@@ -36,19 +36,19 @@ argument (rule 7).
 
 ## Rules at a glance
 
-| #  | Rule                                                                         | Enforcement                                                                                                                        |
-| -- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1  | [Ask the owner; don't re-derive its rule](#1-ask-the-owner)                  | Review, plus a test on the owner                                                                                                   |
-| 2  | [One union per mode](#2-one-union-per-mode)                                  | Types; `expectTypeOf` type tests run by `npm run check`; `Record<Union, V>` tables                                                 |
-| 3  | [Names tell the truth about effects](#3-names-tell-the-truth)                | Review; `DeepReadonly` parameters where a query must stay pure                                                                     |
-| 4  | [Validate at the trust boundary](#4-validate-at-the-trust-boundary)          | Boundary tests; `unknown` input narrowed by a guard, never cast                                                                    |
-| 5  | [One declared contract per wire boundary](#5-one-contract-per-wire-boundary) | A test that reads both sides; typed stubs                                                                                          |
-| 6  | [Server-only packages and storage modes are fenced by lint](#6-lint-fences)  | `SERVER_ONLY_PACKAGES`, `BLOBS_CONSISTENCY_EXPLICIT`, `STORAGE_SEAM_ONLY` in `eslint.config.js`, each with a positive control      |
-| 7  | [The startup path is a budget](#7-the-startup-path-is-a-budget)              | `STARTUP_MODULEPRELOAD_COUNT`, `NATIVE_STARTUP_MODULEPRELOAD_COUNT`, `MAX_STARTUP_JS_CSS_BYTES` (`tools/check-bundle-budgets.mjs`) |
-| 8  | [Tools: entries, strict flags, size ratchet](#8-tools)                       | `tools/tests/tool-specifier-resolution.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef`                |
-| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR; `docs/TESTING.md`                                                   |
-| 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                          |
-| 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                           |
+| #  | Rule                                                                         | Enforcement                                                                                                                                                    |
+| -- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | [Ask the owner; don't re-derive its rule](#1-ask-the-owner)                  | Review, plus a test on the owner                                                                                                                               |
+| 2  | [One union per mode](#2-one-union-per-mode)                                  | Types; `expectTypeOf` type tests run by `npm run check`; `Record<Union, V>` tables                                                                             |
+| 3  | [Names tell the truth about effects](#3-names-tell-the-truth)                | Review; `DeepReadonly` parameters where a query must stay pure                                                                                                 |
+| 4  | [Validate at the trust boundary](#4-validate-at-the-trust-boundary)          | Boundary tests; `unknown` input narrowed by a guard, never cast                                                                                                |
+| 5  | [One declared contract per wire boundary](#5-one-contract-per-wire-boundary) | A test that reads both sides; typed stubs                                                                                                                      |
+| 6  | [Server-only packages and storage modes are fenced by lint](#6-lint-fences)  | `SERVER_ONLY_PACKAGES`, `BLOBS_CONSISTENCY_EXPLICIT`, `STORAGE_SEAM_ONLY`, `API_HANDLER_WRAPPED` in `eslint.config.js`, each with a positive control           |
+| 7  | [The startup path is a budget](#7-the-startup-path-is-a-budget)              | `STARTUP_MODULEPRELOAD_COUNT`, `NATIVE_STARTUP_MODULEPRELOAD_COUNT`, `MAX_STARTUP_JS_CSS_BYTES` (`tools/check-bundle-budgets.mjs`); `STARTUP_REQUIRED_MARKERS` |
+| 8  | [Tools: entries, strict flags, size ratchet](#8-tools)                       | `tools/tests/tool-specifier-resolution.test.mjs`, `tools/tests/tool-entry-flags.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef`   |
+| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR; `docs/TESTING.md`                                                                               |
+| 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                                                      |
+| 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                                                       |
 
 ## 1. Ask the owner
 
@@ -59,7 +59,7 @@ Don't rebuild the answer at the call site from the raw fields the owner reads.
 changes. Each agent session rebuilds hidden invariants from whatever it happened to read, so a rule
 with two homes eventually has two answers.
 
-**Earned by.** Six campaign fixes were re-derivations of an owner's rule:
+**Earned by.** These campaign fixes were re-derivations of an owner's rule:
 
 * PR #2377, a real bug: with the Tool Drawer off, a Pencil double-tap still selected the hidden
   Eraser, because the handler read `eraserEnabled` instead of asking
@@ -73,9 +73,18 @@ with two homes eventually has two answers.
   `downloadedBookCount`/`downloadableBookCount`.
 * PR #2415, a real bug: Settings told iPad users the Share button was "at the bottom";
   `iosShareButtonLocation()` is now the one answer both components use.
+* PR #2429: every caller applied the dark-mode ink rule for the Black swatch, and one default got it
+  wrong in dark mode; `colorsState.themedSwatchColor()` owns it. The same PR gave the duplicated
+  credential migration one owner, `hydrate()` in `secureCredentialCoordinator.ts`.
+
+An owner does not stop a caller that never asks. After PR #2412, the AI report still gated the
+device snapshot on the opt-in alone, right only because its kind defaulted to a bug report, until PR
+#2424 routed it through `attachesDevice()`.
 
 The same holds for state: a value has one writer (ADR-0002's `$bindable` rule). PR #2419 moved the
-AI report status out of a two-deep `bind:` chain into `createImageReportFlow()`.
+AI report status out of a two-deep `bind:` chain into `createImageReportFlow()`. PR #2429 removed an
+appearance effect that wrote another store's `activeColor`, and PR #2422 had Settings sections read
+`open` from the store instead of a prop drilled to twelve sections that three used.
 
 **Enforcement.** Review, plus a test on the owner method rather than on a caller's copy (for example
 `web/src/lib/plugins/pencilEraser.test.ts`, `web/src/lib/ai/credentials.test.ts`). A test double
@@ -154,6 +163,15 @@ plausible wrong numbers.
   throws, and `assertReadableSchema` refuses an unknown capture schema.
 * PR #2379, data loss: Save on Delete cleared the drawing with no banner when `exportCanvasBlob()`
   rejected instead of resolving `null`. Its declaration now names both failure channels.
+* PR #2425, a real bug: a key check that got no answer was reported as 403 "Invalid API key", so a
+  parent's report of an inappropriate picture was lost. The GitHub call had no timeout; it now has
+  `GITHUB_REQUEST_TIMEOUT_MS`, and `web/src/lib/ai/limits.test.ts` holds the deadlines under
+  `NETLIFY_SYNC_TIMEOUT_MS`.
+* PR #2427: `request.formData()` reads were unbounded and turned a file part into "[object File]";
+  `readFormBody` in `web/src/lib/server/http.ts` bounds them. Installation ids reached the function
+  log, which `loggableError` in `web/src/lib/server/logRedaction.ts` now masks.
+* PR #2430, a real bug: a failed save still wrote its dedupe record, so later AI auto-saves skipped
+  the drawing, and one encode error terminated the PNG worker under concurrent exports.
 
 **Enforcement.** Tests at the boundary, and the types: a guard or parser over `unknown`, never a
 cast to the expected shape (PR #2410 replaced a `style as StyleName` cast with
@@ -176,7 +194,12 @@ the client's `readAiImageResponse` (PR #2383). Report field names and kinds
 client's requests to the real handlers; PRs #2387, #2406). The job-id format, owned by `isJobId` (PR
 #2393). Privacy-policy claims against the purge functions' schedules (`IMAGE_REPORT_REVIEW_HOURS`;
 `tools/mobile/tests/privacy-consistency.test.mjs`; PR #2411). Native plugin names and registrations
-(`web/src/lib/plugins/registration.test.ts`, PR #2402).
+(`web/src/lib/plugins/registration.test.ts`, PR #2402), and since PR #2436 the fields each native
+method resolves. The verify-key and verify-access-code request bodies (`VerifyKeyRequestBody`,
+`VerifyAccessCodeRequestBody` in `web/src/lib/ai/keyFormat.ts`, sent through both real handlers by
+`web/src/lib/ai/verifyCredential.wire.test.ts`; PR #2432). The privacy policy's "Last updated" date
+against a hash of its rendered text (`web/src/routes/privacy/policyRevisionsTestHarness.ts`; PR
+#2437, after the date stayed put through a text change).
 
 **Enforcement.** The both-sides test. Test stubs of a boundary function are typed from the real one
 (`vi.fn<typeof realFn>()`), so a changed signature fails `npm run check`; an untyped stub had
@@ -193,18 +216,28 @@ same as a clean repo.
 
 **Earned by.** `sharp` sat one import away from client code in `lib/ai/` (PR #2392). Eight Blobs
 stores used the SDK's default eventual consistency by omission, the mode behind ADR-0105's failed
-free generations (PR #2393).
+free generations (PR #2393). An `/api` handler not wrapped in `apiHandler` compiles and passes its
+unit tests, yet answers `{ message }` to clients that parse `{ ok, error }` and skips the error log
+(PR #2432).
 
 **Enforcement.** In `eslint.config.js`: `SERVER_ONLY_PACKAGES` (positive control
 `tools/tests/server-only-imports-lint.test.mjs`), `BLOBS_CONSISTENCY_EXPLICIT`
 (`tools/tests/blobs-consistency-lint.test.mjs`), and the existing `STORAGE_SEAM_ONLY`
-(`tools/tests/boundary-string-lint.test.mjs`). The same pattern guards tools: `no-undef`
+(`tools/tests/boundary-string-lint.test.mjs`), and `API_HANDLER_WRAPPED`
+(`tools/tests/api-handler-lint.test.mjs`). `WEB_SRC_SYNTAX_RESTRICTIONS` composes the `web/src`
+syntax set once for every block that extends it. The same pattern guards tools: `no-undef`
 (`tools/tests/tools-no-undef-lint.test.mjs`) and `max-lines`
 (`tools/tests/tools-max-lines-lint.test.mjs`).
 
 **Known limits.** `no-restricted-imports` sees static imports only, not `import()`. The Blobs
-selectors match a bare `getStore` callee, not an alias. Flat config replaces a rule's earlier entry,
-so a new restriction must be recomposed into every block for that rule (ADR-0031).
+selectors match a bare `getStore` callee, not an alias. A selector matches a name, not a binding:
+the first `API_HANDLER_WRAPPED` was bypassed by a destructured import until binding selectors pinned
+`apiHandler` to its `$lib/server/http` import (PR #2432). Flat config replaces a rule's earlier
+entry, so a new restriction must be recomposed into every block for that rule (ADR-0031). Some
+server boundaries are still prose or defaults rather than lint: `.claude/rules/server-api.md` asks
+for `readFormBody` over `request.formData()`, and `handleApiCaching` in `web/src/hooks.server.ts`
+defaults every `/api` response to `no-store` (PR #2427), which the API smoke asserts
+(`tools/api-smoke/lib/api-caching.mjs`, PR #2432).
 
 ## 7. The startup path is a budget
 
@@ -227,8 +260,9 @@ one on PR #2406, and PR #2418 pinned the native count too.
 `tools/check-bundle-budgets.mjs` are exact, two-sided pins enforced by `npm run build` and
 `npm run build:cap` on the release build; a change in either direction fails and asks for the
 constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
-`web/tests/startup-bundle.spec.ts` pins which modules load at startup. ADR-0032's 2026-09 amendments
-record the reasoning.
+`web/tests/startup-bundle.spec.ts` pins which modules load at startup, including
+`STARTUP_REQUIRED_MARKERS` for a module that must stay eager (the install prompt's listener, PR
+#2428). ADR-0032's 2026-09 amendments record the reasoning.
 
 ## 8. Tools
 
@@ -241,15 +275,19 @@ skews a published number.
 
 **Earned by.** Imports of entry scripts made two import cycles, and a device runner loaded a
 3,000-line capture script for one regex (PR #2397). A second `=`, a bare flag, `4junk`, or an
-unknown flag each ran with a silent default (PRs #2388, #2409). `tools/` had no size cap and grew by
-about 18,000 lines in 30 days (PR #2405). With `no-undef` off, dropped imports shipped as
-`ReferenceError`s, and `freePort` killed another worktree's server (PR #2381).
+unknown flag each ran with a silent default (PRs #2388, #2409). Exported perf functions read flags
+in parameter defaults, so a flag passed to one CLI would have silently changed another's in-process
+call (PR #2439). `--seconds=2.5` drew for 3 s while the capture recorded 2.5 (PR #2441), and
+asset-gen overwrote tracked shipped files before checking them (PR #2435). `tools/` had no size cap
+and grew by about 18,000 lines in 30 days (PR #2405). With `no-undef` off, dropped imports shipped
+as `ReferenceError`s, and `freePort` killed another worktree's server (PR #2381).
 
 **Enforcement.** `tools/tests/tool-specifier-resolution.test.mjs` (library → entry edges);
 `rejectUnknownFlags` and `parseNumberFlag` in `tools/lib/proc.mjs`, `parsePerfArgs` in
-`tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs`; `max-lines` with
-`TOOLS_GRANDFATHERED_MAX_LINES` in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in
-`tools/lib/vite-server.mjs` throws on a listener outside the checkout.
+`tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag
+read in an exported function's parameter default); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES`
+in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in `tools/lib/vite-server.mjs` throws
+on a listener outside the checkout.
 
 ## 9. Tests prove they can fail
 
@@ -264,8 +302,12 @@ and names its timeouts with measured headroom.
 mutated a shared fixture (PR #2414). Plain-object settings doubles broke 23 tests when PR #2386
 changed the store, and the repair copied its `aiCredentialKind` rule, so the tests checked their own
 copy (PR #2413). A whitespace-collapsing copy test hid a Prettier re-wrap that changed the rendered
-text (PR #2400); PR #2411's exact pins caught the same trap. Tests running close to their timeout
-failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407, #2417).
+text (PR #2400); PR #2411's exact pins caught the same trap. Two coloring-pack regressions (caching
+before verification, remembering a failed manifest load) would have passed the whole suite until PR
+#2431 added `web/src/lib/coloringPacks/manager.webStore.test.ts` on the real web store, and PR #2436
+gave a positive control to a blank-undo test that could pass vacuously. Tests running close to their
+timeout failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407,
+#2417).
 
 **Enforcement.** Lint rejects the structural forms of a test that cannot fail, with
 `tools/tests/vacuous-test-lint.test.mjs` as their positive control. The rest is review, and
@@ -278,8 +320,9 @@ owns its inputs".
 bullet; the campaign added only the words "about code that exists".
 
 **Earned by.** PR #2420 fixed comments that named deleted functions or files, narrated history, or
-left a test-only seam unmarked; PR #2379 corrected a comment that promised the wrong failure
-channel.
+left a test-only seam unmarked, and PR #2438 repointed docs and comments at code the campaign moved.
+PR #2379 corrected a comment that promised the wrong failure channel, and PR #2428 one whose
+"guarantees" the orientation lock's latch made false.
 
 **Enforcement.** Review for code comments. For docs, skills, and rules, `npm run check:doc-refs`
 fails on a repo path or npm script that doesn't resolve.
@@ -302,14 +345,21 @@ regression.
 **Enforcement.**
 
 * `KNOWN_LIB_TO_ENTRY_IMPORTS` (`tools/tests/tool-specifier-resolution.test.mjs`) fails on a new
-  edge and on a listed edge that no longer exists (PR #2397).
+  edge and on a listed edge that no longer exists (PR #2397); PR #2439 cut it from four edges to
+  one.
+* `KNOWN_FLAG_READING_DEFAULTS` (`tools/tests/tool-entry-flags.test.mjs`) lists the exported
+  functions still allowed a flag-reading default, with the same stale-entry test (PR #2439).
+* The asset-gen coupling table in `tools/asset-gen/README.md` is the allowlist
+  `tools/asset-gen/tests/import-boundary.test.mjs` enforces; an undocumented import or a stale row
+  fails (PR #2435).
 * `AUDITED_SWALLOWS` (`tools/perf/tests/silent-catch-inventory.test.mjs`) pins each silent catch by
   identity, so a swap or a new one fails; PR #2401 shrank it by two.
 * `TOOLS_GRANDFATHERED_MAX_LINES` (`eslint.config.js`) freezes each oversized tool at its size, so
   growth fails lint. Lowering a cap after a shrink is review-enforced: `tools/CLAUDE.md` asks the
   shrinking PR to lower it, and PR #2405 rejected an equality test that would conflict on every
-  shrinking PR. The `burn-down-oversized-code` skill lists caps well above their file's size, and PR
-  #2421 lowered ten.
+  shrinking PR, though PR #2426 shrank two listed files without lowering them and PR #2433 lowered
+  them afterwards. The `burn-down-oversized-code` skill lists caps well above their file's size, and
+  PR #2421 lowered ten.
 * `ALLOWED_REFERENCES` (`tools/check-doc-references.mjs`) fails on an entry that stops matching.
 * ADR carve-outs: the engine's module-scope state is ADR-0004's documented exception to the
   `createX()` factory convention. Changing it is an ADR amendment, not a refactor.

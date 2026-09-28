@@ -112,7 +112,9 @@ entry script.
   that reads flags one at a time through `argFlag`/`argNumber`/`argSwitch` (`tools/lib/proc.mjs`)
   declares its whole set with `rejectUnknownFlags` in its `isMain` branch, so a mistyped flag fails
   instead of being ignored; `parsePerfArgs` does the same for the perf capture entries, which parse
-  inside their exported run function, never at module scope.
+  inside their exported run function, never at module scope. An exported function takes argv from
+  its caller, never through a flag read in a parameter default, since another CLI may call it in
+  process (`tools/tests/tool-entry-flags.test.mjs`).
 * `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `web/src` (`eslint.config.js`).
   The files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
   means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff. A PR
