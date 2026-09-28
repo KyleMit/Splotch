@@ -2,6 +2,7 @@ import { aiProvider } from '../../web/src/lib/server/ai/provider';
 import {
   claimJob,
   completeJob,
+  isGenerationWork,
   takeJobInput,
   verifyWorkTicket,
   WORK_TICKET_HEADER,
@@ -16,31 +17,28 @@ import {
 // result — and that constraint is a feature: nothing secret has to be written
 // down for a later request to pick up.
 
-// Deliberately small: a background function's invocation body is capped in the
-// low hundreds of KB (measured against a deploy), so the drawing is fetched from
-// the job store rather than carried here.
-interface WorkPayload {
-  jobId: string;
-  apiKey: string;
-  prompt: string;
-  mimeType: string;
-  deadlineMs: number;
-}
+const badPayload = () => new Response('Bad payload', { status: 400 });
 
 export default async (request: Request): Promise<Response> => {
   const raw = await request.text();
 
-  let work: WorkPayload;
+  let payload: unknown;
   try {
-    work = JSON.parse(raw) as WorkPayload;
+    payload = JSON.parse(raw);
   } catch {
-    return new Response('Bad payload', { status: 400 });
+    return badPayload();
   }
+
+  // The function URL is public, so until the ticket checks out this is anyone's
+  // input: read only the job id the ticket is bound to, and nothing else.
+  const jobId =
+    typeof payload === 'object' && payload !== null && 'jobId' in payload ? payload.jobId : null;
+  if (typeof jobId !== 'string') return badPayload();
 
   if (
     !verifyWorkTicket(
       request.headers.get(WORK_TICKET_HEADER),
-      work.jobId,
+      jobId,
       raw,
       process.env.REPORT_TOKEN_SECRET
     )
@@ -48,6 +46,14 @@ export default async (request: Request): Promise<Response> => {
     console.warn('[generate-image-background] rejected an unsigned or mismatched job');
     return new Response('Forbidden', { status: 403 });
   }
+
+  // A signed payload of the wrong shape was written by a start on a different
+  // deploy, not by an attacker — worth a loud log, since that job never runs.
+  if (!isGenerationWork(payload)) {
+    console.error('[generate-image-background] a signed job did not match GenerationWork');
+    return badPayload();
+  }
+  const work = payload;
 
   let claimId: string | null = null;
   try {

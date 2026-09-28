@@ -21,10 +21,11 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import { FREE_GENERATIONS_REMAINING_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
-import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
+import { SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
+import { readAiImageResponse, type AiImageResponse } from '$lib/drawing/aiImageResponse';
 import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import { GENERATION_JOB_STORE_NAME } from '$lib/server/generationJobStoreName';
-import { WORK_TICKET_HEADER } from '$lib/server/generationJobs';
+import { issueWorkTicket, WORK_TICKET_HEADER } from '$lib/server/generationJobs';
 import worker from '../../../../../netlify/functions/generate-image-background';
 
 // The free-generation allowance is settled across three requests that never
@@ -302,6 +303,22 @@ describe('free generation settlement across the background handoff', () => {
   });
 });
 
+function expectStarted(
+  result: AiImageResponse
+): asserts result is Extract<AiImageResponse, { kind: 'started' }> {
+  expect(result.kind).toBe('started');
+}
+
+describe('the job ticket', () => {
+  it('reads on the client as a job the poll endpoint knows', async () => {
+    const started = await readAiImageResponse(await startFreeGeneration());
+
+    expectStarted(started);
+    expect(started.pollAfterMs).toBeGreaterThan(0);
+    expect((await collect(started.jobId)).status).toBe(202);
+  });
+});
+
 describe('the background worker', () => {
   it('refuses a dispatch with a forged ticket without touching the job or calling the model', async () => {
     const { jobId, dispatch } = await startHandedOffGeneration();
@@ -333,15 +350,37 @@ describe('the background worker', () => {
     expect(provider.generateImage).not.toHaveBeenCalled();
   });
 
-  it('answers 400 to a body that is not JSON', async () => {
-    const response = await worker(
-      new Request('https://splotch.test/.netlify/functions/generate-image-background', {
-        method: 'POST',
-        body: 'not json',
-      })
-    );
+  // Refused before the ticket is checked: a throw here is retried by the
+  // platform twice, a minute apart.
+  it.each(['not json', 'null', '{}', '{"jobId":7}'])(
+    'answers 400 to %s without calling the model',
+    async (body) => {
+      const response = await worker(
+        new Request('https://splotch.test/.netlify/functions/generate-image-background', {
+          method: 'POST',
+          body,
+        })
+      );
 
-    expect(response.status).toBe(400);
+      expect(response.status).toBe(400);
+      expect(provider.generateImage).not.toHaveBeenCalled();
+    }
+  );
+
+  it('refuses a signed dispatch that is not generation work, without touching the job', async () => {
+    const { jobId, dispatch } = await startHandedOffGeneration();
+    const body = JSON.stringify({ jobId });
+    const signed = new Request(dispatch.url, {
+      method: 'POST',
+      headers: {
+        [WORK_TICKET_HEADER]: issueWorkTicket(jobId, body, process.env.REPORT_TOKEN_SECRET) ?? '',
+      },
+      body,
+    });
+
+    expect((await worker(signed)).status).toBe(400);
+    expect(provider.generateImage).not.toHaveBeenCalled();
+    expect(jobBlobKeys(jobId)).toContain(`${jobId}/input`);
   });
 
   it('takes the drawing out of the store before calling the model', async () => {
