@@ -42,16 +42,24 @@ the raws. Edit or regenerate a raw, then re-punch; never hand-edit a shipped fil
 
 ### The one coupling to the app
 
-The AI generators reuse the app's single source of truth rather than duplicating
-prompts/catalog/theme. This is the **entire** sanctioned import surface from `web/src` — keep it to
-these four modules:
+The generators reuse the app's single source of truth rather than duplicating
+prompts/catalog/theme/backdrop keying. This table is the **entire** sanctioned import surface from
+`web/src`, listing every file under `tools/asset-gen/` that imports each module:
 
-| Import                       | Used by                |
-| ---------------------------- | ---------------------- |
-| `web/src/lib/ai/styles.ts`   | `gen-style-covers`     |
-| `web/src/lib/ai/prompt.ts`   | `gen-style-covers`     |
-| `web/src/lib/theme.ts`       | `gen-style-covers`     |
-| `web/src/lib/state/books.ts` | `gen-book-proof-sheet` |
+| Import                                         | Imported by                                                                                                     |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `web/src/lib/ai/styles.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
+| `web/src/lib/ai/prompt.ts`                     | `style-covers/gen-style-covers.mjs`                                                                             |
+| `web/src/lib/theme.ts`                         | `style-covers/gen-style-covers.mjs`                                                                             |
+| `web/src/lib/state/books.ts`                   | `coloring/gen-book-proof-sheet.mjs`, `coloring/gen-responsive-assets.mjs`, `tests/responsive-coloring.test.mjs` |
+| `web/src/lib/server/ai/flatBackgroundPunch.ts` | `lib/flat-background-punch.mjs`                                                                                 |
+
+`lib/flat-background-punch.mjs` re-exports the backdrop key that live Sticker generations use, so
+the style-cover generator cuts its covers with the same code. `tests/import-boundary.test.mjs` holds
+this table to the code in both directions — an import missing from it, or a row no file still
+imports, fails — and fails any import that resolves outside this folder other than these modules,
+such as the repo-root `tools/lib/`. Add a row in the same commit as a new import, or remove one with
+the last.
 
 A module on this list must be importable by bare Node under `--experimental-strip-types`, which —
 unlike Vite — will not resolve an extensionless specifier. So each one spells its own imports with

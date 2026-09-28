@@ -193,6 +193,13 @@ describe('blank tiled undo', () => {
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
     expect(scanTiledRendererIsEmpty(1)).toBe(true);
 
+    // The same stale ink reads as ink once its tile shows, so the scan above
+    // came back empty only because it skips hidden tiles.
+    const staleTile = tiles[1];
+    staleTile.hidden = false;
+    expect(scanTiledRendererIsEmpty(1)).toBe(false);
+    staleTile.hidden = true;
+
     draw(pen, true);
     expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: true });
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
