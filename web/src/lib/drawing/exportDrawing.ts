@@ -33,7 +33,7 @@ export interface ExportOptions {
   preview?: {
     width: number;
     onReady: (preview: ImageBitmap) => void;
-    source?: TiledExportSnapshot;
+    snapshot?: TiledExportSnapshot;
   };
 }
 
@@ -93,7 +93,7 @@ async function deliverTiledPreview(
   overlayImage: HTMLImageElement | null,
   signal: AbortSignal
 ) {
-  if (!preview.source) return;
+  if (!preview.snapshot) return;
   const resolvedBitmaps = new Set<ImageBitmap>();
   const closeResolvedBitmaps = () => {
     for (const bitmap of resolvedBitmaps) bitmap.close();
@@ -103,7 +103,7 @@ async function deliverTiledPreview(
 
   try {
     const tiles = await Promise.all(
-      preview.source.source.tiles.map(async ({ bitmap: bitmapPromise, x, y }) => {
+      preview.snapshot.source.tiles.map(async ({ bitmap: bitmapPromise, x, y }) => {
         const bitmap = await bitmapPromise;
         if (signal.aborted) {
           bitmap.close();
@@ -113,8 +113,8 @@ async function deliverTiledPreview(
         return { bitmap, x, y };
       })
     );
-    const logicalWidth = preview.source.source.width / preview.source.sourceScale;
-    const logicalHeight = preview.source.source.height / preview.source.sourceScale;
+    const logicalWidth = preview.snapshot.source.width / preview.snapshot.sourceScale;
+    const logicalHeight = preview.snapshot.source.height / preview.snapshot.sourceScale;
     const outputScale = preview.width / logicalWidth;
     const outputHeight = Math.max(1, Math.round(logicalHeight * outputScale));
     const canvas = new OffscreenCanvas(preview.width, outputHeight);
@@ -123,7 +123,7 @@ async function deliverTiledPreview(
 
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
-    const tileScale = outputScale / preview.source.sourceScale;
+    const tileScale = outputScale / preview.snapshot.sourceScale;
     context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
     for (const tile of tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
     context.resetTransform();
@@ -182,9 +182,9 @@ async function deliverTiledPreviewBeforeExport(
   }
 }
 
-function closeTiledPreviewSource(preview: ExportOptions['preview']) {
-  if (!preview?.source) return;
-  for (const { bitmap } of preview.source.source.tiles) {
+function closeTiledPreviewSnapshot(preview: ExportOptions['preview']) {
+  if (!preview?.snapshot) return;
+  for (const { bitmap } of preview.snapshot.source.tiles) {
     void bitmap.then(
       (resolved) => resolved.close(),
       () => undefined
@@ -276,7 +276,7 @@ export async function composeExportPng(
 
   const target = getExportContext(snapshot);
   if (!target) {
-    closeTiledPreviewSource(preview);
+    closeTiledPreviewSnapshot(preview);
     return null;
   }
   let texture: HTMLImageElement | null;
@@ -287,10 +287,10 @@ export async function composeExportPng(
       loadExportOverlay(overlaySource),
     ]);
   } catch (error) {
-    closeTiledPreviewSource(preview);
+    closeTiledPreviewSnapshot(preview);
     throw error;
   }
-  if (preview?.source) {
+  if (preview?.snapshot) {
     try {
       // Mount the short-lived feedback before compatibility composition begins,
       // but never let optional feedback pin the save or its coalescing promise.
