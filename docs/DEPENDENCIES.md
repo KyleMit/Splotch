@@ -101,7 +101,7 @@ Non-`keep` rows first.
 
 * **Version:** `^9.1.0` declared · 9.1.0 locked · prod
 * **Used for:** Saving rendered drawings to the iOS photo library. Used in
-  `web/src/lib/drawing/screenshot.ts`. Android saves go through the app-local `PhotoLibrary` plugin
+  `web/src/lib/drawing/imageSave.ts`. Android saves go through the app-local `PhotoLibrary` plugin
   instead, because this plugin's Android albums live in app-specific storage that an uninstall
   deletes (ADR-0037, 2026-09-13 amendment).
 * **Source:** npm ·

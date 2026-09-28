@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AI_IMAGE_BASENAME, DRAWING_BASENAME, extensionForImageType } from '$lib/saveNaming';
+import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
+import { extensionForImageType } from '$lib/savedFile';
 import {
   ANDROID_GALLERY_CHUNK_CHARS,
   ANDROID_GALLERY_IMAGE_TYPES,

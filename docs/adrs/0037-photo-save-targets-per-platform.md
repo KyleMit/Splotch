@@ -5,11 +5,11 @@
 ## Context
 
 Saving a drawing is the app's one "keep this" action, reached three ways, all of which funnel
-through `saveImageBlob(blob, baseName?, opts?)` in `web/src/lib/drawing/screenshot.ts`:
+through `saveImageBlob(blob, baseName, opts?)` in `web/src/lib/drawing/imageSave.ts`:
 
 * **User-initiated** — the Screenshot button (`saveScreenshot`), which also plays the polaroid
   animation.
-* **Background** — Auto-Save on Delete (`saveOnDelete.ts`) and AI auto-save (`aiImage.ts`), which
+* **Background** — Auto-Save on Delete (`saveOnDelete.ts`) and AI auto-save (`aiAutoSave.ts`), which
   save silently and own their own feedback.
 
 Where the bytes land has always been platform-specific, but the behaviour was scattered across the
@@ -175,8 +175,8 @@ parent-directed **Save Failure Banner** in the bottom dock (`SaveFailureBanner.s
 **`SaveResult` gains `denied`.** A native save the OS refused for want of a permission rejects with
 the code `accessDenied`, which `saveImageBlob` maps to `denied`; every other rejection stays
 `failed`. iOS gets the code from `@capacitor-community/media`, whose add-only authorization check
-already rejects with it. `screenshot.gallery.test.ts` reads that Swift source and
-`PhotoLibraryPlugin.java` to keep both codes equal to `ACCESS_DENIED_ERROR_CODE`.
+already rejects with it. `imageSave.test.ts` reads that Swift source and `PhotoLibraryPlugin.java`
+to keep both codes equal to `ACCESS_DENIED_ERROR_CODE`.
 
 **Android 7–9 keeps the denial fallback above.** The issue read a declined storage permission as a
 failed save. It is not one: the picture lands in the app-specific media directory, which the gallery
