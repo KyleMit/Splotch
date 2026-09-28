@@ -17,11 +17,13 @@ vi.mock('$lib/platform', () => ({
 // In-memory stand-in for the durable Capacitor Preferences store.
 const prefsStore = vi.hoisted(() => new Map<string, string>());
 const prefsSetFailure = vi.hoisted(() => ({ key: null as string | null }));
+const prefsGets = vi.hoisted((): string[] => []);
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
-    get: async ({ key }: { key: string }) => ({
-      value: prefsStore.has(key) ? prefsStore.get(key) : null,
-    }),
+    get: async ({ key }: { key: string }) => {
+      prefsGets.push(key);
+      return { value: prefsStore.has(key) ? prefsStore.get(key) : null };
+    },
     set: async ({ key, value }: { key: string; value: string }) => {
       if (prefsSetFailure.key === key) throw new Error('Preferences set failed');
       prefsStore.set(key, value);
@@ -38,11 +40,13 @@ import {
   hydrateDurableStorage,
   onDurableRestore,
 } from './storage';
+import { WEB_ONLY_STORAGE_KEYS } from './storageKeys';
 
 beforeEach(() => {
   localStorage.clear();
   prefsStore.clear();
   prefsSetFailure.key = null;
+  prefsGets.length = 0;
   ctrl.native = false;
 });
 
@@ -69,6 +73,30 @@ describe('hydrateDurableStorage', () => {
     ctrl.native = false;
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(false);
+    expect(prefsGets).toEqual([]);
+  });
+
+  it('asks Preferences for every key native writes and for none of the web-only keys', async () => {
+    ctrl.native = true;
+
+    await hydrateDurableStorage();
+
+    const nativeWritten = Object.values(STORAGE_KEYS).filter(
+      (key) => !WEB_ONLY_STORAGE_KEYS.includes(key)
+    );
+    expect([...prefsGets].sort()).toEqual(nativeWritten.sort());
+  });
+
+  it('never restores a web-only key, whatever Preferences holds for it', async () => {
+    ctrl.native = true;
+    for (const key of WEB_ONLY_STORAGE_KEYS) prefsStore.set(key, 'left-by-an-older-build');
+
+    const restored = await hydrateDurableStorage();
+
+    expect(restored).toBe(false);
+    expect(WEB_ONLY_STORAGE_KEYS.map((key) => localStorage.getItem(key))).toEqual(
+      WEB_ONLY_STORAGE_KEYS.map(() => null)
+    );
   });
 
   it('restores a key the WebView evicted from localStorage', async () => {
