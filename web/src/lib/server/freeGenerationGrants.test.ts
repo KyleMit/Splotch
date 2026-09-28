@@ -239,4 +239,28 @@ describe('free generation grants', () => {
     const store = getStoreMock.mock.results[0]?.value;
     expect(store.get).toHaveBeenCalledTimes(ADMIN_GRANT_SAMPLE_LIMIT + 1);
   });
+
+  // The line names the grant by a short prefix on purpose; a store error that
+  // quotes the whole key must not undo that.
+  it('logs an unreadable grant without its installation id', async () => {
+    const id = installation('b');
+    entries.set(id, { data: null, etag: 'grant' });
+    const store = makeStore();
+    const readDaily = store.get.getMockImplementation()!;
+    store.get.mockImplementation(async (key: string) => {
+      if (key === id) throw new Error(`free-generation-grants get ${id} failed`);
+      return readDaily(key);
+    });
+    getStoreMock.mockReturnValue(store);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await getFreeGenerationGrantAdminStats();
+
+    const line = warn.mock.calls.flat().map(String).join(' ');
+    expect(line).toContain(
+      'failed to read grant bbbbbbbb…: free-generation-grants get <redacted id>'
+    );
+    expect(line).not.toContain(id);
+    warn.mockRestore();
+  });
 });

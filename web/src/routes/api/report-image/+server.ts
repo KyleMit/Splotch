@@ -9,7 +9,7 @@ import { IMAGE_REPORT_FORM_FIELDS } from '$lib/imageReport';
 import { isReportingConfigured } from '$lib/server/github';
 import { MAX_REPORT_REQUEST_BYTES, submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
-import { apiHandler, readBodyWithinLimit } from '$lib/server/http';
+import { apiHandler, readFormBody } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; error: string };
@@ -34,30 +34,16 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   });
   if (!authorization.authorized) return authorization.response;
 
-  const body = await readBodyWithinLimit(request, MAX_REPORT_REQUEST_BYTES);
+  const body = await readFormBody(request, MAX_REPORT_REQUEST_BYTES);
   if (!body.ok) {
-    return json(
-      { ok: false, error: 'That AI report is too large to send.' } satisfies ImageReportResponse,
-      { status: 413 }
-    );
-  }
-
-  let form: FormData;
-  try {
-    // Re-parse the bytes already bounded above; `request.formData()` would read
-    // the stream a second time and reintroduce the unbounded buffer.
-    // Copied into a plain Uint8Array and wrapped as a Blob: the ambient BodyInit
-    // union takes no typed array, and Buffer's ArrayBufferLike is not a BlobPart.
-    // Bounded by the cap above, so the copy is at most MAX_REPORT_REQUEST_BYTES.
-    form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
-      headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
-    }).formData();
-  } catch {
-    return json({ ok: false, error: 'Expected an AI report.' } satisfies ImageReportResponse, {
-      status: 400,
+    const tooLarge = body.reason === 'too-large';
+    const error = tooLarge ? 'That AI report is too large to send.' : 'Expected an AI report.';
+    return json({ ok: false, error } satisfies ImageReportResponse, {
+      status: tooLarge ? 413 : 400,
     });
   }
 
+  const { form } = body;
   const result = await submitImageReport({
     kind: form.get(IMAGE_REPORT_FORM_FIELDS.kind),
     drawing: form.get(IMAGE_REPORT_FORM_FIELDS.drawing),
