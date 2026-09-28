@@ -51,11 +51,20 @@ function renderedFailure() {
   return { card: textOf(target), diagnostics };
 }
 
-async function failWith(response: () => Promise<Response>) {
+type Responder = () => Promise<Response>;
+
+// One responder per request the run makes, in order: the start request, then
+// any polls of an accepted job.
+async function failWith(...responses: Responder[]) {
   mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing'], { type: 'image/png' }));
-  vi.stubGlobal('fetch', vi.fn(response));
+  const fetchMock = vi.fn<Responder>();
+  for (const response of responses) fetchMock.mockImplementationOnce(response);
+  vi.stubGlobal('fetch', fetchMock);
   await generateAiImage();
 }
+
+const acceptedJob: Responder = async () =>
+  new Response('{"jobId":"job","pollAfterMs":0}', { status: 202 });
 
 const REFUSAL_CARD =
   "Let's try drawing something else! That picture didn't work — try drawing something different! For grown-ups Report this refusal";
@@ -102,27 +111,37 @@ describe('AiResultError rendered copy', () => {
     expect(renderedFailure()).toEqual({ card: REFUSAL_CARD, diagnostics: [] });
   });
 
-  it.each([
+  it.each<[string, Responder[], string[]]>([
     [
       'a server error',
-      async () => new Response('Upstream unavailable', { status: 502 }),
+      [async () => new Response('Upstream unavailable', { status: 502 })],
       problemRows('502 · /api/generate-image', 'Upstream unavailable', 1),
     ],
     [
       'throttling',
-      async () => new Response('Please wait', { status: 429, headers: { 'Retry-After': '12' } }),
+      [async () => new Response('Please wait', { status: 429, headers: { 'Retry-After': '12' } })],
       problemRows('429 · /api/generate-image', 'Please wait', 1),
     ],
     [
       'a client error',
-      async () => new Response('Image is too large', { status: 413 }),
+      [async () => new Response('Image is too large', { status: 413 })],
       problemRows('413 · /api/generate-image', 'Image is too large', 1),
+    ],
+    [
+      'an accepted job failing when collected',
+      [acceptedJob, async () => new Response('{"error":"Provider failed"}', { status: 502 })],
+      problemRows('502 · /api/generation-result', 'Provider failed', 1),
+    ],
+    [
+      'an acceptance that carries no job to collect',
+      [async () => new Response('{}', { status: 202 })],
+      problemRows('No response · /api/generate-image', 'The server did not finish the picture.', 1),
     ],
     // The timeout text reaches only the report's diagnostics; the child sees
     // the same card as any other retryable failure.
     [
       'the request timing out',
-      async () => Promise.reject(new DOMException('The operation was aborted.', 'AbortError')),
+      [async () => Promise.reject(new DOMException('The operation was aborted.', 'AbortError'))],
       problemRows(
         'No response · /api/generate-image',
         "That's taking too long — please try again.",
@@ -131,15 +150,15 @@ describe('AiResultError rendered copy', () => {
     ],
     [
       'the request failing outright',
-      async () => Promise.reject(new TypeError('Failed to fetch')),
+      [async () => Promise.reject(new TypeError('Failed to fetch'))],
       problemRows(
         'No response · /api/generate-image',
         'The picture request could not complete.',
         1
       ),
     ],
-  ])('shows the error card after %s, and reports what went wrong', async (_, response, rows) => {
-    await failWith(response);
+  ])('shows the error card after %s, and reports what went wrong', async (_, responses, rows) => {
+    await failWith(...responses);
 
     expect(renderedFailure()).toEqual({ card: FIRST_FAILURE_CARD, diagnostics: rows });
   });
