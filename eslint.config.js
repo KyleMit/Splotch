@@ -191,6 +191,9 @@ const API_HANDLER_WRAPPED = [
     ':matches(ImportDefaultSpecifier, ImportNamespaceSpecifier)[local.name="apiHandler"]',
     ':matches(VariableDeclarator, FunctionDeclaration, ClassDeclaration)[id.name="apiHandler"]',
     'ObjectPattern > Property[value.name="apiHandler"]',
+    'ArrayPattern > Identifier[name="apiHandler"]',
+    'AssignmentPattern[left.name="apiHandler"]',
+    'RestElement[argument.name="apiHandler"]',
   ].map((selector) => ({ selector, message: API_HANDLER_BINDING_MESSAGE })),
 ];
 

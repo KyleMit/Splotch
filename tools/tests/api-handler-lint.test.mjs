@@ -62,6 +62,18 @@ describe('the /api handler wrapping guard', () => {
       'a destructured apiHandler',
       'const { apiHandler } = wrappers;\nexport const POST = apiHandler(inner);',
     ],
+    [
+      'an array-destructured apiHandler',
+      'const [apiHandler] = wrappers;\nexport const POST = apiHandler(inner);',
+    ],
+    [
+      'a defaulted destructured apiHandler',
+      'const { apiHandler = fallback } = wrappers;\nexport const POST = apiHandler(inner);',
+    ],
+    [
+      'a rest-bound apiHandler',
+      'const [...apiHandler] = wrappers;\nexport const POST = apiHandler(inner);',
+    ],
   ])('rejects %s, since the callee is matched by name', async (_shape, source) => {
     expect(await unwrapped(ROUTE, source)).toHaveLength(1);
   });
