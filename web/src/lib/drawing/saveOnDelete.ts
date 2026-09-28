@@ -15,7 +15,10 @@ export async function saveDrawingIfEnabled() {
 
   const screenshotModule = import('./screenshot');
   void screenshotModule.catch(() => undefined);
-  const blob = await exportCanvasBlob();
+  const blob = await exportCanvasBlob().catch((err: unknown) => {
+    console.error('Save on delete export failed:', err);
+    return null;
+  });
   if (!blob) {
     await reportSaveFailure('failed', null);
     return;
