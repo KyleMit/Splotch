@@ -300,7 +300,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/tests/coloring-books-ready.test.mjs': 676,
   'tools/perf/tests/performance-matrix.test.mjs': 2393,
   'tools/perf/tests/real-screen.test.mjs': 1403,
-  'tools/perf/tests/rescore-captures.test.mjs': 836,
+  'tools/perf/tests/rescore-captures.test.mjs': 840,
   'tools/perf/tests/split-capture.test.mjs': 2129,
   'tools/perf/tests/undo-scenarios.test.mjs': 626,
   'tools/perf/tests/xcuitest-actions.test.mjs': 1786,

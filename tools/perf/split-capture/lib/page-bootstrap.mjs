@@ -53,7 +53,9 @@ const THEME_TIMEOUT_MS = 20_000;
 const BOOTSTRAP_POLL_MS = 150;
 // Long enough that a landed click opens the dialog before another is sent.
 const SETTINGS_OPEN_RETRY_MS = 400;
-// Lets Settings' close transition clear the paper before measured contact.
+// An unmeasured pause between Settings closing and contact banking. modalDialog
+// clears `open` only after its exit animation, so this is margin for the next
+// paint, not for the transition.
 const SETTINGS_CLOSE_SETTLE_MS = 400;
 const BRUSH_ATTEMPTS = 4;
 // One settle after the fill, so the paint is committed before contact banking
