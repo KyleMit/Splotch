@@ -690,7 +690,7 @@ try {
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
       // A key the provider refuses, so the generate-image cases stop at the request
       // guards they are checking without spending anyone's quota. It has to be
-      // non-empty: with no key the managed-token path answers 500 from the
+      // non-empty: with no key the managed-token path answers 503 from the
       // authorization step and never reaches those guards.
       OPENAI_API_KEY: 'not-a-usable-openai-key',
       // Blank on purpose: the shipped generation deadline is what the contract

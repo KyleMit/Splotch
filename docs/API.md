@@ -7,14 +7,14 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
-`X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
-native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
-round trip per request. The wildcard is safe because every endpoint is either gated by a credential
-the caller must already hold (access token, OpenAI key, or admin session) or rate-limited and
-bounded. The credential-less `report` endpoint creates a sanitized private support issue;
-`csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
-ADR-0007.
+`X-Access-Token` / `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token`
+headers allowed, plus `X-Free-Generations-Remaining` and `X-Report-Token` exposed and
+`Access-Control-Max-Age: 86400` so native clients can read the updated allowance and cache the
+preflight instead of paying an OPTIONS round trip per request. The wildcard is safe because every
+endpoint is either gated by a credential the caller must already hold (access token, OpenAI key, or
+admin session) or rate-limited and bounded. The credential-less `report` endpoint creates a
+sanitized private support issue; `csp-report` is size-capped and bounded to log lines. Nothing under
+`/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -262,9 +262,10 @@ deploy: a cold start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back r
 ### `GET /api/free-generation-grant`
 
 Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited
-per IP and never creates or spends a grant. It returns `503` when the project OpenAI key is absent
-or the durable daily provider-start ceiling is exhausted, allowing clients without another
-credential to hide the unavailable AI path.
+per IP and never creates or spends a grant. A missing or malformed `X-Installation-Id` is
+`400 Installation grant unavailable`. It returns `503` when the project OpenAI key is absent or the
+durable daily provider-start ceiling is exhausted, allowing clients without another credential to
+hide the unavailable AI path.
 
 ```json
 { "ok": true, "remaining": 10, "limit": 10 }
@@ -489,8 +490,7 @@ directly in its form actions and **never** loops back through these endpoints.
   `HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")` — the same value the web console
   stores in its HTTP-only cookie. It cannot be inverted to recover the secret, and rotating the
   secret (or bumping the HMAC label) invalidates every outstanding session at once.
-* Subsequent requests send it as `Authorization: Bearer <session>`. The native app keeps it in the
-  platform secure store (Keychain/Keystore).
+* Subsequent requests send it as `Authorization: Bearer <session>`.
 * All comparisons are constant-time (`timingSafeEqual`).
 
 ### `POST /api/admin/login`
@@ -630,11 +630,7 @@ persistence contract.
 * `vite dev` / `netlify dev` run all endpoints same-origin — no CORS in play. Token mutations
   without Netlify Blobs credentials fall back to an in-memory list (seeded from
   `ALLOWED_TOKENS_LIST`) that resets on restart.
-* Set `ADMIN_ACCESS_TOKEN` in your environment to use either admin console locally; unset, every
-  login fails (there is nothing to authenticate against).
-* A native dev build (`CAPACITOR=true`) points `apiUrl()` at `https://splotch.art`, so an on-device
-  admin session talks to **production** data. The permissive `/api/*` CORS plus bearer auth means
-  the WebView origin swap (Android `https://localhost`, iOS `capacitor://localhost`) needs no extra
-  configuration.
+* Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
+  unset, every login fails (there is nothing to authenticate against).
 * E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with
   `ADMIN_ACCESS_TOKEN=test-admin-secret`.

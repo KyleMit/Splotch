@@ -7,8 +7,9 @@ export type LoginResponse = { ok: true; session: string } | { ok: false; error: 
 
 /**
  * Exchange the raw admin secret for a derived session token. This is the API
- * twin of the /admin page's `login` form action, used by the native apps
- * (which have no server and therefore no cookie session). Body: { key }.
+ * twin of the /admin page's `login` form action, driven by the API smoke tests
+ * (tools/api-smoke/lib/admin-client.mjs); no in-product client calls it
+ * (ADR-0101). Body: { key }.
  * Returns { ok: true, session } on success — the client sends that session
  * back as `Authorization: Bearer <session>` on /api/admin/tokens requests.
  * The session is the same HMAC the cookie flow uses (see $lib/server/admin),

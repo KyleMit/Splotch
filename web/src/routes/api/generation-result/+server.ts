@@ -141,8 +141,10 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     // been settled or discarded yet, so the next poll can still collect it.
     return unavailable();
   }
-  // The status said `image` but the bytes are gone — the only way that happens
-  // is the blob expiring between the two reads. Retryable, not a refusal.
+  // The status said `image` but the bytes are gone: the scheduled purge or a
+  // concurrent collector's discardJob removed the job between the two reads.
+  // Either way the next poll answers 404, so this is a plain 502, which tells
+  // the client to stop waiting — not GENERATION_UNAVAILABLE, and not a refusal.
   if (!image) throw error(502, 'That creation could not be collected');
 
   let prepared: Awaited<ReturnType<typeof prepareGeneratedImage>>;
