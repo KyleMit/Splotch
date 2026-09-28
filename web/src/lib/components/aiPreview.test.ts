@@ -1,6 +1,10 @@
 // @vitest-environment node
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { createAiPreviewLoader } from './aiPreview';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 it('does not commit a style preview that finishes after its owner is invalidated', async () => {
   const pendingExport = Promise.withResolvers<Blob | null>();

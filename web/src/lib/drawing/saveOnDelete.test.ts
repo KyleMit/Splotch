@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   settings: { saveOnDeleteEnabled: true },
@@ -34,6 +34,10 @@ beforeEach(() => {
   mocks.isCanvasEmpty.mockReturnValue(false);
   mocks.screenshotModuleLoads = 0;
   mocks.saveImageBlob.mockResolvedValue({ status: 'photos' });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('saveDrawingIfEnabled', () => {
