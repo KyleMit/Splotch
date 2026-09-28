@@ -397,14 +397,15 @@ export function passLiftProblem(lifts, plannedStrokes, pass) {
   return null;
 }
 
+const trustedOnCanvas = (row) => row[EVENT_ON_CANVAS] === 1 && row[EVENT_TRUSTED] === 1;
+
 export function strokeDelivery(events, geometry, repeats) {
   const planned =
     androidGestureInstructions(trustedGestureActions(geometry.canvas, 1, 0), {
       densityScale: geometry.dpr,
     }).filter((instruction) => instruction.kind === 'swipe').length * repeats;
   const delivered = events.filter(
-    (row) =>
-      row[EVENT_TYPE] === POINTER_DOWN && row[EVENT_ON_CANVAS] === 1 && row[EVENT_TRUSTED] === 1
+    (row) => row[EVENT_TYPE] === POINTER_DOWN && trustedOnCanvas(row)
   ).length;
   return { planned, delivered };
 }
@@ -468,10 +469,8 @@ async function passLifts(page, fromEvent) {
     ([from, count]) => window.__probe.events(from, count),
     [fromEvent, counts.events - fromEvent]
   );
-  const trustedOnCanvas = rows.filter(
-    (row) => row[EVENT_ON_CANVAS] === 1 && row[EVENT_TRUSTED] === 1
-  );
-  const count = (type) => trustedOnCanvas.filter((row) => row[EVENT_TYPE] === type).length;
+  const delivered = rows.filter(trustedOnCanvas);
+  const count = (type) => delivered.filter((row) => row[EVENT_TYPE] === type).length;
   return { downs: count(POINTER_DOWN), ups: count(POINTER_UP), cancels: count(POINTER_CANCEL) };
 }
 

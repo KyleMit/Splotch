@@ -49,13 +49,11 @@ const READY_TIMEOUT_MS = 25_000;
 const HYDRATION_TIMEOUT_MS = 20_000;
 const BRUSH_COMMIT_TIMEOUT_MS = 12_000;
 const THEME_TIMEOUT_MS = 20_000;
-// How often an in-page wait re-tests its condition: short enough that a ready
-// page is not left idle, long enough not to spin.
+// How often an in-page wait re-tests its condition.
 const BOOTSTRAP_POLL_MS = 150;
 // Long enough that a landed click opens the dialog before another is sent.
 const SETTINGS_OPEN_RETRY_MS = 400;
-// After Settings reports closed, its close transition still has to leave the
-// paper before the first measured touch lands on it.
+// Lets Settings' close transition clear the paper before measured contact.
 const SETTINGS_CLOSE_SETTLE_MS = 400;
 const BRUSH_ATTEMPTS = 4;
 // One settle after the fill, so the paint is committed before contact banking
