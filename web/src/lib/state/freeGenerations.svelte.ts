@@ -75,7 +75,9 @@ async function fetchGrantRemaining(id: string, signal: AbortSignal): Promise<num
 }
 
 interface FreeGenerationsDeps {
-  settings: SettingsState;
+  // Whether a credential is held, never the credential itself: the grant only
+  // needs to know whether the parent is on the free tier.
+  settings: Pick<SettingsState, 'aiImageEnabled' | 'aiCredentialKind'>;
   network: NetworkState;
   persistedStateStatus: PersistedStateStatus;
 }
@@ -87,6 +89,8 @@ export interface FreeGenerationsState {
   readonly available: boolean;
   setFreeGenerationsRemaining(remaining: number): void;
   setFreeGenerationsUnavailable(): void;
+  // Public only for tests; production reads it through install()'s effect and
+  // retryOnVisibleReturn().
   grantRefreshReady(): boolean;
   // Follows readiness and connectivity: a grant is requested whenever both hold
   // and none is known yet, and cancelled the moment either drops.
@@ -136,8 +140,7 @@ export function createFreeGenerations({
     return (
       persistedStateStatus.hydrated &&
       settings.aiImageEnabled &&
-      !settings.aiUserApiKey &&
-      !settings.aiAccessToken
+      settings.aiCredentialKind() === 'none'
     );
   }
 
@@ -170,7 +173,7 @@ export function createFreeGenerations({
     if (!ready || !online) {
       freeGenerationGrantRequest.cancel();
       if (persistedStateStatus.hydrated && !ready) {
-        if (settings.aiUserApiKey || settings.aiAccessToken) setFreeGenerationsUnavailable();
+        if (settings.aiCredentialKind() !== 'none') setFreeGenerationsUnavailable();
         else setFreeGenerationsInactive();
       }
       return;

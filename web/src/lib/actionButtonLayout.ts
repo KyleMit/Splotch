@@ -138,7 +138,7 @@ export function isAiImageButtonShown(): boolean {
 // A shown button that is not usable still renders and takes its drawer slot,
 // disabled, while the free grant is pending or unavailable.
 export function isAiImageButtonUsable(): boolean {
-  const hasCredential = Boolean(settingsState.aiUserApiKey || settingsState.aiAccessToken);
+  const hasCredential = settingsState.aiCredentialKind() !== 'none';
   return isAiImageButtonShown() && (hasCredential || freeGenerationsState.available);
 }
 

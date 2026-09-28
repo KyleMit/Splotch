@@ -32,6 +32,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { THROTTLED_STATUS } from '$lib/ai/generationResult';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME, isUnsaved, type SaveResult } from '$lib/saveNaming';
 import { reportSaveFailure } from '$lib/state/saveFailure.svelte';
 import type { StyleName } from '$lib/ai/styles';
@@ -246,7 +247,7 @@ function applyResponse(
       return null;
     case 'throttled':
       failAiGeneration(runId, undefined, 'retry', null, {
-        status: 429,
+        status: THROTTLED_STATUS,
         endpoint,
         message: response.detail,
       });

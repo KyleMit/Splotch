@@ -24,6 +24,7 @@
 
   const aiImageButtonUsable = $derived(isAiImageButtonUsable());
   const aiImageButtonShown = $derived(isAiImageButtonShown());
+  const hasAiCredential = $derived(settingsState.aiCredentialKind() !== 'none');
 
   // A minimized run is the one state where a generation is in flight and this
   // button is still live: it is what reveals the run again, so it must not be
@@ -72,8 +73,7 @@
       'aiImage',
       () => {
         if (
-          !settingsState.aiUserApiKey &&
-          !settingsState.aiAccessToken &&
+          !hasAiCredential &&
           (!freeGenerationsState.available || freeGenerationsState.remaining === 0)
         ) {
           openAiSettings(origin);
@@ -109,7 +109,7 @@
       ? freeGenerationsState.loading
         ? 'Checking AI image availability'
         : 'AI image unavailable'
-      : settingsState.aiUserApiKey || settingsState.aiAccessToken
+      : hasAiCredential
         ? 'Create AI image'
         : freeGenerationsState.available && freeGenerationsState.remaining > 0
           ? `Create AI image, ${freeGenerationsState.remaining} free left`
@@ -128,7 +128,7 @@
     name={aiGenerating && !aiGenerationState.minimized ? 'loading' : 'wand-stars'}
     class="action-icon"
   />
-  {#if !settingsState.aiUserApiKey && !settingsState.aiAccessToken && freeGenerationsState.badgeRemaining !== null && !storeCapture}
+  {#if !hasAiCredential && freeGenerationsState.badgeRemaining !== null && !storeCapture}
     <span
       class="free-count"
       data-free-count={freeGenerationsState.badgeRemaining}

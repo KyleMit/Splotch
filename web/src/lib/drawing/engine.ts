@@ -8,22 +8,9 @@
 //
 // The engine is the conductor over focused modules — it owns the <canvas>, the
 // paper coordinate space, all pointer tracking, and the public API, and
-// delegates the rest:
-//
-//   strokeOps.ts        the op vocabulary + the one renderer every surface shares
-//   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
-//   tiledRenderer.ts    live surfaces + vector-tail undo (ADR-0085)
-//   tiledSurfaces.ts    allocation and lifecycle of each tile's canvas surfaces
-//   tiledLayout.ts      tile grid geometry + one-hidden-tile-per-frame backing migration
-//   undoHistory.ts      the shared undo depth and debug contracts
-//   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
-//   paperView.ts        pure rotation-lock view geometry (ADR-0050)
-//   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
-//   emptyScan.ts        cheap blank-canvas detection
-//   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
-//   engineListeners.ts  DOM listener registration and teardown tracking
-//   canvasMeasure.ts    cached canvas geometry + the unmeasured-rect rule
-//   exportDrawing.ts    PNG composition for save/share (loaded on demand)
+// delegates the rest to its `drawing/` siblings. The `drawing/` rows of
+// docs/ARCHITECTURE.md's source map say what each one owns; the imports below
+// are the authoritative list of which ones this facade drives.
 
 import { dev } from '$app/environment';
 import { pageCompositionKey } from '$lib/state/books';
@@ -63,21 +50,11 @@ import {
   clearMagicGradient,
   captureMagicSheet,
   deferColorSheet,
-  setColorSheet as setMagicColorSheet,
+  setColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { createCrayonPassBoundaries } from './crayonPassBoundaries';
 import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
-
-// Crayon's deposition pipeline is a per-runtime decision from the same
-// compile-time signal as its op granularity (ADR-0148, ADR-0147, ADR-0146).
-// Configured at module evaluation, before any stroke can render; the probe lets
-// the restamp pipeline's shadow drain yield to an in-flight stroke, and the
-// WKWebView's per-op glaze has no pass state for it to race.
-configureCrayonDeposition(
-  __IS_CAPACITOR__ ? 'glaze-direct' : 'restamp',
-  () => activePointers.size > 0
-);
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -88,17 +65,21 @@ import {
 import type { CrayonPassTracker } from './crayonPassTracker';
 import { paperStateMatches, type HistoryDebug, type RecordedPaperState } from './undoHistory';
 import { recordPaper, restorePaperLayout, createPaperLayoutMemory } from './paperLayout';
+import { currentScreenAngle } from './screenAngle';
 import { createCanvasMeasure, createCanvasLayoutUpdater, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
-import type { ExportOptions, ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
+import type { ExportOptions } from './exportDrawing';
 import { getActiveOverlayExportSource } from './overlay';
 import { currentExportScale } from './exportScale';
 import {
   captureLiveTileSnapshot,
   captureTiledSnapshot,
+  closeStrokeSnapshots,
+  closeTiledExportSnapshot,
   createStrokeSnapshot,
+  type StrokeSnapshots,
 } from './strokeSnapshot';
 import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
@@ -169,10 +150,10 @@ interface InitOptions {
 let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
-const DEFAULT_LINE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
+const DEFAULT_STROKE_WIDTH_PX = getStrokeWidthPx(DEFAULT_SIZE);
 const TILED_INPUT_BITMAP_SIDE_PX = 1;
 let viewport = { width: 0, height: 0 };
-let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
+let currentStrokeWidthPx = DEFAULT_STROKE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;
 let crayonActive = false;
@@ -277,22 +258,7 @@ let paperView: PaperView = IDENTITY_PAPER_VIEW;
 // — so the "blank canvas frees the paper" paths consult this instead.
 let paperLocked = false;
 
-// The /dev/engine harness intentionally mutates this unlike the drawing route's
-// read-only seams: simulated rotation has no equivalent DOM state to drive.
-// The compile-time gate drops both the state and currentScreenAngle branch from
-// release builds.
-let screenAngleOverride: number | null = null;
-export function setScreenAngleOverride(angle: number | null) {
-  if (!dev && !__DEV_HARNESS__) return;
-  screenAngleOverride = angle;
-}
-
-function currentScreenAngle(): number {
-  if ((dev || __DEV_HARNESS__) && screenAngleOverride !== null) return screenAngleOverride;
-  const angle = window.screen?.orientation?.angle;
-  return typeof angle === 'number' ? angle : 0;
-}
-
+export { setScreenAngleOverride } from './screenAngle';
 export { INITIAL_ENGINE_VIEW_STATE, type EngineViewState } from './paperView';
 
 export function getViewState(): EngineViewState {
@@ -715,6 +681,16 @@ interface PointerState {
 
 const activePointers = new Map<number, PointerState>();
 
+// Crayon's deposition pipeline is a per-runtime decision from the same
+// compile-time signal as its op granularity (ADR-0148, ADR-0147, ADR-0146).
+// Configured at module evaluation, before any stroke can render; the probe lets
+// the restamp pipeline's shadow drain yield to an in-flight stroke, and the
+// WKWebView's per-op glaze has no pass state for it to race.
+configureCrayonDeposition(
+  __IS_CAPACITOR__ ? 'glaze-direct' : 'restamp',
+  () => activePointers.size > 0
+);
+
 function finishGroupWhenCanvasIdle() {
   if (activePointers.size > 0) return;
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
@@ -784,7 +760,8 @@ function startDrawing(e: PointerEvent) {
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
   const lineWidth =
-    (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
+    (eraserActive ? currentStrokeWidthPx * ERASER_SIZE_MULTIPLIER : currentStrokeWidthPx) *
+    renderScale;
 
   const edgeSwipeGuard =
     e.pointerType === 'touch'
@@ -1110,9 +1087,11 @@ export function undo(towards?: HTMLElement | null): Promise<void> {
   return Promise.resolve();
 }
 
-export function setColorSheet(colorUrl: string | null) {
-  setMagicColorSheet(colorUrl);
-  if (!colorUrl && hasRetainedTiledMagicOps()) {
+// Components reach magicBrush.setColorSheet only through here: removing the
+// page's fill must also recode the retained magic ink onto the replacement sheet.
+export function applyColoringFill(fillUrl: string | null) {
+  setColorSheet(fillUrl);
+  if (!fillUrl && hasRetainedTiledMagicOps()) {
     ensureMagicSheet();
     recodeMagicOpsToCurrentSheet();
   }
@@ -1344,7 +1323,7 @@ export function setColor(color: string) {
 }
 
 export function setStrokeWidth(widthPx: number) {
-  currentLineWidth = widthPx;
+  currentStrokeWidthPx = widthPx;
 }
 
 export function setEraserMode(active: boolean) {
@@ -1403,14 +1382,12 @@ export function setSafeAreaInsets(insets: {
 
 // --- Export -------------------------------------------------------------------
 
-// Capture strokes in upright paper space rather than the CSS-presented view.
-type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
-
 export interface CanvasExportPreparation {
   complete(options?: ExportOptions): Promise<Blob | null>;
   cancel(): void;
 }
 
+// Capture strokes in upright paper space rather than the CSS-presented view.
 function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
@@ -1427,21 +1404,6 @@ function snapshotStrokes(snapshotScale: number, capturePreview: boolean): Stroke
     }),
     preview,
   };
-}
-
-function closeTiledExportSnapshot(snapshot: TiledExportSnapshot | null) {
-  if (!snapshot) return;
-  for (const { bitmap } of snapshot.source.tiles) {
-    void bitmap.then(
-      (resolved) => resolved.close(),
-      () => undefined
-    );
-  }
-}
-
-function closeStrokeSnapshots(snapshots: StrokeSnapshots) {
-  if ('source' in snapshots.export) closeTiledExportSnapshot(snapshots.export);
-  closeTiledExportSnapshot(snapshots.preview);
 }
 
 export function prepareCanvasExport(capturePreview = true): CanvasExportPreparation | null {
@@ -1465,7 +1427,7 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
       }
       const exportOptions =
         snapshots.preview && options.preview
-          ? { ...options, preview: { ...options.preview, source: snapshots.preview } }
+          ? { ...options, preview: { ...options.preview, snapshot: snapshots.preview } }
           : options;
       if (exportOptions === options) closeTiledExportSnapshot(snapshots.preview);
       return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
