@@ -7,36 +7,15 @@
   // disclosure that expands a row's remaining actions in place. Callbacks
   // return whether the operation succeeded so the component knows when to
   // reset.
-  // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
-  // structural here so this client component never imports server code.
-  // adminFormat.test.ts is the drift guard for that duplication — it reads both
-  // shapes and fails to type-check if they stop agreeing.
-  export interface Usage {
-    count: number;
-    firstUsed: string;
-    lastUsed: string;
-    deleteAfter: string;
-    lastStyle: import('$lib/ai/styles').StyleName | null;
-    lastOutcome: import('$lib/usageRecord').UsageOutcome;
-  }
-  export interface Invite {
-    token: string;
-    url: string;
-    // `null` = tracked but never used; an object = the tally. Whether tracking
-    // works at all is a separate `usageAvailable` flag, because a broken tally
-    // backend and a code nobody has redeemed produce the same empty cell.
-    usage: Usage | null;
-  }
-  export interface Flash {
+  interface Flash {
     kind: 'success' | 'error';
     text: string;
   }
-  export type CopyTarget = 'code' | 'url';
-  export const copyKey = (token: string, target: CopyTarget) => `${token}:${target}`;
   const COPY_FEEDBACK_MS = 1500;
 </script>
 
 <script lang="ts">
+  import type { Invite } from '$lib/adminFormat';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
