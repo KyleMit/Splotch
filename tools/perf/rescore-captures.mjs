@@ -22,7 +22,15 @@
 
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  argFlag,
+  argSwitch,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import {
   DEFAULT_CAPTURE_RUNTIME,
@@ -247,7 +255,7 @@ export async function rescoreCaptures({
   filter = argFlag('filter'),
   targetId = argFlag('target'),
   jsonOut = argFlag('json'),
-  includeUnattributable = process.argv.includes('--include-unattributable'),
+  includeUnattributable = argSwitch('include-unattributable'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   const root = join(ROOT, corpus);
@@ -382,6 +390,7 @@ export async function rescoreCaptures({
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['corpus', 'filter', 'target', 'json', 'include-unattributable']);
   runMain(async () => {
     await rescoreCaptures();
   });

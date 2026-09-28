@@ -99,7 +99,6 @@ function resolveViewport(value) {
 export async function runFramesLocal(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port, throttle } = parsePerfArgs(
     {
-      entry: true,
       throttleDefault: 1,
       extra: [
         'engine',

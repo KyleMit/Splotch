@@ -132,7 +132,6 @@ export function desktopActionsArtifact({
 export async function runDesktopActions(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port, build } = parsePerfArgs(
     {
-      entry: true,
       extra: [
         'engine',
         'url',

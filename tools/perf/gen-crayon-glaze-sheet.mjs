@@ -19,7 +19,16 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, webkit } from '@playwright/test';
-import { ROOT, TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { freePort, spawnViteServer, waitForPortRelease } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 
@@ -268,4 +277,7 @@ not its frame cost — never read performance off this sheet.</p>
 <table><tr><th></th>${header}</tr>${rows}</table>`;
 }
 
-if (isMain(import.meta.url)) runMain(() => generateGlazeSheet());
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['returns', 'passes', 'out-dir', 'engine', 'port']);
+  runMain(() => generateGlazeSheet());
+}

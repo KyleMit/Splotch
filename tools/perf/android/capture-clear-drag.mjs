@@ -272,7 +272,6 @@ function summarizeByToolbar(samples) {
 export async function runClearDrag(argv = process.argv.slice(2)) {
   const { flag, numberFlag, has, port } = parsePerfArgs(
     {
-      entry: isMain(import.meta.url),
       extra: [
         'url',
         'device-id',
