@@ -498,11 +498,13 @@ async function freeDiagnosticPort() {
 //
 // `spawnDiagnostic` is a seam: the whole path — spawn, wait for ready, send the
 // session, read the log, classify, tear down — is otherwise only reachable with a
-// real blocked device, which is how it shipped broken.
-export async function diagnoseLaunchFailure(
-  sessionBody,
-  { spawnDiagnostic = defaultDiagnosticAppium, retried = false } = {}
-) {
+// real blocked device, which is how it shipped broken. `waitsMs` ({ readyPoll,
+// logSettle, exitSettle }) is a test seam too: it shortens the idle waits a
+// fixture that never logs a cause, or never honours SIGTERM, would otherwise
+// sit through in full.
+export async function diagnoseLaunchFailure(sessionBody, options = {}) {
+  const { spawnDiagnostic = defaultDiagnosticAppium, retried = false, waitsMs = {} } = options;
+  const { readyPoll = DIAGNOSTIC_APPIUM_POLL_MS, logSettle = DIAGNOSTIC_LOG_SETTLE_MS } = waitsMs;
   let port;
   try {
     port = await freeDiagnosticPort();
@@ -543,7 +545,7 @@ export async function diagnoseLaunchFailure(
           rethrowIfBroken(error);
           return false;
         });
-      if (!ready) await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
+      if (!ready) await new Promise((resolve) => setTimeout(resolve, readyPoll));
     }
     if (spawnError) {
       return {
@@ -557,7 +559,7 @@ export async function diagnoseLaunchFailure(
       // reporting a dead server, because the alternative reads as "no cause
       // found" for a reason that has nothing to do with the device.
       if (!retried) {
-        return diagnoseLaunchFailure(sessionBody, { spawnDiagnostic, retried: true });
+        return diagnoseLaunchFailure(sessionBody, { ...options, retried: true });
       }
       const how = exited.signal ? `signal ${exited.signal}` : `code ${exited.code}`;
       return { cause: null, diagnostic: `diagnostic server exited early with ${how}` };
@@ -575,7 +577,7 @@ export async function diagnoseLaunchFailure(
     // instant the session request returns can read an empty log and report "no
     // cause found" for a server that logged one a millisecond later. Wait for a
     // cause to appear, bounded — the happy path exits as soon as the line lands.
-    const logDeadline = Date.now() + DIAGNOSTIC_LOG_SETTLE_MS;
+    const logDeadline = Date.now() + logSettle;
     let cause = classifyAppiumLog(log);
     while (!cause && Date.now() < logDeadline) {
       await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_LOG_POLL_MS));
@@ -591,7 +593,7 @@ export async function diagnoseLaunchFailure(
   } catch (error) {
     return { cause: null, diagnostic: `diagnostic failed: ${error.message}` };
   } finally {
-    await terminateDiagnostic(child, () => exited);
+    await terminateDiagnostic(child, () => exited, waitsMs.exitSettle);
   }
 }
 
@@ -608,7 +610,7 @@ export async function diagnoseLaunchFailure(
 // while the child object still records how it ended.) Checked positively
 // rather than as !== null, so an injected fake child without the properties
 // reads as still running instead of already gone.
-async function terminateDiagnostic(child, hasExited) {
+async function terminateDiagnostic(child, hasExited, settleMs = DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS) {
   const exitedNow = () =>
     hasExited() !== null ||
     Number.isInteger(child.exitCode) ||
@@ -628,7 +630,7 @@ async function terminateDiagnostic(child, hasExited) {
     } catch {
       child.kill(signal);
     }
-    await settle(DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS);
+    await settle(settleMs);
   }
   return exitedNow();
 }
