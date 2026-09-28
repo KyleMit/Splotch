@@ -123,9 +123,9 @@ quarantine.
   * The API smoke uses `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`.
 * **Main-merge checks:** a push to `main` runs fewer checks than a PR (no ADR-integrity job, no
   Dependabot review). Don't wait for a PR-sized count after a merge.
-* **Wait loops:** key a CI wait on every registered check finishing, never on a fixed count. The
-  count varies by PR: it drops when the Dependabot review check is absent, and a loop keyed on the
-  larger number never ends.
+* **Wait loops:** never key a CI wait on a fixed check count. The count varies by PR: it drops when
+  the Dependabot review check is absent, and a loop keyed on the larger number never ends. Wait for
+  the expected applicable set to register and then finish, per `drive-pr-to-mergeable` step 5.
 * **Fresh worktree:** run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
 * **Sandbox friction:**
   * The auto-mode sandbox refuses compound shell commands that chain `git` or `gh`, any heredoc
