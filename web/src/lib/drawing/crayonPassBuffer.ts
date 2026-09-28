@@ -153,8 +153,8 @@ function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathO
 //     compositing, and 'crayonFlush' stamps the buffer onto the tile at pass
 //     close. The same day's A/B measured restamp REGRESSING the WKWebView
 //     (1.76–2.12% against the plane pipeline's 1.19–1.39%, at merge caps 8
-//     and 3 alike, and 4.4–5.5% at per-move granularity), so native keeps
-//     the planes.
+//     and 3 alike, and 4.4–5.5% at per-move granularity). ADR-0148 moved
+//     native to 'glaze-direct' (below), so no shipping build runs planes.
 //
 // Three constraints the campaign measured bound any rework of the restamp
 // path:

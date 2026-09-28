@@ -1,7 +1,7 @@
 // Audition rig for Splotch's drag-to-clear ("delete") sound.
 //
 // Every option below implements the same four-call contract the real app uses in
-// web/src/lib/audio/drawingSound.ts — start / update(progress) / commit / cancel
+// web/src/lib/audio/clearSound.ts — start / update(progress) / commit / cancel
 // — so whichever one wins ports across without reshaping its call sites in
 // dragToClear.ts. `progress` is raw normalized drag distance: 1 is the commit
 // threshold, and the value keeps climbing past it while the button is held out.
@@ -334,10 +334,9 @@
   // sound compares clips rather than card mixes. The drag beds are matched
   // separately, by measured loudness (tools/scrapbook/clear-sound-sheet/audit.mjs).
   const COMMIT_LEVEL = 0.5;
-  // web/src/lib/audio/drawingSound.ts plays the pencil-scratch loop at this gain
-  // while its clear bubbles top out at 0.035 — the shipped clear drag is roughly
-  // a sixth of the app's own drawing sound. Matching the two here keeps the
-  // baseline card audible next to the rest instead of losing on volume alone.
+  // web/src/lib/audio/drawingSound.ts plays the pencil-scratch loop at this gain,
+  // and clearSound.ts keeps CLEAR_BUBBLE_GAIN near it. Matching the two here keeps
+  // the baseline card audible next to the rest instead of losing on volume alone.
   const APP_SCRATCH_GAIN = 0.2;
   const BASELINE_DOT_PROGRESS_STEP = 0.055;
   const BASELINE_START_HZ = 420;
