@@ -94,6 +94,9 @@ merge wall clock is not.
 * iOS runs the tag gate's `ios:build:release` on macOS. That includes the web build, because Xcode
   bundles the synced `public/` and `capacitor.config.json`.
 * R8 and resource shrinking stay with the tag gate's `assembleRelease`.
+* Measured on the introducing PR with a cold Gradle cache, the Android job took 131 s (82 s
+  compiling) and the iOS job 158 s (89 s compiling). The slowest `test.yml` job in that day's PR
+  runs took 272–352 s. A deliberate Java error and a deliberate Swift error each failed their job.
 
 Rejected: a job inside `test.yml` gated by a changed-files step, which starts a runner on every PR
 and couples the native toolchains to the web suite's workflow; and a required check, which a path
