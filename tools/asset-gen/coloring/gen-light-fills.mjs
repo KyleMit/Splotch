@@ -42,7 +42,6 @@ import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   REPO_ROOT,
@@ -53,6 +52,7 @@ import {
 } from '../lib/asset-paths.mjs';
 import {
   fail,
+  isMain,
   MAX_ATTEMPTS,
   parseNonNegative,
   parsePositiveInt,
@@ -330,7 +330,7 @@ export async function run(argv) {
   return { failed: failures, shipped };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   run(process.argv.slice(2)).catch((err) => {
     // A RenderFailuresError is the expected "some renders were rejected" exit and
     // its message says everything; anything else is a bug, so print the error whole

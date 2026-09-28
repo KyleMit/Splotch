@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
-import { renderMarkdown, renderReport, targetRole } from '../gen-performance-matrix.mjs';
+import { renderMarkdown, renderReport } from '../gen-performance-matrix.mjs';
+import { targetRole } from '../lib/matrix-vocabulary.mjs';
 
 const MATRIX = join(ROOT, 'scrapbook', 'performance', '2026-07-31-deployment-target-matrix');
 const published = () => JSON.parse(readFileSync(join(MATRIX, 'data.json'), 'utf8'));

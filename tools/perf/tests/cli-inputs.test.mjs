@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
 
-const state = vi.hoisted(() => ({ directEntry: false, runMain: vi.fn() }));
+const state = vi.hoisted(() => ({ directEntryUrl: null, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
 
 vi.mock('@playwright/test', () => ({ chromium }));
@@ -17,7 +17,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, isMain: () => state.directEntry, runMain: state.runMain };
+  return { ...actual, isMain: (url) => url === state.directEntryUrl, runMain: state.runMain };
 });
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -30,13 +30,13 @@ const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scena
 let fixtureDir;
 
 beforeEach(() => {
-  state.directEntry = false;
+  state.directEntryUrl = null;
   state.runMain.mockClear();
   fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-perf-cli-'));
 });
 
 afterEach(() => {
-  state.directEntry = false;
+  state.directEntryUrl = null;
   vi.useRealTimers();
   vi.unstubAllGlobals();
   rmSync(fixtureDir, { recursive: true, force: true });
@@ -256,11 +256,11 @@ describe('performance CLI input failures', () => {
       ['../web/capture-webkit-session.mjs', 'runIosProfile'],
       ['../android/capture-webview-session.mjs', 'runAndroidProfile'],
     ];
-    state.directEntry = true;
 
     for (const [path, entry] of drivers) {
       vi.resetModules();
       state.runMain.mockClear();
+      state.directEntryUrl = new URL(path, import.meta.url).href;
       const module = await import(path);
 
       expect(module[entry]).toBeTypeOf('function');

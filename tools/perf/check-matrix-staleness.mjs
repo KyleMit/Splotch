@@ -43,7 +43,7 @@ import {
   PRESERVED,
   RELEASE_GATE,
   targetRole,
-} from './gen-performance-matrix.mjs';
+} from './lib/matrix-vocabulary.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
 const DISPLAY_COMMIT_CHARS = 12;

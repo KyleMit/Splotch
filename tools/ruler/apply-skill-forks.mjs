@@ -8,9 +8,8 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
-import { ROOT } from '../lib/proc.mjs';
+import { ROOT, isMain } from '../lib/proc.mjs';
 import { sharedNoteSource } from './mirror-skill-notes.mjs';
 
 const FORK_ROOT = join('.ruler', 'skill-forks');
@@ -191,7 +190,7 @@ export function applyRulerSkillForks(root = ROOT) {
   };
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const applied = applyRulerSkillForks();
   console.log(
     `[skill-forks] applied ${applied.skills} runner-specific skill(s) and ${applied.notes} note(s)`

@@ -63,6 +63,7 @@ import {
 } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
+import { isPhysicalAppleUdid } from '../lib/device-identifiers.mjs';
 import {
   assertPickerNeverOpened,
   firstOpenListedMessage,
@@ -336,10 +337,6 @@ export function androidNativeTouchTarget({ nativeApp, deviceId, requestedCapabil
       capabilityValue(requestedCapabilities, 'appPackage') ??
       ANDROID_NATIVE_PACKAGE,
   };
-}
-
-export function isPhysicalAppleUdid(value) {
-  return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
 }
 
 // XCUITest returns no `deviceName` for a physical device — the session names only

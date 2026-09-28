@@ -17,14 +17,11 @@
 // `perf:ios:xcuitest:screen` for that.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { chromium, webkit } from '@playwright/test';
-import { TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, TCP_PORT, argFlag, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
 import { freePort, spawnViteServer, waitForPortRelease } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // The candidates worth looking at, bracketing the shipped default. 0.45 is the
 // pass-cadence `1 - colorMix` reused per op — the first thing tried, and the

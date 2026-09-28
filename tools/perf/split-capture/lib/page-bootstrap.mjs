@@ -11,7 +11,7 @@
 // same-origin `<script src>` rather than eval'd: the route's enforcing CSP
 // (ADR-0073) allows `script-src 'self'` and does not allow `unsafe-eval`, so
 // nothing about the policy has to be relaxed to measure the page.
-import { BRUSH_BUTTON_BY_MODE } from '../../ios/capture-xcuitest-screen.mjs';
+import { BRUSH_BUTTON_BY_MODE } from '../../lib/brush-buttons.mjs';
 import {
   SERVICE_WORKER_REGISTRATION_GUARD_SOURCE,
   STALE_SERVICE_WORKER_EVICTION_SOURCE,
