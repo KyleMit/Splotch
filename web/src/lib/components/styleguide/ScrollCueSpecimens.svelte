@@ -129,14 +129,9 @@
 <style>
   h3 {
     margin: 22px 0 var(--space-1);
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
   }
 
   code {
-    font-size: var(--font-size-xs);
-    color: var(--brand-text);
     white-space: nowrap;
   }
 

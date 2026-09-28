@@ -1,0 +1,39 @@
+/* The chrome every /design partial in this directory shares: section rhythm,
+   the section title, its intro paragraphs, inline code, and the small .value
+   caption. routes/design/+page.svelte imports it, and its .styleguide column
+   scopes it. Each selector sits inside :where(), so it carries no specificity:
+   a partial's own scoped rule for the same element (a specimen title's top
+   margin, how its code wraps) always wins, whichever stylesheet loads first. */
+
+:where(.styleguide section) {
+  margin-top: 48px;
+}
+
+:where(.styleguide section > p) {
+  max-width: 62ch;
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--text);
+}
+
+/* A section's title is its first heading, or, for a primitive, the heading
+   that is itself the scrollspy anchor. */
+:where(.styleguide [data-sg-section] > h3, .styleguide h3[data-sg-section]) {
+  margin: 0 0 6px;
+  color: var(--text-strong);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+:where(.styleguide code) {
+  font-size: var(--font-size-xs);
+  color: var(--brand-text);
+}
+
+/* After code, so a <code class="value"> takes the caption ink. --text-soft is
+   pinned to hold 4.5:1 at this 12px size on the page ground (the axe scan in
+   a11y.spec.ts enforces it). */
+:where(.styleguide .value) {
+  font-size: var(--font-size-xs);
+  color: var(--text-soft);
+}
