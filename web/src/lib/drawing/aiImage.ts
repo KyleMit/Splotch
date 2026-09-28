@@ -108,9 +108,10 @@ function applyResponse(
   switch (response.kind) {
     case 'started':
     case 'pending':
-      // Unreachable: generateAiImage resolves both into a settled outcome before
-      // it gets here, and the compiler holds that true if a third waiting state
-      // is ever added.
+      // A ticket is always collected before this, so 'started' never arrives.
+      // 'pending' can: a start response that accepted the work without a
+      // readable ticket. Either way no picture came back, and the same drawing
+      // may work.
       failAiGeneration(runId, {
         errorKind: 'retry',
         details: { status: null, endpoint, message: 'The server did not finish the picture.' },
