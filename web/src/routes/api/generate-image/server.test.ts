@@ -223,6 +223,47 @@ describe('POST /api/generate-image', () => {
     expect(mocks.generateImage).not.toHaveBeenCalled();
   });
 
+  it.each<[string, Record<string, string>]>([
+    ['no Content-Type', {}],
+    ['an empty Content-Type', { 'Content-Type': '' }],
+    ['a disallowed Content-Type', { 'Content-Type': 'image/gif' }],
+  ])('refuses a raw image body with %s before reserving a creation', async (_label, headers) => {
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', {
+        method: 'POST',
+        headers,
+        body: new Uint8Array([1]),
+      })
+    );
+
+    expect(response.status).toBe(415);
+    expect(await response.json()).toEqual({ ok: false, error: 'Unsupported image type' });
+    expect(mocks.reserveGrant).not.toHaveBeenCalled();
+    expect(mocks.startBackground).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
+  it('refuses a legacy multipart image part with an empty type', async () => {
+    const boundary = 'splotch-test-boundary';
+    const body = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="token"\r\n\r\ndaycare-club\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="drawing.png"\r\nContent-Type: \r\n\r\ndrawing\r\n`,
+      `--${boundary}--\r\n`,
+    ].join('');
+    const headers = { 'Content-Type': `multipart/form-data; boundary=${boundary}` };
+    const parsedImage = (await new Response(body, { headers }).formData()).get('image');
+    expect(parsedImage instanceof Blob && parsedImage.type).toBe('');
+
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', { method: 'POST', headers, body })
+    );
+
+    expect(response.status).toBe(415);
+    expect(await response.json()).toEqual({ ok: false, error: 'Unsupported image type' });
+    expect(mocks.reserveGrant).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
   it('routes the daily ceiling to setup and records its own failure kind', async () => {
     const response = await post();
 

@@ -454,12 +454,13 @@ async function checkCspReport(base) {
 async function checkGenerateImage(base) {
   // The contract is a raw image body: credentials ride in headers (secrets stay
   // out of the query string), the style enum is a query param, the body is the
-  // image bytes. `image: null` sends no body — the valid-token-but-no-image case.
-  const genRequest = ({ token, apiKey, image } = {}) => {
+  // image bytes. `image: null` sends no body — the valid-token-but-no-image case;
+  // `mimeType: null` sends no Content-Type.
+  const genRequest = ({ token, apiKey, image, mimeType = 'image/png' } = {}) => {
     const headers = {};
     if (token) headers['X-Access-Token'] = token;
     if (apiKey) headers['X-Api-Key'] = apiKey;
-    if (image) headers['Content-Type'] = 'image/png';
+    if (mimeType) headers['Content-Type'] = mimeType;
     return fetch(`${base}/api/generate-image`, {
       method: 'POST',
       headers,
@@ -496,6 +497,16 @@ async function checkGenerateImage(base) {
       oversizedImageBody?.ok === false &&
       typeof oversizedImageBody?.error === 'string',
     `got ${oversizedImage.status} ${JSON.stringify(oversizedImageBody)}`
+  );
+
+  const untypedImage = await genRequest({ token: 'alpha', image: tinyPngBuffer(), mimeType: null });
+  const untypedImageBody = await json(untypedImage);
+  check(
+    'generate-image image with no Content-Type → 415 {ok:false, error}',
+    untypedImage.status === 415 &&
+      untypedImageBody?.ok === false &&
+      typeof untypedImageBody?.error === 'string',
+    `got ${untypedImage.status} ${JSON.stringify(untypedImageBody)}`
   );
 
   // Legacy multipart contract (token/apiKey/image/style form fields) — still
@@ -602,7 +613,7 @@ async function checkFreeGenerationGrant(base) {
 
   const invalidImage = await fetch(`${base}/api/generate-image`, {
     method: 'POST',
-    headers: { 'X-Installation-Id': installationId },
+    headers: { 'Content-Type': 'image/png', 'X-Installation-Id': installationId },
   });
   const invalidImageBody = await json(invalidImage);
   check(
