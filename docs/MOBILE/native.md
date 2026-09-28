@@ -130,8 +130,14 @@ itself (see `DeviceLock`, ADR-0027, `ColoringPacks`, ADR-0103, and the Android-o
 * Android — a `@CapacitorPlugin` class in `android/app/src/main/java/art/splotch/app/`
   (`DeviceLockPlugin.java`), registered via `registerPlugin(...)` **before** `super.onCreate` in
   `MainActivity`.
-* JS side — a typed `registerPlugin(...)` facade with a `web` fallback
-  (`web/src/lib/plugins/deviceLock.ts`), loaded through `lazyPluginModule()`.
+* JS side — a typed `registerPlugin(...)` facade (`web/src/lib/plugins/deviceLock.ts`), imported
+  only behind `__IS_CAPACITOR__` (`lazyPluginModule()` or a gated inline `import()`). It needs no
+  `web` fallback: Capacitor uses one only on the `web` platform, and the shipped app calls a local
+  plugin only inside the native shells. The caller's own `catch` handles a native call that fails.
+* Guard — add the plugin to the table in `web/src/lib/plugins/registration.test.ts`. It fails until
+  the JS name, each platform's registration, the iOS Compile Sources entry, and the native method
+  names agree with the facade; without it, a mismatch surfaces only on a device, as
+  `"<name>" plugin is not implemented`.
 
 A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting** variant
 and how to **attach a UIKit interaction to the web view**: the Apple Pencil double-tap

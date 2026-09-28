@@ -80,3 +80,16 @@ method, symmetric across platforms.
   reopening refreshes it. A listener could be added later if needed.
 * **−** Only unit-testable at the web-fallback level; the real native reads require on-device
   verification (Guided Access on iPhone, App Pinning on Android).
+
+## Amendment (2026-09): no web fallback; a registration guard for every local plugin
+
+The JS facade no longer has a `web` fallback. Capacitor uses a `web` implementation only on the
+`web` platform, and `SetupInstructions.svelte` queries the plugin only inside a native shell, so the
+fallback ran nowhere but its own unit test. The caller's `catch` is what reads a failed call as
+unlocked. The pattern this ADR established changes with it: a local plugin's facade needs no `web`
+fallback.
+
+The "easy to forget for the next app-local plugin" consequence now has a test.
+`web/src/lib/plugins/registration.test.ts` fails until every local plugin's JS name, each platform's
+registration, the iOS Compile Sources entry, and the native method names agree with its facade. The
+native reads themselves still need on-device verification.
