@@ -4,10 +4,11 @@ import {
   looksLikeApiKey,
   looksLikeRetiredGeminiKey,
 } from '$lib/ai/keyFormat';
-import type { VerifyAccessCodeResponse } from '../routes/api/verify-access-code/+server';
-import type { VerifyKeyResponse } from '../routes/api/verify-key/+server';
+import type { VerifyAccessCodeResponse } from '../../routes/api/verify-access-code/+server';
+import type { VerifyKeyResponse } from '../../routes/api/verify-key/+server';
 
-export { looksLikeApiKey };
+/** A credential that can pass verification, and so the only kinds a parent can hold. */
+export type VerifiedCredentialKind = 'apiKey' | 'accessCode';
 
 // A value that isn't an API key is treated as a secret access code and checked
 // against the managed allowlist instead — except a Google key, which is neither.
@@ -15,22 +16,21 @@ export { looksLikeApiKey };
 // is true but useless; naming it is what lets a parent who set one up before the
 // provider migration (ADR-0113) understand what to do.
 export type CredentialKind =
-  | 'apiKey'
-  | 'accessCode'
+  | VerifiedCredentialKind
   | 'retiredGeminiKey'
   /** The check never reached OpenAI — nothing was learned about the key. */
   | 'checkUnavailable';
 
-type VerifyResponse = VerifyAccessCodeResponse | VerifyKeyResponse;
-type VerifyError = Extract<VerifyResponse, { ok: false }>['error'];
-type VerifiedAccessCode = Extract<VerifyAccessCodeResponse, { ok: true }>['accessCode'];
+export type VerifyCredentialResult =
+  | { ok: true; kind: 'apiKey' }
+  | { ok: true; kind: 'accessCode'; accessCode: string }
+  | { ok: false; kind: CredentialKind; error?: string };
 
-export interface VerifyCredentialResult {
-  kind: CredentialKind;
-  ok: boolean;
-  accessCode?: VerifiedAccessCode;
-  error?: VerifyError;
-}
+type VerifyResponse = VerifyAccessCodeResponse | VerifyKeyResponse;
+type FieldOf<T> = T extends unknown ? keyof T : never;
+// Every field either endpoint's response can carry, each still unchecked: the
+// body crosses the wire untyped, so each field is narrowed before it is used.
+type UncheckedVerifyResponse = Partial<Record<FieldOf<VerifyResponse>, unknown>>;
 
 // Classifies the entered value, calls the matching verify endpoint, and reports
 // the outcome. Persisting the credential and the UI state machine stay with the
@@ -42,9 +42,9 @@ export async function verifyCredential(
   // Recognised locally and never sent: a key for a provider the app no longer
   // calls cannot pass either endpoint, and putting a credential on the wire to
   // learn that is both pointless and worse for the parent's key.
-  if (looksLikeRetiredGeminiKey(value)) return { kind: 'retiredGeminiKey', ok: false };
+  if (looksLikeRetiredGeminiKey(value)) return { ok: false, kind: 'retiredGeminiKey' };
 
-  const kind: CredentialKind = looksLikeApiKey(value) ? 'apiKey' : 'accessCode';
+  const kind: VerifiedCredentialKind = looksLikeApiKey(value) ? 'apiKey' : 'accessCode';
   const endpoint = kind === 'apiKey' ? '/api/verify-key' : '/api/verify-access-code';
   const body = kind === 'apiKey' ? { apiKey: value } : { code: value };
 
@@ -55,21 +55,17 @@ export async function verifyCredential(
     signal,
   });
   const raw: unknown = await res.json().catch(() => null);
-  const data = (typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? raw : {}) as
-    VerifyResponse | Record<string, never>;
+  const data: UncheckedVerifyResponse = typeof raw === 'object' && raw !== null ? raw : {};
+  const error = typeof data.error === 'string' ? data.error : undefined;
 
-  if ('code' in data && data.code === KEY_CHECK_UNAVAILABLE_CODE) {
-    return {
-      kind: 'checkUnavailable',
-      ok: false,
-      error: 'error' in data ? data.error : undefined,
-    };
+  if (data.code === KEY_CHECK_UNAVAILABLE_CODE) {
+    return { ok: false, kind: 'checkUnavailable', error };
   }
-
-  return {
-    kind,
-    ok: res.ok && data.ok === true,
-    accessCode: 'accessCode' in data ? data.accessCode : undefined,
-    error: 'error' in data ? data.error : undefined,
-  };
+  if (!res.ok || data.ok !== true) return { ok: false, kind, error };
+  if (kind === 'apiKey') return { ok: true, kind };
+  // The server's access code is what gets stored. A success without one breaks
+  // the endpoint's contract, so it fails rather than storing the typed value.
+  return typeof data.accessCode === 'string' && data.accessCode !== ''
+    ? { ok: true, kind, accessCode: data.accessCode }
+    : { ok: false, kind, error };
 }
