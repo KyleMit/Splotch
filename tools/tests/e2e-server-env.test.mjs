@@ -114,7 +114,7 @@ describe('throwaway server env', () => {
 
       // Only the token forces the graceful-503 branch, so only it has to be
       // exactly blank. The model key is declared but deliberately unusable
-      // rather than empty — an empty one makes the managed-code path 500 before
+      // rather than empty — an empty one makes the managed-code path 503 before
       // the guards the generate-image cases exercise.
       it('leaves reporting unconfigured', () => {
         expect(env.GITHUB_ISSUE_TOKEN).toBe('');

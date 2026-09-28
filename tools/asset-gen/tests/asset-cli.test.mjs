@@ -413,3 +413,49 @@ it('night fill rescore counts every rejected review sample as a gate failure', (
     }
   }
 });
+
+describe('book proof sheet --source git:<ref>', () => {
+  let outDir;
+  let out;
+  beforeEach(() => {
+    outDir = mkdtempSync(join(tmpdir(), 'splotch-proof-sheet-'));
+    out = join(outDir, 'sheet.html');
+  });
+  afterEach(() => {
+    rmSync(outDir, { recursive: true, force: true });
+  });
+
+  const buildSheet = (ref) =>
+    spawnSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        entryPath('gen-book-proof-sheet.mjs'),
+        'nature/ant-wide',
+        '--source',
+        `git:${ref}`,
+        '--out',
+        out,
+      ],
+      { encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } }
+    );
+
+  // An unresolvable ref once exited 0 with every "before" tile a placeholder.
+  it('stops on a ref this clone cannot resolve, before writing a sheet', () => {
+    const result = buildSheet('HEAD~l');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr.trim()).toBe(
+      '--source git:HEAD~l does not name a commit in this clone. Check the ref, or fetch it ' +
+        '(git fetch --unshallow in a shallow clone, or git fetch origin <sha>).'
+    );
+    expect(existsSync(out)).toBe(false);
+  });
+
+  it('builds the sheet from a ref that resolves', () => {
+    const result = buildSheet('HEAD');
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(out, 'utf8')).toContain('git:HEAD → current');
+  });
+});

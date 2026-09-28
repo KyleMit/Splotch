@@ -62,14 +62,15 @@ export async function renderResponsiveColoringAsset(sourcePath, asset) {
     .toBuffer();
 }
 
-async function generateResponsiveColoringAsset(staticDir, asset) {
+// Renders and checks one derivative in memory. Nothing touches a tracked target
+// until every derivative in the run has passed, so a rejected run leaves the
+// committed tier exactly as it was rather than half-regenerated.
+async function renderCheckedResponsiveColoringAsset(staticDir, asset) {
   const sourcePath = staticAssetPath(staticDir, asset.source);
-  const targetPath = staticAssetPath(staticDir, asset.target);
   const sourceMetadata = await sharp(sourcePath).metadata();
-  await mkdir(dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, await renderResponsiveColoringAsset(sourcePath, asset));
+  const output = await renderResponsiveColoringAsset(sourcePath, asset);
 
-  const metadata = await sharp(targetPath).metadata();
+  const metadata = await sharp(output).metadata();
   const actualMaxEdgePx = Math.max(metadata.width ?? 0, metadata.height ?? 0);
   if (metadata.width !== asset.widthPx || actualMaxEdgePx !== asset.maxEdgePx) {
     throw new Error(
@@ -81,18 +82,17 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
     throw new Error(`${asset.target} lost the source alpha channel.`);
   }
   const sourceBytes = (await stat(sourcePath)).size;
-  const outputBytes = (await stat(targetPath)).size;
-  if (outputBytes >= sourceBytes) {
+  if (output.length >= sourceBytes) {
     throw new Error(
-      `${asset.target} is ${outputBytes} bytes, not smaller than its ${sourceBytes}-byte source.`
+      `${asset.target} is ${output.length} bytes, not smaller than its ${sourceBytes}-byte source.`
     );
   }
   return {
     encoding: asset.encoding,
+    targetPath: staticAssetPath(staticDir, asset.target),
+    output,
     sourceBytes,
-    outputBytes,
-    compressionSourceBytes: sourceBytes,
-    compressionOutputBytes: outputBytes,
+    outputBytes: output.length,
   };
 }
 
@@ -103,53 +103,50 @@ export function responsiveSavingsFraction(sourceBytes, outputBytes) {
   return (sourceBytes - outputBytes) / sourceBytes;
 }
 
-export async function generateResponsiveColoringAssets(staticDir, assets) {
-  let sourceBytes = 0;
-  let outputBytes = 0;
-  let compressionSourceBytes = 0;
-  let compressionOutputBytes = 0;
-  const byEncoding = {};
-  const generatedAssets = new Array(assets.length);
-  let nextAssetIndex = 0;
+async function mapWithConcurrency(items, task) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
   await Promise.all(
-    Array.from({ length: Math.min(RESPONSIVE_GENERATION_CONCURRENCY, assets.length) }, async () => {
-      while (nextAssetIndex < assets.length) {
-        const assetIndex = nextAssetIndex;
-        nextAssetIndex += 1;
-        generatedAssets[assetIndex] = await generateResponsiveColoringAsset(
-          staticDir,
-          assets[assetIndex]
-        );
+    Array.from({ length: Math.min(RESPONSIVE_GENERATION_CONCURRENCY, items.length) }, async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await task(items[index]);
       }
     })
   );
-  for (const generated of generatedAssets) {
-    sourceBytes += generated.sourceBytes;
-    outputBytes += generated.outputBytes;
-    compressionSourceBytes += generated.compressionSourceBytes;
-    compressionOutputBytes += generated.compressionOutputBytes;
-    const totals = (byEncoding[generated.encoding] ??= {
+  return results;
+}
+
+export async function generateResponsiveColoringAssets(staticDir, assets) {
+  const derivatives = await mapWithConcurrency(assets, (asset) =>
+    renderCheckedResponsiveColoringAsset(staticDir, asset)
+  );
+  let sourceBytes = 0;
+  let outputBytes = 0;
+  const byEncoding = {};
+  for (const derivative of derivatives) {
+    sourceBytes += derivative.sourceBytes;
+    outputBytes += derivative.outputBytes;
+    const totals = (byEncoding[derivative.encoding] ??= {
       count: 0,
       sourceBytes: 0,
       outputBytes: 0,
     });
     totals.count += 1;
-    totals.sourceBytes += generated.sourceBytes;
-    totals.outputBytes += generated.outputBytes;
+    totals.sourceBytes += derivative.sourceBytes;
+    totals.outputBytes += derivative.outputBytes;
   }
-  const savingsFraction = responsiveSavingsFraction(compressionSourceBytes, compressionOutputBytes);
+  const savingsFraction = responsiveSavingsFraction(sourceBytes, outputBytes);
   if (savingsFraction < RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION) {
     throw new Error(
       `Responsive tier saved only ${(savingsFraction * 100).toFixed(1)}%; ` +
         `minimum is ${RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION * 100}%.`
     );
   }
-  return {
-    count: assets.length,
-    sourceBytes,
-    outputBytes,
-    compressionSourceBytes,
-    compressionOutputBytes,
-    byEncoding,
-  };
+  await mapWithConcurrency(derivatives, async ({ targetPath, output }) => {
+    await mkdir(dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, output);
+  });
+  return { count: assets.length, sourceBytes, outputBytes, byEncoding };
 }
