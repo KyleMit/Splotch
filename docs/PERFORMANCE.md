@@ -288,7 +288,8 @@ entry 87. Paths under `web/src/` unless noted.*
 ### V. Tiled canvas & compositing
 
 32. **4×4 tiled live canvas; input canvas shrunk to a 1×1 px backing** — the visible paper is 16
-    tile canvases (+32 crayon preview planes); the pointer-capturing canvas costs nothing to
+    tile canvases (each tile's two crayon preview-plane canvases stay hidden and unbacked in both
+    shipped builds, `crayonPassBuffer.ts:267-280`); the pointer-capturing canvas costs nothing to
     composite. `drawing/liveTiles.ts`, `tiledRenderer.ts`, `engine.ts:154`. *ADR-0085, ADR-0089*
 33. **Per-op tile intersection culling** — only tiles a stroke's padded bbox touches pay render,
     allocation, and undo capture. `tiledGeometry.ts`, `tiledRenderer.ts:280-311`. *ADR-0085*
@@ -303,9 +304,10 @@ entry 87. Paths under `web/src/` unless noted.*
     repaints tiles; one CSS matrix presents the locked paper; spec-enforced
     (`engine-rotation.spec.ts`). `LiveSurface.svelte`, `drawing/paperView.ts`. *ADR-0089*
 38. **Crayon live preview with nothing extra composited** — the web build restamps: each op restores
-    its padded rect from an offscreen "under" shadow and re-applies the glaze onto the ink tile, and
-    the shadow is read at most once per invalidation, after finger-lift. The native build applies
-    the glaze per op directly on the tile, with no pass buffer, preview plane, or blit.
+    its padded rect from an offscreen "under" shadow and re-applies the glaze onto the ink tile. The
+    shadow is normally refreshed once per invalidation, just after finger-lift; a pass that opens
+    before that refresh captures it synchronously (`crayonPassBuffer.ts:667-674`). The native build
+    applies the glaze per op directly on the tile, with no pass buffer, preview plane, or blit.
     `crayonPassBuffer.ts:139-149, 169-172`, `engine.ts:682-690`. *ADR-0147, ADR-0148* *(The earlier
     `mix-blend-mode: darken` preview planes, ADR-0085, are retired from both builds.)*
 39. **Capped DPR (2×), fixed per session** — DPR-3 would cost 9× pixels for detail a finger can't
@@ -355,9 +357,10 @@ entry 87. Paths under `web/src/` unless noted.*
 52. **Pattern caches + seedPhase memo** — CanvasPatterns per context then color+pass; a 1-entry memo
     skips re-hashing for the ~6 identical calls per frame. `crayonBrush.ts:612-671`. *commit
     cc00a8a7*
-53. **Pass buffer with device-px dirty bounds** — stamp and clear touch only the pass's unioned
-    dirty rect: "a flush stays proportional to the pass, not the canvas." `crayonPassBuffer.ts`.
-    *ADR-0068*
+53. **Pass buffer with device-px dirty bounds (web)** — each op restamps only its own padded rect,
+    and closing a pass clears only the pass's unioned dirty rect: "a flush stays proportional to the
+    pass, not the canvas." Native's per-op glaze keeps no pass buffer. `crayonPassBuffer.ts`.
+    *ADR-0068, ADR-0147*
 54. **Mirror by blit, not repaint** *(retired with the preview planes, ADR-0148)* — the preview
     plane copied the op rect from the buffer, halving pattern fills per op. The code survives only
     in the `'planes'` branch (`crayonPassBuffer.ts:640-663`), which no shipping build selects.
