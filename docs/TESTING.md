@@ -125,6 +125,30 @@ staged), so it cannot separate the temporary revert from unrelated uncommitted w
 rather than the fix. Commit first, or invert the edit rather than restoring the file. Never reach
 for a bare `git stash` here: the stash stack is shared across worktrees and other sessions pop it.
 
+### A test owns its inputs
+
+A test also passes for the wrong reason when something outside it decides the outcome. Four shapes
+the 2026-09 clean-code campaign found (rule 9 of `docs/CODING-STANDARDS.md`):
+
+* **Build the fixture per test.** Two performance-matrix release-gate tests passed with their
+  deciding input removed, because a sibling test had mutated the shared fixture object they read (PR
+  \#2414). Return a fresh fixture from a factory, and register cleanup with `onTestFinished` where
+  the test creates a temp directory or a listener.
+* **Drive the real store, not a double that copies its rule.** Plain-object settings doubles broke
+  23 tests when PR \#2386 changed the store's surface, and the repair copied the store's
+  `aiCredentialKind()` rule into them, so the request-header assertions checked the tests' own copy.
+  PR \#2413 moved them onto the real `settingsState`. Import the owner's constant or function rather
+  than re-declaring it, and type any remaining stub from the real function
+  (`vi.fn<typeof realFn>()`) so a changed signature fails `npm run check`.
+* **Pin copy exactly as rendered.** Never collapse whitespace before comparing rendered text. A
+  Prettier re-wrap of a template text line changes the DOM text, which a whitespace-normalizing unit
+  test hides and an anchored E2E regex then catches (PR \#2400). If Prettier wants to wrap a long
+  interpolation, bind a short local alias for it instead (PR \#2411).
+* **Name a timeout and give it measured headroom.** A per-test cap sized near the slowest observed
+  run fails on a loaded runner. Measure, name the constant (`PNPM_LAUNCHES_TIMEOUT_MS`,
+  `REAL_REPO_TEST_OPTIONS`), and prefer fake timers or a mocked `sleep` over real waits (PRs \#2401,
+  \#2407, \#2417).
+
 ## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
 
 Three Node smoke entry points guard the server contract:

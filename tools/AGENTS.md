@@ -119,7 +119,14 @@ entry script.
   inside their exported run function, never at module scope.
 * `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `web/src` (`eslint.config.js`).
   The files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
-  means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff.
+  means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff. A PR
+  that shrinks a listed file lowers its number to the new size.
+* `no-undef` is on across `tools/` because no TypeScript program checks these files; a dropped
+  import otherwise ships as a `ReferenceError`. Declare a deliberate page-script global with
+  `/* global NAME */`.
+* A port that is taken means choosing another port. `freePort` (`tools/lib/vite-server.mjs`) throws
+  on a listener outside this checkout rather than stop another session's server.
+* The incidents behind these rules, and what enforces each: rule 8 of `docs/CODING-STANDARDS.md`.
 * Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a non-zero
   exit; wrap per-item work in try/catch and report failures at the end without discarding completed
   results; never overwrite a baseline/output artifact from a run that had errors; name polling

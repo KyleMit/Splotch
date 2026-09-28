@@ -1,9 +1,9 @@
 ## Conventions
 
 * **No comments** unless the WHY is non-obvious. Well-named identifiers are the documentation. A
-  comment that does survive states stable facts: no temporal phrasing ("now", "previously") and no
-  restating mutable facts (counts, dates, values, paths) owned elsewhere — name the owning
-  identifier or file instead.
+  comment that does survive states stable facts about code that exists: no temporal phrasing ("now",
+  "previously") and no restating mutable facts (counts, dates, values, paths) owned elsewhere — name
+  the owning identifier or file instead.
 * Numbered step comments (`// 1. …`) or section banners inside one function are the signal to
   extract each step into a named helper — write it that way the first time.
 * **Tuning literals get names.** A numeric literal that encodes a tunable decision — threshold,
@@ -53,6 +53,27 @@
   `WindowEventMap` pattern). Never cast to silence a generated union — fix the type at its source.
 * **No speculative surface.** A new prop, option, or optional parameter needs a production caller
   that exercises it; a seam kept only for tests gets a comment saying so at the declaration.
+* **Coding standards.** Each rule below has its incident and enforcement in
+  `docs/CODING-STANDARDS.md`; read it before adding, relaxing, or re-proposing a rule.
+  * **Ask the owner.** Call the module that owns a rule (a store method, a policy function) instead
+    of re-deriving it from raw fields at the call site; state has one writer.
+  * **One union per mode.** Each variant carries only the fields it uses, so props and fields cannot
+    combine into a state the code ignores; pin a props union with an `expectTypeOf` type test.
+  * **Names tell the truth.** A query-named function has no side effects, and paired verbs behave
+    alike.
+  * **Validate at the trust boundary.** Narrow untrusted input from `unknown` with a strict guard
+    and fail loudly. An API has one failure convention, or its declaration names both and every
+    caller handles both.
+  * **One contract per wire boundary**, with a test that reads both sides and test stubs typed from
+    the real function.
+  * **Every lint fence has a positive control**: a test that fails if the rule stops firing.
+  * **The startup path is a budget.** The release builds pin the `/` modulepreload count exactly; a
+    runtime import from a startup module into a module that lazy code also imports is the usual way
+    to add a startup chunk. No principle outranks measured startup or hot-path cost.
+  * **Tests prove they can fail.** Note each guard's negative control in the PR. A test builds its
+    own fixture, drives real stores, pins copy as rendered, and names its timeouts.
+  * **Exceptions are declared in one list and only shrink** (grandfathered caps, allowlists, ADR
+    carve-outs).
 * Module-scope mutable `let` is either a pure memoization cache or lives behind a `createX()`
   factory so tests get fresh instances — never a shipped `*ForTests` reset export. A memoized
   promise resets itself on rejection (see `web/src/lib/idb.ts`) unless permanent failure is

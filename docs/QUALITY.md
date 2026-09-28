@@ -192,6 +192,7 @@ the first - format, svelte-check, eslint, ruler drift, token lint, knip, asset m
 index, and audit. The `format-edited-file.sh` hook routes each edited file through Prettier or
 dprint. Skills: `audit-code` and `audit-extractions` to find work, `vet-audits` to prune it,
 `fix-audits` and `burn-down-audits` to clear it, `simplify` and `code-review` on a working diff.
+`docs/CODING-STANDARDS.md` holds the coding rules, the incident behind each, and what enforces it.
 
 ## Testing
 
