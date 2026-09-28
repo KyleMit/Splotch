@@ -170,16 +170,29 @@ const WEB_SRC_SYNTAX_RESTRICTIONS = [
 // to clients that parse { ok, error } and skips the [server error] log line. The rule is stated
 // in docs/API.md, .claude/rules/server-api.md, and apiHandler's doc comment; the positive control
 // is tools/tests/api-handler-lint.test.mjs. A handler is flagged unless its initializer is the
-// apiHandler call, so a wrapped handler exported by another name or specifier is flagged too.
+// apiHandler call, so a wrapped handler exported by another name or specifier is flagged too. A
+// selector matches the callee by name, not binding, so the second set pins that name to the
+// http.ts import: a local or differently imported apiHandler is flagged where it is bound.
 const API_HANDLER_EXEMPT_ROUTE = 'web/src/routes/api/csp-report/+server.ts';
 const API_METHOD_EXPORT = '/^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD|fallback)$/';
 const API_HANDLER_MESSAGE =
   'Export every /api method handler as apiHandler(...) from $lib/server/http, so a thrown failure answers { ok:false, error } and is logged (docs/API.md). csp-report is the one exemption.';
+const API_HANDLER_BINDING_MESSAGE =
+  'In an /api route, apiHandler is the $lib/server/http import and nothing else, so an apiHandler(...) export is the real wrapper.';
 const API_HANDLER_WRAPPED = [
-  `ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=${API_METHOD_EXPORT}]:not([init.type="CallExpression"][init.callee.name="apiHandler"])`,
-  `ExportNamedDeclaration > FunctionDeclaration[id.name=${API_METHOD_EXPORT}]`,
-  `ExportSpecifier[exported.name=${API_METHOD_EXPORT}]`,
-].map((selector) => ({ selector, message: API_HANDLER_MESSAGE }));
+  ...[
+    `ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=${API_METHOD_EXPORT}]:not([init.type="CallExpression"][init.callee.name="apiHandler"])`,
+    `ExportNamedDeclaration > FunctionDeclaration[id.name=${API_METHOD_EXPORT}]`,
+    `ExportSpecifier[exported.name=${API_METHOD_EXPORT}]`,
+  ].map((selector) => ({ selector, message: API_HANDLER_MESSAGE })),
+  ...[
+    'ImportDeclaration[source.value!="$lib/server/http"] > ImportSpecifier[local.name="apiHandler"]',
+    'ImportSpecifier[local.name="apiHandler"][imported.name!="apiHandler"]',
+    ':matches(ImportDefaultSpecifier, ImportNamespaceSpecifier)[local.name="apiHandler"]',
+    ':matches(VariableDeclarator, FunctionDeclaration, ClassDeclaration)[id.name="apiHandler"]',
+    'ObjectPattern > Property[value.name="apiHandler"]',
+  ].map((selector) => ({ selector, message: API_HANDLER_BINDING_MESSAGE })),
+];
 
 const VITEST_VOCABULARY_SELECTORS = [
   'CallExpression[callee.name="test"]',

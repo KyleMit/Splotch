@@ -45,8 +45,30 @@ describe('the /api handler wrapping guard', () => {
     expect(await unwrapped(ROUTE, source)).toHaveLength(1);
   });
 
+  it.each([
+    [
+      'a local function named apiHandler',
+      'const apiHandler = (handler) => handler;\nexport const POST = apiHandler(inner);',
+    ],
+    [
+      'an apiHandler imported from another module',
+      "import { apiHandler } from '$lib/server/wrap';\nexport const POST = apiHandler(inner);",
+    ],
+    [
+      'another export renamed to apiHandler',
+      "import { fail as apiHandler } from '$lib/server/http';\nexport const POST = apiHandler(inner);",
+    ],
+    [
+      'a destructured apiHandler',
+      'const { apiHandler } = wrappers;\nexport const POST = apiHandler(inner);',
+    ],
+  ])('rejects %s, since the callee is matched by name', async (_shape, source) => {
+    expect(await unwrapped(ROUTE, source)).toHaveLength(1);
+  });
+
   it('allows a wrapped handler and the non-handler exports a route carries', async () => {
     const source = [
+      "import { apiHandler } from '$lib/server/http';",
       'export const prerender = false;',
       'export type ProbeResponse = { ok: true };',
       'export const POST: RequestHandler = apiHandler(async () => new Response());',
