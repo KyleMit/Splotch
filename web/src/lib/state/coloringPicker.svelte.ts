@@ -1,5 +1,6 @@
 import { availableColoringBooks } from './coloringPacks.svelte';
-import { type Book, type BookPlatform } from './books';
+import { type Book, type BookPlatform, type ResponsiveColoringImage } from './books';
+import type { ResponsiveImageRequest } from '$lib/imagePrefetch';
 import { readonlyValue } from './readonlyView';
 
 export interface ColoringPickerBooks {
@@ -39,4 +40,27 @@ export function createColoringPickerBooks(platform: BookPlatform): ColoringPicke
       shownBookIds = installed.map((book) => book.id);
     },
   };
+}
+
+type ColoringImageAttributes =
+  ResponsiveImageRequest | { src: string; srcset?: undefined; sizes?: undefined };
+
+// What every picker <img>, and the prefetch that warms it, asks for. The native
+// bundle strips the responsive tiers a srcset names (ADR-0045), so a native
+// image requests its full-size src alone.
+export function coloringImageAttributes(
+  image: ResponsiveColoringImage,
+  sizes: string
+): ColoringImageAttributes {
+  return __IS_CAPACITOR__ ? { src: image.src } : { src: image.src, srcset: image.srcset, sizes };
+}
+
+// The same image as an imagePrefetch request: a bare URL when there is no
+// srcset to choose from.
+export function coloringImageRequest(
+  image: ResponsiveColoringImage,
+  sizes: string
+): string | ResponsiveImageRequest {
+  const attributes = coloringImageAttributes(image, sizes);
+  return attributes.srcset === undefined ? attributes.src : attributes;
 }

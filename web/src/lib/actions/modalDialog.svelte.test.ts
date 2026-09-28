@@ -1,6 +1,12 @@
+import { flushSync } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { createModal } from '$lib/state/modal.svelte';
-import { DIALOG_CLOSING_CLASS, modalDialog, waitForDialogRetirement } from './modalDialog.svelte';
+import {
+  DIALOG_CLOSING_CLASS,
+  modalDialog,
+  observeModalStack,
+  waitForDialogRetirement,
+} from './modalDialog.svelte';
 
 describe('modalDialog', () => {
   function afterContentRetirementPaint() {
@@ -406,6 +412,69 @@ describe('modalDialog', () => {
     } finally {
       modal.hide();
       await Promise.resolve();
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('tells modal-stack observers that a dialog unmounted while open has left', () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const observer = { opened: vi.fn(), closing: vi.fn() };
+    const stopObserving = observeModalStack(observer);
+    const destroy = mountClosable(dialog, modal);
+
+    try {
+      modal.show(null);
+      flushSync();
+      expect(observer.opened).toHaveBeenCalledExactlyOnceWith(dialog);
+
+      // Svelte takes an unmounted component's DOM out before its actions' destroy.
+      dialog.remove();
+      destroy();
+
+      expect(observer.closing).toHaveBeenCalledExactlyOnceWith(dialog);
+    } finally {
+      stopObserving();
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('keeps what modal-stack observers read out of the dialog effect', () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const observed = $state({ reads: 0 });
+    const readingObserver = {
+      opened: () => void observed.reads,
+      closing: () => void observed.reads,
+    };
+    const stopObserving = observeModalStack(readingObserver);
+    let optionReads = 0;
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => {
+        optionReads++;
+        return { open: modal.open, onRequestClose: modal.hide };
+      });
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      flushSync();
+      const readsWhileOpen = optionReads;
+
+      observed.reads++;
+      const stopSecondObserver = observeModalStack({ opened() {}, closing() {} });
+      flushSync();
+      stopSecondObserver();
+      flushSync();
+
+      expect(optionReads).toBe(readsWhileOpen);
+    } finally {
+      stopObserving();
+      modal.hide();
+      flushSync();
       destroy();
       dialog.remove();
     }
