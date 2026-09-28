@@ -176,7 +176,7 @@ must reach origin before an ephemeral environment can be reclaimed.
 1. Confirm no driver is active. Read process matches rather than trusting a count:
 
    ```bash
-   pgrep -fl 'tools/audit-burndown/(overnight|burndown)\.mjs'
+   pgrep -fl '^node tools/audit-burndown/run-burndown.mjs'
    ```
 
    Run the lookup outside the workspace sandbox. `pgrep -af` is GNU-shaped and can print only a PID
@@ -334,7 +334,7 @@ finding is normally under 15 minutes; 15–25 minutes merits one later recheck; 
 diagnosis. Priority and fix rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
 
 ```bash
-pgrep -fl 'tools/audit-burndown/(overnight|burndown)\.mjs'
+pgrep -fl '^node tools/audit-burndown/run-burndown.mjs'
 ```
 
 For a liveness recheck, compare role-envelope counts—not HEAD or `run.log`, which the supervisor
