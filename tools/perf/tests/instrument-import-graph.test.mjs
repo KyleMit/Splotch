@@ -28,7 +28,6 @@ const NATIVE_ANDROID_ROTATION = 'tools/perf/lib/android-user-rotation.mjs';
 const OUTSIDE_EVERY_INSTRUMENT = {
   'scorers, verdicts and fidelity tables: they re-derive at fold time, so an edit re-scores banked cells rather than invalidating them':
     [
-      'tools/perf/lib/action-stats.mjs',
       'tools/perf/lib/drawing-gates.mjs',
       'tools/perf/lib/frame-stamps.mjs',
       'tools/perf/lib/host-quiet.mjs',
@@ -38,9 +37,12 @@ const OUTSIDE_EVERY_INSTRUMENT = {
       'tools/perf/lib/stroke-delivery.mjs',
       'tools/perf/lib/undo-action-stats.mjs',
     ],
-  'plan, CLI, path, device and error plumbing: which cell runs and where it is written, which every artifact records':
+  // The campaign plan's desktop viewport, gesture repeats, orientation and theme
+  // reach a capture as its command-line arguments, not as code it runs: they
+  // are the cell's identity, and a plan edit that changes them is plan drift,
+  // which the instrument fingerprint does not claim to guard.
+  'plan, CLI, path, device and error plumbing: which cell runs with which arguments and where it is written':
     [
-      'tools/perf/lib/action-applicability.mjs',
       'tools/perf/lib/appium-capabilities.mjs',
       'tools/perf/lib/campaign-plan.mjs',
       'tools/perf/lib/capture-attribution.mjs',

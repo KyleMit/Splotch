@@ -61,6 +61,11 @@ const ACTION_SWEEP_DISPATCH = [
   ANDROID_TOUCH_OCCLUSION,
   CAMPAIGN_STATE,
   COLORING_BOOKS_READY,
+  // FULL_ACTION_GROUPS and actionNotApplicableReason: which actions a default sweep runs.
+  'tools/perf/lib/action-applicability.mjs',
+  // A scorer, hashed for WARMUP_REPEATS alone: how many unscored repeats each
+  // transport captures before the scored ones.
+  'tools/perf/lib/action-stats.mjs',
   SHARED_ACTION_PROBE,
 ];
 
