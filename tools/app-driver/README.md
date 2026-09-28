@@ -23,9 +23,11 @@ tiled-renderer ink, and coloring-book overlay at the Google Play tablet viewport
 that every generated store-drawing scene color remains selectable at all four store target
 viewports.
 
-The command needs installed project dependencies and Playwright Chromium. A port may be free or
-already serving Splotch; the shared server helper reuses a compatible listener. Any failed smoke
-assertion or browser/server error exits nonzero after cleanup and prints the failing checks.
+The command needs installed project dependencies and Playwright Chromium. `ensureDevServer` reuses a
+server on the port only when this checkout owns it; a port held by another checkout, or answering
+from a listener `lsof` cannot attribute, gets this checkout's own server on an OS-assigned port
+instead, and the other listener is left running. Any failed smoke assertion or browser/server error
+exits nonzero after cleanup and prints the failing checks.
 
 ## Ownership and maintenance
 

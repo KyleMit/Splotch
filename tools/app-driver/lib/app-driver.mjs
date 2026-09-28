@@ -2,9 +2,10 @@
 // (gen-store-assets.mjs, gen-promotional-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
-import { sleep } from '../../lib/proc.mjs';
+import { createServer } from 'node:net';
+import { ROOT, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
-import { spawnViteServer } from '../../lib/vite-server.mjs';
+import { portListenerOwners, spawnViteServer } from '../../lib/vite-server.mjs';
 
 const DRAWING_CANVAS_SELECTOR = '#drawingCanvas';
 const DRAWER_TOGGLE_SELECTOR = '.drawer-toggle';
@@ -46,17 +47,45 @@ const isUp = async (url) => {
   }
 };
 
-// Reuse a dev server already listening on the port, or start one (killed via
-// the returned stop(), and on process exit as a backstop).
+const serverBase = (port) => `http://localhost:${port}/`;
+
+// Asked of the OS rather than picked from a band, so no other session choosing
+// ports by hand can land on it between this probe and the spawn.
+function unusedPort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', reject);
+    probe.listen(0, 'localhost', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+// Reuse a dev server only when this checkout owns it, or start one (killed via
+// the returned stop(), and on process exit as a backstop). A server another
+// checkout started serves that checkout's build, and every score, screenshot,
+// and review taken from it would still look valid — so a port held by one, or
+// answering from a listener lsof cannot attribute, gets this run's own server
+// on another port instead. The stranger is never stopped. Callers read the
+// returned base, not the port they asked for.
 export async function ensureDevServer(port, timeout = 90_000) {
-  const base = `http://localhost:${port}/`;
-  if (await isUp(base)) {
-    console.log(`Reusing dev server at ${base}`);
-    return { base, stop: () => {} };
+  const listeners = portListenerOwners(port, ROOT);
+  const foreign = listeners.filter(({ owned }) => !owned).map(({ pid }) => pid);
+  const answering = await isUp(serverBase(port));
+  if (answering && listeners.length > 0 && foreign.length === 0) {
+    console.log(`Reusing this checkout's dev server at ${serverBase(port)}`);
+    return { base: serverBase(port), stop: () => {} };
   }
 
+  const servePort = answering || foreign.length ? await unusedPort() : port;
+  if (servePort !== port) {
+    const holder = foreign.length ? `pid ${foreign.join(', ')}` : 'an unidentified listener';
+    console.log(`Port ${port} is held outside this checkout (${holder}); serving on ${servePort}.`);
+  }
+  const base = serverBase(servePort);
   console.log('Starting dev server…');
-  const { stop } = spawnViteServer(port);
+  const { stop } = spawnViteServer(servePort);
 
   try {
     await waitForUrl(base, timeout);

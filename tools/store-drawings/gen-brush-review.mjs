@@ -88,11 +88,10 @@ async function capture(browser, base, output, target, brush) {
 
 export async function generateStoreDrawingReview(output = DEFAULT_OUTPUT) {
   await mkdir(output, { recursive: true });
-  const server = await ensureDevServer(PORT);
+  const { base, stop } = await ensureDevServer(PORT);
   let browser;
   try {
     browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
-    const base = `http://localhost:${PORT}/`;
     const records = [];
     for (const target of TARGETS) {
       for (const brush of BRUSHES)
@@ -103,7 +102,7 @@ export async function generateStoreDrawingReview(output = DEFAULT_OUTPUT) {
     return records;
   } finally {
     if (browser) await browser.close();
-    server.stop();
+    stop();
   }
 }
 
