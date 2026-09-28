@@ -1003,7 +1003,7 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
     }
   });
 
-  it('analyze refuses an index-marked capture unless deliberately included', () => {
+  it('analyze refuses a marked capture unless included, and any unreadable index', () => {
     const dir = tempDir('splotch-analyze-refusal-');
     const capturePath = join(dir, 'pen.json');
     writeFileSync(capturePath, JSON.stringify({ report }));
@@ -1022,5 +1022,13 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
     expect(unattributableCaptureProblem(capturePath, { includeUnattributable: true })).toBeNull();
     // An entry without the marking stays analyzable.
     expect(unattributableCaptureProblem(join(dir, 'clean.json'))).toBeNull();
+    // An index that does not parse is a broken corpus, never "no refusal" — and
+    // asking to include unattributable captures does not make it readable.
+    writeFileSync(join(dir, 'index.json'), '{');
+    for (const includeUnattributable of [false, true]) {
+      expect(() => unattributableCaptureProblem(capturePath, { includeUnattributable })).toThrow(
+        'index is not valid JSON'
+      );
+    }
   });
 });

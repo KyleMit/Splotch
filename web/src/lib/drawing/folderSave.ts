@@ -177,8 +177,9 @@ export async function saveBlobToFolder(
   if (!folderSaveSupported()) return null;
   const allowPrompt = opts?.allowPrompt ?? false;
 
+  let handle: FileSystemDirectoryHandle | null = null;
   try {
-    const handle = await loadHandle();
+    handle = await loadHandle();
     if (!handle) return null;
 
     if (!(await ensureWritePermission(handle, allowPrompt))) return null;
@@ -191,10 +192,11 @@ export async function saveBlobToFolder(
   } catch (err) {
     // The folder was moved/removed since we stored it: drop the stale handle so
     // it reverts to the no-folder (download) state, and tell the settings mirror
-    // so the UI stops naming it. AbortError and any other write failure just
-    // fall back to a download.
+    // so the UI stops naming it — unless the parent chose another folder while
+    // this save ran, which is not the one that went missing. AbortError and any
+    // other write failure just fall back to a download.
     if (err instanceof DOMException && err.name === 'NotFoundError') {
-      await forgetStaleFolder();
+      if ((await loadHandle()) === handle) await forgetStaleFolder();
     }
     return null;
   }

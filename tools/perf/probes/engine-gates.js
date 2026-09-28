@@ -47,7 +47,10 @@
   const W = window.innerWidth;
   const H = window.innerHeight;
   const MIB = 1024 * 1024;
-  const renderScale = Math.min(window.devicePixelRatio || 1, 2);
+  // The app's live-canvas cap (MAX_RENDER_SCALE in engine.ts); a console
+  // snippet cannot import it, so render-scale-cap.test.mjs pins the copy.
+  const MAX_RENDER_SCALE = 2;
+  const renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
   const paperWidth = Math.round(W * renderScale);
   const paperHeight = Math.round(H * renderScale);
   const mbPerPaper = (paperWidth * paperHeight * 4) / MIB;
