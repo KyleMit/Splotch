@@ -4,7 +4,7 @@
     adoptDrawingCanvas,
     setColor,
     setEraserMode,
-    setColorSheet,
+    applyColoringFill,
     setSafeAreaInsets,
     INITIAL_ENGINE_VIEW_STATE,
     type EngineViewState,
@@ -262,14 +262,14 @@
     const url = themedOverlayUrl;
     const displayed = displayedOverlayUrl;
     if (!url) {
-      setColorSheet(null);
+      applyColoringFill(null);
       return;
     }
     if (displayed !== url) {
       return;
     }
     const theme = resolvedTheme();
-    setColorSheet(fillSheetUrl(theme));
+    applyColoringFill(fillSheetUrl(theme));
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
     const otherUrl = currentThemedOverlayUrl(theme, other);
     if (!otherUrl) return;

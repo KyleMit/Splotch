@@ -447,9 +447,9 @@ export function setColorSheet(colorUrl: string | null) {
 // Reserve an incoming source without immediately starting its fill transfer. The
 // overlay line art owns network priority, but new strokes must stop sampling the
 // outgoing page as soon as the child replaces or clears it. DrawingCanvas pays the
-// reservation with setColorSheet after the overlay settles; the fallback keeps the
-// brush self-healing if that effect never settles. Recorded ops retain their
-// captured snapshot until the replacement sheet recodes them.
+// reservation through engine.applyColoringFill after the overlay settles; the
+// fallback keeps the brush self-healing if that effect never settles. Recorded ops
+// retain their captured snapshot until the replacement sheet recodes them.
 export function deferColorSheet(colorUrl: string | null) {
   cancelDeferredFill();
   pendingLoad = null;

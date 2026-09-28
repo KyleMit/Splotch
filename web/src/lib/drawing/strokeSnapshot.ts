@@ -1,8 +1,10 @@
-import type { TiledExportSnapshot } from './exportDrawing';
+import type { ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { captureTiledCanvasSnapshot } from './tiledRenderer';
 import { require2dContext } from './canvas2d';
 
 type SnapshotCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+export type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
 
 export function captureTiledSnapshot(
   snapshotScale: number,
@@ -44,4 +46,19 @@ export function createStrokeSnapshot(
   target.scale(scale, scale);
   render(target);
   return snapshot;
+}
+
+export function closeTiledExportSnapshot(snapshot: TiledExportSnapshot | null) {
+  if (!snapshot) return;
+  for (const { bitmap } of snapshot.source.tiles) {
+    void bitmap.then(
+      (resolved) => resolved.close(),
+      () => undefined
+    );
+  }
+}
+
+export function closeStrokeSnapshots(snapshots: StrokeSnapshots) {
+  if ('source' in snapshots.export) closeTiledExportSnapshot(snapshots.export);
+  closeTiledExportSnapshot(snapshots.preview);
 }

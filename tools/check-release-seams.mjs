@@ -41,7 +41,6 @@ const RELEASE_ONLY_DEBUG_PROPERTIES = [
 ];
 
 const DEV_GATED_ENGINE_EXPORTS = [
-  'setScreenAngleOverride',
   'getDrawingWorkDebug',
   'getUndoDebug',
   'setCrayonParams',
@@ -49,6 +48,8 @@ const DEV_GATED_ENGINE_EXPORTS = [
 ];
 export const DEV_GATED_EXPORTS = [
   ...DEV_GATED_ENGINE_EXPORTS.map((name) => ({ name, sourcePath: ENGINE_SOURCE_PATH })),
+  // engine.ts re-exports it; the gate lives on the definition.
+  { name: 'setScreenAngleOverride', sourcePath: 'web/src/lib/drawing/screenAngle.ts' },
   { name: 'prepareRefusedAiKeyForget', sourcePath: AI_KEY_SOURCE_PATH },
 ];
 
