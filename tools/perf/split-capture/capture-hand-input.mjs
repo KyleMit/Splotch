@@ -31,7 +31,11 @@ import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
+import {
+  CONTACT_BANK_MS,
+  fetchAcceptedProbeReport,
+  probeHostJson,
+} from './lib/probe-host-protocol.mjs';
 import {
   captureRuntime,
   describeFidelityFailures,
@@ -68,9 +72,6 @@ const PROBE_READY_TIMEOUT_MS = 180_000;
 // way the full three-minute ready poll did twice on 2026-08-25 (issue 1316).
 const FIRST_CONTACT_TIMEOUT_MS = 15_000;
 const REPORT_TIMEOUT_MS = 120_000;
-// The probe ends a phase on its own once the banked contact time runs out; a
-// hand run is ended by the clock below instead, so the bank has to outlast it.
-const CONTACT_BANK_MS = 600_000;
 // A hand stroke is still committing raster work when the drawer lifts off.
 const DRAW_TAIL_MS = 1_200;
 const BUZZ_MS = 350;

@@ -36,6 +36,7 @@ import {
 } from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
+import { CONTACT_BANK_MS } from './lib/probe-host-protocol.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
@@ -50,7 +51,6 @@ const GESTURE_TAIL_MS = 1_200;
 // Long enough for a cadence estimate to settle, short enough that a preflight
 // stays a preflight.
 const PREFLIGHT_GESTURE_REPEATS = 4;
-const CONTACT_BANK_MS = 600_000;
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 
