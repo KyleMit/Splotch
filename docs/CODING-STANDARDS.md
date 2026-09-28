@@ -340,8 +340,9 @@ in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in `tools/lib/vite
 on a listener outside the checkout. `generateFromValidatedSources` in `tools/ruler/apply-ruler.mjs`
 runs read-only plans before generating, and the bad-source cases in
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
-`main()` parses the arguments and resolves the version code before its first write. Review holds
-that order; `tools/release/tests/cut-release.test.mjs` covers the rejections themselves.
+`main()` parses the arguments and `chooseVersionCode` decides the version code before the first
+write, which is `resolveVersionCode` pinning that code into the release file. Review holds that
+order; `tools/release/tests/cut-release.test.mjs` covers the rejections themselves.
 
 ## 9. Tests prove they can fail
 
