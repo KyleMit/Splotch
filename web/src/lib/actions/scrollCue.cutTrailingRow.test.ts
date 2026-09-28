@@ -1,7 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cutTrailingRow } from './scrollCue';
 
+// Each mounted action's window listener outlives its detached dialog unless
+// destroyed, and would answer every later test's resize.
+const mountedActions: { destroy(): void }[] = [];
+
 afterEach(() => {
+  for (const action of mountedActions.splice(0)) action.destroy();
   vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
@@ -47,10 +52,12 @@ function setup() {
     scrollHeight: { get: () => CONTENT_HEIGHT },
   });
   dialog.setAttribute('open', '');
+  const handle = cutTrailingRow(grid);
+  if (handle) mountedActions.push(handle);
 
   return {
     dialog,
-    handle: cutTrailingRow(grid),
+    handle,
     resizeGrid: () => resizeGrid?.(),
     resizeViewport(height: number) {
       naturalHeight = height;
