@@ -10,6 +10,7 @@ import {
   measureNativeExport,
   measureWebBundle,
   nativeExportBudgetProblems,
+  STARTUP_MODULEPRELOAD_COUNT,
   startupResourcesFromHtml,
   webBundleBudgetProblems,
 } from '../check-bundle-budgets.mjs';
@@ -45,6 +46,7 @@ it('reads startup links and inline CSS with structured HTML parsing', () => {
     `)
   ).toEqual({
     hrefs: ['./entry.js', './app.css'],
+    modulepreloadCount: 1,
     inlineStyleBytes: Buffer.byteLength('a{content:"é"}'),
   });
 });
@@ -69,6 +71,7 @@ it('measures linked startup resources and the largest non-startup JavaScript chu
   expect(measureWebBundle({ prerenderedIndex, clientDir })).toEqual({
     startupBytes: 14,
     startupFileCount: 2,
+    modulepreloadCount: 1,
     inlineStyleBytes: 6,
     largestLazyChunk: { path: '_app/immutable/chunks/lazy.js', bytes: 11 },
   });
@@ -78,6 +81,7 @@ it('rejects startup JS/CSS above its byte budget', () => {
   expect(
     webBundleBudgetProblems({
       startupBytes: MAX_STARTUP_JS_CSS_BYTES + 1,
+      modulepreloadCount: STARTUP_MODULEPRELOAD_COUNT,
       largestLazyChunk: { path: 'lazy.js', bytes: MAX_LAZY_CHUNK_BYTES },
     })
   ).toEqual([
@@ -89,12 +93,38 @@ it('rejects the largest lazy JavaScript chunk above its byte budget', () => {
   expect(
     webBundleBudgetProblems({
       startupBytes: MAX_STARTUP_JS_CSS_BYTES,
+      modulepreloadCount: STARTUP_MODULEPRELOAD_COUNT,
       largestLazyChunk: { path: '_app/immutable/chunks/large.js', bytes: MAX_LAZY_CHUNK_BYTES + 1 },
     })
   ).toEqual([
     `Largest lazy JS chunk is ${MAX_LAZY_CHUNK_BYTES + 1} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (_app/immutable/chunks/large.js)`,
   ]);
 });
+
+it.each([
+  {
+    modulepreloadCount: STARTUP_MODULEPRELOAD_COUNT + 1,
+    remedy: 'raise STARTUP_MODULEPRELOAD_COUNT',
+  },
+  {
+    modulepreloadCount: STARTUP_MODULEPRELOAD_COUNT - 1,
+    remedy: 'lower STARTUP_MODULEPRELOAD_COUNT',
+  },
+])(
+  'rejects a startup modulepreload count that moved from its pin: $modulepreloadCount',
+  ({ modulepreloadCount, remedy }) => {
+    const problems = webBundleBudgetProblems({
+      startupBytes: MAX_STARTUP_JS_CSS_BYTES,
+      modulepreloadCount,
+      largestLazyChunk: { path: 'lazy.js', bytes: MAX_LAZY_CHUNK_BYTES },
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain(
+      `The prerendered / page modulepreloads ${modulepreloadCount} chunks`
+    );
+    expect(problems[0]).toContain(remedy);
+  }
+);
 
 it('measures every file in the native export and rejects an oversized package', () => {
   const nativeDir = temporaryDirectory();
@@ -154,9 +184,63 @@ it.each([
     `[bundle-budgets] report-only: Largest lazy JS chunk is ${MAX_LAZY_CHUNK_BYTES + 1} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (_app/immutable/chunks/lazy.js)`
   );
   expect(log).toHaveBeenCalledWith(
-    `[bundle-budgets] instrumented build: release byte budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
+    `[bundle-budgets] instrumented build: release budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files (1/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads) + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
   );
 });
+
+function writeStartupPage(modulepreloadCount) {
+  const root = temporaryDirectory();
+  const clientDir = join(root, 'client');
+  const prerenderedIndex = join(root, 'prerendered/pages/index.html');
+  const links = Array.from({ length: modulepreloadCount }, (_, index) => {
+    const chunk = `_app/immutable/chunks/startup-${index}.js`;
+    writeSizedFile(join(clientDir, chunk), 1);
+    return `<link href="./${chunk}" rel="modulepreload">`;
+  });
+  writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+  mkdirSync(dirname(prerenderedIndex), { recursive: true });
+  writeFileSync(prerenderedIndex, links.join(''));
+  return { clientDir, prerenderedIndex };
+}
+
+it('passes a release build that modulepreloads the pinned number of chunks', async () => {
+  const log = vi.fn();
+
+  await checkBundleBudgets({ ...writeStartupPage(STARTUP_MODULEPRELOAD_COUNT), env: {}, log });
+
+  expect(log).toHaveBeenCalledWith(
+    expect.stringContaining(
+      `(${STARTUP_MODULEPRELOAD_COUNT}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads)`
+    )
+  );
+});
+
+it('rejects a release build that modulepreloads one more chunk than its pin', async () => {
+  await expect(
+    checkBundleBudgets({
+      ...writeStartupPage(STARTUP_MODULEPRELOAD_COUNT + 1),
+      env: {},
+      log: vi.fn(),
+    })
+  ).rejects.toThrow(
+    `The prerendered / page modulepreloads ${STARTUP_MODULEPRELOAD_COUNT + 1} chunks, up from ${STARTUP_MODULEPRELOAD_COUNT}`
+  );
+});
+
+it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'only reports an instrumented build whose modulepreload count moved: %j',
+  async (env) => {
+    const log = vi.fn();
+
+    await checkBundleBudgets({ ...writeStartupPage(STARTUP_MODULEPRELOAD_COUNT + 1), env, log });
+
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `[bundle-budgets] report-only: The prerendered / page modulepreloads ${STARTUP_MODULEPRELOAD_COUNT + 1} chunks`
+      )
+    );
+  }
+);
 
 it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
   'still rejects missing startup resources in an instrumented build: %j',
