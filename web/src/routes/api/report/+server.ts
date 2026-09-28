@@ -14,9 +14,9 @@ const MAX_REPORT_BODY_BYTES = 64 * 1024;
 
 /**
  * Receive an in-app "report a bug / suggest a feature" submission and open a
- * labelled GitHub issue for it. Body: { kind, message, device?, hp? }. Returns
- * { ok: true } on success. The issue lands in the private feedback repository,
- * so no inaccessible URL is returned to the reporter.
+ * labelled GitHub issue for it. Body: `ReportRequestBody` ($lib/report).
+ * Returns { ok: true } on success. The issue lands in the private feedback
+ * repository, so no inaccessible URL is returned to the reporter.
  *
  * Validation and issue creation live in $lib/server/report so the `/feedback`
  * page's form action shares them; this route only adds the wire shape.

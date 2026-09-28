@@ -5,6 +5,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import { IMAGE_REPORT_FORM_FIELDS } from '$lib/imageReport';
 import { isReportingConfigured } from '$lib/server/github';
 import { MAX_REPORT_REQUEST_BYTES, submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
@@ -58,10 +59,10 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   }
 
   const result = await submitImageReport({
-    kind: form.get('kind'),
-    drawing: form.get('drawing'),
-    output: form.get('output'),
-    style: form.get('style'),
+    kind: form.get(IMAGE_REPORT_FORM_FIELDS.kind),
+    drawing: form.get(IMAGE_REPORT_FORM_FIELDS.drawing),
+    output: form.get(IMAGE_REPORT_FORM_FIELDS.output),
+    style: form.get(IMAGE_REPORT_FORM_FIELDS.style),
     reportContext: authorization.reportContext,
   });
   return result.ok

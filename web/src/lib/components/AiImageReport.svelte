@@ -6,19 +6,17 @@
   import ReportFields from './report/ReportFields.svelte';
   import { failureReportRows } from '$lib/ai/failureReport';
   import type { AiFailureDetails } from '$lib/state/aiGeneration.svelte';
-  import type { ReportResponse } from '../../routes/api/report/+server';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
-  import { apiUrl } from '$lib/api';
   import { aiCredentialHeaders } from '$lib/ai/credentials';
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
   import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
   import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
+  import { postFeedbackReport, postImageReport, readReportReply } from '$lib/reportClient';
   import type { Origin } from '$lib/state/modal.svelte';
-  import type { ImageReportResponse } from '../../routes/api/report-image/+server';
 
   interface Props {
     kind?: AiReportKind | 'generation-error';
@@ -55,6 +53,13 @@
   // the holder to be state rather than the plain `let` a top-level bind uses.
   let fields = $state<ReportFields>();
   const refusal = $derived(kind === 'false-positive-refusal');
+  const sendFailedMessage = $derived(
+    problem
+      ? 'Could not send your problem report.'
+      : refusal
+        ? 'Could not send your refusal report.'
+        : 'Could not send your picture report.'
+  );
 
   let message = $state('');
   let controller: AbortController | null = null;
@@ -85,37 +90,25 @@
   });
 
   async function submit(signal: AbortSignal): Promise<Response> {
-    if (problem) {
+    if (kind === 'generation-error') {
       const device = includeDevice ? await fields?.ensureDevice() : undefined;
-      return fetch(apiUrl('/api/report'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'bug',
-          message: diagnosticRows.map(({ label, value }) => `${label}: ${value}`).join('\n'),
-          ...(device ? { device } : {}),
-        }),
-        signal,
-      });
+      const diagnostics = diagnosticRows.map(({ label, value }) => `${label}: ${value}`).join('\n');
+      return postFeedbackReport({ kind: 'bug', message: diagnostics, device }, signal);
     }
     if (!drawingUrl) throw new Error('Missing drawing');
     const [drawingResponse, outputResponse] = await Promise.all([
       fetch(drawingUrl, { signal }),
       outputUrl ? fetch(outputUrl, { signal }) : Promise.resolve(null),
     ]);
-    const form = new FormData();
-    form.set('kind', kind);
-    form.set('drawing', await drawingResponse.blob(), 'drawing');
-    if (outputResponse) form.set('output', await outputResponse.blob(), 'output');
-    form.set('style', style ?? '');
+    const drawing = await drawingResponse.blob();
+    const output = outputResponse ? await outputResponse.blob() : null;
 
     const credentials = await aiCredentialHeaders();
-    return fetch(apiUrl('/api/report-image'), {
-      method: 'POST',
-      headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
-      body: form,
-      signal,
-    });
+    return postImageReport(
+      { kind, drawing, output, style },
+      reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
+      signal
+    );
   }
 
   async function send() {
@@ -138,38 +131,21 @@
     try {
       const response = await submit(requestController.signal);
       // The deadline can fire while the body is still arriving, which rejects
-      // this read rather than the fetch. That rejection belongs to the catch
-      // below, where the deadline is told apart from an unmount; swallowing it
-      // here would leave the dialog on "Sending…" with dismissal blocked.
-      const result: ImageReportResponse | ReportResponse = await response
-        .json()
-        .catch((error: unknown) => {
-          if (requestController.signal.aborted) throw error;
-          return {
-            ok: false,
-            error: problem
-              ? 'Could not send your problem report.'
-              : refusal
-                ? 'Could not send your refusal report.'
-                : 'Could not send your picture report.',
-          };
-        });
+      // this read rather than the fetch. readReportReply rethrows that into the
+      // catch below, where the deadline is told apart from an unmount;
+      // swallowing it would leave the dialog on "Sending…" with dismissal
+      // blocked.
+      const reply = await readReportReply(response, requestController.signal);
       if (requestController.signal.aborted) return;
-      if (response.ok && result.ok) {
+      if (response.ok && reply?.ok) {
         status = 'success';
         message =
-          'reportId' in result
-            ? `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${result.reportId}`
+          'reportId' in reply
+            ? `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${reply.reportId}`
             : 'Thanks. Your problem report was sent to our private support tracker.';
       } else {
         status = 'error';
-        message = result.ok
-          ? problem
-            ? 'Could not send your problem report.'
-            : refusal
-              ? 'Could not send your refusal report.'
-              : 'Could not send your picture report.'
-          : result.error;
+        message = reply && !reply.ok ? reply.error : sendFailedMessage;
       }
     } catch {
       // An abort this component did not schedule is an unmount or a supersede —

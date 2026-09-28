@@ -3,7 +3,6 @@
   import StatusMessage from '../design/StatusMessage.svelte';
   import RuleLabel from '../design/RuleLabel.svelte';
   import ReportFields from '../report/ReportFields.svelte';
-  import { apiUrl } from '$lib/api';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import {
@@ -12,7 +11,7 @@
     type SubmitStatus,
   } from '$lib/latestRequest';
   import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
-  import type { ReportResponse } from '../../../routes/api/report/+server';
+  import { postFeedbackReport, readReportReply } from '$lib/reportClient';
 
   interface Props {
     // Flips true when the Settings modal opens; we use it to clear the form
@@ -71,23 +70,20 @@
 
     try {
       const device = attachDevice ? await fields.ensureDevice() : undefined;
-      const res = await fetch(apiUrl('/api/report'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, device }),
-        signal,
-      });
-      const data: ReportResponse = await res
-        .json()
-        .catch(() => ({ ok: false, error: 'Could not read the server response.' }));
+      const res = await postFeedbackReport({ ...payload, device }, signal);
+      const reply = await readReportReply(res, signal);
       if (!latest.isCurrent(id)) return;
-      if (res.ok && data.ok) {
+      if (res.ok && reply?.ok) {
         status = 'success';
         feedback = 'Thanks for your feedback.';
         message = '';
       } else {
         status = 'error';
-        feedback = !data.ok ? data.error : 'Could not send your report. Please try again.';
+        feedback = !reply
+          ? 'Could not read the server response.'
+          : reply.ok
+            ? 'Could not send your report. Please try again.'
+            : reply.error;
       }
     } catch {
       if (!latest.isCurrent(id)) return;
