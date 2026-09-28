@@ -196,9 +196,6 @@
     margin-top: 4px;
   }
 
-  /* A callout in the step ledger's language rather than three lines floating in
-     the corner — the same left-ruled, washed block /beta closes each
-     step with, so the two pages share a second element besides the button. */
   /* Its own line inside the banner: the error is one sentence and the way out is
      another, and running them together reads as a single long apology. */
   .fallback {
@@ -215,6 +212,9 @@
     white-space: nowrap;
   }
 
+  /* A callout in the step ledger's language rather than three lines floating in
+     the corner — the same left-ruled, washed block /beta closes each
+     step with, so the two pages share a second element besides the button. */
   .aside {
     flex: 0 1 250px;
     min-width: 0;
@@ -224,10 +224,13 @@
     background: var(--brand-wash);
   }
 
+  /* A step above the list it heads, so it reads as the callout's title rather
+     than a bold first line. */
   .aside h2 {
-    margin: 0 0 8px;
-    font-size: var(--font-size-sm);
+    margin: 0 0 10px;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
+    line-height: 1.3;
     color: var(--page-ink);
   }
 
