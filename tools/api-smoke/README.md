@@ -24,7 +24,7 @@ layers rather than in the request client.
 `run-local-contract.mjs` needs no external credentials. It starts a Vite dev server on `SMOKE_PORT`
 (default `5199`) with explicit safe test values, exercises CORS, authentication, validation, rate
 limits, reporting, and public-oracle behavior, then tears the server down. Every non-`OPTIONS`
-`/api/*` response either entry point receives must carry `Cache-Control: no-store`;
+`/api/*` response either entry point's checks receive must carry `Cache-Control: no-store`;
 `lib/api-caching.mjs` records them at the fetch boundary. It prints pass/fail diagnostics and writes
 no artifact. The process exits nonzero on any failed check or startup error.
 

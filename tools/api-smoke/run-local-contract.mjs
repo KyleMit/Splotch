@@ -72,7 +72,7 @@ function postChunkedJson(base, path, chunks, headers = {}) {
           } catch {
             // The assertion below reports the raw response through `error`.
           }
-          resolve({ status: response.statusCode, body, error: raw });
+          resolve({ status: response.statusCode, body, headers: response.headers, error: raw });
         });
       }
     );
@@ -243,12 +243,15 @@ async function checkTokensCrud(admin, auth) {
     ['{"token":"', 'x'.repeat(OVERSIZED_JSON_CHUNK_BYTES), '"}'],
     auth
   );
+  // node:http bypasses the fetch recorder (lib/api-caching.mjs), so this
+  // response asserts its own no-store.
   check(
-    'tokens POST chunked oversized body → clean 413 without a socket reset',
+    'tokens POST chunked oversized body → clean no-store 413 without a socket reset',
     chunkedOversize.status === 413 &&
       chunkedOversize.body?.ok === false &&
-      chunkedOversize.body?.error === 'Request body is too large',
-    `got ${chunkedOversize.status} ${chunkedOversize.error}`
+      chunkedOversize.body?.error === 'Request body is too large' &&
+      chunkedOversize.headers?.['cache-control'] === 'no-store',
+    `got ${chunkedOversize.status} Cache-Control=${chunkedOversize.headers?.['cache-control']} ${chunkedOversize.error}`
   );
 }
 

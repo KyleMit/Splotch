@@ -585,8 +585,8 @@ it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the 
 that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
 `SECURITY_HEADERS` that means something on a non-document body — and neither carrying the rest of
 the SSR set; the preflight returns before the header hook and so carries neither), `no-store` on
-every non-`OPTIONS` `/api/*` response the run receives (`tools/api-smoke/lib/api-caching.mjs`), the
-`verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
+every non-`OPTIONS` `/api/*` response its checks receive (`tools/api-smoke/lib/api-caching.mjs`),
+the `verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
 `GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
 formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
 once the verify budget is burned; valid token minus image → 400 — every case is rejected before the
