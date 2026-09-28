@@ -31,10 +31,9 @@ parsing SVGs during screenshot capture, plus the accepted fidelity and runtime t
 | `gen-brush-review.mjs`          | `npm run gen:store-drawings:review`   | Capture brush variants for review        |
 
 All commands need installed project dependencies. Conversion is deterministic and browser-free;
-evaluation and brush review also need Playwright Chromium. They reuse this checkout's server on port
-4173 and otherwise start their own, on another port when a different checkout holds 4173. The public
-npm commands, sample paths, generated module, and screenshot output directories remain stable during
-the tools naming migration.
+evaluation and brush review also need Playwright Chromium, and start their own dev server on port
+4173, or on an OS-assigned port when 4173 is in use. The public npm commands, sample paths,
+generated module, and screenshot output directories remain stable during the tools naming migration.
 
 ## Conversion pipeline
 

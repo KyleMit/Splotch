@@ -5,42 +5,41 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
-import { portListenerOwners, portListenerPids, spawnViteServer } from '../../lib/vite-server.mjs';
+import { portListenerPids, spawnViteServer } from '../../lib/vite-server.mjs';
 import { ensureDevServer } from '../lib/app-driver.mjs';
 
-// The spawn is faked: what is under test is which port this checkout's own
-// server lands on, not vite booting. Ownership is read from real listeners.
-vi.mock('../../lib/vite-server.mjs', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    portListenerOwners: vi.fn(actual.portListenerOwners),
-    spawnViteServer: vi.fn(() => ({ stop: vi.fn() })),
-  };
-});
-vi.mock('../../lib/net.mjs', async (importOriginal) => ({
+// Only the vite spawn is faked, by a plain HTTP server on the port it is handed:
+// what is under test is which port this run serves on and whether the answer
+// comes from the process it started. Readiness and listener lookup are real.
+vi.mock('../../lib/vite-server.mjs', async (importOriginal) => ({
   ...(await importOriginal()),
-  waitForUrl: vi.fn(async () => {}),
+  spawnViteServer: vi.fn(),
 }));
 
-const LISTEN_ON_ANY_PORT =
-  'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})';
+// A real readiness wait on a local listener takes milliseconds; a run that picks
+// an occupied port waits this long and fails instead of hanging for the default.
+const READY_TIMEOUT_MS = 5_000;
 
-async function listenFrom(cwd) {
-  const child = spawn(process.execPath, ['-e', LISTEN_ON_ANY_PORT], {
+const HTTP_ON_PORT =
+  'require("http").createServer((q,r)=>r.end("x")).listen(Number(process.argv[1]),"localhost",function(){console.log(this.address().port)})';
+const SILENT_TCP_ON_PORT =
+  'require("net").createServer(()=>{}).listen(Number(process.argv[1]),"localhost",function(){console.log(this.address().port)})';
+
+async function listenFrom(cwd, script, port = 0) {
+  const child = spawn(process.execPath, ['-e', script, String(port)], {
     cwd,
     stdio: ['ignore', 'pipe', 'ignore'],
   });
   onTestFinished(() => child.kill());
-  const port = await new Promise((resolve) => {
+  const boundPort = await new Promise((resolve) => {
     child.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
   });
-  return { child, port };
+  return { child, port: boundPort };
 }
 
 function closedPort() {
   return new Promise((resolve) => {
-    const probe = createServer().listen(0, '127.0.0.1', () => {
+    const probe = createServer().listen(0, 'localhost', () => {
       const { port } = probe.address();
       probe.close(() => resolve(port));
     });
@@ -51,8 +50,20 @@ const foreignRoot = mkdtempSync(join(tmpdir(), 'splotch-foreign-'));
 
 afterAll(() => rmSync(foreignRoot, { recursive: true, force: true }));
 
+// The spawned "vite": this checkout's own server on exactly the port handed to it.
+function spawnsOwnServer() {
+  spawnViteServer.mockImplementation((port) => {
+    const child = spawn(process.execPath, ['-e', HTTP_ON_PORT, String(port)], {
+      cwd: ROOT,
+      stdio: 'ignore',
+    });
+    onTestFinished(() => child.kill());
+    return { server: child, stop: vi.fn(() => child.kill()) };
+  });
+}
+
 beforeEach(() => {
-  spawnViteServer.mockClear();
+  spawnViteServer.mockReset();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   onTestFinished(() => vi.restoreAllMocks());
 });
@@ -60,10 +71,21 @@ beforeEach(() => {
 const servedPort = (base) => Number(new URL(base).port);
 
 describe('ensureDevServer', () => {
-  it("serves this checkout's build on another port when another checkout holds the requested one", async () => {
-    const foreign = await listenFrom(foreignRoot);
+  it('starts its own server on the requested port when nothing holds it', async () => {
+    spawnsOwnServer();
+    const port = await closedPort();
 
-    const { base } = await ensureDevServer(foreign.port);
+    const { base } = await ensureDevServer(port, READY_TIMEOUT_MS);
+
+    expect(base).toBe(`http://localhost:${port}/`);
+    expect(spawnViteServer).toHaveBeenCalledExactlyOnceWith(port);
+  });
+
+  it("moves off a port another checkout's server answers on and leaves that server running", async () => {
+    spawnsOwnServer();
+    const foreign = await listenFrom(foreignRoot, HTTP_ON_PORT);
+
+    const { base } = await ensureDevServer(foreign.port, READY_TIMEOUT_MS);
 
     expect(servedPort(base)).not.toBe(foreign.port);
     expect(spawnViteServer).toHaveBeenCalledExactlyOnceWith(servedPort(base));
@@ -71,35 +93,43 @@ describe('ensureDevServer', () => {
     expect(portListenerPids(foreign.port)).toContain(foreign.child.pid);
   });
 
-  it('reuses a server this checkout owns without stopping it on stop()', async () => {
-    const owned = await listenFrom(ROOT);
+  // A stale `vite preview` of this checkout answers from this checkout's cwd
+  // while serving an old build.
+  it('never reuses a server this checkout left running', async () => {
+    spawnsOwnServer();
+    const stale = await listenFrom(ROOT, HTTP_ON_PORT);
 
-    const { base, stop } = await ensureDevServer(owned.port);
-    stop();
+    const { base } = await ensureDevServer(stale.port, READY_TIMEOUT_MS);
 
-    expect(base).toBe(`http://localhost:${owned.port}/`);
-    expect(spawnViteServer).not.toHaveBeenCalled();
-    expect(portListenerPids(owned.port)).toContain(owned.child.pid);
-  });
-
-  // lsof missing, or a listener it cannot see: an answer nobody can attribute is
-  // treated like a stranger's.
-  it('moves off a port that answers from a listener lsof cannot attribute', async () => {
-    const unattributed = await listenFrom(ROOT);
-    portListenerOwners.mockReturnValueOnce([]);
-
-    const { base } = await ensureDevServer(unattributed.port);
-
-    expect(servedPort(base)).not.toBe(unattributed.port);
+    expect(servedPort(base)).not.toBe(stale.port);
     expect(spawnViteServer).toHaveBeenCalledExactlyOnceWith(servedPort(base));
+    expect(portListenerPids(stale.port)).toContain(stale.child.pid);
   });
 
-  it('starts on the requested port when nothing holds it', async () => {
+  it('moves off a port that is bound but not answering yet', async () => {
+    spawnsOwnServer();
+    const silent = await listenFrom(ROOT, SILENT_TCP_ON_PORT);
+
+    const { base } = await ensureDevServer(silent.port, READY_TIMEOUT_MS);
+
+    expect(servedPort(base)).not.toBe(silent.port);
+  });
+
+  // The race after the probe: another process binds the port first, vite's
+  // --strictPort exits, and the answer comes from the other process.
+  it('rejects an answer from a process other than the one it started', async () => {
+    const stop = vi.fn();
     const port = await closedPort();
+    const winners = [];
+    spawnViteServer.mockImplementation(() => {
+      winners.push(listenFrom(foreignRoot, HTTP_ON_PORT, port));
+      return { server: { pid: process.pid, exitCode: null }, stop };
+    });
 
-    const { base } = await ensureDevServer(port);
-
-    expect(base).toBe(`http://localhost:${port}/`);
-    expect(spawnViteServer).toHaveBeenCalledExactlyOnceWith(port);
+    await expect(ensureDevServer(port, READY_TIMEOUT_MS)).rejects.toThrow(
+      `port ${port} is not served by the dev server this run started (pid ${process.pid}`
+    );
+    expect(stop).toHaveBeenCalledOnce();
+    await Promise.all(winners);
   });
 });
