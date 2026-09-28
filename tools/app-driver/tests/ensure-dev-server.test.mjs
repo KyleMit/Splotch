@@ -11,10 +11,14 @@ import { ensureDevServer } from '../lib/app-driver.mjs';
 // Only the vite spawn is faked, by a plain HTTP server on the port it is handed:
 // what is under test is which port this run serves on and whether the answer
 // comes from the process it started. Readiness and listener lookup are real.
-vi.mock('../../lib/vite-server.mjs', async (importOriginal) => ({
-  ...(await importOriginal()),
-  spawnViteServer: vi.fn(),
-}));
+vi.mock('../../lib/vite-server.mjs', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    portListenerPids: vi.fn(actual.portListenerPids),
+    spawnViteServer: vi.fn(),
+  };
+});
 
 // A real readiness wait on a local listener takes milliseconds; a run that picks
 // an occupied port waits this long and fails instead of hanging for the default.
@@ -64,6 +68,7 @@ function spawnsOwnServer() {
 
 beforeEach(() => {
   spawnViteServer.mockReset();
+  portListenerPids.mockReset();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   onTestFinished(() => vi.restoreAllMocks());
 });
@@ -117,19 +122,36 @@ describe('ensureDevServer', () => {
 
   // The race after the probe: another process binds the port first, vite's
   // --strictPort exits, and the answer comes from the other process.
-  it('rejects an answer from a process other than the one it started', async () => {
+  function strangerWinsThePort(port) {
     const stop = vi.fn();
-    const port = await closedPort();
     const winners = [];
     spawnViteServer.mockImplementation(() => {
       winners.push(listenFrom(foreignRoot, HTTP_ON_PORT, port));
-      return { server: { pid: process.pid, exitCode: null }, stop };
+      return { server: { pid: process.pid }, stop };
     });
+    return { stop, settled: () => Promise.all(winners) };
+  }
+
+  it('rejects an answer from a process other than the one it started', async () => {
+    const port = await closedPort();
+    const race = strangerWinsThePort(port);
 
     await expect(ensureDevServer(port, READY_TIMEOUT_MS)).rejects.toThrow(
-      `port ${port} is not served by the dev server this run started (pid ${process.pid}`
+      `port ${port} answered, but not from the dev server this run started (pid ${process.pid}; found pid `
     );
-    expect(stop).toHaveBeenCalledOnce();
-    await Promise.all(winners);
+    expect(race.stop).toHaveBeenCalledOnce();
+    await race.settled();
+  });
+
+  it('fails closed when lsof cannot name who answered', async () => {
+    portListenerPids.mockReturnValue([]);
+    const port = await closedPort();
+    const race = strangerWinsThePort(port);
+
+    await expect(ensureDevServer(port, READY_TIMEOUT_MS)).rejects.toThrow(
+      `port ${port} answered, but not from the dev server this run started (pid ${process.pid}; found no listener lsof could name)`
+    );
+    expect(race.stop).toHaveBeenCalledOnce();
+    await race.settled();
   });
 });

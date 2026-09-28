@@ -58,13 +58,15 @@ function bindProbe(port) {
 
 // A port that was free when probed can still be taken before vite binds it.
 // vite's --strictPort then exits, and the answer waitForUrl saw came from
-// someone else. lsof names the listener; with no lsof (no pids at all) only the
-// exit check can run.
+// someone else. Only lsof can name the process holding the port, so a listener
+// it cannot see — lsof missing included — fails closed rather than vouching.
 function assertServedBy(server, port) {
   const pids = portListenerPids(port);
-  if (server.exitCode !== null || (pids.length > 0 && !pids.includes(server.pid))) {
+  if (!pids.includes(server.pid)) {
+    const holders = pids.length ? `pid ${pids.join(', ')}` : 'no listener lsof could name';
     throw new Error(
-      `port ${port} is not served by the dev server this run started (pid ${server.pid}; listeners: ${pids.join(', ') || 'unknown'}).`
+      `port ${port} answered, but not from the dev server this run started (pid ${server.pid}; found ${holders}). ` +
+        'If lsof is not installed, install it: this check cannot run without it.'
     );
   }
 }
