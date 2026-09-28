@@ -1,5 +1,4 @@
-// Read-only zip container access: list the entries an archive declares, and
-// inflate one of them.
+// Read-only zip container access: inflate one entry an archive declares.
 //
 // Sized to what verifying a store artifact needs and no further — no writing,
 // no streaming, no zip64. A dependency would carry all three plus a decompressor
@@ -70,14 +69,6 @@ function eachCentralDirectoryEntry(buf, visit) {
     at += 46 + nameLength + extraLength + commentLength;
   }
   return null;
-}
-
-/** Every entry name the archive's central directory declares, in stored order. */
-export function listEntries(zipPath) {
-  const buf = readFileSync(zipPath);
-  const names = [];
-  eachCentralDirectoryEntry(buf, ({ name }) => void names.push(name));
-  return names;
 }
 
 /**
