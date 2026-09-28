@@ -21,8 +21,11 @@ recurring bug.
 
 ## What the controls do
 
-The picker offers Portrait, Landscape, and Auto, persisted as `lockRotationEnabled` +
-`forceLandscapeOrientation` and applied by `web/src/lib/platform/orientation.ts`.
+The picker offers Portrait, Landscape, and Auto (the `OrientationChoice` type), persisted as
+`lockRotationEnabled` + `forceLandscapeOrientation` and applied by
+`web/src/lib/platform/orientation.ts`. `settingsState.orientationChoice()` is the one place those
+two booleans become a choice: the picker, the Settings hub subtitle, and the device lock all read
+it.
 
 * **Portrait / Landscape** beat the OS rotation lock wherever a lock is permitted at all. On the web
   this is not obvious: Chromium maps them to `SCREEN_ORIENTATION_SENSOR_PORTRAIT` / `_LANDSCAPE`,
@@ -134,7 +137,7 @@ Orientation branches are covered at two layers, and the web gate cannot be reach
   that reads the manifest and the query constant together, because the installed app's picker
   depends on `"display": "fullscreen"` and nothing else ties those files together.
 * `web/src/lib/platform/orientation.test.ts` — what `applyDeviceOrientationPreference` calls per
-  platform and target, including the superseded-request ordering.
+  platform, choice, and fullscreen state, including the superseded-request ordering.
 * `web/tests/orientation-picker.spec.ts` — layout across phone widths, the absent case in a plain
   tab, and the Auto caption.
 * `web/tests/settings-quick-toggles.spec.ts` — the landscape-phone quick-toggle grid: the compact
