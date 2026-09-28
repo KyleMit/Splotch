@@ -4,7 +4,10 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { GENERATION_JOB_TTL_MS } from '../../../web/src/lib/ai/limits.ts';
 import { FREE_GENERATION_LIMIT } from '../../../web/src/lib/freeGenerations.ts';
-import { IMAGE_REPORT_RETENTION_DAYS } from '../../../web/src/lib/imageReport.ts';
+import {
+  IMAGE_REPORT_RETENTION_DAYS,
+  IMAGE_REPORT_REVIEW_HOURS,
+} from '../../../web/src/lib/imageReport.ts';
 import { USAGE_RECORD_RETENTION_DAYS } from '../../../web/src/lib/usageRecord.ts';
 import { NATIVE_API_ORIGIN } from '../../../web/securityPolicy.ts';
 
@@ -16,9 +19,14 @@ const IOS_LISTING_PATH = 'store-assets/STORE-LISTING-IOS.md';
 const ANDROID_LISTING_PATH = 'store-assets/STORE-LISTING-ANDROID.md';
 const PRIVACY_PAGE_PATH = 'web/src/routes/privacy/+page.svelte';
 const NATIVE_DOC_PATH = 'docs/MOBILE/native.md';
+const ANDROID_DOC_PATH = 'docs/MOBILE/android.md';
+const COMPLIANCE_DOC_PATH = 'docs/MOBILE/compliance.md';
 const API_DOC_PATH = 'docs/API.md';
 const IMAGE_REPORT_ADR_PATH = 'docs/adrs/0104-retain-reported-ai-images-for-thirty-days.md';
 const GENERATION_JOB_ADR_PATH = 'docs/adrs/0115-background-generation-jobs.md';
+// Netlify reads a scheduled function's `config` statically, so the schedule stays
+// a literal in the function file and is read back from there.
+const NETLIFY_SCHEDULE = /\bschedule:\s*'@(\w+)'/;
 
 function filesUnder(directory) {
   return readdirSync(new URL(`../../../${directory}/`, import.meta.url), { withFileTypes: true })
@@ -88,6 +96,9 @@ describe('privacy disclosure consistency', () => {
       ).toBe(true);
       expect(host.implementationEvidence.length, host.id).toBeGreaterThan(0);
     }
+    for (const { id, boundary, cleanupImplementation } of privacyInventory.retentionBoundaries) {
+      expect(cleanupImplementation !== undefined, id).toBe(boundary.cleanupCadence !== undefined);
+    }
     for (const categoryId of categoryIds) {
       expect(
         privacyInventory.outboundHosts.some(({ dataCategoryIds }) =>
@@ -116,6 +127,7 @@ describe('privacy disclosure consistency', () => {
 
     expect(privacyPage).toContain('FREE_GENERATION_LIMIT');
     expect(privacyPage).toContain('IMAGE_REPORT_RETENTION_DAYS');
+    expect(privacyPage).toContain('within {IMAGE_REPORT_REVIEW_HOURS} hours');
     expect(privacyPage).toContain('GENERATION_JOB_TTL_MS');
     expect(privacyPage).toContain('USAGE_RECORD_RETENTION_DAYS');
     expect(iosListing).toContain(`up to ${freeLimit} free creations`);
@@ -131,13 +143,27 @@ describe('privacy disclosure consistency', () => {
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'ordinary-generation-job')
         .boundary
-    ).toMatchObject({ value: Number(jobMinutes), unit: 'minutes', cleanupCadence: 'hourly' });
+    ).toMatchObject({ value: Number(jobMinutes), unit: 'minutes' });
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'confirmed-ai-report').boundary
-    ).toMatchObject({ value: Number(reportDays), unit: 'days', cleanupCadence: 'daily' });
+    ).toMatchObject({ value: Number(reportDays), unit: 'days' });
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'access-code-usage').boundary
-    ).toMatchObject({ value: Number(usageDays), unit: 'days', cleanupCadence: 'daily' });
+    ).toMatchObject({ value: Number(usageDays), unit: 'days' });
+  });
+
+  it('repeats the report review window from IMAGE_REPORT_REVIEW_HOURS in every Markdown copy', () => {
+    const hours = IMAGE_REPORT_REVIEW_HOURS;
+    const promises = [
+      [IOS_LISTING_PATH, `A human reviews reports within ${hours} hours`],
+      [ANDROID_LISTING_PATH, `Reports are reviewed within ${hours} hours`],
+      [ANDROID_DOC_PATH, `humans review within ${hours} hours`],
+      [COMPLIANCE_DOC_PATH, `human review within ${hours} hours`],
+      [API_DOC_PATH, `Humans commit to reviewing reports within ${hours} hours`],
+      [IMAGE_REPORT_ADR_PATH, `A human reviews reports within ${hours} hours`],
+      [IMAGE_REPORT_ADR_PATH, `The ${hours}-hour response commitment`],
+    ];
+    for (const [path, promise] of promises) expect(compact(read(path)), path).toContain(promise);
   });
 
   for (const retention of privacyInventory.retentionBoundaries) {
@@ -145,6 +171,22 @@ describe('privacy disclosure consistency', () => {
       for (const fact of retention.privacyPageFacts) {
         expect(compact(privacyPage)).toContain(fact);
       }
+    });
+  }
+
+  for (const retention of privacyInventory.retentionBoundaries.filter(
+    ({ cleanupImplementation }) => cleanupImplementation
+  )) {
+    it(`runs the ${retention.id} cleanup on the cadence the policy states`, () => {
+      const cadence = NETLIFY_SCHEDULE.exec(read(retention.cleanupImplementation))?.[1];
+
+      expect(cadence, retention.cleanupImplementation).toBe(retention.boundary.cleanupCadence);
+      expect(
+        retention.privacyPageFacts.some((fact) =>
+          fact.toLowerCase().includes(`${cadence} cleanup`)
+        ),
+        retention.id
+      ).toBe(true);
     });
   }
 
