@@ -5,8 +5,11 @@
   // they care about. Several sentences are load-bearing disclosures pinned
   // (whitespace-compacted) by tools/mobile/privacy-permission-inventory.json —
   // reword those only in lockstep with that inventory
-  // (tools/mobile/tests/privacy-consistency.test.mjs). Bump LAST_UPDATED
-  // whenever the wording changes.
+  // (tools/mobile/tests/privacy-consistency.test.mjs). A hash of each build's
+  // rendered policy text is pinned to LAST_UPDATED in
+  // policyRevisionsTestHarness.ts, so any change to what the page says — its
+  // own copy or a constant it interpolates — fails until the date and that
+  // revision list move together.
 
   import { onMount } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
@@ -25,7 +28,7 @@
   import { createPrivacyParentCenter } from './parentCenter.svelte';
   import PolicySummary from './PolicySummary.svelte';
 
-  const LAST_UPDATED = 'August 20, 2026';
+  const LAST_UPDATED = 'September 8, 2026';
   const DESCRIPTION =
     "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.";
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;

@@ -145,6 +145,39 @@ test('/admin logged in has no serious accessibility violations', async ({ adminP
   await expectNoSeriousViolations(page);
 });
 
+// pauseAt needs a moment still ahead of the just-installed fake clock.
+const CLOCK_PAUSE_LEAD_MS = 1000;
+
+// Every row repeats the same Copy and Copy link buttons, so each names the code
+// it copies, as Remove does. The copy is spoken through a status region that is
+// in place before it fills, because a name change on the focused button isn't
+// reliably announced. axe can't see either gap. The clipboard is stubbed and
+// the clock paused so the "Copied!" window can't close under the assertions.
+test('/admin copy actions name their code and announce the copy', async ({ adminPage: page }) => {
+  // The wide layout, where Copy and Copy link are both on the row.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + CLOCK_PAUSE_LEAD_MS);
+  const token = MANAGED_ACCESS_TOKEN;
+  const announcer = page.locator('[role="status"].visually-hidden');
+  await expect(announcer).toHaveText('');
+
+  await page.getByRole('button', { name: `Copy ${token}`, exact: true }).click();
+  await expect(announcer).toHaveText(`Copied ${token}`);
+  await expect(page.getByRole('button', { name: `Copied ${token}`, exact: true })).toHaveText(
+    'Copied!'
+  );
+
+  await page.getByRole('button', { name: `Copy link for ${token}`, exact: true }).click();
+  await expect(announcer).toHaveText(`Copied link for ${token}`);
+});
+
 test('Settings has no serious accessibility violations', async ({ page }) => {
   await seedCompletedSettingsActivitySessions(page, 5);
   await gotoApp(page);

@@ -35,11 +35,27 @@
     open: boolean;
     /** Id for the reveal cell, so the chevron's aria-controls can point at it. */
     revealId: string;
-    oncopy: (key: string, text: string) => void;
+    oncopy: (key: string, text: string, announcement: string) => void;
     onremove: (token: string) => void;
     ontoggle: () => void;
     onclose: () => void;
   } = $props();
+
+  let codeCopied = $derived(copied === copyKey(invite.token, 'code'));
+  let linkCopied = $derived(copied === copyKey(invite.token, 'url'));
+  // Each copy button names the code it acts on, as Remove does, and the name
+  // leads with the words on screen ("Copied" included) so speech input still
+  // matches it.
+  let copyCodeName = $derived(`${codeCopied ? 'Copied' : 'Copy'} ${invite.token}`);
+  let copyLinkName = $derived(`${linkCopied ? 'Copied link' : 'Copy link'} for ${invite.token}`);
+
+  function copyCode() {
+    oncopy(copyKey(invite.token, 'code'), invite.token, `Copied ${invite.token}`);
+  }
+
+  function copyLink() {
+    oncopy(copyKey(invite.token, 'url'), invite.url, `Copied link for ${invite.token}`);
+  }
 
   // Intentionally untracked: read only imperatively, to return focus to the
   // chevron when Escape collapses the reveal from one of its buttons.
@@ -63,10 +79,11 @@
   <Button
     variant="outline"
     size="sm"
-    class={['copy-code', { copied: copied === copyKey(invite.token, 'code') }]}
-    onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
+    class={['copy-code', { copied: codeCopied }]}
+    aria-label={copyCodeName}
+    onclick={copyCode}
   >
-    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+    {codeCopied ? 'Copied!' : 'Copy'}
   </Button>
 {/snippet}
 
@@ -75,18 +92,20 @@
     <button
       type="button"
       class="row-action"
-      class:copied={copied === copyKey(invite.token, 'code')}
-      onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
+      class:copied={codeCopied}
+      aria-label={copyCodeName}
+      onclick={copyCode}
     >
-      {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+      {codeCopied ? 'Copied!' : 'Copy'}
     </button>
     <button
       type="button"
       class="row-action"
-      class:copied={copied === copyKey(invite.token, 'url')}
-      onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
+      class:copied={linkCopied}
+      aria-label={copyLinkName}
+      onclick={copyLink}
     >
-      {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
+      {linkCopied ? 'Copied!' : 'Copy link'}
     </button>
     <button
       type="button"
@@ -129,12 +148,12 @@
     <button
       type="button"
       class="row-action"
-      class:copied={copied === copyKey(invite.token, 'url')}
-      aria-label={`Copy link for ${invite.token}`}
-      onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
+      class:copied={linkCopied}
+      aria-label={copyLinkName}
+      onclick={copyLink}
       onkeydown={onEscapeCollapse}
     >
-      {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
+      {linkCopied ? 'Copied!' : 'Copy link'}
     </button>
     <button
       type="button"

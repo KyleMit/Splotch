@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
 
 import PrivacyPage from './+page.svelte';
+import { describePolicyRevisions } from './policyRevisionsTestHarness';
 
 // Text is compared as rendered, never whitespace-normalized: a formatter
 // wrapping template copy leaves a newline run inside the text node, which a
@@ -29,3 +30,7 @@ describe('privacy policy report section', () => {
     );
   });
 });
+
+// The unit config compiles `__IS_CAPACITOR__` as true, so this is the native
+// render; page.webSsr.test.ts runs the same guard on the web one.
+describePolicyRevisions('native');

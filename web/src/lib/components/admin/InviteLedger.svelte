@@ -23,7 +23,7 @@
     busy: boolean;
     /** The copyKey of the action showing "Copied!", or ''. */
     copied: string;
-    oncopy: (key: string, text: string) => void;
+    oncopy: (key: string, text: string, announcement: string) => void;
     onremove: (token: string) => void;
   } = $props();
 

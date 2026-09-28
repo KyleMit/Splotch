@@ -5,15 +5,15 @@
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
 
-  // The chrome every standalone page wears: a ground, a centered sheet, a
-  // masthead (back link + crayon strip + wordmark) and a hero. Shared by
-  // /beta, /changelog, /feedback, /privacy, /design, and the admin
-  // console so a URL handed out in a store listing or a README lands somewhere
-  // recognisably Splotch either way.
+  // The chrome a standalone page wears: a ground, a centered sheet, a masthead
+  // (back link + crayon strip + wordmark) and a hero, so a URL handed out in a
+  // store listing or a README lands somewhere recognisably Splotch. The pages
+  // wearing it are the ones that import it; /design is the standalone page
+  // that doesn't, trading the masthead for its own StyleguideHeader.
   //
   // The palette is the --page-* custom properties declared in the style block
   // below, resolved from the themed app tokens; everything nested inside — the
-  // page's own body copy, RuleLabel, BetaStepLedger — reads them rather than
+  // page's own body copy, BetaStep, TocDisclosure — reads them rather than
   // restating a color. Every page wearing this shell follows the parent's
   // night-mode preference: no route pins the palette to one theme.
   interface Props {
