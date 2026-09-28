@@ -4,7 +4,12 @@ import {
   sanitizeDeviceInfo,
   type DeviceInfo,
 } from '$lib/platform/deviceReport';
-import { MAX_REPORT_MESSAGE_LENGTH, type ReportKind } from '$lib/report';
+import {
+  MAX_REPORT_MESSAGE_LENGTH,
+  parseReportKind,
+  type ReportKind,
+  type ReportRequestBody,
+} from '$lib/report';
 
 // Server-only core of the feedback flow, shared by its two front doors: the
 // `/api/report` JSON endpoint the in-app form in Settings posts to, and the
@@ -68,11 +73,11 @@ function bodyFor(
   return lines.join('\n');
 }
 
-/** The raw, untrusted fields either front door hands over, in wire shape. */
-export interface ReportInput {
-  kind: unknown;
-  message: unknown;
-  device: unknown;
+/**
+ * The raw, untrusted fields either front door hands over, keyed by the wire
+ * body's own declaration so a renamed field cannot compile at one door alone.
+ */
+export type ReportInput = Record<keyof ReportRequestBody, unknown> & {
   /**
    * Whether the reporter asked for device info. Normally redundant — a ticked
    * box is what produces `device` — but a form post with no JavaScript can
@@ -80,9 +85,7 @@ export interface ReportInput {
    * silently. Present and empty gets said so in the issue.
    */
   wantsDevice?: unknown;
-  /** Honeypot — see the quiet-accept branch in submitReport. */
-  hp: unknown;
-}
+};
 
 /**
  * `status` is the HTTP status the JSON endpoint returns and the status the form
@@ -117,8 +120,7 @@ export async function submitReport({
   wantsDevice,
   hp,
 }: ReportInput): Promise<ReportResult> {
-  const reportKind: ReportKind | null =
-    kind === 'feature' ? 'feature' : kind === 'bug' ? 'bug' : null;
+  const reportKind = parseReportKind(kind);
   if (!reportKind) {
     return { ok: false, status: 400, error: 'Please choose bug or feature.' };
   }
