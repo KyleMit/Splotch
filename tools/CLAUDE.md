@@ -111,6 +111,9 @@ entry script.
 * Every CLI script gates execution behind `isMain(import.meta.url)` (`tools/lib/proc.mjs`) and
   exports a distinctly named entry function.
 * Script options are flags via `parseArgs`; an env var is at most a documented fallback.
+* `max-lines` caps `tools/**/*.{mjs,js,ts}` at the same default as `web/src` (`eslint.config.js`).
+  The files already past it are frozen at their size in `TOOLS_GRANDFATHERED_MAX_LINES`: growing one
+  means cutting lines elsewhere in it, splitting it, or raising its number there, in the diff.
 * Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a non-zero
   exit; wrap per-item work in try/catch and report failures at the end without discarding completed
   results; never overwrite a baseline/output artifact from a run that had errors; name polling
