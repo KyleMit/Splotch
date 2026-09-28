@@ -15,7 +15,16 @@
 // time reusable: every percentile and verdict is derived in Node, so a later
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
-import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_NUMBER,
+  argFlag,
+  argNumber,
+  capture,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
@@ -349,7 +358,7 @@ export async function captureHandInput({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS)),
+  seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, POSITIVE_NUMBER),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   udid = argFlag('device-udid'),
@@ -358,7 +367,7 @@ export async function captureHandInput({
   opener = argFlag('open', argFlag('platform', 'android') === 'android' ? 'adb' : 'manual'),
   label = argFlag('label'),
   output = argFlag('output'),
-  allowForeignBuild = argFlag('allow-foreign-build'),
+  allowForeignBuild = process.argv.includes('--allow-foreign-build'),
   // `argFlag` matches `--name=value` only, so a bare flag is read from argv.
   spokenCues = process.argv.includes('--speak'),
 } = {}) {
@@ -390,7 +399,7 @@ export async function captureHandInput({
       brush,
       theme,
       undoCount: 0,
-      allowForeignBuild: allowForeignBuild !== undefined,
+      allowForeignBuild,
       nativeApp,
     },
     { buildIdentity: handBuildIdentity }

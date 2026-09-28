@@ -19,8 +19,15 @@ import { dirname, join } from 'node:path';
 import { release } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
-import { fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
-import { parsePerfArgs, requireNumberFlag } from '../lib/cli-args.mjs';
+import {
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
+import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { buildAndPreview } from '../lib/profile-preview.mjs';
 import {
   startTrace,
@@ -60,7 +67,7 @@ const entry = isMain(import.meta.url);
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // patch and base-raster bytes come directly from getUndoDebug(), because tiled
 // history does not retain one full-paper square per undo entry.
-const { flag, throttle, port, build } = parsePerfArgs({
+const { flag, numberFlag, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
   extra: [
     'history-settle-timeout-ms',
@@ -87,10 +94,10 @@ const { flag, throttle, port, build } = parsePerfArgs({
 // commit samples the gate scores are complete before this wait begins.
 // tools/perf/tests/history-settle-deadline.test.mjs holds it to that derivation.
 const DEFAULT_HISTORY_SETTLE_TIMEOUT_MS = 45_000;
-const HISTORY_SETTLE_TIMEOUT_MS = requireNumberFlag(
+const HISTORY_SETTLE_TIMEOUT_MS = numberFlag(
   'history-settle-timeout-ms',
-  flag('history-settle-timeout-ms', String(DEFAULT_HISTORY_SETTLE_TIMEOUT_MS)),
-  entry
+  DEFAULT_HISTORY_SETTLE_TIMEOUT_MS,
+  POSITIVE_NUMBER
 );
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
   new URL('../fixtures/undo-fast-set-history.seed.json', import.meta.url)
@@ -156,21 +163,17 @@ if (!engine) {
 // scribble at 120 Hz; override to explore. This is the data volume the
 // harness MUST reproduce — it's what made the replay era's stroke-end
 // keyframe builds hitch, and what the commit fold now absorbs.
-const HZ = requireNumberFlag('hz', flag('hz', '120'), entry);
+const HZ = numberFlag('hz', 120, POSITIVE_NUMBER);
 // One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
 // states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
 const FRAME_BUDGET_MS = 1000 / HZ;
-const LONG_SECONDS = requireNumberFlag('long-seconds', flag('long-seconds', '10'), entry);
-const LONG_OPS = requireNumberFlag(
-  'long-ops',
-  flag('long-ops', String(Math.round(HZ * LONG_SECONDS))),
-  entry
-); // ≈1200
+const LONG_SECONDS = numberFlag('long-seconds', 10, POSITIVE_NUMBER);
+const LONG_OPS = numberFlag('long-ops', Math.round(HZ * LONG_SECONDS), POSITIVE_INTEGER); // ≈1200
 // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
 // 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
 // heaviest single commit fold.
 const MULTI_FINGERS = 5;
-const MULTI_SECONDS = requireNumberFlag('multi-seconds', flag('multi-seconds', '4'), entry);
+const MULTI_SECONDS = numberFlag('multi-seconds', 4, POSITIVE_NUMBER);
 const MULTI_OPS_PER_FINGER = Math.round(HZ * MULTI_SECONDS);
 
 const MARGIN = 160; // keep stroke starts away from the edge-swipe guard band
@@ -252,11 +255,7 @@ const MAX_UNDO_STEPS = 60;
 // Named so the settle deadline's drift guard can read the scenario volume the
 // deadline was derived from (tools/perf/tests/history-settle-deadline.test.mjs).
 const DEFAULT_SCENARIO_STROKES = MAX_UNDO_DEPTH + 2;
-const STROKES = requireNumberFlag(
-  'strokes',
-  flag('strokes', String(DEFAULT_SCENARIO_STROKES)),
-  entry
-);
+const STROKES = numberFlag('strokes', DEFAULT_SCENARIO_STROKES, POSITIVE_INTEGER);
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));

@@ -260,10 +260,10 @@ export async function keepCaptureEvidence({
   productCommit = argFlag('product-commit'),
   target = argFlag('target'),
   filter = argFlag('filter'),
-  force = argFlag('force') !== undefined || process.argv.includes('--force'),
-  keepAll = argFlag('keep-all') !== undefined || process.argv.includes('--keep-all'),
+  force = process.argv.includes('--force'),
+  keepAll = process.argv.includes('--keep-all'),
   study = argFlag('study'),
-  allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
+  allowFailed = process.argv.includes('--allow-failed'),
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
   evidenceRoot = EVIDENCE_ROOT,

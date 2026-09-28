@@ -1,7 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  NON_NEGATIVE_INTEGER,
+  POSITIVE_INTEGER,
+  ROOT,
+  fail,
+  isMain,
+  pollUntil,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
   ERASER_REFILL_IDLE_FRAMES,
@@ -606,7 +615,7 @@ export function handCaptureSecondsProblem(seconds) {
 }
 
 export async function runIpadXcuitest(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     {
       entry: true,
       extra: [
@@ -671,32 +680,17 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     fail('--bundled-report requires a local --device-id= capture with --native-app');
   }
   if (handInput && !bundledReport) fail('--hand-input requires --bundled-report');
-  const handSeconds = Number.parseInt(flag('seconds', String(HAND_DEFAULT_SECONDS)), 10);
+  const handSeconds = numberFlag('seconds', HAND_DEFAULT_SECONDS, POSITIVE_INTEGER);
   const handSecondsProblem = handCaptureSecondsProblem(handSeconds);
   if (handSecondsProblem) fail(handSecondsProblem);
   const requestedOrientation = parseCampaignOrientation(flag('orientation'));
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
-  const gestureRepeats = Number.parseInt(flag('gesture-repeats', '1'), 10);
-  if (!Number.isSafeInteger(gestureRepeats) || gestureRepeats < 1) {
-    fail('--gesture-repeats must be a positive integer');
-  }
-  const repeatPauseMs = Number.parseInt(flag('repeat-pause-ms', '0'), 10);
-  if (!Number.isSafeInteger(repeatPauseMs) || repeatPauseMs < 0) {
-    fail('--repeat-pause-ms must be a non-negative integer');
-  }
-  const undoCount = Number.parseInt(flag('undo-count', '0'), 10);
-  if (!Number.isSafeInteger(undoCount) || undoCount < 0) {
-    fail('--undo-count must be a non-negative integer');
-  }
-  const undoPauseMs = Number.parseInt(flag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS)), 10);
-  if (!Number.isSafeInteger(undoPauseMs) || undoPauseMs < 0) {
-    fail('--undo-pause-ms must be a non-negative integer');
-  }
-  const historySettleMs = Number.parseInt(flag('history-settle-ms', '0'), 10);
-  if (!Number.isSafeInteger(historySettleMs) || historySettleMs < 0) {
-    fail('--history-settle-ms must be a non-negative integer');
-  }
+  const gestureRepeats = numberFlag('gesture-repeats', 1, POSITIVE_INTEGER);
+  const repeatPauseMs = numberFlag('repeat-pause-ms', 0, NON_NEGATIVE_INTEGER);
+  const undoCount = numberFlag('undo-count', 0, NON_NEGATIVE_INTEGER);
+  const undoPauseMs = numberFlag('undo-pause-ms', UNDO_ACTION_PAUSE_MS, NON_NEGATIVE_INTEGER);
+  const historySettleMs = numberFlag('history-settle-ms', 0, NON_NEGATIVE_INTEGER);
   const brush = flag('brush', 'pen');
   const brushSelector = BRUSH_BUTTON_BY_MODE[brush];
   if (!brushSelector) {

@@ -24,7 +24,15 @@ import {
 } from '../ios/capture-xcuitest-actions.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { assertServedBuildIsFresh, buildAndPreview } from '../lib/profile-preview.mjs';
-import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
+  ROOT,
+  fail,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
@@ -53,26 +61,11 @@ const ENGINES = {
   webkit,
 };
 
-function positiveNumber(value, name) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) fail(`--${name} must be a positive number`);
-  return parsed;
-}
-
-function positiveInteger(value, name) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
-  return parsed;
-}
-
 export function resolveViewport(value) {
   if (!value) return DEFAULT_VIEWPORT;
-  const match = /^(\d+)x(\d+)$/.exec(value);
+  const match = /^([1-9]\d*)x([1-9]\d*)$/.exec(value);
   if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT`);
-  return {
-    width: positiveInteger(match[1], 'viewport width'),
-    height: positiveInteger(match[2], 'viewport height'),
-  };
+  return { width: Number(match[1]), height: Number(match[2]) };
 }
 
 export function hasMinimumActionRepeats(repeats) {
@@ -137,7 +130,7 @@ export function desktopActionsArtifact({
 }
 
 export async function runDesktopActions(argv = process.argv.slice(2)) {
-  const { flag, has, port, build } = parsePerfArgs(
+  const { flag, numberFlag, has, port, build } = parsePerfArgs(
     {
       entry: true,
       extra: [
@@ -161,11 +154,12 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
   const engine = ENGINES[engineName];
   if (!engine) fail(`--engine must be one of ${Object.keys(ENGINES).join(', ')}`);
   const viewport = resolveViewport(flag('viewport'));
-  const deviceScaleFactor = positiveNumber(
-    flag('device-scale-factor', DEFAULT_DEVICE_SCALE_FACTOR),
-    'device-scale-factor'
+  const deviceScaleFactor = numberFlag(
+    'device-scale-factor',
+    DEFAULT_DEVICE_SCALE_FACTOR,
+    POSITIVE_NUMBER
   );
-  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
   if (!hasMinimumActionRepeats(repeats)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }

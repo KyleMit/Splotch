@@ -2,9 +2,21 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { pathToFileURL } from 'node:url';
-import { capture, hasCommand, isMain } from '../lib/proc.mjs';
+import {
+  NON_NEGATIVE_INTEGER,
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  capture,
+  hasCommand,
+  isMain,
+  parseNumberFlag,
+  readValueFlag,
+} from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
   '$HOME',
@@ -154,5 +166,120 @@ describe('command helpers', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('left right');
+  });
+});
+// Each spelling below once read as a plausible value or as absent, so a run
+// captured the wrong device, port, or URL and its artifact still looked valid.
+describe('readValueFlag', () => {
+  it('keeps every = after the first as part of the value', () => {
+    const url = 'http://192.168.1.5:4173/?probe=abc&x=1';
+
+    expect(readValueFlag([`--url=${url}`], 'url')).toBe(url);
+    expect(readValueFlag(['--label=a=b'], 'label')).toBe('a=b');
+  });
+
+  it('reads an absent flag as undefined without matching a longer name', () => {
+    expect(readValueFlag([], 'device')).toBeUndefined();
+    expect(readValueFlag(['--device-id=abc', '--device-id'], 'device')).toBeUndefined();
+  });
+
+  it.each([
+    ['bare', ['--device']],
+    ['space-separated', ['--device', 'ipad']],
+  ])('rejects the %s form of a value flag', (_form, argv) => {
+    expect(() => readValueFlag(argv, 'device')).toThrow(
+      '--device takes a value: write --device=<value>'
+    );
+  });
+
+  it('rejects an empty value', () => {
+    expect(() => readValueFlag(['--throttle='], 'throttle')).toThrow(
+      '--throttle= is empty: give it a value or leave it out'
+    );
+  });
+});
+
+describe('argFlag', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reads the given argv, falling back when the flag is absent', () => {
+    expect(argFlag('url', 'fallback', ['node', 'tool.mjs', '--url=http://h/?a=b'])).toBe(
+      'http://h/?a=b'
+    );
+    expect(argFlag('url', 'fallback', ['node', 'tool.mjs'])).toBe('fallback');
+  });
+
+  it('exits with the one-line grammar error for a bare value flag', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    expect(() => argFlag('port', '4173', ['node', 'tool.mjs', '--port', '5000'])).toThrow(
+      'process exited'
+    );
+    expect(error).toHaveBeenCalledWith('--port takes a value: write --port=<value>');
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('parseNumberFlag', () => {
+  it.each([
+    ['4', POSITIVE_INTEGER, 4],
+    ['0', NON_NEGATIVE_INTEGER, 0],
+    ['2.5', POSITIVE_NUMBER, 2.5],
+    ['65535', TCP_PORT, 65_535],
+  ])('accepts %j', (raw, rule, expected) => {
+    expect(parseNumberFlag('value', raw, rule)).toBe(expected);
+  });
+
+  it.each([
+    ['4junk', POSITIVE_INTEGER, 'an integer >= 1'],
+    ['', POSITIVE_INTEGER, 'an integer >= 1'],
+    [' 4', POSITIVE_INTEGER, 'an integer >= 1'],
+    ['-1', NON_NEGATIVE_INTEGER, 'an integer >= 0'],
+    ['2.5', POSITIVE_INTEGER, 'an integer >= 1'],
+    ['0', POSITIVE_NUMBER, 'a number > 0'],
+    ['Infinity', POSITIVE_NUMBER, 'a number > 0'],
+    ['0x10', POSITIVE_NUMBER, 'a number > 0'],
+    ['1e3', POSITIVE_NUMBER, 'a number > 0'],
+    ['41x', TCP_PORT, 'an integer >= 1 and <= 65535'],
+    ['0', TCP_PORT, 'an integer >= 1 and <= 65535'],
+    ['65536', TCP_PORT, 'an integer >= 1 and <= 65535'],
+    ['99999999999999999999', POSITIVE_INTEGER, 'an integer >= 1'],
+  ])('rejects %j', (raw, rule, described) => {
+    expect(() => parseNumberFlag('value', raw, rule)).toThrow(
+      `--value must be ${described}, got "${raw}"`
+    );
+  });
+});
+
+describe('argNumber', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns the fallback unparsed when the flag is absent', () => {
+    expect(argNumber('repeats', 4, POSITIVE_INTEGER, ['node', 'tool.mjs'])).toBe(4);
+    expect(argNumber('repeats', undefined, POSITIVE_INTEGER, ['node', 'tool.mjs'])).toBe(undefined);
+  });
+
+  it('parses a present value by its rule', () => {
+    expect(argNumber('repeats', 4, POSITIVE_INTEGER, ['--repeats=6'])).toBe(6);
+  });
+
+  it('exits on a value its rule rejects', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    expect(() => argNumber('repeats', 4, POSITIVE_INTEGER, ['--repeats=4junk'])).toThrow(
+      'process exited'
+    );
+    expect(error).toHaveBeenCalledWith('--repeats must be an integer >= 1, got "4junk"');
+    expect(exit).toHaveBeenCalledWith(1);
   });
 });

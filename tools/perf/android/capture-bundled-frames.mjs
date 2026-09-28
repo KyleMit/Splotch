@@ -22,7 +22,17 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { ROOT, argFlag, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  POSITIVE_NUMBER,
+  ROOT,
+  TCP_PORT,
+  argFlag,
+  argNumber,
+  isMain,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import { pollFor } from '../split-capture/lib/poll.mjs';
 import {
   androidGestureInstructions,
@@ -566,12 +576,12 @@ export function brushPickScript(brush) {
 export async function captureBundledFrames({
   serial = argFlag('device-serial'),
   brush = argFlag('brush', 'pen'),
-  repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
+  repeats = argNumber('gesture-repeats', GESTURE_REPEATS, POSITIVE_INTEGER),
   orientation = parseCampaignOrientation(argFlag('orientation')) ?? 'PORTRAIT',
   requestedTheme = argFlag('theme', 'light'),
   input = argFlag('input', 'adb'),
-  seconds = Number(argFlag('seconds', HAND_DEFAULT_SECONDS)),
-  forwardPort = Number(argFlag('cdp-forward-port', DEFAULT_CDP_FORWARD_PORT)),
+  seconds = argNumber('seconds', HAND_DEFAULT_SECONDS, POSITIVE_NUMBER),
+  forwardPort = argNumber('cdp-forward-port', DEFAULT_CDP_FORWARD_PORT, TCP_PORT),
   label = argFlag('label'),
   output = argFlag('output'),
 } = {}) {

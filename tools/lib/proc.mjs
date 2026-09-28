@@ -58,14 +58,63 @@ export function requireEnv(name, hint) {
   return value;
 }
 
-// Reads `--name=value` ONLY. A bare `--name` is invisible to this and comes back
-// as the fallback, so `argFlag('x') !== undefined` is never true for one — use
-// `process.argv.includes('--x')` for a boolean flag. Worth stating here because
-// the failure is silent and directional: a bare `--native-app` read as absent
-// captured Safari while the artifact reported a WebView runtime.
-export function argFlag(name, fallback) {
-  const prefix = `--${name}=`;
-  return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;
+// The one value-flag grammar the tools/ flag readers share: `--name=value`, with
+// the value everything after the first `=`, so `--url=http://h/?a=b` survives
+// whole. A bare `--name` — which is also how the space form `--name value`
+// arrives — and an empty `--name=` both throw instead of reading as absent,
+// because that silent fallback is directional: a bare `--native-app` read as
+// absent captured Safari while the artifact reported a WebView runtime. A
+// present-or-absent switch is not a value flag; read it with
+// `argv.includes('--name')`.
+export function readValueFlag(argv, name) {
+  const bare = `--${name}`;
+  if (argv.includes(bare)) throw new Error(`${bare} takes a value: write ${bare}=<value>`);
+  const prefix = `${bare}=`;
+  const value = argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+  if (value === '') throw new Error(`${prefix} is empty: give it a value or leave it out`);
+  return value;
+}
+
+export function argFlag(name, fallback, argv = process.argv) {
+  return parseOrFail(() => readValueFlag(argv, name)) ?? fallback;
+}
+
+// Number() alone reads '' as 0 and accepts `0x10`, `1e3`, and `Infinity`;
+// parseInt reads `4junk` as 4. Each is a plausible wrong run rather than an
+// error, so a numeric flag value is plain digits, with one decimal point
+// allowed only where the rule is not integer-only.
+const INTEGER_TEXT = /^-?\d+$/;
+const DECIMAL_TEXT = /^-?\d+(\.\d+)?$/;
+const MAX_TCP_PORT = 65_535;
+
+// Rules for parseNumberFlag: `integer`, inclusive `min`/`max`, exclusive `above`.
+export const POSITIVE_INTEGER = { integer: true, min: 1 };
+export const NON_NEGATIVE_INTEGER = { integer: true, min: 0 };
+export const POSITIVE_NUMBER = { above: 0 };
+export const TCP_PORT = { integer: true, min: 1, max: MAX_TCP_PORT };
+
+function describeNumberRule({ integer = false, min, above, max }) {
+  const bounds = [
+    min === undefined ? null : `>= ${min}`,
+    above === undefined ? null : `> ${above}`,
+    max === undefined ? null : `<= ${max}`,
+  ].filter(Boolean);
+  return [integer ? 'an integer' : 'a number', bounds.join(' and ')].filter(Boolean).join(' ');
+}
+
+export function parseNumberFlag(name, raw, rule) {
+  const { integer = false, min = -Infinity, above = -Infinity, max = Infinity } = rule;
+  const value = (integer ? INTEGER_TEXT : DECIMAL_TEXT).test(raw) ? Number(raw) : Number.NaN;
+  const inRange = value >= min && value > above && value <= max;
+  if (!inRange || (integer && !Number.isSafeInteger(value))) {
+    throw new Error(`--${name} must be ${describeNumberRule(rule)}, got "${raw}"`);
+  }
+  return value;
+}
+
+export function argNumber(name, fallback, rule, argv = process.argv) {
+  const raw = argFlag(name, undefined, argv);
+  return raw === undefined ? fallback : parseOrFail(() => parseNumberFlag(name, raw, rule));
 }
 
 // Run a command with live output; exits the script with the command's exit

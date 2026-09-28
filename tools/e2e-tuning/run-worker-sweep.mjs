@@ -45,7 +45,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { argFlag, fail, isMain, ROOT, runMain } from '../lib/proc.mjs';
+import { POSITIVE_INTEGER, argFlag, argNumber, fail, isMain, ROOT, runMain } from '../lib/proc.mjs';
 
 const RUN_WEB_TOOL = join(ROOT, 'tools', 'run-web-tool.mjs');
 
@@ -256,13 +256,12 @@ export function sweepSummaryMarkdown(total) {
 if (isMain(import.meta.url)) {
   // async because runMain chains .catch onto its callback's return value.
   runMain(async () => {
-    const workers = Number(argFlag('workers'));
-    const reps = Number(argFlag('reps', '5'));
+    const workers = argNumber('workers', undefined, POSITIVE_INTEGER);
+    const reps = argNumber('reps', 5, POSITIVE_INTEGER);
     const grep = argFlag('grep', '');
     const prebuilt = process.argv.includes('--prebuilt');
     const outDir = argFlag('out', join(ROOT, 'sweep-runs'));
-    if (!Number.isInteger(workers) || workers < 1) fail('--workers=<positive integer> is required');
-    if (!Number.isInteger(reps) || reps < 1) fail('--reps must be a positive integer');
+    if (workers === undefined) fail('--workers=<positive integer> is required');
     const summaries = runSweep({ workers, reps, grep, prebuilt, outDir });
     // Individual red reps are measurement data, but a sweep in which nothing
     // ever executed measured nothing — that is a broken harness, and it must

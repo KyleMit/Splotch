@@ -32,7 +32,16 @@
 import { chromium, firefox, webkit } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  NON_NEGATIVE_INTEGER,
+  POSITIVE_NUMBER,
+  ROOT,
+  fail,
+  isMain,
+  pollUntil,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -80,32 +89,15 @@ const ENGINES = {
   firefox: { launcher: firefox, hasCdp: false },
 };
 
-function positiveNumber(value, label) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) fail(`${label} must be a positive number`);
-  return number;
-}
-
-function nonNegativeInteger(value, label) {
-  const number = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(number) || number < 0) {
-    fail(`${label} must be a non-negative integer`);
-  }
-  return number;
-}
-
 function resolveViewport(value) {
   if (!value) return IPAD_PRO_VIEWPORT;
-  const match = /^(\d+)x(\d+)$/.exec(value);
+  const match = /^([1-9]\d*)x([1-9]\d*)$/.exec(value);
   if (!match) fail(`--viewport=${value} must use WIDTHxHEIGHT, for example 1366x915`);
-  return {
-    width: positiveNumber(match[1], 'viewport width'),
-    height: positiveNumber(match[2], 'viewport height'),
-  };
+  return { width: Number(match[1]), height: Number(match[2]) };
 }
 
 export async function runFramesLocal(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port, throttle } = parsePerfArgs(
     {
       entry: true,
       throttleDefault: 1,
@@ -141,7 +133,6 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       `--engine=${engineName} is not known — expected one of ${Object.keys(ENGINES).join(', ')}`
     );
   }
-  const { throttle } = parsePerfArgs({ throttleDefault: 1 }, argv);
   if (throttle.active && !engine.hasCdp) {
     fail(`--throttle needs CDP, which ${engineName} has none of. Use --engine=chromium.`);
   }
@@ -150,21 +141,16 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   const url = externalUrl
     ? new URL(externalUrl).toString()
     : `http://localhost:${port}${APP_URL_PATH}`;
-  const contactSeconds = Number(flag('contact-seconds', DEFAULT_CONTACT_SECONDS));
-  const drive = flag('drive', 'mixed');
+  const contactSeconds = numberFlag('contact-seconds', DEFAULT_CONTACT_SECONDS, POSITIVE_NUMBER);
+  // A bare `--drive` means the default mix, as it does for perf:ios:webkit:frames.
+  const drive = has('drive') ? 'mixed' : flag('drive', 'mixed');
   const brush = flag('brush', 'pen');
-  const driveHz = flag('drive-hz') && Number(flag('drive-hz'));
+  const driveHz = numberFlag('drive-hz', undefined, POSITIVE_NUMBER);
   const viewport = resolveViewport(flag('viewport'));
-  const deviceScaleFactor = positiveNumber(
-    flag('device-scale-factor', IPAD_PRO_SCALE),
-    'device scale factor'
-  );
+  const deviceScaleFactor = numberFlag('device-scale-factor', IPAD_PRO_SCALE, POSITIVE_NUMBER);
   const headless = !has('headed');
-  const undoCount = nonNegativeInteger(flag('undo-count', '0'), '--undo-count');
-  const undoPauseMs = nonNegativeInteger(
-    flag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS)),
-    '--undo-pause-ms'
-  );
+  const undoCount = numberFlag('undo-count', 0, NON_NEGATIVE_INTEGER);
+  const undoPauseMs = numberFlag('undo-pause-ms', UNDO_ACTION_PAUSE_MS, NON_NEGATIVE_INTEGER);
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const label = flag('label');
   const probeConfig = probeConfigScript({

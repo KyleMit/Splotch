@@ -1,6 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  ROOT,
+  fail,
+  isMain,
+  pollUntil,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
 import {
   IOS_ACTION_GATE_ALLOWANCES,
   MIN_GATED_SAMPLES,
@@ -166,12 +174,6 @@ function webContextForClient(client, contexts) {
     throw new Error(`Appium reported no unambiguous WEBVIEW context: ${contexts.join(', ')}`);
   }
   return webContext;
-}
-
-function positiveInteger(value, name) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
-  return parsed;
 }
 
 export function selectedActions(value) {
@@ -2556,7 +2558,7 @@ export async function runActionSweep({
 }
 
 export async function runIpadActions(argv = process.argv.slice(2)) {
-  const { flag, has, port } = parsePerfArgs(
+  const { flag, numberFlag, has, port } = parsePerfArgs(
     {
       entry: true,
       extra: [
@@ -2593,7 +2595,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
   }
-  const repeats = positiveInteger(flag('repeats', '4'), 'repeats');
+  const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
   if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
