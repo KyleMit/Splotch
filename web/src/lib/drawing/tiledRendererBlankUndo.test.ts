@@ -1,9 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LIVE_TILE_COUNT } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
-import { loadFreshTiledRenderer, type TiledRendererModule } from './tiledRendererTestHarness';
+import {
+  installTiledRendererTestHarness,
+  loadFreshTiledRenderer,
+  rendererElements,
+  type TiledRendererModule,
+} from './tiledRendererTestHarness';
 
 vi.mock('./crayonBrush', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./crayonBrush')>()),
@@ -27,7 +31,28 @@ let scanTiledRendererIsEmpty: TiledRendererModule['scanTiledRendererIsEmpty'];
 let tiledHistoryDebug: TiledRendererModule['tiledHistoryDebug'];
 let undoTiledCommand: TiledRendererModule['undoTiledCommand'];
 
-let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
+// A canvas holds ink once a test marks it or a drawImage copies an inked
+// source onto it; clearRect blanks it. getImageData reports ink as one opaque
+// pixel, which is all the renderer's emptiness scan looks for.
+const inkedCanvases = new WeakSet<CanvasImageSource>();
+
+installTiledRendererTestHarness(
+  () => renderer,
+  (canvas) => ({
+    clearRect: vi.fn(() => {
+      inkedCanvases.delete(canvas);
+    }),
+    drawImage: vi.fn((source: CanvasImageSource) => {
+      if (inkedCanvases.has(source)) inkedCanvases.add(canvas);
+      else inkedCanvases.delete(canvas);
+    }),
+    getImageData(_x: number, _y: number, width: number, height: number) {
+      const data = new Uint8ClampedArray(width * height * 4);
+      if (inkedCanvases.has(canvas)) data[3] = 255;
+      return { data };
+    },
+  })
+);
 
 beforeEach(async () => {
   renderer = await loadFreshTiledRenderer();
@@ -45,90 +70,7 @@ beforeEach(async () => {
     tiledHistoryDebug,
     undoTiledCommand,
   } = renderer);
-  originalGetContext = HTMLCanvasElement.prototype.getContext;
-  (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
-    this: HTMLCanvasElement,
-    kind: string
-  ) {
-    if (kind !== '2d') return null;
-    const canvas = this as HTMLCanvasElement & {
-      _ctx?: CanvasRenderingContext2D;
-      _testHasInk?: boolean;
-    };
-    if (canvas._ctx) return canvas._ctx;
-    let transform = new DOMMatrix();
-    const context = {
-      canvas,
-      lineCap: '',
-      lineJoin: '',
-      globalAlpha: 1,
-      globalCompositeOperation: 'source-over',
-      fillStyle: '',
-      save() {},
-      restore() {},
-      beginPath() {},
-      moveTo() {},
-      quadraticCurveTo() {},
-      stroke() {},
-      rect() {},
-      clip() {},
-      clearRect: vi.fn(() => {
-        canvas._testHasInk = false;
-      }),
-      drawImage: vi.fn((source: CanvasImageSource) => {
-        canvas._testHasInk = Boolean(
-          (source as HTMLCanvasElement & { _testHasInk?: boolean })._testHasInk
-        );
-      }),
-      getImageData(_x: number, _y: number, width: number, height: number) {
-        const data = new Uint8ClampedArray(width * height * 4);
-        if (canvas._testHasInk) data[3] = 255;
-        return { data };
-      },
-      arc() {},
-      fill() {},
-      setTransform(a: number, b: number, c: number, d: number, e: number, f: number) {
-        transform = new DOMMatrix([a, b, c, d, e, f]);
-      },
-      getTransform() {
-        return transform;
-      },
-    } as unknown as CanvasRenderingContext2D;
-    canvas._ctx = context;
-    return context;
-  };
 });
-
-afterEach(() => {
-  renderer.detachTiledRenderer();
-  HTMLCanvasElement.prototype.getContext = originalGetContext;
-  vi.unstubAllGlobals();
-});
-
-function rendererElements() {
-  const host = document.createElement('div');
-  const canvas = document.createElement('canvas');
-  canvas.width = 400;
-  canvas.height = 400;
-  host.append(canvas);
-  for (let index = 0; index < LIVE_TILE_COUNT; index++) {
-    const tile = document.createElement('canvas');
-    tile.dataset.liveTile = '';
-    tile.hidden = true;
-    host.append(tile);
-
-    const bottom = document.createElement('canvas');
-    bottom.dataset.liveCrayonBottom = '';
-    bottom.hidden = true;
-    host.append(bottom);
-
-    const top = document.createElement('canvas');
-    top.dataset.liveCrayonTop = '';
-    top.hidden = true;
-    host.append(top);
-  }
-  return { host, canvas };
-}
 
 function draw(op: StrokeOp, wasEmpty: boolean) {
   beginTiledCommand(wasEmpty);
@@ -246,9 +188,7 @@ describe('blank tiled undo', () => {
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(4);
     expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
 
-    for (const tile of tiles.slice(1, 4)) {
-      (tile as HTMLCanvasElement & { _testHasInk?: boolean })._testHasInk = true;
-    }
+    for (const tile of tiles.slice(1, 4)) inkedCanvases.add(tile);
     draw(eraser, true);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
     expect(scanTiledRendererIsEmpty(1)).toBe(true);
