@@ -3,6 +3,7 @@ import {
   claimJob,
   completeJob,
   isGenerationWork,
+  loggableJobError,
   takeJobInput,
   verifyWorkTicket,
   WORK_TICKET_HEADER,
@@ -106,7 +107,7 @@ export default async (request: Request): Promise<Response> => {
     // a child watching an outcome that keeps being overwritten. So every failure
     // is recorded as this job's answer and reported as success to the platform.
     const reason = cause instanceof Error ? cause.message : String(cause);
-    console.error(`[generate-image-background] ${jobId} failed: ${reason}`);
+    console.error(`[generate-image-background] a job failed: ${loggableJobError(cause)}`);
     if (claimId)
       await completeJob(jobId, claimId, { status: 'error', reason }, null).catch(() => {
         // Nothing left to do: the poll falls through to `expired` on its own.

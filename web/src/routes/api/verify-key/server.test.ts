@@ -1,9 +1,13 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AiImageProvider } from '$lib/server/ai/provider';
 
+// Typed against the functions they replace, so a changed server result shape
+// fails type-check here instead of these tests feeding the route a stale one.
+// Inline `import()` types where a stub shares the real function's name.
 const { rateLimit, verifyKey } = vi.hoisted(() => ({
-  rateLimit: vi.fn(),
-  verifyKey: vi.fn(),
+  rateLimit: vi.fn<typeof import('$lib/server/rateLimit').rateLimit>(),
+  verifyKey: vi.fn<AiImageProvider['verifyKey']>(),
 }));
 
 vi.mock('$lib/server/rateLimit', () => ({ rateLimit }));
