@@ -1,8 +1,18 @@
+import { readString, removeKey, type StorageKey } from '../storage';
+
 // The in-memory mirror of a secret that lives in secure storage: the settings
 // module owns the value, and the coordinator is its only production writer.
 export interface CredentialMirror {
   read(): string;
   write(value: string): void;
+}
+
+interface StoredCredential {
+  load(): Promise<string | null>;
+  // Where an earlier build kept the credential in plaintext localStorage.
+  legacyKey: StorageKey;
+  // A stored value this recognises is forgotten instead of restored.
+  isRetired?(stored: string): boolean;
 }
 
 export function createSecureCredentialCoordinator(
@@ -62,5 +72,28 @@ export function createSecureCredentialCoordinator(
     });
   }
 
-  return { setCredential, runHydration };
+  // Pull the stored credential into the mirror on boot. One-time migration: a
+  // plaintext copy an earlier build left moves into secure storage before it
+  // is scrubbed, so a failed secure write rejects with the plaintext intact
+  // for a later launch to retry.
+  function hydrate({ load, legacyKey, isRetired }: StoredCredential) {
+    return runHydration(async (ownsHydration) => {
+      let stored = await load();
+      const legacy = readString(legacyKey, '');
+      if (!ownsHydration()) return;
+
+      if (!stored && legacy && !mirror.read()) {
+        await persistCredential(legacy);
+        stored = legacy;
+      }
+
+      if (legacy) removeKey(legacyKey);
+
+      if (mirror.read() || !ownsHydration() || !stored) return;
+      if (isRetired?.(stored)) await persistCredential('');
+      else mirror.write(stored);
+    });
+  }
+
+  return { setCredential, runHydration, hydrate };
 }
