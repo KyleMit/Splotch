@@ -22,7 +22,8 @@ Where things live (full file-by-file map: `architecture` skill):
   behind an exported `initX()` a route must remember to call (see `layout.svelte.ts`,
   `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
   one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
-  could miss an event that fires before hydration), but its state seeding stays behind
+  could miss an event that fires before hydration, and `web/tests/startup-bundle.spec.ts` fails if
+  the module leaves the modulepreloaded startup set), but its state seeding stays behind
   `initInstallPrompt()`, called from `lib/boot/webOnlyServices.ts` — kept split for now to avoid
   touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
   derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in
@@ -40,14 +41,14 @@ Where things live (full file-by-file map: `architecture` skill):
   finish without allowing its result to mutate the new visit. An in-memory mirror of persisted state
   lives no longer than the storage fact it mirrors: failed or superseded reads do not prove absence,
   and writes/hydrations carry ownership checks.
-* `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
-  `routes/+page.svelte`'s `onMount`: `hydrateSettings()`, then `mountBootHiddenOverlays()` (the idle
-  overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`, `initWebOnlyServices()`
-  (PWA updates + install prompt), and `installUndoShortcut()` (window-level Ctrl/Cmd+Z, so it keeps
-  working even while `ActionsPanel` isn't the one mounting it) — the last five return the teardowns
-  the route collects and runs on unmount. This is page-lifecycle-scoped imperative wiring — the
-  counterpart to the self-initializing stores above, not an exception to them: it needs
-  mount/unmount teardown, which is exactly what the route's `onMount` provides.
+* `lib/boot/` — the drawing route's boot steps as named helpers, started from
+  `routes/+page.svelte`'s `onMount`; the `boot/` row of `docs/ARCHITECTURE.md` lists them in the
+  order they start and says which one runs outside `onMount`. The route collects a teardown from
+  each `onMount` step after `hydrateSettings()` (a returned function, or a returned controller's
+  `stop`) and runs them on unmount; the `$effect`s `installSettledInEffects()` creates belong to the
+  component instead. This is page-lifecycle-scoped imperative wiring — the counterpart to the
+  self-initializing stores above, not an exception to them: it needs mount/unmount teardown, which
+  is exactly what the route's `onMount` provides.
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;

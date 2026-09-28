@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { networkState } from './state/network.svelte';
 import { FREE_GENERATION_LIMIT } from './freeGenerations';
 import { freeGenerationsState } from './state/freeGenerations.svelte';
 import {
@@ -36,7 +35,7 @@ beforeEach(() => {
   setAiImage(true);
   settingsState.mirrorAiAccessToken('');
   settingsState.mirrorAiUserApiKey('');
-  networkState.setOnline(true);
+  window.dispatchEvent(new Event('online'));
   freeGenerationsState.setFreeGenerationsRemaining(FREE_GENERATION_LIMIT);
   selectBrush('pen');
 });

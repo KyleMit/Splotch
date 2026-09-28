@@ -60,6 +60,16 @@ function deferredIconPathMarker(name: string): string {
   return pathData.slice(0, DEFERRED_ICON_MARKER_LENGTH);
 }
 
+// The positive twin of the markers above: modules that must stay ON the
+// startup path. ADR-0039: install.svelte.ts registers its one-shot
+// `beforeinstallprompt` listener at module evaluation, which only beats the
+// event while the module is modulepreloaded. Behind a lazy import every other
+// gate still passes, while Chromium's one-tap Install silently falls back to
+// the browser-menu hint.
+const STARTUP_REQUIRED_MARKERS: Record<string, string> = {
+  'install.svelte.ts': 'beforeinstallprompt',
+};
+
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');
 
 function modulepreloadHrefs(): string[] {
@@ -68,6 +78,19 @@ function modulepreloadHrefs(): string[] {
     .map((m) => /href="([^"]+)"/.exec(m[0])?.[1])
     .filter((href): href is string => !!href);
 }
+
+test('modules that must register before hydration stay in the prerendered modulepreload list', () => {
+  const chunks = modulepreloadHrefs().map((href) =>
+    readFileSync(`${clientDir}/${href.replace(/^\.\//, '')}`, 'utf8')
+  );
+  expect(chunks.length).toBeGreaterThan(0);
+  for (const [module, marker] of Object.entries(STARTUP_REQUIRED_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `${module} (marker "${marker}") left every modulepreloaded chunk — its module-load listener now registers after the event it must catch`
+    ).toBe(true);
+  }
+});
 
 test('the save pipeline stays out of the prerendered modulepreload list', () => {
   const hrefs = modulepreloadHrefs();
