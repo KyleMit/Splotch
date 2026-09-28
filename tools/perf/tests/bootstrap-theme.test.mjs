@@ -19,7 +19,7 @@ import { REDUCE_MOTION_STORAGE_KEY } from '../lib/reduce-motion.mjs';
 
 const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
 
-function paintShell({ compact, startingTheme, lazySettings = false }) {
+function paintShell({ compact, startingTheme, lazySettings = false, settingsOpensAfterMs = 0 }) {
   document.documentElement.dataset.theme = startingTheme ?? '';
   document.body.innerHTML = `
     <canvas id="drawingCanvas"></canvas>
@@ -72,11 +72,16 @@ function paintShell({ compact, startingTheme, lazySettings = false }) {
   document.elementFromPoint = () => document.querySelector('.canvas-stack');
   window.__committedBrushMode = () => 'pen';
 
+  let settingsClicks = 0;
   document.querySelector('button[aria-label="Settings"]').addEventListener('click', () => {
-    const modal = mountSettings();
-    modal.open = true;
+    settingsClicks += 1;
+    setTimeout(() => {
+      const modal = mountSettings();
+      modal.open = true;
+    }, settingsOpensAfterMs);
   });
   if (!lazySettings) mountSettings();
+  return { settingsClicks: () => settingsClicks };
 }
 
 // The bootstrap now refuses to act for a page it was not opened for, so the
@@ -421,6 +426,26 @@ describe('the bootstrap actually setting the theme', () => {
       ]);
       expect(outcome).toMatchObject({ kind: 'ready', ready: { resolvedTheme: 'dark' } });
       expect(document.querySelector('#settingsModal')).not.toBeNull();
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // A second click before the first has opened the dialog is what the retry
+  // spacing exists to prevent; the in-page poll is shorter than that spacing.
+  it(
+    'clicks Settings once when the dialog takes a moment to open',
+    async () => {
+      const shell = paintShell({
+        compact: true,
+        startingTheme: 'light',
+        lazySettings: true,
+        settingsOpensAfterMs: 200,
+      });
+
+      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'slow-settings' });
+
+      expect((await readyPosted).resolvedTheme).toBe('dark');
+      expect(shell.settingsClicks()).toBe(1);
     },
     BOOTSTRAP_TIMEOUT_MS
   );

@@ -49,8 +49,14 @@ const READY_TIMEOUT_MS = 25_000;
 const HYDRATION_TIMEOUT_MS = 20_000;
 const BRUSH_COMMIT_TIMEOUT_MS = 12_000;
 const THEME_TIMEOUT_MS = 20_000;
+// How often an in-page wait re-tests its condition: short enough that a ready
+// page is not left idle, long enough not to spin.
+const BOOTSTRAP_POLL_MS = 150;
 // Long enough that a landed click opens the dialog before another is sent.
 const SETTINGS_OPEN_RETRY_MS = 400;
+// After Settings reports closed, its close transition still has to leave the
+// paper before the first measured touch lands on it.
+const SETTINGS_CLOSE_SETTLE_MS = 400;
 const BRUSH_ATTEMPTS = 4;
 // One settle after the fill, so the paint is committed before contact banking
 // starts — the same 400 ms the unverified fill always waited.
@@ -165,11 +171,11 @@ export function pageBootstrapSource() {
     { capture: true, passive: true }
   );
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const until = async (test, timeoutMs = ${READY_TIMEOUT_MS}) => {
+  const until = async (test, timeoutMs = ${READY_TIMEOUT_MS}, pollMs = ${BOOTSTRAP_POLL_MS}) => {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       if (test()) return true;
-      await wait(150);
+      await wait(pollMs);
     }
     return false;
   };
@@ -332,7 +338,7 @@ export function pageBootstrapSource() {
         if (document.querySelector('${SETTINGS_MODAL}')?.open === true) return true;
         document.querySelector('${SETTINGS_BUTTON}')?.click();
         return false;
-      }, ${THEME_TIMEOUT_MS});
+      }, ${THEME_TIMEOUT_MS}, ${SETTINGS_OPEN_RETRY_MS});
       if (!opened) throw new Error('Settings never opened for the theme');
 
       const compact = !!document.querySelector('${COMPACT_SHELL_MARKER}');
@@ -356,7 +362,7 @@ export function pageBootstrapSource() {
       if (!settled) throw new Error('the page never resolved to ' + plan.theme);
       document.querySelector('${SETTINGS_CLOSE_BUTTON}')?.click();
       await until(() => document.querySelector('${SETTINGS_MODAL}')?.open !== true);
-      await wait(${SETTINGS_OPEN_RETRY_MS});
+      await wait(${SETTINGS_CLOSE_SETTLE_MS});
     }
 
     // The eraser needs something to erase, or it measures clearing blank paper.
