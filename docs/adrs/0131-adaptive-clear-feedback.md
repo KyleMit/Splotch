@@ -32,11 +32,11 @@ graph.
 
 Use **procedural, distance-driven bubble dots during the drag** and a **recorded pop on commit**.
 
-`dragToClear.ts` passes raw normalized distance to `drawingSound.ts`; visual progress remains
-clamped at the commit threshold while audio can continue rising beyond it. `drawingSound.ts` creates
-brief sine-oscillator resonances whose frequency and gain follow distance. The pitch keeps rising
-until 1.4 times the commit distance, then holds. Absolute progress change is deliberate: backing
-toward the button produces descending bubbles, so sound continues to describe the gesture in both
+`dragToClear.ts` passes raw normalized distance to `clearSound.ts`; visual progress remains clamped
+at the commit threshold while audio can continue rising beyond it. `clearSound.ts` creates brief
+sine-oscillator resonances whose frequency and gain follow distance. The pitch keeps rising until
+1.4 times the commit distance, then holds. Absolute progress change is deliberate: backing toward
+the button produces descending bubbles, so sound continues to describe the gesture in both
 directions.
 
 Crossing the threshold starts a quieter bubble every 240 milliseconds at the current pitch. It
@@ -51,7 +51,7 @@ later drag. Both paths respect the shared sound-enabled and volume settings, inc
 which creates no inaudible oscillator graph.
 
 The authored frequency, progress, interval, gain, and envelope choices remain named tuning constants
-in `drawingSound.ts`. `clearSound.test.ts` pins bidirectional pitch mapping, the cap and ready-state
+in `clearSound.ts`. `clearSound.test.ts` pins bidirectional pitch mapping, the cap and ready-state
 lifecycle, zero-volume behavior, failed-load isolation, delayed commit playback, and sound-disabled
 behavior.
 

@@ -3,9 +3,9 @@ import {
   cancelClearSound,
   commitClearSound,
   startClearSound,
-  stopDrawSound,
   updateClearSound,
-} from '$lib/audio/drawingSound';
+} from '$lib/audio/clearSound';
+import { stopDrawSound } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { CLEAR_SHEET_DURATION_MS } from '$lib/drawing/inkMotion';
@@ -13,13 +13,13 @@ import { createTapRun, dragToClear, type DragToClearOptions } from './dragToClea
 import { ACCEPT_RADIUS_FACTOR } from './dragToClearGeometry';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
-vi.mock('$lib/audio/drawingSound', () => ({
+vi.mock('$lib/audio/clearSound', () => ({
   cancelClearSound: vi.fn(),
   commitClearSound: vi.fn(),
   startClearSound: vi.fn(),
-  stopDrawSound: vi.fn(),
   updateClearSound: vi.fn(),
 }));
+vi.mock('$lib/audio/drawingSound', () => ({ stopDrawSound: vi.fn() }));
 vi.mock('$lib/platform/haptics', () => ({ impactThreshold: vi.fn() }));
 
 // happy-dom lacks a PointerEvent constructor with pointerId, so stub it the

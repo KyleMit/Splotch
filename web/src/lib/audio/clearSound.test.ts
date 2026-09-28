@@ -98,10 +98,10 @@ async function mountClearSound(signal: AbortSignal, options: RigOptions = {}) {
     }),
   });
 
-  const drawingSound = await import('./drawingSound');
+  const clearSound = await import('./clearSound');
   signal.throwIfAborted();
-  cancelClearSound = drawingSound.cancelClearSound;
-  return { drawingSound, oscillators, sources, gains };
+  cancelClearSound = clearSound.cancelClearSound;
+  return { clearSound, oscillators, sources, gains };
 }
 
 describe('clear sound', () => {
@@ -118,10 +118,10 @@ describe('clear sound', () => {
 
   it('walks up the scale as the drag travels and back down as it returns', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    for (const progress of [0.2, 0.45, 0.7, 0.95]) drawingSound.updateClearSound(progress);
+    clearSound.startClearSound();
+    for (const progress of [0.2, 0.45, 0.7, 0.95]) clearSound.updateClearSound(progress);
     const ascending = notesFrom(oscillators);
     expect(ascending.length).toBeGreaterThanOrEqual(3);
     for (let i = 1; i < ascending.length; i += 1) {
@@ -129,7 +129,7 @@ describe('clear sound', () => {
     }
 
     oscillators.length = 0;
-    for (const progress of [0.7, 0.45, 0.2]) drawingSound.updateClearSound(progress);
+    for (const progress of [0.7, 0.45, 0.2]) clearSound.updateClearSound(progress);
     const descending = notesFrom(oscillators);
     expect(descending.length).toBeGreaterThanOrEqual(2);
     for (let i = 1; i < descending.length; i += 1) {
@@ -144,13 +144,13 @@ describe('clear sound', () => {
     signal,
   }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1);
     oscillators.length = 0;
 
-    for (const progress of [1.3, 1.6, 1.9, 2.2, 2.5]) drawingSound.updateClearSound(progress);
+    for (const progress of [1.3, 1.6, 1.9, 2.2, 2.5]) clearSound.updateClearSound(progress);
     const climb = notesFrom(oscillators);
     expect(climb.length).toBeGreaterThanOrEqual(4);
     for (let i = 1; i < climb.length; i += 1) expect(climb[i]).toBeGreaterThan(climb[i - 1]);
@@ -158,14 +158,14 @@ describe('clear sound', () => {
 
   it('says nothing while the drag is held still past the threshold', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
     oscillators.length = 0;
 
-    drawingSound.updateClearSound(1.2);
-    drawingSound.updateClearSound(1.2);
+    clearSound.updateClearSound(1.2);
+    clearSound.updateClearSound(1.2);
     vi.advanceTimersByTime(3_000);
     expect(oscillators).toHaveLength(0);
   });
@@ -190,17 +190,17 @@ describe('clear sound', () => {
       createOscillator: vi.fn(() => oscillatorNode()),
       createBufferSource: vi.fn(() => bufferSource()),
     });
-    const drawingSound = await import('./drawingSound');
+    const clearSound = await import('./clearSound');
     signal.throwIfAborted();
-    cancelClearSound = drawingSound.cancelClearSound;
+    cancelClearSound = clearSound.cancelClearSound;
 
     const peakAt = (progress: number) => {
       gainParams.length = 0;
-      drawingSound.updateClearSound(progress);
+      clearSound.updateClearSound(progress);
       return gainParams[0].exponentialRampToValueAtTime.mock.calls[0][0] as number;
     };
 
-    drawingSound.startClearSound();
+    clearSound.startClearSound();
     const low = peakAt(0.3);
     const high = peakAt(2.5);
     expect(high).toBeLessThan(low);
@@ -210,14 +210,14 @@ describe('clear sound', () => {
     signal,
   }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.7);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.7);
     const arrived = notesFrom(oscillators).at(-1) as number;
     oscillators.length = 0;
 
-    drawingSound.cancelClearSound();
+    clearSound.cancelClearSound();
     vi.advanceTimersByTime(500);
     const unwind = notesFrom(oscillators);
     expect(unwind).toHaveLength(3);
@@ -227,9 +227,9 @@ describe('clear sound', () => {
 
   it('does not unwind when a gesture was never started', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.cancelClearSound();
+    clearSound.cancelClearSound();
     vi.advanceTimersByTime(500);
     expect(oscillators).toHaveLength(0);
   });
@@ -238,34 +238,34 @@ describe('clear sound', () => {
   // otherwise every gesture would open with the sound of abandoning one.
   it('does not unwind or leak a pending unwind into the next gesture', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.7);
-    drawingSound.cancelClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.7);
+    clearSound.cancelClearSound();
     oscillators.length = 0;
 
-    drawingSound.startClearSound();
+    clearSound.startClearSound();
     vi.advanceTimersByTime(500);
     expect(oscillators).toHaveLength(0);
   });
 
   it('plays the page turn once on commit, and never on cancel', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, sources } = await mountClearSound(signal);
+    const { clearSound, sources } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
     await vi.runOnlyPendingTimersAsync();
     expect(pageTurnsIn(sources)).toHaveLength(0);
 
-    drawingSound.commitClearSound();
+    clearSound.commitClearSound();
     expect(pageTurnsIn(sources)).toHaveLength(1);
     expect(pageTurnsIn(sources)[0].start).toHaveBeenCalled();
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.5);
-    drawingSound.cancelClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.5);
+    clearSound.cancelClearSound();
     vi.advanceTimersByTime(500);
     expect(pageTurnsIn(sources)).toHaveLength(1);
   });
@@ -274,10 +274,10 @@ describe('clear sound', () => {
     signal,
   }) => {
     vi.useFakeTimers();
-    const { drawingSound, sources } = await mountClearSound(signal);
+    const { clearSound, sources } = await mountClearSound(signal);
 
-    drawingSound.startClearSound();
-    drawingSound.commitClearSound();
+    clearSound.startClearSound();
+    clearSound.commitClearSound();
     await vi.runOnlyPendingTimersAsync();
 
     expect(pageTurnsIn(sources)).toHaveLength(1);
@@ -312,13 +312,13 @@ describe('clear sound', () => {
         return source;
       }),
     });
-    const drawingSound = await import('./drawingSound');
+    const clearSound = await import('./clearSound');
     signal.throwIfAborted();
-    cancelClearSound = drawingSound.cancelClearSound;
+    cancelClearSound = clearSound.cancelClearSound;
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
-    drawingSound.commitClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
     await vi.runOnlyPendingTimersAsync();
     expect(pageTurnsIn(sources)).toHaveLength(0);
 
@@ -357,13 +357,13 @@ describe('clear sound', () => {
         return source;
       }),
     });
-    const drawingSound = await import('./drawingSound');
+    const clearSound = await import('./clearSound');
     signal.throwIfAborted();
-    cancelClearSound = drawingSound.cancelClearSound;
+    cancelClearSound = clearSound.cancelClearSound;
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.6);
-    drawingSound.cancelClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.6);
+    clearSound.cancelClearSound();
     finishDecode?.({ duration: 1 });
     await vi.runOnlyPendingTimersAsync();
     expect(pageTurnsIn(sources)).toHaveLength(0);
@@ -388,30 +388,59 @@ describe('clear sound', () => {
         return source;
       }),
     });
-    const drawingSound = await import('./drawingSound');
+    const clearSound = await import('./clearSound');
     signal.throwIfAborted();
-    cancelClearSound = drawingSound.cancelClearSound;
+    cancelClearSound = clearSound.cancelClearSound;
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
-    drawingSound.commitClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
     await vi.runOnlyPendingTimersAsync();
 
-    drawingSound.startClearSound();
-    drawingSound.cancelClearSound();
+    clearSound.startClearSound();
+    clearSound.cancelClearSound();
     await vi.runOnlyPendingTimersAsync();
     expect(pageTurnsIn(sources)).toHaveLength(0);
   });
 
+  // Every AudioContext spins up its own audio device thread, so the clear synth
+  // borrows the pencil sound's context instead of building a second one.
+  it('plays on the AudioContext the pencil sound already built', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { clearSound, oscillators } = await mountClearSound(signal);
+    const StubbedContext = globalThis.AudioContext;
+    let constructed = 0;
+    vi.stubGlobal(
+      'AudioContext',
+      class extends StubbedContext {
+        constructor() {
+          super();
+          constructed += 1;
+        }
+      }
+    );
+    const { preloadDrawSounds } = await import('./drawingSound');
+    signal.throwIfAborted();
+
+    preloadDrawSounds();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.5);
+    clearSound.commitClearSound();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(oscillators.length).toBeGreaterThan(0);
+    expect(constructed).toBe(1);
+  });
+
   it('creates no audio graph at all when sound is off', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators, sources } = await mountClearSound(signal, {
+    const { clearSound, oscillators, sources } = await mountClearSound(signal, {
       soundEnabled: false,
     });
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
-    drawingSound.commitClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
     vi.advanceTimersByTime(500);
     expect(oscillators).toHaveLength(0);
     expect(sources).toHaveLength(0);
@@ -419,13 +448,13 @@ describe('clear sound', () => {
 
   it('creates no audio graph when only the delete source is off', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators, sources } = await mountClearSound(signal, {
+    const { clearSound, oscillators, sources } = await mountClearSound(signal, {
       deleteSoundEnabled: false,
     });
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(1.2);
-    drawingSound.commitClearSound();
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
     vi.advanceTimersByTime(500);
     expect(oscillators).toHaveLength(0);
     expect(sources).toHaveLength(0);
@@ -433,42 +462,42 @@ describe('clear sound', () => {
 
   it('creates no oscillators at zero volume', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal, { volume: 0 });
+    const { clearSound, oscillators } = await mountClearSound(signal, { volume: 0 });
 
-    drawingSound.startClearSound();
-    for (const progress of [0.3, 0.8, 1.4]) drawingSound.updateClearSound(progress);
+    clearSound.startClearSound();
+    for (const progress of [0.3, 0.8, 1.4]) clearSound.updateClearSound(progress);
     expect(oscillators).toHaveLength(0);
   });
 
   it('stops mid-gesture when sound is switched off', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
     const { setSound } = await import('$lib/state/settings.svelte');
     signal.throwIfAborted();
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.6);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.6);
     oscillators.length = 0;
 
     setSound(false);
-    drawingSound.updateClearSound(1.2);
-    drawingSound.updateClearSound(1.8);
+    clearSound.updateClearSound(1.2);
+    clearSound.updateClearSound(1.8);
     expect(oscillators).toHaveLength(0);
   });
 
   it('stops mid-gesture when the delete source is switched off', async ({ signal }) => {
     vi.useFakeTimers();
-    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { clearSound, oscillators } = await mountClearSound(signal);
     const { setDeleteSound } = await import('$lib/state/settings.svelte');
     signal.throwIfAborted();
 
-    drawingSound.startClearSound();
-    drawingSound.updateClearSound(0.6);
+    clearSound.startClearSound();
+    clearSound.updateClearSound(0.6);
     oscillators.length = 0;
 
     setDeleteSound(false);
-    drawingSound.updateClearSound(1.2);
-    drawingSound.updateClearSound(1.8);
+    clearSound.updateClearSound(1.2);
+    clearSound.updateClearSound(1.8);
     expect(oscillators).toHaveLength(0);
   });
 });
