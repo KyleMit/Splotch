@@ -155,6 +155,37 @@ describe('authorizeImageReport', () => {
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
     expect(result.response.status).toBe(403);
+    expect(await result.response.json()).toEqual({ ok: false, error: 'Invalid API key' });
+  });
+
+  // A check that never got an answer says nothing about the key, so the parent
+  // hears that reporting is down, as /api/verify-key would tell them, instead of
+  // being told a working key is invalid.
+  it('answers 503 rather than 403 when the BYO key check got no answer', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    verifyKey.mockResolvedValue({
+      ok: false,
+      kind: 'unreachable',
+      reason: 'The key check ran out of time',
+    });
+
+    const result = await authorizeImageReport({
+      apiKey: 'working-key',
+      token: null,
+      installationId: null,
+      reportToken: null,
+      clientAddress: '198.51.100.8',
+    });
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(503);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'AI reporting is not available right now. Please try again later.',
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('The key check ran out of time'));
+    warn.mockRestore();
   });
 
   const freeReport = (overrides: Partial<Parameters<typeof authorizeImageReport>[0]> = {}) =>

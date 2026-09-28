@@ -15,6 +15,7 @@
     type AiReportKind,
   } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
+  import { attachesDevice, type ReportKind } from '$lib/report';
   import { postFeedbackReport, postImageReport, readReportReply } from '$lib/reportClient';
 
   // What this report's phase adds. The run's own inputs (the drawing, its style
@@ -31,6 +32,9 @@
   let { kind = 'picture', failure = null, outputUrl, reportToken, report }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+  // The kind a problem report files as. Its fields offer the device opt-in and
+  // its send attaches the snapshot by the same rule, `attachesDevice`.
+  const PROBLEM_REPORT_KIND: ReportKind = 'bug';
   // Short enough to keep the confirmation's promise on one template line. The
   // formatter wraps the full name, and a wrap leaves a newline run in the
   // rendered sentence (AiImageReport.copy.test.ts compares it as rendered).
@@ -87,9 +91,14 @@
 
   async function submit(signal: AbortSignal): Promise<Response> {
     if (kind === 'generation-error') {
-      const device = includeDevice ? await fields?.ensureDevice() : undefined;
+      const device = attachesDevice(PROBLEM_REPORT_KIND, includeDevice)
+        ? await fields?.ensureDevice()
+        : undefined;
       const diagnostics = diagnosticRows.map(({ label, value }) => `${label}: ${value}`).join('\n');
-      return postFeedbackReport({ kind: 'bug', message: diagnostics, device }, signal);
+      return postFeedbackReport(
+        { kind: PROBLEM_REPORT_KIND, message: diagnostics, device },
+        signal
+      );
     }
     if (!drawingUrl) throw new Error('Missing drawing');
     const [drawingResponse, outputResponse] = await Promise.all([
@@ -218,7 +227,12 @@
         <p>Not sent: the drawing, names, accounts, or location.</p>
       </section>
       <fieldset class="ai-report-device" disabled={sending}>
-        <ReportFields mode="device-only" bind:this={fields} bind:includeDevice />
+        <ReportFields
+          mode="device-only"
+          kind={PROBLEM_REPORT_KIND}
+          bind:this={fields}
+          bind:includeDevice
+        />
       </fieldset>
     {:else}
       <div class="ai-report-thumbs" class:single={!outputUrl}>

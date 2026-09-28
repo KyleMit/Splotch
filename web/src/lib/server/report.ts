@@ -173,11 +173,10 @@ export async function submitReport({
   // payload per candidate name identified the trap in a single request each,
   // defeating any amount of markup obfuscation. Reaching here means the
   // submission would have succeeded, so the caught bot gets exactly what a real
-  // submitter gets on every path. server.test.ts holds the two against each
-  // other rather than against a literal — for this door. /feedback's form action
-  // reads the same ok/not-ok result and builds its redirect from no part of it,
-  // but nothing tests that, so it is a property of the current code rather than
-  // a guaranteed one.
+  // submitter gets on every path. Each door's tests hold the two answers against
+  // each other rather than against a literal: routes/api/report/server.test.ts
+  // for the JSON body, routes/feedback/page.server.test.ts for the form's
+  // redirect and its failures.
   if (typeof hp === 'string' && hp.trim()) return { ok: true };
 
   try {
