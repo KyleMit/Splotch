@@ -1,8 +1,8 @@
 import {
   ColoringPacks,
-  nativeColoringPackRootUrl,
   type NativeColoringPack,
   type NativeColoringPackBook,
+  webViewRootUrl,
 } from '$lib/plugins/coloringPacks';
 import { coloringPackMarkerValue } from './cacheKeys';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
@@ -15,7 +15,7 @@ function nativeBook(book: ResolvedColoringPackBookManifest): NativeColoringPackB
 }
 
 function resolvedPack(pack: NativeColoringPack, bytes: number): InstalledColoringPack {
-  return { id: pack.id, rootPath: nativeColoringPackRootUrl(pack.rootPath), bytes };
+  return { id: pack.id, rootUrl: webViewRootUrl(pack.rootPath), bytes };
 }
 
 export function createNativeColoringPackStore(): ColoringPackStore {
