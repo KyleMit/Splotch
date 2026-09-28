@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SAFE_AREA_EDGES, SAFE_AREA_PROPERTIES } from './safeArea';
 
@@ -12,7 +13,7 @@ import { SAFE_AREA_EDGES, SAFE_AREA_PROPERTIES } from './safeArea';
 // re-declaring these properties on a subtree. So the second test below is the
 // load-bearing one: it fails the moment an inset consumer leaves the seam.
 
-const srcDir = new URL('../../', import.meta.url).pathname;
+const srcDir = fileURLToPath(new URL('../../', import.meta.url));
 const appCss = readFileSync(join(srcDir, 'app.css'), 'utf8');
 
 // The seed block is the sole legitimate env() call site, so it is excluded from
