@@ -100,7 +100,8 @@ const queueNativeRun = createNativeRunQueue();
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
-  let installing = false;
+  // The cellular setting the in-flight install was issued with; null while none is.
+  let installAllowsMetered: boolean | null = null;
   let rerunRequested = false;
   let runPromise: Promise<void> | null = null;
   let controller: AbortController | null = null;
@@ -129,11 +130,11 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       if (book.id === manifest.starterBookId || installed.has(book.id)) continue;
       if (!downloadAllowed()) return;
       coloringPacksState.startBookDownload(book.id);
-      installing = true;
+      installAllowsMetered = settingsState.coloringPacksAllowMetered;
       const pack = await store
-        .install(manifest, book, settingsState.coloringPacksAllowMetered, controller.signal)
+        .install(manifest, book, installAllowsMetered, controller.signal)
         .finally(() => {
-          installing = false;
+          installAllowsMetered = null;
         });
       if (controller.signal.aborted) return;
       applyLocalRoots([pack]);
@@ -182,6 +183,11 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     rerunRequested = false;
     cancelActiveWork();
   };
+  // A native store fixes an install's network class when the install starts, so
+  // one issued under the other cellular setting is cancelled for the rerun to reissue.
+  const installOutlivedPolicy = () =>
+    installAllowsMetered !== null &&
+    (!downloadAllowed() || installAllowsMetered !== settingsState.coloringPacksAllowMetered);
   // Disallowing downloads cancels only a transfer: the books a finished scan
   // published stay visible, and a scan still running keeps going to publish them.
   const applyDownloadPolicy = () => {
@@ -189,7 +195,7 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       pause();
       return;
     }
-    if (installing && !downloadAllowed()) cancelActiveWork();
+    if (installOutlivedPolicy()) cancelActiveWork();
     paused = false;
     requestRun();
   };

@@ -59,8 +59,16 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
                 if let active = self.currentJob,
                    active.resolution == job.resolution,
                    active.book.id == job.book.id {
-                    self.completion = completion
-                    return
+                    if active.allowMetered == job.allowMetered, active.book.marker == job.book.marker {
+                        self.settleCompletion(.failure(ColoringPackError.cancelled))
+                        self.completion = completion
+                        return
+                    }
+                    // A job keeps the session it started on, so a request under the other cellular
+                    // setting replaces it rather than joining it, as Android's REPLACE does.
+                    self.cancelAllTasks()
+                    self.currentJob = nil
+                    self.settleCompletion(.failure(ColoringPackError.cancelled))
                 }
                 if self.currentJob != nil {
                     completion(.failure(ColoringPackError.downloadInProgress))
@@ -111,7 +119,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         queue.async {
             self.cancelAllTasks()
             self.currentJob = nil
-            self.completion = nil
+            self.settleCompletion(.failure(ColoringPackError.cancelled))
             do {
                 for child in Self.children(of: Self.rootDirectory) {
                     for book in Self.children(of: child) { try Self.withdrawMarker(book) }
@@ -208,10 +216,8 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         queue.async {
             self.cancelAllTasks()
             self.currentJob = nil
-            let callback = self.completion
-            self.completion = nil
             try? FileManager.default.removeItem(at: Self.jobURL)
-            callback?(.failure(ColoringPackError.cancelled))
+            self.settleCompletion(.failure(ColoringPackError.cancelled))
             completion()
         }
     }
@@ -246,6 +252,12 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 
     private func sessionIdentifier(allowMetered: Bool) -> String {
         "art.splotch.app.coloring-packs.\(allowMetered ? "metered" : "wifi")"
+    }
+
+    // A task cancelled with a replaced job reports back on that job's session, and must neither
+    // advance nor fail the job that replaced it on the other session.
+    private func isSession(_ session: URLSession, of job: ColoringPackJob) -> Bool {
+        session.configuration.identifier == sessionIdentifier(allowMetered: job.allowMetered)
     }
 
     // An unchanged file is kept, so an app update or an interrupted install transfers only the
@@ -290,6 +302,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         didFinishDownloadingTo location: URL
     ) {
         guard var job = currentJob,
+              isSession(session, of: job),
               let description = downloadTask.taskDescription,
               let index = Int(description),
               index == job.nextFileIndex else { return }
@@ -310,7 +323,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         task: URLSessionTask,
         didCompleteWithError error: Error?
     ) {
-        if let error, currentJob != nil { fail(error) }
+        if let error, let job = currentJob, isSession(session, of: job) { fail(error) }
     }
 
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
@@ -353,9 +366,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
             try Data(job.book.marker.utf8).write(to: Self.markerURL(directory), options: .atomic)
             try? FileManager.default.removeItem(at: Self.jobURL)
             currentJob = nil
-            let callback = completion
-            completion = nil
-            callback?(.success(directory))
+            settleCompletion(.success(directory))
         } catch {
             fail(error)
         }
@@ -363,9 +374,14 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 
     private func fail(_ error: Error) {
         currentJob = nil
+        settleCompletion(.failure(error))
+    }
+
+    // Every path that drops the pending install call settles it first, so its promise never hangs.
+    private func settleCompletion(_ result: Result<URL, Error>) {
         let callback = completion
         completion = nil
-        callback?(.failure(error))
+        callback?(result)
     }
 
     private func persist(_ job: ColoringPackJob) throws {
