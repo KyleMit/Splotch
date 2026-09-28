@@ -2,8 +2,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
-// Issue #461: the save pipeline (the export compositor, screenshot persistence,
-// folder save, screenshot feedback) loads on demand at save time. Nothing else
+// Issue #461: the save pipeline (the export compositor, the platform image save,
+// the Screenshot Button flow, folder save, screenshot feedback) loads on demand at save time. Nothing else
 // stops a future static import from silently merging it back onto the startup
 // critical path, so this spec pins the prerendered `/` page's modulepreload list:
 // no chunk the browser must fetch before hydration may contain the save modules'
@@ -21,7 +21,8 @@ const deferredIconsDir = fileURLToPath(new URL('../src/lib/icons/deferred', impo
 // One minification-proof string literal per lazily-loaded save module.
 const SAVE_MODULE_MARKERS: Record<string, string> = {
   'exportDrawing.ts': 'handmade-paper',
-  'screenshot.ts': 'allowPrompt',
+  'imageSave.ts': 'allowPrompt',
+  'screenshot.ts': 'discardPreview',
   'folderSave.ts': 'Persisting the save folder failed:',
   'screenshotFeedback.ts': 'screenshot-capture-feedback',
 };

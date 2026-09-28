@@ -1,4 +1,4 @@
-import { extensionForImageType, timestamp } from '$lib/saveNaming';
+import { extensionForImageType, timestamp } from '$lib/savedFile';
 
 export const ANDROID_GALLERY_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
 export type AndroidGalleryImageType = (typeof ANDROID_GALLERY_IMAGE_TYPES)[number];

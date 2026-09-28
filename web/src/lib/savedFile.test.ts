@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { extensionForImageType, timestamp } from './saveNaming';
+import { extensionForImageType, timestamp } from './savedFile';
 
 describe('timestamp', () => {
   afterEach(() => {

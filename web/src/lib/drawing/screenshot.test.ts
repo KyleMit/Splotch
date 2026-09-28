@@ -10,9 +10,10 @@ const mocks = vi.hoisted(() => ({
   triggerDownload: vi.fn(),
   savePhoto: vi.fn(),
   reportSaveFailure: vi.fn(),
-  perfMarks: false,
 }));
 
+// The camera flow saves through the real imageSave.ts, so the media, platform, folder, and download
+// mocks here stand in for the collaborators beneath it (imageSave.test.ts covers it on its own).
 vi.mock('@capacitor-community/media', () => ({ Media: { savePhoto: mocks.savePhoto } }));
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
@@ -25,27 +26,20 @@ vi.mock('./screenshotFeedback', () => ({
 vi.mock('./polaroidAnimation', () => ({
   createPolaroidPreviewRequest: mocks.createPolaroidPreviewRequest,
 }));
-vi.mock('$lib/saveNaming', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('$lib/saveNaming')>()),
+vi.mock('$lib/savedFile', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/savedFile')>()),
   triggerDownload: mocks.triggerDownload,
 }));
 vi.mock('$lib/state/saveFailure.svelte', () => ({
   reportSaveFailure: mocks.reportSaveFailure,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
-vi.mock('./perf', () => ({
-  get PERF_MARKS() {
-    return mocks.perfMarks;
-  },
-}));
 
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
-  mocks.perfMarks = false;
   mocks.isNative.mockReturnValue(false);
   mocks.createPolaroidPreviewRequest.mockReturnValue(null);
-  delete window.__screenshotSaveSink;
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:polaroid');
 });
 
@@ -343,90 +337,5 @@ describe('saveScreenshot', () => {
 
     expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
     expect(mocks.playScreenshotSuppressedFeedback).toHaveBeenCalledOnce();
-  });
-});
-
-describe('saveImageBlob', () => {
-  it('uses the instrumented native persistence sink without reaching the media plugin', async () => {
-    const sink = vi.fn();
-    mocks.perfMarks = true;
-    mocks.isNative.mockReturnValue(true);
-    window.__screenshotSaveSink = sink;
-    const blob = new Blob(['image'], { type: 'image/png' });
-    const { saveImageBlob } = await import('./screenshot');
-
-    await expect(saveImageBlob(blob, 'splotch-test')).resolves.toEqual({ status: 'photos' });
-
-    expect(sink).toHaveBeenCalledWith(blob, 'splotch-test');
-    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
-  });
-
-  it('uses the blob MIME type for web filenames', async () => {
-    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
-    const { saveImageBlob } = await import('./screenshot');
-
-    await expect(
-      saveImageBlob(new Blob(['image'], { type: 'image/webp' }), 'splotch-ai')
-    ).resolves.toEqual({ status: 'chosenFolder', folderName: 'Drawings' });
-
-    expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
-      expect.any(Blob),
-      expect.stringMatching(/^splotch-ai-.+\.webp$/),
-      undefined
-    );
-    expect(mocks.triggerDownload).not.toHaveBeenCalled();
-  });
-
-  it('falls back to a download and revokes the object URL when no folder takes the blob', async () => {
-    mocks.saveBlobToFolder.mockResolvedValue(null);
-    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    const { saveImageBlob } = await import('./screenshot');
-
-    const saved = await saveImageBlob(new Blob(['image'], { type: 'image/png' }));
-
-    expect(saved).toEqual({ status: 'downloads' });
-    expect(mocks.triggerDownload).toHaveBeenCalledWith(
-      'blob:polaroid',
-      expect.stringMatching(/^splotch-.+\.png$/)
-    );
-    expect(revoke).toHaveBeenCalledWith('blob:polaroid');
-  });
-
-  it('reports a failed native gallery save instead of claiming it landed', async () => {
-    mocks.isNative.mockReturnValue(true);
-    mocks.savePhoto.mockRejectedValue(new Error('User denied access'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { saveImageBlob } = await import('./screenshot');
-
-    await expect(saveImageBlob(new Blob(['image'], { type: 'image/png' }))).resolves.toEqual({
-      status: 'failed',
-    });
-    expect(mocks.saveBlobToFolder).not.toHaveBeenCalled();
-  });
-
-  it('lets a banner retry re-confirm a lapsed folder permission like the camera button', async () => {
-    const blob = new Blob(['held'], { type: 'image/png' });
-    mocks.saveBlobToFolder.mockResolvedValue('Drawings');
-    const { retryImageSave } = await import('./screenshot');
-
-    await expect(retryImageSave(blob, 'splotch-ai')).resolves.toEqual({
-      status: 'chosenFolder',
-      folderName: 'Drawings',
-    });
-    expect(mocks.saveBlobToFolder).toHaveBeenCalledWith(
-      blob,
-      expect.stringMatching(/^splotch-ai-.+\.png$/),
-      { allowPrompt: true }
-    );
-  });
-
-  it('reports a native gallery save as saved to photos', async () => {
-    mocks.isNative.mockReturnValue(true);
-    mocks.savePhoto.mockResolvedValue({});
-    const { saveImageBlob } = await import('./screenshot');
-
-    await expect(saveImageBlob(new Blob(['image'], { type: 'image/png' }))).resolves.toEqual({
-      status: 'photos',
-    });
   });
 });
