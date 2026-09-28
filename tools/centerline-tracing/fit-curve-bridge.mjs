@@ -9,18 +9,8 @@
 // polyline is split there and each run is fitted independently, so a genuine
 // pen corner is never smoothed into an arc.
 import fitCurveMod from 'fit-curve';
-import { isMain } from '../lib/proc.mjs';
+import { isMain, readStdin } from '../lib/proc.mjs';
 const fitCurve = fitCurveMod.default || fitCurveMod;
-
-function readStdin() {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (c) => (data += c));
-    process.stdin.on('end', () => resolve(data));
-    process.stdin.on('error', reject);
-  });
-}
 
 function dedupe(points) {
   const out = [points[0]];

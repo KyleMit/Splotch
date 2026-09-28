@@ -335,6 +335,20 @@ export function takePerCategory(files, limit) {
   });
 }
 
+// Run an array of async thunks with a small concurrency cap.
+export async function pool(thunks, size) {
+  const results = new Array(thunks.length);
+  let next = 0;
+  async function worker() {
+    while (next < thunks.length) {
+      const i = next++;
+      results[i] = await thunks[i]();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(size, thunks.length) }, worker));
+  return results;
+}
+
 const isPng = (buf) => buf[0] === 0x89 && buf[1] === 0x50;
 const isJpeg = (buf) => buf[0] === 0xff && buf[1] === 0xd8;
 

@@ -1,14 +1,5 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { basename, dirname, join, relative, resolve, sep } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
   expectedCritiqueReviews,
@@ -18,6 +9,7 @@ import {
   reviewDescriptionDigest,
   StaleCritiqueHashError,
   validateCritiqueEntries,
+  writeJsonAtomically,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
@@ -205,18 +197,6 @@ function reviewRequest(capture) {
     sha256: capture.sha256,
     description: capture.review_description,
   };
-}
-
-function writeJsonAtomically(path, document) {
-  mkdirSync(dirname(path), { recursive: true });
-  const staging = mkdtempSync(join(dirname(path), `.${basename(path)}-staging-`));
-  const candidate = join(staging, basename(path));
-  try {
-    writeFileSync(candidate, `${JSON.stringify(document, null, 2)}\n`);
-    renameSync(candidate, path);
-  } finally {
-    rmSync(staging, { recursive: true, force: true });
-  }
 }
 
 export async function finalizePageInventoryCritique(argv = process.argv.slice(2)) {
