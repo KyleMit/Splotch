@@ -72,6 +72,36 @@ describe('createUnsavedPictureStore', () => {
     expect(mocks.delete).toHaveBeenCalledOnce();
   });
 
+  it('restores only the entries in the shape it writes, never a picture of missing bytes', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = createUnsavedPictureStore();
+    await store.write(held);
+    const [, [current]] = mocks.put.mock.calls[0];
+    const { bytes: _bytes, ...withoutBytes } = current;
+    mocks.get.mockResolvedValue([
+      { blob: held[0].blob, baseName: 'splotch', outcome: 'denied', signature: null },
+      withoutBytes,
+      { ...current, outcome: 'photos' },
+      current,
+    ]);
+
+    const restored = await store.read();
+
+    expect(restored).toHaveLength(1);
+    await expect(restored?.[0].blob.text()).resolves.toBe('picture');
+    expect(error).toHaveBeenCalledWith('Skipped 3 held picture(s) in an unrecognized shape');
+  });
+
+  it('skips a record that is not a list of pictures instead of failing the read', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.flag = true;
+    mocks.get.mockResolvedValue({ pictures: 'legacy' });
+
+    await expect(createUnsavedPictureStore().read()).resolves.toEqual([]);
+    expect(error).toHaveBeenCalledWith('Skipped 1 held picture(s) in an unrecognized shape');
+    expect(mocks.delete).not.toHaveBeenCalled();
+  });
+
   it('degrades to nothing held when IndexedDB is unavailable', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mocks.flag = true;
