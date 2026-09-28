@@ -4,6 +4,7 @@ import {
   setCrayon,
   setDeleteSound,
   setDrawingSound,
+  setOrientationChoice,
   setSound,
   setSoundVolume,
   setToolDrawerEnabled,
@@ -34,6 +35,17 @@ describe('SECTIONS', () => {
     const ids = SECTIONS.map((section) => section.id);
     expect(ids.indexOf('accessibility')).toBe(ids.indexOf('controls') + 1);
     expect(ids.indexOf('coloring')).toBe(ids.indexOf('accessibility') + 1);
+  });
+});
+
+describe('Appearance section subtitle', () => {
+  it.each([
+    ['auto', 'Night Mode'],
+    ['portrait', 'Night Mode · portrait lock'],
+    ['landscape', 'Night Mode · landscape lock'],
+  ] as const)('summarizes the %s orientation choice', (choice, expected) => {
+    setOrientationChoice(choice);
+    expect(sectionSubtitle('appearance')).toBe(expected);
   });
 });
 

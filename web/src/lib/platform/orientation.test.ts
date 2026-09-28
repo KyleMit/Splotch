@@ -27,6 +27,9 @@ vi.mock('$lib/plugins/sensorOrientation', async () => {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const FULLSCREEN = true;
+const WINDOWED = false;
+
 const webLock = vi.fn<(orientation: string) => Promise<void>>();
 const webUnlock = vi.fn<() => void>();
 
@@ -60,8 +63,8 @@ describe('applyDeviceOrientationPreference on native', () => {
   it('locks once for repeated calls with the same target', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, false);
-    await applyDeviceOrientationPreference(true, true, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
 
     expect(mocks.nativeLock).toHaveBeenCalledTimes(1);
     expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'landscape' });
@@ -70,8 +73,8 @@ describe('applyDeviceOrientationPreference on native', () => {
   it('locks again for a changed target', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, false);
-    await applyDeviceOrientationPreference(true, false, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
 
     expect(mocks.nativeLock).toHaveBeenNthCalledWith(2, { orientation: 'portrait' });
   });
@@ -80,8 +83,8 @@ describe('applyDeviceOrientationPreference on native', () => {
     mocks.nativeLock.mockRejectedValue(new Error('plugin not ready'));
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, false, false);
-    await applyDeviceOrientationPreference(true, false, false);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
 
     expect(mocks.nativeLock).toHaveBeenCalledTimes(2);
   });
@@ -89,8 +92,8 @@ describe('applyDeviceOrientationPreference on native', () => {
   it('ignores fullscreen changes', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, false);
-    await applyDeviceOrientationPreference(true, true, true);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
+    await applyDeviceOrientationPreference('landscape', FULLSCREEN);
 
     expect(mocks.nativeLock).toHaveBeenCalledTimes(1);
   });
@@ -99,8 +102,8 @@ describe('applyDeviceOrientationPreference on native', () => {
     mocks.followSensor.mockRejectedValue(new Error('plugin not ready'));
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(false, false, false);
-    await applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
 
     expect(mocks.followSensor).toHaveBeenCalledTimes(2);
   });
@@ -108,7 +111,7 @@ describe('applyDeviceOrientationPreference on native', () => {
   it('follows the sensor on Android so Auto rotates past the OS rotation lock', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
 
     expect(mocks.followSensor).toHaveBeenCalledTimes(1);
     expect(mocks.nativeUnlock).not.toHaveBeenCalled();
@@ -118,8 +121,8 @@ describe('applyDeviceOrientationPreference on native', () => {
     mocks.sensorModuleDelayMs = 10;
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    const auto = applyDeviceOrientationPreference(false, false, false);
-    await applyDeviceOrientationPreference(true, false, false);
+    const auto = applyDeviceOrientationPreference('auto', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
     await auto;
 
     expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'portrait' });
@@ -130,7 +133,7 @@ describe('applyDeviceOrientationPreference on native', () => {
     mocks.platform = 'ios';
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
 
     expect(mocks.nativeUnlock).toHaveBeenCalledTimes(1);
     expect(mocks.followSensor).not.toHaveBeenCalled();
@@ -139,8 +142,8 @@ describe('applyDeviceOrientationPreference on native', () => {
   it('pins Portrait through the plugin after Auto on Android', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(false, false, false);
-    await applyDeviceOrientationPreference(true, false, false);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
 
     expect(mocks.nativeLock).toHaveBeenCalledWith({ orientation: 'portrait' });
   });
@@ -150,8 +153,8 @@ describe('applyDeviceOrientationPreference on the web', () => {
   it('locks once for repeated calls with the same target', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, false, false);
-    await applyDeviceOrientationPreference(true, false, false);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
 
     expect(webLock).toHaveBeenCalledTimes(1);
     expect(webLock).toHaveBeenCalledWith('portrait');
@@ -161,10 +164,10 @@ describe('applyDeviceOrientationPreference on the web', () => {
     webLock.mockRejectedValue(new Error('needs fullscreen'));
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
     // The web branch never awaits the lock, so let its rejection handler settle.
     await settle();
-    await applyDeviceOrientationPreference(true, true, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
 
     expect(webLock).toHaveBeenCalledTimes(2);
   });
@@ -173,9 +176,9 @@ describe('applyDeviceOrientationPreference on the web', () => {
     webLock.mockRejectedValueOnce(new Error('needs fullscreen'));
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, false, false);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
     await settle();
-    await applyDeviceOrientationPreference(true, false, true);
+    await applyDeviceOrientationPreference('portrait', FULLSCREEN);
 
     expect(webLock).toHaveBeenCalledTimes(2);
     expect(webLock).toHaveBeenLastCalledWith('portrait');
@@ -184,11 +187,11 @@ describe('applyDeviceOrientationPreference on the web', () => {
   it('requests the lock again on re-entering fullscreen after leaving it', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, true);
+    await applyDeviceOrientationPreference('landscape', FULLSCREEN);
     webLock.mockRejectedValueOnce(new Error('needs fullscreen'));
-    await applyDeviceOrientationPreference(true, true, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
     await settle();
-    await applyDeviceOrientationPreference(true, true, true);
+    await applyDeviceOrientationPreference('landscape', FULLSCREEN);
 
     expect(webLock).toHaveBeenCalledTimes(3);
   });
@@ -196,8 +199,8 @@ describe('applyDeviceOrientationPreference on the web', () => {
   it('keeps a fullscreen lock latched across repeated calls', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, true);
-    await applyDeviceOrientationPreference(true, true, true);
+    await applyDeviceOrientationPreference('landscape', FULLSCREEN);
+    await applyDeviceOrientationPreference('landscape', FULLSCREEN);
 
     expect(webLock).toHaveBeenCalledTimes(1);
   });
@@ -212,11 +215,11 @@ describe('applyDeviceOrientationPreference on the web', () => {
     );
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, false, false);
-    await applyDeviceOrientationPreference(true, false, true);
+    await applyDeviceOrientationPreference('portrait', WINDOWED);
+    await applyDeviceOrientationPreference('portrait', FULLSCREEN);
     refuseWindowed(new Error('needs fullscreen'));
     await settle();
-    await applyDeviceOrientationPreference(true, false, true);
+    await applyDeviceOrientationPreference('portrait', FULLSCREEN);
 
     expect(webLock).toHaveBeenCalledTimes(2);
   });
@@ -224,9 +227,9 @@ describe('applyDeviceOrientationPreference on the web', () => {
   it('does not unlock again when fullscreen changes', async () => {
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(false, false, false);
-    await applyDeviceOrientationPreference(false, false, true);
-    await applyDeviceOrientationPreference(false, false, false);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
+    await applyDeviceOrientationPreference('auto', FULLSCREEN);
+    await applyDeviceOrientationPreference('auto', WINDOWED);
 
     expect(webUnlock).toHaveBeenCalledTimes(1);
   });
@@ -235,7 +238,7 @@ describe('applyDeviceOrientationPreference on the web', () => {
     mocks.supportsLock = false;
     const { applyDeviceOrientationPreference } = await freshModule();
 
-    await applyDeviceOrientationPreference(true, true, false);
+    await applyDeviceOrientationPreference('landscape', WINDOWED);
 
     expect(webLock).not.toHaveBeenCalled();
   });

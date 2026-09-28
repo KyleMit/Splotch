@@ -94,6 +94,11 @@ export type Platform = 'android' | 'ios' | 'web';
 
 export type Orientation = 'portrait' | 'landscape';
 
+// The Orientation picker's vocabulary: a locked side, or 'auto' for no in-app
+// lock. `settingsState.orientationChoice()` is the one place it is derived from
+// the two persisted lock booleans.
+export type OrientationChoice = Orientation | 'auto';
+
 type OrientationLockMembers = {
   lock?: (orientation: Orientation) => Promise<void>;
   unlock?: () => void;

@@ -20,6 +20,7 @@ import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { prepareGeneratedImage } from '$lib/server/generatedImage';
 import {
   discardJob,
+  isJobId,
   readJob,
   readJobImage,
   type GenerationJobContext,
@@ -44,10 +45,6 @@ function unavailable(): Response {
   };
   return Response.json(body, { status: UNAVAILABLE_STATUS });
 }
-// A job id is 256 bits of randomness handed only to the caller that started the
-// job, so possession is the authorization. Shape-checking it keeps a malformed
-// id from becoming a blob-store lookup.
-const JOB_ID_PATTERN = /^[a-f0-9]{64}$/;
 
 function reportBinding(request: Request, context: GenerationJobContext): ReportTokenBinding | null {
   const apiKey = request.headers.get(API_KEY_HEADER)?.trim();
@@ -95,8 +92,10 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
+  // Possessing the job id is the authorization (generationJobs.ts); checking its
+  // shape keeps a malformed one from becoming a blob-store lookup.
   const jobId = url.searchParams.get(GENERATION_JOB_PARAM) ?? '';
-  if (!JOB_ID_PATTERN.test(jobId)) throw error(400, 'Unknown generation');
+  if (!isJobId(jobId)) throw error(400, 'Unknown generation');
 
   const job = await readJob(jobId);
   // Retryable *and worth continuing to wait for*: the store is what failed, not

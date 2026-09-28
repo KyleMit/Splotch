@@ -63,7 +63,7 @@ function keysFor(reportId: string, inputType: string) {
 }
 
 export async function deleteImageReport(report: SavedImageReport): Promise<void> {
-  const store = getStore(IMAGE_REPORT_STORE_NAME);
+  const store = getStore({ name: IMAGE_REPORT_STORE_NAME, consistency: 'eventual' });
   await Promise.all(report.keys.map((key) => store.delete(key)));
 }
 
@@ -84,7 +84,7 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
     outputContentType: input.output?.type ?? null,
     refusalReason: input.kind === 'false-positive-refusal' ? input.refusalReason : null,
   };
-  const store = getStore(IMAGE_REPORT_STORE_NAME);
+  const store = getStore({ name: IMAGE_REPORT_STORE_NAME, consistency: 'eventual' });
   const pendingWrites: Promise<{ modified: boolean }>[] = [
     store.set(keys.input, input.input, { onlyIfNew: true }),
   ];
@@ -123,7 +123,7 @@ export async function purgeExpiredImageReports(): Promise<{
   retainedBlobs: number;
 }> {
   const cutoff = Date.now() - REPORT_RETENTION_MS;
-  const store = getStore(IMAGE_REPORT_STORE_NAME);
+  const store = getStore({ name: IMAGE_REPORT_STORE_NAME, consistency: 'eventual' });
   const expiredReportIds = new Set<string>();
   let attemptedBlobs = 0;
   let deletedBlobs = 0;
