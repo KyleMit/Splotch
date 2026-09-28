@@ -3,7 +3,7 @@ import { blobSha256OrNull } from '$lib/digestHex';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME, isUnsaved, type SaveResult } from '$lib/saveNaming';
 import { reportSaveFailure } from '$lib/state/saveFailure.svelte';
 
-// Tracks the signature of the drawing saved on the previous AI run so we can skip
+// Tracks the signature of the last drawing an AI run saved so we can skip
 // re-saving the child's artwork when they re-roll a new style on an unchanged
 // drawing — the AI image is always fresh, but the drawing copy would just be a
 // duplicate. Constructible so tests can exercise the dedupe in isolation instead
@@ -54,13 +54,9 @@ export async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: num
   setAiAutoSave(runId, await save(aiBlob, AI_IMAGE_BASENAME));
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSha256OrNull(drawingBlob);
-  if (!isAiGenerationActive(runId)) return;
-  if (!drawingSaver.isDuplicate(sig)) {
-    await save(drawingBlob, DRAWING_BASENAME);
-  }
-  // Record the signature of the drawing we just saved even if ownership was lost
-  // during that save: the drawing is already in the gallery, so a later owning run
-  // on the same unchanged drawing must dedupe against it. Returning here (the old
-  // post-save ownership check) left the signature stale and re-saved a duplicate.
-  drawingSaver.record(sig);
+  if (!isAiGenerationActive(runId) || drawingSaver.isDuplicate(sig)) return;
+  // Only a drawing that landed counts as saved: a failed or denied copy is not in the gallery, so
+  // the next re-roll on the same drawing must try again. A landed copy is recorded even when this
+  // run lost ownership mid-save, so a later run on the unchanged drawing dedupes against it.
+  if (!isUnsaved(await save(drawingBlob, DRAWING_BASENAME))) drawingSaver.record(sig);
 }
