@@ -28,9 +28,9 @@ import type { Actions, PageServerLoad } from './$types';
 // Must be server-rendered: it has form actions and validates the admin secret
 // against an HTTP-only session cookie, neither of which is compatible with the
 // site-wide prerender. The auth core (secret check, derived session token,
-// invite building) lives in $lib/server/admin so the /api/admin endpoints the
-// native apps use share the exact same logic — this page just binds it to a
-// cookie instead of a bearer header.
+// invite building) lives in $lib/server/admin so the /api/admin JSON twin
+// shares the exact same logic — this page just binds it to a cookie instead of
+// a bearer header.
 export const prerender = false;
 export const ssr = true;
 

@@ -7,14 +7,14 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
-`X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
-native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
-round trip per request. The wildcard is safe because every endpoint is either gated by a credential
-the caller must already hold (access token, OpenAI key, or admin session) or rate-limited and
-bounded. The credential-less `report` endpoint creates a sanitized private support issue;
-`csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
-ADR-0007.
+`X-Access-Token` / `X-Api-Key` / `X-Async-Generation` / `X-Installation-Id` / `X-Report-Token`
+headers allowed, plus `X-Free-Generations-Remaining` and `X-Report-Token` exposed and
+`Access-Control-Max-Age: 86400` so native clients can read the updated allowance and cache the
+preflight instead of paying an OPTIONS round trip per request. The wildcard is safe because every
+endpoint is either gated by a credential the caller must already hold (access token, OpenAI key, or
+admin session) or rate-limited and bounded. The credential-less `report` endpoint creates a
+sanitized private support issue; `csp-report` is size-capped and bounded to log lines. Nothing under
+`/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -27,9 +27,10 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 
 The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
 the **one client-facing JSON error shape** across `/api/*`, built by the same module's
-`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts
-every thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status
-and message, and an unexpected exception becomes a 500 with the generic error text — so neither
+`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)` (a lint rule,
+`API_HANDLER_WRAPPED` in `eslint.config.js`, rejects an unwrapped export), which converts every
+thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status and
+message, and an unexpected exception becomes a 500 with the generic error text — so neither
 throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
 exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
 module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
@@ -154,10 +155,11 @@ the paper shows through in the result and the downloaded image retains transpare
 render without a usable magenta border and substantial subject returns the retryable `502` failure
 for every credential type, including paid keys. A failed paid generation still incurs the upstream
 model charge; a free-grant reservation is released. The same check runs for synchronous and
-collected results. A free-grant response also carries `X-Free-Generations-Remaining` and
-`X-Report-Token` — the latter the signed proof this AI attempt ran here, which `/api/report-image`
-requires before it will accept a free-tier report. Exhaustion is `403` with
-`{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
+collected results: both routes build the picture, this `502`, and the safety refusal below through
+`web/src/lib/server/generationDelivery.ts`. A free-grant response also carries
+`X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
+ran here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion is
+`403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
@@ -261,9 +263,10 @@ deploy: a cold start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back r
 ### `GET /api/free-generation-grant`
 
 Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited
-per IP and never creates or spends a grant. It returns `503` when the project OpenAI key is absent
-or the durable daily provider-start ceiling is exhausted, allowing clients without another
-credential to hide the unavailable AI path.
+per IP and never creates or spends a grant. A missing or malformed `X-Installation-Id` is
+`400 Installation grant unavailable`. It returns `503` when the project OpenAI key is absent or the
+durable daily provider-start ceiling is exhausted, allowing clients without another credential to
+hide the unavailable AI path.
 
 ```json
 { "ok": true, "remaining": 10, "limit": 10 }
@@ -488,8 +491,7 @@ directly in its form actions and **never** loops back through these endpoints.
   `HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")` — the same value the web console
   stores in its HTTP-only cookie. It cannot be inverted to recover the secret, and rotating the
   secret (or bumping the HMAC label) invalidates every outstanding session at once.
-* Subsequent requests send it as `Authorization: Bearer <session>`. The native app keeps it in the
-  platform secure store (Keychain/Keystore).
+* Subsequent requests send it as `Authorization: Bearer <session>`.
 * All comparisons are constant-time (`timingSafeEqual`).
 
 ### `POST /api/admin/login`
@@ -582,8 +584,9 @@ it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the 
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
 that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
 `SECURITY_HEADERS` that means something on a non-document body — and neither carrying the rest of
-the SSR set; the preflight returns before the header hook and so carries neither), the
-`verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
+the SSR set; the preflight returns before the header hook and so carries neither), `no-store` on
+every non-`OPTIONS` `/api/*` response its checks receive (`tools/api-smoke/lib/api-caching.mjs`),
+the `verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
 `GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
 formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
 once the verify budget is burned; valid token minus image → 400 — every case is rejected before the
@@ -603,14 +606,15 @@ ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 
 It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
 headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
-failures that cannot reach a model call, and the admin-token persistence contract. The workflow
-probes production daily with a read-only `persistent:true` assertion; a manually targeted Netlify
-preview also completes the token write/read/delete round-trip. Manual dispatch accepts an optional
-preview or production URL and otherwise uses production. The unrelated GitHub Pages
-`deployment_status` event is not a trigger or target source. Checks with an explicit preview URL
-compare the deployed version to their selected ref exactly; production checks require the version
-shape and no-cache policy but allow the build to trail docs/tooling-only commits excluded by
-ADR-0070, including when its canonical URL is entered explicitly.
+failures that cannot reach a model call, `no-store` on every non-`OPTIONS` `/api/*` response, and
+the admin-token persistence contract. The workflow probes production daily with a read-only
+`persistent:true` assertion; a manually targeted Netlify preview also completes the token
+write/read/delete round-trip. Manual dispatch accepts an optional preview or production URL and
+otherwise uses production. The unrelated GitHub Pages `deployment_status` event is not a trigger or
+target source. Checks with an explicit preview URL compare the deployed version to their selected
+ref exactly; production checks require the version shape and no-cache policy but allow the build to
+trail docs/tooling-only commits excluded by ADR-0070, including when its canonical URL is entered
+explicitly.
 
 To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 
@@ -629,11 +633,7 @@ persistence contract.
 * `vite dev` / `netlify dev` run all endpoints same-origin — no CORS in play. Token mutations
   without Netlify Blobs credentials fall back to an in-memory list (seeded from
   `ALLOWED_TOKENS_LIST`) that resets on restart.
-* Set `ADMIN_ACCESS_TOKEN` in your environment to use either admin console locally; unset, every
-  login fails (there is nothing to authenticate against).
-* A native dev build (`CAPACITOR=true`) points `apiUrl()` at `https://splotch.art`, so an on-device
-  admin session talks to **production** data. The permissive `/api/*` CORS plus bearer auth means
-  the WebView origin swap (Android `https://localhost`, iOS `capacitor://localhost`) needs no extra
-  configuration.
+* Set `ADMIN_ACCESS_TOKEN` in your environment to use the admin console or its JSON twin locally;
+  unset, every login fails (there is nothing to authenticate against).
 * E2E coverage lives in `tests/admin.spec.ts`; the Playwright web server starts with
   `ADMIN_ACCESS_TOKEN=test-admin-secret`.

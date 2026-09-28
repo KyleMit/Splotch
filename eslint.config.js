@@ -148,6 +148,55 @@ const HISTORY_STATE_MUTATION_RESTRICTIONS = [
   },
 ];
 
+// The full no-restricted-syntax set for web/src, applied by the web/src block and recomposed by
+// every later block that adds selectors for a slice of it. Each set is merged here rather than into
+// its own web/src block, which would silently replace the rate-limit selectors (that actually
+// happened during evaluation). The Svelte and Vitest blocks replace this entry for their file
+// shapes, so each is followed by a web/src-scoped block that recomposes NAMED_EXPORTS_ONLY.
+const WEB_SRC_SYNTAX_RESTRICTIONS = [
+  ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
+    selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
+    message: RATE_LIMIT_MESSAGE,
+  })),
+  NAMED_EXPORTS_ONLY,
+  ...STORAGE_SEAM_ONLY,
+  ...MEDIA_QUERY_LITERAL,
+  ...HISTORY_STATE_MUTATION_RESTRICTIONS,
+  ...BLOBS_CONSISTENCY_EXPLICIT,
+];
+
+// Every /api method handler is exported as `apiHandler(...)` itself: an unwrapped one compiles and
+// passes its unit tests, which call the export directly, yet sends SvelteKit's { message } body
+// to clients that parse { ok, error } and skips the [server error] log line. The rule is stated
+// in docs/API.md, .claude/rules/server-api.md, and apiHandler's doc comment; the positive control
+// is tools/tests/api-handler-lint.test.mjs. A handler is flagged unless its initializer is the
+// apiHandler call, so a wrapped handler exported by another name or specifier is flagged too. A
+// selector matches the callee by name, not binding, so the second set pins that name to the
+// http.ts import: a local or differently imported apiHandler is flagged where it is bound.
+const API_HANDLER_EXEMPT_ROUTE = 'web/src/routes/api/csp-report/+server.ts';
+const API_METHOD_EXPORT = '/^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD|fallback)$/';
+const API_HANDLER_MESSAGE =
+  'Export every /api method handler as apiHandler(...) from $lib/server/http, so a thrown failure answers { ok:false, error } and is logged (docs/API.md). csp-report is the one exemption.';
+const API_HANDLER_BINDING_MESSAGE =
+  'In an /api route, apiHandler is the $lib/server/http import and nothing else, so an apiHandler(...) export is the real wrapper.';
+const API_HANDLER_WRAPPED = [
+  ...[
+    `ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[id.name=${API_METHOD_EXPORT}]:not([init.type="CallExpression"][init.callee.name="apiHandler"])`,
+    `ExportNamedDeclaration > FunctionDeclaration[id.name=${API_METHOD_EXPORT}]`,
+    `ExportSpecifier[exported.name=${API_METHOD_EXPORT}]`,
+  ].map((selector) => ({ selector, message: API_HANDLER_MESSAGE })),
+  ...[
+    'ImportDeclaration[source.value!="$lib/server/http"] > ImportSpecifier[local.name="apiHandler"]',
+    'ImportSpecifier[local.name="apiHandler"][imported.name!="apiHandler"]',
+    ':matches(ImportDefaultSpecifier, ImportNamespaceSpecifier)[local.name="apiHandler"]',
+    ':matches(VariableDeclarator, FunctionDeclaration, ClassDeclaration)[id.name="apiHandler"]',
+    'ObjectPattern > Property[value.name="apiHandler"]',
+    'ArrayPattern > Identifier[name="apiHandler"]',
+    'AssignmentPattern[left.name="apiHandler"]',
+    'RestElement[argument.name="apiHandler"]',
+  ].map((selector) => ({ selector, message: API_HANDLER_BINDING_MESSAGE })),
+];
+
 const VITEST_VOCABULARY_SELECTORS = [
   'CallExpression[callee.name="test"]',
   'CallExpression[callee.object.name="test"]',
@@ -417,23 +466,15 @@ export default tseslint.config(
     // there. The Vitest block near the bottom likewise replaces this for *.test.ts files,
     // where ad-hoc literal keys are the point.
     files: ['web/src/**'],
+    rules: { 'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS] },
+  },
+  {
+    // Adds the apiHandler guard to the /api routes. Recomposes the whole web/src set, which this
+    // block's entry would otherwise replace for these files.
+    files: ['web/src/routes/api/**/+server.ts'],
+    ignores: [API_HANDLER_EXEMPT_ROUTE],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
-          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
-          message: RATE_LIMIT_MESSAGE,
-        })),
-        // Merged here rather than its own web/src block, which would silently replace the
-        // rate-limit selectors above (that actually happened during evaluation). The Svelte and
-        // Vitest blocks below replace this entry for their file shapes, so each is followed by a
-        // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
-        NAMED_EXPORTS_ONLY,
-        ...STORAGE_SEAM_ONLY,
-        ...MEDIA_QUERY_LITERAL,
-        ...HISTORY_STATE_MUTATION_RESTRICTIONS,
-        ...BLOBS_CONSISTENCY_EXPLICIT,
-      ],
+      'no-restricted-syntax': ['error', ...WEB_SRC_SYNTAX_RESTRICTIONS, ...API_HANDLER_WRAPPED],
     },
   },
   {

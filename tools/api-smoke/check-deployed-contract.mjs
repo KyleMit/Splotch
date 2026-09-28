@@ -12,6 +12,7 @@ import {
 import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
 import { check, fatal, json, summarize } from '../lib/smoke.mjs';
+import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
 
@@ -332,11 +333,13 @@ async function runStage(name, stage) {
 }
 
 async function run(target) {
+  const checkApiCaching = recordApiCaching();
   await runStage('static routes', () => checkStaticRoutes(target.hostname));
   await runStage('version', checkVersion);
   await runStage('CORS preflight', checkCors);
   await runStage('unauthenticated API', checkUnauthenticatedApi);
   await runStage('admin persistence', () => checkDeployedAdminContract(BASE, ADMIN_SECRET));
+  checkApiCaching();
 }
 
 export async function checkDeployedContract() {
