@@ -112,10 +112,11 @@ export function createTool(): ToolState {
       if (brush === 'crayon' && inkBrush === 'crayon') inkBrush = 'pen';
       if (s.brush === brush) selectInkBrush();
     },
-    // Flip between the ink brush and the eraser. Shared by the Brush Menu's eraser
-    // entry-toggle semantics and the Apple Pencil double-tap bridge
-    // (web/src/lib/plugins/pencilEraser.ts). Leaving the eraser always lands on
-    // the last ink brush (never the magic brush).
+    // Flip between the ink brush and the eraser, for the Apple Pencil double-tap
+    // bridge (web/src/lib/plugins/pencilEraser.ts). Leaving the eraser always lands
+    // on the last ink brush (never the magic brush). It does not check that Eraser
+    // is shown: settings.svelte.ts owns that rule (actionControlShown) and imports
+    // this store, so a caller asks settings before flipping.
     toggleEraser() {
       if (s.brush === 'eraser') selectInkBrush();
       else selectBrush('eraser');

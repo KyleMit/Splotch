@@ -144,8 +144,10 @@ subscribes with `addListener` and exports `initPencilEraser()`, which `DrawingCa
 lazy-starts only when `isNative()` so `@capacitor/core` never loads on web. The web fallback's
 `addListener` is inert. The feature is on by default but parent-disablable: the listener's
 `handleDoubleTap()` sets a sticky `applePencilSeen` flag (lazy detection — there's no web API to
-query pencil pairing) and only toggles when `pencilEraserEnabled` is on; Settings shows that toggle
-only `{#if settings.applePencilSeen}` so it appears solely on pencil-capable devices.
+query pencil pairing) and only toggles when `pencilEraserEnabled` is on and the Actions Panel shows
+Eraser (`actionControlShown('eraserEnabled')`, which also honours the Tool Drawer switch); Settings
+shows that toggle only once `applePencilSeen` is set, so it appears solely on pencil-capable
+devices.
 
 Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`); `cap:sync`
 alone won't compile/register the new Swift/Java classes.
