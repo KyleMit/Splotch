@@ -3,7 +3,7 @@
   "control": false,
   "title": "the packet diff inherits the developer's diff.context instead of the three lines GitHub renders",
   "path": "tools/rival-agent/worktree.mjs",
-  "lines": [140, 140],
+  "lines": [147, 147],
   "severity": "blocking",
   "keywords": ["--unified", "diff.context", "context lines", "three lines", "renders", "anchor"]
 }
