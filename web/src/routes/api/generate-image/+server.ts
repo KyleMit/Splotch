@@ -24,6 +24,7 @@ import {
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
 import {
+  type AllowedImageType,
   isAllowedImageType,
   MAX_IMAGE_BYTES,
   resolveGenerationPrompt,
@@ -66,8 +67,10 @@ function safetyRefusal(reason: string, authorization: GenerationAuthorization): 
   return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
-function assertAllowedImageType(mimeType: string): void {
-  if (mimeType && !isAllowedImageType(mimeType)) {
+// A missing type is refused like any other: the server does not sniff, so
+// labelling unknown bytes would forward them to the paid provider unchecked.
+function assertAllowedImageType(mimeType: string): asserts mimeType is AllowedImageType {
+  if (!isAllowedImageType(mimeType)) {
     throw error(415, 'Unsupported image type');
   }
 }
@@ -91,7 +94,7 @@ interface GenerationRequest {
   // Deferred so the ≤15 MB body isn't read or validated until authorization
   // succeeds — the thunk can throw 400, 413, or 415. (The multipart shape has
   // already buffered by necessity; only the raw path actually saves the read.)
-  readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
+  readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: AllowedImageType }>;
 }
 
 // Two request shapes are accepted (ADR-0064):
@@ -127,8 +130,9 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
       readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
         if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
-        assertAllowedImageType(imageFile.type);
-        return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
+        const mimeType = imageFile.type;
+        assertAllowedImageType(mimeType);
+        return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType };
       },
     };
   }
@@ -266,8 +270,6 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       }
     }
 
-    const imageMimeType = mimeType || 'image/png';
-
     // Hand the long half to the background worker when the caller can wait for
     // it in a later request and there is a worker to hand it to (ADR-0115). The
     // fallback is not a fallback in name only: a `null` here means the handoff
@@ -280,7 +282,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         { free: freeSettlement(authorization, reservationId), style },
         {
           bytes: new Uint8Array(inputBytes).buffer,
-          mimeType: imageMimeType,
+          mimeType,
         },
         { apiKey: authorization.effectiveKey, prompt: finalPrompt }
       );
@@ -297,7 +299,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     usageAttempted = true;
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,
-      image: { bytes: inputBytes, mimeType: imageMimeType },
+      image: { bytes: inputBytes, mimeType },
       prompt: finalPrompt,
       deadlineMs: synchronousDeadlineMs(),
     });
