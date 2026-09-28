@@ -531,6 +531,39 @@ export async function draw(page: Page, points: { x: number; y: number }[]) {
   await dragStroke(page, box, points);
 }
 
+// SETTLED_IN_STROKES (state/canvas.svelte.ts) earns the install banner, and
+// STROKES_BEFORE_AUTO_CLEAR (state/install.svelte.ts) more strokes part it. Both
+// live in rune modules the Playwright loader cannot import; a raised threshold
+// fails the install-banner specs by timeout.
+export const INSTALL_BANNER_EARNING_STROKES = 3;
+export const INSTALL_BANNER_AUTO_CLEAR_STROKES = 5;
+
+// The banner prewarms near the end of the interaction-quiet overlay pump. If
+// the earning strokes beat it, the earned state demands it in the same flush
+// that releases deferred service-worker registration (routes/+page.svelte). The
+// demand path keeps that network work from delaying the visible banner, while
+// this timeout still covers a loaded worker's component import and rendering.
+export const BANNER_MOUNT_TIMEOUT_MS = 20_000;
+
+const INSTALL_BANNER_STROKE_SPACING_PX = 30;
+
+/** Draws `count` short strokes down the canvas, by default enough to earn the
+ *  install banner. It waits for nothing: a dismissed banner stays unmounted. */
+export async function drawInstallBannerStrokes(page: Page, count = INSTALL_BANNER_EARNING_STROKES) {
+  for (let stroke = 0; stroke < count; stroke += 1) {
+    const y = 180 + (stroke % INSTALL_BANNER_EARNING_STROKES) * INSTALL_BANNER_STROKE_SPACING_PX;
+    await draw(page, [
+      { x: 230, y },
+      { x: 300, y: y + 15 },
+    ]);
+  }
+}
+
+export async function earnInstallBanner(page: Page) {
+  await drawInstallBannerStrokes(page);
+  await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
+}
+
 export async function drawCommittedStroke(page: Page, points: { x: number; y: number }[]) {
   const baseline = await readDrawingHistory(page);
   if (!baseline) throw new Error('drawing history is unavailable');
