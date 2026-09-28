@@ -162,10 +162,15 @@ function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPrefere
   return isReduceMotionPreference(raw) ? raw : fallback;
 }
 
-export type ToolbarStyle = 'buttons' | 'bare';
+const TOOLBAR_STYLES = ['buttons', 'bare'] as const;
 
-function readToolbarStyle(): ToolbarStyle {
-  return readString(STORAGE_KEYS.toolbarStyle, 'buttons') === 'bare' ? 'bare' : 'buttons';
+export type ToolbarStyle = (typeof TOOLBAR_STYLES)[number];
+
+const TOOLBAR_STYLE_DEFAULT: ToolbarStyle = 'buttons';
+
+function readToolbarStyle(fallback: ToolbarStyle): ToolbarStyle {
+  const raw = readString(STORAGE_KEYS.toolbarStyle, fallback);
+  return TOOLBAR_STYLES.find((style) => style === raw) ?? fallback;
 }
 
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
@@ -209,7 +214,7 @@ function readPersistedSettings(current?: PersistedSettings): PersistedSettings {
     ...ints,
     theme: readTheme(current?.theme ?? THEME_DEFAULT),
     reduceMotion: readReduceMotion(current?.reduceMotion ?? REDUCE_MOTION_DEFAULT),
-    toolbarStyle: readToolbarStyle(),
+    toolbarStyle: readToolbarStyle(current?.toolbarStyle ?? TOOLBAR_STYLE_DEFAULT),
   };
 }
 

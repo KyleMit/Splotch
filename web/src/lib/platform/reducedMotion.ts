@@ -29,7 +29,10 @@ export type ReduceMotionPreference = (typeof EXPLICIT_REDUCE_MOTION_PREFERENCES)
 export const REDUCE_MOTION_DEFAULT: ReduceMotionPreference = 'system';
 
 export function isReduceMotionPreference(value: unknown): value is ReduceMotionPreference {
-  return value === 'reduce' || value === 'full' || value === 'system';
+  return (
+    value === 'system' ||
+    EXPLICIT_REDUCE_MOTION_PREFERENCES.some((preference) => preference === value)
+  );
 }
 
 export function resolveReducedMotion(
