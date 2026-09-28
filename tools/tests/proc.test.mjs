@@ -15,6 +15,7 @@ import {
   hasCommand,
   isMain,
   parseNumberFlag,
+  readSwitch,
   readValueFlag,
 } from '../lib/proc.mjs';
 
@@ -199,6 +200,22 @@ describe('readValueFlag', () => {
   });
 });
 
+// `--keep-all=true` once read as absent, so a study promotion kept one capture
+// per cell while appearing to accept a request to keep them all.
+describe('readSwitch', () => {
+  it('reads a bare switch as present and an absent one as not', () => {
+    expect(readSwitch(['--keep-all'], 'keep-all')).toBe(true);
+    expect(readSwitch([], 'keep-all')).toBe(false);
+    expect(readSwitch(['--keep-all-but=1'], 'keep-all')).toBe(false);
+  });
+
+  it.each(['--keep-all=true', '--keep-all='])('rejects %j', (arg) => {
+    expect(() => readSwitch([arg], 'keep-all')).toThrow(
+      '--keep-all is a switch: write --keep-all with no value'
+    );
+  });
+});
+
 describe('argFlag', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -249,6 +266,9 @@ describe('parseNumberFlag', () => {
     ['0', TCP_PORT, 'an integer >= 1 and <= 65535'],
     ['65536', TCP_PORT, 'an integer >= 1 and <= 65535'],
     ['99999999999999999999', POSITIVE_INTEGER, 'an integer >= 1'],
+    // Overflows to Infinity, which the open upper bound of these rules admits.
+    ['9'.repeat(400), POSITIVE_NUMBER, 'a number > 0'],
+    ['9'.repeat(400), { min: 0 }, 'a number >= 0'],
   ])('rejects %j', (raw, rule, described) => {
     expect(() => parseNumberFlag('value', raw, rule)).toThrow(
       `--value must be ${described}, got "${raw}"`

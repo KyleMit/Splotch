@@ -142,8 +142,9 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     ? new URL(externalUrl).toString()
     : `http://localhost:${port}${APP_URL_PATH}`;
   const contactSeconds = numberFlag('contact-seconds', DEFAULT_CONTACT_SECONDS, POSITIVE_NUMBER);
-  // A bare `--drive` means the default mix, as it does for perf:ios:webkit:frames.
-  const drive = has('drive') ? 'mixed' : flag('drive', 'mixed');
+  // A bare `--drive` means the default mix, as it does for perf:ios:webkit:frames;
+  // it is read from argv because `has` rejects a switch written with `=`.
+  const drive = argv.includes('--drive') ? 'mixed' : flag('drive', 'mixed');
   const brush = flag('brush', 'pen');
   const driveHz = numberFlag('drive-hz', undefined, POSITIVE_NUMBER);
   const viewport = resolveViewport(flag('viewport'));

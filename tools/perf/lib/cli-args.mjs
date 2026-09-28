@@ -1,5 +1,12 @@
 import { DEVICES, resolveDevice } from './profile-devices.mjs';
-import { TCP_PORT, fail, parseNumberFlag, parseOrFail, readValueFlag } from '../../lib/proc.mjs';
+import {
+  TCP_PORT,
+  fail,
+  parseNumberFlag,
+  parseOrFail,
+  readSwitch,
+  readValueFlag,
+} from '../../lib/proc.mjs';
 import { PORT_ROLES } from './capture-readiness.mjs';
 
 // CDP's CPU throttling rate is a slowdown factor, so anything up to 1 runs
@@ -43,7 +50,7 @@ export function parsePerfArgs(
     const raw = flag(name);
     return raw === undefined ? fallback : report(() => parseNumberFlag(name, raw, rule));
   };
-  const has = (name) => argv.includes(`--${name}`);
+  const has = (name) => report(() => readSwitch(argv, name));
 
   if (entry) {
     rejectUnknownFlags(

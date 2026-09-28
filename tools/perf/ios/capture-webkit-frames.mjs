@@ -164,18 +164,21 @@ export async function runIpadFrames(argv = process.argv.slice(2)) {
 
   const appUrl = resolveDeviceUrl(flag('url'), port, APP_PATH);
   const contactSeconds = numberFlag('contact-seconds', DEFAULT_CONTACT_SECONDS, POSITIVE_NUMBER);
-  // A bare `--free-draw` gets validateFreeDrawOptions' own duration message.
-  const freeDrawValue = has('free-draw') ? undefined : flag('free-draw');
+  // `--free-draw` and `--drive` are read bare as well as with a value, so their
+  // bare forms come from argv: `has` rejects a switch written with `=`. A bare
+  // `--free-draw` gets validateFreeDrawOptions' own duration message.
+  const bareFreeDraw = argv.includes('--free-draw');
+  const freeDrawValue = bareFreeDraw ? undefined : flag('free-draw');
   // `--drive` with no value is the useful default: one long stroke then a burst
   // of short ones, the two shapes the lag report names.
-  const drive = has('drive') ? 'mixed' : flag('drive');
+  const drive = argv.includes('--drive') ? 'mixed' : flag('drive');
   const driveHz = numberFlag('drive-hz', undefined, POSITIVE_NUMBER);
   const pointerType = flag('pointer-type');
   const brush = flag('brush');
   const hud = has('hud') || (!has('no-hud') && !drive);
   // Wall-clock window behind a START tap, rather than banked finger-down time.
   const freeDrawSeconds = validateFreeDrawOptions(freeDrawValue, {
-    bare: has('free-draw'),
+    bare: bareFreeDraw,
     hud,
   });
   const probeConfig = probeConfigScript({

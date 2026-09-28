@@ -19,6 +19,7 @@ import {
   POSITIVE_NUMBER,
   argFlag,
   argNumber,
+  argSwitch,
   capture,
   fail,
   isMain,
@@ -367,7 +368,7 @@ export async function captureHandInput({
   opener = argFlag('open', argFlag('platform', 'android') === 'android' ? 'adb' : 'manual'),
   label = argFlag('label'),
   output = argFlag('output'),
-  allowForeignBuild = process.argv.includes('--allow-foreign-build'),
+  allowForeignBuild = argSwitch('allow-foreign-build'),
   // `argFlag` matches `--name=value` only, so a bare flag is read from argv.
   spokenCues = process.argv.includes('--speak'),
 } = {}) {

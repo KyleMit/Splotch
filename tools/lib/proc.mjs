@@ -64,8 +64,7 @@ export function requireEnv(name, hint) {
 // arrives — and an empty `--name=` both throw instead of reading as absent,
 // because that silent fallback is directional: a bare `--native-app` read as
 // absent captured Safari while the artifact reported a WebView runtime. A
-// present-or-absent switch is not a value flag; read it with
-// `argv.includes('--name')`.
+// present-or-absent switch is not a value flag; read it with readSwitch.
 export function readValueFlag(argv, name) {
   const bare = `--${name}`;
   if (argv.includes(bare)) throw new Error(`${bare} takes a value: write ${bare}=<value>`);
@@ -77,6 +76,20 @@ export function readValueFlag(argv, name) {
 
 export function argFlag(name, fallback, argv = process.argv) {
   return parseOrFail(() => readValueFlag(argv, name)) ?? fallback;
+}
+
+// The mirror rule for a switch: `--name=true` throws rather than reading as
+// absent, which would run without the switch while appearing to accept it.
+export function readSwitch(argv, name) {
+  const bare = `--${name}`;
+  if (argv.some((arg) => arg.startsWith(`${bare}=`))) {
+    throw new Error(`${bare} is a switch: write ${bare} with no value`);
+  }
+  return argv.includes(bare);
+}
+
+export function argSwitch(name) {
+  return parseOrFail(() => readSwitch(process.argv, name));
 }
 
 // Number() alone reads '' as 0 and accepts `0x10`, `1e3`, and `Infinity`;
@@ -105,8 +118,9 @@ function describeNumberRule({ integer = false, min, above, max }) {
 export function parseNumberFlag(name, raw, rule) {
   const { integer = false, min = -Infinity, above = -Infinity, max = Infinity } = rule;
   const value = (integer ? INTEGER_TEXT : DECIMAL_TEXT).test(raw) ? Number(raw) : Number.NaN;
-  const inRange = value >= min && value > above && value <= max;
-  if (!inRange || (integer && !Number.isSafeInteger(value))) {
+  // A long enough digit string overflows to Infinity, which every open bound admits.
+  const representable = integer ? Number.isSafeInteger(value) : Number.isFinite(value);
+  if (!representable || !(value >= min && value > above && value <= max)) {
     throw new Error(`--${name} must be ${describeNumberRule(rule)}, got "${raw}"`);
   }
   return value;

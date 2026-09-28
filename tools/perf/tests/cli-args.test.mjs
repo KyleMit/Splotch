@@ -145,6 +145,19 @@ describe('parsePerfArgs', () => {
     expect(exit).not.toHaveBeenCalled();
   });
 
+  // `--no-throttle=true` read as absent, so the run stayed throttled at 4×.
+  it('exits for a switch written with a value', () => {
+    const { error, exit } = spyOnExit();
+
+    expect(() =>
+      parsePerfArgs({ throttleDefault: 4, entry: true }, ['--no-throttle=true'])
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(
+      '--no-throttle is a switch: write --no-throttle with no value'
+    );
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+
   it('reports a malformed --throttle even when --no-throttle wins', () => {
     expect(() =>
       parsePerfArgs({ throttleDefault: 4 }, ['--throttle=abc', '--no-throttle'])

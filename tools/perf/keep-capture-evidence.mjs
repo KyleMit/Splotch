@@ -25,7 +25,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, argSwitch, fail, isMain, runMain } from '../lib/proc.mjs';
 import {
   brushOf,
   findCaptureFiles,
@@ -260,10 +260,10 @@ export async function keepCaptureEvidence({
   productCommit = argFlag('product-commit'),
   target = argFlag('target'),
   filter = argFlag('filter'),
-  force = process.argv.includes('--force'),
-  keepAll = process.argv.includes('--keep-all'),
+  force = argSwitch('force'),
+  keepAll = argSwitch('keep-all'),
   study = argFlag('study'),
-  allowFailed = process.argv.includes('--allow-failed'),
+  allowFailed = argSwitch('allow-failed'),
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
   evidenceRoot = EVIDENCE_ROOT,
