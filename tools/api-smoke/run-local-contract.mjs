@@ -15,6 +15,7 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
+import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the assertions below name the same headers the hook stamps: /api/* takes
@@ -583,11 +584,7 @@ async function checkVerifyKey(base) {
   // 503 KEY_CHECK_UNAVAILABLE and fail the run for external state rather than a
   // contract regression. Both provider branches are covered where they can be
   // driven deterministically, in the route's own unit test.
-  const empty = await fetch(`${base}/api/verify-key`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
-  });
+  const empty = await postJson(base, '/api/verify-key', {});
   const emptyBody = await json(empty);
   check(
     'verify-key with no key → 400 {ok:false, error}',
@@ -662,6 +659,7 @@ async function checkThrottling(base) {
 // spends its own bucket, and checkThrottling must run last so the closing
 // generate-image guess lands on an already-exhausted shared per-IP budget.
 async function run() {
+  const checkApiCaching = recordApiCaching();
   const admin = adminClient(BASE);
   const { auth, noAuth } = await checkAdminAuth(admin);
   await checkCorsContract(BASE, noAuth);
@@ -675,6 +673,7 @@ async function run() {
   await checkVerifyKey(BASE);
   await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
+  checkApiCaching();
 }
 
 let stop;

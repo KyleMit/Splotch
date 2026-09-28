@@ -87,6 +87,7 @@ function sendJson(response, status, body, headers = {}) {
 
 async function startDeploy({
   adminCsp = ssrCsp,
+  cacheableApiPath,
   failPath,
   functionSecurityHeader,
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
@@ -107,6 +108,10 @@ async function startDeploy({
       request.socket.destroy();
       return;
     }
+    const apiHeaders =
+      url.pathname === cacheableApiPath
+        ? corsHeaders
+        : { ...corsHeaders, 'Cache-Control': 'no-store' };
     const routeSecurityHeaders = Object.fromEntries(
       Object.entries(securityHeaders)
         .filter(([name]) => name !== omitSecurityHeader)
@@ -164,12 +169,12 @@ async function startDeploy({
       return;
     }
     if (url.pathname === '/api/admin/login') {
-      sendJson(response, 200, { ok: true, session }, corsHeaders);
+      sendJson(response, 200, { ok: true, session }, apiHeaders);
       return;
     }
     if (url.pathname === '/api/admin/tokens') {
       if (request.headers.authorization !== `Bearer ${session}`) {
-        sendJson(response, 401, { ok: false, error: 'Unauthorized' }, corsHeaders);
+        sendJson(response, 401, { ok: false, error: 'Unauthorized' }, apiHeaders);
         return;
       }
       const token = requestBody ? JSON.parse(requestBody).token : undefined;
@@ -184,12 +189,12 @@ async function startDeploy({
           invites: [],
           persistent,
         },
-        corsHeaders
+        apiHeaders
       );
       return;
     }
     const status = url.pathname === '/api/generate-image' ? 403 : 400;
-    sendJson(response, status, { ok: false, error: 'Expected failure' }, corsHeaders);
+    sendJson(response, status, { ok: false, error: 'Expected failure' }, apiHeaders);
   });
   servers.push(server);
   server.listen(0, '127.0.0.1');
@@ -377,6 +382,14 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('GET /admin → no-store');
     expect(result.stderr).toContain('Cache-Control=null');
+  });
+
+  it('fails when a deployed /api response becomes cacheable', async () => {
+    const result = await runSmoke(await startDeploy({ cacheableApiPath: '/api/verify-key' }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('every non-OPTIONS /api/* response → Cache-Control: no-store');
+    expect(result.stderr).toContain('POST /api/verify-key → 400 Cache-Control=null');
   });
 
   it('reports the home response size when no immutable asset can be found', async () => {

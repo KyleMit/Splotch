@@ -583,7 +583,8 @@ it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the 
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
 that non-`OPTIONS` response also carrying `API_RESPONSE_HEADERS` — the `nosniff` subset of
 `SECURITY_HEADERS` that means something on a non-document body — and neither carrying the rest of
-the SSR set; the preflight returns before the header hook and so carries neither), the
+the SSR set; the preflight returns before the header hook and so carries neither), `no-store` on
+every non-`OPTIONS` `/api/*` response the run receives (`tools/api-smoke/lib/api-caching.mjs`), the
 `verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
 `GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
 formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
@@ -604,14 +605,15 @@ ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 
 It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
 headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
-failures that cannot reach a model call, and the admin-token persistence contract. The workflow
-probes production daily with a read-only `persistent:true` assertion; a manually targeted Netlify
-preview also completes the token write/read/delete round-trip. Manual dispatch accepts an optional
-preview or production URL and otherwise uses production. The unrelated GitHub Pages
-`deployment_status` event is not a trigger or target source. Checks with an explicit preview URL
-compare the deployed version to their selected ref exactly; production checks require the version
-shape and no-cache policy but allow the build to trail docs/tooling-only commits excluded by
-ADR-0070, including when its canonical URL is entered explicitly.
+failures that cannot reach a model call, `no-store` on every non-`OPTIONS` `/api/*` response, and
+the admin-token persistence contract. The workflow probes production daily with a read-only
+`persistent:true` assertion; a manually targeted Netlify preview also completes the token
+write/read/delete round-trip. Manual dispatch accepts an optional preview or production URL and
+otherwise uses production. The unrelated GitHub Pages `deployment_status` event is not a trigger or
+target source. Checks with an explicit preview URL compare the deployed version to their selected
+ref exactly; production checks require the version shape and no-cache policy but allow the build to
+trail docs/tooling-only commits excluded by ADR-0070, including when its canonical URL is entered
+explicitly.
 
 To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 
