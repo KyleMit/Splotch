@@ -321,7 +321,7 @@ export const WEB_SRC_DOMAIN_RULES = [
   [D.admin, /^lib\/components\/admin\//],
   [D.admin, /^routes\/(api\/)?admin\//],
   [D.admin, /^lib\/server\/(admin|tokens)$/],
-  [D.admin, /^lib\/(adminFormat|adminPersistence|inviteLink)$/],
+  [D.admin, /^lib\/(adminFormat|inviteLink)$/],
   [D.admin, /^lib\/pwa\/adminRoute$/],
 
   [D.beta, /^lib\/components\/beta\//],
