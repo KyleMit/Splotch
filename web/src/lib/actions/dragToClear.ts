@@ -3,9 +3,9 @@ import {
   cancelClearSound,
   commitClearSound,
   startClearSound,
-  stopDrawSound,
   updateClearSound,
-} from '$lib/audio/drawingSound';
+} from '$lib/audio/clearSound';
+import { stopDrawSound } from '$lib/audio/drawingSound';
 import { CLEAR_SHEET_DURATION_MS, type ClientPoint } from '$lib/drawing/inkMotion';
 import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
