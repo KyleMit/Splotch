@@ -337,7 +337,7 @@ describe('composeExportPng overlay', () => {
       preview: {
         width: 100,
         onReady,
-        source: {
+        snapshot: {
           source: {
             width: 200,
             height: 100,
@@ -374,7 +374,7 @@ describe('composeExportPng overlay', () => {
       preview: {
         width: 100,
         onReady,
-        source: {
+        snapshot: {
           source: {
             width: 200,
             height: 100,
@@ -415,7 +415,7 @@ describe('composeExportPng overlay', () => {
         preview: {
           width: 100,
           onReady,
-          source: {
+          snapshot: {
             source: {
               width: 200,
               height: 100,
@@ -474,7 +474,7 @@ describe('composeExportPng overlay', () => {
       preview: {
         width: 100,
         onReady: vi.fn(),
-        source: {
+        snapshot: {
           source: {
             width: 200,
             height: 100,
