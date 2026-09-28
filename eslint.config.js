@@ -213,6 +213,58 @@ const VACUOUS_TEST_RULES = {
   },
 };
 
+// tools/ files over the default max-lines cap, each capped at its own real-line count so it can
+// shrink but not grow: growth means cutting lines elsewhere in the file or raising its number here,
+// in a diff a reviewer sees. Unlike the web overrides, whose caps carry a reviewed WHY and headroom,
+// none of these has been reviewed for a split. The burn-down-oversized-code skill lists each one as
+// a candidate, and its split-or-raise review is what retires an entry or turns it into a web-style
+// override block.
+const TOOLS_GRANDFATHERED_MAX_LINES = {
+  'tools/api-smoke/run-local-contract.mjs': 548,
+  'tools/audit-burndown/run-burndown.mjs': 792,
+  'tools/audit-burndown/tests/burndown-core.test.mjs': 656,
+  'tools/audit-burndown/tests/run-burndown.test.mjs': 549,
+  'tools/e2e-tuning/gen-tuning-report.mjs': 860,
+  'tools/model-eval/gen-model-inputs.mjs': 512,
+  'tools/model-eval/lib/composition-score.mjs': 627,
+  'tools/model-eval/lib/model-eval-report.mjs': 763,
+  'tools/page-inventory/capture-page-inventory.mjs': 1024,
+  'tools/page-inventory/lib/page-inventory-report.mjs': 557,
+  'tools/page-inventory/tests/page-inventory.test.mjs': 928,
+  'tools/perf/android/capture-bundled-frames.mjs': 759,
+  'tools/perf/gen-performance-matrix.mjs': 2880,
+  'tools/perf/ios/capture-xcuitest-actions.mjs': 2629,
+  'tools/perf/ios/capture-xcuitest-screen.mjs': 1268,
+  'tools/perf/lib/campaign-plan.mjs': 742,
+  'tools/perf/lib/person-session.mjs': 502,
+  'tools/perf/lib/real-screen-stats.mjs': 771,
+  'tools/perf/prepare-capture.mjs': 885,
+  'tools/perf/probes/real-screen-probe.js': 684,
+  'tools/perf/run-campaign.mjs': 633,
+  'tools/perf/split-capture/capture-device-frames.mjs': 818,
+  'tools/perf/split-capture/lib/page-bootstrap.mjs': 540,
+  'tools/perf/tests/bootstrap-theme.test.mjs': 831,
+  'tools/perf/tests/campaign-artifact-acceptance.test.mjs': 685,
+  'tools/perf/tests/campaign-plan.test.mjs': 1403,
+  'tools/perf/tests/campaign-sources.test.mjs': 1142,
+  'tools/perf/tests/capture-readiness.test.mjs': 581,
+  'tools/perf/tests/coloring-books-ready.test.mjs': 676,
+  'tools/perf/tests/performance-matrix.test.mjs': 2396,
+  'tools/perf/tests/real-screen.test.mjs': 1384,
+  'tools/perf/tests/rescore-captures.test.mjs': 793,
+  'tools/perf/tests/split-capture.test.mjs': 2139,
+  'tools/perf/tests/undo-scenarios.test.mjs': 672,
+  'tools/perf/tests/xcuitest-actions.test.mjs': 1786,
+  'tools/perf/web/run-undo-scenarios.mjs': 1091,
+  'tools/scrapbook/clear-sound-sheet/sheet.js': 1716,
+  'tools/scrapbook/lib/scrapbook-index.mjs': 746,
+  'tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js': 571,
+  'tools/tests/bootstrap-worktree.test.mjs': 644,
+  'tools/tests/codex-transcript-tools.test.mjs': 503,
+  'tools/tests/fetch-image-reports.test.mjs': 568,
+  'tools/tests/workflow-hygiene.test.mjs': 511,
+};
+
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
 // source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
@@ -490,10 +542,19 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-non-null-assertion': 'error' },
   },
   {
-    // Size ratchet for app + E2E code: past 500 real lines a module is overdue for the split
-    // treatment engine.ts got (ADR-0004 siblings). Grandfathered outliers below carry caps just
-    // above their current size so they can only shrink.
-    files: ['web/src/**', 'web/tests/**'],
+    // Size ratchet for app, E2E, and tools code: past 500 real lines a module is overdue for the
+    // split treatment engine.ts got (ADR-0004 siblings). Outliers carry per-file caps below: the web
+    // overrides each state why the file stays whole, and TOOLS_GRANDFATHERED_MAX_LINES freezes the
+    // tools/ outliers at their size so they can only shrink. The burn-down-oversized-code skill's
+    // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
+    // its own. Excluded: generated pointer-instruction data, the frozen ideas-exploration archive,
+    // and the one-epic person-present session driver.
+    files: ['web/src/**', 'web/tests/**', 'tools/**/*.{mjs,js,ts}'],
+    ignores: [
+      'tools/store-drawings/generated/**',
+      'tools/asset-gen/ideas-exploration/**',
+      'tools/perf/run-person-session.mjs',
+    ],
     rules: {
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
     },
@@ -528,6 +589,10 @@ export default tseslint.config(
       'max-lines': ['error', { max: 510, skipBlankLines: true, skipComments: true }],
     },
   },
+  ...Object.entries(TOOLS_GRANDFATHERED_MAX_LINES).map(([path, max]) => ({
+    files: [path],
+    rules: { 'max-lines': ['error', { max, skipBlankLines: true, skipComments: true }] },
+  })),
   {
     // Function-size ratchet for app code: 125 real lines is the hard cap; 100 is the soft target
     // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly

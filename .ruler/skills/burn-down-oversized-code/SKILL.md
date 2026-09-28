@@ -147,7 +147,10 @@ user and point at `prune-git-workspace`.
 
 ## Mode: files
 
-Scope covers app code **and** tests, so expect test and spec files among the candidates.
+Scope covers app code, tests, and `tools/` scripts, so expect test and spec files among the
+candidates. Every `tools/` outlier lists with zero room, because `TOOLS_GRANDFATHERED_MAX_LINES`
+froze each at its size without a review. Deciding one takes it out of that table: a split sets its
+cap as for any other override, and a raise becomes a web-style override block with its WHY.
 
 **Seams that have held up:** a child component with its own props contract (as `ColorControl` and
 `BrushControl` are to `ActionsPanel`); a module that owns one responsibility; a test group moved to
