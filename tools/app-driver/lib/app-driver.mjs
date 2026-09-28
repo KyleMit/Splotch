@@ -2,9 +2,10 @@
 // (gen-store-assets.mjs, gen-promotional-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
+import { createServer } from 'node:net';
 import { sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
-import { spawnViteServer } from '../../lib/vite-server.mjs';
+import { portListenerPids, spawnViteServer } from '../../lib/vite-server.mjs';
 
 const DRAWING_CANVAS_SELECTOR = '#drawingCanvas';
 const DRAWER_TOGGLE_SELECTOR = '.drawer-toggle';
@@ -38,28 +39,56 @@ const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
 /** @public */
 export const DRAW_STROKE_STEPS = 6;
 
-const isUp = async (url) => {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    return false;
-  }
-};
+const serverBase = (port) => `http://localhost:${port}/`;
 
-// Reuse a dev server already listening on the port, or start one (killed via
-// the returned stop(), and on process exit as a backstop).
+// Binds `port` on the address vite serves on and releases it, resolving to the
+// port it held, or null when something already holds it. Port 0 asks the OS for
+// an ephemeral port, which sits outside the range other sessions choose by hand,
+// so none of them is likely to take it between this probe and the spawn.
+function bindProbe(port) {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', (err) => (err.code === 'EADDRINUSE' ? resolve(null) : reject(err)));
+    probe.listen(port, 'localhost', () => {
+      const bound = probe.address().port;
+      probe.close(() => resolve(bound));
+    });
+  });
+}
+
+// A port that was free when probed can still be taken before vite binds it.
+// vite's --strictPort then exits, and the answer waitForUrl saw came from
+// someone else. Only lsof can name the process holding the port, so a listener
+// it cannot see — lsof missing included — fails closed rather than vouching.
+function assertServedBy(server, port) {
+  const pids = portListenerPids(port);
+  if (!pids.includes(server.pid)) {
+    const holders = pids.length ? `pid ${pids.join(', ')}` : 'no listener lsof could name';
+    throw new Error(
+      `port ${port} answered, but not from the dev server this run started (pid ${server.pid}; found ${holders}). ` +
+        'If lsof is not installed, install it: this check cannot run without it.'
+    );
+  }
+}
+
+// Start this checkout's own dev server (killed via the returned stop(), and on
+// process exit as a backstop). A server already listening is never reused: an
+// answering port says nothing about which build it serves — another checkout's,
+// or a stale `vite preview` of this one — and every score, screenshot, and
+// review taken from it would still look valid. A held port moves the run to an
+// OS-assigned one, and its holder is never stopped, so callers read the
+// returned base rather than the port they asked for.
 export async function ensureDevServer(port, timeout = 90_000) {
-  const base = `http://localhost:${port}/`;
-  if (await isUp(base)) {
-    console.log(`Reusing dev server at ${base}`);
-    return { base, stop: () => {} };
-  }
-
+  const held = portListenerPids(port).length > 0 || (await bindProbe(port)) === null;
+  const servePort = held ? await bindProbe(0) : port;
+  if (held) console.log(`Port ${port} is in use; serving this checkout on ${servePort}.`);
+  const base = serverBase(servePort);
   console.log('Starting dev server…');
-  const { stop } = spawnViteServer(port);
+  const { server, stop } = spawnViteServer(servePort);
 
   try {
     await waitForUrl(base, timeout);
+    assertServedBy(server, servePort);
   } catch (err) {
     stop();
     throw err;

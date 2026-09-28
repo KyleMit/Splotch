@@ -76,14 +76,14 @@ shows and the publishing runbook.
 
 ## Prerequisites and failure behavior
 
-The promotional and store commands need installed project dependencies, Playwright Chromium, and the
-serving port (`--port`, default 4173) free or already serving **this checkout**.
-`gen-promotional-image.mjs` starts or reuses a dev server; `gen-store-assets.mjs` needs a
-**production preview** (the coloring-pack manifest and the dev-harness seam its scenes depend on),
-so with the port free it runs `PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result
-with `vite preview` (the preview process also gets `PUBLIC_ENABLE_DEV_HARNESS=true`, opening the
-server-side gate on `/dev/store-frames`). Both halves matter to capture mode
-(`web/src/lib/storeCapture.ts`,
+The promotional and store commands need installed project dependencies and Playwright Chromium.
+`gen-promotional-image.mjs` always starts its own dev server, on port 4173 or on an OS-assigned port
+when 4173 is in use. `gen-store-assets.mjs` needs its serving port (`--port`, default 4173) free or
+already serving **this checkout**, and a **production preview** (the coloring-pack manifest and the
+dev-harness seam its scenes depend on), so with the port free it runs
+`PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result with `vite preview` (the
+preview process also gets `PUBLIC_ENABLE_DEV_HARNESS=true`, opening the server-side gate on
+`/dev/store-frames`). Both halves matter to capture mode (`web/src/lib/storeCapture.ts`,
 [ADR-0123](../../docs/adrs/0123-capture-mode-flag-for-store-screenshots.md)): its flag is a
 compile-time literal, so a preview served from a bundle built **without** it still renders every
 frame and still puts the wand button's free-generation count back into each capture — the one

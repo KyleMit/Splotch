@@ -15,7 +15,7 @@
 //   SCENES=house-wide,island-tall npm run model-eval:gen-crayon
 //   BRUSH=pen npm run model-eval:gen-crayon       # the same scenes, pen (contrast)
 //
-// Needs Playwright Chromium and a free port (or one already serving Splotch).
+// Needs Playwright Chromium; it starts its own dev server, on another port if PORT is taken.
 // No API key and no paid call: this is replay and capture only.
 
 import { chromium } from '@playwright/test';

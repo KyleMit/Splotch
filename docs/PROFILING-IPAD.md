@@ -755,10 +755,10 @@ for where the time goes rather than for watching the tier demote. Override with
 `window.__perfStrokes` / `window.__perfOps` in either mode.
 
 Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
-`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:web:undo --scenarios=` takes,
-so a row that's hot here names the desktop scenario that reproduces it. Timeline mode **requires
-exactly one**: you record because A4 flagged a specific row, and Web Inspector's marker ring buffer
-drops the front of a longer run anyway. It refuses with the key list if you forget.
+`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:web:undo -- --scenarios=`
+takes, so a row that's hot here names the desktop scenario that reproduces it. Timeline mode
+**requires exactly one**: you record because A4 flagged a specific row, and Web Inspector's marker
+ring buffer drops the front of a longer run anyway. It refuses with the key list if you forget.
 
 > **Timeline mode measures shape, not magnitude.** Shorter strokes make smaller patches and cheaper
 > encodes, so its milliseconds are *not* gate numbers. Read it for where the time goes and whether a
