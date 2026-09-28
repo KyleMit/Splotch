@@ -73,13 +73,14 @@ carve-out):
   reviewed fresh/normalized/chalk candidate stages an uncommitted `.source.webp` under `vectorized/`
   and must be traced before it becomes canonical. After changing a page chalk, regenerate its night
   fill and re-punch; covers stop after their picker thumbnails.
-* **The only sanctioned imports from `web/src`** are the four modules listed in `README.md` (styles,
-  prompt, theme, books) — the app's single source of truth for prompts/catalog/theme. Gemini
-  response classification lives in `lib/gemini-response.ts`, because the app no longer calls Gemini.
-  Don't reach into anything else under `web/src`, and note the constraint that list carries: each of
-  those modules must be loadable by bare Node under `--experimental-strip-types`, so its own imports
-  are either type-only or spelled with an explicit `.ts` (Vite resolves extensionless specifiers;
-  Node does not).
+* **The only sanctioned imports from `web/src`** are the modules in `README.md`'s "The one coupling
+  to the app" table — the app's single source of truth for prompts/catalog/theme/backdrop keying.
+  `tests/import-boundary.test.mjs` fails an import missing from that table, a stale row, and any
+  import resolving outside this folder (the repo-root `tools/lib/` included), so a new import lands
+  with its row. Gemini response classification lives in `lib/gemini-response.ts`, because the app no
+  longer calls Gemini. Note the constraint the table carries: each listed module must be loadable by
+  bare Node under `--experimental-strip-types`, so its own imports are either type-only or spelled
+  with an explicit `.ts` (Vite resolves extensionless specifiers; Node does not).
 * **macOS/Linux (ADR-0017):** plain Node `.mjs`, forward-slash glob patterns with a resolved `cwd`
   (not `join`-built patterns).
 * **Ad-hoc analysis scripts go inside this folder, not the session scratchpad.** A throwaway `.mjs`
