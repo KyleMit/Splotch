@@ -101,6 +101,7 @@ meta).
 | `burn-down-dependabot-prs`        | Open Dependabot PRs — verify, sequence the merges, close the rest                       |
 | `burn-down-flaky-tests`           | Masked Playwright retry events — fix current flakes or track a narrow quarantine        |
 | `burn-down-oversized-code`        | Files or functions over the size caps — paid back down to their soft targets, one PR    |
+| `burn-down-code-smells`           | Verified code-smell findings — audited in waves, each fixed in its own merged PR        |
 
 ### `reconcile-*` — bring an artifact back in line with reality
 
@@ -125,6 +126,19 @@ fan-out: a proposer and an adversarial reviewer per unit, then an implementer pe
 worktree with a fresh commit checker. Its `measure.mjs` reads every cap from `eslint.config.js`.
 Line limits are treated as smells: a unit that does not separate cleanly gets a per-file cap raise,
 never a counter-driven split.
+
+`burn-down-code-smells` is the time-boxed, unattended code-quality campaign. It is user-invoked
+only, for the same fan-out reason. The run:
+
+* audits in waves with parallel read-only auditors: principles first, then the repo's own
+  conventions, the component layer and test quality, then one pass per uncovered area;
+* clusters the verified findings into small file-disjoint units, and ships each through
+  `ship-issue mode=autonomous` as a rival-reviewed, merged PR, several lanes at a time on top of
+  `ship-campaign`'s loop;
+* ends by folding the rules it earned into `docs/CODING-STANDARDS.md`.
+
+Unlike the audit cycle above, it stages nothing in `docs/AUDIT.md`: it finds and fixes in one
+sitting.
 
 `reconcile-code-map` keeps the lines-of-code snapshot current: `npm run gen:code-map` owns the
 tables, and the skill teaches the rules about new areas and misplaced files and rewrites the prose.
