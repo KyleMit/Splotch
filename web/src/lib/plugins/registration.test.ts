@@ -26,6 +26,13 @@ const IOS_SOURCE_DIR = '../../../../ios/App/App/';
 // SystemBackPlugin.java does.
 const BASE_PLUGIN_METHODS: ReadonlySet<string> = new Set(['addListener']);
 
+const FIELDLESS_TYPE_KINDS: ReadonlySet<ts.SyntaxKind> = new Set([
+  ts.SyntaxKind.VoidKeyword,
+  ts.SyntaxKind.BooleanKeyword,
+  ts.SyntaxKind.NumberKeyword,
+  ts.SyntaxKind.StringKeyword,
+]);
+
 // Java and Swift share comment syntax, and commented-out native code must count as absent. String
 // literals match first so a `//` inside one is not read as a comment.
 const COMMENT_OR_STRING = /("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
@@ -33,6 +40,10 @@ const COMMENT_OR_STRING = /("(?:\\.|[^"\\\n])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
 interface ProxyDeclaration {
   jsName: string;
   methods: string[];
+  // Each own method's distinct resolve payloads, as field-name lists. The fields reach JS untyped,
+  // so a native rename or a dropped payload fails only on a device, where the field reads as
+  // undefined.
+  resolvedPayloads: Record<string, string[][]>;
 }
 
 interface NativeDeclaration extends ProxyDeclaration {
@@ -108,7 +119,150 @@ function proxyDeclaration(
     if (!member.name) throw new Error(`${file}: every plugin interface member needs a name`);
     return member.name.getText(source);
   });
-  return { jsName: nameArgument.text, methods };
+  const signatures = new Map(
+    pluginInterface.members
+      .filter(ts.isMethodSignature)
+      .map((member) => [member.name.getText(source), member])
+  );
+  return {
+    jsName: nameArgument.text,
+    methods,
+    resolvedPayloads: payloadsByMethod(methods, (method) => [
+      promisedFields(file, source, interfaces, method, signatures.get(method)),
+    ]),
+  };
+}
+
+// Reads a method's Promise<T> through object literal types, arrays, and interfaces declared in the
+// proxy's own module. Any other shape throws rather than passing as a result without fields.
+function promisedFields(
+  file: string,
+  source: ts.SourceFile,
+  interfaces: ReadonlyMap<string, ts.InterfaceDeclaration>,
+  method: string,
+  signature: ts.MethodSignature | undefined
+): string[] {
+  const returned = signature?.type;
+  if (
+    !returned ||
+    !ts.isTypeReferenceNode(returned) ||
+    returned.typeName.getText(source) !== 'Promise'
+  ) {
+    throw new Error(
+      `${file}: ${method} needs a method signature with a declared Promise<…> result`
+    );
+  }
+  const fields: string[] = [];
+  const visitMembers = (members: readonly ts.TypeElement[]): void => {
+    for (const member of members) {
+      if (!member.name) throw new Error(`${file}: every resolved field needs a name`);
+      fields.push(member.name.getText(source));
+      if (ts.isPropertySignature(member)) visitType(member.type);
+    }
+  };
+  const visitType = (type: ts.TypeNode | undefined): void => {
+    if (!type || FIELDLESS_TYPE_KINDS.has(type.kind)) return;
+    if (ts.isArrayTypeNode(type)) visitType(type.elementType);
+    else if (ts.isTypeLiteralNode(type)) visitMembers(type.members);
+    else {
+      const local = ts.isTypeReferenceNode(type)
+        ? interfaces.get(type.typeName.getText(source))
+        : undefined;
+      if (!local) {
+        throw new Error(
+          `${file}: ${method} resolves ${type.getText(source)}, which is not an object literal, array, or local interface`
+        );
+      }
+      visitMembers(local.members);
+    }
+  };
+  visitType(returned.typeArguments?.[0]);
+  return fields;
+}
+
+// A method may resolve from a private helper (ColoringPacks' install resolves inside observe) with
+// a payload built in another (installedPack), so its payloads follow calls into the class's own
+// methods, and each resolved value back to the `put` calls that filled it.
+function androidPayloads(bodies: ReadonlyMap<string, string>, method: string): string[][] {
+  const reached = new Set([method]);
+  for (const name of reached) {
+    for (const [, callee] of (bodies.get(name) ?? '').matchAll(/\b(\w+)\(/g)) {
+      if (bodies.has(callee)) reached.add(callee);
+    }
+  }
+  return [...reached].flatMap((name) => {
+    const body = bodies.get(name) ?? '';
+    return resolvedArguments(body).map((value) => javaPayloadFields(value, body, bodies));
+  });
+}
+
+// Keyed by the name of each method declared with an access modifier; a method nested in an
+// anonymous class also appears inside its enclosing method's body.
+function javaMethodBodies(text: string): Map<string, string> {
+  return new Map(
+    [
+      ...text.matchAll(/\b(?:public|private|protected)\b[^;={}()]*?\b(\w+)\([^()]*\)[^;{}()]*\{/g),
+    ].map((declaration) => [
+      declaration[1],
+      enclosed(text, declaration.index + declaration[0].length, '{', '}'),
+    ])
+  );
+}
+
+function javaPayloadFields(
+  value: string,
+  scope: string,
+  bodies: ReadonlyMap<string, string>
+): string[] {
+  const [, helper = ''] = /^(\w+)\(/.exec(value) ?? [];
+  const helperBody = bodies.get(helper);
+  if (helperBody !== undefined) {
+    // A second return could resolve a different payload the guard never reads.
+    const returns = [...helperBody.matchAll(/\breturn\b([^;]*);/g)].map(([, returned]) =>
+      returned.trim()
+    );
+    if (returns.length !== 1 || !/^\w+$/.test(returns[0])) {
+      throw new Error(`${helper} needs exactly one return, of a local payload variable`);
+    }
+    return javaPayloadFields(returns[0], helperBody, bodies);
+  }
+  if (!/^\w+$/.test(value)) return [];
+  return [...scope.matchAll(new RegExp(`\\b${value}\\.put\\(`, 'g'))].flatMap((put) => {
+    const [, field, element] =
+      /^(?:"(\w+)",)?\s*([\s\S]*)$/.exec(enclosed(scope, put.index + put[0].length, '(', ')')) ??
+      [];
+    const nested = javaPayloadFields(element.trim(), scope, bodies);
+    return field ? [field, ...nested] : nested;
+  });
+}
+
+// Swift resolves a dictionary literal in the method body, possibly nesting another in a closure, so
+// every string key inside one of the body's `.resolve(…)` argument lists counts.
+function iosPayloads(text: string, method: string): string[][] {
+  const declaration = new RegExp(
+    `@objc\\s+(?:\\w+\\s+)*?func ${method}\\(_ \\w+: CAPPluginCall\\)[^{]*\\{`
+  ).exec(text);
+  if (!declaration) return [];
+  const body = enclosed(text, declaration.index + declaration[0].length, '{', '}');
+  return resolvedArguments(body).map((value) =>
+    [...value.matchAll(/"(\w+)"\s*:/g)].map(([, field]) => field)
+  );
+}
+
+function resolvedArguments(body: string): string[] {
+  return [...body.matchAll(/\.resolve\(/g)].map((call) =>
+    enclosed(body, call.index + call[0].length, '(', ')').trim()
+  );
+}
+
+// Returns the text from `start` up to the `close` that balances an `open` just before it.
+function enclosed(text: string, start: number, open: string, close: string): string {
+  let depth = 1;
+  for (let end = start; end < text.length; end++) {
+    if (text[end] === open) depth++;
+    else if (text[end] === close && --depth === 0) return text.slice(start, end);
+  }
+  throw new Error(`A "${open}" opened at offset ${start} never closes`);
 }
 
 function androidDeclarations(): NativeDeclaration[] {
@@ -128,7 +282,16 @@ function androidDeclarations(): NativeDeclaration[] {
         `${file}: expected one @CapacitorPlugin(name = "…") class whose every @PluginMethod is a public void method taking a PluginCall`
       );
     }
-    return [{ file, jsName: plugin[1], className: plugin[2], methods }];
+    const bodies = javaMethodBodies(text);
+    return [
+      {
+        file,
+        jsName: plugin[1],
+        className: plugin[2],
+        methods,
+        resolvedPayloads: payloadsByMethod(methods, (method) => androidPayloads(bodies, method)),
+      },
+    ];
   });
 }
 
@@ -147,7 +310,16 @@ function iosDeclarations(): IosDeclaration[] {
     const objcMethods = [
       ...text.matchAll(/@objc\s+(?:\w+\s+)*?func (\w+)\(_ \w+: CAPPluginCall\)/g),
     ].map(([, method]) => method);
-    return [{ file, jsName: jsName[1], className: classes[0][1], methods, objcMethods }];
+    return [
+      {
+        file,
+        jsName: jsName[1],
+        className: classes[0][1],
+        methods,
+        objcMethods,
+        resolvedPayloads: payloadsByMethod(methods, (method) => iosPayloads(text, method)),
+      },
+    ];
   });
 }
 
@@ -175,8 +347,30 @@ function jsNames(plugins: readonly { jsName: string }[]): string[] {
   return plugins.map(({ jsName }) => jsName).sort();
 }
 
+function sortedDistinct(names: readonly string[]): string[] {
+  return [...new Set(names)].sort();
+}
+
 function ownMethods(methods: readonly string[]): string[] {
-  return [...new Set(methods)].filter((method) => !BASE_PLUGIN_METHODS.has(method)).sort();
+  return sortedDistinct(methods).filter((method) => !BASE_PLUGIN_METHODS.has(method));
+}
+
+// A method with no resolve call of its own text (cancel's `call::resolve`) counts as resolving one
+// payload without fields, so a payload the reader cannot find fails instead of passing unread.
+function payloadsByMethod(
+  methods: readonly string[],
+  payloadsOf: (method: string) => string[][]
+): Record<string, string[][]> {
+  return Object.fromEntries(
+    ownMethods(methods).map((method) => {
+      const payloads = new Map(
+        payloadsOf(method)
+          .map(sortedDistinct)
+          .map((fields) => [fields.join(), fields])
+      );
+      return [method, payloads.size > 0 ? [...payloads.values()] : [[]]];
+    })
+  );
 }
 
 const proxies = proxyDeclarations();
@@ -220,6 +414,12 @@ describe.each(ANDROID_PLUGINS)('the $jsName plugin on Android', ({ jsName }) => 
       ownMethods(declarationOf(proxies, jsName).methods)
     );
   });
+
+  it('resolves each method with exactly the fields its JS proxy declares', () => {
+    expect(declarationOf(androidPlugins, jsName).resolvedPayloads).toEqual(
+      declarationOf(proxies, jsName).resolvedPayloads
+    );
+  });
 });
 
 describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
@@ -240,6 +440,12 @@ describe.each(IOS_PLUGINS)('the $jsName plugin on iOS', ({ jsName }) => {
   it('implements exactly the methods its JS proxy declares', () => {
     expect(ownMethods(declarationOf(iosPlugins, jsName).methods)).toEqual(
       ownMethods(declarationOf(proxies, jsName).methods)
+    );
+  });
+
+  it('resolves each method with exactly the fields its JS proxy declares', () => {
+    expect(declarationOf(iosPlugins, jsName).resolvedPayloads).toEqual(
+      declarationOf(proxies, jsName).resolvedPayloads
     );
   });
 
