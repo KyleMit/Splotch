@@ -115,6 +115,21 @@ export function canvasDeltaFunctionSource() {
   }`;
 }
 
+// The probe's config globals are its interface (real-screen-probe.js's header).
+// The floor control installs the probe through this same source, so the floor is
+// measured by a probe configured exactly as a capture configures it. It runs
+// where `plan`, the host's /__probe/plan answer, is in scope.
+export const PROBE_INSTALL_SOURCE = `window.__probePhases = 'blank';
+    window.__probeContactMs = plan.contactMs;
+    window.__probeHud = false;
+    await new Promise((resolve, reject) => {
+      const element = document.createElement('script');
+      element.src = '/__probe/probe.js';
+      element.onload = resolve;
+      element.onerror = () => reject(new Error('probe script failed to load'));
+      document.head.append(element);
+    });`;
+
 export function pageBootstrapSource() {
   return `
 (async () => {
@@ -294,10 +309,9 @@ export function pageBootstrapSource() {
       // Openness is read from layout, not from the option existing: BrushMenu
       // renders its options unconditionally and only sets the hidden
       // attribute, so a presence check is true even when the menu is shut.
-      // That check ran the
-      // toggle its full three times on an already-closed menu and left it open
-      // on the odd click — invisible in portrait, where the flyout misses the
-      // canvas centre, and fatal in landscape, where it covers it.
+      // That check ran the toggle its full three times on an already-closed
+      // menu and left it open on the odd click — invisible in portrait, where
+      // the flyout misses the canvas centre, and fatal in landscape, where it covers it.
       const menuStillOpen = () => !!document.querySelector(selector)?.offsetParent;
       for (let attempt = 0; attempt < 3 && menuStillOpen(); attempt++) {
         document.querySelector('#brushButton')?.click();
@@ -378,16 +392,7 @@ export function pageBootstrapSource() {
       }
     }
 
-    window.__probePhases = 'blank';
-    window.__probeContactMs = plan.contactMs;
-    window.__probeHud = false;
-    await new Promise((resolve, reject) => {
-      const element = document.createElement('script');
-      element.src = '/__probe/probe.js';
-      element.onload = resolve;
-      element.onerror = () => reject(new Error('probe script failed to load'));
-      document.head.append(element);
-    });
+    ${PROBE_INSTALL_SOURCE}
     if (!window.__probe) throw new Error('probe did not install');
 
     const eraserRefills = refillEraserInk ? [] : null;

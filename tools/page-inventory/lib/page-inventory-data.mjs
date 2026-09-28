@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design-notes.mjs';
 
 const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
@@ -29,6 +30,18 @@ function readJson(path, label) {
     return JSON.parse(readFileSync(path, 'utf8'));
   } catch (error) {
     throw new Error(`Could not read ${label} at ${path}: ${error.message}`, { cause: error });
+  }
+}
+
+export function writeJsonAtomically(path, document) {
+  mkdirSync(dirname(path), { recursive: true });
+  const staging = mkdtempSync(join(dirname(path), `.${basename(path)}-staging-`));
+  const candidate = join(staging, basename(path));
+  try {
+    writeFileSync(candidate, `${JSON.stringify(document, null, 2)}\n`);
+    renameSync(candidate, path);
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
   }
 }
 

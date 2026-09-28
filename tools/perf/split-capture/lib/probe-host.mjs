@@ -13,7 +13,9 @@ import { PROBE_HOST_PROTOCOL, PROBE_REPORT_PATH } from './probe-host-protocol.mj
 import { keepIncomingReport, reportFileName, reportRejectionReason } from './report-store.mjs';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
-const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
+// The floor control (serve-floor-control.mjs) serves this same file and speaks
+// the same plumbing below, so the floor is measured by the probe a capture uses.
+export const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 // A dropped chunk fetch does not fail visibly: the module import throws, the
 // route never hydrates, and the capture then measures a page whose buttons are
 // server-rendered markup wired to nothing.
@@ -22,17 +24,17 @@ const UPSTREAM_ATTEMPTS = 3;
 // ends, so this is deliberately far longer than any gesture.
 const DEFAULT_CONTACT_MS = 600_000;
 
-const json = (res, body, status = 200) => {
+export const sendJson = (res, body, status = 200) => {
   res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(body));
 };
 
-const script = (res, body) => {
-  res.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' });
+export const sendText = (res, type, body) => {
+  res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
   res.end(body);
 };
 
-function readBody(req) {
+export function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
@@ -74,7 +76,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
 
     if (pathname === '/__probe/plan') {
       state.planRequests += 1;
-      return json(res, state.plan);
+      return sendJson(res, state.plan);
     }
     // Where a stale page parks itself. Standing down to about:blank left a husk
     // nothing could prove ownership of — and closing unproven pages is exactly
@@ -88,7 +90,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       return res.end(STAND_DOWN_PAGE_HTML);
     }
     if (pathname === '/__probe/state') {
-      return json(res, {
+      return sendJson(res, {
         protocol: PROBE_HOST_PROTOCOL,
         upstream,
         plan: state.plan,
@@ -102,15 +104,17 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     }
     if (req.method === 'GET' && pathname === PROBE_REPORT_PATH) {
       return state.report
-        ? json(res, state.report)
-        : json(res, { error: 'no accepted report for the current plan' }, 404);
+        ? sendJson(res, state.report)
+        : sendJson(res, { error: 'no accepted report for the current plan' }, 404);
     }
-    if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
+    if (pathname === '/__probe/bootstrap.js') {
+      return sendText(res, 'text/javascript', pageBootstrapSource());
+    }
     if (pathname === '/__probe/probe.js') {
-      return script(res, readFileSync(PROBE_SOURCE, 'utf8'));
+      return sendText(res, 'text/javascript', readFileSync(PROBE_SOURCE, 'utf8'));
     }
     if (req.method === 'PUT' && pathname === '/__probe/control') {
-      const patch = await readBody(req);
+      const patch = await readJsonBody(req);
       state.plan = { ...state.plan, ...patch };
       if (state.plan.reset) {
         state.report = null;
@@ -121,15 +125,15 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         state.stalePage = null;
         delete state.plan.reset;
       }
-      return json(res, state.plan);
+      return sendJson(res, state.plan);
     }
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
-      const payload = await readBody(req);
+      const payload = await readJsonBody(req);
       if (pathname === PROBE_REPORT_PATH) {
         const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
         if (rejection) {
           log(`ignored ${rejection} for ${state.plan.label}`);
-          return json(res, {});
+          return sendJson(res, {});
         }
         if (keepIncomingReport(state.report, payload)) {
           state.report = payload;
@@ -171,11 +175,11 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       } else if (pathname === '/__probe/ready') {
         // A suspended tab from an earlier run answers the same plan; only the
         // page that started under this nonce may report readiness.
-        if (payload.nonce !== state.plan.nonce) return json(res, {});
+        if (payload.nonce !== state.plan.nonce) return sendJson(res, {});
         state.progress = payload;
         log(`probe ready ${payload.brush} ${payload.committed ?? ''}`);
       }
-      return json(res, {});
+      return sendJson(res, {});
     }
 
     let response = null;
