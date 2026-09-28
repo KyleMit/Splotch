@@ -250,10 +250,10 @@ export function nativeColoringPresentationProblems(
     return [`Native starter coloring book is missing from the catalog: ${starterBookId}`];
 
   const canonicalPagePaths = starterBook.pages.flatMap((page) => [
-    page.images.portrait,
-    page.images.landscape,
-    page.darkImages.portrait,
-    page.darkImages.landscape,
+    page.lightLineArt.portrait,
+    page.lightLineArt.landscape,
+    page.darkLineArt.portrait,
+    page.darkLineArt.landscape,
   ]);
   const retiredPresentationPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir })
     .sort()

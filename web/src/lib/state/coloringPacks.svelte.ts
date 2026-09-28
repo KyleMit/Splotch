@@ -5,7 +5,9 @@ export interface ColoringPacksState {
   readonly installedBookIds: readonly string[];
   readonly downloadingBookId: string | null;
   readonly downloadedBytes: number;
-  readonly totalBookCount: number;
+  // The starter book ships with the app, so neither count includes it.
+  readonly downloadedBookCount: number;
+  readonly downloadableBookCount: number;
   readonly initialized: boolean;
   availableColoringBooks(platform: BookPlatform): Book[];
   setInstalledColoringBooks(bookIds: string[]): void;
@@ -51,8 +53,14 @@ export function createColoringPacks(): ColoringPacksState {
     get downloadedBytes() {
       return s.downloadedBytes;
     },
-    get totalBookCount() {
-      return s.totalBookCount;
+    get downloadedBookCount() {
+      return s.installedBookIds.filter((id) => id !== STARTER_COLORING_BOOK_ID).length;
+    },
+    // Both catalogs the total comes from list the starter book:
+    // parseColoringPackManifest rejects a manifest without it, and
+    // coloringPacks.svelte.test.ts pins it into every booksForPlatform list.
+    get downloadableBookCount() {
+      return s.totalBookCount - 1;
     },
     get initialized() {
       return s.initialized;

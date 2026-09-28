@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { booksForPlatform } from './books';
+import { STARTER_COLORING_BOOK_ID, booksForPlatform } from './books';
 import { createColoringPacks, type ColoringPacksState } from './coloringPacks.svelte';
 
 let packs: ColoringPacksState;
@@ -58,8 +58,42 @@ describe('a device with no pack storage', () => {
     packs.setNoDownloadedColoringBooks('web');
 
     expect(packs.availableColoringBooks('web').map((book) => book.id)).toEqual(['farm']);
-    expect(packs.totalBookCount).toBe(booksForPlatform('web').length);
+    expect(packs.downloadedBookCount).toBe(0);
+    expect(packs.downloadableBookCount).toBe(booksForPlatform('web').length - 1);
     expect(packs.downloadedBytes).toBe(0);
     expect(packs.initialized).toBe(true);
+  });
+});
+
+describe('extra coloring book counts', () => {
+  it.each(['web', 'mobile'] as const)(
+    'has the starter book in the %s catalog it subtracts from',
+    (platform) => {
+      expect(booksForPlatform(platform).map((book) => book.id)).toContain(STARTER_COLORING_BOOK_ID);
+    }
+  );
+
+  it('counts neither extra book before a scan reports the catalog', () => {
+    expect(packs.downloadedBookCount).toBe(0);
+    expect(packs.downloadableBookCount).toBe(0);
+  });
+
+  it('leaves the starter book out of both counts', () => {
+    packs.setInstalledColoringBooks([STARTER_COLORING_BOOK_ID, 'dinosaur', 'space']);
+    packs.recordInstalledPacks(8, 10);
+
+    expect(packs.downloadedBookCount).toBe(2);
+    expect(packs.downloadableBookCount).toBe(7);
+  });
+
+  it('follows installs and removal', () => {
+    packs.recordInstalledPacks(8, 0);
+    packs.markColoringBookInstalled('dinosaur', 1);
+    packs.markColoringBookInstalled('dinosaur', 1);
+    expect(packs.downloadedBookCount).toBe(1);
+
+    packs.resetDownloadedColoringBooks();
+    expect(packs.downloadedBookCount).toBe(0);
+    expect(packs.downloadableBookCount).toBe(7);
   });
 });

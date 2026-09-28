@@ -69,11 +69,11 @@ describe('nativeUnusedCoverLineArt', () => {
       platforms: ['mobile'],
       pages: [
         {
-          images: {
+          lightLineArt: {
             portrait: '/coloring/mobile/page-tall.overlay.svg',
             landscape: '/coloring/mobile/page-wide.overlay.svg',
           },
-          darkImages: { portrait: '/coloring/mobile/page-tall.dark.overlay.svg' },
+          darkLineArt: { portrait: '/coloring/mobile/page-tall.dark.overlay.svg' },
         },
       ],
     };

@@ -59,10 +59,10 @@ vi.mock('../../../web/src/lib/state/books.ts', () => ({
   bookAssetPaths: (book) => [
     book.cover,
     ...book.pages.flatMap((page) => [
-      ...Object.values(page.images),
-      ...Object.values(page.colorImages),
-      ...Object.values(page.nightImages),
-      ...Object.values(page.darkImages),
+      ...Object.values(page.lightLineArt),
+      ...Object.values(page.lightFill),
+      ...Object.values(page.nightFill),
+      ...Object.values(page.darkLineArt),
     ]),
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
@@ -85,16 +85,16 @@ function fixturePage(directory) {
   return {
     id: 'page',
     name: 'Page',
-    images: {
+    lightLineArt: {
       portrait: `/${directory}/page-tall.overlay.svg`,
       landscape: `/${directory}/page-wide.overlay.svg`,
     },
-    colorImages: {
+    lightFill: {
       portrait: `/${directory}/page-tall.light.webp`,
       landscape: `/${directory}/page-wide.light.webp`,
     },
-    nightImages: {},
-    darkImages: { portrait: `/${directory}/page-tall.dark.overlay.svg` },
+    nightFill: {},
+    darkLineArt: { portrait: `/${directory}/page-tall.dark.overlay.svg` },
   };
 }
 
@@ -114,10 +114,10 @@ function catalogAssetPaths(book) {
   return [
     book.cover,
     ...book.pages.flatMap((page) => [
-      ...Object.values(page.images),
-      ...Object.values(page.colorImages),
-      ...Object.values(page.nightImages),
-      ...Object.values(page.darkImages),
+      ...Object.values(page.lightLineArt),
+      ...Object.values(page.lightFill),
+      ...Object.values(page.nightFill),
+      ...Object.values(page.darkLineArt),
     ]),
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
