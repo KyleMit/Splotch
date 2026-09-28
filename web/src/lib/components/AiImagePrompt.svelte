@@ -164,7 +164,7 @@
     background: var(--paper);
   }
 
-  /* Replaces the shadow the render used to bake in, where it can follow the
+  /* The shadow lives here rather than baked into the render, so it follows the
      silhouette and the theme rather than sitting on a plate. */
   .ai-style-thumb-cutout {
     filter: drop-shadow(0 2px 3px rgb(0 0 0 / 28%));
@@ -235,8 +235,8 @@
      Picking a style is a visual comparison, so a roomy viewport spends its
      room on bigger previews rather than on backdrop — the grid keeps its four
      columns and the tiles grow into the wider card. Classifying by viewport
-     rather than by pointer is what the app already does (`isTabletViewport()`),
-     so a roomy desktop window takes this step too. Both axes on purpose: a
+     rather than by pointer matches actionButtonSizeClass (breakpoints.ts), so
+     a roomy desktop window takes this step too. Both axes on purpose: a
      landscape phone is wide but short, and keeps the compact treatment above.
      600px is TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the
      agreement with it, and with ParentalGate's matching steps, is held by

@@ -13,8 +13,9 @@ import type { Point } from './strokeMath';
 // tuned so toddler scribbles split where the crayon really re-covers its paper
 // while ordinary corners and hand jitter never do. Split triggers, all relative
 // to the stroke width so thick and thin crayons feel the same:
-//  • direction is measured between anchors at least DIR_STEP apart, so pixel
-//    jitter while holding still can neither split nor rotate the direction;
+//  • direction is measured between anchors at least DIR_STEP_FRACTION of the
+//    width (floored at MIN_DIR_STEP_PX) apart, so pixel jitter while holding
+//    still can neither split nor rotate the direction;
 //  • a turn sharper than SPLIT_TURN_COS is a reversal — the tip is heading
 //    back over wax it just laid, so the pass splits immediately;
 //  • re-entry: the tip landing within PROXIMITY_FRACTION of the width of a

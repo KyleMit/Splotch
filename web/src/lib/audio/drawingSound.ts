@@ -7,7 +7,7 @@ const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pen
 const BASE_SCRATCH_GAIN = 0.2;
 // Pointer speed (canvas px/ms) at which the scratch reaches full volume. Slow
 // strokes scale down linearly toward silence instead of hard-pausing at a
-// threshold like the old HTMLAudioElement implementation did.
+// speed threshold.
 const FULL_VOLUME_SPEED = 0.45;
 const GAIN_RAMP_S = 0.06;
 const STOP_DECLICK_S = 0.005;

@@ -538,8 +538,7 @@ function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) 
   // trailing batch the WHOLE frame's moveCount re-credits the moves the split
   // just zeroed — firing the wax checkpoint early after every split, which is
   // the one way op merging can move a visible texture boundary. Attribute the
-  // trailing batch its share of the frame's moves instead; with one move per
-  // call (per-move granularity) this reduces to the old behavior exactly.
+  // trailing batch its share of the frame's moves instead.
   const creditedMoves = didSplit
     ? Math.round((moveCount * batch.length) / points.length)
     : moveCount;
@@ -602,11 +601,9 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
-// last finger lifts) and tell reactive consumers. While an undo restore is
-// still pending on the paper chain the copy+fold defers behind it (see
-// queuePaperStep) so it lands on the restored paper. onStrokeEnd fires at
-// stroke end, not start, so consumers (e.g. mounting the install banner)
-// never do DOM work while a finger is mid-stroke.
+// last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
+// end, not start, so consumers (e.g. mounting the install banner) never do DOM
+// work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   try {

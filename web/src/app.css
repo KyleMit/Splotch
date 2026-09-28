@@ -546,7 +546,7 @@ body {
     background var(--duration-base) ease;
 }
 
-/* Tinted via `fill` (not the old filter chain) so the gray tracks the theme
+/* Tinted via `fill` (not a CSS filter chain) so the gray tracks the theme
    tokens instead of being derived from the baked-in near-black fill. */
 .modal-close-icon {
   width: 100%;
@@ -570,7 +570,7 @@ body {
    and the Settings Button: a transparent button whose whole-button opacity
    steps up idle → hover → pressed over a full-ink glyph. The idle step is the
    lowest that keeps the glyph above the 3:1 non-text floor on both papers —
-   --icon-muted at the old 0.4 blended to under 2:1 on light paper.
+   an --icon-muted glyph at 0.4 blends to under 2:1 on light paper.
    Positioning and z-index stay in each component. */
 .corner-button {
   background: transparent;
@@ -584,7 +584,7 @@ body {
   touch-action: manipulation;
 }
 
-/* Tinted via `fill` (not the old invert() chains) so the ink tracks the theme
+/* Tinted via `fill` (not CSS invert() filters) so the ink tracks the theme
    tokens. */
 .corner-button-icon {
   width: 100%;

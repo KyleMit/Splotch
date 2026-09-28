@@ -1,17 +1,13 @@
-<script module lang="ts">
-  export type ImageReportStatus = 'idle' | 'confirm' | 'busy' | 'success' | 'error';
-</script>
-
 <script lang="ts">
   import ReportFields from './report/ReportFields.svelte';
   import { failureReportRows } from '$lib/ai/failureReport';
-  import type { AiFailureDetails } from '$lib/state/aiGeneration.svelte';
+  import { aiGenerationState, type AiFailureDetails } from '$lib/state/aiGeneration.svelte';
+  import type { ImageReportFlow } from './imageReportFlow.svelte';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
   import { aiCredentialHeaders } from '$lib/ai/credentials';
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
-  import type { StyleName } from '$lib/ai/styles';
   import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
   import {
     IMAGE_REPORT_RETENTION_DAYS,
@@ -20,33 +16,19 @@
   } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import { postFeedbackReport, postImageReport, readReportReply } from '$lib/reportClient';
-  import type { Origin } from '$lib/state/modal.svelte';
 
+  // What this report's phase adds. The run's own inputs (the drawing, its style
+  // and the failure count) are read from aiGenerationState below.
   interface Props {
     kind?: AiReportKind | 'generation-error';
     failure?: AiFailureDetails | null;
-    attempts?: number;
-    drawingUrl: string | null;
     outputUrl: string | null;
-    style: StyleName | null;
     /** The free tier's proof of generation; null on the BYOK and managed paths. */
     reportToken: string | null;
-    /** The Report control's center, for the confirm dialog's fly-in. */
-    origin?: Origin | null;
-    status?: ImageReportStatus;
+    report: ImageReportFlow;
   }
 
-  let {
-    kind = 'picture',
-    failure = null,
-    attempts = 0,
-    drawingUrl,
-    outputUrl,
-    style,
-    reportToken,
-    origin = null,
-    status = $bindable('idle'),
-  }: Props = $props();
+  let { kind = 'picture', failure = null, outputUrl, reportToken, report }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
   // Short enough to keep the confirmation's promise on one template line. The
@@ -54,7 +36,12 @@
   // rendered sentence (AiImageReport.copy.test.ts compares it as rendered).
   const reviewHours = IMAGE_REPORT_REVIEW_HOURS;
   const problem = $derived(kind === 'generation-error');
-  const diagnosticRows = $derived(failureReportRows(failure, attempts, style));
+  // A problem report sends diagnostics only, never the drawing.
+  const drawingUrl = $derived(problem ? null : aiGenerationState.previewUrl);
+  const style = $derived(aiGenerationState.style);
+  const diagnosticRows = $derived(
+    failureReportRows(failure, aiGenerationState.consecutiveFailures, style)
+  );
   let includeDevice = $state(false);
   // Rendered only for a problem report, so absent for the picture and refusal
   // kinds — and bound inside that conditional block, which is why Svelte wants
@@ -77,23 +64,24 @@
   // The confirmation is the last step before an irreversible send, so it stands
   // in front of the result rather than in its footer: exactly one action is live
   // at a time, and the Download button behind the second scrim reads as context.
-  const confirmOpen = $derived(status === 'confirm' || status === 'busy');
+  const sending = $derived(report.status === 'busy');
+  const confirmOpen = $derived(report.status === 'confirm' || sending);
 
   // Failing closes the dialog the keyboard user was in, so the retry it leaves
   // behind takes focus — the alert announces what happened, and this puts them
   // on the control that acts on it. Reached without any tap of theirs when the
   // send times out, which is exactly when being dropped on <body> is worst.
   $effect(() => {
-    if (status !== 'error' || !confirmDialog) return;
+    if (report.status !== 'error' || !confirmDialog) return;
     void waitForDialogRetirement(confirmDialog).then(() => {
-      if (status === 'error') statusEl?.querySelector('button')?.focus();
+      if (report.status === 'error') statusEl?.querySelector('button')?.focus();
     });
   });
 
   $effect(() => {
     return () => {
       controller?.abort();
-      status = 'idle';
+      report.reset();
     };
   });
 
@@ -120,12 +108,11 @@
   }
 
   async function send() {
-    if ((!problem && (!drawingUrl || (kind === 'picture' && !outputUrl))) || status === 'busy')
-      return;
+    if ((!problem && (!drawingUrl || (kind === 'picture' && !outputUrl))) || sending) return;
     controller?.abort();
     const requestController = new AbortController();
     controller = requestController;
-    status = 'busy';
+    report.begin();
     message = '';
     // Nothing else bounds this wait: dismissal is blocked while the request is
     // on the wire, so without a deadline a stalled send holds the topmost dialog
@@ -146,39 +133,34 @@
       const reply = await readReportReply(response, requestController.signal);
       if (requestController.signal.aborted) return;
       if (response.ok && reply?.ok) {
-        status = 'success';
+        report.succeed();
         message =
           'reportId' in reply
             ? `Thanks. We'll review it within ${reviewHours} hours. Keep this report reference if you want it deleted sooner: ${reply.reportId}`
             : 'Thanks. Your problem report was sent to our private support tracker.';
       } else {
-        status = 'error';
+        report.fail();
         message = reply && !reply.ok ? reply.error : sendFailedMessage;
       }
     } catch {
       // An abort this component did not schedule is an unmount or a supersede —
       // there is no one left to tell. Its own deadline firing is a real failure.
       if (requestController.signal.aborted && !timedOut) return;
-      status = 'error';
+      report.fail();
       message = timedOut ? REPORT_TIMEOUT_MESSAGE : NETWORK_ERROR_MESSAGE;
     } finally {
       clearTimeout(timeout);
       if (controller === requestController) controller = null;
     }
   }
-
-  function cancel() {
-    if (status === 'busy') return;
-    status = 'idle';
-  }
 </script>
 
-{#if status === 'success' || status === 'error'}
+{#if report.status === 'success' || report.status === 'error'}
   <div class="ai-image-report" bind:this={statusEl}>
-    <StatusMessage {status}>{message}</StatusMessage>
-    {#if status === 'error'}
+    <StatusMessage status={report.status}>{message}</StatusMessage>
+    {#if report.status === 'error'}
       <!-- No second gate: the one guarding this report was already solved. -->
-      <Button size="sm" onclick={() => (status = 'confirm')}
+      <Button size="sm" onclick={() => report.retry()}
         >{problem ? 'Retry report' : 'Try again'}</Button
       >
     {/if}
@@ -193,12 +175,12 @@
   aria-labelledby="aiReportConfirmTitle"
   use:modalDialog={() => ({
     open: confirmOpen,
-    origin,
-    onRequestClose: cancel,
+    origin: report.origin,
+    onRequestClose: () => report.cancel(),
     // Cancel is the dismissal, and nothing is in flight until Send report is
     // tapped — so backdrop taps and Esc dismiss freely right up until the
     // request the dialog can't get back is on the wire.
-    allowDismiss: () => status !== 'busy',
+    allowDismiss: () => !sending,
   })}
 >
   <div class="ai-report-confirm-content confirm-card-content">
@@ -235,7 +217,7 @@
         </dl>
         <p>Not sent: the drawing, names, accounts, or location.</p>
       </section>
-      <fieldset class="ai-report-device" disabled={status === 'busy'}>
+      <fieldset class="ai-report-device" disabled={sending}>
         <ReportFields mode="device-only" bind:this={fields} bind:includeDevice />
       </fieldset>
     {:else}
@@ -256,9 +238,9 @@
     {/if}
 
     <div class="ai-report-confirm-actions">
-      <Button size="lg" onclick={cancel} disabled={status === 'busy'}>Cancel</Button>
-      <Button variant="brand" size="lg" onclick={() => void send()} busy={status === 'busy'}>
-        {status === 'busy' ? 'Sending…' : 'Send report'}
+      <Button size="lg" onclick={() => report.cancel()} disabled={sending}>Cancel</Button>
+      <Button variant="brand" size="lg" onclick={() => void send()} busy={sending}>
+        {sending ? 'Sending…' : 'Send report'}
       </Button>
     </div>
   </div>

@@ -198,10 +198,9 @@ export async function generateAiImage({
   style = '',
 }: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
   if (aiGenerationState.phase.kind === 'generating') {
-    // A run is already going, and this early return used to be unobservable —
-    // the modal's backdrop swallowed every tap. Now that the chrome is
-    // deliberately live while a run waits in the corner (ADR-0116), a tap on the
-    // magic button has to mean something: show me the one already running.
+    // A run is already going. The chrome stays deliberately live while a run
+    // waits in the corner (ADR-0116), so a tap on the magic button reaches here
+    // and has to mean something: show me the one already running.
     if (aiGenerationState.minimized) restoreAiResult();
     return;
   }

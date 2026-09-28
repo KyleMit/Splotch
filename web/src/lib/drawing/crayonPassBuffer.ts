@@ -64,7 +64,8 @@ function paintCrayon(
 // started from, not the answer: 0.06 read as too green on the device, and the
 // value was settled at 0.16 in a 2026-08-27 session that drew on a physical
 // iPad and cross-checked against a sweep measuring every candidate's crossing
-// colour against the web pipeline's (tools/perf/find-glaze-web-match.mjs, and
+// colour against the web pipeline's
+// (docs/scratchpad/perf/crayon-native2-evidence/find-glaze-web-match.mjs, and
 // the proof sheet beside it). Do not recompute the formula and "correct" this.
 //
 // The trade this makes deliberately: mix depth now varies with stroke speed,
@@ -266,9 +267,8 @@ const liveTileTargets = new WeakSet<CanvasRenderingContext2D>();
 // 'planes' mode registers the tile's paired preview canvases as the pass
 // buffer and its mirror; 'restamp' mode keeps the planes hidden all session
 // and never gives them a backing — every target gets a lazily created
-// offscreen buffer instead. (Removing the plane elements from the web DOM is
-// a follow-up; keeping them registered-but-hidden leaves the LiveSurface
-// contract identical across runtimes.)
+// offscreen buffer instead. Keeping the planes registered-but-hidden leaves
+// the LiveSurface contract identical across runtimes.
 export function setCrayonBufferForTarget(
   target: CanvasRenderingContext2D,
   buffer: CanvasRenderingContext2D,
