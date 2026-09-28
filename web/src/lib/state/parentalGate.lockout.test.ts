@@ -124,6 +124,23 @@ describe('parental gate lockout', () => {
     expect(gate.input).toBe('7');
   });
 
+  it('leaves a pause that ran out mid-shake to the first press after the shake', () => {
+    lockOut();
+    vi.setSystemTime(Date.now() + GATE_LOCKOUT_BASE_MS);
+    const announcement = gate.announcement;
+
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).not.toBeNull();
+    expect(gate.announcement).toBe(announcement);
+    expect(gate.input).toBe('');
+
+    vi.advanceTimersByTime(GATE_SHAKE_MS);
+    gate.pressGateDigit(7);
+    expect(gate.lockoutUntil).toBeNull();
+    expect(gate.announcement).toBe(GATE_LOCKOUT_ENDED_MESSAGE);
+    expect(gate.input).toBe('7');
+  });
+
   it('asks whether the keypad takes input without settling a pause that ran out', () => {
     lockOut();
     vi.advanceTimersByTime(GATE_SHAKE_MS);

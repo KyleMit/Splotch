@@ -189,17 +189,19 @@ interface ParentalGateMutators {
 
 export type ParentalGateState = DeepReadonly<ParentalGateFields> & ParentalGateMutators;
 
+// Input taken while the card shakes would land on a problem the eye hasn't
+// caught up with, and nothing a grown-up does needs it.
+function isKeypadIdle(gate: DeepReadonly<ParentalGateFields>): boolean {
+  return gate.open && !gate.unlocked && !gate.shaking;
+}
+
 /**
  * Whether the open card takes a keypad press. It sees the gate only through a
- * readonly view, so it can never end a lockout: each input command settles an
- * expired one first, and the press that finds the pause over ends it, announces
- * it, and is taken. Exported for the lockout tests.
- *
- * Input taken while the card shakes would land on a problem the eye hasn't
- * caught up with, and nothing a grown-up does needs it.
+ * readonly view, so it can never end a lockout; the input commands settle an
+ * expired one before asking. Exported for the lockout tests.
  */
 export function gateAcceptsInput(gate: DeepReadonly<ParentalGateFields>): boolean {
-  return gate.open && !gate.unlocked && !gate.shaking && gate.lockoutUntil === null;
+  return isKeypadIdle(gate) && gate.lockoutUntil === null;
 }
 
 export function createParentalGate(): ParentalGateState {
@@ -395,27 +397,35 @@ export function createParentalGate(): ParentalGateState {
     }, GATE_ERROR_VISIBLE_MS);
   }
 
+  // Heads every keypad input, so the press that finds a pause over ends it,
+  // announces it, and is taken. A press the card ignores anyway leaves the pause
+  // to the countdown tick or the next press it takes, so the end is never
+  // announced over a shake.
+  function settleLockoutBeforeInput() {
+    if (isKeypadIdle(s)) settleLockoutExpiry();
+  }
+
   /**
    * Append a digit. A digit past the answer's length counts as a wrong answer:
    * a grown-up stops when the dabs are full, and tapping on past them is how
    * random tapping looks.
    */
   function pressGateDigit(digit: number) {
-    settleLockoutExpiry();
+    settleLockoutBeforeInput();
     if (!gateAcceptsInput(s)) return;
     if (s.input.length >= String(s.x * s.y).length) fail();
     else s.input += String(digit);
   }
 
   function pressGateBackspace() {
-    settleLockoutExpiry();
+    settleLockoutBeforeInput();
     if (!gateAcceptsInput(s)) return;
     s.input = s.input.slice(0, -1);
   }
 
   /** Check the typed answer. Checking before every dab is filled is a wrong answer too. */
   function submitGateAnswer() {
-    settleLockoutExpiry();
+    settleLockoutBeforeInput();
     if (!gateAcceptsInput(s)) return;
     const answer = String(s.x * s.y);
     if (s.input === answer) succeed();
