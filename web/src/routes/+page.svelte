@@ -242,7 +242,7 @@
       left: var(--safe-area-left);
     }
   }
-  @media (max-width: 599px) and (orientation: portrait) {
+  @media (max-width: 599.98px) and (orientation: portrait) {
     .bottom-dock {
       padding-inline: var(--space-4);
       padding-bottom: calc(var(--space-2) + var(--corner-button-size) + var(--space-2));
