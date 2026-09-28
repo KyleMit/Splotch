@@ -1,6 +1,7 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BOOKS } from '$lib/state/books';
+import { coloringImageRequest } from '$lib/state/coloringPicker.svelte';
 import ActivePageChip from './ActivePageChip.svelte';
 import ColoringTile from './ColoringTile.svelte';
 
@@ -64,5 +65,9 @@ describe('coloring picker images on native', () => {
     });
 
     expect(renderedImageAttributes(target)).toEqual({ src: IMAGE.src, alt: '' });
+  });
+
+  it('prefetches the same full-size src a tile shows', () => {
+    expect(coloringImageRequest(IMAGE, TILE_SIZES)).toBe(IMAGE.src);
   });
 });

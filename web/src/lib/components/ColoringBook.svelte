@@ -13,7 +13,6 @@
     pageSelectorImageSource,
     type Book,
     type ColoringPage,
-    type ResponsiveColoringImage,
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { createDialogTheme } from '$lib/state/dialogTheme.svelte';
@@ -24,14 +23,16 @@
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layoutState } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { createColoringPickerBooks } from '$lib/state/coloringPicker.svelte';
+  import {
+    coloringImageRequest,
+    createColoringPickerBooks,
+  } from '$lib/state/coloringPicker.svelte';
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,
     predecodeImage,
     predecodeImages,
     prefetchImages,
-    type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
   import { nextFrame } from '$lib/nextFrame';
@@ -68,13 +69,6 @@
 
   // Warm the resolved theme's cover thumbnails at idle so the first picker open
   // and a later theme change both paint without fetching every cover on demand.
-  function imageRequest(
-    image: ResponsiveColoringImage,
-    sizes: string
-  ): string | ResponsiveImageRequest {
-    return __IS_CAPACITOR__ ? image.src : { ...image, sizes };
-  }
-
   // The covers the next open will show, so a book that arrived since is warm.
   $effect(() => {
     const nextOpenBooks = pickerBooks.installed;
@@ -83,7 +77,7 @@
     const sizes = coloringBookGridLayout(nextOpenBooks.length).imageSizes;
     return scheduleIdle(() =>
       prefetchImages(
-        nextOpenBooks.map((book) => imageRequest(coverThumbImageSource(book, theme), sizes))
+        nextOpenBooks.map((book) => coloringImageRequest(coverThumbImageSource(book, theme), sizes))
       )
     );
   });
@@ -92,7 +86,7 @@
   // stronger intent signal that decodes the imminent selector grid before paint.
   function bookPageRequests(book: Book) {
     return book.pages.map((page) =>
-      imageRequest(
+      coloringImageRequest(
         pageSelectorImageSource(page, orientation, resolvedTheme()),
         COLORING_IMAGE_SIZES.pageSelector[orientation]
       )
