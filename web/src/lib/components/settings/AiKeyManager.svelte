@@ -113,6 +113,16 @@
     }
   });
 
+  // The switch is the master control (ADR-0127): switching it off withdraws a
+  // pending submission, whose success would otherwise switch it back on.
+  function toggleAiImage(next: boolean) {
+    if (!next) {
+      latest.cancel();
+      resetKeyFeedback();
+    }
+    setAiImage(next);
+  }
+
   // Throws when the credential could not be stored; returns false when a newer
   // submitKey superseded this one and its outcome should be discarded.
   async function persistCredential(
@@ -158,9 +168,9 @@
         }
         return;
       }
-      if (!persisted) return;
-
-      // A verified credential submitted here is the explicit opt-in boundary in ADR-0127.
+      // A verified credential submitted here is the explicit opt-in boundary in
+      // ADR-0127, but only while this submission is still the parent's latest act.
+      if (!persisted || !latest.isCurrent(id)) return;
       setAiImage(true);
       keyInput = '';
       keyStatus = 'success';
@@ -203,7 +213,7 @@
         label={AI_CREATE_LABEL}
         id="aiImageToggle"
         checked={settingsState.aiImageEnabled}
-        onToggle={setAiImage}
+        onToggle={toggleAiImage}
         help={settingsState.aiImageEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
       />
     </div>

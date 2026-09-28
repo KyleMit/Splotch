@@ -15,13 +15,13 @@ import {
   expandDrawer,
 } from '../app-driver/lib/app-driver.mjs';
 import { fitInstructionScene, sceneStrokePoints } from './lib/drawing-instructions.mjs';
+import { STROKE_WIDTHS } from './gen-pointer-instructions.mjs';
 import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from './generated/store-drawings.mjs';
 
 const DEFAULT_INPUT = join(ROOT, 'tools/store-drawings/samples');
 const DEFAULT_OUTPUT = join(ROOT, 'screenshots/store-drawing-eval');
 const PORT = 4173;
 const GEOMETRY_STROKE_PX = 8;
-const STROKE_WIDTH_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
 const DEVICES = {
   tall: { width: 432, height: 768, deviceScaleFactor: 1 },
   wide: { width: 1280, height: 720, deviceScaleFactor: 1 },
@@ -46,7 +46,7 @@ function instructionSvg(scene, box, geometryOnly = false) {
   const body = scene.strokes.map((stroke) => {
     const points = sceneStrokePoints(scene, box, stroke);
     const color = geometryOnly ? '#000000' : selectionHex(scene.colors[stroke.color]);
-    const width = geometryOnly ? GEOMETRY_STROKE_PX : STROKE_WIDTH_PX[stroke.size];
+    const width = geometryOnly ? GEOMETRY_STROKE_PX : STROKE_WIDTHS[stroke.size - 1];
     if (points.length === 1) {
       return `<circle cx="${points[0].x}" cy="${points[0].y}" r="${width / 2}" fill="${color}"/>`;
     }
