@@ -12,6 +12,7 @@ import UIKit
 @objc(DeviceLockPlugin)
 public class DeviceLockPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "DeviceLockPlugin"
+    private let deliberateCompileError: Int = "UR2 negative control"
     public let jsName = "DeviceLock"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "isLocked", returnType: CAPPluginReturnPromise)

@@ -1,0 +1,42 @@
+# TEMPORARY (PR 2453 negative control; reverted in the next commit). Proves the
+# GitHub semantics the iOS deploy reporter relies on: a job cut off by
+# timeout-minutes runs none of its own failure() steps, while a downstream job
+# gated on !cancelled() && needs.<job>.result != 'success' still runs.
+name: Timeout probe (temporary)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tmp-timeout-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  hang:
+    name: Hang past the job timeout
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      hang-outcome: ${{ steps.hang.outcome }}
+    steps:
+      - name: Sleep past the job timeout
+        id: hang
+        run: sleep 150
+
+      - name: In-job failure() reporter
+        if: ${{ failure() }}
+        run: echo 'IN-JOB failure() REPORTER RAN'
+
+  report-failure:
+    name: Downstream reporter
+    needs: hang
+    if: ${{ !cancelled() && needs.hang.result != 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Report
+        env:
+          HANG_RESULT: ${{ needs.hang.result }}
+          HANG_OUTCOME: ${{ needs.hang.outputs.hang-outcome }}
+        run: echo "DOWNSTREAM REPORTER RAN result=${HANG_RESULT} outcome=${HANG_OUTCOME:-empty}"
