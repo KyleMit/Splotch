@@ -202,12 +202,14 @@ export async function checkBundleBudgets({
       measurement.modulepreloadCount,
       NATIVE_MODULEPRELOAD_PIN
     );
+    if (instrumented) {
+      for (const problem of countProblems) log(`[bundle-budgets] report-only: ${problem}`);
+    }
     const problems = [
       ...nativeExportBudgetProblems(measurement),
       ...(instrumented ? [] : countProblems),
     ];
     if (problems.length) throw new Error(problems.join('\n'));
-    for (const problem of countProblems) log(`[bundle-budgets] report-only: ${problem}`);
     log(
       `[bundle-budgets] ${instrumented ? 'instrumented build: the modulepreload count is report-only; ' : ''}native export ${measurement.bytes}/${MAX_NATIVE_EXPORT_BYTES} bytes across ${measurement.fileCount} files (${measurement.modulepreloadCount}/${NATIVE_STARTUP_MODULEPRELOAD_COUNT} index.html modulepreloads)`
     );

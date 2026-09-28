@@ -393,6 +393,25 @@ it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
   }
 );
 
+it('reports an instrumented native count mismatch before rejecting an oversized export', async () => {
+  const log = vi.fn();
+  const modulepreloadCount = NATIVE_STARTUP_MODULEPRELOAD_COUNT + 1;
+
+  await expect(
+    checkBundleBudgets({
+      native: true,
+      nativeDir: writeNativeExport(modulepreloadCount, MAX_NATIVE_EXPORT_BYTES),
+      env: { PERF_MARKS: 'true' },
+      log,
+    })
+  ).rejects.toThrow(/^Native static export is \d+ bytes, above the \d+-byte budget$/);
+  expect(log).toHaveBeenCalledWith(
+    expect.stringContaining(
+      `[bundle-budgets] report-only: The native export's index.html modulepreloads ${modulepreloadCount} chunks`
+    )
+  );
+});
+
 it.each([
   'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build',
   'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build:cap',
