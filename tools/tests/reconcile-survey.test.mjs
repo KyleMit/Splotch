@@ -133,6 +133,10 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
   // way of being linked must raise it, and an unlinked pair must not.
   describe('relate', () => {
     const { relate, importSpecifiers, resolveSpecifier, moduleKey } = module;
+    // Fixture import lines are assembled so tool-specifier-resolution's scan,
+    // which reads specifier-shaped text in every tools file, doesn't take them
+    // for real relative imports of this test.
+    const rel = (...parts) => parts.join('/');
     const verdict = (upstream, local, localSources) => {
       const up = parseNameStatus(upstream);
       const { bothSides } = classifyChanges(up, parseNameStatus(local));
@@ -142,12 +146,17 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
     it('reads static, side-effect, re-export, and dynamic import specifiers', () => {
       const source = [
         "import { a } from '$lib/a';",
-        "import './side.css';",
-        "export { b } from '../b.ts';",
-        "const c = await import('./c');",
+        `import '${rel('.', 'side.css')}';`,
+        `export { b } from '${rel('..', 'b.ts')}';`,
+        `const c = await import('${rel('.', 'c')}');`,
       ].join('\n');
 
-      expect(importSpecifiers(source)).toEqual(['$lib/a', './side.css', '../b.ts', './c']);
+      expect(importSpecifiers(source)).toEqual([
+        '$lib/a',
+        rel('.', 'side.css'),
+        rel('..', 'b.ts'),
+        rel('.', 'c'),
+      ]);
     });
 
     it('resolves $lib and relative specifiers to repo paths and ignores packages', () => {
@@ -166,7 +175,7 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
 
     it('calls disjoint changes with no shared import or convention unrelated', () => {
       const result = verdict('M\tweb/src/lib/a.ts', 'M\tweb/src/lib/b.ts', [
-        { path: 'web/src/lib/b.ts', source: "import { c } from './c';" },
+        { path: 'web/src/lib/b.ts', source: `import { c } from '${rel('.', 'c')}';` },
       ]);
 
       expect(result).toEqual({ relation: 'unrelated', reasons: [] });
@@ -183,7 +192,7 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
 
     it('calls a branch that imports a module upstream moved or deleted coupled', () => {
       const result = verdict('R100\tweb/src/lib/a.ts\tweb/src/lib/z.ts', 'M\tweb/src/lib/b.ts', [
-        { path: 'web/src/lib/b.ts', source: "import { a } from './a';" },
+        { path: 'web/src/lib/b.ts', source: `import { a } from '${rel('.', 'a')}';` },
       ]);
 
       expect(result.relation).toBe('coupled');
