@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { settingsState } from '$lib/state/settings.svelte';
-  import { visibleActionButtonCount } from '$lib/actionButtonLayout';
+  import { shownActionButtonCount } from '$lib/actionButtonLayout';
   import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
   import ColorMenu from './ColorMenu.svelte';
   import { colorFoldGesture } from '$lib/actions/colorFoldGesture';
@@ -32,7 +32,7 @@
   } = $props();
 
   function fold(folded: boolean) {
-    if (!matchMedia(PHONE_LANDSCAPE_QUERY).matches || visibleActionButtonCount() === 0) return;
+    if (!matchMedia(PHONE_LANDSCAPE_QUERY).matches || shownActionButtonCount() === 0) return;
     if (settingsState.drawerOpen === folded) onfold();
   }
 
