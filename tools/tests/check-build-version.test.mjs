@@ -20,7 +20,12 @@ function writeBundle(root, bundle, version) {
   write(root, `${bundle}/coloring/manifest-${version}.json`, '{}');
 }
 
-function buildOutput({ client = '1.6.896', server = client, serviceWorker = client } = {}) {
+function buildOutput({
+  client = '1.6.896',
+  server = client,
+  native = false,
+  serviceWorker = native ? null : client,
+} = {}) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-build-version-'));
   fixtures.push(root);
   writeBundle(root, 'client', client);
@@ -32,7 +37,7 @@ function buildOutput({ client = '1.6.896', server = client, serviceWorker = clie
       `precacheAndRoute([{url:"index.css",revision:"a"},{url:"coloring/manifest-${serviceWorker}.json",revision:"b"}]);`
     );
   }
-  return { clientDir: join(root, 'client'), serverDir: join(root, 'server') };
+  return { clientDir: join(root, 'client'), serverDir: join(root, 'server'), native };
 }
 
 describe('buildVersionProblems', () => {
@@ -41,7 +46,19 @@ describe('buildVersionProblems', () => {
   });
 
   it('accepts a native build, which ships no service worker', () => {
-    expect(buildVersionProblems(buildOutput({ serviceWorker: null }))).toEqual([]);
+    expect(buildVersionProblems(buildOutput({ native: true }))).toEqual([]);
+  });
+
+  it('reports a web build that ships no service worker', () => {
+    expect(buildVersionProblems(buildOutput({ serviceWorker: null }))).toEqual([
+      'Client sw.js is missing',
+    ]);
+  });
+
+  it('reports a native build that ships a service worker', () => {
+    expect(buildVersionProblems(buildOutput({ native: true, serviceWorker: '1.6.896' }))).toEqual([
+      'Native client ships sw.js',
+    ]);
   });
 
   it('reports an SSR bundle derived from a different commit than the client', () => {

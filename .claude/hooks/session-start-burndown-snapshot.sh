@@ -33,10 +33,11 @@ MAX_AGE_SECONDS=$((24 * 60 * 60))
 
 driver_pid="$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs' 2>/dev/null | head -1)"
 
-# BSD stat (macOS) and GNU stat (Linux) disagree on the flag; try each.
-mtime="$(stat -f %m "$SNAPSHOT" 2>/dev/null || stat -c %Y "$SNAPSHOT" 2>/dev/null)"
-age=""
-[ -n "$mtime" ] && age=$(($(date +%s) - mtime))
+# Node, not stat: GNU and BSD stat take incompatible flags, and GNU reads BSD's
+# `-f %m` as a file-system query whose report lands where the mtime should be.
+# An age that is unknown or not a whole number leaves the nudge on.
+age="$(node -e 'const { mtimeMs } = require("node:fs").statSync(process.argv[1]); process.stdout.write(String(Math.floor((Date.now() - mtimeMs) / 1000)))' "$SNAPSHOT" 2>/dev/null)"
+case "$age" in *[!0-9]*) age="" ;; esac
 
 if [ -z "$driver_pid" ] && [ -n "$age" ] && [ "$age" -gt "$MAX_AGE_SECONDS" ]; then
   exit 0
