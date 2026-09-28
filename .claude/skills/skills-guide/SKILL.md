@@ -233,7 +233,7 @@ up to `n` file-disjoint units at once, with the session as orchestrator:
 
 * it admits a unit only when that unit shares no files and no import dependency with any unit in
   flight;
-* it merges one unit at a time;
+* it performs every merge itself, one at a time, only against a `main` the unit has gated;
 * it broadcasts contract changes to units still running.
 
 When `main` moves under a unit, the `reconcile-with-main` survey's relation verdict decides between

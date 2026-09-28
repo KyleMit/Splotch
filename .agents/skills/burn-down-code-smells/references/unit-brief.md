@@ -9,7 +9,9 @@ The orchestrator gives you:
 * the files other in-flight units own. Stay off them.
 
 Ship the unit as a **free-form unit** through `ship-issue` in `mode=autonomous`, with the spec in
-place of an issue number. Nobody is watching, so never stop to ask a question.
+place of an issue number. In a parallel campaign, stop at shippable instead of merging; the
+orchestrator merges (see "PR, review, and merge"). Nobody is watching, so never stop to ask a
+question.
 
 ## Authorization
 
@@ -67,16 +69,17 @@ quarantine.
   output, and verify it with `git rev-parse --verify`.
 * Review follows `drive-pr-to-mergeable`: at most two rival rounds. A clean round one skips round
   two.
-* **Merging while other units merge.** Follow the per-unit merge gate in `ship-campaign`'s parallel
-  reference exactly:
+* **Merging while other units merge.** In a parallel campaign **you don't merge**; the orchestrator
+  does, one PR at a time. Follow the per-unit merge gate in `ship-campaign`'s parallel reference
+  exactly:
   * Every catch-up with `main` starts with the `reconcile-with-main` survey, including the first one
     after review. Merge commits carry the attribution line.
-  * Immediately before `gh pr merge`, fetch and compare. Merge only against a `main` you have gated.
+  * When CI is green on your gated head, stop, and report
+    `ready: PR <n>, head <sha>, gated main <sha>`, copying both SHAs from command output.
+  * If the orchestrator resumes you because `main` moved, repeat the gate against the new commit.
 
-  Apply any broadcast the orchestrator sends before you merge, and record which path you took.
-* Merge with `gh pr merge <n> --merge --delete-branch`. Treat a nonzero exit as an unknown outcome
-  and read the PR state first. Afterwards, detach at `origin/main` and delete the local branch with
-  `git branch -d`.
+  Apply any broadcast the orchestrator sends before you report ready, and record which path you
+  took. In a serial campaign, merge per `ship-issue` step 5 instead.
 * **Budget.** Two product repair attempts for CI failures your change caused, and 45 minutes of
   waiting per head. Compare head against base before blaming yourself. Past a budget, or with a
   blocking finding still standing after round two, quarantine: convert the PR to draft, add a
@@ -84,7 +87,8 @@ quarantine.
 
 ## Report back (under 30 lines)
 
-* the outcome, PR, and merge SHA;
+* the outcome (ready, merged, or quarantined), the PR, and its SHAs: head and gated `main` when
+  ready, or the merge commit in a serial campaign;
 * the review rounds: what the rival found, and what you fixed or rejected;
 * CI;
 * every autonomous decision;

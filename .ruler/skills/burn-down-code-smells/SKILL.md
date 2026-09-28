@@ -104,9 +104,9 @@ question for the user.
 ## 4. Ship units in parallel lanes
 
 Ship the queue through `ship-campaign parallel=<n>`. That reference owns lane admission, the
-ownership map, the merge queue, the per-unit merge gate with its `reconcile-with-main` relation
-verdict, and the post-merge broadcasts. Each unit is a fresh implementer subagent in its own
-worktree. It runs `ship-issue mode=autonomous` as a free-form unit, with
+ownership map, the per-unit merge gate with its `reconcile-with-main` relation verdict, the
+orchestrator's one-at-a-time merges, and the post-merge broadcasts. Each unit is a fresh implementer
+subagent in its own worktree. It runs `ship-issue mode=autonomous` as a free-form unit, with
 [references/unit-brief.md](references/unit-brief.md) as its standing brief plus the unit spec. The
 brief carries `ship-campaign`'s authorization block verbatim.
 

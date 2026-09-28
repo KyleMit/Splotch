@@ -88,6 +88,15 @@ export function classifyChanges(upstream, local) {
 // reshaped export, and the listed upstream diffs are read for the contract
 // changes types cannot see (a default, a return meaning). "coupled": shared
 // files, a stranded rename, or a convention change; run the whole skill.
+//
+// Dependencies are found through direct imports, re-exporting barrels,
+// `import.meta.glob` patterns, and query-suffixed asset imports. Ordinary
+// transitive imports are deliberately not followed: they fan out through hub
+// modules (settings, storage, platform), so for any module whose imports reach
+// the app's main graph, most merges would read as `adjacent` and the noise the
+// verdict exists to remove would return. A change behind an unchanged
+// intermediate module keeps that module's interface, which the type check
+// verifies, and its behaviour is covered by the tests every path runs.
 export const RELATIONS = ['unrelated', 'adjacent', 'coupled'];
 
 // Repo-wide sources whose change can make untouched branch code wrong or
@@ -166,25 +175,32 @@ const strandedBy = (entry) => MOVED_OR_DELETED_STATUS.test(entry.status);
 
 // Upstream changes indexed by module key, keeping every entry that shares a key
 // so a deletion is never hidden behind an edit of its namesake. A barrel that
-// re-exports a changed module (transitively) joins the index, since importing
-// the barrel imports the changed code.
+// re-exports a changed module (transitively) gains that module's entries, from
+// every target it re-exports and even when the barrel itself also changed, since
+// importing the barrel imports the changed code. Each entry is recorded once per
+// key, which also bounds the fixpoint.
 function changedModules(upstream, reexporters) {
   const index = new Map();
-  const add = (key, hit) => index.set(key, [...(index.get(key) ?? []), hit]);
+  const recorded = new Set();
+  const add = (key, hit) => {
+    const id = [key, hit.entry.status, hit.entry.from, hit.entry.to].join('\0');
+    if (recorded.has(id)) return false;
+    recorded.add(id);
+    index.set(key, [...(index.get(key) ?? []), hit]);
+    return true;
+  };
   for (const entry of upstream) {
     for (const path of changedPaths(entry)) add(moduleKey(path), { entry, via: null });
   }
   for (let grew = true; grew;) {
     grew = false;
     for (const { path, specifiers } of reexporters) {
-      const key = moduleKey(path);
-      if (index.has(key)) continue;
-      const target = specifiers
-        .map((specifier) => resolveSpecifier(specifier, path))
-        .find((resolved) => resolved && index.has(moduleKey(resolved)));
-      if (!target) continue;
-      for (const hit of index.get(moduleKey(target))) add(key, { entry: hit.entry, via: path });
-      grew = true;
+      for (const specifier of specifiers) {
+        const resolved = resolveSpecifier(specifier, path);
+        for (const hit of (resolved && index.get(moduleKey(resolved))) || []) {
+          if (add(moduleKey(path), { entry: hit.entry, via: path })) grew = true;
+        }
+      }
     }
   }
   return index;

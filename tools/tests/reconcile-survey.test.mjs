@@ -232,6 +232,28 @@ describe.each(modules)('reconcile-with-main survey $path', ({ path, module }) =>
       expect(result.relation).toBe('coupled');
     });
 
+    it('carries every changed target of a barrel, so a deletion is not masked by an edit', () => {
+      const result = verdict(
+        'M\tweb/src/lib/a.ts\nD\tweb/src/lib/b.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { b } from '$lib/barrel';" }],
+        [{ path: 'web/src/lib/barrel.ts', specifiers: [rel('.', 'a'), rel('.', 'b')] }]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
+    it('follows a barrel that itself changed to a target upstream deleted', () => {
+      const result = verdict(
+        'M\tweb/src/lib/barrel.ts\nD\tweb/src/lib/b.ts',
+        'M\tweb/src/lib/c.ts',
+        [{ path: 'web/src/lib/c.ts', source: "import { b } from '$lib/barrel';" }],
+        [{ path: 'web/src/lib/barrel.ts', specifiers: [rel('.', 'b')] }]
+      );
+
+      expect(result.relation).toBe('coupled');
+    });
+
     it('keeps a deleted component distinct from an edited namesake module', () => {
       const result = verdict(
         'D\tweb/src/lib/Foo.svelte\nM\tweb/src/lib/Foo.svelte.ts',

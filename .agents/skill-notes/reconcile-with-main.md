@@ -64,6 +64,37 @@ repo.
   value is entirely in the review pass, which cannot be scripted — so the helper deliberately stops
   at gathering facts and never moves a ref.
 
+## The relation verdict (2026-09-28)
+
+The survey grades the incoming commits `unrelated`, `adjacent`, or `coupled` before the merge. The
+user asked for this after a 64-PR campaign, noting that the full pass "can also sometimes be a bit
+noisy if the changes are genuinely unrelated". `ship-campaign`'s parallel mode uses the verdict at
+every catch-up merge.
+
+**Why direct dependencies, and not transitive ones.** A rival review asked for ordinary transitive
+imports to be followed too. Measured against the campaign's 65 merges into `main`:
+
+| Module                         | Modules in its transitive closure | Merges touching the closure | Merges touching its direct imports |
+| ------------------------------ | --------------------------------- | --------------------------- | ---------------------------------- |
+| `aiAutoSave.ts`                | 288                               | 48                          | 4                                  |
+| `webStore.ts` (coloring packs) | 13                                | 7                           | 2                                  |
+| `tool.svelte.ts`               | 6                                 | 5                           | 1                                  |
+
+For a module that reaches the app's hub graph, following transitive imports would have turned
+three-quarters of merges into `adjacent`, each with a long reading list: the noise the verdict
+exists to remove.
+
+A change behind an unchanged intermediate keeps that intermediate's interface, which the type check
+verifies, and its behaviour is covered by the tests every path runs. The residual risk is a branch's
+new call through an intermediate whose behaviour upstream changed indirectly. It is left to the
+tests and to the rule that a failing check escalates the merge to `coupled`.
+
+**Rival findings adopted:**
+
+* the dependency forms (barrels, followed transitively; `import.meta.glob`; `?raw` suffixes);
+* keeping a deleted `Foo.svelte` distinct from an edited `Foo.svelte.ts`;
+* accumulating every changed target of a barrel, even one that itself changed.
+
 ## Open
 
 * The Step 4 trap list is repo-specific and will rot as the repo changes. It is written as "check

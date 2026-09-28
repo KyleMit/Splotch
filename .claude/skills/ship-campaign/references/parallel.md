@@ -33,47 +33,54 @@ current:
      waits, or leaves that edit as a drafted leftover.
 
    A unit whose file set can't be predicted from its spec runs alone, as in the serial loop.
-3. **The merge order.** A worker can't wait on the orchestrator mid-run, so the order is enforced by
-   each worker's compare-before-merge step (below): no PR merges against a `main` it hasn't gated.
-   The orchestrator records each merge as it lands, and re-reads `origin/main` before every
-   admission and broadcast, so it always knows what `main` contains.
+3. **The merges.** The orchestrator performs every merge itself, one at a time, so no two merges can
+   race. A worker takes its PR to shippable, then stops. It reports the PR, its head commit, and the
+   `main` commit its gate covered (below), and the orchestrator merges it from the steps under
+   "Merging".
 4. **Broadcasts.** After every merge, it sends each still-running unit anything that changes that
    unit's assumptions: a renamed identifier, a new lint rule or guard, a moved budget pin or cap, a
-   new convention. The unit applies it before its own merge gate. A unit that finds it needs a file
+   new convention. The unit applies it before it reports ready. A unit that finds it needs a file
    outside its declared set stops that part and reports it. The orchestrator grants the file if it's
    free, or the part becomes a leftover.
 
 ## The per-unit merge gate
 
-This comes on top of `ship-issue` step 5. **Every** catch-up with `main` goes through the
-`reconcile-with-main` survey first, including the first one after review: a coupled change another
-lane landed must never ride in on an ungated merge.
+This replaces `ship-issue` step 5's merge. **Every** catch-up with `main` goes through the
+`reconcile-with-main` survey first, including the first one after review, so a coupled change
+another lane landed never arrives through an ungated merge. The worker, after review:
 
-1. **Catch up.** After review, `git fetch origin main` and run the survey. Then:
-   * If the relation is `coupled`, run `reconcile-with-main` on the branch.
-   * If it is `adjacent`, merge and read the upstream diff of each module the survey lists.
-   * If it is `unrelated`, merge.
+1. Runs `git fetch origin main` and then the survey. It follows the verdict:
+   * `coupled`: run `reconcile-with-main` on the branch;
+   * `adjacent`: merge, and read the upstream diff of each module the survey lists, including those
+     reached through a re-exporting barrel;
+   * `unrelated`: merge.
+2. Commits the merge, pushes, and waits for CI on that head.
+3. Stops at shippable and reports `ready: PR <n>, head <sha>, gated main <sha>`. It copies both SHAs
+   from command output.
 
-   Commit the merge, push, and wait for CI on that head.
-2. **Compare before merging.** Immediately before `gh pr merge`, fetch again.
-   * If `origin/main` is still the commit your last green CI run already contains, merge.
-   * If it moved, run the survey against the new `main`:
+What the survey can't see (a shared string, an event name, a storage key) still escalates the merge
+to `coupled` when it turns up in the reading or in a failing check. The worker records which path it
+took in the PR body.
 
-     | Relation    | The unit does                                                                                                                                                                                                        |
-     | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-     | `unrelated` | A local trial merge (`git merge --no-commit --no-ff origin/main`), then `npm run check`, `npm run lint`, and its targeted tests. If green, abort the trial and repeat step 2.                                        |
-     | `adjacent`  | The same trial, plus reading the upstream diff of each module the survey lists (including those reached through a re-exporting barrel). If both are clean, abort and repeat step 2; otherwise treat it as `coupled`. |
-     | `coupled`   | Back to step 1: reconcile, commit, push, and wait for CI.                                                                                                                                                            |
+## Merging
 
-   If `main` moves under step 2 twice in a row, commit the merge and take a CI round instead of
-   trialling a third time.
+The orchestrator handles ready PRs one at a time:
 
-The survey's verdict is what reserves `reconcile-with-main`'s full semantic pass for merges that
-need it; genuinely unrelated units skip a pass that would only confirm they're unrelated. What the
-survey can't see, such as a shared string, an event name, or a storage key, still escalates the
-merge to `coupled` when it turns up in the trial or in the reading. The window between the final
-fetch and the merge is seconds, and the post-merge CI run on `main` is its backstop. The unit
-records which path it took in the PR body.
+1. Run `git fetch origin main`.
+2. If `origin/main` is still the gated commit, merge with
+   `gh pr merge <n> --merge --delete-branch --match-head-commit <head>`, then verify it from live
+   state (the live-state check in `ship-campaign` step 2). The `--match-head-commit` flag refuses a
+   PR whose head moved after its gate.
+3. If `main` moved, resume that worker with the new `main` commit. The worker repeats the gate
+   against it, and the orchestrator moves on to the next ready PR. When the survey says `unrelated`,
+   the worker may run a local trial merge (`git merge --no-commit --no-ff origin/main`, then
+   `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
+   the trial and reports ready against the new commit. A second consecutive move takes the CI round.
+
+Because the orchestrator is a single process, nothing merges between its fetch and its merge except
+work outside the campaign. The post-merge CI run on `main` is the backstop for that. After a merge,
+the orchestrator resumes the worker once to detach its worktree and delete the local branch, or
+leaves that to the end of the campaign.
 
 **Tests before pushing.** Each unit runs the applicable full tier that isn't host-exclusive before
 it pushes: `npm run test:browserless` (the Vitest tiers plus the API smoke on the unit's own

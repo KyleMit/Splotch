@@ -40,9 +40,9 @@ The input names the queue and, optionally, a deadline:
   yourself when any queued unit needs the device rig or is a performance cluster, even if the caller
   did not name it; otherwise never load that file.
 * **`parallel=<n>`** — up to `n` file-disjoint units in flight at once, with this session as the
-  orchestrator: it owns the ownership map, admission, the merge queue, and the post-merge
-  broadcasts. Read [`references/parallel.md`](references/parallel.md) before preflight, and never
-  load it otherwise. Without it, the loop below is strictly one unit at a time.
+  orchestrator: it owns the ownership map, admission, every merge, and the post-merge broadcasts.
+  Read [`references/parallel.md`](references/parallel.md) before preflight, and never load it
+  otherwise. Without it, the loop below is strictly one unit at a time.
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
