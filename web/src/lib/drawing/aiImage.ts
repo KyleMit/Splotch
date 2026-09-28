@@ -35,7 +35,8 @@ import { autoSaveImages } from './aiAutoSave';
 import { encodeWebpUpload } from './aiUploadEncoding';
 import type { StyleName } from '$lib/ai/styles';
 
-const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
+// Read by a grown-up in the problem report's diagnostics, not by the child, who
+// sees the same retry card as any other transient failure.
 const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 
 const FIRST_SERVER_ERROR_STATUS = 500;
@@ -110,20 +111,18 @@ function applyResponse(
       // Unreachable: generateAiImage resolves both into a settled outcome before
       // it gets here, and the compiler holds that true if a third waiting state
       // is ever added.
-      failAiGeneration(runId, undefined, 'retry', null, {
-        status: null,
-        endpoint,
-        message: 'The server did not finish the picture.',
+      failAiGeneration(runId, {
+        errorKind: 'retry',
+        details: { status: null, endpoint, message: 'The server did not finish the picture.' },
       });
       return null;
     case 'safety':
-      failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety', reportToken);
+      failAiGeneration(runId, { errorKind: 'safety', reportToken });
       return null;
     case 'throttled':
-      failAiGeneration(runId, undefined, 'retry', null, {
-        status: THROTTLED_STATUS,
-        endpoint,
-        message: response.detail,
+      failAiGeneration(runId, {
+        errorKind: 'retry',
+        details: { status: THROTTLED_STATUS, endpoint, message: response.detail },
       });
       console.error(
         `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
@@ -146,13 +145,10 @@ function applyResponse(
       // malformed/oversized request the client never actually sends) stays
       // generic.
       console.error(`AI image request failed (${response.status}): ${response.detail}`);
-      failAiGeneration(
-        runId,
-        undefined,
-        response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic',
-        null,
-        { status: response.status, endpoint, message: response.detail }
-      );
+      failAiGeneration(runId, {
+        errorKind: response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic',
+        details: { status: response.status, endpoint, message: response.detail },
+      });
       return null;
   }
   return finishAiGeneration(
@@ -274,17 +270,14 @@ export async function generateAiImage({
   } catch (err) {
     if (!isAiGenerationActive(runId)) return;
     const timedOut = err instanceof DOMException && err.name === 'AbortError';
-    failAiGeneration(
-      runId,
-      timedOut ? AI_TIMEOUT_MESSAGE : undefined,
-      timedOut ? 'retry' : 'generic',
-      null,
-      {
+    failAiGeneration(runId, {
+      errorKind: timedOut ? 'retry' : 'generic',
+      details: {
         status: null,
         endpoint: failureEndpoint,
         message: timedOut ? AI_TIMEOUT_MESSAGE : 'The picture request could not complete.',
-      }
-    );
+      },
+    });
     console.error(err);
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId);
