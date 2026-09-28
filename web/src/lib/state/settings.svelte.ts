@@ -162,16 +162,17 @@ function readReduceMotion(fallback: ReduceMotionPreference): ReduceMotionPrefere
   return isReduceMotionPreference(raw) ? raw : fallback;
 }
 
-// A literal union rather than one derived from a list:
-// tools/perf/tests/clear-drag.test.mjs reads this declaration's text to keep
-// the perf harness's copy of the values in step.
-export type ToolbarStyle = 'buttons' | 'bare';
+// tools/perf/tests/clear-drag.test.mjs reads this list's text to keep the perf
+// harness's copy of the values in step.
+const TOOLBAR_STYLES = ['buttons', 'bare'] as const;
+
+export type ToolbarStyle = (typeof TOOLBAR_STYLES)[number];
 
 const TOOLBAR_STYLE_DEFAULT: ToolbarStyle = 'buttons';
 
 function readToolbarStyle(fallback: ToolbarStyle): ToolbarStyle {
   const raw = readString(STORAGE_KEYS.toolbarStyle, fallback);
-  return raw === 'buttons' || raw === 'bare' ? raw : fallback;
+  return TOOLBAR_STYLES.find((style) => style === raw) ?? fallback;
 }
 
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {

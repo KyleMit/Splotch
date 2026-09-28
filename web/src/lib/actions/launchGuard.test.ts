@@ -2,7 +2,9 @@
 // Button Size ceiling, reads localStorage as it loads (.claude/rules/testing.md).
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ACTION_BUTTON_BASE_PX } from '$lib/actionButtonLayout';
+import { ACTION_BUTTON_BASE_PX, DRAWER_TOGGLE_SIZE } from '$lib/actionButtonLayout';
+import { PALETTE_COLUMN_GEOMETRY, PALETTE_ROW_GEOMETRY } from '$lib/design/trimGeometry';
+import { scale, toCssVarName } from '$lib/design/tokens';
 import { ACTION_BUTTON_SCALE_MAX } from '$lib/state/settings.svelte';
 import {
   LAUNCH_ZONE_DURATION_MS,
@@ -30,14 +32,36 @@ describe('launch zone tuning', () => {
     expect(LAUNCH_ZONE_DURATION_MS).toBeGreaterThan(Math.max(...flyInDurationsMs));
   });
 
-  it('reaches every corner of the largest action button from its center', () => {
-    const largestBasePx = Math.max(
+  it('outlasts the fade app.css plays in place of the fly-in under reduced motion', () => {
+    const durationToken =
+      /\.modal-dialog\.modal-fly-in\[open\]\[data-start-reduced-motion\]\s*\{\s*animation:\s*modalFadeIn\s+var\((--[\w-]+)\)/.exec(
+        sourceFile('../../app.css')
+      )?.[1];
+    const tokenValue = Object.entries(scale).find(
+      ([key]) => toCssVarName(key) === durationToken
+    )?.[1];
+    const fadeSeconds = /^(\d*\.?\d+)s$/.exec(tokenValue ?? '')?.[1];
+
+    expect(fadeSeconds).toBeDefined();
+    expect(LAUNCH_ZONE_DURATION_MS).toBeGreaterThan(Number(fadeSeconds) * 1000);
+  });
+
+  it('reaches every corner of the largest modal launcher from its center', () => {
+    const largestActionBasePx = Math.max(
       ...Object.values(ACTION_BUTTON_BASE_PX).flatMap((steps) => Object.values(steps))
     );
-    const largestButtonPx = (largestBasePx * ACTION_BUTTON_SCALE_MAX) / 100;
+    const largestLauncherPx = Math.max(
+      (largestActionBasePx * ACTION_BUTTON_SCALE_MAX) / 100,
+      // The Settings Button is a .corner-button: --corner-button-size, which
+      // actionButtonLayout.fallback.test.ts holds to DRAWER_TOGGLE_SIZE.
+      DRAWER_TOGGLE_SIZE,
+      // The Color Palette's custom swatch opens the Color Picker.
+      PALETTE_COLUMN_GEOMETRY.swatchPx,
+      PALETTE_ROW_GEOMETRY.swatchPx
+    );
 
     expect(LAUNCH_ZONE_RADIUS_PX).toBeGreaterThan(
-      Math.hypot(largestButtonPx / 2, largestButtonPx / 2)
+      Math.hypot(largestLauncherPx / 2, largestLauncherPx / 2)
     );
   });
 });

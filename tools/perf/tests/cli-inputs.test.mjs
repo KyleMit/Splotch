@@ -237,7 +237,17 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       handCapturePath,
       [`--seconds=${bankSeconds}`],
-      `--seconds must be a number > 0 and <= ${DRAW_SECONDS.max}, got "${bankSeconds}"`
+      `--seconds must be an integer >= 1 and <= ${DRAW_SECONDS.max}, got "${bankSeconds}"`
+    );
+  });
+
+  // The countdown steps whole seconds, so `--seconds=2.5` drew for 3 s while the
+  // artifact recorded 2.5.
+  it('reports a fractional hand --seconds instead of drawing past it', () => {
+    expectCliFailure(
+      handCapturePath,
+      ['--seconds=2.5'],
+      `--seconds must be an integer >= 1 and <= ${DRAW_SECONDS.max}, got "2.5"`
     );
   });
 

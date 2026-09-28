@@ -21,13 +21,14 @@
 import type { Origin } from '$lib/state/modal.svelte';
 
 // Covers the whole launching button, corners included, with room left for a
-// toddler's off-target repeats. The largest button is ACTION_BUTTON_BASE_PX
-// scaled by ACTION_BUTTON_SCALE_MAX; launchGuard.test.ts holds the radius past
-// its corners.
+// toddler's off-target repeats. launchGuard.test.ts holds the radius past the
+// corners of the largest launcher: an action button at ACTION_BUTTON_SCALE_MAX,
+// the Settings Button, or a Color Palette swatch.
 export const LAUNCH_ZONE_RADIUS_PX = 72;
-// Long enough to outlast a toddler's tap burst, and past the modal fly-in
-// (dialogFlyFromOrigin in app.css, which launchGuard.test.ts reads) so the
-// dialog is plainly present before the backdrop goes live.
+// Long enough to outlast a toddler's tap burst, and past the modal entrance
+// (dialogFlyFromOrigin in app.css, or the fade reduced motion plays instead;
+// launchGuard.test.ts reads both) so the dialog is plainly present before the
+// backdrop goes live.
 export const LAUNCH_ZONE_DURATION_MS = 600;
 
 interface DeadZone {
