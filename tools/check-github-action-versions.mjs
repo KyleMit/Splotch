@@ -1,5 +1,5 @@
-// Surveys the GitHub Actions pinned across .github/workflows/ and reports
-// version drift — the GHA half of the dependency-update flow (issue #231), so
+// Surveys the GitHub Actions pinned across .github/workflows/ and the composite
+// actions under .github/actions/, and reports version drift — the GHA half of the dependency-update flow (issue #231), so
 // the burn-down-outdated-dependencies skill can bump outdated Action pins alongside the
 // npm packages `npm outdated` surfaces.
 //
@@ -10,7 +10,7 @@
 //   node tools/check-github-action-versions.mjs --json          machine-readable inventory
 //
 // Two things need no network and are always reported: the full pin inventory,
-// and inconsistent pins — the same action pinned at >1 version across workflows
+// and inconsistent pins — the same action pinned at >1 version across files
 // (e.g. actions/checkout at @v7 in most files but @v4 in one).
 // With --check-latest it additionally flags any pin whose major trails the
 // latest published release. The GitHub API is hit best-effort per action; a
@@ -18,11 +18,16 @@
 // rather than aborting the report. GITHUB_TOKEN, if set, raises the rate limit.
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
+import { filesRecursively } from './lib/filesystem.mjs';
 import { isMain, ROOT } from './lib/proc.mjs';
 
-const WORKFLOWS_DIR = join(ROOT, '.github', 'workflows');
+const WORKFLOWS_DIR = '.github/workflows';
+const COMPOSITE_ACTIONS_DIR = '.github/actions';
+const YAML_FILE = /\.ya?ml$/;
+const COMPOSITE_ACTION_FILE = /(^|\/)action\.ya?ml$/;
+const COMMIT_SHA = /^[0-9a-f]{40}$/i;
 
 // Pull the `owner/repo[/subpath]@ref` out of one `uses:` value. The `owner/repo@ref`
 // shape the regex requires already excludes `docker://…` (no `@`) and un-versioned
@@ -53,26 +58,43 @@ export function collectPins(text) {
   return pins;
 }
 
-// Highest leading integer (major) in a ref like `v7`, `v7.1.2`, or `7`.
-function majorOf(ref) {
-  const m = ref.match(/^v?(\d+)/);
+// Highest leading integer (major) in a version like `v7`, `v7.1.2`, or `7`.
+function majorOf(version) {
+  const m = version?.match(/^v?(\d+)/);
   return m ? Number(m[1]) : null;
 }
 
-function listWorkflowFiles() {
-  if (!existsSync(WORKFLOWS_DIR)) return [];
-  return readdirSync(WORKFLOWS_DIR)
-    .filter((f) => /\.ya?ml$/.test(f))
-    .sort();
+// A tag ref is its own version. A commit SHA carries none, however many digits it
+// starts with, so a SHA pin is read by its `# vX` comment alone.
+function pinMajor(ref, hint) {
+  return majorOf(COMMIT_SHA.test(ref) ? hint : ref);
+}
+
+// Repo-relative paths of every file whose `uses:` pins run in CI: the workflows,
+// and the composite actions they call, whose pins are invisible from the workflows.
+export function listPinFiles(root) {
+  const workflowsDir = join(root, WORKFLOWS_DIR);
+  const actionsDir = join(root, COMPOSITE_ACTIONS_DIR);
+  const workflows = existsSync(workflowsDir)
+    ? readdirSync(workflowsDir)
+        .filter((f) => YAML_FILE.test(f))
+        .map((f) => `${WORKFLOWS_DIR}/${f}`)
+    : [];
+  const actions = existsSync(actionsDir)
+    ? filesRecursively(actionsDir)
+        .map((path) => relative(root, path))
+        .filter((path) => COMPOSITE_ACTION_FILE.test(path))
+    : [];
+  return [...workflows, ...actions].sort();
 }
 
 // action -> { refs: Map<ref, { hint, uses: [{file, line}] }> }
 // `hint` is a SHA pin's `# vX` version comment, kept per ref so a commit-pinned
 // action can still be compared by version under --check-latest.
-export function buildInventory(files) {
+export function buildInventory(root, files) {
   const inventory = new Map();
   for (const file of files) {
-    const pins = collectPins(readFileSync(join(WORKFLOWS_DIR, file), 'utf8'));
+    const pins = collectPins(readFileSync(join(root, file), 'utf8'));
     for (const pin of pins) {
       if (!inventory.has(pin.action)) inventory.set(pin.action, { refs: new Map() });
       const refs = inventory.get(pin.action).refs;
@@ -81,6 +103,26 @@ export function buildInventory(files) {
     }
   }
   return inventory;
+}
+
+// One action's --check-latest verdict. Only a comparison that ran may print ✓:
+// an unknown or unversioned latest tag, or a SHA pin missing its `# vX`
+// comment, is reported as uncompared rather than read as up to date.
+export function latestStatus(refs, latestTag) {
+  if (!latestTag) return 'latest: unknown';
+  const latestMajor = majorOf(latestTag);
+  if (latestMajor === null) return `⚠ latest ${latestTag} has no version to compare`;
+  const behind = [];
+  const unversioned = [];
+  for (const [ref, { hint }] of refs) {
+    const major = pinMajor(ref, hint);
+    if (major === null) unversioned.push(ref);
+    else if (major < latestMajor) behind.push(ref);
+  }
+  const warnings = [];
+  if (behind.length) warnings.push(`⚠ behind latest ${latestTag} (${behind.join(', ')})`);
+  if (unversioned.length) warnings.push(`⚠ no version to compare (${unversioned.join(', ')})`);
+  return warnings.length ? warnings.join('   ') : `latest ${latestTag} ✓`;
 }
 
 async function fetchLatestTag(action) {
@@ -111,11 +153,13 @@ async function main() {
   const checkLatest = values['check-latest'];
   const asJson = values.json;
 
-  const files = listWorkflowFiles();
-  const inventory = buildInventory(files);
+  const files = listPinFiles(ROOT);
+  const inventory = buildInventory(ROOT, files);
 
   if (inventory.size === 0) {
-    console.log('No GitHub Actions pins found under .github/workflows/.');
+    console.log(
+      `No GitHub Actions pins found under ${WORKFLOWS_DIR}/ or ${COMPOSITE_ACTIONS_DIR}/.`
+    );
     return;
   }
 
@@ -143,29 +187,13 @@ async function main() {
   }
 
   console.log(
-    `\nGitHub Actions pinned across .github/workflows/ (${actions.length} actions, ${files.length} files)\n`
+    `\nGitHub Actions pinned across ${WORKFLOWS_DIR}/ and ${COMPOSITE_ACTIONS_DIR}/ (${actions.length} actions, ${files.length} files)\n`
   );
   for (const action of actions) {
     const { refs } = inventory.get(action);
     let line = `  ${action.padEnd(42)} ${refSummary(refs)}`;
     if (refs.size > 1) line += '  ⚠ inconsistent';
-    if (checkLatest) {
-      const tag = latest.get(action);
-      if (!tag) {
-        line += '   latest: unknown';
-      } else {
-        const latestMajor = majorOf(tag);
-        const behind = [...refs.entries()]
-          .filter(([r, { hint }]) => {
-            const m = majorOf(hint ?? r);
-            return m !== null && latestMajor !== null && m < latestMajor;
-          })
-          .map(([r]) => r);
-        line += behind.length
-          ? `   ⚠ behind latest ${tag} (${behind.join(', ')})`
-          : `   latest ${tag} ✓`;
-      }
-    }
+    if (checkLatest) line += `   ${latestStatus(refs, latest.get(action))}`;
     console.log(line);
   }
 
