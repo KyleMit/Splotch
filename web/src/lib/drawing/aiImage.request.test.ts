@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import type { SaveResult } from '$lib/saveNaming';
 import type { SettingsState } from '$lib/state/settings.svelte';
 
@@ -20,6 +21,8 @@ vi.mock('./imageSave', () => ({
 // instance the test's freshly imported aiImage reads.
 let settings: SettingsState;
 
+const TEST_ACCESS_TOKEN = 'test-token';
+
 function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
@@ -31,7 +34,7 @@ beforeEach(async () => {
   // The fresh store rereads localStorage, where an earlier test's auto-save
   // choice persists; the access code is an in-memory mirror and starts empty.
   settings.setAutoSaveAi(false);
-  settings.mirrorAiAccessToken('test-token');
+  settings.mirrorAiAccessToken(TEST_ACCESS_TOKEN);
 
   let objectUrlId = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:test-${++objectUrlId}`);
@@ -89,6 +92,19 @@ describe('generateAiImage upload format', () => {
     expect(uploadedImage()).toBe(png);
   });
 
+  it('sends the stored access code as the request credential', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    await generateAiImage();
+
+    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers[ACCESS_TOKEN_HEADER]).toBe(TEST_ACCESS_TOKEN);
+    expect(headers[API_KEY_HEADER]).toBeUndefined();
+    expect(headers[INSTALLATION_ID_HEADER]).toBeUndefined();
+  });
+
   it('uses the installation pseudonym instead of a credential for a free generation', async () => {
     settings.mirrorAiAccessToken('');
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
@@ -107,8 +123,8 @@ describe('generateAiImage upload format', () => {
     await generateAiImage();
 
     const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
-    expect(headers['X-Installation-Id']).toMatch(/^[a-f0-9]{64}$/);
-    expect(headers['X-Access-Token']).toBeUndefined();
+    expect(headers[INSTALLATION_ID_HEADER]).toMatch(/^[a-f0-9]{64}$/);
+    expect(headers[ACCESS_TOKEN_HEADER]).toBeUndefined();
     expect(freeGenerationsState.grant).toEqual({ status: 'available', remaining: 9 });
   });
 
