@@ -442,7 +442,7 @@
   :global(:root[data-reduce-motion]) .install-cta :global(.install-chevron) {
     transition: none;
   }
-  @media (max-width: 599px) and (orientation: portrait) {
+  @media (max-width: 599.98px) and (orientation: portrait) {
     .install-main {
       flex-wrap: wrap;
     }

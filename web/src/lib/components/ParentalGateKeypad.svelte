@@ -92,7 +92,7 @@
     height: 22px;
   }
 
-  @media (orientation: landscape) and (max-height: 599px) {
+  @media (orientation: landscape) and (max-height: 599.98px) {
     .gate-keypad {
       gap: 7px;
       width: 216px;

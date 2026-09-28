@@ -24,9 +24,10 @@ vi.mock('$lib/platform/haptics', () => ({ impactThreshold: vi.fn() }));
 
 // happy-dom lacks a PointerEvent constructor with pointerId, so stub it the
 // same way scribbleGuard.test.ts does.
-function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0) {
+function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0, button = 0) {
   const e = new Event(type, { cancelable: true, bubbles: true });
   Object.defineProperty(e, 'pointerId', { value: pointerId });
+  Object.defineProperty(e, 'button', { value: button });
   Object.defineProperty(e, 'clientX', { value: clientX });
   Object.defineProperty(e, 'clientY', { value: clientY });
   return e;
@@ -323,6 +324,44 @@ describe('dragToClear pointer identity', () => {
     node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
 
     expect(options.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  // The drawing route blocks the context menu document-wide, so nothing else
+  // interrupts a secondary-button drag before it reaches the accept radius.
+  it.each([
+    ['middle', 1],
+    ['right', 2],
+  ])('ignores a %s-button drag past the accept radius', (_, button) => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+    const far = 100 + acceptRadius() + 10;
+
+    const down = pointerEvent('pointerdown', 1, 100, 100, button);
+    node.dispatchEvent(down);
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
+
+    expect(down.defaultPrevented).toBe(false);
+    expect(node.setPointerCapture).not.toHaveBeenCalled();
+    expect(releaseAllPointers).not.toHaveBeenCalled();
+    expect(startClearSound).not.toHaveBeenCalled();
+    expect(options.onDragStart).not.toHaveBeenCalled();
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(node.classList.contains('dragging')).toBe(false);
+  });
+
+  it('counts only primary-button presses toward the tutorial tap run', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    for (const pointerId of [1, 2]) {
+      node.dispatchEvent(pointerEvent('pointerdown', pointerId, 100, 100, 2));
+      node.dispatchEvent(pointerEvent('pointerup', pointerId, 100, 100));
+    }
+    node.dispatchEvent(pointerEvent('pointerdown', 3, 100, 100));
+
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+    expect(options.onDragStart).toHaveBeenCalledOnce();
   });
 
   it('cancels a drag past the accept radius without committing and resets its UI state', () => {
