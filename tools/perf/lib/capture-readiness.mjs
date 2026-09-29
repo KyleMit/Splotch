@@ -340,19 +340,19 @@ const LAUNCH_LOG_CAUSES = [
   {
     pattern: /Timed out while enabling automation mode/i,
     detail:
-      'the iPad is asking to enable UI automation. Look at the device: XCTest has put an ' +
-      '"Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen. Enter the ' +
+      'the iOS device is asking to enable UI automation. Look at the device for an XCTest ' +
+      'passcode / Enable UI Automation prompt. Enter the ' +
       'passcode there, then re-run. No host-side change will clear this.',
   },
   {
     pattern: /Developer Mode disabled|developer mode is not enabled/i,
     detail:
-      'Developer Mode is off on the iPad. Settings > Privacy & Security > Developer Mode, ' +
-      'then re-run.',
+      'Developer Mode is off on the iOS device. Settings > Privacy & Security > ' +
+      'Developer Mode > On; restart, unlock, and confirm Turn On, then re-run.',
   },
   {
     pattern: /device is locked|passcode/i,
-    detail: 'the iPad is locked. Unlock it and leave it awake, then re-run.',
+    detail: 'the iOS device is locked. Unlock it and leave it awake, then re-run.',
   },
 ];
 
