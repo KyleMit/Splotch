@@ -236,7 +236,7 @@ function importSpecifiers(source) {
   ].map((match) => match[1]);
   const staticSpecifiers = [
     ...source.matchAll(
-      /^[ \t]*import[ \t]+(?!['"])[\s\S]*?\sfrom\s+['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm
+      /^[ \t]*(?:import[ \t]+(?!['"])|export[ \t]*(?:type[ \t]+)?[*{])[\s\S]*?\sfrom\s+['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm
     ),
   ].map((match) => match[1]);
   const dynamicSpecifiers = [...source.matchAll(/\bimport\s*\(\s*['"]([^'"\r\n]+)['"]\s*\)/g)].map(
@@ -262,12 +262,16 @@ describe('hosted deploy contract smoke', () => {
     const source = [
       "import 'side-effect-package';",
       "import value from 'static-package';",
+      "export * from 'star-reexport-package';",
+      "export { named } from 'named-reexport-package';",
       "const loaded = import('dynamic-package');",
     ].join('\n');
 
     expect(importSpecifiers(source)).toEqual([
       'side-effect-package',
       'static-package',
+      'star-reexport-package',
+      'named-reexport-package',
       'dynamic-package',
     ]);
   });
