@@ -20,10 +20,13 @@ interface MemoryStore extends UnsavedPictureStore {
 }
 
 function memoryStore(initial: HeldPicture[] | null = null) {
-  const store: MemoryStore & { read: ReturnType<typeof vi.fn<MemoryStore['read']>> } = {
+  const store: MemoryStore & {
+    read: ReturnType<typeof vi.fn<MemoryStore['read']>>;
+    write: ReturnType<typeof vi.fn<MemoryStore['write']>>;
+  } = {
     held: initial,
     read: vi.fn<MemoryStore['read']>(async () => store.held),
-    write: vi.fn(async (held: HeldPicture[] | null) => {
+    write: vi.fn<MemoryStore['write']>(async (held) => {
       store.held = held;
     }),
   };
@@ -470,4 +473,23 @@ describe('a store that could not be read', () => {
       expect(failure.outcome).toBeNull();
     }
   );
+
+  it('still restores the record after a write that failed', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = memoryStore([kept('held before an evicted flag')]);
+    store.read.mockResolvedValueOnce(null);
+    store.write.mockRejectedValueOnce(new Error('quota'));
+    const failure = failureWith(saverReturning(), store);
+    await failure.restoreUnsavedPictures();
+    await failure.reportSaveFailure('failed', picture('first'));
+    await vi.waitFor(() =>
+      expect(error).toHaveBeenCalledWith('Keeping unsaved pictures failed:', expect.any(Error))
+    );
+
+    await failure.restoreUnsavedPictures();
+    await failure.reportSaveFailure('failed', picture('second'));
+
+    await vi.waitFor(() => expect(store.held).toHaveLength(3));
+    expect(failure.pictureCount).toBe(3);
+  });
 });

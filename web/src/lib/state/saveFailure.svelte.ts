@@ -87,11 +87,11 @@ export function createSaveFailure({
   let generation = 0;
   // Bumped by each picture-less report, so a retry clears only the one it saw when it started.
   let uncapturedVersion = 0;
-  // Intentionally untracked: set once memory holds every picture the record does, because a restore
-  // brought them in or this session wrote the record. No read runs after that, however many times
-  // boot, durable hydration, and writes after a failed read ask: a picture whose signature could
-  // not be computed has no content identity to deduplicate a second restore against, and a second
-  // read would bring back a picture a retry saved or a dismissal released since.
+  // Intentionally untracked: set once memory holds every picture the record does, because a
+  // restore brought them in or a write from this session landed. No read runs after that, however
+  // many times boot, durable hydration, and writes after a failed read ask: a picture whose
+  // signature could not be computed has no content identity to deduplicate a second restore
+  // against, and a second read would bring back a picture a retry saved or a dismissal released.
   let restoration: Promise<void> | null = null;
   let memoryCoversRecord = false;
   // Intentionally untracked: set by a read of the stored pictures that failed and cleared by one
@@ -135,8 +135,12 @@ export function createSaveFailure({
       await restoreFromStore(generation);
       if (storeUnread) return;
     }
-    memoryCoversRecord = true;
-    await pictureStore.write(pictures.length > 0 ? pictures : null);
+    try {
+      await pictureStore.write(pictures.length > 0 ? pictures : null);
+      memoryCoversRecord = true;
+    } catch (err) {
+      console.error('Keeping unsaved pictures failed:', err);
+    }
   }
 
   function persist() {

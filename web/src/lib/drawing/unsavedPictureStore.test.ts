@@ -110,11 +110,11 @@ describe('createUnsavedPictureStore', () => {
     await expect(createUnsavedPictureStore().read()).rejects.toBe(blocked);
   });
 
-  it('logs a write IndexedDB refuses instead of failing the save flow', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mocks.put.mockRejectedValue(new Error('quota'));
+  it('rejects a write IndexedDB refuses, and leaves the flag unset', async () => {
+    const quota = new Error('quota');
+    mocks.put.mockRejectedValue(quota);
 
-    await expect(createUnsavedPictureStore().write(held)).resolves.toBeUndefined();
-    expect(error).toHaveBeenCalledWith('Keeping unsaved pictures failed:', expect.any(Error));
+    await expect(createUnsavedPictureStore().write(held)).rejects.toBe(quota);
+    expect(mocks.flag).toBe(false);
   });
 });
