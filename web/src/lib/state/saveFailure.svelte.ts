@@ -87,11 +87,15 @@ export function createSaveFailure({
   let generation = 0;
   // Bumped by each picture-less report, so a retry clears only the one it saw when it started.
   let uncapturedVersion = 0;
-  // Intentionally untracked: stored pictures are restored into memory once, however many times boot
-  // and durable hydration ask, because a picture whose signature could not be computed has no
-  // content identity to deduplicate a second restore against.
+  // Intentionally untracked: stored pictures are restored into memory once, however many times boot,
+  // durable hydration, and writes after a failed read ask, because a picture whose signature could
+  // not be computed has no content identity to deduplicate a second restore against.
   let restoration: Promise<void> | null = null;
   let restored = false;
+  // Intentionally untracked: set by a read of the stored pictures that failed and cleared by one that
+  // succeeds. Every write replaces the whole record, so while it is set a write first reads the
+  // record into memory, and is skipped if that read fails too.
+  let storeUnread = false;
   // Intentionally untracked: one queue for every read and write of the stored pictures. Each write
   // takes the state as it is when its turn comes, and a restore's read runs before any write queued
   // behind it, so a failure reported during boot cannot overwrite the pictures being restored.
@@ -103,8 +107,37 @@ export function createSaveFailure({
     return queued;
   }
 
+  // Runs inside the store queue. Resolves whether it brought stored pictures into memory; a
+  // dismissal after `sinceGeneration` releases them instead.
+  async function restoreFromStore(sinceGeneration: number): Promise<boolean> {
+    if (restored) return false;
+    let held: HeldPicture[] | null;
+    try {
+      held = await pictureStore.read();
+    } catch (err) {
+      console.error('Reading unsaved pictures failed:', err);
+      storeUnread = true;
+      return false;
+    }
+    storeUnread = false;
+    if (!held || held.length === 0) return false;
+    restored = true;
+    if (sinceGeneration !== generation) return false;
+    pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
+    demandOverlay('saveFailureBanner');
+    return true;
+  }
+
+  async function writeToStore() {
+    if (storeUnread) {
+      await restoreFromStore(generation);
+      if (storeUnread) return;
+    }
+    await pictureStore.write(pictures.length > 0 ? pictures : null);
+  }
+
   function persist() {
-    void enqueue(() => pictureStore.write(pictures.length > 0 ? pictures : null));
+    void enqueue(writeToStore);
   }
 
   return {
@@ -171,14 +204,9 @@ export function createSaveFailure({
       if (restored) return Promise.resolve();
       restoration ??= (async () => {
         const restoreGeneration = generation;
-        const held = await enqueue(() => pictureStore.read());
+        const broughtIn = await enqueue(() => restoreFromStore(restoreGeneration));
         restoration = null;
-        if (!held || held.length === 0) return;
-        restored = true;
-        if (restoreGeneration !== generation) return;
-        pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
-        persist();
-        demandOverlay('saveFailureBanner');
+        if (broughtIn) persist();
       })();
       return restoration;
     },

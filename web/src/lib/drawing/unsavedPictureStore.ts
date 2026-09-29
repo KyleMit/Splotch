@@ -17,6 +17,8 @@ export interface HeldPicture {
 }
 
 export interface UnsavedPictureStore {
+  // Resolves null when no pictures are held, and rejects when the store could not be read: a
+  // failed read says nothing about what the record holds, and every write replaces the record.
   read(): Promise<HeldPicture[] | null>;
   write(held: HeldPicture[] | null): Promise<void>;
 }
@@ -93,13 +95,8 @@ export function createUnsavedPictureStore(): UnsavedPictureStore {
   return {
     async read() {
       if (!readBool(STORAGE_KEYS.unsavedPicturesHeld, false)) return null;
-      try {
-        const stored: unknown = await store.get(HELD_KEY);
-        return stored === undefined ? null : fromStored(recognizedPictures(stored));
-      } catch (err) {
-        console.error('Reading unsaved pictures failed:', err);
-        return null;
-      }
+      const stored: unknown = await store.get(HELD_KEY);
+      return stored === undefined ? null : fromStored(recognizedPictures(stored));
     },
     async write(held) {
       try {

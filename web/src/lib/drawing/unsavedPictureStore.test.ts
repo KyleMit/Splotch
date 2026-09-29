@@ -102,14 +102,19 @@ describe('createUnsavedPictureStore', () => {
     expect(mocks.delete).not.toHaveBeenCalled();
   });
 
-  it('degrades to nothing held when IndexedDB is unavailable', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('rejects a read IndexedDB refuses rather than report nothing held', async () => {
     mocks.flag = true;
-    mocks.get.mockRejectedValue(new Error('blocked'));
-    mocks.put.mockRejectedValue(new Error('quota'));
-    const store = createUnsavedPictureStore();
+    const blocked = new Error('blocked');
+    mocks.get.mockRejectedValue(blocked);
 
-    await expect(store.read()).resolves.toBeNull();
-    await expect(store.write(held)).resolves.toBeUndefined();
+    await expect(createUnsavedPictureStore().read()).rejects.toBe(blocked);
+  });
+
+  it('logs a write IndexedDB refuses instead of failing the save flow', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.put.mockRejectedValue(new Error('quota'));
+
+    await expect(createUnsavedPictureStore().write(held)).resolves.toBeUndefined();
+    expect(error).toHaveBeenCalledWith('Keeping unsaved pictures failed:', expect.any(Error));
   });
 });

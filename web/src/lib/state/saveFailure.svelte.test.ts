@@ -383,3 +383,70 @@ describe('unsaved pictures across a relaunch', () => {
     expect(demandOverlay).not.toHaveBeenCalled();
   });
 });
+
+// A failed read says nothing about what the record holds, and every write replaces the record, so
+// the pictures a relaunch left behind must survive a read that fails at boot.
+describe('a store that could not be read', () => {
+  const kept = (bytes: string): HeldPicture => ({
+    ...picture(bytes),
+    outcome: 'denied',
+    signature: bytes,
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function unreadableAtBoot(...held: HeldPicture[]) {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = memoryStore(held);
+    store.read.mockRejectedValueOnce(new Error('blocked'));
+    return { error, store };
+  }
+
+  it('reads the record again before a later write, and keeps every picture', async () => {
+    const { error, store } = unreadableAtBoot(kept('first'), kept('second'));
+    const failure = failureWith(saverReturning(), store);
+
+    await failure.restoreUnsavedPictures();
+    expect(failure.pictureCount).toBe(0);
+    await failure.reportSaveFailure('failed', picture('third'));
+
+    await vi.waitFor(() => expect(store.held).toHaveLength(3));
+    expect(failure.pictureCount).toBe(3);
+    expect(failure.outcome).toBe('denied');
+    expect(error).toHaveBeenCalledExactlyOnceWith(
+      'Reading unsaved pictures failed:',
+      expect.any(Error)
+    );
+  });
+
+  it('writes nothing while the record still cannot be read', async () => {
+    const earlier = [kept('earlier')];
+    const { error, store } = unreadableAtBoot(...earlier);
+    store.read.mockRejectedValue(new Error('still blocked'));
+    const failure = failureWith(saverReturning(), store);
+
+    await failure.restoreUnsavedPictures();
+    await failure.reportSaveFailure('failed', picture('new'));
+    failure.dismissSaveFailure();
+
+    await vi.waitFor(() => expect(error).toHaveBeenCalledTimes(3));
+    expect(store.write).not.toHaveBeenCalled();
+    expect(store.held).toEqual(earlier);
+  });
+
+  it('brings back pictures a dismissal never showed rather than delete them', async () => {
+    const { store } = unreadableAtBoot(kept('never shown'));
+    const failure = failureWith(saverReturning(), store);
+    await failure.restoreUnsavedPictures();
+    await failure.reportSaveFailure('failed', null);
+
+    failure.dismissSaveFailure();
+
+    await vi.waitFor(() => expect(failure.pictureCount).toBe(1));
+    expect(failure.outcome).toBe('denied');
+    await vi.waitFor(() => expect(store.write).toHaveBeenCalledOnce());
+    expect(store.held).toMatchObject([{ signature: 'never shown' }]);
+  });
+});
