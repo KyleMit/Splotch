@@ -56,11 +56,14 @@ paths:
   source and confirm the test tracks it. If the source executes at import time, move the constant to
   a side-effect-free module.
 * **A test that cannot fail is a lint error**, not something a reviewer has to notice:
-  `npm run lint` scopes `@vitest/eslint-plugin` and `eslint-plugin-playwright` onto the two test
-  globs and rejects a body with no assertion, a committed `.only`, an unconditional skip, an
-  `expect` that never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first
-  assertion), and an assertion reachable only through a branch. That last one shapes how a
-  parametrized case is written: state the expectation as a value the table carries
+  `npm run lint` scopes `@vitest/eslint-plugin` onto `**/*.test.{ts,mjs}` and
+  `web/src/**/*TestHarness.ts` and `eslint-plugin-playwright` onto `web/tests/**/*.spec.ts`, and
+  rejects a body with no assertion, a committed `.only`, an unconditional skip, an `expect` that
+  never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first assertion), and
+  an assertion reachable only through a branch. The other `web/tests/**/*.ts` helper modules get
+  only the three assertion-shape rules (`valid-expect`, `missing-playwright-await`,
+  `valid-expect-in-promise`), since helpers are not tests. The branch rule shapes how a parametrized
+  case is written: state the expectation as a value the table carries
   (`await expect(label).toBeVisible({ visible: expected === 'shown' })`,
   `expect(output.includes(hint)).toBe(scenario.wantsHint)`), narrow a union through an
   `asserts`-signature `expect*` helper rather than an `if` on the discriminant, or split a case that

@@ -59,15 +59,18 @@ benchmark remains manual.
 ## A test that cannot fail is a lint error
 
 A test that has only ever passed carries no evidence it is connected to anything, and a green suite
-looks identical whether the coverage is real or vacuous. `npm run lint` catches that whole class on
-every file, in the `quality` job, at no runtime cost. `eslint.config.js` scopes
-`@vitest/eslint-plugin` onto `**/*.test.{ts,mjs}` and `eslint-plugin-playwright` onto
+looks identical whether the coverage is real or vacuous. `npm run lint` catches that whole class in
+the `quality` job, at no runtime cost. `eslint.config.js` scopes `@vitest/eslint-plugin` onto
+`**/*.test.{ts,mjs}` and `web/src/**/*TestHarness.ts`, and `eslint-plugin-playwright` onto
 `web/tests/**/*.spec.ts`, and turns on the same six guards under each plugin's spelling: a test body
 with no assertion, a committed `.only` (which silently skips the rest of its file), an unconditional
 skip, an `expect` that never reaches a matcher, a retrying assertion whose promise is dropped
-(`expect.poll`, a web-first assertion), and an assertion reachable only through a branch.
+(`expect.poll`, a web-first assertion), and an assertion reachable only through a branch. The shared
+E2E helpers — every other `web/tests/**/*.ts` module — get only the three rules about an assertion's
+own shape (`valid-expect`, `missing-playwright-await`, `valid-expect-in-promise`): a helper is not a
+test, so the rules that judge a test body do not apply. Code outside those globs is not checked.
 
-That last one is the only rule that constrains how a test is written. **A parametrized case states
+The branch rule is the only one that constrains how a test is written. **A parametrized case states
 its expectation as a value rather than branching around the assertion:**
 
 ```ts
