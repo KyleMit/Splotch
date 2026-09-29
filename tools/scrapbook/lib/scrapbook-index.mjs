@@ -16,7 +16,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { esc } from '../../lib/html.mjs';
-import { chromeStyle } from './scrapbook-chrome.mjs';
+import { chromeStyle, crayons } from './scrapbook-chrome.mjs';
 
 // Not scrapbook entries — the index's own scaffolding.
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
@@ -745,15 +745,6 @@ const PAGE_CSS = `
   .section-head .desc{display:block; margin-top:2px}
 }
 `;
-
-function crayons(size) {
-  const hues = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'];
-  return (
-    `<span class="crayons crayons-${size}" aria-hidden="true">` +
-    hues.map((h) => `<i style="background:var(--c-${h})"></i>`).join('') +
-    `</span>`
-  );
-}
 
 function groupSection(id, group, cards) {
   if (!cards.length) return '';
