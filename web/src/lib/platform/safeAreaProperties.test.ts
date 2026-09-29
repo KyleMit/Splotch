@@ -20,7 +20,9 @@ const appCss = readFileSync(join(srcDir, 'app.css'), 'utf8');
 // the sweep by matching it exactly rather than by line number.
 const SEED_PATTERN = /--safe-area-(top|right|bottom|left):\s*env\(safe-area-inset-\1,\s*0px\)/g;
 
-const CALL_PATTERN = /env\(safe-area-inset-(top|right|bottom|left)\)/;
+// The seed's own spelling carries a fallback, so a consumer copied from it does
+// too; the pattern has to see past `, 0px` and padding inside the parens.
+const CALL_PATTERN = /env\(\s*safe-area-inset-(?:top|right|bottom|left)\s*[,)]/;
 
 function collectSources(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -40,6 +42,15 @@ describe('safe-area inset custom properties', () => {
     for (const edge of SAFE_AREA_EDGES) {
       expect(appCss).toContain(`${SAFE_AREA_PROPERTIES[edge]}: env(safe-area-inset-${edge}, 0px)`);
     }
+  });
+
+  it.each([
+    ['padding-top: env(safe-area-inset-top, 0px);', true],
+    ['margin-left: env( safe-area-inset-left );', true],
+    ['bottom: max(env(safe-area-inset-bottom), 12px);', true],
+    ['the seam wraps env(safe-area-inset-*)', false],
+  ])('recognises %j as a direct call: %s', (css, isCall) => {
+    expect(CALL_PATTERN.test(css)).toBe(isCall);
   });
 
   it('no source outside that seed calls env(safe-area-inset-*) directly', () => {
