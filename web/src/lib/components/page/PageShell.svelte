@@ -21,14 +21,15 @@
     /** The <h1>. Also the only heading the shell owns. */
     title: string;
     /** Small-caps mark beside the crayon strip, e.g. "Splotch for Android". */
-    wordmark: string;
+    /** Forwarded to BrandMark: the word after "Splotch" in the mark. */
+    wordmarkSuffix?: string;
     lede?: Snippet;
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
     children: Snippet;
   }
 
-  let { title, wordmark, lede, actions, children }: Props = $props();
+  let { title, wordmarkSuffix, lede, actions, children }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
   const hydration = createHydratedFlag();
@@ -41,7 +42,7 @@
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href={DRAWING_ROUTE}>
-        <BrandMark {wordmark} />
+        <BrandMark suffix={wordmarkSuffix} />
       </a>
     </div>
 

@@ -181,7 +181,7 @@
   }
 </script>
 
-<PageShell title="Admin" wordmark="Splotch Admin">
+<PageShell title="Admin" wordmarkSuffix="Admin">
   {#snippet lede()}
     Manage AI access codes
   {/snippet}

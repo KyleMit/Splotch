@@ -95,7 +95,7 @@
   </aside>
 {/snippet}
 
-<PageShell title={sent ? 'Thank you — your report is in.' : 'Send us feedback'} wordmark="Splotch">
+<PageShell title={sent ? 'Thank you — your report is in.' : 'Send us feedback'}>
   {#snippet lede()}
     {#if sent}
       A real person reads every one of these. There's no account attached to it, so we can't write

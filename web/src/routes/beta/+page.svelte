@@ -105,7 +105,7 @@
 <SocialCard path="/beta" title="Join the Splotch Beta" description={DESCRIPTION} />
 
 <div class="beta">
-  <PageShell title="Join the Splotch beta" wordmark="Splotch beta">
+  <PageShell title="Join the Splotch beta" wordmarkSuffix="beta">
     {#snippet lede()}
       Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
       feedback. Thank you for helping!

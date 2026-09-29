@@ -42,7 +42,7 @@
       <span class="header-label">Design system</span>
     </div>
     <a class="header-brand" href="#top" aria-label="Back to top">
-      <BrandMark wordmark="Splotch" />
+      <BrandMark />
     </a>
   </div>
   <!-- The second row of the sticky header, so the contents needs no offset of

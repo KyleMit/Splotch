@@ -299,7 +299,9 @@ with `BrandMark`:
 |                      | accent/shadow/measure/gutter, plus the accent's hover and on-accent variants), resolved     |
 |                      | from the themed app tokens                                                                  |
 | `RuleLabel.svelte`   | The small-caps section marker with a hairline running to the sheet edge — a real `<h2>`     |
-| `BrandMark.svelte`   | Crayon strip + small-caps wordmark lockup (the masthead's second way home)                  |
+| `BrandMark.svelte`   | Crayon strip + small-caps wordmark lockup (the masthead's second way home). A page passes   |
+|                      | only the word after "Splotch" (`wordmarkSuffix="beta"`); on phones a suffixed mark shows    |
+|                      | just that word, with the full name kept in the link's accessible name                       |
 | `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
 
 **No page opts out of night mode.** Every route wearing the shell follows the parent's Appearance

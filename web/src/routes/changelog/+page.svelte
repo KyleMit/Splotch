@@ -80,7 +80,7 @@
 <SocialCard path="/changelog" title="Splotch Changelog" description={DESCRIPTION} />
 
 <div class="changelog" id="top" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
-  <PageShell title="Changelog" wordmark="Splotch">
+  <PageShell title="Changelog">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that
       shipped&nbsp;alongside&nbsp;it.

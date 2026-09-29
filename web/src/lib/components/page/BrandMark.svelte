@@ -6,16 +6,18 @@
   // instead of a mirrored copy. The strip is decorative (CrayonStrip is
   // aria-hidden), so the wordmark text is the lockup's whole accessible content.
   interface Props {
-    /** Small-caps mark beside the crayon strip, e.g. "Splotch for Android". */
-    wordmark: string;
+    /** The word after "Splotch" in the mark, e.g. "beta" for "Splotch beta". */
+    suffix?: string;
   }
 
-  let { wordmark }: Props = $props();
+  let { suffix }: Props = $props();
 </script>
 
 <span class="brand-mark">
   <CrayonStrip />
-  <span class="wordmark">{wordmark}</span>
+  <span class={['wordmark', { suffixed: suffix }]}
+    ><span class="name">Splotch</span>{suffix ? ` ${suffix}` : ''}</span
+  >
 </span>
 
 <style>
@@ -53,6 +55,19 @@
     /* The size stays on the ramp's floor; the tracking tightens instead. */
     .wordmark {
       letter-spacing: 0.06em;
+    }
+
+    /* At the floor, a two-word mark wraps beside the back link on common phone
+       widths, so a suffixed mark shows only its suffix. The name is clipped
+       rather than removed, so the link home keeps its whole accessible name. */
+    .suffixed .name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
     }
   }
 </style>
