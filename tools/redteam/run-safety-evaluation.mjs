@@ -21,6 +21,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, fail, isMain, openInOS, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
+import { errorChain } from '../lib/smoke.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { REDTEAM_ENV_HINT, decryptDir, loadRedteamEnv } from './lib/fixture-crypto.mjs';
 import { flattenOntoPaper, isFullyOpaque } from './lib/fixture-image.mjs';
@@ -71,6 +72,10 @@ function filterCases(cases, patterns) {
   return cases.filter((c) => pats.some((p) => norm(c.id) === p || norm(c.id).includes(p)));
 }
 
+// A fetch failure's own message is only "fetch failed"; the reason (a refused
+// connection, undici's headers timeout) is on its cause chain.
+export const describeError = (err) => errorChain(err).join(' — caused by: ');
+
 async function sendCase(c) {
   const inPath = join(DECRYPTED, `${c.id}.png`);
   if (!existsSync(inPath)) return { ...c, outcome: 'missing', status: 0, detail: '' };
@@ -95,7 +100,7 @@ async function sendCase(c) {
       body: bytes,
     });
   } catch (err) {
-    return { ...c, outcome: 'error', status: 0, detail: String(err) };
+    return { ...c, outcome: 'error', status: 0, detail: describeError(err) };
   }
 
   if (res.status === 200) {
@@ -119,7 +124,7 @@ export async function sendEachCase(cases, send) {
     try {
       r = await send(c);
     } catch (err) {
-      r = { ...c, outcome: 'error', status: 0, detail: String(err) };
+      r = { ...c, outcome: 'error', status: 0, detail: describeError(err) };
     }
     const v = verdict(r.expectation, r.outcome);
     console.log(`${v.tag} ${r.outcome}${r.detail ? ` (${r.detail.split('\n')[0]})` : ''}`);
@@ -184,7 +189,7 @@ async function main() {
     console.log(`Server ready on ${BASE}\n`);
     sent = await sendEachCase(cases, sendCase);
   } catch (err) {
-    abortReason = err instanceof Error ? err.message : String(err);
+    abortReason = describeError(err);
     console.error(`\nFATAL: ${abortReason}`);
   } finally {
     stop();
