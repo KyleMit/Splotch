@@ -14,9 +14,7 @@ The 2026-09-28 code-quality burndown (tracking issue #2443) extended rules 1, 4,
 than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #2467) extended rules
 4, 6, 8, and 9 the same way and added evidence to rules 1 and 2. The 2026-09-29 evening burndown
 (tracking issue #2500) extended rules 2, 4, 9, and 10 and added evidence to rules 1, 3, 5, 6, and 8.
-Enforcement is named by path. A few citations name a PR that was still open when this doc cited it
-("the guards PR #2511 adds"), because `npm run check:doc-refs` fails on a path `main` does not have
-yet; each becomes a path once its PR merges.
+Enforcement is named by path.
 
 ## What earns a rule
 
@@ -355,7 +353,10 @@ The 2026-09-29 evening campaign found more names, and one sentence, typed at sev
 
 **Enforcement.** The both-sides test. Test stubs of a boundary function are typed from the real one
 (`vi.fn<typeof realFn>()`), so a changed signature fails `npm run check`; an untyped stub had
-drifted to a shape the real function never returns (PRs #2383, #2393).
+drifted to a shape the real function never returns (PRs #2383, #2393). Where the stub lives in an
+untyped tool, a drift guard reads the type: the store-asset generator's free-grant stub sent a field
+the route never sends, and `tools/marketing-assets/tests/free-grant-stub.test.mjs` now holds its
+keys to `FreeGenerationGrantStatus` (PR #2518).
 
 **Known limits.** For native plugins, the both-sides test checks names and the fields each method
 resolves, not how each platform behaves. PR #2448 found two platform gaps:
@@ -463,7 +464,9 @@ reused whatever server answered on its port, so store-drawing scores could come 
 checkout's build (PR #2456). `perf:android` ignored unknown flags, so a mistyped `--no-build`
 silently rebuilt and reinstalled the app it was asked to profile as it stood (PR #2504). Two perf
 entries accepted flags their `npm run info` text never named, and one kept a private copy of the
-orientation vocabulary the perf lib owns (PR #2515).
+orientation vocabulary the perf lib owns (PR #2515). `parseNumberFlag` read `080` as 80 while two
+callers rejected a leading zero with checks of their own; the shared integer rule in
+`tools/lib/proc.mjs` now decides it once (PR #2521).
 
 Checks that ran after the writes they were meant to guard:
 
@@ -623,8 +626,12 @@ Source-text guards that a comment, another job, or another spelling could satisf
   padding, and a call nested in `max()`.
 * PR #2511: a first-cut guard that read the iPad gates probe's source literals passed with a
   scenario hard-coded to two strokes, and regexes over engine measure names read comments and
-  skipped template literals. The guards PR #2511 adds run the probe and count what it draws, and
-  parse both sides with the TypeScript compiler API.
+  skipped template literals. `tools/perf/tests/probe-undo-depth.test.mjs` now runs the probe and
+  counts what it draws, and `tools/perf/tests/engine-measure-names.test.mjs` parses both sides with
+  the TypeScript compiler API.
+* PR #2518: the dialog retirement settles on the `close` event or a one-frame fallback, and with the
+  `close` listener removed every test still passed. `web/src/lib/actions/modalDialog.svelte.test.ts`
+  now holds the fallback's frame and settles on `close` alone.
 * PR #2513: a WebKit history test asserted `if: always()` against the whole job, and the diagnostics
   upload step satisfied it while the history step carried a different condition. That assertion is
   gone, and the upload's other assertions now read the history step alone.
