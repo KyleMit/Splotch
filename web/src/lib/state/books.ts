@@ -260,10 +260,6 @@ export function booksForPlatform(platform: BookPlatform): Book[] {
   return BOOKS.filter((book) => book.platforms.includes(platform));
 }
 
-export function pageImage(page: ColoringPage, orientation: BookOrientation): string {
-  return page.lightLineArt[orientation];
-}
-
 export function pageCompositionKey(url: string): string {
   return url.replace(PAGE_ASSET_SUFFIX_PATTERN, '');
 }

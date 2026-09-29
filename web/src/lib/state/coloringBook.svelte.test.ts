@@ -17,7 +17,7 @@ describe('coloring book state', () => {
   it('starts with no overlay in portrait', () => {
     expect(book.overlayPage).toBeNull();
     expect(book.orientation).toBe('portrait');
-    expect(book.overlayUrl()).toBeNull();
+    expect(book.hasOverlayPage()).toBe(false);
   });
 
   it('refuses writes through the overlay-page getter', () => {
@@ -47,19 +47,20 @@ describe('coloring book state', () => {
 
   it('setOverlayPage tracks the line art and the colored fill together', () => {
     book.setOverlayPage(page, 'landscape');
-    expect(book.overlayUrl()).toBe(page.lightLineArt.landscape);
+    expect(book.hasOverlayPage()).toBe(true);
+    expect(book.themedOverlayUrl('light')).toBe(page.lightLineArt.landscape);
     expect(book.fillSheetUrl('light')).toBe(page.lightFill.landscape);
     expect(book.overlayPage?.id).toBe(page.id);
   });
 
   it('updates every asset accessor when only the orientation changes', () => {
     book.setOverlayPage(spacePage, 'landscape');
-    expect(book.overlayUrl()).toBe(spacePage.lightLineArt.landscape);
+    expect(book.themedOverlayUrl('light')).toBe(spacePage.lightLineArt.landscape);
     expect(book.fillSheetUrl('light')).toBe(spacePage.lightFill.landscape);
     expect(book.fillSheetUrl('dark')).toBe(spacePage.nightFill.landscape);
 
     book.setOverlayOrientation('portrait');
-    expect(book.overlayUrl()).toBe(spacePage.lightLineArt.portrait);
+    expect(book.themedOverlayUrl('light')).toBe(spacePage.lightLineArt.portrait);
     expect(book.fillSheetUrl('light')).toBe(spacePage.lightFill.portrait);
     expect(book.fillSheetUrl('dark')).toBe(spacePage.nightFill.portrait);
   });
@@ -67,7 +68,8 @@ describe('coloring book state', () => {
   it('clearOverlay drops the line art and the fill sheet for either theme', () => {
     book.setOverlayPage(spacePage, 'portrait');
     book.clearOverlay();
-    expect(book.overlayUrl()).toBeNull();
+    expect(book.hasOverlayPage()).toBe(false);
+    expect(book.themedOverlayUrl('light')).toBeNull();
     expect(book.fillSheetUrl('light')).toBeNull();
     expect(book.fillSheetUrl('dark')).toBeNull();
     expect(book.overlayPage).toBeNull();

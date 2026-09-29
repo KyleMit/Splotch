@@ -1626,7 +1626,7 @@ describe('probe selectors still match the app', () => {
     const source = component('DrawingCanvas.svelte');
     const wrapperTag = source.match(/<div\s+class="paper-view"[\s\S]*?>/)?.[0];
 
-    expect(wrapperTag).toContain("data-paper-active={overlayUrl() ? '' : undefined}");
+    expect(wrapperTag).toContain("data-paper-active={hasOverlayPage() ? '' : undefined}");
     expect(PROBE).toContain("paperView.hasAttribute('data-paper-active')");
   });
 
