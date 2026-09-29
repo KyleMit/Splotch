@@ -36,7 +36,7 @@ export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
 export type InstallPromptStage = 'initial' | 'returning' | 'final';
 
-const STROKES_BEFORE_AUTO_CLEAR = 5;
+export const STROKES_BEFORE_AUTO_CLEAR = 5;
 const MAX_INSTALL_REPROMPTS = INSTALL_REPROMPT_SESSION_MILESTONES.length;
 const VALID_REPROMPTS_USED = Array.from({ length: MAX_INSTALL_REPROMPTS + 1 }, (_, index) => index);
 
