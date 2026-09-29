@@ -30,8 +30,9 @@ Implement **dual-layer storage** in `src/lib/storage.ts`:
 * **On native app launch**, `hydrateDurableStorage()` reconciles the two layers: any key missing
   from localStorage is restored from Preferences (recovering from OS eviction), and any key present
   in localStorage but absent from Preferences is backed up. The hydration list is derived from the
-  static `STORAGE_KEYS` registry, and all hydration keys are fetched from Preferences concurrently
-  (not serially) to minimize cold-start latency.
+  static `STORAGE_KEYS` registry minus the keys only the web build writes (see the 2026-09-29
+  amendment), and all hydration keys are fetched from Preferences concurrently (not serially) to
+  minimize cold-start latency.
 * Secure AI-credential hydration runs after durable reconciliation so legacy plaintext BYOK keys and
   managed access codes can be recovered from Preferences, moved into separate secure-storage slots,
   and then removed from both plaintext layers. The live credential state stays empty until secure
@@ -53,6 +54,19 @@ On web, `isNative()` returns false and the Preferences layer is never touched.
   window could lose the write on next launch. In practice this is negligible for user preference
   data.
 * **+** Durable recovery does not depend on a storage helper touching a key before hydration; adding
-  a persisted key to `STORAGE_KEYS` includes it automatically.
+  a persisted key to `STORAGE_KEYS` includes it automatically unless it is declared web-only.
 * **-** Native boot must keep durable reconciliation ahead of secure AI-credential hydration so
   migration consumes a recovered legacy value before scrubbing it.
+
+## Amendment (2026-09-29): web-only keys stay out of hydration
+
+This record first said the hydration list was the whole `STORAGE_KEYS` registry. Since PR #2440,
+`hydrationKeys` in `web/src/lib/storage.ts` subtracts `WEB_ONLY_STORAGE_KEYS`
+(`web/src/lib/storageKeys.ts`), the keys only the web build writes. Native never writes one, so
+fetching its durable copy would only read back an empty slot, and `removeKey` has no durable copy of
+one to forget. The web build never touches Preferences, so it keeps neither list.
+`web/src/lib/storageKeys.webOnly.test.ts` holds every writer of a web-only key to the guard that
+keeps it off native.
+
+The decision is unchanged: every key native writes is mirrored and restored, and a new key joins
+hydration automatically unless it is added to the web-only list.
