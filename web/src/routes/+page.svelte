@@ -9,7 +9,7 @@
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import { updateDrawingLayout } from '$lib/drawing/engine';
   import { untrack } from 'svelte';
-  import { uiState } from '$lib/state/ui.svelte';
+  import { SETTINGS_BUTTON_ID, uiState } from '$lib/state/ui.svelte';
   import GlassPanes from '$lib/components/GlassPanes.svelte';
   import type { OpenFlyout } from '$lib/glassPanes';
   let openFlyout: OpenFlyout = $state(null);
@@ -191,6 +191,12 @@
 <svelte:head>
   <title>{HOME_CARD.title}</title>
   <meta name="description" content={HOME_CARD.description} />
+  <!-- The prerendered document is large enough that a browser paints it in
+       pieces, which shows the toolbar one control at a time in markup order.
+       This holds the first paint until the last control in the markup is
+       parsed. An engine without `rel="expect"` ignores the link and paints
+       progressively. first-paint.spec.ts pins both the target and the order. -->
+  <link rel="expect" href={`#${SETTINGS_BUTTON_ID}`} blocking="render" />
 </svelte:head>
 
 <SocialCard />

@@ -187,4 +187,12 @@ declare global {
   }
 }
 
+// The render-blocking attribute `rel="expect"` takes (routes/+page.svelte),
+// which Svelte's element types do not carry.
+declare module 'svelte/elements' {
+  interface HTMLLinkAttributes {
+    blocking?: 'render' | null;
+  }
+}
+
 export {};
