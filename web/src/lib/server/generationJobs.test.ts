@@ -15,6 +15,7 @@ vi.mock('@netlify/blobs', () => ({ getStore: () => store }));
 import {
   claimJob,
   completeJob,
+  discardJob,
   isJobId,
   issueWorkTicket,
   markJobPending,
@@ -575,5 +576,32 @@ describe('malformed job records', () => {
         expect(store.delete).toHaveBeenCalledWith(`${JOB}/status.json`);
       }
     );
+  });
+});
+
+// Its callers are already answering the child, so it never throws; the count is
+// the only way a delete that failed reaches the function log at the time.
+describe('discardJob', () => {
+  beforeEach(() => {
+    store.delete.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('reports nothing when every blob is deleted', async () => {
+    await expect(discardJob(JOB)).resolves.toBeNull();
+    expect(store.delete.mock.calls.map(([key]) => key)).toEqual([
+      `${JOB}/input`,
+      `${JOB}/image`,
+      `${JOB}/status.json`,
+    ]);
+  });
+
+  it('tries every delete and reports how many failed', async () => {
+    const failure = new Error('blob store unavailable');
+    store.delete.mockImplementation(async (key: string) => {
+      if (!key.endsWith('/input')) throw failure;
+    });
+
+    await expect(discardJob(JOB)).resolves.toEqual({ failedDeletes: 2, firstFailure: failure });
+    expect(store.delete).toHaveBeenCalledTimes(3);
   });
 });
