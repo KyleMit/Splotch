@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest';
+import { colorContrast } from './colorContrast';
 import { iconTokenEntries } from './iconTokens';
-import { brand, isColorToken, scale, themes, toCssVarName, zIndex } from './tokens';
+import {
+  brand,
+  isColorToken,
+  scale,
+  themes,
+  toCssVarName,
+  toKebabCase,
+  zIndex,
+  type ThemeTokens,
+} from './tokens';
 
 // The gen:tokens drift gate only proves the committed CSS matches the
 // generator's output — it would happily bless a wrong var name on both sides.
@@ -42,7 +52,46 @@ describe('isColorToken', () => {
       'ruleSecondaryOpacity',
       'stepInkStrength',
       'stepWashStrength',
+      'surfaceRgb',
     ]);
+  });
+});
+
+const THEME_NAMES = ['light', 'dark'] as const;
+
+function hexChannels(hex: string): string {
+  const match = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  expect(match, `${hex} is a six-digit hex`).not.toBeNull();
+  return match!
+    .slice(1)
+    .map((pair) => Number.parseInt(pair, 16))
+    .join(' ');
+}
+
+// --surface-rgb is --surface restated as channels, for the fades that paint
+// without color-mix(). Two spellings of one color agree only while this holds.
+describe('surfaceRgb', () => {
+  it.each(THEME_NAMES)('%s carries the channels of --surface', (theme) => {
+    expect(themes[theme].surfaceRgb).toBe(hexChannels(themes[theme].surface));
+  });
+});
+
+// A wash Button hovers to its wash-hover step and keeps its text-token label,
+// so every hovered wash holds the same AA floor as the resting one.
+describe('wash hovers', () => {
+  const AA_MIN_CONTRAST = 4.5;
+  const WASH_HOVER_LABELS = [
+    ['brandWashHover', 'brandText'],
+    ['dangerWashHover', 'dangerText'],
+  ] as const satisfies readonly (readonly [keyof ThemeTokens, keyof ThemeTokens])[];
+
+  describe.each(WASH_HOVER_LABELS)('%s', (hover, label) => {
+    it.each(THEME_NAMES)(`%s keeps --${toKebabCase(label)} at AA`, (theme) => {
+      const tokens = themes[theme];
+      expect(colorContrast(tokens[label], tokens[hover], tokens.surface)).toBeGreaterThanOrEqual(
+        AA_MIN_CONTRAST
+      );
+    });
   });
 });
 

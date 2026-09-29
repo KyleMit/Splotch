@@ -289,7 +289,7 @@
   .status-demo {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-3);
     max-width: 480px;
   }
 

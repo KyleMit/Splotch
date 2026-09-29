@@ -328,7 +328,7 @@
         {/if}
 
         {#if keyMessage}
-          <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}
+          <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'} class="key-status"
             >{keyMessage}</StatusMessage
           >
         {/if}
@@ -360,6 +360,10 @@
 
   .ai-settings-stack > section.ai-primary-toggle > .setting {
     padding-bottom: 0;
+  }
+
+  .setting-group :global(.key-status) {
+    margin-top: var(--space-3);
   }
 
   /* AI access code entry */

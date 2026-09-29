@@ -12,7 +12,7 @@
   <title>Dev harnesses · Splotch</title>
 </svelte:head>
 
-<PageShell title="Dev harnesses" wordmark="Splotch dev">
+<PageShell title="Dev harnesses" wordmarkSuffix="dev">
   {#snippet lede()}
     Development-only pages for working on the app, unlocked under <code>vite dev</code> or with
     <code>PUBLIC_ENABLE_DEV_HARNESS=true</code>. They 404 in production.

@@ -124,7 +124,7 @@ export const scale = {
   // button, or gate key. Text and glyphs on their own never take it: they
   // change ink token instead (design rule 5). The canvas action buttons keep
   // a deeper bespoke fade of their own in app.css.
-  disabledOpacity: '0.55',
+  disabledOpacity: '0.65',
 
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
   // --float-shadow instead — these are for modal-layer chrome where one
@@ -225,6 +225,12 @@ export interface ThemeTokens {
   appBg: string;
   /** modal cards, palette bar */
   surface: string;
+  /**
+   * --surface as bare RGB channels, for `rgb(var(--surface-rgb) / alpha)`: a
+   * fade to the surface that needs no color-mix(). tokens.test.ts holds it
+   * equal to --surface in both themes.
+   */
+  surfaceRgb: string;
   /** setting cards, inset panels */
   surface2: string;
   /** Crayon contribution to numbered-step discs and digits. */
@@ -258,8 +264,10 @@ export interface ThemeTokens {
    * overstates how readable light ink is on a dark ground: the dark value
    * cleared 8.5:1 on --app-bg and still read as washed out beside the light
    * theme's 5.3:1. What tracks the eye is the perceptual step down from
-   * --text, so the dark value is set to hold the same APCA step below --text
-   * that the light value holds (~7 Lc on --surface) rather than to a ratio.
+   * --text, so the two themes hold the same APCA step between --text and
+   * --text-soft on --surface (~13 Lc) rather than a ratio. The step is widened
+   * from the --text side: --text-soft cannot move without breaking the
+   * --control-track pairing above.
    */
   textSoft: string;
   /** Tracked labels need stronger apparent weight on dark surfaces. */
@@ -274,7 +282,11 @@ export interface ThemeTokens {
   iconMuted: string;
   /** brand-tinted active/selected fills */
   brandWash: string;
-  /** one step stronger, for hovering washed elements */
+  /**
+   * One step stronger, for hovering washed elements. Held to 4.5:1 under
+   * --brand-text in both themes (tokens.test.ts), which caps how deep the
+   * light step can go.
+   */
   brandWashHover: string;
   brandText: string;
   /**
@@ -300,6 +312,12 @@ export interface ThemeTokens {
    */
   successText: string;
   dangerWash: string;
+  /**
+   * One step stronger, for hovering danger washes. Held to 4.5:1 under
+   * --danger-text in both themes (tokens.test.ts), which caps how deep the
+   * light step can go.
+   */
+  dangerWashHover: string;
   dangerText: string;
   warningWash: string;
   warningText: string;
@@ -362,6 +380,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   light: {
     appBg: '#f5f5f5',
     surface: '#ffffff',
+    surfaceRgb: '255 255 255',
     surface2: '#f8f8f8',
     stepWashStrength: '9%',
     stepInkStrength: '45%',
@@ -373,19 +392,20 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     controlTrackHover: '#ccc',
     sliderNotch: 'rgb(0 0 0 / 22%)',
     textStrong: '#333',
-    text: '#555',
+    text: '#474747',
     textSoft: '#666',
     labelInk: '#666',
     iconInk: '#1f1f1f',
     iconMuted: '#737373',
     brandWash: '#ede7f6',
-    brandWashHover: '#e3d7f5',
+    brandWashHover: '#ede1ff',
     brandText: '#7c50bb',
     brandSolid: '#7c50bb',
     brandSolidHover: '#6b3fbf',
     successWash: '#e9f7ec',
     successText: '#2e7d4f',
     dangerWash: '#fdecec',
+    dangerWashHover: '#ffe6e6',
     dangerText: '#b04a4a',
     warningWash: '#fff2d3',
     warningText: '#895a0a',
@@ -409,6 +429,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   dark: {
     appBg: '#17171d',
     surface: '#23232b',
+    surfaceRgb: '35 35 43',
     stepWashStrength: '24%',
     stepInkStrength: '0%',
     surface2: '#2d2d37',
@@ -420,9 +441,9 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     controlTrackHover: '#575765',
     sliderNotch: 'rgb(255 255 255 / 40%)',
     textStrong: '#eceaf2',
-    text: '#c9c7d3',
+    text: '#d3d1dc',
     textSoft: '#bdbbc8',
-    labelInk: '#c9c7d3',
+    labelInk: '#d3d1dc',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
     brandWash: '#3b2f4f',
@@ -433,6 +454,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     successWash: '#24382b',
     successText: '#8bcfa4',
     dangerWash: '#422a2c',
+    dangerWashHover: '#4e3134',
     dangerText: '#e09393',
     warningWash: '#3e331c',
     warningText: '#f2d488',
@@ -463,6 +485,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
 export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   appBg: true,
   surface: true,
+  surfaceRgb: false,
   surface2: true,
   stepWashStrength: false,
   stepInkStrength: false,
@@ -487,6 +510,7 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   successWash: true,
   successText: true,
   dangerWash: true,
+  dangerWashHover: true,
   dangerText: true,
   warningWash: true,
   warningText: true,

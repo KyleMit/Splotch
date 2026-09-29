@@ -26,6 +26,7 @@
   </p>
   <Button
     variant="brand"
+    size="hero"
     class="ai-error-primary"
     onclick={() => (repeatedFailure ? closeAiResult() : void retryAiImage())}
   >
@@ -84,13 +85,6 @@
   .ai-error-card :global(.ai-error-primary) {
     margin-top: var(--space-6);
     width: 100%;
-    min-height: 56px;
-    padding: 0 var(--space-6);
-    border-radius: var(--radius-pill);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    gap: 10px;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
   }
 
   .ai-error-card :global(.ai-error-refresh) {

@@ -126,9 +126,10 @@
     align-items: center;
     justify-content: center;
     padding: 0 var(--space-2);
-    /* rgb fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
-       the theme so the caption sits on the tile's own paper tone. */
-    background: rgb(255 255 255 / 92%);
+    /* A solid --surface-2 fallback precedes the color-mix
+       (docs/COMPATIBILITY.md); both follow the theme so the caption sits on the
+       tile's own paper tone. */
+    background: var(--surface-2);
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);

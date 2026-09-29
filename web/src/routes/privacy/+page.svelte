@@ -77,7 +77,7 @@
 {/snippet}
 
 <div class="privacy" style:--spy-line="{SPY_LINE_PX}px">
-  <PageShell title="Privacy policy" wordmark="Splotch">
+  <PageShell title="Privacy policy">
     {#snippet lede()}
       Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short
       version is easy to remember.
