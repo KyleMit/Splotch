@@ -26,10 +26,10 @@
   # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
   # under tools/ rather than only the flat ones, rebuilding on every
   # capability-folder change. tools/tests/enumerated-build-paths.test.mjs pins
-  # that semantics, and fails when the npm prebuild/build/postbuild scripts, or
-  # the tools/ modules they import, reach a tools/ folder the `ignore` line
-  # leaves out. It does not read the `command` line above, so a folder only
-  # tools/stage-netlify-functions.mjs imports is not checked.
+  # that semantics, and checks the enumeration against the tools/ folders the
+  # npm prebuild/build/postbuild scripts reach through relative `from '…'`
+  # imports. That check does not follow the `command` line's staging step or
+  # other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
