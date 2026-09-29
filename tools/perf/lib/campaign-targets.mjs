@@ -44,7 +44,8 @@ export const CAMPAIGN_TARGETS = {
   },
   'iphone-device-web': {
     captureRuntime: 'ios-safari',
-    refreshRegime: null,
+    // Measured at 17 ms in this iPhone's 2026-09-29 Safari refresh probe.
+    refreshRegime: '60hz',
     label: 'iPhone device · web',
     transport: 'appium',
     runtime: 'web',
