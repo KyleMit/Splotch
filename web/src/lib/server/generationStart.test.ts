@@ -83,18 +83,78 @@ describe('startBackgroundGeneration', () => {
     expect(discardJob).not.toHaveBeenCalled();
   });
 
-  it('keeps the job id out of the logs when a store error names the job key', async () => {
-    const jobId = 'a'.repeat(64);
-    putJobInput.mockRejectedValue(new Error(`put ${jobId}/input failed`));
-    claimJob.mockRejectedValue(new Error(`read ${jobId}/status.json failed`));
+  // A job that was never sent has no worker, and its id never left this request:
+  // a 202 would leave the child polling for a picture nobody is making, and a
+  // free reservation handed to a job that nothing will ever settle.
+  describe('when the job store fails before the worker is called', () => {
+    it.each([
+      [
+        'the job record cannot be written and nothing is there to claim',
+        () => {
+          markJobPending.mockRejectedValue(new Error('store unreachable'));
+          claimJob.mockResolvedValue(null);
+        },
+      ],
+      [
+        'the drawing cannot be stored and ownership cannot be read',
+        () => {
+          putJobInput.mockRejectedValue(new Error('store unreachable'));
+          claimJob.mockRejectedValue(new Error('store unreachable'));
+        },
+      ],
+    ])('answers in-line when %s', async (_label, failTheStore) => {
+      failTheStore();
 
-    await start();
+      await expect(start()).resolves.toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+      expect(claimJob).not.toHaveBeenCalled();
+      expect(discardJob).toHaveBeenCalledWith('a'.repeat(64));
+    });
 
-    const logged = vi.mocked(console.error).mock.calls.flat().map(String);
-    expect(logged).toContainEqual(expect.stringContaining('/input failed'));
-    expect(logged).toContainEqual(expect.stringContaining('/status.json failed'));
-    expect(logged.join('\n')).not.toContain(jobId);
+    it('still answers in-line when the cleanup fails too', async () => {
+      markJobPending.mockRejectedValue(new Error('store unreachable'));
+      discardJob.mockRejectedValue(new Error('store unreachable'));
+
+      await expect(start()).resolves.toBeNull();
+    });
   });
+
+  it.each([
+    [
+      'the drawing cannot be stored',
+      '/input failed',
+      (jobId: string) => putJobInput.mockRejectedValue(new Error(`put ${jobId}/input failed`)),
+    ],
+    [
+      'the handoff fails',
+      '/generate-image-background failed',
+      (jobId: string) =>
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockRejectedValue(new Error(`post ${jobId}/generate-image-background failed`))
+        ),
+    ],
+    [
+      'ownership cannot be read after a failed handoff',
+      '/status.json failed',
+      (jobId: string) => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('socket hang up')));
+        claimJob.mockRejectedValue(new Error(`read ${jobId}/status.json failed`));
+      },
+    ],
+  ])(
+    'keeps the job id out of the logs when %s and the error names the job key',
+    async (_label, loggedText, fail) => {
+      const jobId = 'a'.repeat(64);
+      fail(jobId);
+
+      await start();
+
+      const logged = vi.mocked(console.error).mock.calls.flat().map(String);
+      expect(logged).toContainEqual(expect.stringContaining(loggedText));
+      expect(logged.join('\n')).not.toContain(jobId);
+    }
+  );
 
   it('still falls back when the cleanup itself fails', async () => {
     // The fallback is what the child experiences; the purge is the backstop for

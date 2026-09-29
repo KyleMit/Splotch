@@ -453,11 +453,6 @@ describe('GET /api/generation-result', () => {
         { [ACCESS_TOKEN_HEADER]: 'daycare-club', [INSTALLATION_ID_HEADER]: installationId },
         { kind: 'managed', credential: 'daycare-club' },
       ],
-      [
-        'the installation id header when nothing else is sent',
-        { [INSTALLATION_ID_HEADER]: installationId },
-        { kind: 'free', credential: installationId },
-      ],
     ])('binds a refusal report token to %s', async (_label, headers, binding) => {
       await get(headers);
 
@@ -467,13 +462,22 @@ describe('GET /api/generation-result', () => {
       });
     });
 
-    it('sends a refusal without a report token when the poll carries no credential', async () => {
-      const response = await get();
+    // A free token is the whole proof /api/report-image asks of the free tier,
+    // and nothing checked this header: the job id authorized the poll, and the
+    // job was not a free one.
+    it.each([
+      ['no credential', {}],
+      ['only an installation id nobody checked', { [INSTALLATION_ID_HEADER]: installationId }],
+    ])(
+      'sends a refusal without a report token when the poll carries %s',
+      async (_label, headers) => {
+        const response = await get(headers);
 
-      expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
-      expect(response.headers.has(REPORT_TOKEN_HEADER)).toBe(false);
-      expect(mocks.issueReportToken).not.toHaveBeenCalled();
-    });
+        expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
+        expect(response.headers.has(REPORT_TOKEN_HEADER)).toBe(false);
+        expect(mocks.issueReportToken).not.toHaveBeenCalled();
+      }
+    );
 
     it('omits the report token header when no token can be minted', async () => {
       mocks.issueReportToken.mockReturnValue(null);

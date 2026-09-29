@@ -6,6 +6,7 @@ import {
   takeJobInput,
   verifyWorkTicket,
   WORK_TICKET_HEADER,
+  type GenerationJobOutcome,
 } from '../../web/src/lib/server/generationJobs';
 import { loggableError } from '../../web/src/lib/server/logRedaction';
 
@@ -19,6 +20,22 @@ import { loggableError } from '../../web/src/lib/server/logRedaction';
 // down for a later request to pick up.
 
 const badPayload = () => new Response('Bad payload', { status: 400 });
+
+// An outcome the job store did not take is a generation nobody will collect,
+// and one that may have been paid for, so it leaves a line to debug from. The
+// job id stays out of that line: it is the capability to collect the picture.
+async function recordOutcome(
+  jobId: string,
+  claimId: string,
+  outcome: GenerationJobOutcome,
+  image: ArrayBuffer | null
+): Promise<void> {
+  if ((await completeJob(jobId, claimId, outcome, image)) === 'superseded') {
+    console.warn(
+      `[generate-image-background] the job's outcome (${outcome.status}) was superseded and not recorded`
+    );
+  }
+}
 
 export default async (request: Request): Promise<Response> => {
   const raw = await request.text();
@@ -64,7 +81,7 @@ export default async (request: Request): Promise<Response> => {
     // the job expires.
     if (!isGenerationWork(payload)) {
       console.error('[generate-image-background] a signed job did not match GenerationWork');
-      await completeJob(
+      await recordOutcome(
         jobId,
         claimId,
         { status: 'error', reason: 'the job was not one this worker can run' },
@@ -74,7 +91,7 @@ export default async (request: Request): Promise<Response> => {
     }
 
     if (!input) {
-      await completeJob(
+      await recordOutcome(
         jobId,
         claimId,
         { status: 'error', reason: 'the drawing was not there' },
@@ -92,14 +109,14 @@ export default async (request: Request): Promise<Response> => {
 
     if (result.kind === 'image') {
       const bytes = Buffer.from(result.data, 'base64');
-      await completeJob(
+      await recordOutcome(
         jobId,
         claimId,
         { status: 'image', mimeType: result.mimeType },
         bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       );
     } else {
-      await completeJob(jobId, claimId, { status: result.kind, reason: result.reason }, null);
+      await recordOutcome(jobId, claimId, { status: result.kind, reason: result.reason }, null);
     }
   } catch (cause) {
     // Netlify retries a background function that fails — twice, a minute apart.
@@ -109,7 +126,7 @@ export default async (request: Request): Promise<Response> => {
     const reason = cause instanceof Error ? cause.message : String(cause);
     console.error(`[generate-image-background] a job failed: ${loggableError(cause)}`);
     if (claimId)
-      await completeJob(jobId, claimId, { status: 'error', reason }, null).catch(() => {
+      await recordOutcome(jobId, claimId, { status: 'error', reason }, null).catch(() => {
         // Nothing left to do: the poll falls through to `expired` on its own.
       });
   }

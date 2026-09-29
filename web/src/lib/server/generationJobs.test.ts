@@ -313,7 +313,9 @@ describe('purgeExpiredGenerationJobs', () => {
       metadata: {},
     });
 
-    await completeJob(JOB, claimId, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null);
+    await expect(
+      completeJob(JOB, claimId, { status: 'refusal', reason: 'IMAGE_SAFETY' }, null)
+    ).resolves.toBe('recorded');
 
     expect(store.setJSON).toHaveBeenCalledWith(
       `${JOB}/status.json`,
@@ -327,29 +329,53 @@ describe('purgeExpiredGenerationJobs', () => {
     );
   });
 
-  it('does not recreate an outcome whose pending start record is gone', async () => {
-    store.getWithMetadata.mockResolvedValueOnce(null);
+  // The worker answers the platform 200 whatever happened, so this answer is
+  // the only way it learns that a generation it ran will never be collected.
+  it.each([
+    ['whose pending start record is gone', null],
+    [
+      'that already has an outcome',
+      {
+        data: storedJob({
+          outcome: { status: 'image', mimeType: 'image/png' },
+          claimId: 'claim-1',
+        }),
+        etag: 'complete-v1',
+        metadata: {},
+      },
+    ],
+    [
+      'held under another claim',
+      { data: storedJob({ claimId: 'claim-2' }), etag: 'claimed-v1', metadata: {} },
+    ],
+  ])('writes nothing over a job %s, and says it was superseded', async (_label, entry) => {
+    store.getWithMetadata.mockResolvedValueOnce(entry);
 
-    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'late' }, null);
+    await expect(
+      completeJob(JOB, 'claim-1', { status: 'error', reason: 'late' }, new ArrayBuffer(1))
+    ).resolves.toBe('superseded');
 
+    expect(store.set).not.toHaveBeenCalled();
     expect(store.setJSON).not.toHaveBeenCalled();
   });
 
-  it('does not replace a job that already has an outcome', async () => {
+  it('says the outcome was superseded when the job changed before the write landed', async () => {
     store.getWithMetadata.mockResolvedValueOnce({
-      data: {
-        context: { free: null, style: null },
-        outcome: { status: 'image', mimeType: 'image/png' },
-        claimId: 'claim-1',
-        expiresAt: 5_000 + GENERATION_JOB_TTL_MS,
-      },
-      etag: 'complete-v1',
+      data: storedJob({ claimId: 'claim-1' }),
+      etag: 'claimed-v1',
       metadata: {},
     });
+    store.setJSON.mockResolvedValueOnce({ modified: false });
 
-    await completeJob(JOB, 'claim-1', { status: 'error', reason: 'duplicate' }, null);
+    await expect(
+      completeJob(JOB, 'claim-1', { status: 'error', reason: 'late' }, null)
+    ).resolves.toBe('superseded');
 
-    expect(store.setJSON).not.toHaveBeenCalled();
+    expect(store.setJSON).toHaveBeenCalledWith(
+      `${JOB}/status.json`,
+      expect.objectContaining({ outcome: { status: 'error', reason: 'late' } }),
+      { onlyIfMatch: 'claimed-v1' }
+    );
   });
 });
 

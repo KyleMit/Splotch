@@ -99,9 +99,10 @@ stores those raw bytes without first base64-encoding them, and the drawing stays
 provider seam; the single base64 encode happens inside the adapter, which needs it for the vendor's
 data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected.
 The server still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured
-signing secret), and a client that never sends the header always gets the synchronous shape. Since
-every OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
-controlled `502`.
+signing secret) and whenever the handoff fails with no worker owning the job (the job store could
+not take it, or the worker refused it), and a client that never sends the header always gets the
+synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
+now usually ends in the controlled `502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -213,9 +214,11 @@ picture is handed over.
 | `503`  | `{ ok:false, code:"GENERATION_UNAVAILABLE", error }` — the job store could not be read; keep polling |
 
 Send the same credential headers as the generation itself. They are not re-authorized (the job id
-already is the capability) — they are what the report token is bound to, and omitting them only
-costs the ability to report that picture. Rate-limited per IP, with a budget sized for waiting
-rather than guessing.
+already is the capability). A BYO key or an access code is what the report token is bound to, and
+omitting it only costs the ability to report that picture. A free job's report token is bound to the
+installation id the job stored when it started, never to the poll's `X-Installation-Id`, so a job
+started with another credential gets no free-tier token. Rate-limited per IP, with a budget sized
+for waiting rather than guessing.
 
 Settling the free-generation reservation and minting the report token both happen **here**, not in
 the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
