@@ -22,7 +22,8 @@ quarantine.
 
 ## Setup
 
-1. Run `git fetch origin main`, then `git checkout -b <slug> origin/main`.
+1. Run `git fetch origin main`, then `git checkout -b <slug> origin/main`. While several lanes
+   fetch, a fetch can fail with "Permission denied (publickey)" for about a minute. Retry it.
 2. If `node_modules` is missing, run `pnpm install --frozen-lockfile --prefer-offline`. Never
    `npm install`.
 3. Read the root `CLAUDE.md` conventions and `docs/CODING-STANDARDS.md`. Consult the area skill
@@ -87,6 +88,9 @@ quarantine.
 
 ## Report back (under 30 lines)
 
+Send it only after every command it reports on has returned. A reply sent in the same round as a
+read goes out before the read's output does.
+
 * the outcome (ready, merged, or quarantined), the PR, and its SHAs: head and gated `main` when
   ready, or the merge commit in a serial campaign;
 * the review rounds: what the rival found, and what you fixed or rejected;
@@ -109,7 +113,9 @@ quarantine.
   * `__IS_CAPACITOR__` compiles to true in unit tests, so a rendered-output guard needs a
     `*.webSsr.test.ts` twin to cover the web build.
 * **Source-text guards:** tools drift guards read `web/src` text (type unions, constants, CSS). Run
-  `npm run test:tools` before changing a declaration they read.
+  `npm run test:tools` before changing a declaration they read. Likewise,
+  `web/src/lib/storageKeys.webOnly.test.ts` counts each web-only storage key's writers per file and
+  pins their native guards by regex, so editing one of those state modules can fail it.
 * **Docs:** the `docs/ARCHITECTURE.md` table pads every row to its longest cell. Keep edits shorter
   than the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one
   edit.
@@ -126,6 +132,8 @@ quarantine.
 * **Wait loops:** never key a CI wait on a fixed check count. The count varies by PR: it drops when
   the Dependabot review check is absent, and a loop keyed on the larger number never ends. Wait for
   the expected applicable set to register and then finish, per `drive-pr-to-mergeable` step 5.
+* **CI logs:** `gh api repos/<owner>/<repo>/actions/jobs/<id>/logs` exits 1 without
+  `--allow-escape-sequences`, so with stderr discarded the logs look empty.
 * **Fresh worktree:** run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
 * **Sandbox friction:**
   * The auto-mode sandbox refuses compound shell commands that chain `git` or `gh`, any heredoc
