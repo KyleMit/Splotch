@@ -36,7 +36,7 @@ let mounted: ReturnType<typeof mount> | null = null;
 
 function finishResult(url: string) {
   const run = startAiGeneration('blob:drawing');
-  finishAiGeneration(run, url, 'image/webp');
+  finishAiGeneration(run, { url, reportToken: null });
   flushSync();
 }
 
@@ -57,12 +57,16 @@ function showResult() {
   return { target, dialog, download: downloadButton(target) };
 }
 
+// A macrotask lets a tap handler's remaining awaits settle before the card is inspected.
+async function settleHandlers() {
+  await new Promise((resolve) => setTimeout(resolve));
+  flushSync();
+}
+
 async function tapDownload(download: HTMLButtonElement) {
   download.click();
   await vi.waitFor(() => expect(saveImageBlob).toHaveBeenCalled());
-  // A macrotask lets the handler's remaining awaits settle before the card is inspected.
-  await new Promise((resolve) => setTimeout(resolve));
-  flushSync();
+  await settleHandlers();
 }
 
 beforeEach(() => {
@@ -117,18 +121,25 @@ describe('AI result Download', () => {
     expect(aiGenerationState.phase.kind).toBe('result');
   });
 
-  it('offers the next result a save while a closed card is still saving', async () => {
+  it('offers the next result a save while a closed card is still saving, and keeps it latched', async () => {
     const firstSave = Promise.withResolvers<SaveResult>();
-    saveImageBlob.mockReturnValueOnce(firstSave.promise).mockResolvedValue({ status: 'photos' });
+    const nextSave = Promise.withResolvers<SaveResult>();
+    saveImageBlob.mockReturnValueOnce(firstSave.promise).mockReturnValueOnce(nextSave.promise);
     const { target, download } = showResult();
 
     await tapDownload(download);
     closeAiResult();
     finishResult(NEXT_RESULT_URL);
     downloadButton(target).click();
-
     await vi.waitFor(() => expect(saveImageBlob).toHaveBeenCalledTimes(2));
+
     firstSave.resolve({ status: 'photos' });
+    await settleHandlers();
+    downloadButton(target).click();
+    await settleHandlers();
+
+    expect(saveImageBlob).toHaveBeenCalledTimes(2);
+    nextSave.resolve({ status: 'photos' });
   });
 
   it('reports a save whose pipeline threw as failed', async () => {

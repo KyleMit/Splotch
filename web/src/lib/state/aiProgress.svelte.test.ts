@@ -109,7 +109,7 @@ describe('createAiProgress', () => {
       harness.machine.minimizeAiResult();
       await tick();
 
-      harness.machine.finishAiGeneration(runId, 'blob:result', 'image/png');
+      harness.machine.finishAiGeneration(runId, { url: 'blob:result', reportToken: null });
       await tick();
 
       // No pumpFrame: nothing is watching a dial in the corner, so the reveal
@@ -128,7 +128,7 @@ describe('createAiProgress', () => {
       const runId = await startRunInFlight(harness);
       harness.machine.minimizeAiResult();
       await tick();
-      harness.machine.finishAiGeneration(runId, 'blob:result', 'image/png');
+      harness.machine.finishAiGeneration(runId, { url: 'blob:result', reportToken: null });
       await tick();
 
       harness.machine.restoreAiResult();
@@ -146,7 +146,7 @@ describe('createAiProgress', () => {
     const harness = createHarness();
     try {
       const runId = await startRunInFlight(harness, 5000);
-      harness.machine.finishAiGeneration(runId, 'blob:result', 'image/png');
+      harness.machine.finishAiGeneration(runId, { url: 'blob:result', reportToken: null });
       await tick();
 
       expect(harness.progress.revealed).toBe(false);
@@ -197,7 +197,7 @@ describe('createAiProgress', () => {
     const harness = createHarness();
     try {
       const runId = await startRunInFlight(harness);
-      harness.machine.finishAiGeneration(runId, 'blob:result', 'image/png');
+      harness.machine.finishAiGeneration(runId, { url: 'blob:result', reportToken: null });
       await tick();
       harness.machine.closeAiResult();
       await tick();
