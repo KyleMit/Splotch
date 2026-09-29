@@ -1,12 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Guards the issue templates against off-taxonomy labels: a template can apply
-// any label string, and one absent from .github/labels.yml silently escapes
-// the synced taxonomy (this once shipped bare `bug`/`enhancement` labels).
+// Guards the issue templates and the automation against off-taxonomy labels: a
+// template can apply any label string, and one absent from .github/labels.yml
+// silently escapes the synced taxonomy (this once shipped bare `bug`/`enhancement`
+// labels). A workflow's label trigger never fires for a renamed label, and
+// `gh issue create --label` fails on a missing one inside a failure reporter.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const templateDir = join(repoRoot, '.github', 'ISSUE_TEMPLATE');
+const AUTOMATION_DIRS = ['workflows', 'actions', 'scripts'].map((dir) =>
+  join(repoRoot, '.github', dir)
+);
 const labelsYaml = readFileSync(join(repoRoot, '.github', 'labels.yml'), 'utf8');
 
 // GitHub's label API rejects a longer description with "description is too
@@ -89,6 +94,44 @@ describe('issue template labels', () => {
       }
     });
   }
+});
+
+const AUTOMATION_LABEL_PATTERNS = {
+  'gh --label': /--(?:add-|remove-)?label[= ](?:'([^']+)'|"([^"]+)"|([^\s'"]+))/g,
+  'label event': /github\.event\.label\.name\s*[!=]=\s*'([^']+)'/g,
+};
+
+function automationLabels() {
+  const files = AUTOMATION_DIRS.flatMap((dir) =>
+    readdirSync(dir, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name))
+  );
+  return files.flatMap((file) => {
+    const text = readFileSync(file, 'utf8');
+    return Object.entries(AUTOMATION_LABEL_PATTERNS).flatMap(([form, pattern]) =>
+      [...text.matchAll(pattern)].map((match) => ({
+        file: relative(repoRoot, file),
+        form,
+        label: match.slice(1).find((group) => group !== undefined),
+      }))
+    );
+  });
+}
+
+describe('automation labels', () => {
+  const found = automationLabels();
+
+  it.each(Object.keys(AUTOMATION_LABEL_PATTERNS))('finds at least one %s reference', (form) => {
+    expect(found.filter((reference) => reference.form === form).length).toBeGreaterThan(0);
+  });
+
+  it('names only labels defined in .github/labels.yml', () => {
+    const offTaxonomy = found
+      .filter(({ label }) => !definedLabels.has(label))
+      .map(({ file, label }) => `${file}: ${label}`);
+    expect(offTaxonomy).toEqual([]);
+  });
 });
 
 describe('label descriptions', () => {

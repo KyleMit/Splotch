@@ -12,9 +12,9 @@ name: Native compile
 
 on:
   workflow_dispatch:
-  # package.json holds both compile commands, and run-gradle.mjs imports the
-  # two tools/ paths. The push list repeats this one, and
-  # tools/mobile/tests/native-release-configurations.test.mjs fails if they differ.
+  # Both path lists are pinned by
+  # tools/mobile/tests/native-release-configurations.test.mjs against the
+  # inputs the compile commands read.
   pull_request:
     paths:
       - 'android/**'
@@ -22,8 +22,10 @@ on:
       - 'capacitor.config.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'tools/lib/proc.mjs'
       - 'tools/mobile/android/**'
+      - '.github/actions/setup-pnpm/**'
       - '.github/workflows/native-compile.yml'
   # Main runs keep the Gradle cache that pull requests restore from: a cache
   # saved on a pull request is visible only to that pull request.
@@ -35,8 +37,10 @@ on:
       - 'capacitor.config.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'tools/lib/proc.mjs'
       - 'tools/mobile/android/**'
+      - '.github/actions/setup-pnpm/**'
       - '.github/workflows/native-compile.yml'
 
 permissions:
