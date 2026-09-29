@@ -16,7 +16,8 @@ question.
 ## Authorization
 
 Paste `ship-campaign`'s authorization block here verbatim, followed by the user's quoted merge
-approval and any other grant the user added in their own words. This unit is a queued unit spec in
+approval and any other grant the user added in their own words. If the user chose open PRs instead,
+say so in place of the quote; then no unit merges. This unit is a queued unit spec in
 `ship-campaign`'s sense, so the block's merge authority covers it. A denied tool call is not a
 withdrawn authorization: find another route, or quarantine. The exception is a guardrail denial that
 forbids the outcome rather than the call, such as the auto-mode classifier refusing a merge: respect
