@@ -145,3 +145,9 @@ Two failures to keep in mind:
   reviewed work without fixing anything.
 * Running several campaign sessions on one epic in parallel is the orchestrator pattern (epic
   #1926), deliberately left to a separate skill that hands out prompts rather than implementing.
+* **A classifier denial of the merge.** On 2026-09-29 (#2467, parallel mode) the auto-mode
+  classifier denied the orchestrator's first merge, giving no reason. The merge was a `/tmp` script
+  run with `/bin/bash`: the gate, then `gh pr merge --merge --delete-branch --match-head-commit`,
+  then verification. The run treated the denial as binding and did not route around it; every unit
+  then ended as an open, shippable PR for the user to merge. The cause is unvalidated, and so is
+  whether any preflight check could have surfaced it while the user was present.

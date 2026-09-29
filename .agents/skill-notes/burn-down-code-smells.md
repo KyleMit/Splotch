@@ -80,6 +80,28 @@ easy, because findings arrive already grouped by the files they touch.
   catch-up `coupled`, and with runs queued about 10 minutes it was the run's main throughput limit.
   `ship-campaign`'s parallel reference now treats such a unit as an implicit holder.
 
+## Third run, 2026-09-29 (#2467)
+
+* **The usage limit counts agents, not lanes.** From 05:00, about 15 agents ran at once: seven
+  auditors, six unit lanes, and two helpers one auditor spawned on its own. The limit ended all of
+  them at 06:04 and reset at 09:50. After the resume only unit lanes ran, six or seven at a time,
+  and 68 minutes later none had hit it. The parallel reference's Lanes rule now counts every agent.
+  This run's data also argues for holding an audit wave until unit lanes free up, and for an audit
+  brief line forbidding helpers; neither is in the skill.
+* **Launch pacing.** Of eight worktree-isolated Claude Code agents launched in one message, four
+  were refused with "git metadata that could not be resolved". Launched one per message, all
+  started.
+* **Nothing merged.** The auto-mode classifier denied the orchestrator's first merge (see the
+  ship-campaign skill note's open questions), so every unit ended as an open, shippable PR. With
+  nothing merged, the standards unit could not cite enforcement by path: `check:doc-refs` fails on a
+  path that exists only on an unmerged branch. Step 7's "verified by path" assumes merged units.
+* **Transient SSH refusals.** `git fetch` failed with "Permission denied (publickey)" in three
+  worktrees between 10:50 and 10:55, while six lanes were active. Each succeeded on a retry within a
+  minute.
+* The unit brief's other new traps came from this run's units: a report sent in the same round as
+  its first read, which skipped a unit until it was resumed; the `gh api` log flag (#2470); and the
+  web-only storage-key guard (#2477).
+
 ## Rejected or deferred during the run
 
 These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
@@ -98,7 +120,8 @@ These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
 
 * A second run. The waves' yields on an already-campaigned codebase are unknown. Expect later waves
   to find less, and consider starting at the area passes that weren't covered.
-* The lane count under the usage limit. Six to seven was sustainable for about 6.5 hours of agent
-  time before the first limit hit.
+* The lane count under the usage limit. The first run sustained six to seven agents for about 6.5
+  hours before its first hit; the third reached the limit in 65 minutes with about 15. How long six
+  or seven unit lanes alone can run is still unknown.
 * Whether the skill should also stage its rejected findings into `docs/audit-deferred/decisions/`.
   This run recorded them only in the tracking issue and the standards doc.
