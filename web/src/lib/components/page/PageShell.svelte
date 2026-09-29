@@ -20,7 +20,6 @@
   interface Props {
     /** The <h1>. Also the only heading the shell owns. */
     title: string;
-    /** Small-caps mark beside the crayon strip, e.g. "Splotch for Android". */
     /** Forwarded to BrandMark: the word after "Splotch" in the mark. */
     wordmarkSuffix?: string;
     lede?: Snippet;

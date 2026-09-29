@@ -1,7 +1,12 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import DialogHeader from './design/DialogHeader.svelte';
-  import { clearRequestedSettingsSection, settingsModal, uiState } from '$lib/state/ui.svelte';
+  import {
+    clearRequestedSettingsSection,
+    SETTINGS_MODAL_ID,
+    settingsModal,
+    uiState,
+  } from '$lib/state/ui.svelte';
   import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
@@ -139,7 +144,7 @@
   class:resizing={uiState.resizingActionButtons}
   class:wide={shell.wide}
   class:compact={shell.compact}
-  id="settingsModal"
+  id={SETTINGS_MODAL_ID}
   aria-label="Settings"
   bind:this={dialogEl}
   use:modalDialog={() => ({

@@ -3,7 +3,7 @@ import { waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
 import { parentalGateLink } from '$lib/actions/parentalGateLink';
 import { createSingleFlight } from '$lib/singleFlight';
 import type { Origin } from '$lib/state/modal.svelte';
-import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
+import { openParentCenterSettings, SETTINGS_MODAL_ID, settingsModal } from '$lib/state/ui.svelte';
 
 // The privacy page's grown-up-gate wiring, as a factory so the page owns the
 // instance (and tests could own fresh ones): the gate component mounts lazily
@@ -61,7 +61,7 @@ export function createPrivacyParentCenter() {
 
   $effect(() => {
     if (!managingPolicies || settingsModal.open) return;
-    const dialog = document.querySelector<HTMLDialogElement>('#settingsModal');
+    const dialog = document.querySelector<HTMLDialogElement>(`#${SETTINGS_MODAL_ID}`);
     if (!dialog) {
       managingPolicies = false;
       return;

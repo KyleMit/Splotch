@@ -51,6 +51,7 @@ export const uiState = createUi();
 export const { setResizingActionButtons, clearRequestedSettingsSection } = uiState;
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
+export const SETTINGS_MODAL_ID = 'settingsModal';
 
 // Deliberately here rather than beside the screenshot feedback that uses it.
 // ScreenshotButton needs this id at startup; playScreenshotFeedback and the polaroid

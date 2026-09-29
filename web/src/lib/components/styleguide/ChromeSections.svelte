@@ -49,7 +49,6 @@
       value={demoSlider}
       min={40}
       max={100}
-      valueText={`${demoSlider}%`}
       onInput={(value) => (demoSlider = value)}
     />
   </div>
