@@ -14,12 +14,11 @@ import {
   pickColor,
 } from '../app-driver/lib/app-driver.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { isMain, ROOT, sleep } from '../lib/proc.mjs';
+import { isMain, parseNumberFlag, ROOT, sleep, TCP_PORT } from '../lib/proc.mjs';
 import { portListenerPids, spawnViteServer } from '../lib/vite-server.mjs';
 import { drawBalloonTall, drawDinosaurWide } from '../store-drawings/generated/store-drawings.mjs';
 
 const DEFAULT_PORT = 5199;
-const MAX_PORT = 65535;
 const SERVER_TIMEOUT_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 3000;
 const SERVER_POLL_MS = 500;
@@ -187,8 +186,7 @@ export async function generateReadmeHero(args = process.argv.slice(2)) {
     console.log('Usage: npm run gen:readme-hero -- [--port <unused port>] [--out <file.webp>]');
     return;
   }
-  const port = Number(values.port);
-  if (!Number.isInteger(port) || port < 1 || port > MAX_PORT) throw new Error('Invalid --port');
+  const port = parseNumberFlag('port', values.port, TCP_PORT);
   const output = resolve(values.out);
   if (!output.endsWith('.webp')) throw new Error('--out must end in .webp');
   if (portListenerPids(port).length)

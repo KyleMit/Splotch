@@ -3,24 +3,22 @@ import { resolve } from 'node:path';
 import { chromium, type LaunchOptions, type PlaywrightTestConfig } from '@playwright/test';
 
 import { chromiumExecutablePath } from '../tools/lib/playwright.mjs';
+import { parseNumberFlag, TCP_PORT } from '../tools/lib/proc.mjs';
 import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
 const DEFAULT_PLAYWRIGHT_PORT = 4173;
-const MAX_TCP_PORT = 65_535;
 
-function invalidPlaywrightPort(value: string): never {
-  throw new Error(
-    `SPLOTCH_E2E_PORT must be an integer from 1 through ${MAX_TCP_PORT}; received ${JSON.stringify(value)}`
-  );
-}
-
+// An environment variable, not a flag, so a rejection keeps this message instead of
+// parseNumberFlag's `--SPLOTCH_E2E_PORT` wording.
 export function resolvePlaywrightPort(value = process.env.SPLOTCH_E2E_PORT): number {
   if (value === undefined) return DEFAULT_PLAYWRIGHT_PORT;
-  if (!/^\d+$/.test(value)) invalidPlaywrightPort(value);
-
-  const port = Number(value);
-  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) invalidPlaywrightPort(value);
-  return port;
+  try {
+    return parseNumberFlag('SPLOTCH_E2E_PORT', value, TCP_PORT);
+  } catch {
+    throw new Error(
+      `SPLOTCH_E2E_PORT must be an integer from ${TCP_PORT.min} through ${TCP_PORT.max}; received ${JSON.stringify(value)}`
+    );
+  }
 }
 
 export const playwrightPort = resolvePlaywrightPort();

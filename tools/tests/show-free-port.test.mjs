@@ -71,7 +71,7 @@ describe('show-free-port', () => {
     await expect(findFreePort({ from: 5400, to: 5300 })).rejects.toThrow('--from');
   });
 
-  it.each(['0', '65536', '-1', '5300junk', '1e3', '0x14b4', '53.5', ''])(
+  it.each(['0', '65536', '-1', '5300junk', '1e3', '0x14b4', '53.5', '', '080', '05399'])(
     'rejects the port %j by the shared TCP port rule',
     async (value) => {
       await expect(showFreePort([`--from=${value}`])).rejects.toThrow(
@@ -82,15 +82,6 @@ describe('show-free-port', () => {
       );
     }
   );
-
-  it('keeps rejecting a port with a leading zero', async () => {
-    await expect(showFreePort(['--from=080'])).rejects.toThrow(
-      new Error('--from must not have a leading zero, got "080"')
-    );
-    await expect(showFreePort(['--to=05399'])).rejects.toThrow(
-      new Error('--to must not have a leading zero, got "05399"')
-    );
-  });
 
   it(
     'prints the one free port in a valid range and exits 0',

@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fail, isMain, runMain } from '../lib/proc.mjs';
+import { isUnattributable, readEvidenceIndex } from './lib/capture-rescore.mjs';
 import {
   bucketRows,
   comparisonRows,
@@ -88,21 +89,11 @@ export function printRun(capture, { forensics = true } = {}) {
 // and answers for a cell it never measured. This was the one documented reader
 // still consuming evidence with no attribution check after issue 1350 closed
 // the rescorer's. Returns the refusal message, or null; pure for the test.
-//
-// An index that exists but does not parse throws, as the rescorer's
-// `evidenceIndexEntries` does: it is the only record of which captures are
-// unattributable, so reading it as "no refusal" would re-admit them.
 export function unattributableCaptureProblem(path, { includeUnattributable = false } = {}) {
   const indexPath = join(dirname(path), 'index.json');
   if (!existsSync(indexPath)) return null;
-  let index;
-  try {
-    index = JSON.parse(readFileSync(indexPath, 'utf8'));
-  } catch (error) {
-    throw new Error(`${indexPath}: evidence index is not valid JSON`, { cause: error });
-  }
-  const entry = (index.kept ?? []).find((kept) => kept?.file === basename(path));
-  if (!entry || entry.cellAttributable !== false || includeUnattributable) return null;
+  const entry = readEvidenceIndex(indexPath).find((kept) => kept.file === basename(path));
+  if (!entry || !isUnattributable(entry) || includeUnattributable) return null;
   return (
     `${basename(path)}: its evidence index marks cellAttributable: false` +
     (entry.reportNonce ? ` (report nonce: ${entry.reportNonce})` : '') +
