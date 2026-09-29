@@ -23,7 +23,7 @@
 // the deploy's admin secret (it never travels except in the login POST body, and
 // parseAdminSecretTarget holds that target to https).
 
-import { fatal, summarize } from '../lib/smoke.mjs';
+import { exitWhenFlushed, fatal, summarize } from '../lib/smoke.mjs';
 import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
 import { parseAdminSecretTarget } from './lib/deployed-admin-target.mjs';
 
@@ -39,7 +39,7 @@ if (!parseAdminSecretTarget(BASE) || !ADMIN_SECRET) {
       '       ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke',
     ].join('\n')
   );
-  process.exit(2);
+  await exitWhenFlushed(2);
 }
 
 async function run() {
