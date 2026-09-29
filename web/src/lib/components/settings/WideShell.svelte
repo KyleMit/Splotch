@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
-  import SidebarToc, { type SidebarTocItem } from '../nav/SidebarToc.svelte';
+  import SidebarToc, { type SidebarTocButtonItem } from '../nav/SidebarToc.svelte';
   import ScrollCue from '../design/ScrollCue.svelte';
   import SectionBody from './SectionBody.svelte';
   import ParentCenterLock from './ParentCenterLock.svelte';
@@ -54,7 +54,7 @@
 
   // The table of contents is the shared guide-rail sidebar; only the icon and
   // the label differ per section, so the list is the whole configuration.
-  const navItems = $derived<SidebarTocItem<SectionId>[]>(
+  const navItems = $derived<SidebarTocButtonItem<SectionId>[]>(
     SECTIONS.map((section) => ({
       id: section.id,
       label: section.label,

@@ -30,6 +30,7 @@
   <div class="header-row">
     <div class="header-left">
       <div class="theme-toggle">
+        <!-- setTheme pins explicitly, so a specimen holds across OS theme changes (ADR-0096). -->
         <SegmentedPicker
           label="Theme"
           fill={false}
