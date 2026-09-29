@@ -3,6 +3,7 @@ import { AI_REPORT_KINDS, IMAGE_REPORT_REVIEW_HOURS, type AiReportKind } from '$
 import type { ReportTokenContext } from './reportToken';
 import { createIssue, escapeIssueMarkdown } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
+import { AI_REPORTING_UNAVAILABLE_MESSAGE } from './imageReportUnavailable';
 import {
   deleteImageReport,
   IMAGE_REPORT_RETENTION_DAYS,
@@ -77,11 +78,7 @@ export async function submitImageReport({
       return { ok: false, status: 400, error: 'That AI report could not be sent.' };
     }
     if (reportContext?.kind !== 'false-positive-refusal') {
-      return {
-        ok: false,
-        status: 503,
-        error: 'AI reporting is not available right now. Please try again later.',
-      };
+      return { ok: false, status: 503, error: AI_REPORTING_UNAVAILABLE_MESSAGE };
     }
     refusalReason = reportContext.refusalReason;
     reportInput = {
@@ -103,11 +100,7 @@ export async function submitImageReport({
     report = await saveImageReport(reportInput);
   } catch (error) {
     console.error('[report-image] evidence storage failed', error);
-    return {
-      ok: false,
-      status: 503,
-      error: 'AI reporting is not available right now. Please try again later.',
-    };
+    return { ok: false, status: 503, error: AI_REPORTING_UNAVAILABLE_MESSAGE };
   }
 
   const styleLabel = style ?? 'Default';
