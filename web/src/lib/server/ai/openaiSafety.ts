@@ -93,6 +93,22 @@ function typedRefusal(response: OpenAiResponse): string {
 }
 
 /**
+ * Whether any message part is a non-blank typed refusal. Unlike `typedRefusal`
+ * it tolerates a malformed part, because it runs beside an image that must still
+ * be delivered.
+ */
+function hasTypedRefusal(response: OpenAiResponse): boolean {
+  return messageParts(response).some(
+    (part: unknown) =>
+      typeof part === 'object' &&
+      part !== null &&
+      'refusal' in part &&
+      typeof part.refusal === 'string' &&
+      part.refusal.trim() !== ''
+  );
+}
+
+/**
  * The machine-readable declines on a response, each named by where it sits and
  * never by its text: a refusal or policy message can describe the child's
  * drawing, and these names go to the server log.
@@ -103,7 +119,7 @@ function declineSignalNames(response: OpenAiResponse): string[] {
   return [
     ...(code ? [`error.code=${code}`] : []),
     ...(reason ? [`incomplete_details.reason=${reason}`] : []),
-    ...(typedRefusal(response) ? ['refusal part'] : []),
+    ...(hasTypedRefusal(response) ? ['refusal part'] : []),
   ];
 }
 

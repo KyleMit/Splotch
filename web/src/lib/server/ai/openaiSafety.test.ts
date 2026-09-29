@@ -142,6 +142,30 @@ describe('classifyOpenAiResponse', () => {
     expect(r).toEqual({ kind: 'safety', reason: 'content_filter' });
   });
 
+  it('prefers the policy error message over a content-filter stop', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'incomplete',
+        output: [],
+        error: { code: 'bio_policy', message: 'blocked by policy' },
+        incomplete_details: { reason: 'content_filter' },
+      })
+    );
+    expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+  });
+
+  it('falls back to the policy error code when its message is empty', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'incomplete',
+        output: [],
+        error: { code: 'bio_policy', message: '' },
+        incomplete_details: { reason: 'content_filter' },
+      })
+    );
+    expect(r).toEqual({ kind: 'safety', reason: 'bio_policy' });
+  });
+
   it('does not mistake a non-policy incomplete reason for a refusal', () => {
     const r = classifyOpenAiResponse(
       resp({
@@ -245,11 +269,29 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
     ]);
   });
 
+  it('still delivers the image when a message part beside it is malformed', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'completed',
+        output: [
+          imageCall(),
+          message([null, 'stray text', { type: 'refusal', refusal: REFUSAL_TEXT }]),
+        ],
+      })
+    );
+    expect(r).toEqual({ kind: 'image', data: 'AAAA', mimeType: 'image/png' });
+    expect(warn.mock.calls).toEqual([['[openai-safety] delivered an image despite refusal part']]);
+  });
+
   it.each([
     { label: 'an image alone', output: [imageCall()] },
     {
       label: 'an image with a comment',
       output: [imageCall(), message([{ type: 'output_text', text: 'Here you go!' }])],
+    },
+    {
+      label: 'an image beside a blank refusal part',
+      output: [imageCall(), message([{ type: 'refusal', refusal: '   ' }])],
     },
     {
       label: 'a refusal beside a failed tool call',
