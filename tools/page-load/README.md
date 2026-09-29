@@ -90,8 +90,11 @@ after an intentionally reused production build; the preview identity guard still
 and local bundle agree.
 
 Because the run replaces its reports folder, `--out` is checked before the run reads, builds, or
-deletes anything, and a refusal exits nonzero with one line naming the resolved path. A relative
-`--out` resolves against the repository and an absolute one is taken as given. The run refuses the
-repository root, a path outside the repository (symlinks resolved), a file, and a folder holding
-anything other than an earlier run's reports, `summary.json`, Chrome profiles, and Finder's
-`.DS_Store`. `--baseline` resolves the same way and is only read.
+deletes anything, and again at the moment the folder is replaced. A refusal exits nonzero with one
+line naming the resolved path. A relative `--out` resolves against the repository and an absolute
+one is taken as given. The run refuses the repository root, a path outside the repository (symlinks
+resolved), and a file. It replaces a folder that already exists only when the folder is empty or
+carries `.page-load-reports`, the mark the runner leaves in every folder it makes, and holds nothing
+besides an earlier run's reports, `summary.json`, Chrome profiles, and Finder's `.DS_Store`. A
+reports folder written before the mark existed is refused once: remove it by hand. `--baseline`
+resolves like `--out` and is only read.

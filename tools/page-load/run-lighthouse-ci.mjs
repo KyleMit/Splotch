@@ -47,11 +47,21 @@ const DEFAULT_SAMPLES = 3;
 export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
 const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
 
+// A name alone proves nothing about who wrote a file, so the runner leaves this in every folder
+// it makes and replaces no folder without it.
+export const OWNERSHIP_MARKER_FILE = '.page-load-reports';
+const OWNERSHIP_MARKER_TEXT =
+  'tools/page-load/run-lighthouse-ci.mjs made this folder and replaces it whole on every run.\n';
 const SUMMARY_FILE = 'summary.json';
 const CHROME_PROFILES_FOLDER = '.profiles';
 // Finder drops this into a folder a person opens; it holds view state, never their work.
 const FINDER_METADATA_FILE = '.DS_Store';
-const REPLACEABLE_ENTRIES = [SUMMARY_FILE, CHROME_PROFILES_FOLDER, FINDER_METADATA_FILE];
+const REPLACEABLE_ENTRIES = [
+  OWNERSHIP_MARKER_FILE,
+  SUMMARY_FILE,
+  CHROME_PROFILES_FOLDER,
+  FINDER_METADATA_FILE,
+];
 const REPORT_FILE = new RegExp(
   `^(?:${Object.keys(PROFILES).join('|')})-(?:${VISITS.join('|')})-\\d+\\.report\\.json$`
 );
@@ -145,14 +155,10 @@ function physicalPath(path) {
   return join(realpathSync(existing), relative(existing, path));
 }
 
-function entriesWrittenElsewhere(outDir) {
-  return readdirSync(outDir).filter(
-    (entry) => !REPLACEABLE_ENTRIES.includes(entry) && !REPORT_FILE.test(entry)
-  );
-}
+const isReplaceable = (entry) => REPLACEABLE_ENTRIES.includes(entry) || REPORT_FILE.test(entry);
 
-// The run replaces this folder whole, so it has to be one only this runner has written to.
-// `root` is a parameter so a test can stand a temporary folder in for the repository.
+// The run replaces this folder whole, so it has to be one this runner made and nothing else has
+// written to. `root` is a parameter so a test can stand a temporary folder in for the repository.
 export function resolveOutDir(out, root = ROOT) {
   const outDir = physicalPath(resolve(root, out));
   const fromRoot = relative(realpathSync(root), outDir);
@@ -165,13 +171,29 @@ export function resolveOutDir(out, root = ROOT) {
   }
   if (!existsSync(outDir)) return outDir;
   if (!statSync(outDir).isDirectory()) refuse('which is a file: name a folder for the reports');
-  const [foreign] = entriesWrittenElsewhere(outDir);
+  const entries = readdirSync(outDir);
+  if (entries.length && !entries.includes(OWNERSHIP_MARKER_FILE)) {
+    refuse(
+      `which holds files but not ${OWNERSHIP_MARKER_FILE}, the mark this runner leaves in a ` +
+        'folder it made: remove the folder yourself, or name a new one'
+    );
+  }
+  const foreign = entries.find((entry) => !isReplaceable(entry));
   if (foreign !== undefined) {
     refuse(
       `which holds entries this runner did not write, such as ${foreign}: ` +
-        'name a new folder, or one that holds only an earlier run'
+        'move them out, or name a new folder'
     );
   }
+  return outDir;
+}
+
+// Judges the folder again at the moment it is replaced, so nothing can be deleted unjudged.
+export function replaceOutDir(out, root = ROOT) {
+  const outDir = resolveOutDir(out, root);
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, OWNERSHIP_MARKER_FILE), OWNERSHIP_MARKER_TEXT);
   return outDir;
 }
 
@@ -359,13 +381,12 @@ export async function runLighthouseCi({
   if (!Number.isInteger(samples) || samples < 3 || samples % 2 === 0) {
     fail('--samples must be an odd integer of at least 3 so the median resists one outlier');
   }
-  const absoluteOut = parseOrFail(() => resolveOutDir(out));
+  parseOrFail(() => resolveOutDir(out));
   const baseline = readBaseline(baselinePath);
   const sourceStatus = baselineSourceStatus(baseline);
   reportBaselineSourceStatus(sourceStatus);
 
-  rmSync(absoluteOut, { recursive: true, force: true });
-  mkdirSync(absoluteOut, { recursive: true });
+  const absoluteOut = parseOrFail(() => replaceOutDir(out));
   const preview = await buildAndPreview(port, { build });
   const measurements = [];
   try {

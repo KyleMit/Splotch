@@ -17,6 +17,7 @@ import { jobBlock, testWorkflow } from '../../ci-mirror/tests/workflow-job-steps
 import {
   GATED_METRICS,
   LIGHTHOUSE_TIMEOUT_MS,
+  OWNERSHIP_MARKER_FILE,
   PROFILES,
   REPORTED_METRICS,
   VISITS,
@@ -24,6 +25,7 @@ import {
   baselineSourceStatus,
   median,
   readBaseline,
+  replaceOutDir,
   reportFileName,
   resolveOutDir,
   summarizeMeasurements,
@@ -84,6 +86,13 @@ function folderHolding(folder, entries) {
   for (const entry of entries) writeFileSync(join(folder, entry), '');
   return folder;
 }
+
+const earlierRun = () => [
+  'summary.json',
+  ...Object.keys(PROFILES).flatMap((profile) =>
+    VISITS.map((visit) => reportFileName(profile, visit, 12))
+  ),
+];
 
 function baseline(limit) {
   return {
@@ -287,22 +296,39 @@ describe('the folder a Lighthouse run replaces', () => {
     );
   });
 
-  it('refuses a folder holding entries the runner did not write', () => {
+  it.each([
+    ['a file that only shares a report name', ['summary.json']],
+    ['the reports of a run older than the mark', earlierRun()],
+    ['a Finder file alone', ['.DS_Store']],
+  ])('refuses a folder it did not mark, holding %s', (_, entries) => {
     const { repository } = scratchRepository();
-    const occupied = folderHolding(join(repository, 'docs'), ['notes.md', 'summary.json']);
+    folderHolding(join(repository, 'kept'), entries);
 
-    expect(() => resolveOutDir('docs', repository)).toThrow(
-      'which holds entries this runner did not write, such as notes.md'
+    expect(() => resolveOutDir('kept', repository)).toThrow(
+      `which holds files but not ${OWNERSHIP_MARKER_FILE}`
     );
-    expect(readdirSync(occupied)).toEqual(['notes.md', 'summary.json']);
   });
 
-  it('refuses a report name from a profile the runner does not measure', () => {
+  it('refuses a folder it did not mark, holding only a profiles folder', () => {
     const { repository } = scratchRepository();
-    folderHolding(join(repository, 'reports'), ['desktop-first-1.report.json']);
+    mkdirSync(join(repository, 'kept', '.profiles'), { recursive: true });
 
-    expect(() => resolveOutDir('reports', repository)).toThrow('desktop-first-1.report.json');
+    expect(() => resolveOutDir('kept', repository)).toThrow(
+      `which holds files but not ${OWNERSHIP_MARKER_FILE}`
+    );
   });
+
+  it.each(['notes.md', 'desktop-first-1.report.json'])(
+    'refuses a folder it made once %s is put there',
+    (foreign) => {
+      const { repository } = scratchRepository();
+      folderHolding(replaceOutDir('reports', repository), [...earlierRun(), foreign]);
+
+      expect(() => resolveOutDir('reports', repository)).toThrow(
+        `which holds entries this runner did not write, such as ${foreign}`
+      );
+    }
+  );
 
   it('refuses a file', () => {
     const { repository } = scratchRepository();
@@ -311,20 +337,33 @@ describe('the folder a Lighthouse run replaces', () => {
     expect(() => resolveOutDir('summary.json', repository)).toThrow('which is a file');
   });
 
-  it('accepts an empty folder and one that holds only an earlier run', () => {
+  it('accepts an empty folder', () => {
     const { repository } = scratchRepository();
     const empty = folderHolding(join(repository, 'empty'), []);
-    const earlierRun = folderHolding(join(repository, 'lighthouse-reports/ci'), [
-      'summary.json',
-      '.DS_Store',
-      ...Object.keys(PROFILES).flatMap((profile) =>
-        VISITS.map((visit) => reportFileName(profile, visit, 12))
-      ),
-    ]);
-    mkdirSync(join(earlierRun, '.profiles', 'phone-portrait-1'), { recursive: true });
 
     expect(resolveOutDir('empty', repository)).toBe(empty);
-    expect(resolveOutDir('lighthouse-reports/ci', repository)).toBe(earlierRun);
+  });
+
+  it('replaces a folder it made, whatever an earlier run left in it', () => {
+    const { repository } = scratchRepository();
+    const made = replaceOutDir('lighthouse-reports/ci', repository);
+    folderHolding(made, [...earlierRun(), '.DS_Store']);
+    mkdirSync(join(made, '.profiles', 'phone-portrait-1'), { recursive: true });
+
+    expect(made).toBe(join(repository, 'lighthouse-reports/ci'));
+    expect(resolveOutDir('lighthouse-reports/ci', repository)).toBe(made);
+    expect(replaceOutDir('lighthouse-reports/ci', repository)).toBe(made);
+    expect(readdirSync(made)).toEqual([OWNERSHIP_MARKER_FILE]);
+  });
+
+  it('leaves a folder it refuses exactly as it found it', () => {
+    const { repository } = scratchRepository();
+    const kept = folderHolding(join(repository, 'kept'), ['notes.md', 'summary.json']);
+
+    expect(() => replaceOutDir('kept', repository)).toThrow(
+      `which holds files but not ${OWNERSHIP_MARKER_FILE}`
+    );
+    expect(readdirSync(kept)).toEqual(['notes.md', 'summary.json']);
   });
 
   // The baseline named here does not exist, so a run whose refusal failed to fire stops at
