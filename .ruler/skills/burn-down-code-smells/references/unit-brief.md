@@ -130,6 +130,10 @@ read goes out before the read's output does.
 * **Docs:** the `docs/ARCHITECTURE.md` table pads every row to its longest cell. Keep edits shorter
   than the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one
   edit.
+* **Scrapbook pages:** `npm run test:browserless` doesn't run `scrapbook:check`. After editing a
+  file that a committed `scrapbook/` page inlines, such as
+  `tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js`, run `npm run check:quality`
+  before pushing.
 * **`tools/` size and imports:**
   * `tools/` is size-ratcheted (`TOOLS_GRANDFATHERED_MAX_LINES`). A net line added to a listed file
     fails lint, and a file you shrink gets its cap lowered in the same PR.

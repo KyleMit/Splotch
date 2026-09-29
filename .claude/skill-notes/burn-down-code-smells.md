@@ -109,8 +109,10 @@ easy, because findings arrive already grouped by the files they touch.
   share `refs/remotes/origin/main` (#2515), or from the branch's base when nothing merged (the
   rival's catch on this note's own PR, whose head had no catch-up merge); `post-review.mjs` blocks a
   finding naming an emulator serial (#2504); `ANDROID_HOME` pointed at an empty directory keeps a
-  spawned test off real devices (#2524). The orchestrator-side changes (integration trials, the
-  serialized WebKit gate, usage thresholds) are in the ship-campaign skill note.
+  spawned test off real devices (#2524); `scrapbook:check` runs in `check:quality` but not
+  `test:browserless`, which cost #2520 a CI repair after it edited a file a scrapbook page inlines.
+  The orchestrator-side changes (integration trials, the serialized WebKit gate, usage thresholds)
+  are in the ship-campaign skill note.
 * **Not added:** parse a source-reading guard with the TypeScript compiler API rather than a regex.
   The rival caught regex guards fooled by comments or template literals twice (#2511, #2524), but
   `docs/CODING-STANDARDS.md` records it through #2516, open at the time, and units read that doc at
