@@ -15,7 +15,7 @@ than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #24
 4, 6, 8, and 9 the same way and added evidence to rules 1 and 2. The 2026-09-29 evening burndown
 (tracking issue #2500) extended rules 2, 4, 9, and 10 and added evidence to rules 1, 3, 5, 6, and 8.
 Enforcement is named by path. A few citations name a PR that was still open when this doc cited it
-("the test PR #2510 adds"), because `npm run check:doc-refs` fails on a path `main` does not have
+("the guards PR #2511 adds"), because `npm run check:doc-refs` fails on a path `main` does not have
 yet; each becomes a path once its PR merges.
 
 ## What earns a rule
@@ -163,10 +163,10 @@ never shown in the parent's preview (PR #2510).
 
 **Enforcement.** The types themselves, with exhaustive `Record<Union, V>` tables (a new variant
 fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A table of `[key, value]` pairs is not
-exhaustive; key it by the union, or derive the union from the table, as PR #2510 does for
-`DeviceInfo`. A component props union is pinned by a type test — `expectTypeOf(...).not.toExtend`
-over `ComponentProps<typeof X>`, which `npm run check` evaluates
-(`web/src/lib/components/design/Button.props.test.ts`,
+exhaustive; key it by the union, or derive the union from the table, as `DEVICE_INFO_LABELS` in
+`web/src/lib/platform/deviceReport.ts` does for `DeviceInfo` (PR #2510). A component props union is
+pinned by a type test — `expectTypeOf(...).not.toExtend` over `ComponentProps<typeof X>`, which
+`npm run check` evaluates (`web/src/lib/components/design/Button.props.test.ts`,
 `web/src/lib/components/design/SegmentedPicker.props.test.ts`,
 `web/src/lib/components/nav/SidebarToc.props.test.ts`) — not by `@ts-expect-error`.
 
@@ -292,7 +292,8 @@ The 2026-09-29 evening campaign found failures that were loud but named the wron
   test of the coloring-asset gate asserted the exit status before stderr, so a failing gate reported
   `expected 1 to be +0` instead of the checker's own line.
 * PR #2512: `discardJob` settled its three deletes and dropped the results, so no caller could log a
-  failed delete. It now reports how many failed.
+  failed delete. It now reports how many failed, and `web/src/lib/server/generationJobs.test.ts`
+  drives a rejected delete through it.
 
 **Enforcement.** Tests at the boundary, and the types: a guard or parser over `unknown`, never a
 cast to the expected shape (PR #2410 replaced a `style as StyleName` cast with
@@ -306,10 +307,12 @@ held picture is replaced (PR #2474); `web/src/lib/server/tokens.test.ts` and
 (PR #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject
 inside a temporary repository (PR #2471). A failure's message is asserted, not only its status: the
 device-selection cases in `tools/perf/tests/android-serial.test.mjs` spawn `perf:android` against a
-fake `adb` and pin the refusal and the one call it made. PR #2513 moves the coloring-asset CLI
-test's stderr assertion ahead of its exit status, so a failing gate shows the checker's own line,
-and its red-team tests feed the runner an error with a `cause` and assert the cause is printed. Java
-and Swift have no unit harness, so the plugin side is review (rule 5).
+fake `adb` and pin the refusal and the one call it made.
+`tools/mobile/tests/mobile-build-scripts.test.mjs` asserts the coloring-asset CLI's stderr ahead of
+its exit status, so a failing gate shows the checker's own line, and
+`tools/redteam/tests/run-safety-evaluation.test.mjs` feeds the runner an error with a `cause` and
+asserts the cause is printed through `errorChain` in `tools/lib/smoke.mjs` (PR #2513). Java and
+Swift have no unit harness, so the plugin side is review (rule 5).
 
 ## 5. One contract per wire boundary
 
@@ -339,10 +342,12 @@ The 2026-09-29 evening campaign found more names, and one sentence, typed at sev
 
 * The `/admin` console's form fields and action names were typed in the page, the server actions,
   the console component, and the login test. A renamed field compiled, and sign-in then answered
-  "Incorrect access key." for the right key. PR #2509 declares them once, and the test it adds pins
-  the route's action keys to the declared list.
+  "Incorrect access key." for the right key. `ADMIN_FORM_FIELDS` and `ADMIN_ACTIONS` in
+  `web/src/lib/adminForm.ts` declare them once, and `web/src/routes/admin/page.server.test.ts` pins
+  the route's action keys to the declared list (PR #2509).
 * The store-frames render page re-typed the query-param names that its `paths.ts` header said were
-  declared once (PR #2510).
+  declared once. It now reads `RENDER_PAGE_PARAM` and `RENDER_TARGET_PARAM` from
+  `web/src/routes/dev/store-frames/lib/paths.ts` (PR #2510).
 * One parent-facing 503 sentence was typed at four sites in three server modules, and two of the six
   503 paths pinned it. `AI_REPORTING_UNAVAILABLE_MESSAGE` in
   `web/src/lib/server/imageReportUnavailable.ts` now serves all six, and each path's test pins the
@@ -382,7 +387,9 @@ cases on a `tools/tests/` path only, so a later block that switched a rule off f
 `web/src/**/*.test.ts` would have passed it (PR #2481). A fence is also silent over a tree its globs
 leave out: `no-undef` covered `tools/` but not the skill-package scripts, which no TypeScript
 program reads either, so a dropped import there would throw only when an agent ran the skill (PR
-#2503).
+#2503). The vacuous-test lint skipped the shared E2E helpers, which hold the retrying opens every
+spec leans on, and the `*TestHarness.ts` modules that define tests for their callers, while
+`docs/TESTING.md` said it covered every file (PR #2514).
 
 **Enforcement.** In `eslint.config.js`: `SERVER_ONLY_PACKAGES` (positive control
 `tools/tests/server-only-imports-lint.test.mjs`), `BLOBS_CONSISTENCY_EXPLICIT`
@@ -394,7 +401,8 @@ syntax set once for every block that extends it. The same pattern guards tools: 
 `max-lines` (`tools/tests/tools-max-lines-lint.test.mjs`). For CSS,
 `tools/tests/stylelint-config-lint.test.mjs` lints seeded CSS through the config `npm run lint:css`
 discovers, over a `.css` and a `.svelte` path, and `tools/tests/vacuous-test-lint.test.mjs` seeds
-its cases under `web/src` as well as `tools/tests/` (both PR #2481).
+its cases under `web/src` as well as `tools/tests/` (both PR #2481), and since PR #2514 at a
+`web/tests` helper path and a `*TestHarness.ts` path too.
 
 **Known limits.** `no-restricted-imports` sees static imports only, not `import()`. The Blobs
 selectors match a bare `getStore` callee, not an alias. A selector matches a name, not a binding:
@@ -453,7 +461,9 @@ and grew by about 18,000 lines in 30 days (PR #2405). With `no-undef` off, dropp
 as `ReferenceError`s, and `freePort` killed another worktree's server (PR #2381). The app driver
 reused whatever server answered on its port, so store-drawing scores could come from another
 checkout's build (PR #2456). `perf:android` ignored unknown flags, so a mistyped `--no-build`
-silently rebuilt and reinstalled the app it was asked to profile as it stood (PR #2504).
+silently rebuilt and reinstalled the app it was asked to profile as it stood (PR #2504). Two perf
+entries accepted flags their `npm run info` text never named, and one kept a private copy of the
+orientation vocabulary the perf lib owns (PR #2515).
 
 Checks that ran after the writes they were meant to guard:
 
@@ -647,7 +657,7 @@ left a test-only seam unmarked, and PR #2438 repointed docs and comments at code
 PR #2379 corrected a comment that promised the wrong failure channel, and PR #2428 one whose
 "guarantees" the orientation lock's latch made false.
 
-The 2026-09-29 evening campaign found four comments whose claim about another site had gone false:
+The 2026-09-29 evening campaign found five comments whose claim about another site had gone false:
 
 * `HubList` said `/design`'s header carried the same Night Mode toggle. ADR-0096 says it
   deliberately doesn't, so an agent following rule 1 could have moved the header onto the shared
@@ -658,6 +668,8 @@ The 2026-09-29 evening campaign found four comments whose claim about another si
   it does not cross (PR #2508).
 * The store-frames `paths.ts` header said the render route's params were declared once while the
   render page re-typed them (PR #2510).
+* A `web/tests/helpers.ts` comment said a raised install-banner threshold would fail its specs by
+  timeout, after a unit guard had come to fail on a divergence in either direction (PR #2517).
 
 **Enforcement.** Review for code comments. For docs, skills, and rules, `npm run check:doc-refs`
 fails on a repo path or npm script that doesn't resolve.
