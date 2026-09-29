@@ -106,8 +106,9 @@ genuinely needs one locally, the orchestrator schedules it while no other lane i
 ## Lanes
 
 * **Start at two or three.** Raise toward six only while the queue keeps producing disjoint units
-  and lanes are mostly waiting on review and CI. Launch worktree-isolated lanes one per message;
-  launched together, some are refused with "git metadata that could not be resolved".
+  and lanes are mostly waiting on review and CI. From Claude Code, launch worktree-isolated lanes
+  one per message; launched together, some are refused with "git metadata that could not be
+  resolved".
 * **Every agent shares one account usage limit**: each lane, each auditor, and each helper an agent
   spawns. Reaching it ends them all at once, so size the lanes by every agent running. Late in a
   run, prefer finishing open PRs over opening new lanes, so an interruption can't eat the reserve.

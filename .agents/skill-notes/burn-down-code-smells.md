@@ -88,8 +88,9 @@ easy, because findings arrive already grouped by the files they touch.
   and 68 minutes later none had hit it. The parallel reference's Lanes rule now counts every agent.
   This run's data also argues for holding an audit wave until unit lanes free up, and for an audit
   brief line forbidding helpers; neither is in the skill.
-* **Launch pacing.** Of eight worktree-isolated agents launched in one message, four were refused
-  with "git metadata that could not be resolved". Launched one per message, all started.
+* **Launch pacing.** Of eight worktree-isolated Claude Code agents launched in one message, four
+  were refused with "git metadata that could not be resolved". Launched one per message, all
+  started.
 * **Nothing merged.** The auto-mode classifier denied the orchestrator's first merge (see the
   ship-campaign skill note's open questions), so every unit ended as an open, shippable PR. With
   nothing merged, the standards unit could not cite enforcement by path: `check:doc-refs` fails on a

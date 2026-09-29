@@ -114,8 +114,9 @@ read goes out before the read's output does.
     `*.webSsr.test.ts` twin to cover the web build.
 * **Source-text guards:** tools drift guards read `web/src` text (type unions, constants, CSS). Run
   `npm run test:tools` before changing a declaration they read. Likewise,
-  `web/src/lib/storageKeys.webOnly.test.ts` counts each web-only storage key's writers per file and
-  pins their native guards by regex, so editing one of those state modules can fail it.
+  `web/src/lib/storageKeys.webOnly.test.ts` pins, per file, how often each known writer identifier
+  of a web-only storage key appears, plus the native guards' text, so editing one of those state
+  modules can fail it.
 * **Docs:** the `docs/ARCHITECTURE.md` table pads every row to its longest cell. Keep edits shorter
   than the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one
   edit.
