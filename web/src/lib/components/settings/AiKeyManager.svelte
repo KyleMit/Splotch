@@ -9,7 +9,7 @@
   import { AI_CREATE_HELP, AI_CREATE_LABEL } from './aiSettingsCopy';
   import { sectionReveal } from './sectionReveal';
   import { settingsState, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
-  import { setAiUserApiKey } from '$lib/state/aiKey';
+  import { setUserSubmittedAiUserApiKey } from '$lib/state/aiKey';
   import { setUserSubmittedAiAccessToken } from '$lib/state/aiAccessToken';
   import {
     verifyCredential,
@@ -133,7 +133,7 @@
     const ownsRequest = () => latest.isCurrent(id);
     const persisted =
       result.kind === 'apiKey'
-        ? await setAiUserApiKey(value, ownsRequest)
+        ? await setUserSubmittedAiUserApiKey(value, ownsRequest)
         : await setUserSubmittedAiAccessToken(result.accessCode, ownsRequest);
     // A write the coordinator refused while this request was still current is
     // a storage failure the parent must hear about, not a superseded request.
@@ -197,7 +197,7 @@
   }
 
   function forgetKey() {
-    return forgetCredential('apiKey', () => setAiUserApiKey(''));
+    return forgetCredential('apiKey', () => setUserSubmittedAiUserApiKey(''));
   }
 
   function forgetAccessCode() {

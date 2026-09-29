@@ -22,7 +22,7 @@ vi.mock('../idb', () => ({
 }));
 
 import { settingsState } from './settings.svelte';
-import { hydrateApiKey, setAiUserApiKey } from './aiKey';
+import { hydrateApiKey, setAiUserApiKey, setUserSubmittedAiUserApiKey } from './aiKey';
 import { loadApiKey, saveApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 
@@ -41,36 +41,30 @@ beforeEach(() => {
   vi.mocked(requestPersistentStorage).mockReset().mockResolvedValue(false);
 });
 
+function holdNextSave() {
+  let finishSave!: () => void;
+  vi.mocked(saveApiKey).mockImplementationOnce(
+    (value: string) =>
+      new Promise<void>((resolve) => {
+        finishSave = () => {
+          secureStore.apiKey = value;
+          resolve();
+        };
+      })
+  );
+  return () => finishSave();
+}
+
 describe('setAiUserApiKey', () => {
-  it('requests persistent storage after a key is saved without waiting for permission', async () => {
-    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+  it('stores a key without requesting persistent storage', async () => {
+    expect(await setAiUserApiKey('sk-delivered')).toBe(true);
 
-    await setAiUserApiKey('sk-persisted');
-
-    expect(requestPersistentStorage).toHaveBeenCalledOnce();
-    expect(secureStore.apiKey).toBe('sk-persisted');
-  });
-
-  it('does not request persistent storage when a parent forgets a key', async () => {
-    secureStore.apiKey = 'sk-existing';
-
-    await setAiUserApiKey('');
-
+    expect(secureStore.apiKey).toBe('sk-delivered');
     expect(requestPersistentStorage).not.toHaveBeenCalled();
-    expect(secureStore.apiKey).toBeNull();
   });
 
   it('commits the live key only after secure persistence succeeds', async () => {
-    let finishSave!: () => void;
-    vi.mocked(saveApiKey).mockImplementationOnce(
-      (value: string) =>
-        new Promise<void>((resolve) => {
-          finishSave = () => {
-            secureStore.apiKey = value;
-            resolve();
-          };
-        })
-    );
+    const finishSave = holdNextSave();
 
     const saving = setAiUserApiKey('sk-persisted');
     await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
@@ -90,20 +84,10 @@ describe('setAiUserApiKey', () => {
 
     expect(settingsState.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
-    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
   it('a second call supersedes an in-flight first write', async () => {
-    let finishSave!: () => void;
-    vi.mocked(saveApiKey).mockImplementationOnce(
-      (value: string) =>
-        new Promise<void>((resolve) => {
-          finishSave = () => {
-            secureStore.apiKey = value;
-            resolve();
-          };
-        })
-    );
+    const finishSave = holdNextSave();
 
     const firstWrite = setAiUserApiKey('first');
     await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
@@ -117,7 +101,6 @@ describe('setAiUserApiKey', () => {
     expect(await firstWrite).toBe(false);
     expect(settingsState.aiUserApiKey).toBe('second');
     expect(secureStore.apiKey).toBe('second');
-    expect(requestPersistentStorage).toHaveBeenCalledOnce();
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
@@ -135,6 +118,62 @@ describe('setAiUserApiKey', () => {
     expect(result).toBe(false);
     expect(settingsState.aiUserApiKey).toBe('prior-key');
     expect(secureStore.apiKey).toBe('prior-key');
+  });
+});
+
+// ADR-0128: the storage request follows only a save the parent made and the
+// coordinator kept, so a failed, superseded, or abandoned save cannot prompt.
+describe('setUserSubmittedAiUserApiKey', () => {
+  it('requests persistent storage after a key is saved without waiting for permission', async () => {
+    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+
+    await setUserSubmittedAiUserApiKey('sk-persisted');
+
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+    expect(secureStore.apiKey).toBe('sk-persisted');
+  });
+
+  it('does not request persistent storage when a parent forgets a key', async () => {
+    secureStore.apiKey = 'sk-existing';
+
+    await setUserSubmittedAiUserApiKey('');
+
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+    expect(secureStore.apiKey).toBeNull();
+  });
+
+  it('does not request persistent storage when secure persistence rejects', async () => {
+    vi.mocked(saveApiKey).mockRejectedValueOnce(new Error('secure storage unavailable'));
+
+    await expect(setUserSubmittedAiUserApiKey('sk-rejected')).rejects.toThrow(
+      'secure storage unavailable'
+    );
+
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+  });
+
+  it('requests persistent storage once when a second save supersedes the first', async () => {
+    const finishSave = holdNextSave();
+
+    const firstWrite = setUserSubmittedAiUserApiKey('first');
+    await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
+    const secondWrite = setUserSubmittedAiUserApiKey('second');
+    finishSave();
+
+    expect(await secondWrite).toBe(true);
+    expect(await firstWrite).toBe(false);
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+  });
+
+  it('does not request persistent storage when ownership is lost mid-flight', async () => {
+    let ownsRequest = true;
+    vi.mocked(saveApiKey).mockImplementationOnce(async (value: string) => {
+      secureStore.apiKey = value;
+      ownsRequest = false;
+    });
+
+    expect(await setUserSubmittedAiUserApiKey('new-key', () => ownsRequest)).toBe(false);
+
     expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 });
@@ -172,7 +211,7 @@ describe('hydrateApiKey', () => {
     });
 
     const hydrating = hydrateApiKey();
-    const saving = setAiUserApiKey('sk-just-saved');
+    const saving = setUserSubmittedAiUserApiKey('sk-just-saved');
     releaseRead();
     await Promise.all([hydrating, saving]);
 
