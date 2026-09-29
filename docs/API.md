@@ -99,9 +99,10 @@ stores those raw bytes without first base64-encoding them, and the drawing stays
 provider seam; the single base64 encode happens inside the adapter, which needs it for the vendor's
 data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected.
 The server still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured
-signing secret), and a client that never sends the header always gets the synchronous shape. Since
-every OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
-controlled `502`.
+signing secret) and whenever the handoff fails with no worker owning the job (the job store could
+not take it, or the worker refused it), and a client that never sends the header always gets the
+synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
+now usually ends in the controlled `502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API

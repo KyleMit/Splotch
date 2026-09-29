@@ -124,6 +124,16 @@ export async function startBackgroundGeneration(
   try {
     await markJobPending(jobId, context);
     await putJobInput(jobId, image.bytes);
+  } catch (cause) {
+    // The worker has not been called and the job id has not left this request,
+    // so nothing else can own the job: answering in-line cannot start a second
+    // paid model call, and a 202 would name a job nobody will ever run.
+    console.error('[generate-image] could not store the job for the worker:', loggableError(cause));
+    await abandon(jobId);
+    return null;
+  }
+
+  try {
     // A background function answers 202 as soon as it has accepted the work, so
     // this await is the handoff, not the generation.
     const response = await fetch(`${origin}${WORKER_PATH}`, {
