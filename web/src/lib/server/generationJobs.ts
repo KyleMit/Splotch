@@ -319,15 +319,20 @@ export async function takeJobInput(jobId: string): Promise<Uint8Array | null> {
   return bytes ? new Uint8Array(bytes) : null;
 }
 
+/**
+ * Record what the claimant decided. `superseded` means the outcome was not
+ * recorded: the job is gone, already has an outcome, or is held under another
+ * claim, either at the read or by the time the conditional write landed.
+ */
 export async function completeJob(
   jobId: string,
   claimId: string,
   outcome: GenerationJobOutcome,
   image: ArrayBuffer | null
-): Promise<void> {
+): Promise<'recorded' | 'superseded'> {
   const jobStore = store();
   const existing = await readStoredJobVersion(jobStore, jobId);
-  if (!existing || existing.data.outcome || existing.data.claimId !== claimId) return;
+  if (!existing || existing.data.outcome || existing.data.claimId !== claimId) return 'superseded';
 
   // Bytes first: a poll that saw `image` but found nothing to send would be a
   // dead end, whereas one more `pending` is simply the next poll's problem.
@@ -341,7 +346,8 @@ export async function completeJob(
     // hands over a picture the ledger can no longer charge.
     expiresAt: existing.data.expiresAt,
   };
-  await jobStore.setJSON(statusKey(jobId), record, { onlyIfMatch: existing.etag });
+  const write = await jobStore.setJSON(statusKey(jobId), record, { onlyIfMatch: existing.etag });
+  return write.modified ? 'recorded' : 'superseded';
 }
 
 // `now` is a test seam: production callers omit it and take the wall clock.
