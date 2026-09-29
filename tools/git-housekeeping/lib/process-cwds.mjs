@@ -29,6 +29,13 @@ export function parseLsofCwds(text) {
   return entries;
 }
 
+function readLsofCwds() {
+  if (!hasCommand('lsof')) return [];
+  // lsof exits non-zero when any process refuses inspection, which is every
+  // run on a multi-user host; the partial listing is still the answer.
+  return parseLsofCwds(tryCapture('lsof', ['-w', '-d', 'cwd', '-Fpcn']).stdout);
+}
+
 function readProcCwds() {
   const entries = [];
   for (const name of readdirSync('/proc')) {
@@ -46,15 +53,30 @@ function readProcCwds() {
   return entries;
 }
 
-export function listProcessCwds() {
-  if (hasCommand('lsof')) {
-    // lsof exits non-zero when any process refuses inspection, which is every
-    // run on a multi-user host; the partial listing is still the answer.
-    const result = tryCapture('lsof', ['-w', '-d', 'cwd', '-Fpcn']);
-    if (result.stdout) return parseLsofCwds(result.stdout);
+function liveCwdReaders() {
+  return process.platform === 'linux' ? [readLsofCwds, readProcCwds] : [readLsofCwds];
+}
+
+const UNUSABLE_LISTING = Object.freeze({
+  ok: false,
+  reason: 'no process listing names this process, so none can be trusted',
+});
+
+export const PROCESS_LISTING_NEEDS =
+  'The listing needs `lsof` on PATH (macOS keeps it in /usr/sbin; Linux falls back to /proc) and a shell allowed to inspect processes.';
+
+// A listing that worked names the process that asked for it. One that does not
+// has failed, whatever else it holds: `lsof` is off PATH, or the shell may not
+// inspect processes. A failed listing says nothing about which directories are
+// in use, so it comes back as unusable and never as an empty answer.
+//
+// `readers` is a seam for tests, which cannot take `lsof` away from a real host.
+export function listProcessCwds({ readers = liveCwdReaders() } = {}) {
+  for (const read of readers) {
+    const entries = read();
+    if (entries.some(({ pid }) => pid === process.pid)) return { ok: true, entries };
   }
-  if (process.platform === 'linux') return readProcCwds();
-  return [];
+  return UNUSABLE_LISTING;
 }
 
 // The script's own process and the npm that launched it are always "inside"

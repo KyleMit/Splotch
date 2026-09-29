@@ -20,6 +20,7 @@ import {
   listIgnoredPaths,
   partitionIgnoredPaths,
   stillHeld,
+  unknownUseWarning,
   worktreeHold,
 } from './lib/agent-worktrees.mjs';
 import { formatOutcomeLine, formatSummary, outcomeWidth } from './lib/outcome-report.mjs';
@@ -43,12 +44,11 @@ export function parseSalvageArgs(argv) {
 
 export function planSalvage({ cwd, roots, dest, processCwds, onProgress }) {
   const discovered = discoverAgentWorktrees({ cwd, roots });
-  const liveCwds = processCwds ?? listProcessCwds();
   const rows = [];
   for (const [index, worktree] of discovered.candidates.entries()) {
     if (onProgress) onProgress(index + 1, discovered.candidates.length, worktree.id);
     if (worktree.prunable) continue;
-    const held = worktreeHold(worktree, liveCwds);
+    const held = worktreeHold(worktree, processCwds);
     if (held) {
       rows.push({ worktree: worktree.real, id: worktree.id, path: null, ...held });
       continue;
@@ -111,13 +111,19 @@ function printReport(plan, { json }) {
   );
 }
 
-export async function salvageWorktreeEvidence(options, { cwd = ROOT } = {}) {
+// `listCwds` is a seam for tests: the guards are exercised against a process
+// listing the test controls rather than the host's.
+export async function salvageWorktreeEvidence(
+  options,
+  { cwd = ROOT, listCwds = listProcessCwds } = {}
+) {
   const { apply, roots, dest, json } = options;
   const note = (message) => process.stderr.write(`${message}\n`);
   const plan = planSalvage({
     cwd,
     roots,
     dest,
+    processCwds: listCwds(),
     onProgress: (done, total, id) => note(`listing ${done}/${total} ${id}…`),
   });
   if (apply) {
@@ -125,7 +131,7 @@ export async function salvageWorktreeEvidence(options, { cwd = ROOT } = {}) {
       if (row.outcome !== 'salvage') continue;
       // The plan is minutes old; a session can have started in this worktree
       // since, and a cross-filesystem move deletes the source after copying.
-      const held = stillHeld(row.worktree, cwd);
+      const held = stillHeld(row.worktree, cwd, listCwds);
       if (held) {
         Object.assign(row, held);
         continue;
@@ -140,8 +146,10 @@ export async function salvageWorktreeEvidence(options, { cwd = ROOT } = {}) {
     }
   }
   printReport(plan, { json });
+  const warning = unknownUseWarning(plan.rows);
+  if (warning) note(warning);
   if (!apply) note(`Dry run. Pass --apply to move the \`salvage\` rows under ${dest}.`);
-  else if (plan.rows.some((row) => row.outcome === 'failed')) process.exitCode = 1;
+  else if (warning || plan.rows.some((row) => row.outcome === 'failed')) process.exitCode = 1;
   return plan;
 }
 

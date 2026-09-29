@@ -33,11 +33,20 @@ and consider only those under a **root**: the main checkout's `.claude/worktrees
 main checkout, the worktree the command runs from, and anything outside every root are reported as
 excluded and never touched. Neither script deletes a branch.
 
+Both scripts ask the same question before touching a worktree: is a process sitting in it? The
+answer comes from a process listing (`lsof -d cwd`, or `/proc` on Linux), and a listing that worked
+always names the process that asked for it. One that does not has failed — `lsof` is off `PATH`, or
+the shell may not inspect processes — and cannot say that a worktree is unused. Both scripts then
+report every unlocked worktree as `skip (use unknown)`, print what the listing needs, and exit 1
+under `--apply` having moved and removed nothing from a live worktree. A listing that names this
+process and hides others still passes; the check catches a listing that failed, not one that lies.
+
 `worktrees:salvage` skips a locked worktree and one some process has as its cwd, exactly as the
 prune does, and rechecks both immediately before each move — a plan is minutes old by the time
 `--apply` runs, and moving a running capture's output out from under it splits the run. For the rest
-it lists the ignored paths (`git status --ignored=matching`) and partitions them by the
-`SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance captures under
+it lists the ignored paths (`git status -z --ignored=matching`; without `-z` git quotes a path that
+holds a space or a non-ASCII character, and a quoted path matches no prefix) and partitions them by
+the `SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance captures under
 `perf-profiles/` and red-team material under `tools/redteam/{decrypted,output}/` and
 `web/tests/redteam/{decrypted,output}/` are moved to
 `~/Code/splotch-worktree-evidence/<worktree id>/<path>` (`--dest=<dir>` overrides); everything else
@@ -47,15 +56,26 @@ ignored is reported as `leave` for the prune to delete. A destination that alrea
 `worktrees:prune` fetches `origin` first (a stale `origin/main` can only keep more, and the script
 says so if the fetch fails) and then removes a worktree only when every guard passes, in this order:
 
-| Outcome         | Guard                                                                         |
-| --------------- | ----------------------------------------------------------------------------- |
-| `prunable`      | Directory already gone; `git worktree prune` cleans the entry under `--apply` |
-| `skip (locked)` | `git worktree lock` was set, with its reason                                  |
-| `skip (in use)` | A process has its cwd inside (`lsof -d cwd`, or `/proc` on Linux), with pids  |
-| `keep`          | Unsalvaged evidence under an allowlisted prefix — run `worktrees:salvage`     |
-| `keep`          | `git status --porcelain` is not empty (modified or untracked paths)           |
-| `keep`          | `HEAD` is not an ancestor of `origin/main`, with the commit count ahead       |
-| `remove`        | Clean, merged, salvaged, unused — `git worktree remove` without `--force`     |
+| Outcome              | Guard                                                                        |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `keep`               | Directory already gone, detached, and no ref holds its commit                |
+| `prunable`           | Directory already gone; `--apply` removes that one entry                     |
+| `skip (locked)`      | `git worktree lock` was set, with its reason                                 |
+| `skip (use unknown)` | The process listing failed, so nobody can say the worktree is unused         |
+| `skip (in use)`      | A process has its cwd inside (`lsof -d cwd`, or `/proc` on Linux), with pids |
+| `keep`               | Unsalvaged evidence under an allowlisted prefix — run `worktrees:salvage`    |
+| `keep`               | `git status --porcelain` is not empty (modified or untracked paths)          |
+| `keep`               | `HEAD` is not an ancestor of `origin/main`, with the commit count ahead      |
+| `remove`             | Clean, merged, salvaged, unused — `git worktree remove` without `--force`    |
+
+A worktree whose directory is gone has only its admin entry left, and for a detached `HEAD` that
+entry can be the last reference to its commits: a branch outlives the entry, a detached commit that
+no branch, tag, or remote holds does not. Such a row is a `keep` whose reason names the commit;
+`git branch <name> <commit>` gives it a ref, and the next run reports it `prunable`. Under `--apply`
+each `prunable` entry is removed by path with `git worktree remove`, never with
+`git worktree prune`, which takes no path and drops every prunable entry in the repository — the
+ones outside every root included. Because `git worktree remove` also deletes a directory that
+exists, the entry is read again first and left alone unless git still reports it prunable.
 
 ## Local branches
 
@@ -114,13 +134,14 @@ outward-facing and stays the user's, via the script the skill hands back.
 commit-pinned ref delete; `lib/github-prs.mjs` the one-call PR index (open beats merged beats closed
 when a head is reused); `lib/process-cwds.mjs` the live-cwd detection; `lib/agent-worktrees.mjs`
 root filtering, the salvage allowlist, and the `worktreeHold` guard both worktree passes share;
-`lib/outcome-report.mjs` the per-row output. Entry points take injected proofs and process lists so
-every guard is exercised by `tests/` on a throwaway repository with a bare `origin`
+`lib/outcome-report.mjs` the per-row output. Entry points take injected proofs and process listings
+so every guard is exercised by `tests/` on a throwaway repository with a bare `origin`
 (`tests/fixtures/temp-repo.mjs`).
 
 ## Failure behavior
 
-A failed fetch or PR lookup is reported and the run continues as a plan. Per-item git failures are
+A failed fetch or PR lookup is reported and the run continues as a plan. A failed process listing is
+reported, skips every unlocked worktree, and fails an `--apply` run. Per-item git failures are
 reported on that row (`kept (git … refused: …)`) and the run continues. Unknown flags fail closed so
 a misspelled `--apply` cannot fall through to a run that deletes. The scripts never use `--force` on
 a worktree, never delete a branch from the worktree scripts, and never push.
