@@ -367,9 +367,11 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 15
     # Serialized across commits, deliberately against the per-SHA workflow group
-    # above. The filing step below is a check-then-create, so two failing runs
-    # reaching it together would both find no open issue and both create one.
-    # Running one gate at a time makes that check atomic by construction.
+    # above, in one group shared with webkit-commit-gate-fast-retry. That job's
+    # filing step is a check-then-create, so two failing retries reaching it
+    # together would both find no open issue and both create one. One gate job
+    # at a time, first run or retry, makes that check atomic by construction.
+    # This job files nothing, so it holds no issues scope.
     # `queue: max` is load-bearing: the default `queue: single` cancels the
     # pending run when a third commit lands, which would reopen the very
     # coverage hole the per-SHA workflow group exists to close.
@@ -379,7 +381,6 @@ jobs:
       queue: max
     permissions:
       contents: read
-      issues: write
     outputs:
       gate-outcome: ${{ steps.verdict.outputs.gate }}
       gate-failures: ${{ steps.verdict.outputs.failures }}
@@ -474,6 +475,9 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     timeout-minutes: 15
+    # The group webkit-commit-gate-fast declares, where the reasoning is. This
+    # job's membership is the one the filing step below depends on;
+    # tools/tests/workflow-gates.test.mjs pins it.
     concurrency:
       group: webkit-commit-gate-fast
       cancel-in-progress: false
@@ -648,6 +652,10 @@ jobs:
 
       - uses: ./.github/actions/setup-playwright-webkit
 
+      # Every path that ends on the committed seed warns. The seed restarts the
+      # run-to-run record the fast-set checks read, so a run that started from
+      # it has to say so in its own log. tools/tests/workflow-gates.test.mjs
+      # executes this step.
       - name: Restore fast-set history
         env:
           GH_TOKEN: ${{ github.token }}
@@ -663,6 +671,8 @@ jobs:
             else
               echo "::warning::fast-set history restore failed; starting from the committed seed"
             fi
+          else
+            echo "::warning::no release-tag fast-set history artifact found; starting from the committed seed"
           fi
           if [[ "$restore_ok" -eq 0 ]]; then
             cp tools/perf/fixtures/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
@@ -671,8 +681,14 @@ jobs:
       - name: Run full WebKit commit gate
         run: npm run perf:web:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json
 
+      # Release tags only. The restore step reads this artifact back from tag
+      # runs alone, so a dispatch run's copy would never be restored; it would
+      # only take a place in the newest-first list that step reads one page of.
+      # A dispatch run's history still uploads with the diagnostics below.
       - name: Persist WebKit full-run history
-        if: always()
+        if: >-
+          always() && github.event_name == 'push' &&
+          startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: webkit-undo-full-history
