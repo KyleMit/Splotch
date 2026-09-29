@@ -7,7 +7,14 @@ import { spawnSync } from 'node:child_process';
 
 class GitError extends Error {}
 
-export function git(args, { cwd, input } = {}) {
+// A refusal quotes what it found; output that holds no terminator at all is the
+// whole listing, and an error that long hides its own first line.
+const REFUSAL_EXCERPT_CHARS = 80;
+
+// A listing read for its NUL terminators stays untrimmed. `git` and `tryGit` trim,
+// which edits the first or the last entry whenever it starts or ends with
+// whitespace, and a path, a commit subject, and a lock reason all can.
+function gitUntrimmed(args, { cwd, input } = {}) {
   const result = spawnSync('git', args, { cwd, input, encoding: 'utf8' });
   if (result.error) throw new GitError(`git ${args.join(' ')}: ${result.error.message}`);
   if (result.status !== 0) {
@@ -15,7 +22,25 @@ export function git(args, { cwd, input } = {}) {
       `git ${args.join(' ')} exited ${result.status}: ${(result.stderr ?? '').trim()}`
     );
   }
-  return (result.stdout ?? '').trim();
+  return result.stdout ?? '';
+}
+
+// What follows the last terminator is nothing, or the newline `for-each-ref`
+// prints after each record. Anything else is output that was not NUL-terminated,
+// and reading it as an empty listing would tell a caller nothing is there.
+function nulTerminatedEntries(text) {
+  const entries = text.split('\0');
+  const remainder = entries.pop();
+  if (remainder !== '' && remainder !== '\n') {
+    throw new GitError(
+      `expected NUL-terminated git output, found ${JSON.stringify(remainder.slice(0, REFUSAL_EXCERPT_CHARS))} after the last terminator; refusing to guess`
+    );
+  }
+  return entries;
+}
+
+export function git(args, options) {
+  return gitUntrimmed(args, options).trim();
 }
 
 export function tryGit(args, { cwd, input } = {}) {
@@ -37,12 +62,14 @@ export function currentBranchOf(cwd) {
   return name === 'HEAD' ? null : name;
 }
 
-// `git worktree list --porcelain` prints one attribute per line and a blank
-// line between worktrees; the first block is always the main checkout.
+// `git worktree list --porcelain -z` (git 2.36+) ends every attribute with a NUL
+// and every worktree with an empty attribute; the first block is always the main
+// checkout. Without `-z` the terminator is a newline, which a worktree path can
+// hold: the path is then cut short and the rest of it is read as attributes.
 export function parseWorktreeList(porcelain) {
   const worktrees = [];
   let current = null;
-  for (const line of porcelain.split('\n')) {
+  for (const line of nulTerminatedEntries(porcelain)) {
     if (line === '') {
       if (current) worktrees.push(current);
       current = null;
@@ -76,7 +103,7 @@ export function parseWorktreeList(porcelain) {
 }
 
 export function listWorktrees(cwd) {
-  return parseWorktreeList(git(['worktree', 'list', '--porcelain'], { cwd }));
+  return parseWorktreeList(gitUntrimmed(['worktree', 'list', '--porcelain', '-z'], { cwd }));
 }
 
 const REF_FIELDS = [
@@ -89,31 +116,64 @@ const REF_FIELDS = [
   '%(authorname)',
   '%(subject)',
 ];
+const REF_FIELD_COUNT = REF_FIELDS.length + 1;
+const RECORD_NEWLINE = /^\n/;
+const OBJECT_ID = /^[0-9a-f]{40,64}$/;
+const UNIX_SECONDS = /^\d+$/;
+const AHEAD_BEHIND = /^(\d+) (\d+)$/;
 
+function refuseBranchRef(name, field, value) {
+  throw new GitError(
+    `for-each-ref printed ${JSON.stringify(value)} as ${field} of ${JSON.stringify(name)}; refusing to guess`
+  );
+}
+
+// `for-each-ref` ends each record with a newline of its own, which lands in
+// front of the next record's ref name once the listing is split on NUL. A ref
+// name holds no newline, so dropping one there removes nothing of the name.
+function parseBranchRef(fields) {
+  const [name, tip, upstream, track, unix, iso, author, subject, aheadBehind] = fields;
+  const refName = name.replace(RECORD_NEWLINE, '');
+  if (!OBJECT_ID.test(tip)) refuseBranchRef(refName, 'the commit id', tip);
+  if (!UNIX_SECONDS.test(unix)) refuseBranchRef(refName, 'the commit date', unix);
+  const counts = AHEAD_BEHIND.exec(aheadBehind);
+  if (!counts) refuseBranchRef(refName, 'the ahead/behind counts', aheadBehind);
+  return {
+    name: refName,
+    tip,
+    upstream: upstream || null,
+    upstreamGone: track === '[gone]',
+    committedAt: Number(unix),
+    date: iso.slice(0, 10),
+    author,
+    subject,
+    ahead: Number(counts[1]),
+    behind: Number(counts[2]),
+  };
+}
+
+// Every field ends in a NUL, the one byte git accepts in none of them. An
+// author name and a commit subject can hold a tab, and an upstream name read
+// from config a tab or a newline, so either as the separator lets the text
+// move the counts into another column: a subject of `Add rows<TAB>0 0 …` read
+// as zero commits ahead, which is the merged verdict. The strict field checks
+// are what turns any remaining surprise into a refusal instead of a default.
+//
 // `%(ahead-behind:<base>)` (git 2.41+) answers "commits unique to the branch /
 // commits it is missing" for every ref in one walk, instead of two rev-list
 // calls per branch.
 export function parseBranchRefs(text) {
-  return text
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const [name, tip, upstream, track, unix, iso, author, subject, aheadBehind] =
-        line.split('\t');
-      const [ahead, behind] = aheadBehind.split(' ').map(Number);
-      return {
-        name,
-        tip,
-        upstream: upstream || null,
-        upstreamGone: track === '[gone]',
-        committedAt: Number(unix),
-        date: iso.slice(0, 10),
-        author,
-        subject,
-        ahead,
-        behind,
-      };
-    });
+  const fields = nulTerminatedEntries(text);
+  if (fields.length % REF_FIELD_COUNT !== 0) {
+    throw new GitError(
+      `for-each-ref printed ${fields.length} NUL-terminated fields, not whole records of ${REF_FIELD_COUNT}; refusing to guess`
+    );
+  }
+  const refs = [];
+  for (let start = 0; start < fields.length; start += REF_FIELD_COUNT) {
+    refs.push(parseBranchRef(fields.slice(start, start + REF_FIELD_COUNT)));
+  }
+  return refs;
 }
 
 // `refs/remotes/<remote>/HEAD` is a symbolic ref pointing at the remote's default
@@ -127,14 +187,24 @@ export function parseBranchRefs(text) {
 // is still a prefix match there, which would also hide a real branch like `HEAD/x`.
 const SYMBOLIC_REF_NAME_FORMAT = '%(if)%(symref)%(then)%(refname:short)%(end)';
 
+// The base goes into the format as a commit id, never as the name it was given:
+// a ref name may hold `)` and `%(`, and `main)%(symref` would close the atom
+// early and count every branch against `main` instead.
 export function listBranchRefs(cwd, { base, namespace }) {
-  const format = [...REF_FIELDS, `%(ahead-behind:${base})`].join('%09');
+  const baseCommit = git(['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`], {
+    cwd,
+  });
+  const format = [...REF_FIELDS, `%(ahead-behind:${baseCommit})`]
+    .map((field) => `${field}%00`)
+    .join('');
   const symbolic = new Set(
     git(['for-each-ref', `--format=${SYMBOLIC_REF_NAME_FORMAT}`, namespace], { cwd })
       .split('\n')
       .filter(Boolean)
   );
-  const refs = parseBranchRefs(git(['for-each-ref', `--format=${format}`, namespace], { cwd }));
+  const refs = parseBranchRefs(
+    gitUntrimmed(['for-each-ref', `--format=${format}`, namespace], { cwd })
+  );
   return refs.filter((ref) => !symbolic.has(ref.name));
 }
 
@@ -192,9 +262,7 @@ export function branchLandedVerbatim(base, tip, cwd) {
   if (commits.length === 0) return false;
 
   for (const commit of commits) {
-    const files = tryGit(['diff', '--name-only', `${commit}^`, commit], { cwd });
-    if (!files.ok) return false;
-    const paths = files.stdout.split('\n').filter(Boolean);
+    const paths = pathsChangedBy(commit, cwd);
     if (paths.length === 0) return false;
     const wanted = commitPatchId(commit, cwd);
     if (!wanted) return false;
@@ -209,6 +277,22 @@ export function branchLandedVerbatim(base, tip, cwd) {
     if (!landed) return false;
   }
   return true;
+}
+
+// `-z` prints each path as it is stored. Without it git quotes and escapes a
+// path holding a non-ASCII byte, a tab, a newline, a quote, or a backslash, and
+// the quoted spelling names no file once it is handed back as a pathspec, so a
+// commit touching only such paths never finds the counterpart it has. A commit
+// whose paths cannot be listed reads as changing none, which proves nothing.
+function pathsChangedBy(commit, cwd) {
+  try {
+    return nulTerminatedEntries(
+      gitUntrimmed(['diff', '--name-only', '-z', `${commit}^`, commit], { cwd })
+    );
+  } catch (error) {
+    if (error instanceof GitError) return [];
+    throw error;
+  }
 }
 
 function commitPatchId(commit, cwd) {

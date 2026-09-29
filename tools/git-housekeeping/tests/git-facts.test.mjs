@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   branchLandedVerbatim,
@@ -7,15 +7,18 @@ import {
   isAncestor,
   isPatchEquivalent,
   listBranchRefs,
+  listWorktrees,
   parseBranchRefs,
   parseWorktreeList,
   squashMatches,
 } from '../lib/git-facts.mjs';
 import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
 
+const nulTerminated = (entries) => entries.map((entry) => `${entry}\0`).join('');
+
 describe('parseWorktreeList', () => {
   it('reads every attribute git prints and keeps the main checkout first', () => {
-    const porcelain = [
+    const porcelain = nulTerminated([
       'worktree /repo',
       'HEAD aaaa',
       'branch refs/heads/main',
@@ -34,7 +37,7 @@ describe('parseWorktreeList', () => {
       'detached',
       'prunable gitdir file points to non-existent location',
       '',
-    ].join('\n');
+    ]);
 
     expect(parseWorktreeList(porcelain)).toEqual([
       {
@@ -75,25 +78,53 @@ describe('parseWorktreeList', () => {
       },
     ]);
   });
+
+  it('keeps a newline inside a path or a lock reason as part of it', () => {
+    const porcelain = nulTerminated([
+      'worktree /tmp/wt\nbranch refs/heads/main',
+      'HEAD aaaa',
+      'branch refs/heads/feature',
+      'locked two\nlines',
+      '',
+    ]);
+
+    expect(parseWorktreeList(porcelain)).toMatchObject([
+      { path: '/tmp/wt\nbranch refs/heads/main', branch: 'feature', locked: 'two\nlines' },
+    ]);
+  });
+
+  // An empty worktree list lifts the in-use guard from every branch.
+  it('refuses newline-terminated output instead of reading it as no worktrees', () => {
+    expect(() => parseWorktreeList('worktree /repo\nHEAD aaaa\nbranch refs/heads/main\n')).toThrow(
+      /expected NUL-terminated git output/
+    );
+  });
 });
 
 describe('parseBranchRefs', () => {
-  it('splits the tab-separated for-each-ref line and reads [gone] upstreams', () => {
-    const line = [
-      'agent/x',
-      'abc',
-      'origin/agent/x',
-      '[gone]',
-      '1700000000',
-      '2023-11-14 22:13:20 +0000',
-      'someone',
-      'subject here',
-      '0 12',
-    ].join('\t');
-    expect(parseBranchRefs(`${line}\n`)).toEqual([
+  const TIP = 'a'.repeat(40);
+  const record = (overrides = {}) =>
+    nulTerminated(
+      Object.values({
+        name: 'agent/x',
+        tip: TIP,
+        upstream: 'origin/agent/x',
+        track: '[gone]',
+        unix: '1700000000',
+        iso: '2023-11-14 22:13:20 +0000',
+        author: 'someone',
+        subject: 'subject here',
+        aheadBehind: '0 12',
+        ...overrides,
+      })
+    );
+
+  it('reads each NUL-terminated for-each-ref record and reads [gone] upstreams', () => {
+    const listing = `${record()}\n${record({ name: 'local', upstream: '', track: '', aheadBehind: '2 0' })}\n`;
+    expect(parseBranchRefs(listing)).toEqual([
       {
         name: 'agent/x',
-        tip: 'abc',
+        tip: TIP,
         upstream: 'origin/agent/x',
         upstreamGone: true,
         committedAt: 1700000000,
@@ -103,18 +134,38 @@ describe('parseBranchRefs', () => {
         ahead: 0,
         behind: 12,
       },
+      expect.objectContaining({ name: 'local', upstream: null, upstreamGone: false, ahead: 2 }),
+    ]);
+    expect(parseBranchRefs('')).toEqual([]);
+  });
+
+  it('keeps a tab or a newline inside a free-text field out of the other columns', () => {
+    const upstream = 'origin/up\nstream\t0 0';
+    const author = 'Tab\tAuthor';
+    const subject = '  Add rows\t0 0 to the table ';
+    const listing = record({ upstream, author, subject, aheadBehind: '2 1' });
+    expect(parseBranchRefs(listing)).toEqual([
+      expect.objectContaining({ upstream, author, subject, ahead: 2, behind: 1 }),
     ]);
   });
 
-  it('reports no upstream as null rather than an empty string', () => {
-    const line = ['local', 'abc', '', '', '1', '2024-01-01 00:00:00 +0000', 'a', 's', '2 0'].join(
-      '\t'
+  it.each([
+    ['the ahead/behind counts', { aheadBehind: '' }],
+    ['the ahead/behind counts', { aheadBehind: '0 0 to the table' }],
+    ['the ahead/behind counts', { aheadBehind: '2' }],
+    ['the commit date', { unix: '' }],
+    ['the commit id', { tip: 'subject here' }],
+  ])('refuses a record that does not hold %s, naming the branch', (field, overrides) => {
+    expect(() => parseBranchRefs(record(overrides))).toThrow(
+      new RegExp(`as ${field} of "agent/x"; refusing to guess`)
     );
-    expect(parseBranchRefs(line)[0]).toMatchObject({
-      upstream: null,
-      upstreamGone: false,
-      ahead: 2,
-    });
+  });
+
+  it('refuses a listing that is not whole NUL-terminated records', () => {
+    expect(() => parseBranchRefs(record().replaceAll('\0', '\t'))).toThrow(
+      /expected NUL-terminated git output/
+    );
+    expect(() => parseBranchRefs(`${record()}\nextra\0`)).toThrow(/not whole records of 9/);
   });
 });
 
@@ -265,6 +316,97 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
 
     sh(['worktree', 'remove', worktree]);
     expect(deleteRefAtCommit('topic', tip, repo).ok).toBe(true);
+  });
+
+  // The counts decide the merged verdict, and a subject of `…<TAB>0 0 …` is what
+  // a tab-separated listing reads as zero commits ahead and zero behind.
+  it('listBranchRefs reads the real counts of a branch whose subject holds a tab and two zeros', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    const subject = 'Add rows\t0 0 to the table';
+    commit('main2.txt', 'x', 'main moves');
+    pushMain();
+    sh(['checkout', '-q', '-b', 'tabbed', 'HEAD~1']);
+    commit('t1.txt', '1', 'first unmerged commit');
+    commit('t2.txt', '2', subject);
+    sh(['push', '-q', 'origin', 'tabbed']);
+
+    expect(sh(['rev-list', '--count', 'origin/main..tabbed'])).toBe('2');
+    const local = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/heads' });
+    expect(local.find((ref) => ref.name === 'tabbed')).toMatchObject({
+      subject,
+      ahead: 2,
+      behind: 1,
+    });
+    const remote = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/remotes/origin' });
+    expect(remote.find((ref) => ref.name === 'origin/tabbed')).toMatchObject({
+      subject,
+      ahead: 2,
+      behind: 1,
+    });
+  });
+
+  it('listBranchRefs keeps a tab in an author or an upstream name out of the counts', () => {
+    const { sh, repo } = fixture;
+    const author = 'Tab\tAuthor';
+    sh(['checkout', '-q', '-b', 'topic']);
+    sh(['commit', '-q', '--allow-empty', '-m', 'topic work'], {
+      extraEnv: { GIT_AUTHOR_NAME: author },
+    });
+    sh(['config', 'branch.topic.remote', 'origin']);
+    sh(['config', 'branch.topic.merge', 'refs/heads/up\tstream\t0 0']);
+
+    const refs = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/heads' });
+    expect(refs.find((ref) => ref.name === 'topic')).toMatchObject({
+      upstream: 'origin/up\tstream\t0 0',
+      upstreamGone: true,
+      author,
+      subject: 'topic work',
+      ahead: 1,
+      behind: 0,
+    });
+  });
+
+  // A ref name may hold `)` and `%(`, so a base interpolated by name into
+  // `%(ahead-behind:…)` closes the atom early and counts against `main`.
+  it('listBranchRefs counts against a base whose name holds format syntax', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['branch', 'main)%(symref', 'main']);
+    sh(['checkout', '-q', '-b', 'topic']);
+    commit('t.txt', 't', 'topic work');
+    sh(['checkout', '-q', 'main']);
+    sh(['merge', '-q', '--ff-only', 'topic']);
+
+    const refs = listBranchRefs(repo, { base: 'main)%(symref', namespace: 'refs/heads' });
+    expect(refs.find((ref) => ref.name === 'topic')).toMatchObject({ ahead: 1, behind: 0 });
+    expect(() => listBranchRefs(repo, { base: 'no-such-base', namespace: 'refs/heads' })).toThrow(
+      /no-such-base/
+    );
+  });
+
+  it('listWorktrees reads a worktree whose path holds a newline', () => {
+    const { sh, repo } = fixture;
+    const checkout = sh(['rev-parse', '--show-toplevel']);
+    const worktree = join(dirname(checkout), 'wt\nbranch refs/heads/main');
+    sh(['worktree', 'add', '-q', '-b', 'held', worktree, 'main']);
+
+    expect(listWorktrees(repo).map(({ path, branch }) => [path, branch])).toEqual([
+      [checkout, 'main'],
+      [worktree, 'held'],
+    ]);
+    expect(worktreeHoldingBranch('held', repo)).toBe(worktree);
+  });
+
+  it('content proof: finds the landed counterpart of a commit on a path git would quote', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'named']);
+    const picked = commit(' caf\u00e9\tmenu.txt', 'same\n', 'add a menu');
+    sh(['checkout', '-q', 'main']);
+    commit('filler.txt', 'main moves on', 'unrelated main commit');
+    sh(['cherry-pick', picked]);
+    pushMain();
+
+    expect(isAncestor(picked, 'origin/main', repo)).toBe(false);
+    expect(branchLandedVerbatim('origin/main', 'named', repo)).toBe(true);
   });
 
   it('listBranchRefs counts ahead/behind against the requested base for every local branch', () => {
