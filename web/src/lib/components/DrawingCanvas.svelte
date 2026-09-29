@@ -22,7 +22,7 @@
     getEraserWidthPx,
   } from '$lib/state/strokeWidth.svelte';
   import {
-    overlayUrl,
+    hasOverlayPage,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
     fillSheetUrl,
@@ -54,10 +54,10 @@
   // wrapper below is positioned with the exact same transform the canvas paints
   // through, so page art and strokes stay aligned.
   const paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
-  let paperPresentationResident = $state(!!overlayUrl());
+  let paperPresentationResident = $state(hasOverlayPage());
 
   $effect(() => {
-    if (coloringBookModal.open || overlayUrl()) {
+    if (coloringBookModal.open || hasOverlayPage()) {
       paperPresentationResident = true;
     }
   });
@@ -291,7 +291,7 @@
   <div
     class="paper-view"
     class:paper-presentation-resident={paperPresentationResident}
-    data-paper-active={overlayUrl() ? '' : undefined}
+    data-paper-active={hasOverlayPage() ? '' : undefined}
     style:width={paperCssWidth}
     style:height={paperCssHeight}
     style:transform={paperPresentationResident ? paperTransform : undefined}
@@ -306,7 +306,7 @@
       decoding="async"
       data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
-      hidden={!overlayUrl() && !retiringOverlayUrl}
+      hidden={!hasOverlayPage() && !retiringOverlayUrl}
       bind:this={overlayEl}
     />
   </div>

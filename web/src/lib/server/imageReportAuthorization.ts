@@ -11,8 +11,7 @@ import { rateLimitPolicy } from './rateLimitPolicy';
 import { checkAccessToken } from './tokens';
 import { isInstallationId } from '$lib/installationId';
 import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
-
-const REPORTING_UNAVAILABLE = 'AI reporting is not available right now. Please try again later.';
+import { AI_REPORTING_UNAVAILABLE_MESSAGE } from './imageReportUnavailable';
 
 export type ImageReportAuthorizationResult =
   | { authorized: true; reportContext: ReportTokenContext | null }
@@ -36,7 +35,7 @@ function verifyReportContext(
       };
     case 'unconfigured':
       console.error('[report-image] REPORT_TOKEN_SECRET is unset; signed reporting is closed');
-      return { authorized: false, response: fail(503, REPORTING_UNAVAILABLE) };
+      return { authorized: false, response: fail(503, AI_REPORTING_UNAVAILABLE_MESSAGE) };
     default:
       return { authorized: false, response: fail(403, 'Invalid access token') };
   }
@@ -64,7 +63,7 @@ export async function authorizeImageReport(input: {
       // nothing about it, so it answers as /api/verify-key's 503 does.
       if (check.kind === 'unreachable') {
         console.warn(`[report-image] key check unreachable: ${check.reason}`);
-        return { authorized: false, response: fail(503, REPORTING_UNAVAILABLE) };
+        return { authorized: false, response: fail(503, AI_REPORTING_UNAVAILABLE_MESSAGE) };
       }
       return { authorized: false, response: fail(403, 'Invalid API key') };
     }
@@ -86,7 +85,7 @@ export async function authorizeImageReport(input: {
       const response =
         access.verdict === 'denied'
           ? fail(403, 'Invalid access token')
-          : fail(503, REPORTING_UNAVAILABLE);
+          : fail(503, AI_REPORTING_UNAVAILABLE_MESSAGE);
       return { authorized: false, response };
     }
 
