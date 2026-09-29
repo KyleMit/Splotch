@@ -48,10 +48,10 @@ lies.
 prune does, and rechecks both immediately before each move — a plan is minutes old by the time
 `--apply` runs, and moving a running capture's output out from under it splits the run. For the rest
 it lists the ignored paths (`git status -z --ignored=matching`; without `-z` git quotes a path that
-holds a space or a non-ASCII character, and a quoted path matches no prefix) and partitions them by
-the `SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance captures under
-`perf-profiles/` and red-team material under `tools/redteam/{decrypted,output}/` and
-`web/tests/redteam/{decrypted,output}/` are moved to
+holds a space or a non-ASCII character, and a quoted path matches no prefix; an entry it cannot read
+stops the run) and partitions them by the `SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`:
+raw performance captures under `perf-profiles/` and red-team material under
+`tools/redteam/{decrypted,output}/` and `web/tests/redteam/{decrypted,output}/` are moved to
 `~/Code/splotch-worktree-evidence/<worktree id>/<path>` (`--dest=<dir>` overrides); everything else
 ignored is reported as `leave` for the prune to delete. A destination that already exists is a
 `conflict` and is not overwritten. Moves fall back to copy-then-delete across filesystems.

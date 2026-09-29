@@ -46,6 +46,12 @@ describe('ignored-path partitioning', () => {
     ).toEqual(['perf-profiles/run-1/']);
   });
 
+  it('throws on an entry whose status it cannot read, such as one that lost its leading space', () => {
+    expect(() => parseIgnoredPaths('M .gitignore\0!! perf-profiles/run-1/\0')).toThrow(
+      'unreadable git status entry: "M .gitignore"'
+    );
+  });
+
   it('keeps allowlisted prefixes and their children, leaves everything else', () => {
     const paths = [
       'node_modules/',
@@ -146,6 +152,18 @@ describe('planSalvage and moveTree on a real repository', REAL_REPO_TEST_OPTIONS
       ['perf-profiles/run 2/', 'salvage'],
     ]);
     expect(planned.rows.every((row) => existsSync(row.from))).toBe(true);
+  });
+
+  // ` M .gitignore` sorts first and starts with a space, which a trimmed read
+  // of the status output would lose.
+  it('plans evidence out of a worktree whose first status entry is an unstaged change', () => {
+    const real = addWorktree('wt1');
+    writeFileSync(join(real, '.gitignore'), '# edited\n', { flag: 'a' });
+    addCapture(real, 'run-1');
+
+    expect(plan().rows.map((row) => [row.path, row.outcome])).toEqual([
+      ['perf-profiles/run-1/', 'salvage'],
+    ]);
   });
 
   // The prune's never-touch set is the salvage's too: moving a capture's output

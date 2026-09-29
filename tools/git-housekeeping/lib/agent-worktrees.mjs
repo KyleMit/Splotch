@@ -3,11 +3,12 @@
 // checkout and any hand-made checkout elsewhere are never considered, whatever
 // their state.
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 
-import { currentWorktreeOf, git, listWorktrees } from './git-facts.mjs';
+import { currentWorktreeOf, listWorktrees } from './git-facts.mjs';
 import { PROCESS_LISTING_NEEDS, processesUsing } from './process-cwds.mjs';
 
 // Gitignored paths worth moving out before a worktree is removed. Everything
@@ -130,13 +131,21 @@ export function unknownUseWarning(rows) {
 // holding a space, a quote, a backslash, or a non-ASCII byte, and a quoted path
 // matches no salvage prefix. With it each entry ends in NUL, and a rename or a
 // copy carries its origin path as a second field, skipped here so that a path
-// is never read as an entry.
+// is never read as an entry. An entry that is not a two-character status and a
+// space is output this parser would misread, so it throws rather than guess.
+const STATUS_ENTRY = /^[ MTADRCU?!]{2} /;
+
 export function parseIgnoredPaths(porcelain) {
   const fields = porcelain.split('\0');
   const paths = [];
   for (let index = 0; index < fields.length; index += 1) {
-    const status = fields[index].slice(0, 2);
-    if (status === '!!') paths.push(fields[index].slice(3));
+    const field = fields[index];
+    if (field === '') continue;
+    if (!STATUS_ENTRY.test(field)) {
+      throw new Error(`unreadable git status entry: ${JSON.stringify(field)}`);
+    }
+    const status = field.slice(0, 2);
+    if (status === '!!') paths.push(field.slice(3));
     else if (/[RC]/.test(status)) index += 1;
   }
   return paths;
@@ -152,12 +161,16 @@ export function partitionIgnoredPaths(paths, prefixes = SALVAGE_PREFIXES) {
   return { salvage, disposable };
 }
 
+// Read with spawnSync rather than the shared `git()`, which trims its output:
+// trimming takes the leading space off a first entry such as ` M file`.
 export function listIgnoredPaths(worktreePath, pathspecs = []) {
-  return parseIgnoredPaths(
-    git(['status', '--porcelain', '-z', '--ignored=matching', '--', ...pathspecs], {
-      cwd: worktreePath,
-    })
-  );
+  const args = ['status', '--porcelain', '-z', '--ignored=matching', '--', ...pathspecs];
+  const result = spawnSync('git', args, { cwd: worktreePath, encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    const why = result.error?.message ?? result.stderr.trim();
+    throw new Error(`git ${args.join(' ')} failed in ${worktreePath}: ${why}`);
+  }
+  return parseIgnoredPaths(result.stdout);
 }
 
 // Only *ignored* content under the salvage prefixes is at risk: tracked
