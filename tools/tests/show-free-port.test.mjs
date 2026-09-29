@@ -5,7 +5,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { findFreePort, probePort, showFreePort } from '../show-free-port.mjs';
 
 const CLI = fileURLToPath(new URL('../show-free-port.mjs', import.meta.url));
-// A Node start under a loaded host can exceed Vitest's 5 s default.
+// A Node start under a loaded host can exceed Vitest's 5 s default. spawnSync blocks the event
+// loop, so Vitest's own timeout cannot fire during it: the child carries the limit, set below the
+// test's so a hung CLI fails the test instead of the CI job.
+const CLI_TIMEOUT_MS = 15_000;
 const CLI_TEST_TIMEOUT_MS = 20_000;
 
 const servers = [];
@@ -34,7 +37,10 @@ async function releasedPort() {
 }
 
 function runCli(args) {
-  return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
+  return spawnSync(process.execPath, [CLI, ...args], {
+    encoding: 'utf8',
+    timeout: CLI_TIMEOUT_MS,
+  });
 }
 
 describe('show-free-port', () => {
