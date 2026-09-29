@@ -3,12 +3,13 @@
 // checkout and any hand-made checkout elsewhere are never considered, whatever
 // their state.
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 
-import { currentWorktreeOf, git, listWorktrees } from './git-facts.mjs';
-import { listProcessCwds, processesUsing } from './process-cwds.mjs';
+import { currentWorktreeOf, listWorktrees } from './git-facts.mjs';
+import { PROCESS_LISTING_NEEDS, processesUsing } from './process-cwds.mjs';
 
 // Gitignored paths worth moving out before a worktree is removed. Everything
 // else ignored (node_modules, env copies, sync output, screenshots) is
@@ -80,9 +81,15 @@ export function discoverAgentWorktrees({ cwd, roots }) {
 // moving files out of one. A locked worktree or one some process is sitting in
 // is a session mid-flight — moving a capture's output out from under it splits
 // the run, and a cross-filesystem salvage deletes the source after copying.
+//
+// A process listing that failed cannot say a worktree is unused, so it holds
+// every unlocked one: both passes then act on nothing, by construction.
+const USE_UNKNOWN = 'skip (use unknown)';
+
 export function worktreeHold(worktree, processCwds) {
   if (worktree.locked) return { outcome: 'skip (locked)', reason: worktree.locked };
-  const users = processesUsing(worktree.real, processCwds);
+  if (!processCwds.ok) return { outcome: USE_UNKNOWN, reason: processCwds.reason };
+  const users = processesUsing(worktree.real, processCwds.entries);
   if (users.length > 0) {
     return {
       outcome: 'skip (in use)',
@@ -100,21 +107,48 @@ export function worktreeHold(worktree, processCwds) {
 // locked it since. Reusing the plan's `locked` value would answer the second
 // half with a stale snapshot, which is the same class of mistake as trusting a
 // branch name to still point where it did.
-export function stillHeld(worktreePath, cwd = worktreePath) {
+export function stillHeld(worktreePath, cwd, listCwds) {
   const live = listWorktrees(cwd).find((worktree) => worktree.path === worktreePath);
-  return worktreeHold({ ...(live ?? {}), real: worktreePath }, listProcessCwds());
+  return worktreeHold({ ...(live ?? {}), real: worktreePath }, listCwds());
 }
 
-// `git status --porcelain --ignored=matching` marks ignored entries with `!!`
-// and lists each path that matches an ignore rule, with a trailing slash on a
-// directory. The default `--ignored` mode instead collapses to the highest
+// What both passes print, and fail an `--apply` run on, when a failed process
+// listing held a worktree, at plan time or at the recheck before acting. The
+// row carries the short reason; this adds what the listing needs to work.
+export function unknownUseWarning(rows) {
+  const held = rows.find((row) => row.outcome === USE_UNKNOWN);
+  if (!held) return null;
+  return `Cannot tell which worktrees are in use: ${held.reason}. ${PROCESS_LISTING_NEEDS}`;
+}
+
+// `git status --porcelain -z --ignored=matching` marks ignored entries with
+// `!!` and lists each path that matches an ignore rule, with a trailing slash
+// on a directory. The default `--ignored` mode instead collapses to the highest
 // directory whose contents are all ignored, which hides `tools/redteam/output/`
 // behind `tools/` in a checkout where nothing else under tools/ exists yet.
+//
+// `-z` is what lets a path be read as itself. Without it git C-quotes any path
+// holding a space, a quote, a backslash, or a non-ASCII byte, and a quoted path
+// matches no salvage prefix. With it each entry ends in NUL, and a rename or a
+// copy carries its origin path as a second field, skipped here so that a path
+// is never read as an entry. An entry that is not a two-character status and a
+// space is output this parser would misread, so it throws rather than guess.
+const STATUS_ENTRY = /^[ MTADRCU?!]{2} /;
+
 export function parseIgnoredPaths(porcelain) {
-  return porcelain
-    .split('\n')
-    .filter((line) => line.startsWith('!! '))
-    .map((line) => line.slice(3));
+  const fields = porcelain.split('\0');
+  const paths = [];
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index];
+    if (field === '') continue;
+    if (!STATUS_ENTRY.test(field)) {
+      throw new Error(`unreadable git status entry: ${JSON.stringify(field)}`);
+    }
+    const status = field.slice(0, 2);
+    if (status === '!!') paths.push(field.slice(3));
+    else if (/[RC]/.test(status)) index += 1;
+  }
+  return paths;
 }
 
 export function partitionIgnoredPaths(paths, prefixes = SALVAGE_PREFIXES) {
@@ -127,10 +161,16 @@ export function partitionIgnoredPaths(paths, prefixes = SALVAGE_PREFIXES) {
   return { salvage, disposable };
 }
 
+// Read with spawnSync rather than the shared `git()`, which trims its output:
+// trimming takes the leading space off a first entry such as ` M file`.
 export function listIgnoredPaths(worktreePath, pathspecs = []) {
-  return parseIgnoredPaths(
-    git(['status', '--porcelain', '--ignored=matching', '--', ...pathspecs], { cwd: worktreePath })
-  );
+  const args = ['status', '--porcelain', '-z', '--ignored=matching', '--', ...pathspecs];
+  const result = spawnSync('git', args, { cwd: worktreePath, encoding: 'utf8' });
+  if (result.error || result.status !== 0) {
+    const why = result.error?.message ?? result.stderr.trim();
+    throw new Error(`git ${args.join(' ')} failed in ${worktreePath}: ${why}`);
+  }
+  return parseIgnoredPaths(result.stdout);
 }
 
 // Only *ignored* content under the salvage prefixes is at risk: tracked
