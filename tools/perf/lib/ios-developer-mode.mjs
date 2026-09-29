@@ -2,11 +2,11 @@ export function iosDeveloperModeCheck(result) {
   let details;
   try {
     details = JSON.parse(result.out);
-  } catch {
+  } catch (error) {
     return {
       name: 'ios developer mode',
       status: 'warn',
-      detail: `could not read CoreDevice status${result.err ? `: ${result.err}` : ''}`,
+      detail: `could not read CoreDevice status: ${result.err || String(error)}`,
       enabled: null,
     };
   }

@@ -17,11 +17,7 @@ function plistField(plist, key, format = 'json') {
   });
   if (result.status !== 0) return null;
   if (format === 'raw') return result.stdout.trim();
-  try {
-    return JSON.parse(result.stdout);
-  } catch {
-    return null;
-  }
+  return JSON.parse(result.stdout);
 }
 
 function readProfile(path) {
@@ -85,13 +81,10 @@ export function checkIosProvisioning(udid) {
       detail: 'ios/local.xcconfig has no DEVELOPMENT_TEAM',
     };
   }
-  let paths = [];
-  try {
-    paths = readdirSync(PROFILE_DIR)
-      .filter((name) => name.endsWith('.mobileprovision'))
-      .map((name) => join(PROFILE_DIR, name));
-  } catch {
-    // An empty list produces the same actionable result as a missing cache.
-  }
+  const paths = existsSync(PROFILE_DIR)
+    ? readdirSync(PROFILE_DIR)
+        .filter((name) => name.endsWith('.mobileprovision'))
+        .map((name) => join(PROFILE_DIR, name))
+    : [];
   return iosProvisioningCheck({ udid, team, profiles: paths.map(readProfile).filter(Boolean) });
 }
