@@ -85,6 +85,9 @@ interface StoredJob {
 const statusKey = (jobId: string) => `${jobId}/status.json`;
 const inputKey = (jobId: string) => `${jobId}/input`;
 const imageKey = (jobId: string) => `${jobId}/image`;
+// Every key a job can own. The input is normally gone already — the worker
+// takes it — but a job that never reached a worker must not leave a drawing behind.
+const jobKeys = (jobId: string) => [inputKey(jobId), imageKey(jobId), statusKey(jobId)];
 
 type JobStore = ReturnType<typeof getStore>;
 
@@ -376,15 +379,23 @@ export async function readJobImage(jobId: string): Promise<Uint8Array | null> {
   return bytes ? new Uint8Array(bytes) : null;
 }
 
-/** Collected means finished with: the picture has been handed over, so nothing is kept. */
-export async function discardJob(jobId: string): Promise<void> {
-  await Promise.allSettled([
-    // The input is normally gone already — the worker takes it — but a job that
-    // never reached a worker must not leave a drawing behind.
-    store().delete(inputKey(jobId)),
-    store().delete(imageKey(jobId)),
-    store().delete(statusKey(jobId)),
-  ]);
+/**
+ * Collected means finished with: the picture has been handed over, so nothing is
+ * kept. Every delete is tried whatever the others do, and none of them throws:
+ * each caller is already answering the child, and the scheduled purge is the
+ * backstop for whatever is left. What failed comes back — null when every delete
+ * landed — so the caller can put the leftover drawing in the log. `firstFailure`
+ * can quote the key it failed on, so it is logged through loggableError.
+ */
+export async function discardJob(
+  jobId: string
+): Promise<{ failedDeletes: number; firstFailure: unknown } | null> {
+  const results = await Promise.allSettled(jobKeys(jobId).map(async (key) => store().delete(key)));
+  const failures = results.flatMap((result) =>
+    result.status === 'rejected' ? [result.reason] : []
+  );
+  if (failures.length === 0) return null;
+  return { failedDeletes: failures.length, firstFailure: failures[0] };
 }
 
 /**
@@ -432,7 +443,7 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
 
       let jobDeletedBlobs = 0;
       let jobFailedBlobDeletes = 0;
-      for (const key of [inputKey(jobId), imageKey(jobId), statusKey(jobId)]) {
+      for (const key of jobKeys(jobId)) {
         try {
           await jobStore.delete(key);
           jobDeletedBlobs++;

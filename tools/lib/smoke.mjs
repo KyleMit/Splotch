@@ -3,12 +3,12 @@
 // error, and summarize() prints the totals and exits non-zero on any failure.
 
 // A fetch failure's own message is only "fetch failed"; the reason (a refused redirect, a DNS
-// miss, a refused connection) sits on its cause chain. fatal() prints each cause's message and
+// miss, a refused connection) sits on its cause chain. errorChain() takes each cause's message and
 // never the error object, so a request's headers or body cannot reach the log. The cap bounds a
 // cyclic chain.
 const MAX_CAUSE_DEPTH = 5;
 // A message is free text, so a bearer credential (the one the smoke tools send) is masked in every
-// line fatal() prints. The value class is RFC 6750's b64token.
+// line errorChain() returns. The value class is RFC 6750's b64token.
 const BEARER_CREDENTIAL = /\b(Bearer)\s+[\w.~+/-]+=*/gi;
 
 let passed = 0;
@@ -26,8 +26,15 @@ export function check(name, ok, detail = '') {
 
 export function fatal(err) {
   failed++;
-  console.error(`\nFATAL: ${redactBearer(err.message)}`);
-  for (const reason of causeMessages(err)) console.error(`  caused by: ${redactBearer(reason)}`);
+  const [message, ...causes] = errorChain(err);
+  console.error(`\nFATAL: ${message}`);
+  for (const reason of causes) console.error(`  caused by: ${reason}`);
+}
+
+// The messages fatal() prints, without its tally: for a runner with its own exit rule.
+export function errorChain(err) {
+  if (!(err instanceof Error)) return [redactBearer(err)];
+  return [err.message, ...causeMessages(err)].map(redactBearer);
 }
 
 const redactBearer = (text) => String(text).replace(BEARER_CREDENTIAL, '$1 [redacted]');

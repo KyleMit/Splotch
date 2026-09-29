@@ -4,42 +4,40 @@
 // use it — the field order and labels live here once so the parent-facing
 // preview and the Markdown written into the GitHub issue can never drift.
 
-export interface DeviceInfo {
-  app?: string;
-  platform?: string;
-  os?: string;
-  device?: string;
-  browser?: string;
-  screen?: string;
-  viewport?: string;
-  pixelRatio?: string;
-  language?: string;
-  display?: string;
-  online?: string;
-}
+// Every field a report can carry, with its human label, in row order. The table
+// is the DeviceInfo type, so a collector can't fill a field that has no label.
+const DEVICE_INFO_LABELS = {
+  app: 'App version',
+  platform: 'Platform',
+  os: 'Operating system',
+  device: 'Device',
+  browser: 'Browser',
+  screen: 'Screen',
+  viewport: 'Window',
+  pixelRatio: 'Pixel ratio',
+  language: 'Language',
+  display: 'Display mode',
+  online: 'Online',
+};
 
-// Ordered [key, human label] pairs. Every value is a plain string so the
-// preview, the wire payload, and the issue Markdown all share one shape.
-const FIELD_LABELS: [keyof DeviceInfo, string][] = [
-  ['app', 'App version'],
-  ['platform', 'Platform'],
-  ['os', 'Operating system'],
-  ['device', 'Device'],
-  ['browser', 'Browser'],
-  ['screen', 'Screen'],
-  ['viewport', 'Window'],
-  ['pixelRatio', 'Pixel ratio'],
-  ['language', 'Language'],
-  ['display', 'Display mode'],
-  ['online', 'Online'],
-];
+type DeviceInfoField = keyof typeof DEVICE_INFO_LABELS;
+
+// Every value is a plain string so the preview, the wire payload, and the issue
+// Markdown all share one shape.
+export type DeviceInfo = Partial<Record<DeviceInfoField, string>>;
+
+// Object.keys widens to string[]; the keys of a closed literal are its fields.
+// Exported for the tests that must cover every field.
+export const DEVICE_INFO_FIELDS = Object.keys(DEVICE_INFO_LABELS) as DeviceInfoField[];
 
 /** Present fields as ordered { label, value } rows, dropping any that are blank. */
 export function describeDeviceInfo(info: DeviceInfo): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
-  for (const [key, label] of FIELD_LABELS) {
+  for (const key of DEVICE_INFO_FIELDS) {
     const value = info[key];
-    if (typeof value === 'string' && value.trim()) rows.push({ label, value: value.trim() });
+    if (typeof value === 'string' && value.trim()) {
+      rows.push({ label: DEVICE_INFO_LABELS[key], value: value.trim() });
+    }
   }
   return rows;
 }
@@ -56,7 +54,7 @@ export function sanitizeDeviceInfo(raw: unknown): DeviceInfo {
   const info: DeviceInfo = {};
   if (!raw || typeof raw !== 'object') return info;
   const source = raw as Record<string, unknown>;
-  for (const [key] of FIELD_LABELS) {
+  for (const key of DEVICE_INFO_FIELDS) {
     const value = source[key];
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       const cleaned = String(value)

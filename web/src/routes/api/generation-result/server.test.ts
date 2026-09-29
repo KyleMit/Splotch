@@ -99,7 +99,7 @@ beforeEach(() => {
     reason: 'IMAGE_SAFETY',
     context: paidContext,
   });
-  mocks.discardJob.mockResolvedValue(undefined);
+  mocks.discardJob.mockResolvedValue(null);
   mocks.readJobImage.mockResolvedValue(pictureBytes);
   mocks.completeFreeGeneration.mockResolvedValue({ remaining: 7 });
   mocks.failFreeGeneration.mockResolvedValue(undefined);
@@ -233,6 +233,29 @@ describe('GET /api/generation-result', () => {
     });
     expect(mocks.discardJob).toHaveBeenCalledExactlyOnceWith(jobId);
     expectNothingSettled();
+  });
+
+  // The picture is already paid for and on its way; the purge is the backstop
+  // for what the delete left behind. The log is the only record that it did.
+  it('still delivers the picture when its blobs cannot be deleted, and says so', async () => {
+    mocks.readJob.mockResolvedValue({
+      status: 'image',
+      mimeType: 'image/png',
+      context: paidContext,
+    });
+    mocks.discardJob.mockResolvedValue({
+      failedDeletes: 2,
+      firstFailure: new Error(`delete ${jobId}/image failed`),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const response = await get();
+
+    expect(response.status).toBe(200);
+    const logged = warn.mock.calls.flat().map(String).join('\n');
+    expect(logged).toContain('failed deletes: 2');
+    expect(logged).toContain('/image failed');
+    expect(logged).not.toContain(jobId);
   });
 
   describe('a free-tier job', () => {

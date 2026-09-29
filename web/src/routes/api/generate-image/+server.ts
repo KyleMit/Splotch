@@ -32,6 +32,7 @@ import { apiHandler, contentTypeOf, readBodyWithinLimit, readFormBody } from '$l
 import { loggableError } from '$lib/server/logRedaction';
 import {
   clientAcceptsBackgroundGeneration,
+  deadlineAfterFailedHandoffMs,
   freeSettlement,
   startBackgroundGeneration,
   synchronousDeadlineMs,
@@ -265,7 +266,9 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     // genuinely failed, and answering in-line is better than leaving a child
     // watching a job nobody is working on — even though it will usually outrun
     // the deadline.
+    let deadlineMs = synchronousDeadlineMs();
     if (clientAcceptsBackgroundGeneration(request)) {
+      const handoffStartedAt = Date.now();
       const started = await startBackgroundGeneration(
         url.origin,
         { free: freeSettlement(authorization, reservationId), style },
@@ -285,6 +288,15 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
           status: GENERATION_ACCEPTED_STATUS,
         });
       }
+      const handoffMs = Date.now() - handoffStartedAt;
+      const remainingMs = deadlineAfterFailedHandoffMs(handoffMs);
+      if (remainingMs === null) {
+        console.warn(
+          `[generate-image] the failed handoff took ${handoffMs} ms; not answering in-line`
+        );
+        throw error(502, 'There was not enough time left to make that creation');
+      }
+      deadlineMs = remainingMs;
     }
 
     usageAttempted = true;
@@ -292,7 +304,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       apiKey: authorization.effectiveKey,
       image: { bytes: inputBytes, mimeType },
       prompt: finalPrompt,
-      deadlineMs: synchronousDeadlineMs(),
+      deadlineMs,
     });
     if (result.kind === 'refusal') {
       recordGenerationUsage(authorization, style, 'refused', platform);
