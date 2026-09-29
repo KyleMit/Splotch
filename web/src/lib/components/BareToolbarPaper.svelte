@@ -53,7 +53,9 @@
     );
     mix-blend-mode: var(--rule-blend);
     opacity: var(--rule-opacity);
-    mask-image: url('/icons/margin-fiber-v.svg');
+    /* Inlined, like the glass mask above: fetched by URL the fiber arrives after
+       first paint and the rule appears a beat behind the toolbar it edges. */
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='600'%3E%3Cfilter id='a'%3E%3CfeTurbulence baseFrequency='0.6 0.035' numOctaves='3' seed='7' type='fractalNoise'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
     mask-size: 100% 600px;
   }
   .second {
@@ -84,7 +86,7 @@
         var(--rule-ink) 70%,
         transparent
       );
-      mask-image: url('/icons/margin-fiber-h.svg');
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='8'%3E%3Cfilter id='a'%3E%3CfeTurbulence baseFrequency='0.035 0.6' numOctaves='3' seed='7' type='fractalNoise'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
       mask-size: 600px 100%;
     }
     .second {
