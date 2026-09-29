@@ -201,8 +201,8 @@ async function run(browser, base) {
 let stop;
 let browser;
 try {
-  ({ stop } = await ensureDevServer(PORT));
-  const base = `http://localhost:${PORT}/`;
+  let base;
+  ({ base, stop } = await ensureDevServer(PORT));
   browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   await run(browser, base);
 } catch (err) {

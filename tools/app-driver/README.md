@@ -17,15 +17,18 @@ modules, not standalone commands.
 
 ## Inputs and behavior
 
-The smoke starts or reuses Splotch on `SMOKE_PORT` (4173 by default) and launches Chromium. It
+The smoke starts its own Splotch on `SMOKE_PORT` (4173 by default) and launches Chromium. It
 exercises the drawing canvas, drawer, palette, exact picker colors, brush and size selection,
 tiled-renderer ink, and coloring-book overlay at the Google Play tablet viewport. It also verifies
 that every generated store-drawing scene color remains selectable at all four store target
 viewports.
 
-The command needs installed project dependencies and Playwright Chromium. A port may be free or
-already serving Splotch; the shared server helper reuses a compatible listener. Any failed smoke
-assertion or browser/server error exits nonzero after cleanup and prints the failing checks.
+The command needs installed project dependencies and Playwright Chromium. `ensureDevServer` never
+reuses a server already on the port, since an answering port says nothing about which build it
+serves: a held port gets this checkout's own server on an OS-assigned port instead, the holder is
+left running, and the run fails if the answer comes from any process but the one it started. Any
+failed smoke assertion or browser/server error exits nonzero after cleanup and prints the failing
+checks.
 
 ## Ownership and maintenance
 
