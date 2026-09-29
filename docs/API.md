@@ -237,7 +237,21 @@ valid families behind one NAT never spend it.
 { "ok": false, "error": "That access code was not recognized." }
 // 400 — missing, non-string, or blank code
 { "ok": false, "error": "No access code provided" }
+// 503 — the allowlist could not be read, so nothing was learned about the code
+{ "ok": false, "code": "KEY_CHECK_UNAVAILABLE", "error": "We couldn't check that key just now. Please try again." }
 ```
+
+An allowlist that could not be read is a **third** answer, as it is for `/api/verify-key`: a code
+added in `/admin` is not wrong just because the token store failed to answer. The verdict comes from
+`checkAccessToken` in `web/src/lib/server/tokens.ts`, which reports `unavailable` when a lost seed
+race could not be confirmed, and when a Blobs read threw and the env-seed stand-in lacks the code. A
+runtime with no Blobs at all (a production preview) still treats its seed as the whole list and
+answers a miss as unrecognized. The same verdict decides the failed-guess charge: an `unavailable`
+answer spends a guess only when it depended on the code. After a failed Blobs read, a seed code is
+still accepted, so a miss there is an answer about the code and is charged like a wrong one; with no
+list at all, every code gets the same `503` and nothing is charged. `generate-image` and
+`report-image` apply the same verdict to `X-Access-Token`, answering `503` with their own
+unavailable message where a wrong token gets `403`.
 
 ### `POST /api/verify-key`
 
@@ -538,6 +552,12 @@ round-trip only on Netlify preview hostnames.
 | `GET`    | —                     | List tokens + invite URLs                                                         |
 | `POST`   | `{ "token": "name" }` | Add a token. `400 { ok: false, error }` when empty or duplicate.                  |
 | `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). Also requests immediate deletion of its usage tally. |
+
+A mutation's snapshot also carries `changed`: whether the request wrote anything. A `DELETE` whose
+token matched nothing in the list read is still `200`, but with `changed: false`; it writes nothing
+and deletes no tally, and the `/admin` console says the token was not in the list instead of
+confirming a removal. Under eventual consistency that read can lag a recent add, so an operator
+revoking a code that should be there checks the returned `tokens` and retries.
 
 Mutations are etag compare-and-set writes with a few retries; if concurrent admin mutations keep
 colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE` return

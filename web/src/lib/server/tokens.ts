@@ -17,14 +17,18 @@ let memoryTokens: string[] | null = null;
 let blobsUnavailable = false;
 
 type TokenStore = ReturnType<typeof getStore>;
-type MemorySource = 'memory' | 'degraded';
-// Why the seed-race winner stayed unknown. Reads deny either way, but a store
+// Why the seed-race winner stayed unknown. Reads allow nothing either way, but a store
 // that never once answered is the same unreachable condition as `degraded`, so
 // a mutation must report it as such rather than as a losable race.
 type UnconfirmedCause = 'stale' | 'unreachable';
+// Why a production-shaped read fell back to the env seed. With no Blobs in the
+// runtime the seed is the only list this instance has; after a Blobs read threw,
+// the durable list still exists and holds codes the seed never had.
+type DegradedCause = 'unconfigured' | 'unreachable';
 type StoreRead =
   | { source: 'blobs'; store: TokenStore; list: string[]; etag?: string }
-  | { source: MemorySource; store: null; list: string[]; etag?: undefined }
+  | { source: 'memory'; store: null; list: string[]; etag?: undefined }
+  | { source: 'degraded'; cause: DegradedCause; store: null; list: string[]; etag?: undefined }
   | {
       source: 'unconfirmed';
       cause: UnconfirmedCause;
@@ -89,9 +93,14 @@ async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
 // alike but writes may not. `memory` is the intentional writable Vite-dev mode.
 // `degraded` covers every production-shaped getStore failure and any Blobs read
 // failure, where accepting a mutation would report success without durability.
-function memoryRead(source: MemorySource): StoreRead {
+// Reads serve the seed in both; only checkAccessToken tells a miss apart.
+function memoryList(): string[] {
   if (memoryTokens === null) memoryTokens = seedFromEnv();
-  return { source, store: null, list: memoryTokens };
+  return memoryTokens;
+}
+
+function degradedRead(cause: DegradedCause): StoreRead {
+  return { source: 'degraded', cause, store: null, list: memoryList() };
 }
 
 /**
@@ -129,10 +138,10 @@ async function readStore(): Promise<StoreRead> {
       // silently drop every future write.
       const detail = err instanceof Error ? err.message : err;
       console.warn('[tokens] Netlify Blobs read failed, using in-memory list:', detail);
-      return memoryRead('degraded');
+      return degradedRead('unreachable');
     }
   }
-  return memoryRead(dev ? 'memory' : 'degraded');
+  return dev ? { source: 'memory', store: null, list: memoryList() } : degradedRead('unconfigured');
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
@@ -165,11 +174,31 @@ export async function getTokensStatus(): Promise<{ tokens: string[]; persistent:
   return { tokens: [...read.list], persistent: read.source === 'blobs' };
 }
 
-/** Whether `token` is currently allowed. */
-export async function isAllowedToken(token: unknown) {
-  if (typeof token !== 'string') return false;
+// `spendsGuess` is whether the answer told the caller anything about this
+// token, which is what the shared failed-guess budget (ADR-0014) meters. Only
+// this module knows, so callers charge on the flag instead of on the verdict.
+type AccessTokenCheck =
+  | { verdict: 'allowed' }
+  | { verdict: 'denied'; spendsGuess: true }
+  | { verdict: 'unavailable'; spendsGuess: boolean };
+
+/**
+ * What the allowlist says about `token`. `unavailable` means the durable list
+ * could not be read, so a miss is not a wrong code; it never allows anything.
+ */
+export async function checkAccessToken(token: unknown): Promise<AccessTokenCheck> {
+  if (typeof token !== 'string') return { verdict: 'denied', spendsGuess: true };
   const read = await readStore();
-  return read.source !== 'unconfirmed' && read.list.includes(token);
+  // No list at all: every token gets this same answer, so it reveals nothing.
+  if (read.source === 'unconfirmed') return { verdict: 'unavailable', spendsGuess: false };
+  if (read.list.includes(token)) return { verdict: 'allowed' };
+  // The seed lacks every code added in /admin, so this miss is not a wrong
+  // code. It still spends a guess: the seed hit above answers differently, so
+  // an uncharged miss would let a caller enumerate the seed during an outage.
+  if (read.source === 'degraded' && read.cause === 'unreachable') {
+    return { verdict: 'unavailable', spendsGuess: true };
+  }
+  return { verdict: 'denied', spendsGuess: true };
 }
 
 // Each attempt re-runs the whole read-modify cycle (dup-check/filter included)
@@ -216,8 +245,10 @@ export const MAX_TOKEN_MUTATION_BODY_BYTES = 8 * 1024;
 // write unless the read came from Blobs or the Vite-dev memory stand-in, so the
 // durability of the list it returns is settled by the same read. A caller that
 // re-derived it would be asking the store a question it has just been answered,
-// and racing its own write to do so.
-export type MutationResult = { ok: true; tokens: string[]; persistent: boolean } | MutationFailure;
+// and racing its own write to do so. `changed` is false when the transform had
+// nothing to do, so a caller never confirms a removal that matched no token.
+export type MutationResult =
+  { ok: true; tokens: string[]; persistent: boolean; changed: boolean } | MutationFailure;
 
 function unconfirmedFailure(cause: UnconfirmedCause): MutationFailure {
   return cause === 'unreachable'
@@ -250,16 +281,16 @@ async function mutateList(
     const persistent = read.source === 'blobs';
     const result = transform(list);
     if ('error' in result) return { ok: false, error: result.error, reason: result.reason };
-    if ('noop' in result) return { ok: true, tokens: [...list], persistent };
+    if ('noop' in result) return { ok: true, tokens: [...list], persistent, changed: false };
     if (await persist(store, result.next, etag)) {
       if (afterPersist) await afterPersist(result.next);
-      return { ok: true, tokens: result.next, persistent };
+      return { ok: true, tokens: result.next, persistent, changed: true };
     }
   }
   return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
 }
 
-/** Add a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
+/** Add a token. Returns `{ ok, tokens, changed: true }` or `{ ok: false, error }`. */
 export async function addToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   if (!t) return { ok: false, error: 'Token cannot be empty', reason: 'invalid' };
@@ -268,7 +299,10 @@ export async function addToken(token: unknown): Promise<MutationResult> {
   );
 }
 
-/** Remove a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
+/**
+ * Remove a token. Returns `{ ok, tokens, changed }`, where `changed: false`
+ * means no token matched and nothing was written, or `{ ok: false, error }`.
+ */
 export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   return mutateList(

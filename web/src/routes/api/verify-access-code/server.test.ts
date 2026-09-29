@@ -1,15 +1,16 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
-  isAllowedToken: vi.fn(),
+const { checkAccessToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
+  checkAccessToken: vi.fn<typeof import('$lib/server/tokens').checkAccessToken>(),
   peekRateLimit: vi.fn(),
   rateLimit: vi.fn(),
 }));
 
-vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
+vi.mock('$lib/server/tokens', () => ({ checkAccessToken }));
 vi.mock('$lib/server/rateLimit', () => ({ peekRateLimit, rateLimit }));
 
+import { KEY_CHECK_UNAVAILABLE_CODE } from '$lib/ai/keyFormat';
 import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { POST } from './+server';
@@ -40,7 +41,7 @@ function postRaw(body: string) {
 }
 
 beforeEach(() => {
-  isAllowedToken.mockReset().mockResolvedValue(true);
+  checkAccessToken.mockReset().mockResolvedValue({ verdict: 'allowed' });
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
 });
@@ -54,12 +55,12 @@ describe('POST /api/verify-access-code', () => {
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('12');
     expect(peekRateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
 
   it('charges the shared bucket only on a failed verification', async () => {
-    isAllowedToken.mockResolvedValue(false);
+    checkAccessToken.mockResolvedValue({ verdict: 'denied', spendsGuess: true });
 
     const response = await post({ code: 'wrong-guess' });
 
@@ -69,7 +70,33 @@ describe('POST /api/verify-access-code', () => {
       error: 'That access code was not recognized.',
     });
     expect(peekRateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
-    expect(isAllowedToken).toHaveBeenCalledWith('wrong-guess');
+    expect(checkAccessToken).toHaveBeenCalledWith('wrong-guess');
+    expect(rateLimit).toHaveBeenCalledOnce();
+    expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
+  });
+
+  // The same third answer /api/verify-key gives when its check got no answer,
+  // which the client already reads as "try again" for either endpoint.
+  it('answers an unreadable allowlist with 503 KEY_CHECK_UNAVAILABLE, charging nothing', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+
+    const response = await post({ code: 'console-added' });
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      ok: false,
+      code: KEY_CHECK_UNAVAILABLE_CODE,
+      error: "We couldn't check that key just now. Please try again.",
+    });
+    expect(rateLimit).not.toHaveBeenCalled();
+  });
+
+  it('still charges an unavailable answer that depended on the code', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: true });
+
+    const response = await post({ code: 'console-added' });
+
+    expect(response.status).toBe(503);
     expect(rateLimit).toHaveBeenCalledOnce();
     expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.verifyAccessCode);
   });
@@ -88,7 +115,7 @@ describe('POST /api/verify-access-code', () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ ok: false, error: 'No access code provided' });
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
 
@@ -100,7 +127,7 @@ describe('POST /api/verify-access-code', () => {
       ok: false,
       error: 'Expected a JSON body',
     });
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
 });

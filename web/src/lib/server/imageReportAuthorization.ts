@@ -8,7 +8,7 @@ import {
   verifyAccessCodeBucket,
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
-import { isAllowedToken } from './tokens';
+import { checkAccessToken } from './tokens';
 import { isInstallationId } from '$lib/installationId';
 import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
 
@@ -78,9 +78,16 @@ export async function authorizeImageReport(input: {
     const guessKey = verifyAccessCodeBucket(input.clientAddress);
     const guess = peekRateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
     if (guess.limited) return { authorized: false, response: throttled(guess.retryAfter) };
-    if (!(await isAllowedToken(managedToken))) {
-      rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
-      return { authorized: false, response: fail(403, 'Invalid access token') };
+    const access = await checkAccessToken(managedToken);
+    if (access.verdict !== 'allowed') {
+      if (access.spendsGuess) rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
+      // As with the key check above: an unreadable allowlist says nothing
+      // about the code, so it answers 503 rather than calling the code invalid.
+      const response =
+        access.verdict === 'denied'
+          ? fail(403, 'Invalid access token')
+          : fail(503, REPORTING_UNAVAILABLE);
+      return { authorized: false, response };
     }
 
     const attempt = rateLimit(

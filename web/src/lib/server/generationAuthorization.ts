@@ -8,7 +8,7 @@ import {
   verifyAccessCodeBucket,
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
-import { isAllowedToken } from './tokens';
+import { checkAccessToken } from './tokens';
 import { isInstallationId } from '$lib/installationId';
 
 export type GenerationAuthorization =
@@ -19,15 +19,15 @@ export type GenerationAuthorization =
 export type GenerationAuthorizationResult =
   GenerationAuthorization | { authorized: false; response: Response };
 
+// Stays generic because it reaches parent-facing error reports.
+const AI_CREATIONS_UNAVAILABLE =
+  'AI creations are not available right now. Please try again later.';
+
 // A deploy without the project key is a server fault, answered like every other
 // unconfigured condition: a 503 for the caller and a log line for the operator.
-// The body stays generic because it reaches parent-facing error reports.
 function projectKeyMissing(): { authorized: false; response: Response } {
   console.error('[generate-image] OPENAI_API_KEY is unset; managed and free generation is closed');
-  return {
-    authorized: false,
-    response: fail(503, 'AI creations are not available right now. Please try again later.'),
-  };
+  return { authorized: false, response: fail(503, AI_CREATIONS_UNAVAILABLE) };
 }
 
 export async function authorizeGenerationRequest(input: {
@@ -47,9 +47,15 @@ export async function authorizeGenerationRequest(input: {
     const guessKey = verifyAccessCodeBucket(input.clientAddress);
     const guess = peekRateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
     if (guess.limited) return { authorized: false, response: throttled(guess.retryAfter) };
-    if (!(await isAllowedToken(managedToken))) {
-      rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
-      return { authorized: false, response: fail(403, 'Invalid access token') };
+    const access = await checkAccessToken(managedToken);
+    if (access.verdict !== 'allowed') {
+      if (access.spendsGuess) rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
+      // An unreadable allowlist is our fault, not a revoked code: retryable.
+      const response =
+        access.verdict === 'denied'
+          ? fail(403, 'Invalid access token')
+          : fail(503, AI_CREATIONS_UNAVAILABLE);
+      return { authorized: false, response };
     }
 
     // Valid managed traffic is keyed per token to contain a leaked credential.
