@@ -69,6 +69,24 @@ export function synchronousDeadlineMs(): number {
   return Math.min(override, WORKER_DEADLINE_MS);
 }
 
+// A refusal is the quickest answer the model gives: about two seconds in the
+// ADR-0113 bake-off. With less than that left, no outcome of the call can arrive
+// before the deadline, so starting it would only spend a paid call on a 502.
+const MIN_INLINE_DEADLINE_MS = 2_000;
+
+/**
+ * The in-line deadline once a failed handoff has spent `handoffMs` of it, or null
+ * when too little is left for the model to answer at all. ADR-0063's margin under
+ * the platform ceiling was sized for a request that goes straight to the
+ * provider, so the handoff's time has to come out of the deadline: a job store
+ * that fails slowly would otherwise let the platform end the request before the
+ * route's own 502 could.
+ */
+export function deadlineAfterFailedHandoffMs(handoffMs: number): number | null {
+  const remainingMs = synchronousDeadlineMs() - handoffMs;
+  return remainingMs >= MIN_INLINE_DEADLINE_MS ? remainingMs : null;
+}
+
 export function freeSettlement(
   authorization: GenerationAuthorization,
   reservationId: string | undefined
@@ -85,11 +103,12 @@ export function freeSettlement(
  * the failure is already known here.
  */
 async function abandon(jobId: string): Promise<void> {
-  try {
-    await discardJob(jobId);
-  } catch (cause) {
-    // The fallback matters more than the cleanup — the purge is the backstop.
-    console.warn('[generate-image] could not clean up the abandoned job:', loggableError(cause));
+  const failure = await discardJob(jobId);
+  if (failure) {
+    console.warn(
+      `[generate-image] could not clean up the abandoned job (failed deletes: ${failure.failedDeletes}):`,
+      loggableError(failure.firstFailure)
+    );
   }
 }
 

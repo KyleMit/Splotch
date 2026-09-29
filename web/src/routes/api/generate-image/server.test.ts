@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import type { AiImageProvider } from '$lib/server/ai/provider';
 import type {
@@ -11,6 +11,7 @@ import type {
 import type { authorizeGenerationRequest } from '$lib/server/generationAuthorization';
 import type {
   clientAcceptsBackgroundGeneration,
+  deadlineAfterFailedHandoffMs,
   freeSettlement,
   startBackgroundGeneration,
 } from '$lib/server/generationStart';
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   acceptsBackground: vi.fn<typeof clientAcceptsBackgroundGeneration>(),
   freeSettlement: vi.fn<typeof freeSettlement>(),
   startBackground: vi.fn<typeof startBackgroundGeneration>(),
+  deadlineAfterHandoff: vi.fn<typeof deadlineAfterFailedHandoffMs>(),
 }));
 
 vi.mock('$lib/server/generationAuthorization', () => ({
@@ -54,6 +56,7 @@ vi.mock('$lib/server/generationStart', () => ({
   clientAcceptsBackgroundGeneration: mocks.acceptsBackground,
   freeSettlement: mocks.freeSettlement,
   startBackgroundGeneration: mocks.startBackground,
+  deadlineAfterFailedHandoffMs: mocks.deadlineAfterHandoff,
   synchronousDeadlineMs: () => 1_000,
 }));
 vi.mock('$lib/server/reportToken', () => ({
@@ -116,6 +119,7 @@ beforeEach(() => {
   mocks.issueReportToken.mockReturnValue('signed-report-token');
   mocks.acceptsBackground.mockReturnValue(false);
   mocks.startBackground.mockResolvedValue(null);
+  mocks.deadlineAfterHandoff.mockReturnValue(1_000);
   mocks.recordTokenUsage.mockResolvedValue(undefined);
 });
 
@@ -461,6 +465,60 @@ describe('POST /api/generate-image', () => {
     expect(mocks.recordTokenUsage).toHaveBeenCalledWith('daycare-club', {
       style: 'Paper',
       outcome: 'accepted',
+    });
+  });
+
+  // ADR-0063's margin under the platform ceiling was sized for a request that
+  // goes straight to the provider. A handoff that failed slowly has spent part of
+  // it, and a provider call started with the full deadline would let the platform
+  // end the request before the route's own 502.
+  describe('after a failed handoff', () => {
+    const HANDOFF_MS = 7_000;
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      mocks.reserveDaily.mockResolvedValue({ reserved: true, remaining: 400 });
+      mocks.acceptsBackground.mockReturnValue(true);
+      mocks.startBackground.mockImplementation(async () => {
+        vi.setSystemTime(Date.now() + HANDOFF_MS);
+        return null;
+      });
+      mocks.generateImage.mockResolvedValue({ kind: 'error', reason: 'timed out' });
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('gives the in-line call only what the handoff left of the deadline', async () => {
+      mocks.deadlineAfterHandoff.mockReturnValue(17_000);
+
+      await post();
+
+      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(HANDOFF_MS);
+      expect(mocks.generateImage).toHaveBeenCalledWith(
+        expect.objectContaining({ deadlineMs: 17_000 })
+      );
+    });
+
+    it('answers the controlled 502 without a provider call when too little is left', async () => {
+      mocks.deadlineAfterHandoff.mockReturnValue(null);
+
+      const response = await post();
+
+      expect(response.status).toBe(502);
+      await expect(response.json()).resolves.toEqual({
+        ok: false,
+        error: 'There was not enough time left to make that creation',
+      });
+      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(HANDOFF_MS);
+      expect(mocks.generateImage).not.toHaveBeenCalled();
+      expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(
+        'a'.repeat(64),
+        'upstream',
+        'reservation-1'
+      );
     });
   });
 

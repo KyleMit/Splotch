@@ -102,7 +102,10 @@ The server still answers in-line wherever there is no worker (a plain `vite dev`
 signing secret) and whenever the handoff fails with no worker owning the job (the job store could
 not take it, or the worker refused it), and a client that never sends the header always gets the
 synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
-now usually ends in the controlled `502`.
+now usually ends in the controlled `502`. After a failed handoff the in-line call gets only what the
+handoff left of that deadline, so a slow store failure still answers before the platform ceiling
+(ADR-0063); when too little is left for the model to answer at all, the model is not called and the
+answer is the same controlled `502`, with the free reservation released.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
