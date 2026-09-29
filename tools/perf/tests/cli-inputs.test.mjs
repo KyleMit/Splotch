@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
 import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
@@ -29,6 +29,34 @@ const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recordin
 const scenarioPath = join(repoRoot, 'tools', 'perf', 'web', 'capture-web-session.mjs');
 const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scenarios.mjs');
 const handCapturePath = join(repoRoot, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs');
+const HOST_REQUIRED = '--host= is required — the probe host URL the device can reach over the LAN';
+const FOREIGN_BUILD_NEEDS_URL =
+  '--allow-foreign-build needs --url= naming the externally served build it allows';
+// capture-browser-actions resolves the Android device straight after its
+// orientation, so it has no later check a test can reach without adb.
+const ORIENTATION_ENTRIES = [
+  { entry: 'android/capture-browser-actions.mjs' },
+  {
+    entry: 'android/capture-clear-drag.mjs',
+    next: [['--allow-foreign-build'], FOREIGN_BUILD_NEEDS_URL],
+  },
+  {
+    entry: 'ios/capture-xcuitest-actions.mjs',
+    next: [['--allow-foreign-build'], FOREIGN_BUILD_NEEDS_URL],
+  },
+  { entry: 'split-capture/capture-device-frames.mjs', next: [[], HOST_REQUIRED] },
+  { entry: 'split-capture/capture-hand-input.mjs', next: [[], HOST_REQUIRED] },
+];
+// A read of the flag through any of the perf flag helpers; the one owner is
+// parseCampaignOrientation, so every such read must be its argument.
+const ORIENTATION_FLAG_READ = /\b\w*[Ff]lag\((?:\s*argv\s*,)?\s*'orientation'\s*[,)]/g;
+
+function orientationReads(source) {
+  return [...source.matchAll(ORIENTATION_FLAG_READ)].map(({ 0: read, index }) => ({
+    read,
+    owned: source.slice(0, index).endsWith('parseCampaignOrientation('),
+  }));
+}
 
 let fixtureDir;
 
@@ -269,6 +297,25 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
+  it.each(ORIENTATION_ENTRIES)('$entry refuses an --orientation no campaign has', ({ entry }) => {
+    expectCliFailure(
+      join(repoRoot, 'tools', 'perf', entry),
+      ['--orientation=square'],
+      '--orientation must be PORTRAIT or LANDSCAPE'
+    );
+  });
+
+  it.each(ORIENTATION_ENTRIES.filter(({ next }) => next))(
+    '$entry takes a lower-case --orientation through to its next check',
+    ({ entry, next: [args, message] }) => {
+      expectCliFailure(
+        join(repoRoot, 'tools', 'perf', entry),
+        ['--orientation=landscape', ...args],
+        message
+      );
+    }
+  );
+
   // The drift guard for SIZE_PX and DEFAULT_SIZE_LEVEL: the app's SIZE_TO_PX and
   // DEFAULT_SIZE live in a Svelte rune module no Node code can import, so they
   // are read from the source text.
@@ -430,5 +477,36 @@ describe('Web Inspector analysis', () => {
     });
 
     expect(output).toMatch(/engine\.undo\s+count=\s+1\s+n=1\s+min=400\.00.*\[paired marks\]/);
+  });
+});
+
+describe('the --orientation vocabulary owner', () => {
+  it('tells a read through parseCampaignOrientation from one that bypasses it', () => {
+    expect(orientationReads("const o = flag('orientation')?.toUpperCase();")).toEqual([
+      { read: "flag('orientation')", owned: false },
+    ]);
+    expect(orientationReads("o = argFlag('orientation', 'PORTRAIT'),")).toEqual([
+      { read: "argFlag('orientation',", owned: false },
+    ]);
+    expect(orientationReads("parseCampaignOrientation(argFlag('orientation')) ?? 'x'")).toEqual([
+      { read: "argFlag('orientation')", owned: true },
+    ]);
+  });
+
+  it('reads every perf entry’s --orientation through parseCampaignOrientation', () => {
+    const perfRoot = join(repoRoot, 'tools', 'perf');
+    const reads = readdirSync(perfRoot, { recursive: true })
+      .filter((path) => path.endsWith('.mjs') && !path.startsWith(`tests${sep}`))
+      .flatMap((path) =>
+        orientationReads(readFileSync(join(perfRoot, path), 'utf8')).map((read) => ({
+          path: path.split(sep).join('/'),
+          ...read,
+        }))
+      );
+
+    expect(reads.filter(({ owned }) => !owned)).toEqual([]);
+    expect(reads.map(({ path }) => path)).toEqual(
+      expect.arrayContaining(ORIENTATION_ENTRIES.map(({ entry }) => entry))
+    );
   });
 });

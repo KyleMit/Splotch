@@ -28,6 +28,7 @@ import {
   argNumber,
   fail,
   isMain,
+  parseOrFail,
   ROOT,
   runMain,
   sleep,
@@ -40,7 +41,7 @@ import {
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
-import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { parseCampaignOrientation, readinessThemeProblem } from '../lib/campaign-state.mjs';
 import {
   CONTACT_BANK_MS,
   FLOOR_CONTROL_PAGE,
@@ -81,7 +82,6 @@ import { FLOOR_CONTROL_THEME, floorControlIdentity } from './serve-floor-control
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
-const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 // Chrome and Safari both need time to settle a cold navigation before the
 // bootstrap can find a sized canvas; the probe-ready poll below is the real
 // gate, this only avoids hammering it from the first millisecond.
@@ -838,7 +838,7 @@ const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
-  orientation = argFlag('orientation', 'PORTRAIT'),
+  orientation = parseOrFail(() => parseCampaignOrientation(argFlag('orientation'))) ?? 'PORTRAIT',
   theme = argFlag('theme', 'light'),
   repeats = argNumber('gesture-repeats', GESTURE_REPEATS, POSITIVE_INTEGER),
   undoCount = argNumber('undo-count', 0, NON_NEGATIVE_INTEGER),
@@ -874,9 +874,6 @@ export async function captureDeviceFrames({
   }
   if (undoCount > 0 && brush !== 'pen') {
     fail('--undo-count is supported only with --brush=pen');
-  }
-  if (!ORIENTATIONS.includes(orientation)) {
-    fail(`--orientation must be one of ${ORIENTATIONS.join(', ')}`);
   }
   if (!host) fail('--host= is required — the probe host URL the device can reach over the LAN');
   if (platform === 'android' && !serial)

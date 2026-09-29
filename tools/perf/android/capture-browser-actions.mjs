@@ -9,6 +9,7 @@ import {
   TCP_PORT,
   fail,
   isMain,
+  parseOrFail,
   pollUntil,
   runMain,
   sleep,
@@ -42,6 +43,7 @@ import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
 import {
   ensureCampaignTheme,
+  parseCampaignOrientation,
   parseCampaignTheme,
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
@@ -256,10 +258,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   }
   const actions = selectedActions(flag('actions'));
   const requestedTheme = parseCampaignTheme(flag('theme'));
-  const requestedOrientation = flag('orientation')?.toUpperCase();
-  if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
-    fail('--orientation must be PORTRAIT or LANDSCAPE');
-  }
+  const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
   const deviceId = resolveAndroidDevice(flag('device-id'), ADB);
   const token = `${Date.now()}`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;

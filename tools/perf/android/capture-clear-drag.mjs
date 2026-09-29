@@ -12,7 +12,16 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { POSITIVE_INTEGER, TCP_PORT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  POSITIVE_INTEGER,
+  TCP_PORT,
+  fail,
+  isMain,
+  parseOrFail,
+  runMain,
+  sleep,
+} from '../../lib/proc.mjs';
+import { parseCampaignOrientation } from '../lib/campaign-state.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
 import { ADB } from '../../mobile/android/lib/android-toolchain.mjs';
@@ -296,10 +305,8 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   } catch (error) {
     fail(error.message);
   }
-  const orientation = (flag('orientation') ?? 'PORTRAIT').toUpperCase();
-  if (!['PORTRAIT', 'LANDSCAPE'].includes(orientation)) {
-    fail('--orientation must be PORTRAIT or LANDSCAPE');
-  }
+  const orientation =
+    parseOrFail(() => parseCampaignOrientation(flag('orientation'))) ?? 'PORTRAIT';
   const allowForeignBuild = has('allow-foreign-build');
   if (allowForeignBuild && !flag('url')) {
     fail('--allow-foreign-build needs --url= naming the externally served build it allows');
