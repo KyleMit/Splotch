@@ -1,7 +1,7 @@
 <script lang="ts" module>
   import type { IconName } from '../icon-names';
 
-  export interface SidebarTocItem<Id extends string = string> {
+  interface SidebarTocRow<Id extends string> {
     id: Id;
     label: string;
     /** Second line under the label — the changelog's release date. */
@@ -12,8 +12,16 @@
     unseen?: boolean;
     /** Uppercase heading the run of items sharing it opens with — /design's parts. */
     group?: string;
-    /** Renders the row as an anchor; a row without one is a button that calls `onSelect`. */
-    href?: string;
+  }
+
+  /** A row that links to its section's in-page anchor and navigates itself. */
+  export interface SidebarTocItem<Id extends string = string> extends SidebarTocRow<Id> {
+    href: string;
+  }
+
+  /** A row rendered as a button that hands its id to the rail's `onSelect`. */
+  export interface SidebarTocButtonItem<Id extends string = string> extends SidebarTocRow<Id> {
+    href?: never;
   }
 </script>
 
@@ -32,27 +40,34 @@
   // renders one, an item with `meta` gets a second line, and a run of items
   // sharing a `group` opens with a heading. There is deliberately no `variant`
   // prop — that is the drift this component exists to close.
-  interface Props {
-    items: readonly SidebarTocItem<Id>[];
+  //
+  // One kind of row per rail: anchor rows take no `onSelect`, and button rows
+  // cannot render without one, so no host can ship a row that does nothing.
+  type Props = {
     /** The scrollspied section. An indicator of reading position, not a page state. */
     active: Id;
     /** Accessible name for the <nav>. */
     label: string;
-    /**
-     * Jump handler for button rows — Settings scrolls its own pane by
-     * arithmetic and unlocks Parent Center on the way. Anchor rows navigate
-     * themselves and need none.
-     */
-    onSelect?: (id: Id, trigger: HTMLElement) => void;
-  }
+  } & (
+    | { items: readonly SidebarTocItem<Id>[]; onSelect?: never }
+    | {
+        items: readonly SidebarTocButtonItem<Id>[];
+        /**
+         * Jump handler for button rows — Settings scrolls its own pane by
+         * arithmetic and unlocks Parent Center on the way.
+         */
+        onSelect: (id: Id, trigger: HTMLElement) => void;
+      }
+  );
 
   let { items, active, label, onSelect }: Props = $props();
 
   // Consecutive items carrying the same `group` are one run under one heading,
   // so a host can label every item and never has to work out which one is
   // first. The heading breaks the track on purpose.
+  type Run = { heading?: string; items: (SidebarTocItem<Id> | SidebarTocButtonItem<Id>)[] };
   const runs = $derived(
-    items.reduce<{ heading?: string; items: SidebarTocItem<Id>[] }[]>((acc, item) => {
+    items.reduce<Run[]>((acc, item) => {
       const open = acc.at(-1);
       if (open && open.heading === item.group) open.items.push(item);
       else acc.push({ heading: item.group, items: [item] });
@@ -100,7 +115,7 @@
   {/each}
 </nav>
 
-{#snippet rowBody(item: SidebarTocItem)}
+{#snippet rowBody(item: SidebarTocRow<string>)}
   {#if item.icon}
     <span class="toc-icon-wrap">
       <SectionIcon icon={item.icon} class="toc-icon" />
