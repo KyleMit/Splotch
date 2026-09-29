@@ -246,6 +246,21 @@ describe('workflow gates', () => {
       expect(restored.history).toBe(history);
     });
 
+    // The stubbed listing never evaluates this filter, and gh's evaluator
+    // cannot be handed a fixture. The filter is what keeps a dispatch run's
+    // artifact, or a fork's, from being restored as release history, so the
+    // text is pinned: changing it means changing it here as well.
+    it('selects the newest unexpired artifact a release-tag run uploaded', () => {
+      expect(restoreScript).toContain(
+        [
+          `gh api "repos/\${GITHUB_REPOSITORY}/actions/artifacts?name=${HISTORY_ARTIFACT}&per_page=20"`,
+          `--jq '[.artifacts[] | select(.expired == false`,
+          'and .workflow_run.head_repository_id == .workflow_run.repository_id',
+          `and (.workflow_run.head_branch | startswith("v")))][0].id // empty'`,
+        ].join(' ')
+      );
+    });
+
     // The restore lists one page of this artifact name, newest first, and
     // reads back tag runs only. An upload from any other run is never restored
     // and moves the release record one place nearer the end of that page.
