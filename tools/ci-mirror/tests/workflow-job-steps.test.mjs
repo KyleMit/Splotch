@@ -57,4 +57,21 @@ describe('jobBlocks', () => {
   it('finds no jobs in a file without a jobs: key', () => {
     expect(jobBlocks('name: Fixture\non:\n  push:\n')).toEqual([]);
   });
+
+  it.each([
+    ['an anchor', '  lint: &lint\n    runs-on: ubuntu-latest\n'],
+    ['a flow-style body', '  lint: { runs-on: ubuntu-latest }\n'],
+    ['a trailing comment on a CRLF line', '  lint: # checks\r\n    runs-on: ubuntu-latest\r\n'],
+  ])('enumerates a job whose key carries %s', (_label, lint) => {
+    const blocks = jobBlocks(`${workflow}${lint}`);
+
+    expect(blocks.map(({ id }) => id)).toEqual(['build', 'test', 'lint']);
+    expect(blocks.at(-1).text).toBe(lint);
+  });
+
+  it('throws on a key at job indent it cannot read, rather than dropping that job', () => {
+    expect(() => jobBlocks(`${workflow}  "lint":\n    runs-on: ubuntu-latest\n`)).toThrow(
+      'Unreadable job key under jobs: "lint":'
+    );
+  });
 });
