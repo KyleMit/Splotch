@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { parseNumberFlag, POSITIVE_INTEGER } from '../../lib/proc.mjs';
 
 export function runGitHub(
   args,
@@ -35,10 +36,14 @@ export function resolveRepository(repo, run = runGitHub) {
   return parseRepository(result.nameWithOwner);
 }
 
+// The number is positional, so a rejection keeps this message instead of parseNumberFlag's
+// `--number` wording, and the String() comparison keeps rejecting a leading zero.
 export function parseIssueNumber(value) {
-  const number = Number(value);
-  if (!Number.isSafeInteger(number) || number < 1 || String(number) !== value) {
-    throw new Error(`Expected a positive issue or PR number, got ${value ?? '(missing)'}`);
+  try {
+    const number = parseNumberFlag('number', value, POSITIVE_INTEGER);
+    if (String(number) === value) return number;
+  } catch {
+    // Every rejection is reported below.
   }
-  return number;
+  throw new Error(`Expected a positive issue or PR number, got ${value ?? '(missing)'}`);
 }
