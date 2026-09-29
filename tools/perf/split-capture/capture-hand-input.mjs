@@ -23,6 +23,7 @@ import {
   capture,
   fail,
   isMain,
+  parseOrFail,
   runMain,
   sleep,
 } from '../../lib/proc.mjs';
@@ -30,7 +31,7 @@ import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
-import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { parseCampaignOrientation, readinessThemeProblem } from '../lib/campaign-state.mjs';
 import {
   CONTACT_BANK_MS,
   fetchAcceptedProbeReport,
@@ -56,7 +57,6 @@ import { staleServiceWorkerProblem } from '../lib/service-worker-guard.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
-const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const OPENERS = ['adb', 'devicectl', 'safari', 'manual'];
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
 export const DEFAULT_DRAW_SECONDS = 25;
@@ -336,7 +336,7 @@ function handBuildIdentity(host, { allowForeignBuild }) {
 export async function captureHandInput({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
-  orientation = argFlag('orientation', 'PORTRAIT'),
+  orientation = parseOrFail(() => parseCampaignOrientation(argFlag('orientation'))) ?? 'PORTRAIT',
   theme = argFlag('theme', 'light'),
   seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, DRAW_SECONDS),
   host = argFlag('host'),
@@ -353,9 +353,6 @@ export async function captureHandInput({
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
-  if (!ORIENTATIONS.includes(orientation)) {
-    fail(`--orientation must be one of ${ORIENTATIONS.join(', ')}`);
-  }
   if (!OPENERS.includes(opener)) fail(`--open must be one of ${OPENERS.join(', ')}`);
   if (!host) fail('--host= is required — the probe host URL the device can reach over the LAN');
   if (opener === 'adb' && !serial) fail('--device-serial= is required for --open=adb');

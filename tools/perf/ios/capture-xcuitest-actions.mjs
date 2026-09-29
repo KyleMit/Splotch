@@ -5,6 +5,7 @@ import {
   ROOT,
   fail,
   isMain,
+  parseOrFail,
   pollUntil,
   runMain,
   sleep,
@@ -79,6 +80,7 @@ import {
   settingsShellIsCompact as isCompactSettingsShell,
   closeLeftoverSettings,
   ensureCampaignTheme,
+  parseCampaignOrientation,
   parseCampaignTheme,
   readResolvedTheme,
   releaseNativeRotationLock,
@@ -2592,10 +2594,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   );
   const nativeApp = has('native-app');
   const requestedTheme = parseCampaignTheme(flag('theme'));
-  const requestedOrientation = flag('orientation')?.toUpperCase();
-  if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
-    fail('--orientation must be PORTRAIT or LANDSCAPE');
-  }
+  const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
   const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
   if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
