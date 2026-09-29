@@ -39,8 +39,9 @@ import {
 const HARNESS_PATH = '/dev/engine';
 const DRIVER_FILE = join(ROOT, 'tools', 'perf', 'probes', 'engine-gates.js');
 
-// Four scenarios × 22 strokes at real op volume runs a couple of minutes; the
-// cap is loose enough that a slow device is not mistaken for a hung one.
+// Every scenario at the driver's default stroke count and real op volume runs a
+// couple of minutes; the cap is loose enough that a slow device is not mistaken
+// for a hung one.
 const GATES_TIMEOUT_MS = 20 * 60_000;
 
 // Every override is assigned, not only the ones passed: a window.__perfScenarios

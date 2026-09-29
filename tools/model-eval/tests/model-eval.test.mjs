@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { IMAGE_SIZES, imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
 import {
   assertProductionConfig,
   costOf,
@@ -9,7 +10,19 @@ import {
   evaluationVariants,
   VARIANTS,
 } from '../lib/model-eval.mjs';
-import { sizeForAspect } from '../lib/image-providers.mjs';
+import { callVariant } from '../lib/image-providers.mjs';
+
+const openAiRequests = vi.hoisted(() => []);
+vi.mock('openai', () => ({
+  default: class {
+    responses = {
+      create: async (request) => {
+        openAiRequests.push(request);
+        return { output: [] };
+      },
+    };
+  },
+}));
 
 describe('production config', () => {
   it('matches the production orchestrator and prompts', () => {
@@ -144,21 +157,39 @@ describe('evaluation metadata', () => {
   });
 });
 
-describe('sizeForAspect', () => {
-  it('maps a canvas shape onto the matching OpenAI size', () => {
-    expect(sizeForAspect(1024, 1024)).toBe('1024x1024');
-    expect(sizeForAspect(1296, 864)).toBe('1536x1024');
-    expect(sizeForAspect(864, 1296)).toBe('1024x1536');
+describe('the image size the OpenAI adapter sends', () => {
+  const variant = VARIANTS.find((v) => v.provider === 'openai');
+
+  async function sentSize(width, height) {
+    openAiRequests.length = 0;
+    await callVariant(variant, {
+      apiKeys: { openai: 'unused-by-the-mocked-client' },
+      image: { base64: '', mimeType: 'image/png', width, height },
+      prompt: '',
+      systemInstruction: '',
+      timeoutMs: 1,
+    });
+    expect(openAiRequests).toHaveLength(1);
+    return openAiRequests[0].tools[0].size;
+  }
+
+  // 1024×880 sits just outside production's square band, so it is the canvas a
+  // tolerance copied into the harness and left behind would send as square.
+  it.each([
+    [1024, 1024],
+    [1024, 880],
+    [880, 1024],
+    [864, 1296],
+    [1296, 864],
+  ])("matches production's size for a %i×%i drawing", async (width, height) => {
+    expect(await sentSize(width, height)).toBe(imageSizeFor({ width, height }));
   });
 
-  it('keeps a near-square canvas square rather than stretching it', () => {
-    expect(sizeForAspect(1024, 960)).toBe('1024x1024');
-    expect(sizeForAspect(960, 1024)).toBe('1024x1024');
-  });
-
-  it('falls back to square when the input dimensions are unknown', () => {
-    expect(sizeForAspect(0, 0)).toBe('1024x1024');
-    expect(sizeForAspect(undefined, undefined)).toBe('1024x1024');
+  it.each([
+    [0, 0],
+    [undefined, undefined],
+  ])('renders square when the dimensions were not read (%s×%s)', async (width, height) => {
+    expect(await sentSize(width, height)).toBe(IMAGE_SIZES.square);
   });
 });
 
