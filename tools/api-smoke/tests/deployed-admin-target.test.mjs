@@ -45,7 +45,8 @@ async function runEntry(script, targetArg, allowHttpForTests) {
   let stderr = '';
   child.stdout.resume();
   child.stderr.on('data', (chunk) => (stderr += chunk));
-  const [code] = await once(child, 'exit');
+  // 'close', not 'exit': Node may emit 'exit' while the child's stdio is still unread.
+  const [code] = await once(child, 'close');
   return { code, stderr };
 }
 

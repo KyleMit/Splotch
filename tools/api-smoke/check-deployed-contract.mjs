@@ -11,7 +11,7 @@ import {
 } from '../../web/securityPolicy.ts';
 import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
-import { check, fatal, json, summarize } from '../lib/smoke.mjs';
+import { check, exitWhenFlushed, fatal, json, summarize } from '../lib/smoke.mjs';
 import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
@@ -352,7 +352,7 @@ export async function checkDeployedContract() {
         '       ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke',
       ].join('\n')
     );
-    process.exit(2);
+    await exitWhenFlushed(2);
   }
 
   console.log(`[deploy-smoke] target: ${BASE}`);

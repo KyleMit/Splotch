@@ -1,8 +1,13 @@
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { createServer } from 'node:http';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fatal } from '../lib/smoke.mjs';
 
 const REQUEST_SECRET = 'splotch-smoke-secret-sentinel';
+const SMOKE_MODULE_URL = pathToFileURL(join(import.meta.dirname, '..', 'lib', 'smoke.mjs')).href;
 
 let printed;
 
@@ -97,5 +102,47 @@ describe('fatal', () => {
 
     expect(printed[0]).toBe('\nFATAL: fetch failed');
     expect(printed.slice(1)).toEqual([expect.stringMatching(/^ {2}caused by: .*redirect/)]);
+  });
+});
+
+describe('summarize', () => {
+  // Several times what the pipe and the parent's stream buffer together hold, so while stderr goes
+  // unread most of the failure lines are still queued inside the child when summarize() exits.
+  const FAILURE_LINES = 4_000;
+  const FAILURE_DETAIL = 'x'.repeat(100);
+
+  async function runFailingSmoke() {
+    const child = spawn(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        [
+          `import { check, summarize } from ${JSON.stringify(SMOKE_MODULE_URL)};`,
+          `for (let i = 0; i < ${FAILURE_LINES}; i++) check('case ' + i, false, '${FAILURE_DETAIL}');`,
+          'summarize();',
+        ].join('\n'),
+      ],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => (stdout += chunk));
+    // The tally is summarize()'s last write before it exits. Reading stderr only after it arrives
+    // makes this reader fall behind deterministically, the way a slow one does by chance.
+    await once(child.stdout, 'data');
+    child.stderr.on('data', (chunk) => (stderr += chunk));
+    const [code] = await once(child, 'close');
+    return { code, stdout, stderr };
+  }
+
+  it('delivers every line through a pipe before it exits non-zero', async () => {
+    const { code, stdout, stderr } = await runFailingSmoke();
+
+    expect(code).toBe(1);
+    expect(stdout).toBe(`\n0 passed, ${FAILURE_LINES} failed\n`);
+    const failures = stderr.trimEnd().split('\n');
+    expect(failures).toHaveLength(FAILURE_LINES);
+    expect(failures.at(-1)).toBe(`  ✗ case ${FAILURE_LINES - 1} — ${FAILURE_DETAIL}`);
   });
 });
