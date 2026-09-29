@@ -53,9 +53,9 @@ campaign (step 4), and a gate-repair PR for a check proven broken on its own bas
 **not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
 a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
 work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
-quoted merge approval, into every unit's instructions: an unattended unit must never have to infer
-its authority, and a runner that sees "never merge" anywhere in its instructions will refuse the
-merge.
+quoted merge approval when one was given, into every unit's instructions: an unattended unit must
+never have to infer its authority, and a runner that sees "never merge" anywhere in its instructions
+will refuse the merge.
 
 **A denied tool call is not a withdrawn authorization.** A single rejected command — a permission
 prompt declined, a hook refusing an edit, a call interrupted mid-turn — says nothing about the grant
@@ -102,13 +102,11 @@ fix done before declaring the campaign started.
   An unattended run whose rival bridge is missing reviews nothing and merges nothing.
 * **Prove the merge path.** `gh auth status`, and `gh --version` at or above the release
   `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
-  unit's gate. Then ask the user to say explicitly, in their own words, that merges are approved for
-  this campaign, and quote them in the ledger and in the authorization block every unit carries.
-  Without that approval the campaign does not merge as it goes: say plainly that every PR will be
-  left open, and ask whether that is what they want. A bare "go" answers neither, so the campaign
-  does not start until the user has approved merges or confirmed that PRs stay open. An open-PR
-  campaign runs every unit as step 3's reviewer-outage downgrade does: `ship-issue`'s default mode,
-  verified as an open, mergeable PR rather than a merge.
+  unit's gate. Invoking the campaign approves its merges; put that on record now, before the user
+  leaves: ask them to say explicitly, in their own words, that merges are approved for this
+  campaign, and quote them in the ledger and in the authorization block every unit carries. If they
+  say instead that PRs should stay open, run every unit as step 3's reviewer-outage downgrade does:
+  `ship-issue`'s default mode, verified as an open, mergeable PR rather than a merge.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
 * **Devices.** When any queued unit needs the rig, the performance profile's device preflight
   applies.
