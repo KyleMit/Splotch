@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { describeDeviceInfo, sanitizeDeviceInfo } from './deviceReport';
+import { DEVICE_INFO_FIELDS, describeDeviceInfo, sanitizeDeviceInfo } from './deviceReport';
+
+const everyField = () => Object.fromEntries(DEVICE_INFO_FIELDS.map((key) => [key, key]));
 
 describe('describeDeviceInfo', () => {
   it('emits present fields in the canonical order with their labels', () => {
@@ -17,6 +19,22 @@ describe('describeDeviceInfo', () => {
     ]);
   });
 
+  it('labels every field, in the order the preview and the issue list them', () => {
+    expect(describeDeviceInfo(everyField())).toEqual([
+      { label: 'App version', value: 'app' },
+      { label: 'Platform', value: 'platform' },
+      { label: 'Operating system', value: 'os' },
+      { label: 'Device', value: 'device' },
+      { label: 'Browser', value: 'browser' },
+      { label: 'Screen', value: 'screen' },
+      { label: 'Window', value: 'viewport' },
+      { label: 'Pixel ratio', value: 'pixelRatio' },
+      { label: 'Language', value: 'language' },
+      { label: 'Display mode', value: 'display' },
+      { label: 'Online', value: 'online' },
+    ]);
+  });
+
   it('drops blank and whitespace-only values', () => {
     const rows = describeDeviceInfo({ app: '1.0', platform: '', os: '   ' });
     expect(rows).toEqual([{ label: 'App version', value: '1.0' }]);
@@ -24,6 +42,10 @@ describe('describeDeviceInfo', () => {
 });
 
 describe('sanitizeDeviceInfo', () => {
+  it('keeps every labelled field', () => {
+    expect(sanitizeDeviceInfo(everyField())).toEqual(everyField());
+  });
+
   it('keeps only known keys and ignores extras', () => {
     const clean = sanitizeDeviceInfo({ app: '1.0', evil: 'rm -rf', platform: 'Web' });
     expect(clean).toEqual({ app: '1.0', platform: 'Web' });

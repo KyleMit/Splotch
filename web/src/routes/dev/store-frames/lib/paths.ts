@@ -22,7 +22,11 @@ export const PLAY_ICON_ASSET_FILE = 'icon-512.png';
 
 export const assetUrl = (file: string) => `${STORE_FRAME_ASSET_BASE}/${file}`;
 
-// The render page's non-target page param for the Play feature graphic.
+// The render page's query param names.
+export const RENDER_PAGE_PARAM = 'page';
+export const RENDER_TARGET_PARAM = 'target';
+
+// The RENDER_PAGE_PARAM value for the Play feature graphic, which takes no target.
 export const FEATURE_GRAPHIC_PAGE_PARAM = 'feature-graphic';
 
 // Root-relative URL of the bare render page the generator screenshots.
@@ -30,7 +34,7 @@ export function renderPath(
   page: StorePageId | typeof FEATURE_GRAPHIC_PAGE_PARAM,
   target?: StoreTargetName
 ): string {
-  const params = new URLSearchParams({ page });
-  if (target) params.set('target', target);
+  const params = new URLSearchParams({ [RENDER_PAGE_PARAM]: page });
+  if (target) params.set(RENDER_TARGET_PARAM, target);
   return `/dev/store-frames/render?${params}`;
 }
