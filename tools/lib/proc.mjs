@@ -120,9 +120,10 @@ export function rejectUnknownFlags(known, argv = process.argv.slice(2)) {
 // Number() alone reads '' as 0 and accepts `0x10`, `1e3`, and `Infinity`;
 // parseInt reads `4junk` as 4. Each is a plausible wrong run rather than an
 // error, so a numeric flag value is plain digits, with one decimal point
-// allowed only where the rule is not integer-only.
-const INTEGER_TEXT = /^-?\d+$/;
-const DECIMAL_TEXT = /^-?\d+(\.\d+)?$/;
+// allowed only where the rule is not integer-only. A leading zero is rejected
+// rather than read as decimal: `080` is more likely a typo than a port 80.
+const INTEGER_TEXT = /^-?(0|[1-9]\d*)$/;
+const DECIMAL_TEXT = /^-?(0|[1-9]\d*)(\.\d+)?$/;
 const MAX_TCP_PORT = 65_535;
 
 // Rules for parseNumberFlag: `integer`, inclusive `min`/`max`, exclusive `above`.
