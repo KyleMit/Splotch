@@ -201,17 +201,29 @@ function forceDeleteAtProvenTip(row, cwd, reason) {
   };
 }
 
+// Forcing a merged row overrides git's own refusal, so the ancestry is proved
+// from the commit graph here, at deletion time. The plan can admit a row to this
+// tier on the ahead count of a listing alone, and a parsed count is not a proof
+// to force a deletion on.
+function forceDeleteMergedRow(row, { cwd, base }) {
+  if (!isAncestor(row.tip, base, cwd)) {
+    return {
+      outcome: 'kept',
+      reason: `refusing to force-delete: ${row.tip.slice(0, 12)} is not an ancestor of ${base}, so ${row.name} is not merged into it`,
+    };
+  }
+  return forceDeleteAtProvenTip(
+    row,
+    cwd,
+    `${row.reason}; -d refused because HEAD is behind ${base}, deleted at the proven commit`
+  );
+}
+
 export function deleteLocalBranch(row, { cwd, base, includeEquivalent }) {
   if (row.tier === 'merged') {
     const safe = tryGit(['branch', '-d', row.name], { cwd });
     if (safe.ok) return { outcome: 'deleted', reason: row.reason };
-    if (includeEquivalent) {
-      return forceDeleteAtProvenTip(
-        row,
-        cwd,
-        `${row.reason}; -d refused because HEAD is behind ${base}, deleted at the proven commit`
-      );
-    }
+    if (includeEquivalent) return forceDeleteMergedRow(row, { cwd, base });
     return {
       outcome: 'kept',
       reason: `git branch -d refused (${firstLine(safe.stderr)}); HEAD is behind ${base} — rerun from a current checkout or pass --include-equivalent`,

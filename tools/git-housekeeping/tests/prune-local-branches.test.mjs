@@ -493,4 +493,45 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(forced.reason).toMatch(/deleted at the proven commit/);
     expect(sh(['branch', '--list', 'merged-later'])).toBe('');
   });
+
+  // A tab-separated listing reads a subject of `…<TAB>0 0 …` as zero commits
+  // ahead, which is the merged verdict.
+  it('keeps an unmerged branch whose subject holds a tab and two zeros', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    commit('main2.txt', 'x', 'main moves');
+    pushMain();
+    sh(['checkout', '-q', '-b', 'tabbed', 'HEAD~1']);
+    commit('t1.txt', '1', 'first unmerged commit');
+    const tip = commit('t2.txt', '2', 'Add rows\t0 0 to the table');
+    sh(['checkout', '-q', 'main']);
+
+    const row = planLocalBranchPrune({
+      cwd: repo,
+      base: 'origin/main',
+      prIndex: new Map(),
+      prLookupOk: true,
+    }).find((r) => r.name === 'tabbed');
+    expect(row).toMatchObject({ tier: 'keep', reason: '2 unique commits, no PR — judgment pass' });
+
+    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
+    expect(deleteLocalBranch(row, options)).toBeNull();
+    expect(sh(['rev-parse', 'tabbed'])).toBe(tip);
+  });
+
+  // The forced path overrides git's refusal, so it proves ancestry itself
+  // instead of trusting the tier a plan row arrives with.
+  it('refuses to force-delete a merged row whose commit is not on the base', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['checkout', '-q', '-b', 'unmerged']);
+    const tip = commit('u.txt', 'u', 'unmerged work');
+    sh(['checkout', '-q', 'main']);
+
+    const misread = { name: 'unmerged', tip, tier: 'merged', reason: 'merged into origin/main' };
+    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
+    expect(deleteLocalBranch(misread, options)).toEqual({
+      outcome: 'kept',
+      reason: `refusing to force-delete: ${tip.slice(0, 12)} is not an ancestor of origin/main, so unmerged is not merged into it`,
+    });
+    expect(sh(['rev-parse', 'unmerged'])).toBe(tip);
+  });
 });
