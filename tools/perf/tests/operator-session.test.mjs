@@ -1,13 +1,29 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handCaptureArgs,
   handItemInstructions,
+  operatorSessionOptions,
   operatorSessionPlan,
   runHandItem,
+  runOperatorSession,
 } from '../run-operator-session.mjs';
+import { FAKE_ANDROID_SERIAL, FAKE_IOS_UDID } from '../lib/device-identifiers.mjs';
 import { grantLogLine } from '../lib/grant-log.mjs';
-import { openWithDevicectl } from '../split-capture/capture-hand-input.mjs';
+import { prepareCapture } from '../prepare-capture.mjs';
+import { DEFAULT_DRAW_SECONDS, openWithDevicectl } from '../split-capture/capture-hand-input.mjs';
 import { runtimeUaProblem } from '../lib/input-fidelity.mjs';
+
+// The real preflight wakes an attached Android phone and changes its screen
+// settings; no test here may reach it.
+vi.mock('../prepare-capture.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  prepareCapture: vi.fn(async () => ({
+    androidSerial: 'R5CFAKESER1',
+    iosUdid: null,
+    ready: false,
+    blockers: ['stubbed preflight'],
+  })),
+}));
 
 // Real user agents from tracked captures: the Safari one is from the mislabeled
 // 2026-08-24 hand capture this check exists to refuse, the WKWebView one from
@@ -65,13 +81,99 @@ describe('operatorSessionPlan', () => {
     expect(ios.every((item) => item.skipped?.includes('iPad'))).toBe(true);
     expect(plan.filter((item) => item.step === 'android-hand').every((i) => !i.skipped)).toBe(true);
   });
+});
+
+describe('operatorSessionOptions', () => {
+  it('defaults to every step, pen and crayon, portrait, light, and the preflight probe port', () => {
+    expect(operatorSessionOptions([])).toEqual({
+      planOnly: false,
+      steps: ['grant', 'android-hand', 'ios-hand'],
+      brushes: ['pen', 'crayon'],
+      orientations: ['PORTRAIT'],
+      theme: 'light',
+      seconds: DEFAULT_DRAW_SECONDS,
+      requestedProbePort: undefined,
+    });
+  });
+
+  it('reads each list, number, and switch the operator typed', () => {
+    const options = operatorSessionOptions([
+      '--plan',
+      '--steps=ios-hand',
+      '--brushes=magic,eraser',
+      '--orientations=LANDSCAPE',
+      '--theme=dark',
+      '--seconds=12',
+      '--probe-port=4999',
+    ]);
+    expect(options).toEqual({
+      planOnly: true,
+      steps: ['ios-hand'],
+      brushes: ['magic', 'eraser'],
+      orientations: ['LANDSCAPE'],
+      theme: 'dark',
+      seconds: 12,
+      requestedProbePort: 4999,
+    });
+  });
 
   it('rejects an unknown step, brush, or orientation by throwing', () => {
-    expect(() => operatorSessionPlan({ steps: ['grant', 'reboot'] })).toThrow(/unknown step/);
-    expect(() => operatorSessionPlan({ brushes: ['chalk'] })).toThrow(/unknown brush/);
-    expect(() => operatorSessionPlan({ orientations: ['UPSIDE_DOWN'] })).toThrow(
+    expect(() => operatorSessionOptions(['--steps=grant,reboot'])).toThrow(/unknown step/);
+    expect(() => operatorSessionOptions(['--brushes=chalk'])).toThrow(/unknown brush/);
+    expect(() => operatorSessionOptions(['--orientations=UPSIDE_DOWN'])).toThrow(
       /unknown orientation/
     );
+  });
+});
+
+describe('runOperatorSession', () => {
+  beforeEach(() => {
+    prepareCapture.mockClear();
+  });
+
+  async function runExpectingExit(argv) {
+    const printed = [];
+    const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
+    const spies = ['error', 'log', 'table'].map((method) =>
+      vi.spyOn(console, method).mockImplementation((line) => printed.push(String(line)))
+    );
+    try {
+      await expect(runOperatorSession(argv)).rejects.toThrow('exit 1');
+    } finally {
+      exit.mockRestore();
+      for (const spy of spies) spy.mockRestore();
+    }
+    return printed.join('\n');
+  }
+
+  // The positive control: a valid argv reaches the stubbed preflight, so the
+  // refusals below prove an order rather than an unwired stub.
+  it('runs the preflight with the Android wake once the flags are valid', async () => {
+    const printed = await runExpectingExit([
+      '--steps=grant',
+      `--android-serial=${FAKE_ANDROID_SERIAL}`,
+      `--ios-udid=${FAKE_IOS_UDID}`,
+    ]);
+    expect(prepareCapture).toHaveBeenCalledWith(['--wake-android']);
+    expect(printed).toContain('stubbed preflight');
+  });
+
+  it.each([
+    ['--steps=grnt', 'unknown step "grnt"'],
+    ['--brushes=chalk', 'unknown brush "chalk"'],
+    ['--orientations=UPSIDE_DOWN', 'unknown orientation "UPSIDE_DOWN"'],
+    ['--seconds=0', '--seconds must be'],
+    ['--probe-port=70000', '--probe-port must be'],
+    ['--theme=moon', '--theme must be light or dark'],
+    ['--android-serial=', '--android-serial= is empty'],
+    ['--ios-udid', '--ios-udid takes a value'],
+    ['--ios-udid=bogus', 'bogus is not a recognizable iOS device identifier'],
+  ])('refuses %s before the preflight wakes the phone', async (flag, message) => {
+    const printed = await runExpectingExit([flag]);
+    expect(printed).toContain(message);
+    expect(prepareCapture).not.toHaveBeenCalled();
   });
 });
 
