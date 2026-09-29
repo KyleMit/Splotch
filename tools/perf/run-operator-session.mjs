@@ -30,12 +30,14 @@ import { createInterface } from 'node:readline/promises';
 import {
   ROOT,
   TCP_PORT,
-  argFlag,
-  argNumber,
   fail,
   hasCommand,
   isMain,
+  parseNumberFlag,
   parseOrFail,
+  readSwitch,
+  readValueFlag,
+  rejectUnknownFlags,
   run,
   runMain,
 } from '../lib/proc.mjs';
@@ -53,6 +55,20 @@ const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const DEFAULT_BRUSHES = ['pen', 'crayon'];
+const DEFAULT_ORIENTATIONS = ['PORTRAIT'];
+const SESSION_FLAGS = [
+  'plan',
+  'steps',
+  'brushes',
+  'orientations',
+  'theme',
+  'seconds',
+  'probe-port',
+];
+// prepareCapture runs in this process and reads these from its argv, so they
+// are this entry's flags too: the preflight's own "pass --android-serial="
+// advice has to work here.
+const PREFLIGHT_FLAGS = ['android-serial', 'ios-udid'];
 const SERVER_READY_TIMEOUT_MS = 90_000;
 // One retry, because the expected failure is the operator missing the prompt's
 // one-minute window — anything structural repeats identically on attempt two.
@@ -60,29 +76,52 @@ const GRANT_MAX_ATTEMPTS = 2;
 const OUTPUT_ROOT = join('perf-profiles', 'split-capture', 'hand-native');
 const LOG_DIR = join(ROOT, 'perf-profiles', 'operator-logs');
 
-export function operatorSessionPlan({
-  steps = STEP_NAMES,
-  brushes = DEFAULT_BRUSHES,
-  orientations = ['PORTRAIT'],
-  theme = 'light',
-  androidSerial = null,
-  iosUdid = null,
-} = {}) {
-  for (const step of steps) {
+const listFlag = (argv, name, fallback) => readValueFlag(argv, name)?.split(',') ?? fallback;
+
+function numberFlag(argv, name, rule) {
+  const raw = readValueFlag(argv, name);
+  return raw === undefined ? undefined : parseNumberFlag(name, raw, rule);
+}
+
+// Judges everything the operator typed before the preflight wakes the phone and
+// changes its screen settings; a typo refused after that has already cost the
+// device state. Throws on bad input.
+export function operatorSessionOptions(argv) {
+  const options = {
+    planOnly: readSwitch(argv, 'plan'),
+    steps: listFlag(argv, 'steps', STEP_NAMES),
+    brushes: listFlag(argv, 'brushes', DEFAULT_BRUSHES),
+    orientations: listFlag(argv, 'orientations', DEFAULT_ORIENTATIONS),
+    theme: readValueFlag(argv, 'theme') ?? 'light',
+    seconds: numberFlag(argv, 'seconds', DRAW_SECONDS) ?? DEFAULT_DRAW_SECONDS,
+    requestedProbePort: numberFlag(argv, 'probe-port', TCP_PORT),
+  };
+  for (const step of options.steps) {
     if (!STEP_NAMES.includes(step)) {
       throw new Error(`unknown step "${step}" — steps are ${STEP_NAMES.join(', ')}`);
     }
   }
-  for (const brush of brushes) {
+  for (const brush of options.brushes) {
     if (!BRUSHES.includes(brush)) {
       throw new Error(`unknown brush "${brush}" — brushes are ${BRUSHES.join(', ')}`);
     }
   }
-  for (const orientation of orientations) {
+  for (const orientation of options.orientations) {
     if (!ORIENTATIONS.includes(orientation)) {
       throw new Error(`unknown orientation "${orientation}" — use ${ORIENTATIONS.join(', ')}`);
     }
   }
+  return options;
+}
+
+export function operatorSessionPlan({
+  steps = STEP_NAMES,
+  brushes = DEFAULT_BRUSHES,
+  orientations = DEFAULT_ORIENTATIONS,
+  theme = 'light',
+  androidSerial = null,
+  iosUdid = null,
+} = {}) {
   const items = [];
   if (steps.includes('grant')) {
     items.push({
@@ -320,24 +359,23 @@ export async function runHandItem(item, { host, seconds, outputDir, ask, spawnCh
     : { status: 'fail', detail: `exit ${child.status} — rerun with --steps=${item.step}` };
 }
 
-export async function runOperatorSession() {
-  const planOnly = process.argv.includes('--plan');
+export async function runOperatorSession(argv) {
+  const { planOnly, steps, brushes, orientations, theme, seconds, requestedProbePort } =
+    parseOrFail(() => operatorSessionOptions(argv));
   // The preflight is the authority on device identity, port resolution, and the
   // Android wake state — the skill's rule is to take its answers rather than
   // re-deriving them. --plan skips it so the checklist works offline.
   const report = planOnly
     ? { androidSerial: null, iosUdid: null, ports: null, ready: true, blockers: [] }
     : await prepareCapture(['--wake-android']);
-  const plan = parseOrFail(() =>
-    operatorSessionPlan({
-      steps: argFlag('steps', STEP_NAMES.join(',')).split(','),
-      brushes: argFlag('brushes', DEFAULT_BRUSHES.join(',')).split(','),
-      orientations: argFlag('orientations', 'PORTRAIT').split(','),
-      theme: argFlag('theme', 'light'),
-      androidSerial: planOnly ? 'planned' : report.androidSerial,
-      iosUdid: planOnly ? 'planned' : report.iosUdid,
-    })
-  );
+  const plan = operatorSessionPlan({
+    steps,
+    brushes,
+    orientations,
+    theme,
+    androidSerial: planOnly ? 'planned' : report.androidSerial,
+    iosUdid: planOnly ? 'planned' : report.iosUdid,
+  });
 
   console.log('\nOperator session — the inputs only a human at the devices can give.\n');
   console.table(
@@ -352,10 +390,9 @@ export async function runOperatorSession() {
   if (planOnly) return plan;
   if (!report.ready) fail(`the preflight is blocking:\n  ${report.blockers.join('\n  ')}`);
 
-  const seconds = argNumber('seconds', DEFAULT_DRAW_SECONDS, DRAW_SECONDS);
   const lan = lanAddresses()[0];
   if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
-  const probePort = argNumber('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT, TCP_PORT);
+  const probePort = requestedProbePort ?? report.ports.probe ?? DEFAULT_PROBE_PORT;
   const probeAction = await requestedProbeAction({ requestedPort: probePort, report });
   const host = `http://${lan}:${probePort}`;
   const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(':', '-'));
@@ -425,7 +462,8 @@ export async function runOperatorSession() {
 }
 
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags([...SESSION_FLAGS, ...PREFLIGHT_FLAGS]);
   runMain(async () => {
-    await runOperatorSession();
+    await runOperatorSession(process.argv.slice(2));
   });
 }

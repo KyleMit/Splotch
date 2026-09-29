@@ -40,24 +40,46 @@ const ENTRIES = [
   ],
 ];
 
+// Device entries, each with the argv of its offline mode: spawned in it, an
+// entry whose refusal went missing prints a checklist instead of waking a phone.
+const DEVICE_ENTRIES = [
+  [
+    'tools/perf/run-operator-session.mjs',
+    ['--plan'],
+    [
+      'plan',
+      'steps',
+      'brushes',
+      'orientations',
+      'theme',
+      'seconds',
+      'probe-port',
+      'android-serial',
+      'ios-udid',
+    ],
+  ],
+];
+
 const runEntry = (script, args) =>
   spawnSync(process.execPath, [join(repoRoot, script), ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
   });
 
+function expectUnknownFlagRefused(result, known) {
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(1);
+  expect(result.stdout).toBe('');
+  expect(result.stderr).toBe(
+    `Unknown flag --definitely-not-a-flag — known flags: ${known.toSorted().join(', ')}\n`
+  );
+}
+
 describe('non-device tool entries', () => {
   // An empty stdout is the proof the refusal came first: every one of these
   // prints, builds, or writes as soon as it starts work.
   it.each(ENTRIES)('%s refuses an unknown flag before doing any work', (script, known) => {
-    const result = runEntry(script, ['--definitely-not-a-flag']);
-
-    expect(result.error).toBeUndefined();
-    expect(result.status).toBe(1);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toBe(
-      `Unknown flag --definitely-not-a-flag — known flags: ${known.toSorted().join(', ')}\n`
-    );
+    expectUnknownFlagRefused(runEntry(script, ['--definitely-not-a-flag']), known);
   });
 
   // gen:performance-matrix takes its manifest positionally; given the staleness
@@ -96,6 +118,15 @@ describe('non-device tool entries', () => {
     expect(result.stdout).toBe('');
     expect(result.stderr).toBe('--strict is a switch: write --strict with no value\n');
   });
+});
+
+describe('device tool entries', () => {
+  it.each(DEVICE_ENTRIES)(
+    '%s refuses an unknown flag before doing any work',
+    (script, offline, known) => {
+      expectUnknownFlagRefused(runEntry(script, [...offline, '--definitely-not-a-flag']), known);
+    }
+  );
 });
 
 const hasExportModifier = (node) =>
