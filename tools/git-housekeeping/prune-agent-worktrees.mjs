@@ -14,12 +14,11 @@ import { parseArgs } from 'node:util';
 import { isMain, parseOrFail, ROOT, runMain } from '../lib/proc.mjs';
 import {
   discoverAgentWorktrees,
-  stillHeld,
   unknownUseWarning,
   unsalvagedEvidence,
   worktreeHold,
 } from './lib/agent-worktrees.mjs';
-import { fetchBase, git, isAncestor, tryGit } from './lib/git-facts.mjs';
+import { fetchBase, git, isAncestor, listWorktrees, tryGit } from './lib/git-facts.mjs';
 import { formatOutcomeLine, formatSummary, outcomeWidth } from './lib/outcome-report.mjs';
 import { listProcessCwds } from './lib/process-cwds.mjs';
 
@@ -99,11 +98,27 @@ export function planWorktreePrune({ cwd, roots, base, processCwds, onProgress })
   return { ...discovered, rows };
 }
 
-export function removeWorktree(row, { mainCheckout, listCwds }) {
-  // Same reason the salvage rechecks: the plan is minutes old and removing a
-  // directory under a live session fails strangely later.
-  const held = stillHeld(row.real, mainCheckout, listCwds);
-  if (held) return held;
+// The plan is minutes old by the time `--apply` reaches a row. Since then a
+// session can have started in the worktree, locked it, committed to it, or
+// deleted its directory, and `git worktree remove` on a vanished directory
+// drops the entry the plan would have kept. So every guard is asked again of
+// the live entry, with a fresh process listing, and the worktree is removed
+// only if it passes them all at the HEAD the plan judged.
+export function removeWorktree(row, { mainCheckout, base, listCwds }) {
+  const live = listWorktrees(mainCheckout).find((worktree) => worktree.path === row.path);
+  if (!live) return { outcome: 'kept', reason: 'no longer listed by git worktree list' };
+  const verdict = classifyWorktree(
+    { ...live, real: row.real },
+    { base, processCwds: listCwds(), cwd: mainCheckout }
+  );
+  if (verdict.outcome === 'keep') return { outcome: 'kept', reason: verdict.reason };
+  if (verdict.outcome !== 'remove') return verdict;
+  if (live.head !== row.head) {
+    return {
+      outcome: 'kept',
+      reason: `HEAD moved from ${row.head.slice(0, 12)} to ${live.head.slice(0, 12)} since the plan; rerun to judge it again`,
+    };
+  }
   const result = tryGit(['worktree', 'remove', row.real], { cwd: mainCheckout });
   if (result.ok) return { outcome: 'removed', reason: row.reason };
   return {
@@ -153,8 +168,9 @@ export async function pruneAgentWorktrees(
   });
   if (apply) {
     for (const row of plan.rows) {
-      if (row.outcome === 'remove') Object.assign(row, removeWorktree(row, { ...plan, listCwds }));
-      else if (row.outcome === 'keep') row.outcome = 'kept';
+      if (row.outcome === 'remove') {
+        Object.assign(row, removeWorktree(row, { ...plan, base, listCwds }));
+      } else if (row.outcome === 'keep') row.outcome = 'kept';
     }
   }
   printReport(plan, { json });

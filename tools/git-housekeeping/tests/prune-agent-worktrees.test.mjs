@@ -115,7 +115,7 @@ describe('planWorktreePrune on a real repository', REAL_REPO_TEST_OPTIONS, () =>
 
     const removed = removeWorktree(
       planned.rows.find((row) => row.id === 'clean'),
-      { ...planned, listCwds: listing }
+      { ...planned, base: 'origin/main', listCwds: listing }
     );
     expect(removed.outcome).toBe('removed');
     expect(existsSync(clean)).toBe(false);
@@ -187,6 +187,40 @@ describe('planWorktreePrune on a real repository', REAL_REPO_TEST_OPTIONS, () =>
 
     expect(outcomes(planned)).toEqual({ merged: 'keep', detached: 'keep', branched: 'keep' });
     expect(new Set(Object.values(reasons(planned)))).toEqual(new Set([VANISHED_REASON]));
+  });
+
+  function applyRow(planned, id) {
+    const row = planned.rows.find((candidate) => candidate.id === id);
+    return removeWorktree(row, { ...planned, base: 'origin/main', listCwds: listing });
+  }
+
+  it('keeps a worktree planned for removal that gained a commit and vanished before --apply', () => {
+    const { commit, sh } = fixture;
+    const clean = addWorktree('clean');
+    const planned = plan();
+    expect(outcomes(planned)).toEqual({ clean: 'remove' });
+    commit('work.txt', 'the only copy', 'unmerged work, detached', { cwd: clean });
+    rmSync(clean, { recursive: true, force: true });
+
+    expect(applyRow(planned, 'clean')).toEqual({ outcome: 'kept', reason: VANISHED_REASON });
+    expect(sh(['worktree', 'list', '--porcelain'])).toContain(clean);
+  });
+
+  it('keeps a worktree planned for removal whose HEAD moved to another merged commit', () => {
+    const { commit, pushMain, sh } = fixture;
+    const first = sh(['rev-parse', 'HEAD']);
+    const second = commit('later.txt', 'b', 'later merged work');
+    pushMain();
+    const moved = addWorktree('moved', ['--detach', first]);
+    const planned = plan();
+    expect(outcomes(planned)).toEqual({ moved: 'remove' });
+    sh(['checkout', '-q', '--detach', second], { cwd: moved });
+
+    expect(applyRow(planned, 'moved')).toEqual({
+      outcome: 'kept',
+      reason: `HEAD moved from ${first.slice(0, 12)} to ${second.slice(0, 12)} since the plan; rerun to judge it again`,
+    });
+    expect(existsSync(moved)).toBe(true);
   });
 });
 

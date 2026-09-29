@@ -70,6 +70,10 @@ says so if the fetch fails) and then removes a worktree only when every guard pa
 | `keep`               | `HEAD` is not an ancestor of `origin/main`, with the commit count ahead      |
 | `remove`             | Clean, merged, salvaged, unused — `git worktree remove` without `--force`    |
 
+A plan is minutes old by the time `--apply` reaches a `remove` row, so every guard above is asked
+again of the live entry immediately before the removal, with a fresh process listing. A worktree
+that no longer passes, or whose `HEAD` has moved since the plan, is reported `kept` with the reason.
+
 A worktree whose directory is gone has only its admin entry left, which holds that worktree's `HEAD`
 and `HEAD` reflog. Either can be the last reference to a commit: a detached commit, one a reset left
 only in the reflog, or a branch deleted while still checked out. The script never drops such an
