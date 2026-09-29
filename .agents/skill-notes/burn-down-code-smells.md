@@ -106,10 +106,11 @@ easy, because findings arrive already grouped by the files they touch.
 
 * **Unit-brief additions**, each from a unit's report: catch up with `main` once, after review
   (#2507 paid three CI rounds chasing it); read the gated `main` from `HEAD^2`, since worktrees
-  share `refs/remotes/origin/main` (#2515); `post-review.mjs` blocks a finding naming an emulator
-  serial (#2504); `ANDROID_HOME` pointed at an empty directory keeps a spawned test off real devices
-  (#2524). The orchestrator-side changes (integration trials, the serialized WebKit gate, usage
-  thresholds) are in the ship-campaign skill note.
+  share `refs/remotes/origin/main` (#2515), or from the branch's base when nothing merged (the
+  rival's catch on this note's own PR, whose head had no catch-up merge); `post-review.mjs` blocks a
+  finding naming an emulator serial (#2504); `ANDROID_HOME` pointed at an empty directory keeps a
+  spawned test off real devices (#2524). The orchestrator-side changes (integration trials, the
+  serialized WebKit gate, usage thresholds) are in the ship-campaign skill note.
 * **Not added:** parse a source-reading guard with the TypeScript compiler API rather than a regex.
   The rival caught regex guards fooled by comments or template literals twice (#2511, #2524), but
   `docs/CODING-STANDARDS.md` records it through #2516, open at the time, and units read that doc at

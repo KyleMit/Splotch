@@ -167,7 +167,9 @@ The #2500 parallel campaign merged about 20 PRs in under three hours. Four chang
   re-gates or CI rounds. #2511, whose catch-up was `coupled`, still took its CI round. The trial for
   #2517 hit a stderr flake in `deployed-admin-target.test.mjs`; it passed 8/8 alone on `main` and on
   the trial merge, and the diff could not reach it, so no unit was charged. Those two cases set the
-  trial's limits in the parallel reference.
+  trial's limits in the parallel reference. The campaign's trials ran only the browserless tier; the
+  rival on the PR that wrote this up added each PR's own targeted tests and build guards, which the
+  worker's fast path already required.
 * **Catch up once.** One unit (#2507) chased `main` through three full CI rounds before reporting
   ready. The working brief then told units to catch up once, after review, and leave later moves to
   the orchestrator. The same run found that worktrees share `refs/remotes/origin/main` (#2515), so

@@ -60,8 +60,10 @@ another lane landed never arrives through an ungated merge. The worker, after re
    * `unrelated`: merge.
 2. Commits the merge, pushes, and waits for CI on that head.
 3. Stops at shippable and reports `ready: PR <n>, head <sha>, gated main <sha>`. It copies both SHAs
-   from command output, taking the gated `main` from `git rev-parse HEAD^2` on its merge commit:
-   worktrees share `refs/remotes/origin/main`, so another lane's fetch can move it mid-gate.
+   from command output. The gated `main` is `git rev-parse HEAD^2` after a catch-up merge, or the
+   branch's base (`git merge-base HEAD origin/main`) when `main` hadn't moved and there was nothing
+   to merge. Never read it from `origin/main` itself: worktrees share that ref, so another lane's
+   fetch can move it mid-gate.
 
 What the survey can't see (a shared string, an event name, a storage key) still escalates the merge
 to `coupled` when it turns up in the reading or in a failing check. The worker records which path it
@@ -101,7 +103,10 @@ gate them itself instead of resuming each worker:
 1. Survey each PR's head against the current `origin/main`. Only PRs whose verdict is `unrelated`
    join the trial; admission already keeps their file sets and contracts disjoint from each other.
 2. In a scratch worktree at that `origin/main`, merge the joining heads, then run `npm run check`,
-   `npm run lint`, and `npm run test:browserless` once.
+   `npm run lint`, and `npm run test:browserless` once, plus what each PR's own gate needs beyond
+   that tier: its targeted tests (Playwright specs included), and `npm run build` and
+   `npm run build:cap` when it touched a startup module. A PR whose coverage the trial can't give is
+   left out and resumes its worker instead.
 3. On green, merge the PRs one at a time with `--match-head-commit` at the heads the trial covered,
    re-reading each PR's live state first and verifying each merge after, as steps 2 and 3 of the
    merging list do. A PR that moved, or work that reached `main` from outside the trial, voids the

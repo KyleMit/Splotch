@@ -83,9 +83,10 @@ orchestrator then pauses the queue and asks the user.
   * Catch up once, after review. Don't chase `main` if it moves again while your CI runs: each chase
     costs a CI round, and later moves are the orchestrator's (an integration trial, or a resume).
   * When CI is green on your gated head, stop, and report
-    `ready: PR <n>, head <sha>, gated main <sha>`, copying both SHAs from command output. Take the
-    gated `main` from `git rev-parse HEAD^2` on your merge commit, never from `origin/main`:
-    worktrees share that ref, and another lane's fetch can move it mid-gate.
+    `ready: PR <n>, head <sha>, gated main <sha>`, copying both SHAs from command output. The gated
+    `main` is `git rev-parse HEAD^2` after your catch-up merge, or your branch's base
+    (`git merge-base HEAD origin/main`) when there was nothing to merge. Never read it from
+    `origin/main` itself: worktrees share that ref, and another lane's fetch can move it mid-gate.
   * If the orchestrator resumes you because `main` moved, repeat the gate against the new commit.
 
   Apply any broadcast the orchestrator sends before you report ready, and record which path you
