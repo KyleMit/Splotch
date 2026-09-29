@@ -66,7 +66,11 @@ quarantine, not a question for the user. Handing a pre-authorized merge back cos
 round trip the campaign exists to spare them, at the moment they are least likely to be watching.
 (2026-09-22, unit 12 of the 2161–2170 campaign: a declined `broker.mjs next`, whose rival had
 already finished and written its findings to disk, was read as the merge authority lapsing; the
-queue stopped with a green, reviewed PR unmerged.)
+queue stopped with a green, reviewed PR unmerged.) The exception is a guardrail denial that forbids
+the outcome rather than the call, such as the auto-mode classifier refusing a merge: respect it, and
+never reach that outcome by another route. A refused merge downgrades the queue as a reviewer outage
+does (step 3): each unit still goes to shippable and ends as an open, mergeable PR for the user to
+merge.
 
 **Report an interruption from live state, never from assumption.** What step 5 requires of
 **status** binds harder on an unplanned stop, because that report is what the user decides on:

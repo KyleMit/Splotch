@@ -81,8 +81,9 @@ Run waves in this order, and start the next one as the queue drains:
 | 3+. Area passes | One whole-area pass per area no auditor has covered yet, for example server routes and functions, state and boot, drawing modules off the hot path, pipelines such as asset generation, page routes, E2E specs, and the agent-instruction tooling                                                                                                                                                                     |
 
 Later waves take a list of the merged campaign PRs and the earlier findings files, so they never
-re-report fixed work. Stop launching waves when a wave's findings could no longer ship before the
-reserve.
+re-report fixed work. Each auditor counts against the same account usage limit as a unit lane, so
+size a wave together with the lanes in flight. Stop launching waves when a wave's findings could no
+longer ship before the reserve.
 
 ## 3. Cluster findings into units
 
@@ -146,9 +147,10 @@ PRs over starting new ones.
 
 * **Standards.** As a late unit, update `docs/CODING-STANDARDS.md` and its always-loaded one-liners
   in `.ruler/conventions.md` with the rules this run earned. Each new rule needs the incident behind
-  it, cited by PR, and an enforcement mechanism, verified by path. Rejected ideas go under
-  "Considered and not adopted". Follow the user's preflight choice: open PR or merge. Refresh the
-  citations just before the reserve.
+  it, cited by PR, and an enforcement mechanism, verified by path. An enforcement still on an
+  unmerged PR is cited by that PR: `check:doc-refs` fails on a path that exists only on an unmerged
+  branch. Rejected ideas go under "Considered and not adopted". Follow the user's preflight choice:
+  open PR or merge. Refresh the citations just before the reserve.
 * **Reserve and report.** Follow `ship-campaign` step 5, and add:
   * a table of the new guards the run added, each with its PR;
   * the startup preload counts and byte deltas;
