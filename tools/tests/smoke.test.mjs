@@ -106,9 +106,9 @@ describe('fatal', () => {
 });
 
 describe('summarize', () => {
-  // Enough failure lines to overrun a pipe's capacity (64 KiB on macOS) several times, so the tail
-  // reaches the reader only if the exit waits for the pipe to drain.
-  const FAILURE_LINES = 2_000;
+  // Several times what the pipe and the parent's stream buffer together hold, so while stderr goes
+  // unread most of the failure lines are still queued inside the child when summarize() exits.
+  const FAILURE_LINES = 4_000;
   const FAILURE_DETAIL = 'x'.repeat(100);
 
   async function runFailingSmoke() {
@@ -128,6 +128,9 @@ describe('summarize', () => {
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => (stdout += chunk));
+    // The tally is summarize()'s last write before it exits. Reading stderr only after it arrives
+    // makes this reader fall behind deterministically, the way a slow one does by chance.
+    await once(child.stdout, 'data');
     child.stderr.on('data', (chunk) => (stderr += chunk));
     const [code] = await once(child, 'close');
     return { code, stdout, stderr };
