@@ -44,11 +44,27 @@ export function createNetwork(
     writeBool(STORAGE_KEYS.lastNetworkOnline, online);
   }
 
+  function followWindowEvents() {
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+  }
+
+  // The plugin is the only writer on native, so each part of it that fails hands
+  // its job to the WebView's own signal. Swallowed, the failure would leave a
+  // stored "offline" in force for this session and every later one.
   function installNativeStatus(loadPlugin: () => Promise<NetworkPluginModule>) {
     let receivedStatusEvent = false;
     let disposed = false;
     removeNativeListener = () => {
       disposed = true;
+    };
+    const readNavigatorInstead = (error: unknown) => {
+      console.warn('[network] device status read failed; using navigator.onLine', error);
+      if (!receivedStatusEvent && !disposed) updateOnline(navigator.onLine ?? true);
+    };
+    const followWindowEventsInstead = (error: unknown) => {
+      console.warn('[network] device status events failed; following window events', error);
+      if (!disposed) followWindowEvents();
     };
     void loadPlugin()
       .then(({ Network }) => {
@@ -57,7 +73,7 @@ export function createNetwork(
           .then((status) => {
             if (!receivedStatusEvent && !disposed) updateOnline(status.connected);
           })
-          .catch(() => {});
+          .catch(readNavigatorInstead);
         Network.addListener('networkStatusChange', (status) => {
           receivedStatusEvent = true;
           if (!disposed) updateOnline(status.connected);
@@ -70,9 +86,12 @@ export function createNetwork(
                 void handle.remove();
               };
           })
-          .catch(() => {});
+          .catch(followWindowEventsInstead);
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        readNavigatorInstead(error);
+        followWindowEventsInstead(error);
+      });
   }
 
   return {
@@ -87,8 +106,7 @@ export function createNetwork(
       // Keep the stored state until the device status arrives.
       if (!native) {
         updateOnline(navigator.onLine ?? true);
-        window.addEventListener('online', onOnline);
-        window.addEventListener('offline', onOffline);
+        followWindowEvents();
       }
       // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
       // the plugin chunk (isNative() alone can't tree-shake across modules). The
