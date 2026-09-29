@@ -93,7 +93,8 @@ token-CRUD request plumbing; `tools/app-driver/lib/app-driver.mjs` the browser g
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag. A helper
 that an entry script defines and another tool needs moves into a `lib/` module; a `lib/` module
-never imports an entry script.
+never imports an entry script, and never exits the process or loads `.env` when imported: the entry
+script that uses it does both.
 
 Moving a tool between depths is the operation that breaks this tree quietly: a stale `vi.mock()`
 path mocks nothing without erroring, and a repo-root walk with the wrong number of `..` still
@@ -127,11 +128,13 @@ entry script.
 * A port that is taken means choosing another port. `freePort` (`tools/lib/vite-server.mjs`) throws
   on a listener outside this checkout rather than stop another session's server.
 * The incidents behind these rules, and what enforces each: rule 8 of `docs/CODING-STANDARDS.md`.
-* Validate the inputs a write, tag, push, or delete depends on before that step runs, with a
-  path-specific one-line error and a non-zero exit (a read-only plan, then apply). In multi-item
-  runs, wrap per-item work in try/catch and report failures at the end without discarding completed
-  results; never overwrite a baseline/output artifact from a run that had errors; name polling
-  budgets.
+* Validate the inputs a write, tag, push, delete, or credential-bearing request depends on before
+  that step runs, with a path-specific one-line error and a non-zero exit (a read-only plan, then
+  apply). A delete proves its target safe again at the moment it acts and removes only the state it
+  proved: a compare-and-delete at the proven commit, a plan row judged again from a fresh listing at
+  apply time, a folder carrying the tool's own mark. In multi-item runs, wrap per-item work in
+  try/catch and report failures at the end without discarding completed results; never overwrite a
+  baseline/output artifact from a run that had errors; name polling budgets.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the
   `check:coloring-assets` npm script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
