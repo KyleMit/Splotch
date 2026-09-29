@@ -11,7 +11,11 @@ The rules come from the 2026-09 clean-code campaign (tracking issue #2376). Its 
 the grades and the motivations analysis, is
 [`docs/scratchpad/clean-code-principles-review-2026-09-27.md`](scratchpad/clean-code-principles-review-2026-09-27.md).
 The 2026-09-28 code-quality burndown (tracking issue #2443) extended rules 1, 4, 5, 8, and 9 rather
-than adding new ones. Every PR cited below merged during one of those two campaigns.
+than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #2467) extended rules
+4, 6, 8, and 9 the same way and added evidence to rules 1 and 2. The first two campaigns' PRs had
+merged when they were cited, so their enforcement is named by path. The third campaign's PRs were
+open when this doc cited them, so their enforcement is named by PR ("the tests PR #2471 adds")
+rather than by a path `main` did not yet have.
 
 ## What earns a rule
 
@@ -47,7 +51,7 @@ argument (rule 7).
 | 6  | [Server-only packages and storage modes are fenced by lint](#6-lint-fences)  | `SERVER_ONLY_PACKAGES`, `BLOBS_CONSISTENCY_EXPLICIT`, `STORAGE_SEAM_ONLY`, `API_HANDLER_WRAPPED` in `eslint.config.js`, each with a positive control           |
 | 7  | [The startup path is a budget](#7-the-startup-path-is-a-budget)              | `STARTUP_MODULEPRELOAD_COUNT`, `NATIVE_STARTUP_MODULEPRELOAD_COUNT`, `MAX_STARTUP_JS_CSS_BYTES` (`tools/check-bundle-budgets.mjs`); `STARTUP_REQUIRED_MARKERS` |
 | 8  | [Tools: entries, strict flags, validate first, size ratchet](#8-tools)       | `tools/tests/tool-specifier-resolution.test.mjs`, `tools/tests/tool-entry-flags.test.mjs`, `rejectUnknownFlags`, `TOOLS_GRANDFATHERED_MAX_LINES`, `no-undef`   |
-| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR, for gates too; `docs/TESTING.md`                                                                |
+| 9  | [Tests prove they can fail](#9-tests-prove-they-can-fail)                    | Lint guards on test files; a negative control noted in the PR, for gates too; decoys for source-text guards; `docs/TESTING.md`                                 |
 | 10 | [Comments state stable facts about code that exists](#10-comments)           | Review; `npm run check:doc-refs` for docs                                                                                                                      |
 | 11 | [Exceptions are declared and ratchet down](#11-exceptions-ratchet-down)      | Ratchet tests and caps listed in rule 11                                                                                                                       |
 
@@ -105,9 +109,11 @@ identity, never a flag that later calls share. PRs #2449 and #2458 fixed three b
 that re-implements the owner's rule tests its own copy (rule 9). For the stale-write case, the test
 holds the superseded call open, starts the newer one, settles the old one, and then asserts the
 newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`,
-`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`).
-`web/src/lib/components/AiImageResult.download.test.ts` covers only the first half: the next
-result's save starts while the old one is still pending.
+`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`). The first version of
+`web/src/lib/components/AiImageResult.download.test.ts` covered only the first half, the next
+result's save starting while the old one was still pending, and passed with the latch fault
+injected. The version PR #2482 adds holds both saves, settles the closed card's save, and asserts
+that tapping the next result again starts no second save of it.
 
 ## 2. One union per mode
 
@@ -123,7 +129,9 @@ error phase as the `AiFailure` union (PR #2403). The free-generation grant as `F
 (PR #2391). `Button` rejecting link props its anchor would drop (PR #2378). `SegmentedPicker` split
 on mode, where `mode="toggle"` plus `inputName` used to render radios with no `aria-pressed` (PR
 #2399). Secret names and style names closed as unions (PR #2410). The verify-credential result as
-`VerifyCredentialResult` (PR #2386).
+`VerifyCredentialResult` (PR #2386). `finishAiGeneration` took an unread MIME type between `url` and
+the optional `reportToken`, so a stale positional call could put the MIME string where the report
+token belongs; it takes one `picture` object, and such a call no longer compiles (PR #2482).
 
 **Enforcement.** The types themselves, with exhaustive `Record<Union, V>` tables (a new variant
 fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A component props union is pinned by a type test
@@ -158,12 +166,18 @@ a mutation (`gateAcceptsInput`).
 ## 4. Validate at the trust boundary
 
 **Rule.** Input from outside the type system — a request, a worker payload, a stored record, a
-server reply, a tool flag, an evidence file — arrives as `unknown`, is narrowed by a strict guard or
-parser, and fails loudly when it doesn't fit. Give each API one failure convention; where an API
-keeps two (reject and resolve `null`), its declaration names both and every caller handles both.
-Absence never becomes a value by default. A missing field, a missing or unreadable file, or a failed
-command is an error, or a case the code handles by name. It is never quietly read as an empty list,
-a zero, or the harmless answer. This extends the conventions' "`as` is a boundary tool".
+server reply, a tool flag, an evidence file, another program's output — arrives as `unknown`, is
+narrowed by a strict guard or parser, and fails loudly when it doesn't fit. The guard checks the
+value as it arrived, before a transform such as a hash can make any value pass. Another program's
+output is read in a form its free-text fields cannot break (NUL-terminated with `-z` or `%00`, not
+split on the tabs and newlines a commit subject or a path can hold), and a record that does not
+parse is refused. Give each API one failure convention; where an API keeps two (reject and resolve
+`null`), its declaration names both and every caller handles both. Absence never becomes a value by
+default. A missing field, a missing or unreadable file, or a failed command is an error, or a case
+the code handles by name. It is never quietly read as an empty list, a zero, or the harmless answer,
+and "could not tell" never becomes "no". Writes follow the same rule: a write that can fail or match
+nothing tells its caller which happened, and the caller acts on that answer. This extends the
+conventions' "`as` is a boundary tool".
 
 **Why here.** The users are toddlers: a lost drawing is the product failing silently, and nobody
 files the bug. AI generation costs money, and capture tooling that accepts a bad input produces
@@ -207,12 +221,40 @@ plausible wrong numbers.
   evidence index read as "no refusal". A fix in one reader does not reach the other readers of the
   same file, so look for them when fixing one.
 
+The 2026-09-29 campaign found the same failure in writes, and in the output of other programs:
+
+* PR #2474, data loss: the held-pictures store read a failed IndexedDB read as "nothing held", so
+  the next failed save replaced every picture held from an earlier session. Review round two found
+  that `write()` swallowed its own failures, so the flag meaning "memory matches storage" was set
+  for a write that never landed. The store now has one failure convention: `read()` and `write()`
+  reject.
+* PR #2475: a token-store read failure answered "That access code was not recognized." and spent the
+  family's failed-guess budget. It now answers 503, and the verdict says whether the failure spends
+  a guess. A removal that matched nothing told `/admin` `Removed “X”`, so an operator revoking a
+  leaked code was told it was gone; the result now carries `changed`.
+* PR #2472: a job-store failure before the worker was ever called answered 202 for a job no worker
+  owned, and `completeJob` dropped the result of its conditional write; it now returns `'recorded'`
+  or `'superseded'`. A free report token was bound to an unchecked `X-Installation-Id` header rather
+  than the job's stored id.
+* PR #2477: the native network plugin's failures ended in `.catch(() => {})`, so a session that
+  ended offline stayed offline with no log line. The same PR's installation-id check could never
+  fire (rule 9).
+* PRs #2471 and #2473, in tools that delete: `git for-each-ref` fields split on tabs let a tab in a
+  commit subject shift the ahead count, so an unmerged branch read as merged. `git status` quoted
+  the path `perf-profiles/run 2/`, the quoted spelling matched no salvage prefix, and the path read
+  as disposable. An empty or failed `lsof` listing read as "no worktree is in use". Both tools now
+  read NUL-terminated output and refuse a record that does not parse, and a failed listing reads as
+  "use unknown". Rule 8 covers what they do before deleting.
+
 **Enforcement.** Tests at the boundary, and the types: a guard or parser over `unknown`, never a
 cast to the expected shape (PR #2410 replaced a `style as StyleName` cast with
 `parseGenerationJobContext`). The boundary test includes the missing and malformed inputs as
 fixtures, for example the blank-pin and missing-Gradle-code cases in
 `tools/release/tests/cut-release.test.mjs` and the index written as `{` in
-`tools/perf/tests/rescore-captures.test.mjs`. Java and Swift have no unit harness, so the plugin
+`tools/perf/tests/rescore-captures.test.mjs`. A failed read or write is a fixture too: the tests PR
+#2474 adds make the store's `read` reject and assert that no held picture is replaced, the tests PR
+#2475 adds pin the 503 and which failures spend a guess, and the tests PR #2471 adds put a tab in a
+commit subject inside a temporary repository. Java and Swift have no unit harness, so the plugin
 side is review (rule 5).
 
 ## 5. One contract per wire boundary
@@ -257,8 +299,8 @@ settles its call on every path, and both platforms answer the same input the sam
 ## 6. Lint fences
 
 **Rule.** A boundary that one import or one omitted option can cross is fenced by lint, and every
-lint fence has a positive control: a test that seeds the violation and fails if the rule's glob
-narrows or stops firing.
+lint fence has a positive control: a test that seeds the violation through the real config, under
+each glob the rule covers, and fails if the rule's glob narrows or stops firing.
 
 **Why here.** A lint rule scoped to a glob that matches nothing reports nothing, which looks the
 same as a clean repo.
@@ -267,7 +309,10 @@ same as a clean repo.
 stores used the SDK's default eventual consistency by omission, the mode behind ADR-0105's failed
 free generations (PR #2393). An `/api` handler not wrapped in `apiHandler` compiles and passes its
 unit tests, yet answers `{ message }` to clients that parse `{ ok, error }` and skips the error log
-(PR #2432).
+(PR #2432). No test loaded the real `stylelint.config.js`, so deleting a CSS rule or widening
+`ignoreFiles` left `npm run lint:css` and every test green; and the vacuous-test control seeded its
+cases on a `tools/tests/` path only, so a later block that switched a rule off for
+`web/src/**/*.test.ts` would have passed it (PR #2481).
 
 **Enforcement.** In `eslint.config.js`: `SERVER_ONLY_PACKAGES` (positive control
 `tools/tests/server-only-imports-lint.test.mjs`), `BLOBS_CONSISTENCY_EXPLICIT`
@@ -276,7 +321,9 @@ unit tests, yet answers `{ message }` to clients that parse `{ ok, error }` and 
 (`tools/tests/api-handler-lint.test.mjs`). `WEB_SRC_SYNTAX_RESTRICTIONS` composes the `web/src`
 syntax set once for every block that extends it. The same pattern guards tools: `no-undef`
 (`tools/tests/tools-no-undef-lint.test.mjs`) and `max-lines`
-(`tools/tests/tools-max-lines-lint.test.mjs`).
+(`tools/tests/tools-max-lines-lint.test.mjs`). For CSS, the stylelint control PR #2481 adds lints
+seeded CSS through the config `npm run lint:css` discovers, over a `.css` and a `.svelte` path, and
+the same PR seeds the vacuous-test cases under `web/src` as well as `tools/tests/`.
 
 **Known limits.** `no-restricted-imports` sees static imports only, not `import()`. The Blobs
 selectors match a bare `getStore` callee, not an alias. A selector matches a name, not a binding:
@@ -315,9 +362,11 @@ constant to move with a reason. `MAX_STARTUP_JS_CSS_BYTES` holds the bytes, and
 
 ## 8. Tools
 
-**Rule.** In `tools/`: a library module never imports an entry script; flags parse strictly and an
-unknown flag is fatal; a tool validates the inputs a write, tag, push, or delete depends on before
-that step runs; files are size-ratcheted. The detail lives in `tools/CLAUDE.md` ("Libraries: one
+**Rule.** In `tools/`: a library module never imports an entry script, and never exits the process
+or loads the environment when imported; flags parse strictly and an unknown flag is fatal; a tool
+validates the inputs a write, tag, push, delete, or credential-bearing request depends on before
+that step runs; a delete proves its target safe again at the moment it acts, and removes only the
+state it proved; files are size-ratcheted. The detail lives in `tools/CLAUDE.md` ("Libraries: one
 shared, many owned" and "Writing a tool").
 
 **Why here.** A capture tool that accepts a mistyped flag produces a capture that looks valid and
@@ -340,6 +389,28 @@ Checks that ran after the writes they were meant to guard:
   ran. When the stray-note guard threw, Ruler had already concatenated that note into the root
   `CLAUDE.md` (PR #2444).
 * `npm run release` tagged, pushed, and published before a bad version pin surfaced (PR #2446).
+* The deployed Blobs smoke sent the admin secret to any URL it was given, `http://` included, and
+  the rival found both deployed smokes following a 307 from https to http and re-posting the secret.
+  One target rule now serves both: https, or plain http only to a loopback host under the smokes'
+  explicit test flag. The shared admin client sets `redirect: 'error'` (PR #2476).
+
+Deletes that trusted a premise they had not proved at the moment they acted:
+
+* The Lighthouse runner joined `--out` onto the repository root and deleted the result recursively,
+  so `--out=.` named the checkout. It now refuses the repository root, a folder outside it, and a
+  non-empty folder that lacks the mark file it leaves in a folder it made, and checks again at the
+  moment it deletes (PR #2469).
+* The local-branch prune proved a branch merged and then ran `git branch -d`, which reads the branch
+  again; review round two found the window between the two. It now deletes with
+  `git update-ref -d refs/heads/<name> <proven commit>`, which git applies only while the branch
+  still points at the commit it proved (PR #2471).
+* The worktree prune removed a row planned for removal even if the worktree gained a commit before
+  `--apply`, and `--apply` ran an unscoped `git worktree prune`. Each row is now judged again from a
+  fresh listing at apply time, and a vanished worktree's entry is kept (PR #2473).
+
+A red-team library loaded `.env` from the working directory when imported and exited the process on
+a failed decrypt, so the documented `web/.env` was never read and the library had no test (PR
+#2480).
 
 **Enforcement.** `tools/tests/tool-specifier-resolution.test.mjs` (library → entry edges);
 `rejectUnknownFlags` and `parseNumberFlag` in `tools/lib/proc.mjs`, `parsePerfArgs` in
@@ -353,18 +424,26 @@ starts its own server and rejects an answer from any other process
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
 `main()` parses the arguments and `chooseVersionCode` decides the version code before the first
 write, which is `resolveVersionCode` pinning that code into the release file. Review holds that
-order; `tools/release/tests/cut-release.test.mjs` covers the rejections themselves.
+order; `tools/release/tests/cut-release.test.mjs` covers the rejections themselves. The tests PRs
+#2469, #2471, and #2473 add drive each refusal in a temporary folder or repository and assert that
+nothing was removed; those in #2471 and #2473 also move the branch or the worktree between the plan
+and the delete. The tests PR #2476 adds spawn both smokes against a recording server, and assert
+that neither a plain-http target without the test flag nor a redirected target receives the login.
+The tests PR #2480 adds import the red-team library directly.
 
 ## 9. Tests prove they can fail
 
 **Rule.** Every guard or regression test ships with a negative control — the test run against the
 unfixed code or a seeded violation, and seen to fail — and the PR says so. Each test builds its own
-fixture, drives real stores instead of doubles that copy their rules, pins copy exactly as rendered,
-and names its timeouts with measured headroom. A gate, checker, or liveness probe is a test of the
-repo and meets the same bar. It reports a pass only after it has compared something, and a fixture
-pins its failing verdict. An E2E spec that asserts something happened waits on a state change the
-app exposes, not on a sleep. A check that something did not happen first waits until it could have
-happened.
+fixture, drives real stores instead of doubles that copy their rules or run in an order the real
+code cannot, pins copy exactly as rendered, and names its timeouts with measured headroom. A gate,
+checker, or liveness probe is a test of the repo and meets the same bar. It reports a pass only
+after it has compared something, and a fixture pins its failing verdict. A guard that reads source
+or config text reads only the block it names, compares whole lines or exact names rather than a
+count, and refuses a spelling it cannot read. Its negative controls include a decoy: the line
+commented out, moved to another block, or spelled another valid way. An E2E spec that asserts
+something happened waits on a state change the app exposes, not on a sleep. A check that something
+did not happen first waits until it could have happened.
 
 **Why here.** A test that has only ever passed carries no evidence it is connected to anything.
 
@@ -377,7 +456,9 @@ before verification, remembering a failed manifest load) would have passed the w
 #2431 added `web/src/lib/coloringPacks/manager.webStore.test.ts` on the real web store, and PR #2436
 gave a positive control to a blank-undo test that could pass vacuously. Tests running close to their
 timeout failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407,
-#2417).
+#2417). The web-store tests stubbed `scheduleIdle` to call back before it returned, which the real
+scheduler never does. The tests ran in an order production cannot produce, and an install aborted
+mid-wait had no test; PR #2484 replaced the stub with a double that defers its callback.
 
 Gates that passed without checking what they claimed:
 
@@ -387,6 +468,10 @@ Gates that passed without checking what they claimed:
   `DRIVER_PROCESS_PATTERN` in `tools/audit-burndown/lib/burndown-core.mjs` is now the one pattern,
   and `tools/audit-burndown/tests/driver-process-pattern.test.mjs` requires it at every `pgrep`
   lookup in the burndown hooks, both skill packages, and `show-status.mjs`.
+* PR #2486: that guard read only `pgrep`, so the Claude package's `pkill` kept the unanchored
+  pattern; the widened guard PR #2486 adds holds every `pgrep` and `pkill` lookup to it. Nothing
+  tested that a rival bench seed still applied, and one had stopped applying after a README re-wrap;
+  the corpus test that PR adds runs `git apply --check` over every seed.
 * PR #2455: `check:github-actions` never read the pins inside `.github/actions/`, read a bare commit
   SHA's leading digits as a major version, and printed ✓ beside a pin it had not compared.
   `latestStatus` in `tools/check-github-action-versions.mjs` now prints ✓ only after a comparison,
@@ -400,11 +485,40 @@ Gates that passed without checking what they claimed:
   Reduce Motion answer. With the regression injected, it passed 3 runs of 3. The specs now sync on a
   state change the app exposes: `getAnimations(...)` `finished`, the request's
   `requestfinished`/`requestfailed`, and `strokeRevision`.
+* PR #2480: the red-team runner guarded only its `fetch`, so any other throw ended the loop. The run
+  still wrote a report of the rows that had run, printed "0 row(s) flagged ⚠", and exited 0. An
+  aborted run now lists every case that never ran and exits 1.
+* PR #2483: the Native compile workflow's path filter tied itself to the compile's inputs by a
+  comment, and its only test compared the filter's two copies with each other. Both omitted
+  `pnpm-workspace.yaml`, so a pull request changing only its `nodeLinker` setting would skip both
+  native compiles. The test that PR adds walks the compile's imports and install inputs against the
+  filter.
+
+Source-text guards that a comment, another job, or another spelling could satisfy:
+
+* PR #2468: the least-privilege guard on workflow `permissions:` read one spelling of the key. The
+  rival passed `permissions: write-all` through it in round one, and `permissions : write-all` and a
+  quoted key in round two. The guard now fails any `permissions` block that is not one
+  `scope: level` line per scope, so a spelling it cannot read fails rather than passes.
+* PR #2469: the Lighthouse wiring test searched all of `.github/workflows/test.yml` for lines that
+  other jobs also carry, so it could not fail for the job it named, and a commented-out line
+  counted. It now slices that job's block and compares whole lines.
+* PR #2481: `tools/tests/playwright-report-folder.test.mjs` read an artifact name with `(\S+)$`, so
+  the sharded step's name, which holds spaces, fell out of its filter while `length > 0` stayed
+  green on the other steps. It now pins the three names exactly.
+
+Product guards that could never fire (PR #2477): the native installation-id check ran on the SHA-256
+digest, which always matches the 64-hex pattern, so an empty device id hashed into one pseudonym
+shared by every such device; and `clearSound` emptied its failed-URL memo on the line before its
+only reader. The id is now checked before it is hashed (rule 4), and the memo was removed.
 
 **Enforcement.** Lint rejects the structural forms of a test that cannot fail, with
 `tools/tests/vacuous-test-lint.test.mjs` as their positive control. The rest is review, and
 `docs/TESTING.md` carries the detail: "A regression test must fail against the old code", "A test
 owns its inputs", and, for E2E waits, "No fixed `waitForTimeout` to wait for something to *happen*".
+For source-text guards, the decoy controls PRs #2468, #2469, and #2481 add: a wired line moved into
+a `decoy` job or commented out, the respellings of `permissions` the reader must refuse, and an
+artifact-name fixture that holds spaces.
 
 ## 10. Comments
 
@@ -475,3 +589,8 @@ Proposed during a campaign and rejected with evidence. Don't re-propose one with
 | Declaring every repeated tuning value once            | The cross-file rule covers values that must agree, which PR #2451 drift-guarded (`MAX_RENDER_SCALE`). The capture tools' `PROBE_CONTACT_BUDGET_MS` and its siblings are tuned separately per tool, and `DISPLAY_COMMIT_CHARS` is only used for display.                                                    |
 | A separate standard for native plugins                | Its incidents come from one PR (#2448), and no Java or Swift harness exists to enforce it. The missing-field lesson is in rule 4, and settling every call is in rule 5's known limits.                                                                                                                     |
 | A portability rule for Claude Code hooks              | ADR-0017 and ADR-0062 already make macOS and Linux the targets. A burndown hook that tried BSD `stat` first broke that existing rule on Linux. PR #2452 fixed it with ADR-0017's own answer, doing the work in Node, and `tools/tests/agent-hooks.test.mjs` runs the hook under GNU- and BSD-style `stat`. |
+| A separate rule for tools that delete                 | Every incident (PRs #2469, #2471, #2473) is in `tools/`, and rule 8 already owns validating before a delete. One clause there, "prove it again at the moment you act", covers all three.                                                                                                                   |
+| A separate rule for credential-bearing requests       | Its incidents come from one PR (#2476), and the fix is one target rule both smokes share, plus redirect refusal in the shared admin client. Rule 8's validate-before-the-outward-step covers it.                                                                                                           |
+| A lint rule against an empty `.catch(() => {})`       | 36 catch arrows in shipped `web/src` are empty or return `undefined` or `null`, most deliberately (a wake-lock release, a cancellable animation, a queue's tail). ADR-0031's bar needs a compliant codebase; the harmful form (PRs #2474, #2477) is rule 4's.                                              |
+| NUL-terminated parsing for every `tools/` parser      | Besides the parser PR #2471 replaces, five tab-split parsers remain outside tests: three read logs their own tool writes, two read `git ls-remote` and `adb devices`, whose fields hold no tab and are matched exactly. Rule 4 covers free-text fields.                                                    |
+| A YAML parser for the workflow guards                 | None ships, and the guards catch a grant left by accident. PR #2468's line reader refuses any spelling it cannot read, which caught every respelling the rival tried; a YAML form built to evade it, such as a merge key, would still pass.                                                                |
