@@ -10,11 +10,26 @@ import { describe, expect, it } from 'vitest';
 // three deliberate relaxations gets a case pinning what it lets through, so tightening one is a
 // decision rather than an accident.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const eslint = new ESLint({ cwd: repoRoot });
+// The type-aware no-floating-promises block runs a TS project service over web/src/**/*.ts,
+// which fatals on a virtual path instead of running any rules. It is orthogonal to what this
+// control pins, so the override switches that one layer off for the web/src probe path.
+const eslint = new ESLint({
+  cwd: repoRoot,
+  overrideConfig: [
+    {
+      files: ['web/src/**/*.ts'],
+      languageOptions: { parserOptions: { projectService: false } },
+      rules: { '@typescript-eslint/no-floating-promises': 'off' },
+    },
+  ],
+});
 
-// Neither path exists on disk — ESLint reads a file path only to pick the config blocks that
-// match it, and these are the globs the Vitest and Playwright blocks are scoped to.
+// None of these paths exists on disk — ESLint reads a file path only to pick the config blocks that
+// match it, and these are the globs the Vitest and Playwright blocks are scoped to. web/src's
+// colocated unit tests get a fixture of their own because later blocks re-scope rules for that
+// slice, and a re-scoped block can drop what the Vitest block turned on.
 const VITEST_FIXTURE = 'tools/tests/seeded-defect.test.mjs';
+const WEB_SRC_VITEST_FIXTURE = 'web/src/lib/seeded-defect.test.ts';
 const PLAYWRIGHT_FIXTURE = 'web/tests/seeded-defect.spec.ts';
 
 const rulesReportedFor = async (fixture, source) => {
@@ -28,55 +43,60 @@ const playwrightSpec = (body) => `import { expect, test } from '@playwright/test
 const vitestRules = (body) => rulesReportedFor(VITEST_FIXTURE, vitestSpec(body));
 const playwrightRules = (body) => rulesReportedFor(PLAYWRIGHT_FIXTURE, playwrightSpec(body));
 
-describe('the Vitest block reports a test that cannot fail', () => {
-  it('flags a test body with no assertion', async () => {
-    expect(await vitestRules(`it('asserts nothing', () => { JSON.parse('{}'); });`)).toContain(
-      'vitest/expect-expect'
-    );
-  });
+describe.each([VITEST_FIXTURE, WEB_SRC_VITEST_FIXTURE])(
+  'the Vitest block reports a test that cannot fail in %s',
+  (fixture) => {
+    const fixtureRules = (body) => rulesReportedFor(fixture, vitestSpec(body));
 
-  it('flags a committed .only, which silently skips the rest of the file', async () => {
-    expect(await vitestRules(`it.only('is focused', () => { expect(1).toBe(1); });`)).toContain(
-      'vitest/no-focused-tests'
-    );
-  });
+    it('flags a test body with no assertion', async () => {
+      expect(await fixtureRules(`it('asserts nothing', () => { JSON.parse('{}'); });`)).toContain(
+        'vitest/expect-expect'
+      );
+    });
 
-  it('flags a skipped test', async () => {
-    expect(await vitestRules(`it.skip('is disabled', () => { expect(1).toBe(1); });`)).toContain(
-      'vitest/no-disabled-tests'
-    );
-  });
+    it('flags a committed .only, which silently skips the rest of the file', async () => {
+      expect(await fixtureRules(`it.only('is focused', () => { expect(1).toBe(1); });`)).toContain(
+        'vitest/no-focused-tests'
+      );
+    });
 
-  it('flags an expect that never reaches a matcher', async () => {
-    expect(await vitestRules(`it('never matches', () => { expect(1); });`)).toContain(
-      'vitest/valid-expect'
-    );
-  });
+    it('flags a skipped test', async () => {
+      expect(await fixtureRules(`it.skip('is disabled', () => { expect(1).toBe(1); });`)).toContain(
+        'vitest/no-disabled-tests'
+      );
+    });
 
-  it('flags an expect.poll whose promise is dropped', async () => {
-    const body = `it('drops the poll', async () => { expect.poll(() => 1).toBe(1); });`;
-    expect(await vitestRules(body)).toContain('vitest/require-awaited-expect-poll');
-  });
+    it('flags an expect that never reaches a matcher', async () => {
+      expect(await fixtureRules(`it('never matches', () => { expect(1); });`)).toContain(
+        'vitest/valid-expect'
+      );
+    });
 
-  it('flags an async assertion that is never awaited', async () => {
-    const body = `it('drops the rejection', async () => { expect(vi.fn()()).rejects.toThrow(); });`;
-    expect(await vitestRules(body)).toContain('vitest/valid-expect');
-  });
+    it('flags an expect.poll whose promise is dropped', async () => {
+      const body = `it('drops the poll', async () => { expect.poll(() => 1).toBe(1); });`;
+      expect(await fixtureRules(body)).toContain('vitest/require-awaited-expect-poll');
+    });
 
-  it('flags an assertion left inside a floating promise chain', async () => {
-    const body = `it('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
-    expect(await vitestRules(body)).toContain('vitest/valid-expect-in-promise');
-  });
+    it('flags an async assertion that is never awaited', async () => {
+      const body = `it('drops the rejection', async () => { expect(vi.fn()()).rejects.toThrow(); });`;
+      expect(await fixtureRules(body)).toContain('vitest/valid-expect');
+    });
 
-  it('flags an assertion reachable only if something threw', async () => {
-    const body = [
-      `it('rejects bad input', () => {`,
-      `  try { JSON.parse('{}'); } catch (error) { expect(error.message).toBe('bad'); }`,
-      `});`,
-    ].join('\n');
-    expect(await vitestRules(body)).toContain('vitest/no-conditional-expect');
-  });
-});
+    it('flags an assertion left inside a floating promise chain', async () => {
+      const body = `it('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
+      expect(await fixtureRules(body)).toContain('vitest/valid-expect-in-promise');
+    });
+
+    it('flags an assertion reachable only if something threw', async () => {
+      const body = [
+        `it('rejects bad input', () => {`,
+        `  try { JSON.parse('{}'); } catch (error) { expect(error.message).toBe('bad'); }`,
+        `});`,
+      ].join('\n');
+      expect(await fixtureRules(body)).toContain('vitest/no-conditional-expect');
+    });
+  }
+);
 
 describe('the Playwright block reports a test that cannot fail', () => {
   it('flags a test body with no assertion', async () => {
