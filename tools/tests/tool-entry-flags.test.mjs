@@ -58,6 +58,13 @@ const DEVICE_ENTRIES = [
       'ios-udid',
     ],
   ],
+  // No build, and a serial adb cannot list: a missing refusal stops at the
+  // device listing instead of rebuilding the app and driving a phone.
+  [
+    'tools/perf/android/capture-webview-session.mjs',
+    ['--no-build', '--device-id=no-such-device'],
+    ['no-build', 'device-id'],
+  ],
 ];
 
 const runEntry = (script, args) =>
@@ -125,6 +132,35 @@ describe('device tool entries', () => {
     '%s refuses an unknown flag before doing any work',
     (script, offline, known) => {
       expectUnknownFlagRefused(runEntry(script, [...offline, '--definitely-not-a-flag']), known);
+    }
+  );
+});
+
+const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+const ENV_ASSIGNMENTS = /^(?:[A-Z_]+=\S+ )+/;
+
+// The npm scripts that run an entry with no arguments of their own, so every
+// flag a caller adds to one is learned from `npm run info`.
+const bareScriptsRunning = (script) =>
+  Object.entries(packageJson.scripts)
+    .filter(([, command]) => command.replace(ENV_ASSIGNMENTS, '') === `node ${script}`)
+    .map(([name]) => name);
+
+describe('npm run info', () => {
+  it.each([...ENTRIES, ...DEVICE_ENTRIES.map(([script, , known]) => [script, known])])(
+    'names every flag %s accepts',
+    (script, known) => {
+      const scripts = bareScriptsRunning(script);
+      const unnamed = scripts.flatMap((name) =>
+        known
+          .filter(
+            (flag) => !new RegExp(`--${flag}(?![a-z-])`).test(packageJson['scripts-info'][name])
+          )
+          .map((flag) => `${name}: --${flag}`)
+      );
+
+      expect(scripts).not.toEqual([]);
+      expect(unnamed).toEqual([]);
     }
   );
 });

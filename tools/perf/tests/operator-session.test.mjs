@@ -117,11 +117,18 @@ describe('operatorSessionOptions', () => {
     });
   });
 
+  // The capture child's --orientation and the plan's labels take the upper
+  // case the campaign parser returns, whatever case the operator typed.
+  it('reads orientations in any case, as the campaign parser does', () => {
+    const { orientations } = operatorSessionOptions(['--orientations=landscape,Portrait']);
+    expect(orientations).toEqual(['LANDSCAPE', 'PORTRAIT']);
+  });
+
   it('rejects an unknown step, brush, or orientation by throwing', () => {
     expect(() => operatorSessionOptions(['--steps=grant,reboot'])).toThrow(/unknown step/);
     expect(() => operatorSessionOptions(['--brushes=chalk'])).toThrow(/unknown brush/);
-    expect(() => operatorSessionOptions(['--orientations=UPSIDE_DOWN'])).toThrow(
-      /unknown orientation/
+    expect(() => operatorSessionOptions(['--orientations=PORTRAIT,UPSIDE_DOWN'])).toThrow(
+      '--orientation must be PORTRAIT or LANDSCAPE'
     );
   });
 });
@@ -163,7 +170,7 @@ describe('runOperatorSession', () => {
   it.each([
     ['--steps=grnt', 'unknown step "grnt"'],
     ['--brushes=chalk', 'unknown brush "chalk"'],
-    ['--orientations=UPSIDE_DOWN', 'unknown orientation "UPSIDE_DOWN"'],
+    ['--orientations=UPSIDE_DOWN', '--orientation must be PORTRAIT or LANDSCAPE'],
     ['--seconds=0', '--seconds must be'],
     ['--probe-port=70000', '--probe-port must be'],
     ['--theme=moon', '--theme must be light or dark'],

@@ -533,8 +533,9 @@ export async function draw(page: Page, points: { x: number; y: number }[]) {
 
 // SETTLED_IN_STROKES (state/canvas.svelte.ts) earns the install banner, and
 // STROKES_BEFORE_AUTO_CLEAR (state/install.svelte.ts) more strokes part it. Both
-// live in rune modules the Playwright loader cannot import; a raised threshold
-// fails the install-banner specs by timeout.
+// live in rune modules the Playwright loader cannot import, so these copies are
+// literals; state/install.e2eThresholds.test.ts reads them as text and fails
+// when either differs from its owner.
 export const INSTALL_BANNER_EARNING_STROKES = 3;
 export const INSTALL_BANNER_AUTO_CLEAR_STROKES = 5;
 
