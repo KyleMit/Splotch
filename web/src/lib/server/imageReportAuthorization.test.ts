@@ -33,6 +33,10 @@ import { issueReportToken } from './reportToken';
 
 const INSTALLATION_ID = 'a'.repeat(64);
 const FREE_BINDING = { kind: 'free', credential: INSTALLATION_ID } as const;
+const REPORTING_UNAVAILABLE_BODY = {
+  ok: false,
+  error: 'AI reporting is not available right now. Please try again later.',
+};
 
 beforeEach(() => {
   envState.REPORT_TOKEN_SECRET = 'unit-test-report-secret';
@@ -122,10 +126,7 @@ describe('authorizeImageReport', () => {
 
     if (result.authorized) throw new Error('Expected authorization failure');
     expect(result.response.status).toBe(503);
-    expect(await result.response.json()).toEqual({
-      ok: false,
-      error: 'AI reporting is not available right now. Please try again later.',
-    });
+    expect(await result.response.json()).toEqual(REPORTING_UNAVAILABLE_BODY);
     expect(rateLimit).not.toHaveBeenCalled();
   });
 
@@ -217,10 +218,7 @@ describe('authorizeImageReport', () => {
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
     expect(result.response.status).toBe(503);
-    expect(await result.response.json()).toEqual({
-      ok: false,
-      error: 'AI reporting is not available right now. Please try again later.',
-    });
+    expect(await result.response.json()).toEqual(REPORTING_UNAVAILABLE_BODY);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('The key check ran out of time'));
     warn.mockRestore();
   });
@@ -322,6 +320,7 @@ describe('authorizeImageReport', () => {
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
     expect(result.response.status).toBe(503);
+    expect(await result.response.json()).toEqual(REPORTING_UNAVAILABLE_BODY);
   });
 
   it('rejects a malformed installation id but still charges the free bucket', async () => {
