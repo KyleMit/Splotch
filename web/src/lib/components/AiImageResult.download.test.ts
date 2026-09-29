@@ -136,9 +136,10 @@ describe('AI result Download', () => {
     firstSave.resolve({ status: 'photos' });
     await settleHandlers();
     downloadButton(target).click();
-    await settleHandlers();
 
-    expect(saveImageBlob).toHaveBeenCalledTimes(2);
+    // A tap the latch lets through fetches the picture before its first await,
+    // so reading the count synchronously cannot race the rest of the save.
+    expect(fetch).toHaveBeenCalledTimes(2);
     nextSave.resolve({ status: 'photos' });
   });
 
