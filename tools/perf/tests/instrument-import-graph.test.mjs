@@ -43,6 +43,7 @@ const OUTSIDE_EVERY_INSTRUMENT = {
   // which the instrument fingerprint does not claim to guard.
   'plan, CLI, path, device and error plumbing: which cell runs with which arguments and where it is written':
     [
+      'tools/perf/lib/android-serial.mjs',
       'tools/perf/lib/appium-capabilities.mjs',
       'tools/perf/lib/campaign-plan.mjs',
       'tools/perf/lib/capture-attribution.mjs',
