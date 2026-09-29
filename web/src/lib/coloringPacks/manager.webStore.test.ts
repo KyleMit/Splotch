@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { coloringPackManifestPath, type ColoringPackManifest } from './manifest';
 import { DIGESTS, useWebStoreWorld, type Content } from './webStoreTestHarness';
 
-vi.mock('$lib/idle', () => ({
-  scheduleIdle: (callback: () => void) => {
-    callback();
-    return () => {};
-  },
-}));
+vi.mock('$lib/idle', () => ({ scheduleIdle: vi.fn() }));
 vi.mock('$lib/state/coloringBook.svelte', () => ({ clearOverlay: vi.fn() }));
 vi.mock('$lib/state/settings.svelte', () => ({
   settingsState: { coloringBookEnabled: true, coloringPacksAllowMetered: false },

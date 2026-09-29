@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { COLORING_PACK_LOCK_NAME, coloringPackMarkerPath } from './cacheKeys';
 import { promiseWithResolvers } from '$lib/promiseWithResolvers';
 
-vi.mock('$lib/idle', () => ({
-  scheduleIdle: (callback: () => void) => {
-    callback();
-    return () => {};
-  },
-}));
+vi.mock('$lib/idle', () => ({ scheduleIdle: vi.fn() }));
 
 vi.mock('$lib/idb', () => ({ requestPersistentStorage: vi.fn() }));
 
