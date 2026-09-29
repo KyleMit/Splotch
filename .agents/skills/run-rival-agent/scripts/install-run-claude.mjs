@@ -6,6 +6,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { isMain } from '../../../../tools/lib/proc.mjs';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, '../../../..');
@@ -175,7 +176,7 @@ export function runInstallerCli(argv = process.argv.slice(2)) {
   installRunClaude({ check: values.check });
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     runInstallerCli();
   } catch (error) {
