@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { jobBlock, testWorkflow } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import {
   GATED_METRICS,
   LIGHTHOUSE_TIMEOUT_MS,
@@ -15,6 +16,13 @@ import {
 } from '../run-lighthouse-ci.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
+const PAGE_LOAD_JOB = 'page-load-performance';
+const WIRED_LINES = [
+  'browsers: chromium',
+  'npm run test:lighthouse:ci -- --port=4197',
+  'path: lighthouse-reports/ci/',
+  'if-no-files-found: warn',
+];
 const committedBaseline = JSON.parse(
   readFileSync(join(ROOT, 'tools/page-load/baseline.json'), 'utf8')
 );
@@ -34,6 +42,9 @@ function measurements(value) {
     )
   );
 }
+
+const unwiredLines = (workflow) =>
+  WIRED_LINES.filter((line) => !jobBlock(workflow, PAGE_LOAD_JOB).includes(line));
 
 function baseline(limit) {
   return {
@@ -155,12 +166,16 @@ describe('the Lighthouse CI metric contract', () => {
   });
 
   it('keeps the production-build CI job wired to Chromium, an explicit port, and artifacts', () => {
-    const workflow = readFileSync(join(ROOT, '.github/workflows/test.yml'), 'utf8');
+    expect(unwiredLines(testWorkflow)).toEqual([]);
+  });
 
-    expect(workflow).toContain('page-load-performance:');
-    expect(workflow).toContain('browsers: chromium');
-    expect(workflow).toContain('npm run test:lighthouse:ci -- --port=4197');
-    expect(workflow).toContain('path: lighthouse-reports/ci/');
-    expect(workflow).toContain('if-no-files-found: warn');
+  it.each(WIRED_LINES)('misses "%s" once only another job carries it', (line) => {
+    const job = jobBlock(testWorkflow, PAGE_LOAD_JOB);
+    const movedToAnotherJob =
+      testWorkflow.replace(job, () => job.replace(line, '')) +
+      `\n  decoy:\n    steps:\n      - run: echo ${line}\n`;
+
+    expect(movedToAnotherJob).toContain(line);
+    expect(unwiredLines(movedToAnotherJob)).toEqual([line]);
   });
 });
