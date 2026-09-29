@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { shouldWriteBlobsProbe } from '../api-smoke/lib/deployed-admin-target.mjs';
+import { jobBlocks } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // Line-oriented on purpose: no YAML parser ships in this repo's dependency
 // tree, and these invariants (top-level keys, job-level keys, uses: refs) sit
@@ -169,22 +170,8 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function jobs(lines) {
-  const found = [];
-  let inJobs = false;
-  for (const line of lines) {
-    if (/^jobs:/.test(line)) {
-      inJobs = true;
-      continue;
-    }
-    if (/^\S/.test(line)) inJobs = false;
-    if (!inJobs) continue;
-    const header = line.match(/^ {2}([\w-]+):/);
-    if (header) found.push({ id: header[1], lines: [] });
-    else found.at(-1)?.lines.push(line);
-  }
-  return found;
-}
+const jobs = (lines) =>
+  jobBlocks(lines.join('\n')).map(({ id, text }) => ({ id, lines: text.split('\n') }));
 
 function topLevelBlock(lines, key) {
   const start = lines.findIndex((line) => line.startsWith(`${key}:`));

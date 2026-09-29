@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { jobBlock } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import {
   BREACH_CONFIRMATIONS,
   COMMIT_GATE_MS,
@@ -20,11 +21,7 @@ const setupAction = readFileSync(
   'utf8'
 );
 
-function job(id) {
-  const body = workflow.match(new RegExp(`\\n  ${id}:\\n([\\s\\S]*?)(?=\\n  [\\w-]+:\\n|$)`))?.[1];
-  if (!body) throw new Error(`Workflow job not found: ${id}`);
-  return body;
-}
+const job = (id) => jobBlock(workflow, id);
 
 // One step's block, so a per-step key (`continue-on-error`) can be asserted
 // against the step that must carry it rather than against anything in the job.

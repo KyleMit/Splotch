@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { jobBlocks } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   FLAKY_HISTORY_ARTIFACT_NAME,
@@ -20,8 +21,7 @@ const workflow = (name) => readFileSync(join(ROOT, '.github', 'workflows', name)
 
 /** Each job's `name:` with the `name:` and `retention-days:` of its upload-artifact steps. */
 function reportUploads(text) {
-  const jobs = text.split(/\n(?= {2}[\w-]+:\n)/).slice(1);
-  return jobs.flatMap((job) => {
+  return jobBlocks(text).flatMap(({ text: job }) => {
     const jobName = /^ {4}name: (.+)$/m.exec(job)?.[1];
     const uploads = job
       .split(/\n(?= {6}- )/)

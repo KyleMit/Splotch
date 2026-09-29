@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { jobBlock, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
+
 // Playwright tags decide which engine a spec runs on: Firefox and WebKit grep
 // for ENGINE_SMOKE_TAG while Chromium greps it out. Nothing validates a tag, so
 // a typo can route one spec to Chromium alone while both smoke jobs stay green.
@@ -17,7 +19,6 @@ const testsDir = join(repoRoot, 'web', 'tests');
 const TAGS_MODULE = './tags';
 const playwrightConfig = readFileSync(join(repoRoot, 'web', 'playwright.config.ts'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
-const testWorkflow = readFileSync(join(repoRoot, '.github', 'workflows', 'test.yml'), 'utf8');
 const warmWorkflow = readFileSync(
   join(repoRoot, '.github', 'workflows', 'warm-playwright-cache.yml'),
   'utf8'
@@ -69,14 +70,6 @@ function taggedEntries({ name = 'spec.ts', source }) {
 }
 
 const isLiteral = (entry) => entry.startsWith("'") || entry.startsWith('"');
-
-function workflowJob(source, jobId) {
-  const start = source.indexOf(`\n  ${jobId}:\n`);
-  if (start === -1) return '';
-  const rest = source.slice(start + 1);
-  const nextJob = rest.slice(1).search(/\n {2}[\w-]+:\n/);
-  return nextJob === -1 ? rest : rest.slice(0, nextJob + 1);
-}
 
 function standardWorkflowBrowsers(source) {
   return [...new Set([...source.matchAll(/^ +browsers: (\S+)$/gm)].map((match) => match[1]))];
@@ -153,7 +146,7 @@ describe('E2E engine tags', () => {
         `node tools/run-web-tool.mjs playwright test --project ${name}`
       );
 
-      const job = workflowJob(testWorkflow, `${name}-smoke`);
+      const job = jobBlock(testWorkflow, `${name}-smoke`);
       expect(job).toContain(`browsers: ${name}`);
       expect(job).toContain(`run: npm run test:${name}:smoke`);
       expect(job).toContain(`${requirement}: 1`);
