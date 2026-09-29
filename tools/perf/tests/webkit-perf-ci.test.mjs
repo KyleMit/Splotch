@@ -384,15 +384,16 @@ describe('WebKit performance CI', () => {
 
   it('restores and durably persists the rolling full-run history', () => {
     const fullJob = job('webkit-commit-gate-full');
+    // The upload's release-tag condition is pinned by workflow-gates.test.mjs.
+    const persist = step(fullJob, 'Persist WebKit full-run history');
 
     expect(workflow).toContain('actions: read');
     expect(fullJob).toContain('name=webkit-undo-full-history');
     expect(fullJob).toContain('undo-fast-set-history.seed.json');
-    expect(fullJob).toContain('name: webkit-undo-full-history');
-    expect(fullJob).toContain('path: .perf-state/undo-fast-set-history.json');
-    expect(fullJob).toContain('include-hidden-files: true');
-    expect(fullJob).toContain('if: always()');
-    expect(fullJob).toContain('retention-days: 90');
+    expect(persist).toContain('name: webkit-undo-full-history');
+    expect(persist).toContain('path: .perf-state/undo-fast-set-history.json');
+    expect(persist).toContain('include-hidden-files: true');
+    expect(persist).toContain('retention-days: 90');
   });
 
   it('falls back to the committed seed when artifact transfer or extraction fails', () => {
