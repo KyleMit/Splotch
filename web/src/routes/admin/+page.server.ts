@@ -1,4 +1,5 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
+import { ADMIN_FORM_FIELDS } from '$lib/adminForm';
 import {
   beginAdminLogin,
   buildInvites,
@@ -125,7 +126,7 @@ async function tokenMutation(
     const { status, message } = unreadableFormBody(body.reason);
     return fail(status, { error: message });
   }
-  const token = formStringField(body.form, 'token').trim();
+  const token = formStringField(body.form, ADMIN_FORM_FIELDS.token).trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
   return { success: true, message: describe(token, result.changed) };
@@ -143,7 +144,7 @@ export const actions: Actions = {
       const { status, message } = unreadableFormBody(body.reason);
       return fail(status, { loginError: message });
     }
-    if (!attempt.verify(formStringField(body.form, 'access-key')).ok) {
+    if (!attempt.verify(formStringField(body.form, ADMIN_FORM_FIELDS.accessKey)).ok) {
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);
