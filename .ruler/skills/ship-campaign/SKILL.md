@@ -69,8 +69,7 @@ already finished and written its findings to disk, was read as the merge authori
 queue stopped with a green, reviewed PR unmerged.) The exception is a guardrail denial that forbids
 the outcome rather than the call, such as the auto-mode classifier refusing a merge: respect it, and
 never reach that outcome by another route. A refused merge downgrades the queue as a reviewer outage
-does (step 3): each unit still goes to shippable and ends as an open, mergeable PR for the user to
-merge.
+does (step 3): units still go to shippable and end as open, mergeable PRs for the user to merge.
 
 **Report an interruption from live state, never from assumption.** What step 5 requires of
 **status** binds harder on an unplanned stop, because that report is what the user decides on:
@@ -209,7 +208,8 @@ the morning report and stop.
 **A reviewer outage downgrades the queue instead of stopping it.** If the rival cannot run after one
 retry, a substituted review withdraws the merge authority (`ship-issue` step 4). Keep going in
 `ship-issue`'s default mode: each unit ends as an open, mergeable PR branched from `main`, and the
-morning report lists them for the user to merge.
+morning report lists them for the user to merge. A successor that needs one of those unmerged PRs is
+dependency-blocked and skipped, as after a quarantine.
 
 ## 4. When `main` goes red during the campaign — roll forward
 
