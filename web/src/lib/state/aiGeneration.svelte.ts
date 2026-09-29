@@ -33,7 +33,6 @@ type AiPhase =
   | {
       kind: 'result';
       url: string;
-      type: string;
       // Proof this AI attempt ran on this server, spent by the report flow.
       // Null on the BYOK and managed paths, which carry their own credential.
       reportToken: string | null;
@@ -72,12 +71,7 @@ interface AiGenerationMachine {
   endAiGeneration(id: number): void;
   setAiPreview(id: number, previewUrl: string): void;
   setAiDrawing(id: number, drawing: Blob): void;
-  finishAiGeneration(
-    id: number,
-    url: string,
-    imageType: string,
-    reportToken?: string | null
-  ): boolean;
+  finishAiGeneration(id: number, picture: Pick<AiResultPhase, 'url' | 'reportToken'>): boolean;
   setAiAutoSave(id: number, autoSave: AiAutoSave): void;
   failAiGeneration(id: number, failure: AiFailure): void;
   closeAiResult(): void;
@@ -188,14 +182,14 @@ export function createAiGeneration(): AiGenerationState {
     },
     // The finished image has arrived — hand it to the modal so the dial can race to
     // completion and reveal it.
-    finishAiGeneration(id, url, imageType, reportToken = null) {
+    finishAiGeneration(id, { url, reportToken }) {
       if (!isAiGenerationActive(id) || !open()) {
         URL.revokeObjectURL(url);
         return false;
       }
       s.consecutiveFailures = 0;
       s.drawing = null;
-      leavePhase({ kind: 'result', url, type: imageType, reportToken, autoSave: null });
+      leavePhase({ kind: 'result', url, reportToken, autoSave: null });
       return true;
     },
     setAiAutoSave(id, autoSave) {

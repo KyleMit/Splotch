@@ -343,8 +343,28 @@ describe('generateAiImage response handling', () => {
 
     await generateAiImage();
 
-    expectPhase(aiGenerationState, { kind: 'result', url: 'blob:test-2', type: 'image/webp' });
+    expectPhase(aiGenerationState, { kind: 'result', url: 'blob:test-2' });
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
+  });
+
+  it("hands the picture the server's report proof", async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(new Blob(['result'], { type: 'image/webp' }), {
+          status: 200,
+          headers: { [REPORT_TOKEN_HEADER]: 'signed-picture-token' },
+        })
+      )
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiGenerationState } = await import('$lib/state/aiGeneration.svelte');
+
+    await generateAiImage();
+
+    expectPhase(aiGenerationState, { kind: 'result', reportToken: 'signed-picture-token' });
   });
 });
 

@@ -141,12 +141,7 @@ function applyResponse(
       });
       return null;
   }
-  return finishAiGeneration(
-    runId,
-    URL.createObjectURL(response.blob),
-    response.blob.type,
-    reportToken
-  )
+  return finishAiGeneration(runId, { url: URL.createObjectURL(response.blob), reportToken })
     ? { committedBlob: response.blob }
     : null;
 }

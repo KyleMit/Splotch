@@ -40,7 +40,7 @@ describe('createAiGeneration', () => {
     const machine = createAiGeneration();
     const firstController = new AbortController();
     const firstRun = machine.startAiGeneration('blob:first-preview', firstController, 'Crayon');
-    machine.finishAiGeneration(firstRun, 'blob:first-result', 'image/png');
+    machine.finishAiGeneration(firstRun, { url: 'blob:first-result', reportToken: null });
     machine.failAiGeneration(firstRun, RETRY_FAILURE);
 
     const secondRun = machine.startAiGeneration('blob:second-preview', undefined, 'Watercolor');
@@ -60,7 +60,7 @@ describe('createAiGeneration', () => {
     const machine = createAiGeneration();
     const controller = new AbortController();
     const firstRun = machine.startAiGeneration('blob:preview', controller, 'Paper');
-    machine.finishAiGeneration(firstRun, 'blob:result', 'image/webp');
+    machine.finishAiGeneration(firstRun, { url: 'blob:result', reportToken: null });
     machine.closeAiResult();
 
     expect(controller.signal.aborted).toBe(true);
@@ -82,7 +82,10 @@ describe('createAiGeneration', () => {
     const activeRun = machine.startAiGeneration('blob:active-preview');
 
     machine.setAiPreview(staleRun, 'blob:stale-preview');
-    const committed = machine.finishAiGeneration(staleRun, 'blob:stale-result', 'image/png');
+    const committed = machine.finishAiGeneration(staleRun, {
+      url: 'blob:stale-result',
+      reportToken: null,
+    });
 
     expect(committed).toBe(false);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-preview');
@@ -97,12 +100,13 @@ describe('createAiGeneration', () => {
     const machine = createAiGeneration();
     const run = machine.startAiGeneration(null, undefined, 'Felt');
 
-    expect(machine.finishAiGeneration(run, 'blob:result', 'image/jpeg')).toBe(true);
+    expect(
+      machine.finishAiGeneration(run, { url: 'blob:result', reportToken: 'report-proof' })
+    ).toBe(true);
     expect(machine.phase).toEqual({
       kind: 'result',
       url: 'blob:result',
-      type: 'image/jpeg',
-      reportToken: null,
+      reportToken: 'report-proof',
       autoSave: null,
     });
     expect(machine.style).toBe('Felt');
@@ -124,7 +128,7 @@ describe('createAiGeneration', () => {
   it('cannot hold a picture and an error at once: a failure after a result releases the picture', () => {
     const machine = createAiGeneration();
     const run = machine.startAiGeneration(null);
-    machine.finishAiGeneration(run, 'blob:result', 'image/png');
+    machine.finishAiGeneration(run, { url: 'blob:result', reportToken: null });
 
     machine.failAiGeneration(run, RETRY_FAILURE);
 
@@ -136,7 +140,7 @@ describe('createAiGeneration', () => {
     const machine = createAiGeneration();
     const staleRun = machine.startAiGeneration(null);
     const run = machine.startAiGeneration(null);
-    machine.finishAiGeneration(run, 'blob:result', 'image/png');
+    machine.finishAiGeneration(run, { url: 'blob:result', reportToken: null });
 
     machine.setAiAutoSave(run, { status: 'failed' });
     machine.setAiAutoSave(staleRun, { status: 'photos' });
@@ -179,14 +183,14 @@ describe('minimizing a waiting generation', () => {
     // The whole trick: the run stays open, which is what finishAiGeneration
     // checks. Minimizing must not become a way to throw away a paid picture.
     expect(machine.phase).toEqual({ kind: 'generating' });
-    expect(machine.finishAiGeneration(id, 'blob:done', 'image/png')).toBe(true);
+    expect(machine.finishAiGeneration(id, { url: 'blob:done', reportToken: null })).toBe(true);
     expect(machine.phase).toMatchObject({ kind: 'result', url: 'blob:done' });
   });
 
   it('refuses to minimize a result there is already something to look at', () => {
     const machine = createAiGeneration();
     const id = machine.startAiGeneration(null);
-    machine.finishAiGeneration(id, 'blob:done', 'image/png');
+    machine.finishAiGeneration(id, { url: 'blob:done', reportToken: null });
 
     machine.minimizeAiResult();
     expect(machine.minimized).toBe(false);
@@ -221,7 +225,7 @@ describe('consecutive generation failures', () => {
     machine.failAiGeneration(second, RETRY_FAILURE);
     expect(machine.consecutiveFailures).toBe(2);
     const third = machine.startAiGeneration(null);
-    machine.finishAiGeneration(third, 'blob:result', 'image/png');
+    machine.finishAiGeneration(third, { url: 'blob:result', reportToken: null });
     expect(machine.consecutiveFailures).toBe(0);
     machine.failAiGeneration(third, RETRY_FAILURE);
     machine.closeAiResult();

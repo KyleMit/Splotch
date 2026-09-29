@@ -29,7 +29,7 @@ async function revealedRun() {
   const { startAiGeneration, finishAiGeneration, aiGenerationState } =
     await import('$lib/state/aiGeneration.svelte');
   const runId = startAiGeneration(null);
-  finishAiGeneration(runId, 'blob:ai', aiPicture.type);
+  finishAiGeneration(runId, { url: 'blob:ai', reportToken: null });
   return { runId, state: aiGenerationState };
 }
 
