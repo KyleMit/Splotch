@@ -3,10 +3,10 @@ import { ESLint } from 'eslint';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// No TypeScript program covers tools/, so no-undef is the only check between a dropped import and
-// a ReferenceError at CLI runtime. That bug has shipped outside tools/asset-gen: an app driver
-// called sleep() without importing it, and perf:mount called join() the same way. This fails if
-// the eslint.config.js glob narrows back to a subtree.
+// No TypeScript program covers tools/ or the skill-package scripts, so no-undef is the only check
+// between a dropped import and a ReferenceError at CLI runtime. That bug has shipped outside
+// tools/asset-gen: an app driver called sleep() without importing it, and perf:mount called join()
+// the same way. This fails if the eslint.config.js glob narrows back to a subtree.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const eslint = new ESLint({ cwd: repoRoot });
 
@@ -17,7 +17,7 @@ const undefinedNames = async (fixture, source) => {
     .map((message) => message.message);
 };
 
-describe('no-undef covers every tools/ script', () => {
+describe('no-undef covers every tools/ and skill-package script', () => {
   it.each([
     'tools/perf/probe.mjs',
     'tools/lib/probe.mjs',
@@ -25,6 +25,17 @@ describe('no-undef covers every tools/ script', () => {
     'tools/perf/probes/probe.js',
     'tools/asset-gen/lib/probe.ts',
   ])('rejects an unimported binding in %s', async (fixture) => {
+    expect(await undefinedNames(fixture, 'await sleep(1);\n')).toEqual(["'sleep' is not defined."]);
+  });
+
+  // Skill-package helpers run only when an agent invokes the skill. Cover the ruler sources and
+  // forks, and both provider trees, which also hold the direct provider packages ruler never writes.
+  it.each([
+    '.ruler/skills/probe/probe.mjs',
+    '.ruler/skill-forks/claude/skills/probe/probe.mjs',
+    '.claude/skills/probe/scripts/probe.mjs',
+    '.agents/skills/probe/scripts/probe.mjs',
+  ])('rejects an unimported binding in skill script %s', async (fixture) => {
     expect(await undefinedNames(fixture, 'await sleep(1);\n')).toEqual(["'sleep' is not defined."]);
   });
 

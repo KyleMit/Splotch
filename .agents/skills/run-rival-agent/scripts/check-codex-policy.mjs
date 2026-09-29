@@ -2,8 +2,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isMain } from '../../../../tools/lib/proc.mjs';
 import { CODEX_POLICY_PATHS, ESCALATED_WRAPPERS, POLICY_RULES } from './install-codex-policy.mjs';
 import { installRunClaude } from './install-run-claude.mjs';
 
@@ -93,7 +92,7 @@ export function checkCodexPolicy() {
   console.log('Codex rival-agent policy and trusted wrappers are ready');
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     if (process.argv.length !== 2) throw new Error('check-codex-policy.mjs accepts no arguments');
     checkCodexPolicy();
