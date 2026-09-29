@@ -422,6 +422,29 @@ describe('clear sound', () => {
     expect(pageTurnsIn(sources)).toHaveLength(0);
   });
 
+  it('attempts a failed page-turn load again on the next gesture', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { clearSound, sources } = await mountClearSound(signal);
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
+    await vi.runOnlyPendingTimersAsync();
+    expect(pageTurnsIn(sources)).toHaveLength(0);
+
+    clearSound.startClearSound();
+    clearSound.updateClearSound(1.2);
+    clearSound.commitClearSound();
+    await vi.runOnlyPendingTimersAsync();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(pageTurnsIn(sources)).toHaveLength(1);
+  });
+
   // Every AudioContext spins up its own audio device thread, so the clear synth
   // borrows the pencil sound's context instead of building a second one.
   it('plays on the AudioContext the pencil sound already built', async ({ signal }) => {

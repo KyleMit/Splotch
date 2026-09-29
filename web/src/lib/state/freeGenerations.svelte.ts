@@ -37,8 +37,14 @@ async function rawInstallationId(): Promise<string> {
   return webInstallationId();
 }
 
+// Checked before hashing: every input digests to a well-formed pseudonym, so a
+// missing device id would otherwise become one allowance shared by every device
+// that lacks one.
 async function createInstallationId(): Promise<string> {
-  const raw = await rawInstallationId();
+  const raw: unknown = await rawInstallationId();
+  if (typeof raw !== 'string' || raw.length === 0) {
+    throw new Error('Invalid raw installation identifier');
+  }
   return sha256Hex(new TextEncoder().encode(`${INSTALLATION_NAMESPACE}:${raw}`));
 }
 

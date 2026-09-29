@@ -537,3 +537,37 @@ describe('grantRefreshReady', () => {
     });
   });
 });
+
+// The installation id is a module-level memo, and every case above resolves it
+// through the real plugin, so this case takes a fresh copy of the module.
+describe('native installation id', () => {
+  afterEach(() => {
+    vi.doUnmock('@capacitor/device');
+    vi.resetModules();
+  });
+
+  it('refuses a device reply with no identifier and sends no grant request', async () => {
+    freeGenerationsState.dispose();
+    const getId = vi.fn(async () => ({}));
+    vi.doMock('@capacitor/device', () => ({ Device: { getId } }));
+    vi.resetModules();
+    const fresh = await import('./freeGenerations.svelte');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fresh.installationId()).rejects.toThrow('Invalid raw installation identifier');
+
+    persistedStateStatus.markHydrated();
+    const grantStore = fresh.createFreeGenerations({
+      settings: settingsState,
+      network: networkState,
+      persistedStateStatus,
+    });
+    grantStore.install();
+    await vi.waitFor(() => expect(grantStore.grant).toEqual({ status: 'unavailable' }));
+    grantStore.dispose();
+
+    expect(getId).toHaveBeenCalledTimes(2);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
