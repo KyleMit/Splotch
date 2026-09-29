@@ -40,7 +40,13 @@ function profileMatches(profile, team, bundleId, now) {
   if (typeof profile.appId !== 'string') return false;
   if (profile.expires && Date.parse(profile.expires) <= now) return false;
   const appId = `${team}.${bundleId}`;
-  return profile.appId === appId || profile.appId === `${team}.*`;
+  if (profile.appId === appId) return true;
+  if (!profile.appId.endsWith('*')) return false;
+  return appId.startsWith(profile.appId.slice(0, -1));
+}
+
+export function iosProvisioningReady(provisioning) {
+  return provisioning?.status === 'ok';
 }
 
 export function iosProvisioningCheck({ udid, team, profiles, now = Date.now() }) {
