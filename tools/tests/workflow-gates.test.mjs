@@ -68,26 +68,32 @@ function jobBlocks(workflow) {
 
 const steps = (job) => job.split(/^(?= {6}- )/m).slice(1);
 
+const isBlankOrComment = (line) => /^\s*(?:#.*)?$/.test(line);
+
 // Every `permissions` key that is not a block of `scope: level` lines, or the
-// empty mapping that grants nothing.
+// empty mapping that grants nothing. A key is found however it is spelled
+// (quoted, or with space before the colon) and accepted only in the one
+// spelling the holders below are read from.
 function unreadablePermissions(workflow) {
   const lines = workflow.split('\n');
   return lines.flatMap((line, index) => {
-    const header = line.match(/^( *)permissions:(.*)$/);
+    const header = line.match(/^( *)["']?permissions["']?\s*:(.*)$/);
     if (!header) return [];
 
-    const entryIndent = header[1].length + 2;
-    const entry = new RegExp(`^ {${entryIndent}}[a-z-]+: (?:read|write|none)$`);
-    const end = lines.findIndex(
-      (candidate, at) => at > index && candidate.search(/\S/) < entryIndent
+    const [, indent, value] = header;
+    const entry = new RegExp(`^${indent}  [a-z-]+: (?:read|write|none)$`);
+    const following = lines.slice(index + 1);
+    const end = following.findIndex(
+      (candidate) => !isBlankOrComment(candidate) && candidate.search(/\S/) <= indent.length
     );
-    const entries = lines
-      .slice(index + 1, end < 0 ? undefined : end)
-      .filter((candidate) => !candidate.trimStart().startsWith('#'));
-    const grantsNothing = header[2] === ' {}' && entries.length === 0;
-    const readable =
-      header[2] === '' && entries.length > 0 && entries.every((grant) => entry.test(grant));
-    return grantsNothing || readable ? [] : [`line ${index + 1}: ${line.trim()}`];
+    const entries = following
+      .slice(0, end < 0 ? undefined : end)
+      .filter((candidate) => !isBlankOrComment(candidate));
+    const grantsNothing = value === ' {}' && entries.length === 0;
+    const grantsByScope =
+      value === '' && entries.length > 0 && entries.every((grant) => entry.test(grant));
+    const readable = line === `${indent}permissions:${value}` && (grantsNothing || grantsByScope);
+    return readable ? [] : [`line ${index + 1}: ${line.trim()}`];
   });
 }
 
@@ -164,6 +170,32 @@ describe('workflow gates', () => {
     // inline mapping, or an entry carrying a comment.
     it.each(workflows)('$name spells every permissions block one scope per line', ({ text }) => {
       expect(unreadablePermissions(text)).toEqual([]);
+    });
+
+    it.each([
+      { spelling: 'a block of scopes', yaml: ['permissions:', '  contents: read', 'jobs:'] },
+      { spelling: 'the empty mapping', yaml: ['    permissions: {}', '    steps:'] },
+      {
+        spelling: 'a block holding a blank line and a comment',
+        yaml: ['    permissions:', '', '      # filing', '      issues: write', '    steps:'],
+      },
+    ])('reads $spelling', ({ yaml }) => {
+      expect(unreadablePermissions(yaml.join('\n'))).toEqual([]);
+    });
+
+    it.each([
+      { spelling: 'write-all', yaml: ['    permissions: write-all'] },
+      { spelling: 'a space before the colon', yaml: ['    permissions : write-all'] },
+      { spelling: 'a quoted key', yaml: ['    "permissions":', '      issues: write'] },
+      { spelling: 'an inline mapping', yaml: ['    permissions: { issues: write }'] },
+      {
+        spelling: 'a grant carrying a comment',
+        yaml: ['    permissions:', '      issues: write # filing'],
+      },
+      { spelling: 'a quoted scope', yaml: ['    permissions:', '      "issues": write'] },
+      { spelling: 'a key with no grants under it', yaml: ['    permissions:', '    steps:'] },
+    ])('rejects $spelling', ({ yaml }) => {
+      expect(unreadablePermissions(yaml.join('\n'))).toEqual([`line 1: ${yaml[0].trim()}`]);
     });
 
     it('finds the jobs holding a job-level issues: write', () => {
