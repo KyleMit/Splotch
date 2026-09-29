@@ -717,7 +717,7 @@ itself. No `claude` call in the sample exceeded ~13 min.
   signature is specific — `pgrep -f 'claude -p'` returns nothing but the supervising session's own
   CLI, no new envelope for tens of minutes, HEAD frozen, and **no log line of any kind**, so an
   event-driven monitor stays silent and reads exactly like a healthy long finding. Confirm with the
-  envelope count above, then `pkill -TERM -f 'audit-burndown/run-burndown.mjs'`,
+  envelope count above, then `pkill -TERM -f '^node tools/audit-burndown/run-burndown.mjs'`,
   `git reset -q --hard origin/<branch>` to drop the half-done finding (its `docs/AUDIT.md` entry was
   never removed, so the finding is intact and will be re-processed), and relaunch from the durable
   checkpoint.
