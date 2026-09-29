@@ -1,0 +1,8 @@
+     2ms [document request] http://localhost:5300/
+     5ms [navigated] http://localhost:5300/
+    18ms [navigated] http://localhost:5300/
+  1554ms [before relaunch] {"length":2,"state":"{\"sveltekit:history\":1790630740827,\"sveltekit:navigation\":1790630740827}"}
+  1560ms [relaunch: reload on the current history entry]
+  1569ms [document request] http://localhost:5300/
+  1644ms [navigated] http://localhost:5300/
+  6649ms [after relaunch] {"length":2,"state":"{\"sveltekit:history\":1790630740827,\"sveltekit:navigation\":1790630740827}","documentLoads":["reload"]}

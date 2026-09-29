@@ -5,6 +5,9 @@ Panel share deterministic first-paint geometry for the persisted visible-button 
 orientation-tagged measurement retained as a hydrated correction. Amended 2026-09-19: the AI button
 uses the last known connectivity state to paint before runtime status resolves.
 
+> **Amended by [ADR-0176](0176-drawing-route-holds-first-paint-until-the-toolbar-is-parsed.md):**
+> the prerendered drawing route holds its first paint until its toolbar has been parsed.
+
 ## Context
 
 The web target is built with `@sveltejs/adapter-netlify` (ADR-0001), which is *capable* of runtime

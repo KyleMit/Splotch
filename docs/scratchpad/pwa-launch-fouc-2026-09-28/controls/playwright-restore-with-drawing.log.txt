@@ -1,0 +1,10 @@
+     2ms [document request] http://localhost:5300/
+     5ms [navigated] http://localhost:5300/
+    19ms [navigated] http://localhost:5300/
+  1625ms [navigated] http://localhost:5300/
+  2851ms [before relaunch] {"length":3,"state":"{\"sveltekit:history\":1790630732663,\"sveltekit:navigation\":1790630732662,\"sveltekit:pageurl\":\"http://localhost:5300/\",\"sveltekit:states\":{\"splotchBackNavigation\":{\"session\":\"3d273be2-6913-4099-9db9-946fa6fbb37d\",\"guard\":true,\"dialogs\":0}}}"}
+  2856ms [relaunch: reload on the current history entry]
+  2864ms [document request] http://localhost:5300/
+  2941ms [navigated] http://localhost:5300/
+  2962ms [navigated] http://localhost:5300/
+  7945ms [after relaunch] {"length":3,"state":"{\"sveltekit:history\":1790630732662,\"sveltekit:navigation\":1790630732662}","documentLoads":["reload"]}

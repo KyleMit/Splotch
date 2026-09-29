@@ -1,0 +1,20 @@
+{
+  "theme": "system",
+  "scheme": "dark",
+  "toolbar": "bare",
+  "throttle": 4,
+  "warm": false,
+  "frames": 5,
+  "timeline": {
+    "timeOrigin": 1790632130.6193998,
+    "domContentLoaded": 284,
+    "load": 284,
+    "paints": [
+      ["first-paint", 288],
+      ["first-contentful-paint", 288]
+    ],
+    "htmlAttrs": ["lang=en", "data-orientation=portrait", "data-app-surface=", "data-toolbar=bare"],
+    "swController": false
+  },
+  "log": ["[navigated] http://localhost:5300/", "[navigated] http://localhost:5300/"]
+}
