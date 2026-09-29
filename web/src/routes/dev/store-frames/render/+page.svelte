@@ -6,19 +6,23 @@
   import FeatureGraphic from '../lib/FeatureGraphic.svelte';
   import { STORE_TARGETS } from '../lib/targets.ts';
   import { STORE_PAGES } from '../lib/pages.ts';
-  import { FEATURE_GRAPHIC_PAGE_PARAM } from '../lib/paths.ts';
+  import {
+    FEATURE_GRAPHIC_PAGE_PARAM,
+    RENDER_PAGE_PARAM,
+    RENDER_TARGET_PARAM,
+  } from '../lib/paths.ts';
 
   // The bare screenshot surface: renders exactly one composition at its exact
   // store pixel size and reports data-render-state so the generator can wait
-  // deterministically instead of sleeping. ?page=<id>&target=<name>, or
-  // ?page=feature-graphic (no target).
+  // deterministically instead of sleeping. Its URL comes from renderPath in
+  // ../lib/paths.ts: a store page id and target, or the feature graphic alone.
 
   // Every weight the frames set; the layout's lazy font warm races this page's
   // first paint, so the render surface loads them itself before reporting ready.
   const FRAME_FONT_WEIGHTS = [500, 600, 700];
 
-  const pageParam = $derived(route.url.searchParams.get('page') ?? '');
-  const targetParam = $derived(route.url.searchParams.get('target') ?? '');
+  const pageParam = $derived(route.url.searchParams.get(RENDER_PAGE_PARAM) ?? '');
+  const targetParam = $derived(route.url.searchParams.get(RENDER_TARGET_PARAM) ?? '');
   const isFeatureGraphic = $derived(pageParam === FEATURE_GRAPHIC_PAGE_PARAM);
   const storePage = $derived(STORE_PAGES.find((entry) => entry.id === pageParam));
   const target = $derived(STORE_TARGETS.find((entry) => entry.name === targetParam));
