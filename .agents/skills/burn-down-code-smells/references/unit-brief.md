@@ -23,7 +23,8 @@ quarantine.
 ## Setup
 
 1. Run `git fetch origin main`, then `git checkout -b <slug> origin/main`. While several lanes
-   fetch, a fetch can fail with "Permission denied (publickey)" for about a minute. Retry it.
+   fetch, a fetch can fail with "Permission denied (publickey)" for about a minute. Retry it;
+   meanwhile `gh api repos/KyleMit/Splotch/commits/main --jq .sha` reads `main`.
 2. If `node_modules` is missing, run `pnpm install --frozen-lockfile --prefer-offline`. Never
    `npm install`.
 3. Read the root `CLAUDE.md` conventions and `docs/CODING-STANDARDS.md`. Consult the area skill
