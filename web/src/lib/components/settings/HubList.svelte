@@ -159,9 +159,8 @@
     transform: scale(0.97);
   }
 
-  /* Untiled: the icon takes the space the tile's padding used to. The box stays
-     44px as the optical column that keeps every row's title left-aligned — it is
-     layout, not a hit target (the row itself is the target). */
+  /* The untiled icon's box is the optical column that keeps every row's title
+     left-aligned — it is layout, not a hit target (the row itself is the target). */
   .hub-icon {
     display: flex;
     align-items: center;

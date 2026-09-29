@@ -10,9 +10,8 @@
 
   // The save pipeline (export compositor, polaroid, folder save) is
   // save-time-only, so it loads at press time and stays out of the startup
-  // bundle (issue #461). The catch keeps a dead-connection chunk load from
-  // throwing unhandled — the tap just does nothing, like the other silent
-  // save degradations (see screenshot.ts).
+  // bundle (issue #461). A failed chunk load clears the memo so the next press
+  // retries; the tap that hit it logs the error and does nothing else.
   function loadScreenshotModule() {
     if (screenshotModulePromise) return screenshotModulePromise;
     const loading = import('$lib/drawing/screenshot').catch((error) => {
