@@ -58,12 +58,20 @@ const POLICY_ERROR_CODES = new Set<ResponseError['code']>([
 ]);
 const POLICY_INCOMPLETE_REASONS = new Set(['content_filter']);
 
-function policySignal(response: OpenAiResponse): string | null {
+function policyErrorCode(response: OpenAiResponse): ResponseError['code'] | null {
   const code = response?.error?.code;
-  if (code && POLICY_ERROR_CODES.has(code)) return response.error?.message || code;
+  return code && POLICY_ERROR_CODES.has(code) ? code : null;
+}
+
+function policyIncompleteReason(response: OpenAiResponse): string | null {
   const reason = response?.incomplete_details?.reason;
-  if (reason && POLICY_INCOMPLETE_REASONS.has(reason)) return reason;
-  return null;
+  return reason && POLICY_INCOMPLETE_REASONS.has(reason) ? reason : null;
+}
+
+function policySignal(response: OpenAiResponse): string | null {
+  const code = policyErrorCode(response);
+  if (code) return response.error?.message || code;
+  return policyIncompleteReason(response);
 }
 
 const messageParts = (response: OpenAiResponse) =>
@@ -72,15 +80,41 @@ const messageParts = (response: OpenAiResponse) =>
     .flatMap((item) => item.content ?? []);
 
 /**
- * The SDK's typed decline. This is machine-readable in exactly the way the codes
- * above are, so it outranks any reasoning about what the image tool did — a
- * model that emitted a `refusal` part has declined, whatever else came back.
+ * The SDK's typed decline. It is machine-readable in exactly the way the codes
+ * above are, so when the image tool produced no bytes it outranks any reasoning
+ * about what the tool did: a failed tool call beside a `refusal` part is a
+ * decline, not a retry. A completed image still wins over it (ADR-0023).
  */
 function typedRefusal(response: OpenAiResponse): string {
   return messageParts(response)
     .map((part) => ('refusal' in part ? (part.refusal ?? '') : ''))
     .join(' ')
     .trim();
+}
+
+/**
+ * The machine-readable declines on a response, each named by where it sits and
+ * never by its text: a refusal or policy message can describe the child's
+ * drawing, and these names go to the server log.
+ */
+function declineSignalNames(response: OpenAiResponse): string[] {
+  const code = policyErrorCode(response);
+  const reason = policyIncompleteReason(response);
+  return [
+    ...(code ? [`error.code=${code}`] : []),
+    ...(reason ? [`incomplete_details.reason=${reason}`] : []),
+    ...(typedRefusal(response) ? ['refusal part'] : []),
+  ];
+}
+
+// A completed image wins over a decline beside it, so the child gets the
+// picture and the decline goes unheeded. This line is the only trace that the
+// model or the platform also said no.
+function warnOfDroppedDeclines(response: OpenAiResponse): void {
+  const dropped = declineSignalNames(response);
+  if (dropped.length > 0) {
+    console.warn(`[openai-safety] delivered an image despite ${dropped.join(', ')}`);
+  }
 }
 
 /** The prose the model answered with, across every message part. */
@@ -95,12 +129,16 @@ function messageText(response: OpenAiResponse): string {
  * The image tool's own terminal states. A tool call that ran and failed is an
  * upstream failure, not a policy decision — the model's policy decision is to
  * not call the tool at all.
+ *
+ * Precedence, first match wins: a completed image (ADR-0023), a machine-readable
+ * decline, a tool call without bytes, then the model's prose.
  */
 export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassification {
   const output = response?.output ?? [];
 
   const call = output.find((item) => item.type === 'image_generation_call');
   if (call?.result) {
+    warnOfDroppedDeclines(response);
     return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
   }
 
