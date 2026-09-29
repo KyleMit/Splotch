@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
   # Both path lists are pinned by
   # tools/mobile/tests/native-release-configurations.test.mjs against the
-  # inputs the compile commands reach outside the native trees.
+  # inputs the compile commands read.
   pull_request:
     paths:
       - 'android/**'

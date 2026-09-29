@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -9,6 +10,11 @@ const androidWorkflow = read('.github/workflows/android-deploy.yml');
 const iosWorkflow = read('.github/workflows/ios-deploy.yml');
 const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
 const nativeCompileWorkflow = read('.github/workflows/native-compile.yml');
+
+// Gradle compiles android/, xcodebuild compiles ios/, and cap update and cap
+// sync configure both from capacitor.config.json.
+const NATIVE_TREES = ['android', 'ios'];
+const CAPACITOR_CONFIG = 'capacitor.config.json';
 
 // What `pnpm install` reads. pnpm-workspace.yaml's nodeLinker decides the
 // node_modules paths cap sync writes into the native projects, and editing it
@@ -160,7 +166,17 @@ describe('native release configuration gates', () => {
     expect(pathLists[0]).toContain("- '.github/workflows/native-compile.yml'");
   });
 
-  it('filters native compile on every input its commands reach outside the native trees', () => {
+  it('filters native compile on every input its commands read', () => {
+    const nativeTreeFiles = execFileSync('git', ['ls-files', '--', ...NATIVE_TREES], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    })
+      .trim()
+      .split('\n');
+    expect(
+      NATIVE_TREES.every((tree) => nativeTreeFiles.some((file) => file.startsWith(`${tree}/`)))
+    ).toBe(true);
+
     const roots = nativeCompileToolEntryPoints();
     const reachedTools = localImportClosure(roots);
     expect(roots.length).toBeGreaterThan(0);
@@ -175,7 +191,14 @@ describe('native release configuration gates', () => {
     );
     expect(localActions.size).toBeGreaterThan(0);
 
-    const inputs = [...PNPM_INSTALL_INPUTS, ...localActions, ...reachedTools];
+    const inputs = [
+      ...nativeTreeFiles,
+      CAPACITOR_CONFIG,
+      '.github/workflows/native-compile.yml',
+      ...PNPM_INSTALL_INPUTS,
+      ...localActions,
+      ...reachedTools,
+    ];
     for (const input of inputs) expect(existsSync(join(repoRoot, input)), input).toBe(true);
 
     const filters = nativeCompilePathFilters();
