@@ -151,8 +151,8 @@ completions can never claim one slot — but it is no longer allowed to destroy 
 ledger write that fails is logged and the image returned without the remaining-count header, leaving
 the daily ceiling as the spending boundary. A separate durable compare-and-set counter reserves
 every free provider start before the model is called and caps project-funded traffic across all
-installations and function instances at 500 calls per UTC day. Provider failures and safety refusals
-are not refunded from that daily ceiling.
+installations and function instances at 500 calls per UTC day. Provider failures, safety refusals,
+and an in-line fallback skipped for lack of time (above) are not refunded from that daily ceiling.
 
 On success returns the image bytes. Sticker results are keyed server-side into a transparent PNG, so
 the paper shows through in the result and the downloaded image retains transparency. A Sticker
