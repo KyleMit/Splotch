@@ -209,6 +209,11 @@ export default defineConfig({
               globIgnores: [
                 // The social card is served but never fetched by the application.
                 'large-image.png',
+                // The icons the manifest named before ADR-0177. The store-frame
+                // harness and installs made before it still request them by URL;
+                // the installed app does not.
+                'web-app-manifest-192x192.png',
+                'web-app-manifest-512x512.png',
                 `${PAGE_CACHE_CLEANUP_SCRIPT_PREFIX}*.js`,
                 '**/*.outline.webp',
                 '**/*.chalk.webp',

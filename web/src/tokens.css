@@ -128,6 +128,7 @@
   --float-border: transparent;
   --float-shadow: 0 2px 6px rgb(93 84 68 / 14%), 0 6px 16px rgb(93 84 68 / 10%);
   --dark-ink-keyline: transparent;
+  --black-swatch-ink: #0a0b10;
 
   --icon-appearance-night: #212d4c;
   --icon-brush-magic-handle: #3a2470;
@@ -198,6 +199,7 @@
   --float-border: rgb(255 255 255 / 10%);
   --float-shadow: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%);
   --dark-ink-keyline: #e9e7f0;
+  --black-swatch-ink: #ffffff;
 
   --icon-appearance-night: #93a6d6;
   --icon-brush-magic-handle: #d5c4f5;
@@ -269,6 +271,7 @@
     --float-border: rgb(255 255 255 / 10%);
     --float-shadow: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%);
     --dark-ink-keyline: #e9e7f0;
+    --black-swatch-ink: #ffffff;
 
     --icon-appearance-night: #93a6d6;
     --icon-brush-magic-handle: #d5c4f5;

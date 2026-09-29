@@ -272,7 +272,7 @@
   });
 </script>
 
-<div class="canvas-container">
+<div class="canvas-container" class:paper-locked={paperView.active}>
   <!-- The paper sheet: the off-white textured page the child draws on, sitting
        beneath the (transparent) canvas. Full-container in normal use; after a
        rotation locks the paper (ADR-0050) it carries the same transform the
@@ -324,10 +324,22 @@
     position: relative;
     width: 100%;
     overflow: hidden;
-    /* Only visible around the lifted paper sheet while a rotation has the paper
-       locked: a flat tone slightly apart from the sheet's so the original page
-       reads as distinct without any border line. */
+    /* The sheet is sized by the engine, which settles a resize before it
+       follows one, so a viewport that grows shows this box past the sheet's
+       edge until then: an installed app entering fullscreen does it on every
+       launch. It wears the sheet's own paper, tiled from the same corner, so
+       that strip is more page rather than a dark band. */
+    background-color: var(--paper);
+    background-image: var(--paper-texture);
+    background-repeat: repeat;
+  }
+
+  /* Around the lifted sheet while a rotation has the paper locked: a flat tone
+     slightly apart from the sheet's, so the original page reads as distinct
+     without any border line. */
+  .canvas-container.paper-locked {
     background-color: var(--paper-margin);
+    background-image: none;
   }
 
   .paper-sheet {

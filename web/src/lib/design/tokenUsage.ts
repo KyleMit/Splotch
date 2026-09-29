@@ -167,4 +167,5 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   floatShadow:
     'The one themed lift for everything floating on the paper — cards, open flyouts, page sheets.',
   darkInkKeyline: 'The keyline ringing near-black ink on float cards; inert in light mode.',
+  blackSwatchInk: "The Black swatch's fill, which turns white on dark paper.",
 };

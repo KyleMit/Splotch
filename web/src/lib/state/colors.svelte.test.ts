@@ -4,15 +4,17 @@ import {
   TRIM_ORDER,
   CUSTOM_SWATCH,
   BLACK_INK,
+  BLACK_SWATCH_FILL,
   WHITE_INK,
   createColors,
+  swatchFill,
   isWhite,
   isDarkInk,
   type ColorsState,
 } from './colors.svelte';
 import { PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 import { colorContrast } from '$lib/design/colorContrast';
-import { themes } from '$lib/design/tokens';
+import { themes, toCssVarName } from '$lib/design/tokens';
 
 // Ink the old BT.601 predicate reported as light enough to skip the keyline.
 const PERCEIVED_BRIGHTNESS_MISSES = [
@@ -80,6 +82,27 @@ describe('themedSwatchColor', () => {
     for (const { hex } of PALETTE_COLORS) {
       expect(colors.themedSwatchColor(hex), hex).toBe(hex === BLACK_INK ? WHITE_INK : hex);
     }
+  });
+});
+
+describe('swatchFill', () => {
+  it('fills every swatch but Black with its own color', () => {
+    for (const { hex } of PALETTE_COLORS.filter(({ hex }) => hex !== BLACK_INK)) {
+      expect(swatchFill(hex), hex).toBe(hex);
+    }
+  });
+
+  it('fills Black from the themed token', () => {
+    expect(swatchFill(BLACK_INK)).toBe(BLACK_SWATCH_FILL);
+    expect(BLACK_SWATCH_FILL).toBe(`var(${toCssVarName('blackSwatchInk')})`);
+  });
+
+  it.each([
+    ['light', false],
+    ['dark', true],
+  ] as const)('shows the ink the swatch paints in the %s theme', (theme, dark) => {
+    colors.followTheme(() => dark);
+    expect(themes[theme].blackSwatchInk).toBe(colors.themedSwatchColor(BLACK_INK));
   });
 });
 
