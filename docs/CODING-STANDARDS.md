@@ -431,15 +431,15 @@ The tests PR #2480 adds import the red-team library directly.
 
 **Rule.** Every guard or regression test ships with a negative control — the test run against the
 unfixed code or a seeded violation, and seen to fail — and the PR says so. Each test builds its own
-fixture, drives real stores instead of doubles that copy their rules, pins copy exactly as rendered,
-and names its timeouts with measured headroom. A gate, checker, or liveness probe is a test of the
-repo and meets the same bar. It reports a pass only after it has compared something, and a fixture
-pins its failing verdict. A guard that reads source or config text reads only the block it names,
-compares whole lines or exact names rather than a count, and refuses a spelling it cannot read. Its
-negative controls include a decoy: the line commented out, moved to another block, or spelled
-another valid way. An E2E spec that asserts something happened waits on a state change the app
-exposes, not on a sleep. A check that something did not happen first waits until it could have
-happened.
+fixture, drives real stores instead of doubles that copy their rules or run in an order the real
+code cannot, pins copy exactly as rendered, and names its timeouts with measured headroom. A gate,
+checker, or liveness probe is a test of the repo and meets the same bar. It reports a pass only
+after it has compared something, and a fixture pins its failing verdict. A guard that reads source
+or config text reads only the block it names, compares whole lines or exact names rather than a
+count, and refuses a spelling it cannot read. Its negative controls include a decoy: the line
+commented out, moved to another block, or spelled another valid way. An E2E spec that asserts
+something happened waits on a state change the app exposes, not on a sleep. A check that something
+did not happen first waits until it could have happened.
 
 **Why here.** A test that has only ever passed carries no evidence it is connected to anything.
 
@@ -452,7 +452,9 @@ before verification, remembering a failed manifest load) would have passed the w
 #2431 added `web/src/lib/coloringPacks/manager.webStore.test.ts` on the real web store, and PR #2436
 gave a positive control to a blank-undo test that could pass vacuously. Tests running close to their
 timeout failed on loaded CI runners, one at 5,570 ms against a 5,000 ms default (PRs #2401, #2407,
-#2417).
+#2417). The web-store tests stubbed `scheduleIdle` to call back before it returned, which the real
+scheduler never does. The tests ran in an order production cannot produce, and an install aborted
+mid-wait had no test; PR #2484 replaced the stub with a double that defers its callback.
 
 Gates that passed without checking what they claimed:
 
@@ -478,6 +480,11 @@ Gates that passed without checking what they claimed:
 * PR #2480: the red-team runner guarded only its `fetch`, so any other throw ended the loop. The run
   still wrote a report of the rows that had run, printed "0 row(s) flagged ⚠", and exited 0. An
   aborted run now lists every case that never ran and exits 1.
+* PR #2483: the Native compile workflow's path filter tied itself to the compile's inputs by a
+  comment, and its only test compared the filter's two copies with each other. Both omitted
+  `pnpm-workspace.yaml`, so a pull request changing only its `nodeLinker` setting would skip both
+  native compiles. The test that PR adds walks the compile's imports and install inputs against the
+  filter.
 
 Source-text guards that a comment, another job, or another spelling could satisfy:
 
@@ -575,7 +582,7 @@ Proposed during a campaign and rejected with evidence. Don't re-propose one with
 | A separate standard for native plugins                | Its incidents come from one PR (#2448), and no Java or Swift harness exists to enforce it. The missing-field lesson is in rule 4, and settling every call is in rule 5's known limits.                                                                                                                     |
 | A portability rule for Claude Code hooks              | ADR-0017 and ADR-0062 already make macOS and Linux the targets. A burndown hook that tried BSD `stat` first broke that existing rule on Linux. PR #2452 fixed it with ADR-0017's own answer, doing the work in Node, and `tools/tests/agent-hooks.test.mjs` runs the hook under GNU- and BSD-style `stat`. |
 | A separate rule for tools that delete                 | Every incident (PRs #2469, #2471, #2473) is in `tools/`, and rule 8 already owns validating before a delete. One clause there, "prove it again at the moment you act", covers all three.                                                                                                                   |
-| A separate rule for credential-bearing requests       | Its incidents come from one PR (#2476), and the fix is one target rule in the one shared admin client. Rule 8's validate-before-the-outward-step covers it.                                                                                                                                                |
+| A separate rule for credential-bearing requests       | Its incidents come from one PR (#2476), and the fix is one target rule both smokes share, plus redirect refusal in the shared admin client. Rule 8's validate-before-the-outward-step covers it.                                                                                                           |
 | A lint rule against an empty `.catch(() => {})`       | 36 catch arrows in shipped `web/src` are empty or return `undefined` or `null`, most deliberately (a wake-lock release, a cancellable animation, a queue's tail). ADR-0031's bar needs a compliant codebase; the harmful form (PRs #2474, #2477) is rule 4's.                                              |
 | NUL-terminated parsing for every `tools/` parser      | Besides the parser PR #2471 replaces, five tab-split parsers remain outside tests: three read logs their own tool writes, two read `git ls-remote` and `adb devices`, whose fields hold no tab and are matched exactly. Rule 4 covers free-text fields.                                                    |
 | A YAML parser for the workflow guards                 | None ships, and the guards catch a grant left by accident. PR #2468's line reader refuses any spelling it cannot read, which caught every respelling the rival tried; a YAML form built to evade it, such as a merge key, would still pass.                                                                |
