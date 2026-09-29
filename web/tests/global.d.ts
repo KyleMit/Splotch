@@ -1,8 +1,6 @@
 // Ambient types for the dev-only engine harness globals that the Playwright
 // specs read via page.evaluate(). They're defined in the harness page at
 // src/routes/dev/engine/+page.svelte and only ever exist under /dev/engine.
-import type { Orientation } from '../src/lib/platform';
-
 export {};
 
 declare global {
@@ -28,17 +26,7 @@ declare global {
       isCanvasEmpty(): boolean;
       getUndoDebug(): import('../src/lib/drawing/undoHistory').HistoryDebug;
       setCrayonMode(active: boolean): void;
-      setCrayonParams(params: {
-        tile?: number;
-        octaves?: { cell: number; weight: number }[];
-        edge?: number;
-        bodyVariation?: number;
-        bodyVariationCell?: number;
-        shadeVariation?: number;
-        colorMix?: number;
-        perOpGlazeReturn?: number;
-        passes?: { widthScale: number; coverage: number }[];
-      }): void;
+      setCrayonParams: typeof import('../src/lib/drawing/engine').setCrayonParams;
       // Selects the deposition pipeline for an APPEARANCE sweep. Colour
       // reproduces off-device; frame cost does not (ADR-0148).
       // Narrower than the mode union: 'planes' cannot be entered after tile
@@ -46,16 +34,7 @@ declare global {
       setCrayonDeposition(mode: 'restamp' | 'glaze-direct'): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
-      getViewState(): {
-        active: boolean;
-        scale: number;
-        rotate: 0 | 90 | 180 | 270;
-        tx: number;
-        ty: number;
-        paperCssWidth: number;
-        paperCssHeight: number;
-        paperOrientation: Orientation;
-      };
+      getViewState: typeof import('../src/lib/drawing/engine').getViewState;
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       prepareCanvasExport(
         capturePreview?: boolean
