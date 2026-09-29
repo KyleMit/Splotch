@@ -11,7 +11,6 @@ import {
   coverThumbImageSource,
   pageFillImage,
   pageCompositionKey,
-  pageImage,
   pageOverlayImage,
   pageSelectorImageSource,
   responsiveColoringAssets,
@@ -354,8 +353,8 @@ describe('bookAssetPaths', () => {
     expect(paths).toContain(coverThumb(farm, 'light'));
     expect(paths).toContain(coverThumb(farm, 'dark'));
     for (const page of farm.pages) {
-      expect(paths).toContain(pageImage(page, 'portrait'));
-      expect(paths).toContain(pageImage(page, 'landscape'));
+      expect(paths).toContain(page.lightLineArt.portrait);
+      expect(paths).toContain(page.lightLineArt.landscape);
       expect(paths).toContain(pageFillImage(page, 'portrait', 'light'));
       expect(paths).toContain(pageFillImage(page, 'landscape', 'light'));
     }

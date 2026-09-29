@@ -1,11 +1,5 @@
 // The catalog lives in a rune-free TypeScript module so build scripts can read it too.
-import {
-  pageImage,
-  pageFillImage,
-  pageOverlayImage,
-  type BookOrientation,
-  type ColoringPage,
-} from './books';
+import { pageFillImage, pageOverlayImage, type BookOrientation, type ColoringPage } from './books';
 import type { ResolvedTheme } from '../theme';
 import { readonlyValue, type DeepReadonly } from './readonlyView';
 
@@ -15,7 +9,7 @@ export interface ColoringBookState {
   setOverlayPage(page: ColoringPage, orientation: BookOrientation): void;
   setOverlayOrientation(orientation: BookOrientation): void;
   clearOverlay(): void;
-  overlayUrl(): string | null;
+  hasOverlayPage(): boolean;
   themedOverlayUrl(theme: ResolvedTheme, orientation?: BookOrientation): string | null;
   fillSheetUrl(theme: ResolvedTheme): string | null;
 }
@@ -43,8 +37,8 @@ export function createColoringBook(): ColoringBookState {
     clearOverlay() {
       s.overlayPage = null;
     },
-    overlayUrl() {
-      return s.overlayPage ? pageImage(s.overlayPage, s.orientation) : null;
+    hasOverlayPage() {
+      return s.overlayPage !== null;
     },
     themedOverlayUrl(theme, orientation = s.orientation) {
       return s.overlayPage ? pageOverlayImage(s.overlayPage, orientation, theme) : null;
@@ -61,7 +55,7 @@ export const {
   setOverlayPage,
   setOverlayOrientation,
   clearOverlay,
-  overlayUrl,
+  hasOverlayPage,
   themedOverlayUrl,
   fillSheetUrl,
 } = coloringBookState;
