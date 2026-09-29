@@ -82,3 +82,6 @@ timestamp	device	outcome	detail
 2026-09-26T01:45:21.696Z	device-003f826c172a	blocked	Unknown device or simulator UDID: '<hardware UDID redacted>'
 2026-09-26T01:45:21.698Z	device-003f826c172a	ok	recovery: The borrowed Appium could not see the iPad (`Unknown device or simulator UDID`): its device discovery is stale, which is not the automation grant. A direct WebDriverAgent launch came up ready at http://127.0.0.1:8100; a Safari session through it followed a rotation and closed cleanly. Grant: valid.
 2026-09-29T16:32:15.073Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-29T17:29:41.000Z	device-8e0689ff6880	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-29T17:30:30.148Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-29T18:54:34.018Z	device-8e0689ff6880	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly

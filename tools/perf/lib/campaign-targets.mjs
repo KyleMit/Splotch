@@ -54,7 +54,8 @@ export const CAMPAIGN_TARGETS = {
   },
   'iphone-device-native': {
     captureRuntime: 'ios-capacitor-webview',
-    refreshRegime: null,
+    // Measured at 17 ms by the fidelity-passing installed iPhone WebView probe.
+    refreshRegime: '60hz',
     label: 'iPhone device · native',
     transport: 'appium',
     runtime: 'native',

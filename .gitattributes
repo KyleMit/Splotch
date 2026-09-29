@@ -40,6 +40,8 @@ AGENTS.md              linguist-generated=true
 # diff exhausts review tooling without making the samples reviewable.
 perf-profiles/evidence/**/*.json            binary
 perf-profiles/evidence/**/index.json         text diff merge
+perf-profiles/evidence/**/checkpoint.json    text diff merge
+perf-profiles/evidence/**/controls/*.json    text diff merge
 
 # Generated scrapbook bulk (ADR-0059). Each coloring-book proof sheet is a
 # multi-megabyte page of inlined renders written by `gen:coloring-book-proof-sheet`,

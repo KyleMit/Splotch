@@ -1,0 +1,34 @@
+{
+  "native": {
+    "productCommit": "704edcdb1092420e204b684b80378149bbd890cd",
+    "cleanSourceBeforeBuild": true,
+    "buildCommand": "npm run perf:build:cap",
+    "installCommand": "npx cap run ios --target <physical-iphone> --no-sync",
+    "bundleId": "art.splotch.app",
+    "bundledOrigin": "capacitor://localhost",
+    "webBuildIndexSha256": "0384b94e162057391ee4d26a885d88e1dbb1c858e2c7acc19fc47ee33176b834",
+    "iosPublicIndexSha256": "0384b94e162057391ee4d26a885d88e1dbb1c858e2c7acc19fc47ee33176b834"
+  },
+  "webPreview": [
+    {
+      "base": "http://127.0.0.1:4173/",
+      "problem": null,
+      "htmlMatchesSaved": true,
+      "binding": {
+        "buildEntry": "/_app/immutable/entry/start.DFEg549_.js",
+        "buildDigest": "f1a39062c01bc705afdbe3324cf227d1c8eb5a9bbc9777eda1a5679a43735a9c",
+        "productCommit": "704edcdb1092420e204b684b80378149bbd890cd"
+      }
+    },
+    {
+      "base": "https://rig-mac.local:4174/",
+      "problem": null,
+      "htmlMatchesSaved": true,
+      "binding": {
+        "buildEntry": "/_app/immutable/entry/start.DFEg549_.js",
+        "buildDigest": "f1a39062c01bc705afdbe3324cf227d1c8eb5a9bbc9777eda1a5679a43735a9c",
+        "productCommit": "704edcdb1092420e204b684b80378149bbd890cd"
+      }
+    }
+  ]
+}

@@ -59,6 +59,8 @@ const ACTION_SWEEP_DISPATCH = [
   APPIUM_ACTIONS_CAPTURE,
   APPIUM_SCREEN_CAPTURE,
   ANDROID_TOUCH_OCCLUSION,
+  'tools/perf/lib/native-tap-point.mjs',
+  'tools/perf/lib/unavailable-undo-cue.mjs',
   CAMPAIGN_STATE,
   COLORING_BOOKS_READY,
   // FULL_ACTION_GROUPS and actionNotApplicableReason: which actions a default sweep runs.

@@ -27,18 +27,20 @@ const EVIDENCE = join(ROOT, 'perf-profiles', 'evidence');
 function corpusBeats(campaign, campaignTarget) {
   const index = JSON.parse(readFileSync(join(EVIDENCE, campaign, 'index.json'), 'utf8'));
   const expectedRuntime = campaignTarget ? CAMPAIGN_TARGETS[campaignTarget].captureRuntime : null;
-  return index.kept.map((entry) => {
-    const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, entry.file), 'utf8'));
-    if (expectedRuntime) {
-      const runtime = capture.runtime ?? capture.fidelity?.runtime ?? null;
-      expect({ campaign, file: entry.file, runtime }).toMatchObject({ runtime: expectedRuntime });
-    }
-    return {
-      target: campaignTarget ?? entry.target,
-      brush: entry.brush,
-      intervalMs: capture.summaries?.intervalMs,
-    };
-  });
+  return index.kept
+    .filter((entry) => entry.brush !== 'actions')
+    .map((entry) => {
+      const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, entry.file), 'utf8'));
+      if (expectedRuntime) {
+        const runtime = capture.runtime ?? capture.fidelity?.runtime ?? null;
+        expect({ campaign, file: entry.file, runtime }).toMatchObject({ runtime: expectedRuntime });
+      }
+      return {
+        target: campaignTarget ?? entry.target,
+        brush: entry.brush,
+        intervalMs: capture.summaries?.intervalMs,
+      };
+    });
 }
 
 describe('classifyRefreshRegime', () => {
@@ -92,6 +94,7 @@ describe('the regime each target is scored against', () => {
   // the hand-native corpus, whose index keys entries by runtime — hence the
   // explicit campaign-target override.
   it.each([
+    ['2026-09-29-iphone'],
     ['2026-08-23-ipad-main'],
     ['2026-08-23-android-split'],
     ['2026-08-23-desktop-main'],
