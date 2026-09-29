@@ -177,7 +177,14 @@ export const openAiProvider: AiImageProvider = {
     if (classified.kind === 'safety') return { kind: 'refusal', reason: classified.reason };
     if (classified.kind === 'empty')
       return { kind: 'error', reason: `Model did not return an image: ${classified.reason}` };
-    return classified;
+    const { droppedDeclines, ...delivered } = classified;
+    // A completed image wins over a decline beside it (ADR-0023), so the child
+    // gets the picture and the decline goes unheeded. This line is the only
+    // trace that the model or the platform also said no.
+    if (droppedDeclines.length > 0) {
+      console.warn(`[openai-safety] delivered an image despite ${droppedDeclines.join(', ')}`);
+    }
+    return delivered;
   },
 
   async verifyKey(apiKey) {
