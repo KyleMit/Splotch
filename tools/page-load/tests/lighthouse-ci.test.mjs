@@ -1,6 +1,18 @@
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { jobBlock, testWorkflow } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import {
   GATED_METRICS,
@@ -11,11 +23,15 @@ import {
   assessSummary,
   baselineSourceStatus,
   median,
+  readBaseline,
+  reportFileName,
+  resolveOutDir,
   summarizeMeasurements,
   withOneRetry,
 } from '../run-lighthouse-ci.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
+const RUNNER = join(ROOT, 'tools/page-load/run-lighthouse-ci.mjs');
 const PAGE_LOAD_JOB = 'page-load-performance';
 const WIRED_LINES = [
   'browsers: chromium',
@@ -23,6 +39,8 @@ const WIRED_LINES = [
   'path: lighthouse-reports/ci/',
   'if-no-files-found: warn',
 ];
+// The runner imports Playwright and Lighthouse before it reads a flag.
+const RUNNER_EXIT_TIMEOUT_MS = 30_000;
 const committedBaseline = JSON.parse(
   readFileSync(join(ROOT, 'tools/page-load/baseline.json'), 'utf8')
 );
@@ -45,6 +63,22 @@ function measurements(value) {
 
 const unwiredLines = (workflow) =>
   WIRED_LINES.filter((line) => !jobBlock(workflow, PAGE_LOAD_JOB).includes(line));
+
+// Every folder these tests judge or fill sits under the system temp folder, and `repository`
+// stands in for the checkout, so no refusal that fails to fire can reach a real one.
+function scratchRepository() {
+  const scratch = realpathSync(mkdtempSync(join(tmpdir(), 'lighthouse-out-')));
+  onTestFinished(() => rmSync(scratch, { recursive: true, force: true }));
+  const repository = join(scratch, 'repository');
+  mkdirSync(repository);
+  return { scratch, repository };
+}
+
+function folderHolding(folder, entries) {
+  mkdirSync(folder, { recursive: true });
+  for (const entry of entries) writeFileSync(join(folder, entry), '');
+  return folder;
+}
 
 function baseline(limit) {
   return {
@@ -178,4 +212,132 @@ describe('the Lighthouse CI metric contract', () => {
     expect(movedToAnotherJob).toContain(line);
     expect(unwiredLines(movedToAnotherJob)).toEqual([line]);
   });
+
+  it('reads the baseline an absolute path names', () => {
+    const { scratch } = scratchRepository();
+    const copy = join(scratch, 'baseline.json');
+    copyFileSync(join(ROOT, 'tools/page-load/baseline.json'), copy);
+
+    expect(readBaseline(copy)).toEqual(committedBaseline);
+    expect(readBaseline('tools/page-load/baseline.json')).toEqual(committedBaseline);
+  });
+});
+
+describe('the folder a Lighthouse run replaces', () => {
+  it('resolves a relative folder against the repository', () => {
+    const { repository } = scratchRepository();
+
+    expect(resolveOutDir('lighthouse-reports/ci', repository)).toBe(
+      join(repository, 'lighthouse-reports/ci')
+    );
+  });
+
+  it('takes an absolute folder inside the repository as given', () => {
+    const { repository } = scratchRepository();
+    const inside = join(repository, 'reports');
+
+    expect(resolveOutDir(inside, repository)).toBe(inside);
+  });
+
+  it.each(['.', './', 'reports/..'])('refuses %j, the repository root', (out) => {
+    const { repository } = scratchRepository();
+
+    expect(() => resolveOutDir(out, repository)).toThrow(
+      `--out=${out} resolves to ${repository}, the repository root`
+    );
+  });
+
+  it.each(['..', '../sibling', 'reports/../../sibling'])(
+    'refuses %j, outside the repository',
+    (out) => {
+      const { repository } = scratchRepository();
+
+      expect(() => resolveOutDir(out, repository)).toThrow('outside the repository');
+    }
+  );
+
+  it('refuses an absolute folder outside the repository instead of nesting it inside', () => {
+    const { scratch, repository } = scratchRepository();
+    const outside = join(scratch, 'elsewhere');
+
+    expect(() => resolveOutDir(outside, repository)).toThrow(
+      `--out=${outside} resolves to ${outside}, outside the repository`
+    );
+  });
+
+  it('refuses a folder that a symlink carries outside the repository', () => {
+    const { scratch, repository } = scratchRepository();
+    const outside = folderHolding(join(scratch, 'elsewhere'), []);
+    symlinkSync(outside, join(repository, 'linked'));
+
+    expect(() => resolveOutDir('linked/reports', repository)).toThrow(
+      `--out=linked/reports resolves to ${join(outside, 'reports')}, outside the repository`
+    );
+  });
+
+  it('refuses a folder holding entries the runner did not write', () => {
+    const { repository } = scratchRepository();
+    const occupied = folderHolding(join(repository, 'docs'), ['notes.md', 'summary.json']);
+
+    expect(() => resolveOutDir('docs', repository)).toThrow(
+      'which holds entries this runner did not write, such as notes.md'
+    );
+    expect(readdirSync(occupied)).toEqual(['notes.md', 'summary.json']);
+  });
+
+  it('refuses a report name from a profile the runner does not measure', () => {
+    const { repository } = scratchRepository();
+    folderHolding(join(repository, 'reports'), ['desktop-first-1.report.json']);
+
+    expect(() => resolveOutDir('reports', repository)).toThrow('desktop-first-1.report.json');
+  });
+
+  it('refuses a file', () => {
+    const { repository } = scratchRepository();
+    folderHolding(repository, ['summary.json']);
+
+    expect(() => resolveOutDir('summary.json', repository)).toThrow('which is a file');
+  });
+
+  it('accepts an empty folder and one that holds only an earlier run', () => {
+    const { repository } = scratchRepository();
+    const empty = folderHolding(join(repository, 'empty'), []);
+    const earlierRun = folderHolding(join(repository, 'lighthouse-reports/ci'), [
+      'summary.json',
+      '.DS_Store',
+      ...Object.keys(PROFILES).flatMap((profile) =>
+        VISITS.map((visit) => reportFileName(profile, visit, 12))
+      ),
+    ]);
+    mkdirSync(join(earlierRun, '.profiles', 'phone-portrait-1'), { recursive: true });
+
+    expect(resolveOutDir('empty', repository)).toBe(empty);
+    expect(resolveOutDir('lighthouse-reports/ci', repository)).toBe(earlierRun);
+  });
+
+  // The baseline named here does not exist, so a run whose refusal failed to fire stops at
+  // reading it, before the step that replaces the folder.
+  it(
+    'stops the runner before it does any work',
+    () => {
+      const { scratch } = scratchRepository();
+      const held = folderHolding(join(scratch, 'held'), ['notes.md']);
+
+      const result = spawnSync(
+        process.execPath,
+        [RUNNER, `--out=${held}`, `--baseline=${join(scratch, 'absent.json')}`],
+        { cwd: ROOT, encoding: 'utf8', timeout: RUNNER_EXIT_TIMEOUT_MS }
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe(
+        `--out=${held} resolves to ${held}, outside the repository: ` +
+          'the run replaces this folder, so keep it inside the checkout\n'
+      );
+      expect(readdirSync(held)).toEqual(['notes.md']);
+    },
+    RUNNER_EXIT_TIMEOUT_MS
+  );
 });

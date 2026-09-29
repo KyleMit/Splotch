@@ -2,8 +2,18 @@
 
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import {
@@ -14,6 +24,7 @@ import {
   argSwitch,
   fail,
   isMain,
+  parseOrFail,
   rejectUnknownFlags,
   runMain,
 } from '../lib/proc.mjs';
@@ -35,6 +46,18 @@ const DEFAULT_PORT = 4197;
 const DEFAULT_SAMPLES = 3;
 export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
 const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
+
+const SUMMARY_FILE = 'summary.json';
+const CHROME_PROFILES_FOLDER = '.profiles';
+// Finder drops this into a folder a person opens; it holds view state, never their work.
+const FINDER_METADATA_FILE = '.DS_Store';
+const REPLACEABLE_ENTRIES = [SUMMARY_FILE, CHROME_PROFILES_FOLDER, FINDER_METADATA_FILE];
+const REPORT_FILE = new RegExp(
+  `^(?:${Object.keys(PROFILES).join('|')})-(?:${VISITS.join('|')})-\\d+\\.report\\.json$`
+);
+
+export const reportFileName = (profileName, visit, sample) =>
+  `${profileName}-${visit}-${sample}.report.json`;
 
 export function median(values) {
   if (!values.length) throw new Error('median needs at least one value');
@@ -107,6 +130,49 @@ export function validateBaseline(baseline) {
       }
     }
   }
+}
+
+export function readBaseline(baselinePath) {
+  const baseline = JSON.parse(readFileSync(resolve(ROOT, baselinePath), 'utf8'));
+  validateBaseline(baseline);
+  return baseline;
+}
+
+// Symlinks resolved, so the folder judged is the folder the run would replace.
+function physicalPath(path) {
+  let existing = path;
+  while (!existsSync(existing)) existing = dirname(existing);
+  return join(realpathSync(existing), relative(existing, path));
+}
+
+function entriesWrittenElsewhere(outDir) {
+  return readdirSync(outDir).filter(
+    (entry) => !REPLACEABLE_ENTRIES.includes(entry) && !REPORT_FILE.test(entry)
+  );
+}
+
+// The run replaces this folder whole, so it has to be one only this runner has written to.
+// `root` is a parameter so a test can stand a temporary folder in for the repository.
+export function resolveOutDir(out, root = ROOT) {
+  const outDir = physicalPath(resolve(root, out));
+  const fromRoot = relative(realpathSync(root), outDir);
+  const refuse = (reason) => {
+    throw new Error(`--out=${out} resolves to ${outDir}, ${reason}`);
+  };
+  if (fromRoot === '') refuse('the repository root: name a folder inside it for the reports');
+  if (fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+    refuse('outside the repository: the run replaces this folder, so keep it inside the checkout');
+  }
+  if (!existsSync(outDir)) return outDir;
+  if (!statSync(outDir).isDirectory()) refuse('which is a file: name a folder for the reports');
+  const [foreign] = entriesWrittenElsewhere(outDir);
+  if (foreign !== undefined) {
+    refuse(
+      `which holds entries this runner did not write, such as ${foreign}: ` +
+        'name a new folder, or one that holds only an earlier run'
+    );
+  }
+  return outDir;
 }
 
 function trackedMeasuredFiles() {
@@ -188,7 +254,7 @@ function lighthouseResult(path, profile, visit, sample) {
 
 function runLighthouse({ base, out, profileName, visit, sample, profileDir }) {
   const profile = PROFILES[profileName];
-  const reportPath = join(out, `${profileName}-${visit}-${sample}.report.json`);
+  const reportPath = join(out, reportFileName(profileName, visit, sample));
   rmSync(reportPath, { force: true });
   const chromeFlags = [
     '--headless=new',
@@ -293,10 +359,8 @@ export async function runLighthouseCi({
   if (!Number.isInteger(samples) || samples < 3 || samples % 2 === 0) {
     fail('--samples must be an odd integer of at least 3 so the median resists one outlier');
   }
-  const absoluteBaseline = join(ROOT, baselinePath);
-  const absoluteOut = join(ROOT, out);
-  const baseline = JSON.parse(readFileSync(absoluteBaseline, 'utf8'));
-  validateBaseline(baseline);
+  const absoluteOut = parseOrFail(() => resolveOutDir(out));
+  const baseline = readBaseline(baselinePath);
   const sourceStatus = baselineSourceStatus(baseline);
   reportBaselineSourceStatus(sourceStatus);
 
@@ -307,7 +371,7 @@ export async function runLighthouseCi({
   try {
     for (let sample = 1; sample <= samples; sample += 1) {
       for (const profileName of Object.keys(PROFILES)) {
-        const profileDir = join(absoluteOut, '.profiles', `${profileName}-${sample}`);
+        const profileDir = join(absoluteOut, CHROME_PROFILES_FOLDER, `${profileName}-${sample}`);
         mkdirSync(profileDir, { recursive: true });
         for (const visit of VISITS) {
           console.log(`${profileName} ${visit} sample ${sample}/${samples}`);
@@ -339,7 +403,7 @@ export async function runLighthouseCi({
     }
   } finally {
     preview.stop();
-    rmSync(join(absoluteOut, '.profiles'), { recursive: true, force: true });
+    rmSync(join(absoluteOut, CHROME_PROFILES_FOLDER), { recursive: true, force: true });
   }
 
   const summary = summarizeMeasurements(measurements);
@@ -354,7 +418,7 @@ export async function runLighthouseCi({
     summary,
     measurements,
   };
-  writeFileSync(join(absoluteOut, 'summary.json'), `${JSON.stringify(artifact, null, 2)}\n`);
+  writeFileSync(join(absoluteOut, SUMMARY_FILE), `${JSON.stringify(artifact, null, 2)}\n`);
   console.log(`Reports: ${relative(ROOT, absoluteOut)}`);
 
   if (reportOnly) return artifact;
