@@ -48,7 +48,7 @@ import {
   explicitProbePortDecision,
   iosIdentifierProblem,
 } from './lib/capture-readiness.mjs';
-import { parseCampaignTheme } from './lib/campaign-state.mjs';
+import { parseCampaignOrientation, parseCampaignTheme } from './lib/campaign-state.mjs';
 import { GRANT_LOG, recordGrantAttempt } from './lib/grant-log.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
@@ -58,7 +58,6 @@ import { rethrowIfBroken } from './lib/error-classification.mjs';
 
 const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
-const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const DEFAULT_BRUSHES = ['pen', 'crayon'];
 const DEFAULT_ORIENTATIONS = ['PORTRAIT'];
 const SESSION_FLAGS = [
@@ -107,7 +106,9 @@ export function operatorSessionOptions(argv) {
     planOnly: readSwitch(argv, 'plan'),
     steps: listFlag(argv, 'steps', STEP_NAMES),
     brushes: listFlag(argv, 'brushes', DEFAULT_BRUSHES),
-    orientations: listFlag(argv, 'orientations', DEFAULT_ORIENTATIONS),
+    orientations: listFlag(argv, 'orientations', DEFAULT_ORIENTATIONS).map(
+      parseCampaignOrientation
+    ),
     theme: parseCampaignTheme(readValueFlag(argv, 'theme')) ?? 'light',
     seconds: numberFlag(argv, 'seconds', DRAW_SECONDS) ?? DEFAULT_DRAW_SECONDS,
     requestedProbePort: numberFlag(argv, 'probe-port', TCP_PORT),
@@ -120,11 +121,6 @@ export function operatorSessionOptions(argv) {
   for (const brush of options.brushes) {
     if (!BRUSHES.includes(brush)) {
       throw new Error(`unknown brush "${brush}" — brushes are ${BRUSHES.join(', ')}`);
-    }
-  }
-  for (const orientation of options.orientations) {
-    if (!ORIENTATIONS.includes(orientation)) {
-      throw new Error(`unknown orientation "${orientation}" — use ${ORIENTATIONS.join(', ')}`);
     }
   }
   checkPreflightFlags(argv);
