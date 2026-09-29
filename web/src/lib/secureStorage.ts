@@ -10,8 +10,12 @@ import { STORAGE_KEYS } from './storageKeys';
 // key (BYOK) and managed access code.
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
-//    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
-//    persistent until the app is deleted.
+//    which stores them in the iOS Keychain / Android Keystore, both hardware-backed.
+//    Both stay on this device: the iOS item is written whenUnlockedThisDeviceOnly with
+//    iCloud Keychain sync off (selectBackend pins both), so no sync or backup carries it
+//    to another device, and the Android copy is never backed up
+//    (android:allowBackup="false"). Current iOS may keep the item after the app is
+//    deleted, which Apple does not guarantee, so no copy promises deletion.
 //
 //  • Web: there's no hardware vault, so the next best thing — the raw value is never
 //    written in plaintext. It's AES-GCM encrypted with a *non-extractable* CryptoKey
@@ -223,9 +227,15 @@ interface SecureBackend {
 // a runtime check it can't tree-shake.
 async function selectBackend(): Promise<SecureBackend> {
   if (__IS_CAPACITOR__ && isNative()) {
-    const { SecureStorage } = await getPlugin();
+    const { SecureStorage, KeychainAccess } = await getPlugin();
     return {
-      save: (name, value) => SecureStorage.set(name, value),
+      // No iCloud Keychain sync and device-only access, passed on every write
+      // rather than inherited from the plugin's defaults so an upgrade cannot
+      // change where a parent's saved key can go (see the header). A key saved by
+      // an earlier build keeps its old access until it is saved again. Android
+      // ignores both; `undefined` keeps the plugin's own date handling.
+      save: (name, value) =>
+        SecureStorage.set(name, value, undefined, false, KeychainAccess.whenUnlockedThisDeviceOnly),
       load: async (name) => {
         const value = await SecureStorage.get(name);
         return typeof value === 'string' ? value : null;

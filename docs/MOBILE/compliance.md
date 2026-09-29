@@ -230,6 +230,14 @@ ten-creation free allowance; the feedback device snapshot is opt-in and off-by-d
 reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
 gate protects action boundaries and is not itself legal consent.
 
+**Stored AI credentials stay on the device, on every platform.** A saved access code or OpenAI key
+is an iOS Keychain item written `whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, both
+passed on every write in `web/src/lib/secureStorage.ts`, so no sync or backup carries it to another
+device. That matches Android, where `android:allowBackup="false"` keeps it out of cloud backup. The
+user chose this on 2026-09-28 so one plain sentence in `/privacy` holds everywhere; iCloud Keychain
+sync and backup-portable storage were considered and not adopted. Current iOS may keep a Keychain
+item after the app is deleted, which Apple does not guarantee, so no copy promises deletion.
+
 ### 5.1.4 Kids
 
 > "Apps in the Kids Category or those that collect, transmit, or have the capability to share

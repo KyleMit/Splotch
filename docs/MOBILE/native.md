@@ -66,6 +66,10 @@ slots on native and AES-GCM-encrypted IndexedDB rows on web. Live credential sta
 boot hydration completes. Native hydration first recovers legacy plaintext values from Preferences,
 then migrates them into secure storage and removes both plaintext copies.
 
+Both native stores keep a saved credential on the device: the iOS Keychain item is written
+`whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, and the Android copy is never backed up
+(`android:allowBackup="false"`). `docs/MOBILE/compliance.md` (Apple 5.1.1) records the decision.
+
 ### Loading native plugins (read before adding one)
 
 Two rules, both load-bearing:

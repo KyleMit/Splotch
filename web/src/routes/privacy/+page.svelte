@@ -28,7 +28,7 @@
   import { createPrivacyParentCenter } from './parentCenter.svelte';
   import PolicySummary from './PolicySummary.svelte';
 
-  const LAST_UPDATED = 'September 8, 2026';
+  const LAST_UPDATED = 'September 28, 2026';
   const DESCRIPTION =
     "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.";
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
@@ -123,10 +123,10 @@
           <p>
             Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are
             stored on your device and never sent to us. An access code or your own OpenAI key is
-            stored on the device too: the code alongside those settings, the key in the device's
-            secure storage (the Keychain on Apple devices) and encrypted in the browser on the web.
-            The access code or OpenAI key is sent to us when a grown-up adds it so we can check it.
-            It is sent again with each AI picture made or reported using it.
+            stored on the device too, in the device's secure storage (the Keychain on Apple devices)
+            and encrypted in the browser on the web. The access code or OpenAI key is sent to us
+            when a grown-up adds it so we can check it. It is sent again with each AI picture made
+            or reported using it.
           </p>
         </section>
 
