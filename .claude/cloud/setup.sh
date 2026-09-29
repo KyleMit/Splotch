@@ -38,7 +38,7 @@ corepack enable pnpm && corepack install \
 # playwright-core resolves at test time. A hard-coded version drifts silently — e.g.
 # pinning 1.60.0 (Chromium 1223) while the repo resolves 1.61.x (Chromium 1228) leaves
 # the pinned revision absent, the #1 cloud-session E2E failure. driver.mjs and
-# playwright.config.ts self-heal past a stale snapshot, but keeping this in sync avoids
+# tools/lib/playwright.mjs self-heal past a stale snapshot, but keeping this in sync avoids
 # needing the fallback at all.
 # Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
 PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"

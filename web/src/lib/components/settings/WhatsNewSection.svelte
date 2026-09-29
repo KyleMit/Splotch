@@ -88,16 +88,16 @@
   }
 
   /* Content is build-time-rendered Markdown, so style its tags globally. */
-  .whats-new-body :global(h2),
-  .whats-new-body :global(h3) {
+  .whats-new-body :global(h4),
+  .whats-new-body :global(h5) {
     margin: 12px 0 6px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--text-strong);
   }
 
-  .whats-new-body :global(h2:first-child),
-  .whats-new-body :global(h3:first-child) {
+  .whats-new-body :global(h4:first-child),
+  .whats-new-body :global(h5:first-child) {
     margin-top: 0;
   }
 

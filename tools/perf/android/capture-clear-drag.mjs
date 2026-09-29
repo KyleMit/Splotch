@@ -15,7 +15,9 @@ import { chromium } from '@playwright/test';
 import { POSITIVE_INTEGER, TCP_PORT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
+import { ADB } from '../../mobile/android/lib/android-toolchain.mjs';
 import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { resolveAndroidDevice } from '../lib/android-serial.mjs';
 import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { servedBuildBinding } from '../lib/profile-preview.mjs';
@@ -26,7 +28,6 @@ import {
   closeTarget,
   profilerUrl,
   renderFrameRateFrom,
-  resolveAndroidDevice,
   rotationFor,
   selectProfilerTarget,
   waitForCanvas,
@@ -306,7 +307,7 @@ export async function runClearDrag(argv = process.argv.slice(2)) {
   const repeats = numberFlag('repeats', 3, POSITIVE_INTEGER);
   const cycles = numberFlag('cycles', 6, POSITIVE_INTEGER);
   const cdpPort = numberFlag('cdp-port', DEFAULT_CDP_PORT, TCP_PORT);
-  const deviceId = resolveAndroidDevice(flag('device-id'));
+  const deviceId = resolveAndroidDevice(flag('device-id'), ADB);
   const base = flag('url') ?? `http://localhost:${port}/`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;
   const token = `${Date.now()}`;

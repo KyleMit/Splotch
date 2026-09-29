@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  connectedAndroidDevices,
   deviceUptimeSecondsFrom,
   isOwnedProfilerUrl,
   refreshRateRestoreArgs,
@@ -9,18 +8,6 @@ import {
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
 
 describe('Android web action profiling', () => {
-  it('selects only ADB devices that are ready for commands', () => {
-    const output = [
-      'List of devices attached',
-      'emulator-5554\tdevice',
-      'R5CT123456\toffline',
-      'ZX1G22\tunauthorized',
-      '',
-    ].join('\n');
-
-    expect(connectedAndroidDevices(output)).toEqual(['emulator-5554']);
-  });
-
   it('recognizes only profiler-owned tabs on the app origin', () => {
     const base = 'http://192.168.1.5:4173/';
 
