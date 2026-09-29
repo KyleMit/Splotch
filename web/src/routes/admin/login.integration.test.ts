@@ -20,6 +20,7 @@ vi.mock('$lib/server/tokens', () => ({
 }));
 vi.mock('$lib/server/usage', () => ({ readUsageAndPurgeExpired: vi.fn() }));
 
+import { ADMIN_FORM_FIELDS } from '$lib/adminForm';
 import { MAX_ADMIN_LOGIN_BODY_BYTES, sessionToken } from '$lib/server/admin';
 import { POST } from '../api/admin/login/+server';
 import { actions } from './+page.server';
@@ -39,7 +40,7 @@ function jsonDoor(address: string, body: string) {
 
 function formDoor(address: string, key: string) {
   const body = new FormData();
-  body.set('access-key', key);
+  body.set(ADMIN_FORM_FIELDS.accessKey, key);
   const request = new Request('http://localhost/admin?/login', { method: 'POST', body });
   return actions.login({
     request,
@@ -120,7 +121,7 @@ describe('the admin login doors (real rateLimit)', () => {
     const key = 'x'.repeat(MAX_ADMIN_LOGIN_BODY_BYTES);
     const form = new Request('http://localhost/admin?/login', {
       method: 'POST',
-      body: new URLSearchParams({ 'access-key': key }),
+      body: new URLSearchParams({ [ADMIN_FORM_FIELDS.accessKey]: key }),
     });
 
     expect((await jsonDoor('203.0.113.16', JSON.stringify({ key }))).status).toBe(413);
