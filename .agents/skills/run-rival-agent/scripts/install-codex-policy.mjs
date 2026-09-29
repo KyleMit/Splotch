@@ -2,8 +2,8 @@
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { isMain } from '../../../../tools/lib/proc.mjs';
 import { INSTALL_ROOT, INSTALL_SHIMS, installRunClaude } from './install-run-claude.mjs';
 
 const CODEX_DIRECTORY = join(homedir(), '.codex');
@@ -96,7 +96,7 @@ export function installCodexPolicy() {
   console.log('installed Codex rival-agent policy; restart Codex before using the wrappers');
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     if (process.argv.length !== 2) throw new Error('install-codex-policy.mjs accepts no arguments');
     installCodexPolicy();
