@@ -12,10 +12,10 @@ the grades and the motivations analysis, is
 [`docs/scratchpad/clean-code-principles-review-2026-09-27.md`](scratchpad/clean-code-principles-review-2026-09-27.md).
 The 2026-09-28 code-quality burndown (tracking issue #2443) extended rules 1, 4, 5, 8, and 9 rather
 than adding new ones, and the 2026-09-29 code-smell burndown (tracking issue #2467) extended rules
-4, 6, 8, and 9 the same way. The first two campaigns' PRs had merged when they were cited, so their
-enforcement is named by path. The third campaign's PRs were open when this doc cited them, so their
-enforcement is named by PR ("the tests PR #2471 adds") rather than by a path `main` did not yet
-have.
+4, 6, 8, and 9 the same way and added evidence to rules 1 and 2. The first two campaigns' PRs had
+merged when they were cited, so their enforcement is named by path. The third campaign's PRs were
+open when this doc cited them, so their enforcement is named by PR ("the tests PR #2471 adds")
+rather than by a path `main` did not yet have.
 
 ## What earns a rule
 
@@ -109,9 +109,11 @@ identity, never a flag that later calls share. PRs #2449 and #2458 fixed three b
 that re-implements the owner's rule tests its own copy (rule 9). For the stale-write case, the test
 holds the superseded call open, starts the newer one, settles the old one, and then asserts the
 newer call's state survived (`web/src/lib/drawing/folderSave.test.ts`,
-`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`).
-`web/src/lib/components/AiImageResult.download.test.ts` covers only the first half: the next
-result's save starts while the old one is still pending.
+`web/src/lib/components/settings/AiKeyManager.aiToggle.test.ts`). The first version of
+`web/src/lib/components/AiImageResult.download.test.ts` covered only the first half, the next
+result's save starting while the old one was still pending, and passed with the latch fault
+injected. The version PR #2482 adds holds both saves, settles the closed card's save, and asserts
+that tapping the next result again starts no second save of it.
 
 ## 2. One union per mode
 
@@ -127,7 +129,9 @@ error phase as the `AiFailure` union (PR #2403). The free-generation grant as `F
 (PR #2391). `Button` rejecting link props its anchor would drop (PR #2378). `SegmentedPicker` split
 on mode, where `mode="toggle"` plus `inputName` used to render radios with no `aria-pressed` (PR
 #2399). Secret names and style names closed as unions (PR #2410). The verify-credential result as
-`VerifyCredentialResult` (PR #2386).
+`VerifyCredentialResult` (PR #2386). `finishAiGeneration` took an unread MIME type between `url` and
+the optional `reportToken`, so a stale positional call could put the MIME string where the report
+token belongs; it takes one `picture` object, and such a call no longer compiles (PR #2482).
 
 **Enforcement.** The types themselves, with exhaustive `Record<Union, V>` tables (a new variant
 fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A component props union is pinned by a type test
@@ -464,6 +468,10 @@ Gates that passed without checking what they claimed:
   `DRIVER_PROCESS_PATTERN` in `tools/audit-burndown/lib/burndown-core.mjs` is now the one pattern,
   and `tools/audit-burndown/tests/driver-process-pattern.test.mjs` requires it at every `pgrep`
   lookup in the burndown hooks, both skill packages, and `show-status.mjs`.
+* PR #2486: that guard read only `pgrep`, so the Claude package's `pkill` kept the unanchored
+  pattern; the widened guard PR #2486 adds holds every `pgrep` and `pkill` lookup to it. Nothing
+  tested that a rival bench seed still applied, and one had stopped applying after a README re-wrap;
+  the corpus test that PR adds runs `git apply --check` over every seed.
 * PR #2455: `check:github-actions` never read the pins inside `.github/actions/`, read a bare commit
   SHA's leading digits as a major version, and printed ✓ beside a pin it had not compared.
   `latestStatus` in `tools/check-github-action-versions.mjs` now prints ✓ only after a comparison,
