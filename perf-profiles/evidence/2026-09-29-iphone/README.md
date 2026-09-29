@@ -33,11 +33,12 @@ native spans one invocation. An accepted capture can have red performance budget
 restored web preview binding. The native bundle uses `capacitor://localhost`; its index matches the
 saved native build. HTTP and HTTPS previews both match the saved web index and entry fingerprint.
 
-`controls/instrument-provenance.json` records the captured source commit and module hashes. Apply
-`controls/banked-actions.patch` to the action driver at that source commit to reproduce its captured
-bytes. Publication extracts tap placement, names its constants, restricts the inset to iPhone
-handsets, and formats the driver. These edits do not rewrite accepted fingerprints or ledgers. The
-saved pre-publication driver also remains in the local session for reproducing those captures.
+`controls/instrument-provenance.json` records the captured source commit and module hashes. Extract
+the `patch` field from `controls/banked-actions.patch.json` and apply that text to the action driver
+at the recorded source commit to reproduce its captured bytes. Publication extracts tap placement,
+names its constants, restricts the inset to iPhone handsets, and formats the driver. These edits do
+not rewrite accepted fingerprints or ledgers. The saved pre-publication driver also remains in the
+local session for reproducing those captures.
 
 ## Before merge
 
