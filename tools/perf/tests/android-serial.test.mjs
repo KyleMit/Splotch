@@ -1,10 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { selectAndroidSerial } from '../lib/android-serial.mjs';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { delimiter, join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { requireCaptureSerial, selectAndroidSerial } from '../lib/android-serial.mjs';
 import { FAKE_ANDROID_SERIAL } from '../lib/device-identifiers.mjs';
 import { androidChecks } from '../prepare-capture.mjs';
 import { releaseAndroid, releaseFailures } from '../release-capture.mjs';
 
 const EMULATOR = 'emulator-5554';
+const WEBVIEW_SESSION = join(import.meta.dirname, '..', 'android', 'capture-webview-session.mjs');
+// The refusal lands before the first device step, so a run that gets further
+// polls for a WebView socket for tens of seconds; this ends it first.
+const WEBVIEW_REFUSAL_TIMEOUT_MS = 15_000;
 
 const listing = (...rows) => ({
   ok: true,
@@ -46,6 +54,8 @@ describe('selectAndroidSerial', () => {
   it('counts only devices adb can drive', () => {
     const rows = listing(`${FAKE_ANDROID_SERIAL}\tunauthorized`, `${EMULATOR}\tdevice`);
     expect(selectAndroidSerial(rows, null)).toEqual({ serial: EMULATOR, attached: [EMULATOR] });
+    const offline = listing(`${EMULATOR}\tdevice`, `${FAKE_ANDROID_SERIAL}\toffline`, '');
+    expect(selectAndroidSerial(offline, null).attached).toEqual([EMULATOR]);
   });
 
   it('refuses to guess between a phone and an emulator', () => {
@@ -143,5 +153,81 @@ describe('releaseAndroid', () => {
     });
     expect(release).toEqual({ forwards: [], android: null });
     expect(releaseFailures(release)).toEqual([]);
+  });
+});
+
+describe('requireCaptureSerial', () => {
+  it('takes the only attached device, or an explicit one that is attached', () => {
+    expect(requireCaptureSerial(attached(EMULATOR), undefined)).toBe(EMULATOR);
+    expect(requireCaptureSerial(attached(FAKE_ANDROID_SERIAL, EMULATOR), EMULATOR)).toBe(EMULATOR);
+  });
+
+  it('refuses two attached devices, naming the capture runners’ flag', () => {
+    expect(() => requireCaptureSerial(attached(FAKE_ANDROID_SERIAL, EMULATOR), undefined)).toThrow(
+      `several devices attached (${FAKE_ANDROID_SERIAL}, ${EMULATOR}) — pass --device-id=`
+    );
+  });
+
+  it('refuses an explicit serial adb does not list', () => {
+    expect(() => requireCaptureSerial(attached(EMULATOR), FAKE_ANDROID_SERIAL)).toThrow(
+      `--device-id=${FAKE_ANDROID_SERIAL} is not attached (adb lists ${EMULATOR})`
+    );
+  });
+
+  it('stops on an empty rig and on a failed adb devices', () => {
+    expect(() => requireCaptureSerial(attached(), undefined)).toThrow(
+      'No Android device is attached — connect a phone or boot an emulator (npm run android:boot)'
+    );
+    expect(() => requireCaptureSerial(ADB_FAILED, undefined)).toThrow(
+      'adb devices failed (spawnSync adb ENOENT) — no device was checked'
+    );
+  });
+});
+
+describe('perf:android device selection', () => {
+  const roots = [];
+  afterEach(() => {
+    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  });
+
+  // A fake adb first on PATH lists the rig and logs every call it receives.
+  function runWebviewSession(rig, args) {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-fake-adb-'));
+    roots.push(root);
+    const calls = join(root, 'calls.log');
+    const listing = join(root, 'devices.txt');
+    writeFileSync(listing, rig.out);
+    writeFileSync(
+      join(root, 'adb'),
+      `#!/bin/sh\necho "$*" >> "${calls}"\n[ "$1" = devices ] && cat "${listing}"\nexit 0\n`
+    );
+    chmodSync(join(root, 'adb'), 0o755);
+    const result = spawnSync(process.execPath, [WEBVIEW_SESSION, ...args], {
+      encoding: 'utf8',
+      timeout: WEBVIEW_REFUSAL_TIMEOUT_MS,
+      env: { ...process.env, PATH: `${root}${delimiter}${process.env.PATH}` },
+    });
+    const log = existsSync(calls) ? readFileSync(calls, 'utf8').trim() : '';
+    return { ...result, calls: log ? log.split('\n') : [] };
+  }
+
+  it('refuses two attached devices before any device step', () => {
+    const run = runWebviewSession(attached(FAKE_ANDROID_SERIAL, EMULATOR), ['--no-build']);
+
+    expect(run.status).toBe(1);
+    expect(run.stderr.trim()).toBe(
+      `several devices attached (${FAKE_ANDROID_SERIAL}, ${EMULATOR}) — pass --device-id=`
+    );
+    expect(run.calls).toEqual(['devices']);
+  });
+
+  // A mistyped --no-build would otherwise rebuild and reinstall the app it was
+  // asked to profile as-is.
+  it('refuses an unknown flag before listing devices', () => {
+    const run = runWebviewSession(attached(FAKE_ANDROID_SERIAL, EMULATOR), ['--no-buld']);
+
+    expect(run.status).toBe(1);
+    expect(run.stderr.trim()).toBe('Unknown flag --no-buld — known flags: device-id, no-build');
+    expect(run.calls).toEqual([]);
   });
 });
