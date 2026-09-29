@@ -9,15 +9,6 @@ import { BLACK_INK, WHITE_INK, createColors } from './colors.svelte';
 import { createSettings, type SettingsState } from './settings.svelte';
 import { createTool } from './tool.svelte';
 
-// secureStorage reaches for IndexedDB/WebCrypto on the web path; settings.svelte
-// (imported transitively via appearance) only needs its function bindings, so
-// stub them out — none are called at import time.
-vi.mock('../secureStorage', () => ({
-  saveApiKey: vi.fn(async () => {}),
-  loadApiKey: vi.fn(async () => null),
-  clearApiKey: vi.fn(async () => {}),
-}));
-
 const THEME_COLOR_DARK = themes.dark.appBg;
 
 // One controllable prefers-color-scheme query, recording every subscription so

@@ -4,18 +4,19 @@ import { join } from 'node:path';
 // Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
 // revision can drift from what playwright-core resolves (e.g. the env installed
 // 1223 while this Playwright wants 1228), so `chromium.launch()` fails with
-// "Executable doesn't exist". Mirror the self-heal in web/playwright.config.ts:
-// if the resolved binary is missing, fall back to any Chromium under the
-// browsers path. `PLAYWRIGHT_CHROMIUM` (or its alias `PLAYWRIGHT_CHROMIUM_PATH`)
-// overrides; returning undefined lets Playwright use its own (correct) binary.
-// Pass the `chromium` browser type in so this module doesn't import
-// @playwright/test for scripts that never use it.
+// "Executable doesn't exist". If the resolved binary is missing, fall back to the
+// newest Chromium under the browsers path. `PLAYWRIGHT_CHROMIUM` overrides;
+// returning undefined lets Playwright use its own (correct) binary.
+// `.claude/cloud/setup.sh` installs the matching revision, so the fallback covers
+// only a stale environment snapshot. Pass the `chromium` browser type in so this
+// module doesn't import @playwright/test for scripts that never use it.
 export function chromiumExecutablePath(chromium) {
-  if (process.env.PLAYWRIGHT_CHROMIUM || process.env.PLAYWRIGHT_CHROMIUM_PATH)
-    return process.env.PLAYWRIGHT_CHROMIUM || process.env.PLAYWRIGHT_CHROMIUM_PATH;
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
   try {
     if (existsSync(chromium.executablePath())) return undefined;
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to discovery.
+  }
   const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   const chromiumPrefix = 'chromium-';
   try {
@@ -30,6 +31,8 @@ export function chromiumExecutablePath(chromium) {
         if (existsSync(p)) return p;
       }
     }
-  } catch {}
+  } catch {
+    // An absent or unreadable browser path should fall through to Playwright.
+  }
   return undefined;
 }

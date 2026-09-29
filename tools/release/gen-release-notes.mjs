@@ -28,6 +28,13 @@ const CLOSED_EM_DASH = /\S—\S|\S—|—\S/;
 // plain-node script cannot import ($lib alias, deferred-icon registration);
 // web/src/lib/releaseSections.test.ts fails when the two diverge.
 export const RELEASE_SECTION_TITLES = new Set(['New', 'Improved', 'Fixed']);
+const MARKDOWN_SECTION_HEADING_LEVEL = 2;
+// Settings' What's New heads the release with its date as an <h3>;
+// web/src/lib/components/settings/WhatsNewSection.headingOutline.test.ts fails
+// when the two diverge.
+const CURRENT_RELEASE_SECTION_HEADING_LEVEL = 4;
+// The changelog heads each release with an <h2> "Version x".
+const RELEASE_HISTORY_SECTION_HEADING_LEVEL = 3;
 
 function parseRelease(filename) {
   return parseReleaseSource(filename, readFileSync(join(RELEASES_DIR, filename), 'utf8'));
@@ -126,8 +133,18 @@ export function releaseAnchor(version) {
   return `release-${version.replaceAll('.', '-')}`;
 }
 
+// Each app surface moves the Markdown's `##` sections under its own heading for
+// the release, so the whole body shifts down by the difference.
+// A heading pushed past h6 stops there, the deepest level Markdown has.
+function nestMarkdownHeadings(body, headingLevel) {
+  const deeper = '#'.repeat(headingLevel - MARKDOWN_SECTION_HEADING_LEVEL);
+  return body.replace(/^#{1,6}(?=\s)/gm, (heading) => `${heading}${deeper}`.slice(0, 6));
+}
+
 function renderAppReleaseMarkdown(body, headingLevel) {
-  const html = escapeSvelteBraces(renderReleaseMarkdown(body).trim());
+  const html = escapeSvelteBraces(
+    renderReleaseMarkdown(nestMarkdownHeadings(body, headingLevel)).trim()
+  );
   return html.replace(
     new RegExp(`<h${headingLevel}>([^<]+)</h${headingLevel}>`, 'g'),
     (heading, title) =>
@@ -144,7 +161,7 @@ export function renderReleaseComponent(body, filename) {
     .filter(Boolean);
   const markup = sections
     .map((section, index) => {
-      const html = renderAppReleaseMarkdown(section, 2);
+      const html = renderAppReleaseMarkdown(section, CURRENT_RELEASE_SECTION_HEADING_LEVEL);
       return `{#if visibleSections >= ${index + 1}}\n${indentStaticHtml(html)}\n{/if}`;
     })
     .join('\n');
@@ -161,11 +178,7 @@ export function renderReleaseHistory(releases) {
       const version = esc(release.meta.version);
       const isoDate = esc(release.meta.date);
       const dateLabel = esc(release.dateLabel);
-      const bodyWithNestedHeadings = release.body.replace(
-        /^(#{1,5})(?=\s)/gm,
-        (heading) => `${heading}#`
-      );
-      const notes = renderAppReleaseMarkdown(bodyWithNestedHeadings, 3);
+      const notes = renderAppReleaseMarkdown(release.body, RELEASE_HISTORY_SECTION_HEADING_LEVEL);
       return (
         `<article class="release" id="${releaseAnchor(release.meta.version)}">\n` +
         `  <header class="release-header">\n` +

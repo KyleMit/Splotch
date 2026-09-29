@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -373,7 +373,11 @@ describe('the corpus', () => {
           directory: join(root, 'wt2'),
         })
       ).toMatchObject({ ok: false });
-      expect(git(['worktree', 'list'])).not.toContain('wt');
+      const worktrees = git(['worktree', 'list', '--porcelain'])
+        .split('\n')
+        .filter((line) => line.startsWith('worktree '))
+        .map((line) => line.slice('worktree '.length));
+      expect(worktrees).toEqual([realpathSync(repo)]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
