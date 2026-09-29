@@ -13,11 +13,15 @@ storage together. A narrower entry point remains available when only Blobs persi
 | `check-deployed-contract.mjs` | `npm run test:deploy:smoke` | Validate the complete hosted deploy contract         |
 | `check-deployed-blobs.mjs`    | `npm run test:blobs:smoke`  | Validate only Blobs persistence on a real deployment |
 
-`lib/admin-client.mjs` owns the shared `/api/admin` request plumbing.
-`lib/deployed-admin-target.mjs` allows writes only for Netlify preview hostnames and loopback test
-servers, and `lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the
-preview-only token round-trip used by both deployed entry points. Assertions remain in the contract
-layers rather than in the request client.
+`lib/admin-client.mjs` owns the shared `/api/admin` request plumbing and fails any admin request
+that is answered with a redirect, so an HTTPS target cannot bounce the secret onto another URL.
+`lib/deployed-admin-target.mjs` owns both target rules. The login sends the admin secret, so each
+deployed entry point exits with status 2, before any request, when its URL is not HTTPS;
+`DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS=1` admits plain HTTP only for a loopback test server. Writes
+happen only for Netlify preview hostnames and loopback test servers.
+`lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the preview-only token
+round-trip used by both deployed entry points. Assertions remain in the contract layers rather than
+in the request client.
 
 ## Local contract inputs and outputs
 
