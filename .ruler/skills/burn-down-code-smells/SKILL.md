@@ -48,9 +48,9 @@ readability or maintainability — for humans, and especially for agents.** In p
 
 ## 1. Preflight — with the user present
 
-Run `ship-campaign` step 1: clean start, `rival:health`, `gh` auth and version, green `main`,
-baseline `check` and `lint`, and the deadline and reserve (`hours=<n>` or `until=<time>`). Then ask
-the user these questions, all at once, and no others:
+Run `ship-campaign` step 1: clean start, `rival:health`, `gh` auth and version, green `main`, the
+usage windows and their launch thresholds, baseline `check` and `lint`, and the deadline and reserve
+(`hours=<n>` or `until=<time>`). Then ask the user these questions, all at once, and no others:
 
 1. **Tracking.** One tracking issue holding the ledger, with every fix a free-form PR saying
    `Refs #<n>` (recommended), or an issue per finding.

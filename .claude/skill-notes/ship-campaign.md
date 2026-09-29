@@ -156,6 +156,35 @@ invoking the campaign is the approval and the statement only puts it on record, 
 campaigns merge instead of silently piling up conflicting PRs (#2467). Whether an explicit quote
 actually changes a guardrail's merge verdict is unverified.
 
+## 2026-09-29 evening: integration trials, one catch-up, usage thresholds
+
+The #2500 parallel campaign merged about 20 PRs in under three hours. Four changes came from it:
+
+* **The integration trial.** Ready PRs gated on an older `main` were merged locally onto the current
+  one, checked once with `check`, `lint`, and `test:browserless`, then merged one at a time with
+  `--match-head-commit`. One trial covered #2504, #2506, and #2508 together (16:44); single trials
+  covered #2509, #2512, #2514, #2515, #2517, and #2522–#2525. That replaced about eight worker
+  re-gates or CI rounds. #2511, whose catch-up was `coupled`, still took its CI round. The trial for
+  #2517 hit a stderr flake in `deployed-admin-target.test.mjs`; it passed 8/8 alone on `main` and on
+  the trial merge, and the diff could not reach it, so no unit was charged. Those two cases set the
+  trial's limits in the parallel reference. The campaign's trials ran only the browserless tier; the
+  rival on the PR that wrote this up added each PR's own targeted tests and build guards, which the
+  worker's fast path already required.
+* **Catch up once.** One unit (#2507) chased `main` through three full CI rounds before reporting
+  ready. The working brief then told units to catch up once, after review, and leave later moves to
+  the orchestrator. The same run found that worktrees share `refs/remotes/origin/main` (#2515), so
+  the gated `main` is read from the merge commit's second parent.
+* **The serialized WebKit gate.** The post-merge WebKit fast gate runs one commit at a time
+  (`.github/workflows/test.yml`), and that day it ran about three hours behind: gates for merges at
+  16:36 started at 19:45. Step 2's "finished green", read literally, would have held each unit that
+  long. Verification now takes the push `Tests` run's standard jobs per merge and collects the
+  WebKit gates once at the end. Whether the first-run gate should leave its concurrency group is a
+  CI decision parked for the user in the #2500 ledger.
+* **Usage thresholds.** Preflight found the weekly usage window at 88%. The user agreed no new
+  launch at 94% and wrap-up at 97%. Launches paused at 94% (17:48) and reopened at 17:56 when the
+  user reported a reset, which the host's usage tool confirmed. Whether those thresholds suit a
+  campaign that starts lower is unvalidated.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign

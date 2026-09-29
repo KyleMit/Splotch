@@ -102,6 +102,22 @@ easy, because findings arrive already grouped by the files they touch.
   its first read, which skipped a unit until it was resumed; the `gh api` log flag (#2470); and the
   web-only storage-key guard (#2477).
 
+## Fourth run, 2026-09-29 evening (#2500)
+
+* **Unit-brief additions**, each from a unit's report: catch up with `main` once, after review
+  (#2507 paid three CI rounds chasing it); read the gated `main` from `HEAD^2`, since worktrees
+  share `refs/remotes/origin/main` (#2515), or from the branch's base when nothing merged (the
+  rival's catch on this note's own PR, whose head had no catch-up merge); `post-review.mjs` blocks a
+  finding naming an emulator serial (#2504); `ANDROID_HOME` pointed at an empty directory keeps a
+  spawned test off real devices (#2524); `scrapbook:check` runs in `check:quality` but not
+  `test:browserless`, which cost #2520 a CI repair after it edited a file a scrapbook page inlines.
+  The orchestrator-side changes (integration trials, the serialized WebKit gate, usage thresholds)
+  are in the ship-campaign skill note.
+* **Not added:** parse a source-reading guard with the TypeScript compiler API rather than a regex.
+  The rival caught regex guards fooled by comments or template literals twice (#2511, #2524), but
+  `docs/CODING-STANDARDS.md` records it through #2516, open at the time, and units read that doc at
+  setup.
+
 ## Rejected or deferred during the run
 
 These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
