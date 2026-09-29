@@ -4,15 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Typed against the functions they replace, so a changed server result shape
 // fails type-check here instead of these tests feeding the module a stale one.
 // Inline `import()` types because each stub shares the real function's name.
-const { envState, isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
+const { envState, checkAccessToken, peekRateLimit, rateLimit } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
-  isAllowedToken: vi.fn<typeof import('./tokens').isAllowedToken>(),
+  checkAccessToken: vi.fn<typeof import('./tokens').checkAccessToken>(),
   peekRateLimit: vi.fn<typeof import('./rateLimit').peekRateLimit>(),
   rateLimit: vi.fn<typeof import('./rateLimit').rateLimit>(),
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
-vi.mock('./tokens', () => ({ isAllowedToken }));
+vi.mock('./tokens', () => ({ checkAccessToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 
 import { authorizeGenerationRequest } from './generationAuthorization';
@@ -33,7 +33,7 @@ const managedInput = {
 
 beforeEach(() => {
   envState.OPENAI_API_KEY = 'managed-key';
-  isAllowedToken.mockReset().mockResolvedValue(true);
+  checkAccessToken.mockReset().mockResolvedValue({ verdict: 'allowed' });
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
 });
@@ -53,12 +53,12 @@ describe('authorizeGenerationRequest', () => {
       ok: false,
       error: 'Too many attempts. Please wait 12s.',
     });
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
 
   it('charges only a failed managed guess to the shared verification bucket', async () => {
-    isAllowedToken.mockResolvedValue(false);
+    checkAccessToken.mockResolvedValue({ verdict: 'denied', spendsGuess: true });
 
     const result = await authorizeGenerationRequest(managedInput);
 
@@ -71,7 +71,37 @@ describe('authorizeGenerationRequest', () => {
       verifyAccessCodeBucket('203.0.113.5'),
       rateLimitPolicy.verifyAccessCode
     );
-    expect(isAllowedToken).toHaveBeenCalledWith('daycare-club');
+    expect(checkAccessToken).toHaveBeenCalledWith('daycare-club');
+    expect(rateLimit).toHaveBeenCalledOnce();
+    expect(rateLimit).toHaveBeenCalledWith(
+      verifyAccessCodeBucket('203.0.113.5'),
+      rateLimitPolicy.verifyAccessCode
+    );
+  });
+
+  // A token store we could not read is our fault, not a revoked code: the 403
+  // this used to answer is a dead end the client never retries.
+  it('answers an unreadable allowlist with a retryable 503, charging nothing', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+
+    const result = await authorizeGenerationRequest(managedInput);
+
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(503);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'AI creations are not available right now. Please try again later.',
+    });
+    expect(rateLimit).not.toHaveBeenCalled();
+  });
+
+  it('still charges an unavailable answer that depended on the token', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: true });
+
+    const result = await authorizeGenerationRequest(managedInput);
+
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(503);
     expect(rateLimit).toHaveBeenCalledOnce();
     expect(rateLimit).toHaveBeenCalledWith(
       verifyAccessCodeBucket('203.0.113.5'),
@@ -135,7 +165,7 @@ describe('authorizeGenerationRequest', () => {
       error: 'Too many attempts. Please wait 7s.',
     });
     expect(peekRateLimit).not.toHaveBeenCalled();
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(rateLimit).toHaveBeenCalledWith(generateImageByokBucket('198.51.100.8'), {
       limit: 30,
       windowMs: 60_000,

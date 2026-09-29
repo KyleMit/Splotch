@@ -2,16 +2,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AiImageProvider } from '$lib/server/ai/provider';
 
-const { rateLimit, peekRateLimit, verifyKey, isAllowedToken } = vi.hoisted(() => ({
+const { rateLimit, peekRateLimit, verifyKey, checkAccessToken } = vi.hoisted(() => ({
   rateLimit: vi.fn<typeof import('$lib/server/rateLimit').rateLimit>(),
   peekRateLimit: vi.fn<typeof import('$lib/server/rateLimit').peekRateLimit>(),
   verifyKey: vi.fn<AiImageProvider['verifyKey']>(),
-  isAllowedToken: vi.fn<typeof import('$lib/server/tokens').isAllowedToken>(),
+  checkAccessToken: vi.fn<typeof import('$lib/server/tokens').checkAccessToken>(),
 }));
 
 vi.mock('$lib/server/rateLimit', () => ({ rateLimit, peekRateLimit }));
 vi.mock('$lib/server/ai/provider', () => ({ aiProvider: { verifyKey } }));
-vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
+vi.mock('$lib/server/tokens', () => ({ checkAccessToken }));
 
 import { POST as verifyKeyRoute } from '../../routes/api/verify-key/+server';
 import { POST as verifyAccessCodeRoute } from '../../routes/api/verify-access-code/+server';
@@ -39,7 +39,7 @@ beforeEach(() => {
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   verifyKey.mockReset().mockResolvedValue({ ok: true });
-  isAllowedToken.mockReset().mockResolvedValue(true);
+  checkAccessToken.mockReset().mockResolvedValue({ verdict: 'allowed' });
   serveVerifyRoutes();
 });
 
@@ -59,6 +59,17 @@ describe('credential verification over the wire', () => {
       kind: 'accessCode',
       accessCode: 'sunny-meadow',
     });
-    expect(isAllowedToken).toHaveBeenCalledWith('sunny-meadow');
+    expect(checkAccessToken).toHaveBeenCalledWith('sunny-meadow');
+  });
+
+  // The route's 503 must reach the parent as "try again", never as a bad code.
+  it('reads an unreadable allowlist as a check that got no answer', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+
+    expect(await verifyCredential('sunny-meadow')).toEqual({
+      ok: false,
+      kind: 'checkUnavailable',
+      error: "We couldn't check that key just now. Please try again.",
+    });
   });
 });

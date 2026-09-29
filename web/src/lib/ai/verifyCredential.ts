@@ -20,7 +20,7 @@ export type VerifiedCredentialKind = 'apiKey' | 'accessCode';
 export type CredentialKind =
   | VerifiedCredentialKind
   | 'retiredGeminiKey'
-  /** The check never reached OpenAI — nothing was learned about the key. */
+  /** The check got no answer — nothing was learned about the credential. */
   | 'checkUnavailable';
 
 export type VerifyCredentialResult =

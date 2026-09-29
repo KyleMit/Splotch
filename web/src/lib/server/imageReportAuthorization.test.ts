@@ -5,16 +5,16 @@ import type { AiImageProvider } from './ai/provider';
 // Typed against the functions they replace, so a changed server result shape
 // fails type-check here instead of these tests feeding the module a stale one.
 // Inline `import()` types where a stub shares the real function's name.
-const { envState, isAllowedToken, peekRateLimit, rateLimit, verifyKey } = vi.hoisted(() => ({
+const { envState, checkAccessToken, peekRateLimit, rateLimit, verifyKey } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
-  isAllowedToken: vi.fn<typeof import('./tokens').isAllowedToken>(),
+  checkAccessToken: vi.fn<typeof import('./tokens').checkAccessToken>(),
   peekRateLimit: vi.fn<typeof import('./rateLimit').peekRateLimit>(),
   rateLimit: vi.fn<typeof import('./rateLimit').rateLimit>(),
   verifyKey: vi.fn<AiImageProvider['verifyKey']>(),
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
-vi.mock('./tokens', () => ({ isAllowedToken }));
+vi.mock('./tokens', () => ({ checkAccessToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
 vi.mock('./ai/provider', () => ({ aiProvider: { verifyKey } }));
 // Nothing on the free branch is stubbed, so it runs against the real
@@ -36,7 +36,7 @@ const FREE_BINDING = { kind: 'free', credential: INSTALLATION_ID } as const;
 
 beforeEach(() => {
   envState.REPORT_TOKEN_SECRET = 'unit-test-report-secret';
-  isAllowedToken.mockReset().mockResolvedValue(true);
+  checkAccessToken.mockReset().mockResolvedValue({ verdict: 'allowed' });
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   verifyKey.mockReset().mockResolvedValue({ ok: true });
@@ -87,7 +87,7 @@ describe('authorizeImageReport', () => {
   });
 
   it('charges an invalid managed token to the shared access-code oracle bucket', async () => {
-    isAllowedToken.mockResolvedValue(false);
+    checkAccessToken.mockResolvedValue({ verdict: 'denied', spendsGuess: true });
 
     const result = await authorizeImageReport({
       apiKey: null,
@@ -100,6 +100,43 @@ describe('authorizeImageReport', () => {
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
     expect(result.response.status).toBe(403);
+    expect(rateLimit).toHaveBeenCalledWith(
+      verifyAccessCodeBucket('203.0.113.5'),
+      rateLimitPolicy.verifyAccessCode
+    );
+  });
+
+  const managedReport = {
+    apiKey: null,
+    token: 'console-added',
+    installationId: null,
+    reportToken: null,
+    clientAddress: '203.0.113.5',
+  };
+
+  // The managed twin of the BYO key check's `unreachable` answer below.
+  it('answers an unreadable allowlist with 503 rather than an invalid token', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+
+    const result = await authorizeImageReport(managedReport);
+
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(503);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'AI reporting is not available right now. Please try again later.',
+    });
+    expect(rateLimit).not.toHaveBeenCalled();
+  });
+
+  it('still charges an unavailable answer that depended on the token', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: true });
+
+    const result = await authorizeImageReport(managedReport);
+
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(503);
+    expect(rateLimit).toHaveBeenCalledOnce();
     expect(rateLimit).toHaveBeenCalledWith(
       verifyAccessCodeBucket('203.0.113.5'),
       rateLimitPolicy.verifyAccessCode
@@ -121,7 +158,7 @@ describe('authorizeImageReport', () => {
       rateLimitPolicy.reportImageByok
     );
     expect(verifyKey).toHaveBeenCalledWith('parent-key');
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
   });
 
   it('rejects a refusal context token bound to a different BYO key', async () => {
@@ -210,7 +247,7 @@ describe('authorizeImageReport', () => {
       reportImageFreeBucket('192.0.2.9'),
       rateLimitPolicy.reportImageFree
     );
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
     expect(verifyKey).not.toHaveBeenCalled();
   });
 
@@ -224,7 +261,7 @@ describe('authorizeImageReport', () => {
       authorized: true,
       reportContext: { kind: 'picture' },
     });
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
   });
 
   // The installation id is a client-generated 64-hex string, so on its own it

@@ -8,7 +8,7 @@ import {
   MAX_TOKEN_MUTATION_BODY_BYTES,
   MUTATION_FAILURE_STATUS,
 } from '$lib/server/tokens';
-import type { MutationFailure } from '$lib/server/tokens';
+import type { MutationFailure, MutationResult } from '$lib/server/tokens';
 import { apiHandler, readJsonBody, stringField } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -30,7 +30,13 @@ export type TokenSnapshot = {
   persistent: boolean;
 };
 
+// A mutation also says whether it wrote anything: a DELETE that matched no
+// token is still a 200 (the operation is idempotent) but reports `changed: false`.
+export type TokenMutationSnapshot = TokenSnapshot & { changed: boolean };
+
 export type TokenMutationError = { ok: false; error: string };
+
+type MutationSuccess = Extract<MutationResult, { ok: true }>;
 
 /**
  * Every method requires `Authorization: Bearer <session>`, where <session> is
@@ -60,20 +66,22 @@ function requireSession(request: Request) {
 // mutation path, it would race the write it follows — under the eventual
 // consistency this module documents at length it can land on a replica that has
 // not caught up.
-async function snapshot(origin: string, tokens: string[], persistent: boolean) {
-  const payload = {
-    ok: true,
-    tokens,
-    invites: buildInvites(tokens, origin),
-    persistent,
-  } satisfies TokenSnapshot;
-  return json(payload);
+function snapshot(origin: string, tokens: string[], persistent: boolean): TokenSnapshot {
+  return { ok: true, tokens, invites: buildInvites(tokens, origin), persistent };
 }
 
 // The read-only front door has nothing to carry, so it asks.
 async function readSnapshot(origin: string) {
   const { tokens, persistent } = await getTokensStatus();
-  return snapshot(origin, tokens, persistent);
+  return json(snapshot(origin, tokens, persistent));
+}
+
+function mutationSnapshot(origin: string, result: MutationSuccess) {
+  const payload = {
+    ...snapshot(origin, result.tokens, result.persistent),
+    changed: result.changed,
+  } satisfies TokenMutationSnapshot;
+  return json(payload);
 }
 
 // The status per failure reason is MUTATION_FAILURE_STATUS in
@@ -98,7 +106,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
   if (!parsed.ok) return parsed.response;
   const result = await addToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
-  return snapshot(url.origin, result.tokens, result.persistent);
+  return mutationSnapshot(url.origin, result);
 });
 
 /** Remove an access token. Body: { token }. */
@@ -109,5 +117,5 @@ export const DELETE: RequestHandler = apiHandler(async ({ request, url }) => {
   if (!parsed.ok) return parsed.response;
   const result = await removeToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
-  return snapshot(url.origin, result.tokens, result.persistent);
+  return mutationSnapshot(url.origin, result);
 });

@@ -97,12 +97,32 @@ describe('the /admin token form actions', () => {
   });
 
   it('reports the mutated token on success', async () => {
-    vi.mocked(removeToken).mockResolvedValue({ ok: true, tokens: [], persistent: true });
+    vi.mocked(removeToken).mockResolvedValue({
+      ok: true,
+      tokens: [],
+      persistent: true,
+      changed: true,
+    });
     expect(await tokenDoor('remove', '  spaced  ')).toEqual({
       success: true,
       message: 'Removed “spaced”',
     });
     expect(removeToken).toHaveBeenCalledWith('spaced');
+  });
+
+  // An operator revoking a leaked code against a lagging replica, or with a
+  // typo, must not read "Removed" while the code stays valid.
+  it('says nothing was removed when the removal matched no token', async () => {
+    vi.mocked(removeToken).mockResolvedValue({
+      ok: true,
+      tokens: ['other'],
+      persistent: true,
+      changed: false,
+    });
+    expect(await tokenDoor('remove', 'typo')).toEqual({
+      success: true,
+      message: '“typo” was not in the list — nothing was removed',
+    });
   });
 
   it('answers 413 over the JSON endpoint body cap without mutating anything', async () => {

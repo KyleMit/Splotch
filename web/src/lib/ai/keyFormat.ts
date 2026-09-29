@@ -36,8 +36,9 @@ export function looksLikeRetiredGeminiKey(value: string): boolean {
 }
 
 /**
- * The key check could not reach OpenAI. Distinct from a key OpenAI refused,
- * because only one of the two is a statement about the parent's key.
+ * The check got no answer: the key check could not reach OpenAI, or the
+ * access-code check could not read the allowlist. Distinct from a credential
+ * that was refused, because only that is a statement about the parent's.
  */
 export const KEY_CHECK_UNAVAILABLE_CODE = 'KEY_CHECK_UNAVAILABLE';
 

@@ -117,7 +117,7 @@ async function tokenMutation(
   cookies: Cookies,
   request: Request,
   op: (token: string) => Promise<MutationResult>,
-  verb: 'Added' | 'Removed'
+  describe: (token: string, changed: boolean) => string
 ) {
   requireAdmin(cookies);
   const body = await readFormBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
@@ -128,7 +128,7 @@ async function tokenMutation(
   const token = formStringField(body.form, 'token').trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
-  return { success: true, message: `${verb} “${token}”` };
+  return { success: true, message: describe(token, result.changed) };
 }
 
 export const actions: Actions = {
@@ -153,6 +153,12 @@ export const actions: Actions = {
     cookies.delete(SESSION_COOKIE, { path: '/admin' });
     throw redirect(303, '/admin');
   },
-  add: ({ request, cookies }) => tokenMutation(cookies, request, addToken, 'Added'),
-  remove: ({ request, cookies }) => tokenMutation(cookies, request, removeToken, 'Removed'),
+  add: ({ request, cookies }) =>
+    tokenMutation(cookies, request, addToken, (token) => `Added “${token}”`),
+  // An operator revoking a leaked code must not read "Removed" for a code that
+  // is still valid because this read missed it.
+  remove: ({ request, cookies }) =>
+    tokenMutation(cookies, request, removeToken, (token, changed) =>
+      changed ? `Removed “${token}”` : `“${token}” was not in the list — nothing was removed`
+    ),
 };

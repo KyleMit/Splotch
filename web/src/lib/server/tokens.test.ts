@@ -14,6 +14,11 @@ import {
   usageGrantKey,
 } from './tokensTestHarness';
 
+const ALLOWED = { verdict: 'allowed' };
+const DENIED = { verdict: 'denied', spendsGuess: true };
+// The list could not be read, and the answer is the same for every token.
+const UNAVAILABLE_FOR_ALL = { verdict: 'unavailable', spendsGuess: false };
+
 beforeEach(() => {
   envState.USAGE_GRANT_ID_SECRET = USAGE_SECRET;
   // Silence the expected "Blobs unavailable" warning from openStore.
@@ -39,10 +44,13 @@ describe('getTokensStatus', () => {
   });
 
   it('still serves env-seeded reads outside Vite dev', async () => {
-    const { getTokensStatus, isAllowedToken } = await freshTokensOutsideDev('seeded');
+    const { getTokensStatus, checkAccessToken } = await freshTokensOutsideDev('seeded');
 
     expect(await getTokensStatus()).toEqual({ tokens: ['seeded'], persistent: false });
-    expect(await isAllowedToken('seeded')).toBe(true);
+    expect(await checkAccessToken('seeded')).toEqual(ALLOWED);
+    // With no Blobs in the runtime the seed is the only list there is, so a
+    // miss is a wrong code, as a production preview has always answered.
+    expect(await checkAccessToken('unknown')).toEqual(DENIED);
   });
 });
 
@@ -56,8 +64,14 @@ describe('mutations when getStore fails', () => {
       // freshTokens leaves Blobs unconfigured, so this is the Vite-dev
       // in-memory list: writable, but not durably stored.
       persistent: false,
+      changed: true,
     });
-    expect(await removeToken('seeded')).toEqual({ ok: true, tokens: ['local'], persistent: false });
+    expect(await removeToken('seeded')).toEqual({
+      ok: true,
+      tokens: ['local'],
+      persistent: false,
+      changed: true,
+    });
   });
 
   it('fails closed outside Vite dev', async () => {
@@ -74,13 +88,13 @@ describe('mutations when getStore fails', () => {
   });
 });
 
-describe('isAllowedToken', () => {
+describe('checkAccessToken', () => {
   it('accepts a seeded token and rejects unknown or non-string input', async () => {
-    const { isAllowedToken } = await freshTokens('good');
-    expect(await isAllowedToken('good')).toBe(true);
-    expect(await isAllowedToken('bad')).toBe(false);
-    expect(await isAllowedToken(undefined)).toBe(false);
-    expect(await isAllowedToken(123)).toBe(false);
+    const { checkAccessToken } = await freshTokens('good');
+    expect(await checkAccessToken('good')).toEqual(ALLOWED);
+    expect(await checkAccessToken('bad')).toEqual(DENIED);
+    expect(await checkAccessToken(undefined)).toEqual(DENIED);
+    expect(await checkAccessToken(123)).toEqual(DENIED);
   });
 });
 
@@ -96,9 +110,9 @@ describe('first seed into empty Blobs', () => {
 
 describe('stale-empty seed races', () => {
   it('authorizes only the persisted list after a lost seed race', async () => {
-    const { isAllowedToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
-    expect(await isAllowedToken('legacy')).toBe(false);
-    expect(await isAllowedToken('current')).toBe(true);
+    const { checkAccessToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
+    expect(await checkAccessToken('legacy')).toEqual(DENIED);
+    expect(await checkAccessToken('current')).toEqual(ALLOWED);
   });
 
   it('bases mutations on the persisted list after a lost seed race', async () => {
@@ -107,6 +121,7 @@ describe('stale-empty seed races', () => {
       ok: true,
       tokens: ['current', 'mine'],
       persistent: true,
+      changed: true,
     });
     expect(await storeFor('access-tokens').get('list')).toEqual(['current', 'mine']);
   });
@@ -121,10 +136,10 @@ describe('stale-empty seed races', () => {
       if (calls === 2) throw new Error('transient blobs read failure'); // first reread blips
       return read(key, options); // second reread sees the real list
     };
-    const { isAllowedToken } = await import('./tokens');
+    const { checkAccessToken } = await import('./tokens');
     // A single transient blip must not collapse to unconfirmed/deny.
-    expect(await isAllowedToken('current')).toBe(true);
-    expect(await isAllowedToken('legacy')).toBe(false);
+    expect(await checkAccessToken('current')).toEqual(ALLOWED);
+    expect(await checkAccessToken('legacy')).toEqual(DENIED);
   });
 
   it('calls an all-throws confirmation an outage, not a losable race', async () => {
@@ -137,7 +152,7 @@ describe('stale-empty seed races', () => {
       if (calls++ % 4 === 0) return null;
       throw new Error('blobs unreachable');
     };
-    const { addToken, isAllowedToken, TOKEN_UNAVAILABLE_ERROR } = await import('./tokens');
+    const { addToken, checkAccessToken, TOKEN_UNAVAILABLE_ERROR } = await import('./tokens');
     // Nothing changed and the store never answered — the same shape as a
     // degraded read, so it must not be reported as a retryable CAS conflict.
     expect(await addToken('mine')).toEqual({
@@ -145,21 +160,21 @@ describe('stale-empty seed races', () => {
       error: TOKEN_UNAVAILABLE_ERROR,
       reason: 'unavailable',
     });
-    // Still fails closed: an unconfirmed winner denies every token, including
-    // the env seed that lost the race.
-    expect(await isAllowedToken('legacy')).toBe(false);
-    expect(await isAllowedToken('current')).toBe(false);
+    // Still fails closed: an unconfirmed winner allows no token, including the
+    // env seed that lost the race, and calls none of them wrong.
+    expect(await checkAccessToken('legacy')).toEqual(UNAVAILABLE_FOR_ALL);
+    expect(await checkAccessToken('current')).toEqual(UNAVAILABLE_FOR_ALL);
     expect(await storeFor('access-tokens').get('list')).toEqual(['current']);
   });
 
   it('fails closed and rejects mutations when the winning list cannot be confirmed', async () => {
-    const { isAllowedToken, addToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithSeedRace(
+    const { checkAccessToken, addToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithSeedRace(
       'legacy',
       ['current'],
       Number.POSITIVE_INFINITY
     );
-    expect(await isAllowedToken('legacy')).toBe(false);
-    expect(await isAllowedToken('current')).toBe(false);
+    expect(await checkAccessToken('legacy')).toEqual(UNAVAILABLE_FOR_ALL);
+    expect(await checkAccessToken('current')).toEqual(UNAVAILABLE_FOR_ALL);
     expect(await addToken('mine')).toEqual({
       ok: false,
       error: TOKEN_CONFLICT_ERROR,
@@ -171,10 +186,10 @@ describe('stale-empty seed races', () => {
 
 describe('addToken', () => {
   it('adds a trimmed token and reflects it in the list', async () => {
-    const { addToken, isAllowedToken } = await freshTokens('');
+    const { addToken, checkAccessToken } = await freshTokens('');
     const result = await addToken('  new-token  ');
-    expect(result).toEqual({ ok: true, tokens: ['new-token'], persistent: false });
-    expect(await isAllowedToken('new-token')).toBe(true);
+    expect(result).toEqual({ ok: true, tokens: ['new-token'], persistent: false, changed: true });
+    expect(await checkAccessToken('new-token')).toEqual(ALLOWED);
   });
 
   // Discovering whether the list is durably stored and writing to it were two
@@ -191,6 +206,7 @@ describe('addToken', () => {
       ok: true,
       tokens: ['existing', 'new-token'],
       persistent: true,
+      changed: true,
     });
     expect(reads).toHaveBeenCalledTimes(1);
   });
@@ -217,15 +233,23 @@ describe('addToken', () => {
 describe('removeToken', () => {
   it('removes a token and returns the remaining list', async () => {
     const { removeToken } = await freshTokens('a,b,c');
-    expect(await removeToken('b')).toEqual({ ok: true, tokens: ['a', 'c'], persistent: false });
+    expect(await removeToken('b')).toEqual({
+      ok: true,
+      tokens: ['a', 'c'],
+      persistent: false,
+      changed: true,
+    });
   });
 
-  it('is a no-op for an unknown token', async () => {
+  // Still idempotent, but it says so: a caller must never confirm a removal
+  // that matched nothing.
+  it('is a no-op for an unknown token and reports that nothing changed', async () => {
     const { removeToken } = await freshTokens('a,b');
     expect(await removeToken('missing')).toEqual({
       ok: true,
       tokens: ['a', 'b'],
       persistent: false,
+      changed: false,
     });
   });
 });
@@ -257,7 +281,12 @@ describe('concurrent mutations against Blobs', () => {
 
   it('persists an add through Blobs and reports persistent: true', async () => {
     const { addToken, getTokensStatus } = await freshTokensWithBlobs(['a']);
-    expect(await addToken('b')).toEqual({ ok: true, tokens: ['a', 'b'], persistent: true });
+    expect(await addToken('b')).toEqual({
+      ok: true,
+      tokens: ['a', 'b'],
+      persistent: true,
+      changed: true,
+    });
     expect(await getTokensStatus()).toEqual({ tokens: ['a', 'b'], persistent: true });
   });
 
@@ -268,6 +297,7 @@ describe('concurrent mutations against Blobs', () => {
       ok: true,
       tokens: ['a', 'other-admin', 'mine'],
       persistent: true,
+      changed: true,
     });
   });
 
@@ -278,6 +308,7 @@ describe('concurrent mutations against Blobs', () => {
       ok: true,
       tokens: ['a', 'other-admin'],
       persistent: true,
+      changed: true,
     });
   });
 
@@ -312,7 +343,7 @@ describe('mutations during a transient Blobs read failure', () => {
     // that only lands there is undone the moment Blobs recovers.
     expect((await tokens.getTokensStatus()).tokens).toEqual(['legacy', 'durable']);
     recoverBlobs();
-    expect(await tokens.isAllowedToken('durable')).toBe(true);
+    expect(await tokens.checkAccessToken('durable')).toEqual(ALLOWED);
     expect(await storeFor('access-tokens').get('list')).toEqual(['legacy', 'durable']);
   });
 
@@ -325,13 +356,24 @@ describe('mutations during a transient Blobs read failure', () => {
     });
     expect((await tokens.getTokensStatus()).tokens).toEqual(['legacy']);
     recoverBlobs();
-    expect(await tokens.isAllowedToken('mine')).toBe(false);
+    expect(await tokens.checkAccessToken('mine')).toEqual(DENIED);
   });
 
   it('still serves reads from the in-memory stand-in', async () => {
     const { tokens } = await freshTokensWithFailingBlobs('legacy', ['legacy', 'durable']);
     expect(await tokens.getTokensStatus()).toEqual({ tokens: ['legacy'], persistent: false });
-    expect(await tokens.isAllowedToken('legacy')).toBe(true);
+    expect(await tokens.checkAccessToken('legacy')).toEqual(ALLOWED);
+  });
+
+  // `durable` is a code added in /admin: the seed never had it, so the failed
+  // read cannot say it is wrong. The seed hit above makes the miss an answer
+  // about the code all the same, so it still spends a guess.
+  it('calls a code the seed lacks unavailable, not wrong, and still charges it', async () => {
+    const { tokens } = await freshTokensWithFailingBlobs('legacy', ['legacy', 'durable']);
+    expect(await tokens.checkAccessToken('durable')).toEqual({
+      verdict: 'unavailable',
+      spendsGuess: true,
+    });
   });
 });
 
@@ -343,7 +385,12 @@ describe('usage cleanup on remove', () => {
     const retainedKey = usageGrantKey('a');
     await usage.setJSON(revokedKey, { count: 3 });
     await usage.setJSON(retainedKey, { count: 1 });
-    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'], persistent: true });
+    expect(await removeToken('revoked')).toEqual({
+      ok: true,
+      tokens: ['a'],
+      persistent: true,
+      changed: true,
+    });
     expect(usage.blobs.has(revokedKey)).toBe(false);
     expect(usage.blobs.has(retainedKey)).toBe(true);
     expect(usage.blobs.has('revoked')).toBe(false);
@@ -356,7 +403,12 @@ describe('usage cleanup on remove', () => {
     usage.delete = async () => {
       throw new Error('blobs outage');
     };
-    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'], persistent: true });
+    expect(await removeToken('revoked')).toEqual({
+      ok: true,
+      tokens: ['a'],
+      persistent: true,
+      changed: true,
+    });
     expect((await getTokensStatus()).tokens).toEqual(['a']);
   });
 
@@ -364,7 +416,12 @@ describe('usage cleanup on remove', () => {
     const { removeToken } = await freshTokensWithBlobs(['a']);
     const usage = storeFor('ai-usage');
     await usage.setJSON('missing', { count: 2 });
-    expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a'], persistent: true });
+    expect(await removeToken('missing')).toEqual({
+      ok: true,
+      tokens: ['a'],
+      persistent: true,
+      changed: false,
+    });
     expect(usage.blobs.has('missing')).toBe(true);
   });
 });
