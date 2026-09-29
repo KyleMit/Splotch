@@ -1,9 +1,8 @@
 // The /admin console's form wire, declared once for both ends: +page.svelte
 // posts to these actions with these fields, AdminConsole.svelte names its
 // inputs with them, and +page.server.ts exports the actions and reads the
-// fields. It lives outside $lib/server because the page imports it, and
-// outside +page.server.ts because a route's server module may export only
-// SvelteKit's own names.
+// fields. The page imports it, so it cannot live in a server-only module:
+// neither $lib/server nor +page.server.ts.
 
 /**
  * The /admin form actions, each posted as `?/<name>`. routes/admin/page.server.test.ts
