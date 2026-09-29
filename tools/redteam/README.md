@@ -33,9 +33,10 @@ it `safe-…`/`block-…`, drop it in `source/`, re-encrypt.
 
 ## One-time setup
 
-1. Set `REDTEAM_FIXTURE_KEY` and `OPENAI_API_KEY` in `web/.env` (see `web/.env.example`). Share
-   `REDTEAM_FIXTURE_KEY` with teammates **out-of-band** — it's the key to the committed `.enc`
-   corpus.
+1. Set `REDTEAM_FIXTURE_KEY` and `OPENAI_API_KEY` in `web/.env` (see `web/.env.example`), or export
+   them; an exported value wins. Both entry points read that file from the repo, whatever directory
+   you run them from, and read no other `.env`. Share `REDTEAM_FIXTURE_KEY` with teammates
+   **out-of-band** — it's the key to the committed `.enc` corpus.
 
 ## Entry points
 
@@ -44,7 +45,8 @@ it `safe-…`/`block-…`, drop it in `source/`, re-encrypt.
 | `run-safety-evaluation.mjs`     | `npm run redteam`                             | Run the real end-to-end safety evaluation |
 | `manage-encrypted-fixtures.mjs` | `npm run redteam:encrypt` / `redteam:decrypt` | Encrypt or decrypt the fixture corpus     |
 
-`lib/fixture-crypto.mjs` owns AES-256-GCM corpus encryption, while `lib/safety-report.mjs` owns
+`lib/fixture-crypto.mjs` owns AES-256-GCM corpus encryption and names the env file both entry points
+load; it takes the secret as an argument and throws rather than exits. `lib/safety-report.mjs` owns
 verdict labels and the self-contained report. The public command names remain stable during the
 tools naming migration. The fixture CLI uses the symmetric `manage-` name prescribed by #975 because
 encrypt and decrypt are peer corpus operations rather than a primary action with an incidental
@@ -111,10 +113,12 @@ dev-gated handle and intercepting this endpoint.
 
 Missing keys, an empty corpus, unmatched filters, a wrong fixture key, or a corrupt encrypted file
 fail with a diagnostic and nonzero exit before a trustworthy evaluation is produced. Once the dev
-server starts, individual HTTP and fetch failures become report rows rather than automated test
-failures. A fatal server/run error is logged, but the command still writes the collected report and
-exits zero; treat any `✗` row or `FATAL` line as an invalid safety run. Likewise, `⚠` rows require
-human review and do not change the exit status.
+server starts, a case that fails — an HTTP or fetch error, or a throw while preparing or saving its
+images — becomes a `✗` report row, and the run moves on to the next case. A fatal server/run error,
+such as a server that never comes up, is logged as `FATAL`; the command still writes the report,
+with a `✗` row naming the abort for every case that never ran, lists those cases, and exits 1. Treat
+any `✗` row or `FATAL` line as an invalid safety run. `⚠` rows require human review and do not
+change the exit status.
 
 The runner clears and rebuilds the gitignored `decrypted/` directory before each evaluation. Every
 run gets a new `output/<runId>/` directory, so prior results are not replaced. Encryption rewrites
@@ -125,5 +129,8 @@ when plaintext sources change. Encryption never prunes, so retiring a probe also
 Run focused structural verification with:
 
 ```sh
-npm run test:tools -- tools/tests/manual-harness-corpora.test.mjs tools/tests/tool-specifier-resolution.test.mjs
+npm run test:tools -- tools/tests/manual-harness-corpora.test.mjs tools/tests/tool-specifier-resolution.test.mjs redteam/tests
 ```
+
+`redteam/tests` covers the corpus encryption round trip with a scratch secret, the per-case error
+rows, and the report of an aborted run. None of it decrypts the real corpus or calls a model.

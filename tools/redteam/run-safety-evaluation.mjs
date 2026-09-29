@@ -7,9 +7,10 @@
 // corpus, sends each crude safe/unsafe drawing to a real model call, and saves
 // every input + output + a report under tools/redteam/output/<runId>/.
 //
-// It NEVER asserts pass/fail and always exits 0: the real verification is the
-// human review of the saved images at the end. Requires REDTEAM_FIXTURE_KEY and
-// OPENAI_API_KEY (in web/.env or exported).
+// It NEVER asserts pass/fail: the real verification is the human review of the
+// saved images at the end. It exits non-zero only when the run aborted before
+// every case was sent. Requires REDTEAM_FIXTURE_KEY and OPENAI_API_KEY (in
+// web/.env or exported).
 //
 //   npm run redteam              # the whole corpus
 //   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)
@@ -18,12 +19,12 @@
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
+import { ROOT, fail, isMain, openInOS, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
-import { decryptDir } from './lib/fixture-crypto.mjs';
+import { REDTEAM_ENV_HINT, decryptDir, loadRedteamEnv } from './lib/fixture-crypto.mjs';
 import { flattenOntoPaper, isFullyOpaque } from './lib/fixture-image.mjs';
-import { buildReport, verdict } from './lib/safety-report.mjs';
+import { buildReport, completeResults, verdict } from './lib/safety-report.mjs';
 
 // Generous enough for the slowest production effort tier: the point of this
 // suite is to see the finished picture, not to re-measure the platform ceiling.
@@ -107,8 +108,30 @@ async function sendCase(c) {
   return { ...c, outcome: 'error', status: res.status, detail };
 }
 
+// Cases run safe-first, so a case that throws becomes its own error row rather
+// than ending the loop and leaving every block-* probe unsent. `send` is
+// sendCase in production; tests pass a stub.
+export async function sendEachCase(cases, send) {
+  const results = [];
+  for (const c of cases) {
+    process.stdout.write(`  → ${c.id} … `);
+    let r;
+    try {
+      r = await send(c);
+    } catch (err) {
+      r = { ...c, outcome: 'error', status: 0, detail: String(err) };
+    }
+    const v = verdict(r.expectation, r.outcome);
+    console.log(`${v.tag} ${r.outcome}${r.detail ? ` (${r.detail.split('\n')[0]})` : ''}`);
+    results.push(r);
+  }
+  return results;
+}
+
 async function main() {
-  requireEnv('OPENAI_API_KEY', 'set it in web/.env or export it');
+  loadRedteamEnv();
+  requireEnv('OPENAI_API_KEY', REDTEAM_ENV_HINT);
+  const fixtureKey = requireEnv('REDTEAM_FIXTURE_KEY', REDTEAM_ENV_HINT);
 
   const all = discoverCases();
   if (all.length === 0) {
@@ -133,7 +156,11 @@ async function main() {
   console.log('Decrypting fixtures…');
   // Clear any stale decrypted files from a previous corpus before re-decrypting.
   rmSync(DECRYPTED, { recursive: true, force: true });
-  decryptDir(ENCRYPTED, DECRYPTED);
+  try {
+    decryptDir(ENCRYPTED, DECRYPTED, fixtureKey);
+  } catch (err) {
+    fail(err.message);
+  }
   mkdirSync(OUT_DIR, { recursive: true });
 
   console.log('Starting throwaway dev server…');
@@ -150,29 +177,32 @@ async function main() {
     },
   });
 
-  const results = [];
+  let sent = [];
+  let abortReason = null;
   try {
     await waitForUrl(`${BASE}/`, 60_000);
     console.log(`Server ready on ${BASE}\n`);
-    for (const c of cases) {
-      process.stdout.write(`  → ${c.id} … `);
-      const r = await sendCase(c);
-      const v = verdict(r.expectation, r.outcome);
-      console.log(`${v.tag} ${r.outcome}${r.detail ? ` (${r.detail.split('\n')[0]})` : ''}`);
-      results.push(r);
-    }
+    sent = await sendEachCase(cases, sendCase);
   } catch (err) {
-    console.error(`\nFATAL: ${err.message}`);
+    abortReason = err instanceof Error ? err.message : String(err);
+    console.error(`\nFATAL: ${abortReason}`);
   } finally {
     stop();
   }
 
+  const results = completeResults(cases, sent, abortReason);
   const htmlPath = buildReport({ runId, outDir: OUT_DIR, base: BASE, results });
   const link = pathToFileURL(htmlPath).href;
 
   const flagged = results.filter((r) => verdict(r.expectation, r.outcome).tag === '⚠');
   console.log(`\nWrote ${results.length} result(s) to tools/redteam/output/${runId}/`);
   console.log(`  ${flagged.length} row(s) flagged ⚠ for review.`);
+  const neverRan = results.slice(sent.length);
+  if (neverRan.length) {
+    console.error(
+      `  ${neverRan.length} case(s) never ran: ${neverRan.map((r) => r.id).join(', ')}`
+    );
+  }
   console.log(`\nReview report (input → output, safe cases then block cases):`);
   console.log(`  ${link}`);
 
@@ -183,6 +213,10 @@ async function main() {
       : '\nOpen the link above in your browser to review (set REDTEAM_NO_OPEN=1 to skip auto-open).'
   );
   console.log('This script does not pass/fail — your review is the verdict.');
+  if (abortReason !== null) {
+    console.error('The run aborted before every case was sent, so this is not a safety result.');
+    process.exitCode = 1;
+  }
 }
 
-await main();
+if (isMain(import.meta.url)) await main();

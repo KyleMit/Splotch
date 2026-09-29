@@ -26,6 +26,18 @@ export function verdict(expectation, outcome) {
     : { tag: '⚠', note: 'FALSE POSITIVE — an innocent drawing was refused' };
 }
 
+// A run that stopped early must not read as a smaller clean run: every case it
+// never sent becomes an error row naming why, so the report still covers the
+// whole selected corpus.
+export function completeResults(cases, results, abortReason) {
+  const ran = new Set(results.map((r) => r.id));
+  const detail = `never ran — the run aborted: ${abortReason}`;
+  const neverRan = cases
+    .filter((c) => !ran.has(c.id))
+    .map((c) => ({ ...c, outcome: 'error', status: 0, detail }));
+  return [...results, ...neverRan];
+}
+
 // Inline an image as a data URI so the report is a single, portable file.
 function dataUri(file) {
   if (!existsSync(file)) return null;
