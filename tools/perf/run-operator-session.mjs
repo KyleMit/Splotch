@@ -43,7 +43,12 @@ import {
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
 import { freePort, portListenerOwners, waitForPortRelease } from '../lib/vite-server.mjs';
-import { classifyLaunchProbe, explicitProbePortDecision } from './lib/capture-readiness.mjs';
+import {
+  classifyLaunchProbe,
+  explicitProbePortDecision,
+  iosIdentifierProblem,
+} from './lib/capture-readiness.mjs';
+import { parseCampaignTheme } from './lib/campaign-state.mjs';
 import { GRANT_LOG, recordGrantAttempt } from './lib/grant-log.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
@@ -67,7 +72,8 @@ const SESSION_FLAGS = [
 ];
 // prepareCapture runs in this process and reads these from its argv, so they
 // are this entry's flags too: the preflight's own "pass --android-serial="
-// advice has to work here.
+// advice has to work here. It reads --ios-udid only after the Android wake, so
+// checkPreflightFlags judges both first.
 const PREFLIGHT_FLAGS = ['android-serial', 'ios-udid'];
 const SERVER_READY_TIMEOUT_MS = 90_000;
 // One retry, because the expected failure is the operator missing the prompt's
@@ -83,6 +89,16 @@ function numberFlag(argv, name, rule) {
   return raw === undefined ? undefined : parseNumberFlag(name, raw, rule);
 }
 
+// Whether a serial is attached takes adb, so the preflight judges that. That
+// each flag has a value, and that the UDID is a hardware UDID, can be judged
+// before anything touches a device.
+function checkPreflightFlags(argv) {
+  readValueFlag(argv, 'android-serial');
+  const udid = readValueFlag(argv, 'ios-udid');
+  const problem = udid === undefined ? null : iosIdentifierProblem(udid);
+  if (problem) throw new Error(`--ios-udid: ${problem}`);
+}
+
 // Judges everything the operator typed before the preflight wakes the phone and
 // changes its screen settings; a typo refused after that has already cost the
 // device state. Throws on bad input.
@@ -92,7 +108,7 @@ export function operatorSessionOptions(argv) {
     steps: listFlag(argv, 'steps', STEP_NAMES),
     brushes: listFlag(argv, 'brushes', DEFAULT_BRUSHES),
     orientations: listFlag(argv, 'orientations', DEFAULT_ORIENTATIONS),
-    theme: readValueFlag(argv, 'theme') ?? 'light',
+    theme: parseCampaignTheme(readValueFlag(argv, 'theme')) ?? 'light',
     seconds: numberFlag(argv, 'seconds', DRAW_SECONDS) ?? DEFAULT_DRAW_SECONDS,
     requestedProbePort: numberFlag(argv, 'probe-port', TCP_PORT),
   };
@@ -111,6 +127,7 @@ export function operatorSessionOptions(argv) {
       throw new Error(`unknown orientation "${orientation}" — use ${ORIENTATIONS.join(', ')}`);
     }
   }
+  checkPreflightFlags(argv);
   return options;
 }
 

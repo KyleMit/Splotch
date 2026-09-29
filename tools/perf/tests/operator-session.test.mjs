@@ -7,6 +7,7 @@ import {
   runHandItem,
   runOperatorSession,
 } from '../run-operator-session.mjs';
+import { FAKE_ANDROID_SERIAL, FAKE_IOS_UDID } from '../lib/device-identifiers.mjs';
 import { grantLogLine } from '../lib/grant-log.mjs';
 import { prepareCapture } from '../prepare-capture.mjs';
 import { DEFAULT_DRAW_SECONDS, openWithDevicectl } from '../split-capture/capture-hand-input.mjs';
@@ -150,7 +151,11 @@ describe('runOperatorSession', () => {
   // The positive control: a valid argv reaches the stubbed preflight, so the
   // refusals below prove an order rather than an unwired stub.
   it('runs the preflight with the Android wake once the flags are valid', async () => {
-    const printed = await runExpectingExit(['--steps=grant']);
+    const printed = await runExpectingExit([
+      '--steps=grant',
+      `--android-serial=${FAKE_ANDROID_SERIAL}`,
+      `--ios-udid=${FAKE_IOS_UDID}`,
+    ]);
     expect(prepareCapture).toHaveBeenCalledWith(['--wake-android']);
     expect(printed).toContain('stubbed preflight');
   });
@@ -161,6 +166,10 @@ describe('runOperatorSession', () => {
     ['--orientations=UPSIDE_DOWN', 'unknown orientation "UPSIDE_DOWN"'],
     ['--seconds=0', '--seconds must be'],
     ['--probe-port=70000', '--probe-port must be'],
+    ['--theme=moon', '--theme must be light or dark'],
+    ['--android-serial=', '--android-serial= is empty'],
+    ['--ios-udid', '--ios-udid takes a value'],
+    ['--ios-udid=bogus', 'bogus is not a recognizable iOS device identifier'],
   ])('refuses %s before the preflight wakes the phone', async (flag, message) => {
     const printed = await runExpectingExit([flag]);
     expect(printed).toContain(message);
