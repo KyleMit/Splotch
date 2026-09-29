@@ -75,13 +75,18 @@
   // the time goes and whether a frame dropped, and quote the gates run for
   // *how much*.
   const TIMELINE = window.__perfTimeline === true;
-  // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
-  // tools/perf/web/run-undo-scenarios.mjs), so the gates run measures history with
-  // the stack full and exercises the oldest-entry fold + shift overflow path.
+  // The app's undo depth cap (MAX_UNDO_DEPTH in undoHistory.ts); a console
+  // snippet cannot import it, so probe-undo-depth.test.mjs pins the copy.
+  const MAX_UNDO_DEPTH = 20;
+  // Drawing past the cap is what makes the gates run measure history with the
+  // stack full and exercise the oldest-entry fold + shift overflow path.
+  // probe-undo-depth.test.mjs holds it to the desktop harness's overshoot.
+  const STROKES_PAST_UNDO_DEPTH = 2;
   // Timeline mode is sized for legibility, not retained-depth or byte-budget
   // coverage. A recorded run is for where the time goes and whether a frame
   // dropped.
-  const STROKES = Number(window.__perfStrokes) || (TIMELINE ? 6 : 22);
+  const STROKES =
+    Number(window.__perfStrokes) || (TIMELINE ? 6 : MAX_UNDO_DEPTH + STROKES_PAST_UNDO_DEPTH);
   const OPS = Number(window.__perfOps) || (TIMELINE ? 200 : HZ * 10);
   const MULTI_FINGERS = 5;
   const MULTI_PER_FINGER = Math.round(OPS * 0.4);
@@ -244,8 +249,8 @@
   // Preflight the PERF_MARKS half of the build recipe. The harness checks above
   // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
   // PERF_MARKS=true emits no marks/measures at all — undoAll's per-step wait
-  // would then burn its full 5 s cap on every undo step (4 scenarios × 20 steps
-  // ≈ 7 minutes of apparent hang) before printing a table of zeros. So drive
+  // would then burn its full 5 s cap on every undo step of every scenario
+  // (minutes of apparent hang) before printing a table of zeros. So drive
   // one probe stroke and require its engine.commit measure (emitted
   // synchronously at stroke end, engine.ts commitStrokeGroup) to exist before
   // any scenario runs.
