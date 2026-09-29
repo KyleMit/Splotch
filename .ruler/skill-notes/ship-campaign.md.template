@@ -149,6 +149,10 @@ stays, because there review is missing, not merging.
 The same day the user made merge approval a preflight item: "make merge approval part of the
 preflight - ask me to explicitly say merges are approved for this campaign, so there's something
 noted in the chat history". Their quoted approval now travels with the authorization block.
+#2498 first wrote it as a gate the campaign could not start without; on 2026-09-29 the user
+clarified that invoking the campaign is the approval and the statement only puts it on record, so
+autonomous campaigns merge instead of silently piling up conflicting PRs (#2467). Whether an
+explicit quote actually changes a guardrail's merge verdict is unverified.
 
 ## Open questions
 

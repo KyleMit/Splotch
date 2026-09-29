@@ -46,15 +46,16 @@ The input names the queue and, optionally, a deadline:
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
-merge each PR through `ship-issue`'s autonomous gate once the user has approved merges in their own
-words (step 1), comment on queued issues and their epic, and ship two kinds of unqueued **free-form
-unit**: a trunk-repair PR that fixes `main` forward after it turns red during the campaign (step 4),
-and a gate-repair PR for a check proven broken on its own base (step 3). It does **not** authorize
-bypassing branch protection, weakening a test or gate to get green, force-pushing a shared branch,
-closing an issue except through `Fixes` on merge, filing new issues, or touching work outside the
-queue and those two exceptions. Carry this block verbatim, followed by the user's quoted merge
-approval, into every unit's instructions: an unattended unit must never have to infer its authority,
-and a runner that sees "never merge" anywhere in its instructions will refuse the merge.
+merge each PR through `ship-issue`'s autonomous gate (step 1 puts that approval on record in the
+user's own words), comment on queued issues and their epic, and ship two kinds of unqueued
+**free-form unit**: a trunk-repair PR that fixes `main` forward after it turns red during the
+campaign (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
+**not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
+a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
+work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
+quoted merge approval, into every unit's instructions: an unattended unit must never have to infer
+its authority, and a runner that sees "never merge" anywhere in its instructions will refuse the
+merge.
 
 **A denied tool call is not a withdrawn authorization.** A single rejected command — a permission
 prompt declined, a hook refusing an edit, a call interrupted mid-turn — says nothing about the grant
