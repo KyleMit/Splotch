@@ -89,7 +89,10 @@ through it: the one a page change opens and the one a page removal opens. The De
 restores those three pieces as one action" and the matching Consequence hold while the feature is
 on.
 
-The ink half of the unit is unchanged. Undo still returns each recoded op to its previous sheet, so
-after a switch-off the magic ink takes the earlier page's fill colors while no page shows.
-`web/src/lib/drawing/coloringAppearance.test.ts` and
+The ink half of the unit is unchanged, and what it does after a switch-off depends on timing. If the
+new page's fill had landed and recoded the ink before the switch-off, Undo returns each recoded op
+to its previous sheet, so the magic ink takes the earlier page's fill colors while no page shows. If
+the switch-off came first, its no-page sheet recoded the ink outside the unit, the unit never
+applied, and Undo leaves the ink in the no-page colors. `tiledMagicRecode.ts` restores sheets only
+for an applied unit. `web/src/lib/drawing/coloringAppearance.test.ts` and
 `web/tests/flows-coloring-book-off-undo.spec.ts` pin the guard.
