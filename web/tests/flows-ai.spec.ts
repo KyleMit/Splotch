@@ -13,7 +13,7 @@ import {
 } from './helpers';
 
 import { openDrawer } from './flows-harness';
-import { prepareAiGeneration } from './ai-harness';
+import { mockFreeGrant, prepareAiGeneration } from './ai-harness';
 
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
@@ -47,38 +47,22 @@ test('the phone toolbar generates directly when style customization is disabled'
 test('a fresh installation does not fetch an AI allowance or show the canvas action', async ({
   page,
 }) => {
-  let grantStatusRequests = 0;
-  await page.route('**/api/free-generation-grant', async (route) => {
-    grantStatusRequests += 1;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 7, exhausted: false }),
-    });
-  });
+  const grant = await mockFreeGrant(page, { remaining: 7 });
   await gotoApp(page);
   await openDrawer(page);
 
   await expect(page.locator('#aiImageButton')).toBeHidden();
-  expect(grantStatusRequests).toBe(0);
+  expect(grant.requests()).toBe(0);
 });
 
 test('returning to the visible app recovers a failed free allowance', async ({ page }) => {
-  let grantStatusRequests = 0;
-  await page.route('**/api/free-generation-grant', async (route) => {
-    grantStatusRequests += 1;
-    await route.fulfill({
-      status: grantStatusRequests === 1 ? 503 : 200,
-      contentType: 'application/json',
-      body: JSON.stringify(
-        grantStatusRequests === 1 ? { ok: false } : { ok: true, remaining: 7, limit: 10 }
-      ),
-    });
-  });
+  const grant = await mockFreeGrant(page, (request) =>
+    request === 1 ? 'unavailable' : { remaining: 7 }
+  );
   await seedAiEnabled(page);
   await gotoApp(page);
   await openDrawer(page);
-  await expect.poll(() => grantStatusRequests).toBe(1);
+  await expect.poll(() => grant.requests()).toBe(1);
   const settings = await openSettingsModal(page);
   await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   await expect(
@@ -100,7 +84,7 @@ test('returning to the visible app recovers a failed free allowance', async ({ p
     document.dispatchEvent(new Event('visibilitychange'));
   });
 
-  await expect.poll(() => grantStatusRequests).toBe(2);
+  await expect.poll(() => grant.requests()).toBe(2);
   await expect(page.locator('#aiImageButton')).toBeVisible();
   await expect(page.locator('#aiImageButton')).toHaveAccessibleName('Create AI image, 7 free left');
 });
@@ -135,13 +119,7 @@ test('AI Settings explains the off feature without mounting its setup controls',
 });
 
 test('the off explanation reuses a known exhausted allowance', async ({ page }) => {
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 0, exhausted: true }),
-    })
-  );
+  await mockFreeGrant(page, { remaining: 0 });
   await gotoApp(page);
 
   const settings = await openSettingsModal(page);
@@ -157,13 +135,7 @@ test('the off explanation reuses a known exhausted allowance', async ({ page }) 
 test('an exhausted free installation keeps the AI affordance and opens BYOK setup', async ({
   page,
 }) => {
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 0, exhausted: true }),
-    })
-  );
+  await mockFreeGrant(page, { remaining: 0 });
   await gotoApp(page);
   await enableAiInSettings(page);
   await openDrawer(page);
@@ -187,11 +159,7 @@ test('an exhausted free installation keeps the AI affordance and opens BYOK setu
 });
 
 test('a migrated BYO key reveals the AI button on the next launch', async ({ page }) => {
-  let grantStatusRequests = 0;
-  await page.route('**/api/free-generation-grant', (route) => {
-    grantStatusRequests += 1;
-    return route.fulfill({ status: 500 });
-  });
+  const grant = await mockFreeGrant(page, 'unavailable');
   await page.addInitScript(
     ({ aiUserApiKey, aiImageEnabled, seedMarker }) => {
       if (sessionStorage.getItem(seedMarker)) return;
@@ -220,16 +188,12 @@ test('a migrated BYO key reveals the AI button on the next launch', async ({ pag
   await openDrawer(page);
 
   await expect(page.locator('#aiImageButton')).toBeVisible();
-  expect(grantStatusRequests).toBe(0);
+  expect(grant.requests()).toBe(0);
 });
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   let postedImage = false;
-  let grantStatusRequests = 0;
-  await page.route('**/api/free-generation-grant', (route) => {
-    grantStatusRequests += 1;
-    return route.fulfill({ status: 500 });
-  });
+  const grant = await mockFreeGrant(page, 'unavailable');
   await page.route('**/api/generate-image?style=Magical', async (route) => {
     const req = route.request();
     // The client sends the raw image bytes as the body (no multipart envelope)
@@ -268,7 +232,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
   await downloadButton.click();
   await expect((await download).suggestedFilename()).toMatch(/^splotch-ai-.+\.webp$/);
   expect(postedImage).toBe(true);
-  expect(grantStatusRequests).toBe(0);
+  expect(grant.requests()).toBe(0);
 });
 
 // A cutout cover ships with real alpha so the picker's own surface shows

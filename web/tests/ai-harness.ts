@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '../src/lib/freeGenerations';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
 import { drawCommittedStroke, gotoApp, seedAiEnabled, settleFlyIn } from './helpers';
 
@@ -105,6 +106,39 @@ async function mockAiEndpoint(page: Page) {
         headers: headers ?? (status === 422 ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined),
       }),
   };
+}
+
+// A granted allowance, or any of the route's `fail()` refusals, which the client
+// treats alike.
+type FreeGrantReply = { remaining: number } | 'unavailable';
+
+function freeGrantResponse(reply: FreeGrantReply) {
+  if (reply === 'unavailable') {
+    return { status: 503, body: { ok: false, error: 'Free generations are unavailable' } };
+  }
+  const body = {
+    ok: true,
+    remaining: reply.remaining,
+    limit: FREE_GENERATION_LIMIT,
+  } satisfies FreeGenerationGrantStatus;
+  return { status: 200, body };
+}
+
+// The one stub for /api/free-generation-grant. A function `reply` receives the
+// 1-based request number, so a spec can answer its first request differently or
+// hold a request open until it releases it.
+export async function mockFreeGrant(
+  page: Page,
+  reply: FreeGrantReply | ((request: number) => FreeGrantReply | Promise<FreeGrantReply>)
+) {
+  let requests = 0;
+  await page.route('**/api/free-generation-grant', async (route) => {
+    requests += 1;
+    const answer = typeof reply === 'function' ? await reply(requests) : reply;
+    const { status, body } = freeGrantResponse(answer);
+    await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  return { requests: () => requests };
 }
 
 export async function invokeAiGeneration(page: Page) {
