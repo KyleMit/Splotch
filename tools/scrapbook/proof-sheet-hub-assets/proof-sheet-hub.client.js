@@ -13,6 +13,9 @@ const SHEET_DATA_MARKER = 'window.__COLORING_BOOK_PROOF_SHEET__ = ';
 // is embedded in.
 const SHEET_DATA_END = ';\x3c/script>';
 
+// The app's per-theme paper and line-art blend, restated because this static asset
+// cannot import `themes` (web/src/lib/design/tokens.ts); proof-sheet-paper.test.mjs
+// fails on drift.
 const PAPER = { light: '#fcfbf8', dark: '#211f29' };
 const BLEND = { light: 'multiply', dark: 'screen' };
 const VIEWS = ['outline', 'fill', 'combined'];
