@@ -54,9 +54,10 @@ live session's cwd. Salvage first, then prune.
    before removing it and reports a worktree whose `HEAD` moved since the plan as `kept`.
 
 If either pass prints `skip (use unknown)` rows, its process listing failed (`lsof` off `PATH`, or a
-shell that may not inspect processes), so it cannot tell that any worktree is unused. `--apply` then
-exits 1 having moved and removed nothing. Fix the listing the warning names, then rerun; don't work
-around it.
+shell that may not inspect processes), so it could not tell those worktrees were unused and left
+them alone; `--apply` exits 1. The listing is taken again before each row is applied, so rows done
+before it failed stay done: read every row. Fix the listing the warning names, then rerun; don't
+work around it.
 
 Removing a worktree frees its branch for Part 2, so run Part 1 to completion before planning
 branches.

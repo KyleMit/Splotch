@@ -158,8 +158,8 @@ token belongs; it takes one `picture` object, and such a call no longer compiles
 neither type-checked and rendered a focusable button that did nothing; its props are now anchor rows
 with no handler, or button rows with a required one (PR #2507). The device report's label table was
 an array of `[keyof DeviceInfo, string]` pairs, which checks each key but not that every key is
-present: a field the collector filled and the table lacked was stripped by the server and never
-shown in the parent's preview (PR #2510).
+present: a field added to the collector but not the table would have been stripped by the server and
+never shown in the parent's preview (PR #2510).
 
 **Enforcement.** The types themselves, with exhaustive `Record<Union, V>` tables (a new variant
 fails to compile, as with `STROKE_FLAGS_BY_BRUSH`). A table of `[key, value]` pairs is not
@@ -304,10 +304,11 @@ fixtures, for example the blank-pin and missing-Gradle-code cases in
 held picture is replaced (PR #2474); `web/src/lib/server/tokens.test.ts` and
 `web/src/routes/api/verify-access-code/server.test.ts` pin the 503 and which failures spend a guess
 (PR #2475); and `tools/git-housekeeping/tests/git-facts.test.mjs` puts a tab in a commit subject
-inside a temporary repository (PR #2471). A failure's message is asserted as well as its status, and
-before it: the device-selection cases in `tools/perf/tests/android-serial.test.mjs` spawn
-`perf:android` against a fake `adb` and assert the refusal after exactly one call, and the tests PR
-#2513 adds feed the red-team runner an error with a `cause` and assert the cause is printed. Java
+inside a temporary repository (PR #2471). A failure's message is asserted, not only its status: the
+device-selection cases in `tools/perf/tests/android-serial.test.mjs` spawn `perf:android` against a
+fake `adb` and pin the refusal and the one call it made. PR #2513 moves the coloring-asset CLI
+test's stderr assertion ahead of its exit status, so a failing gate shows the checker's own line,
+and its red-team tests feed the runner an error with a `cause` and assert the cause is printed. Java
 and Swift have no unit harness, so the plugin side is review (rule 5).
 
 ## 5. One contract per wire boundary

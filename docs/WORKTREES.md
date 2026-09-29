@@ -242,8 +242,10 @@ the `prune-git-workspace` skill runs them in order with the branch cleanup that 
 Both are dry runs until `-- --apply`. A worktree another session is using shows up as
 `skip (in use)` with the process ids, which is the expected shape on a host running several agents
 at once; leave it. A process listing that failed (`lsof` off `PATH`, or a shell that may not inspect
-processes) holds every unlocked worktree as `skip (use unknown)`, and `--apply` then exits 1 having
-moved and removed nothing. `tools/git-housekeeping/README.md` has the full guard table.
+processes) cannot say a worktree is unused, so each unlocked worktree it was asked about is
+`skip (use unknown)` and left alone, and `--apply` exits 1. The listing is taken again before each
+row is applied, so a failure partway through leaves the earlier rows applied; read every row.
+`tools/git-housekeeping/README.md` has the full guard table.
 
 ## Sharing the host
 
