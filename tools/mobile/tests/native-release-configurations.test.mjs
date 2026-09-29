@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { jobBlocks } from '../../ci-mirror/tests/workflow-job-steps.mjs';
+
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const packageJson = JSON.parse(read('package.json'));
@@ -73,12 +75,6 @@ function localImportClosure(entryPoints) {
   }
   return [...visited];
 }
-
-const jobBlocks = (workflow) =>
-  workflow
-    .split(/^jobs:\n/m)[1]
-    .split(/^(?= {2}[\w-]+:\n)/m)
-    .map((text) => ({ id: text.match(/^ {2}([\w-]+):/)[1], text }));
 
 describe('native release configuration gates', () => {
   it('builds and boots a test-signed optimized Android release APK', () => {

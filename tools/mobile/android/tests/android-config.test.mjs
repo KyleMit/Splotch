@@ -6,6 +6,7 @@ import {
   MIN_ANDROID_RELEASE,
 } from '../../../../web/src/lib/components/beta/androidBeta.ts';
 import { themes } from '../../../../web/src/lib/design/tokens.ts';
+import { jobBlock } from '../../../ci-mirror/tests/workflow-job-steps.mjs';
 import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 import {
   androidEmulatorApiLevels,
@@ -149,7 +150,7 @@ describe('Android emulator API levels', () => {
   });
 
   it('gives the checkout-free failure reporter explicit repository context', () => {
-    const reportJob = androidWorkflow.slice(androidWorkflow.indexOf('  report-failure:'));
+    const reportJob = jobBlock(androidWorkflow, 'report-failure');
     expect(reportJob).not.toContain('actions/checkout@');
     expect(reportJob).toContain('GH_REPO: ${{ github.repository }}');
     expect(reportJob.indexOf('GH_REPO: ${{ github.repository }}')).toBeLessThan(

@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { jobBlock, jobBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // Line-oriented for the reason workflow-hygiene.test.mjs gives: no YAML parser
 // ships in this repo's dependency tree, and job keys, steps, and job-level
@@ -56,16 +57,6 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function jobBlocks(workflow) {
-  return workflow
-    .split(/^jobs:\n/m)[1]
-    .split(/^(?= {2}[\w-]+:\n)/m)
-    .flatMap((text) => {
-      const id = text.match(/^ {2}([\w-]+):\n/)?.[1];
-      return id === undefined ? [] : [{ id, text }];
-    });
-}
-
 const steps = (job) => job.split(/^(?= {6}- )/m).slice(1);
 
 const isBlankOrComment = (line) => /^\s*(?:#.*)?$/.test(line);
@@ -95,13 +86,6 @@ function unreadablePermissions(workflow) {
     const readable = line === `${indent}permissions:${value}` && (grantsNothing || grantsByScope);
     return readable ? [] : [`line ${index + 1}: ${line.trim()}`];
   });
-}
-
-function testsJob(id) {
-  const tests = workflows.find(({ name }) => name === 'test.yml');
-  const job = jobBlocks(tests.text).find((candidate) => candidate.id === id);
-  if (!job) throw new Error(`No ${id} job in test.yml`);
-  return job.text;
 }
 
 function runScript(job, stepName) {
@@ -215,7 +199,7 @@ describe('workflow gates', () => {
   // commit from cancelling the run still waiting.
   describe('WebKit fast gate filing', () => {
     it('serializes the job that files without dropping a queued run', () => {
-      const retryJob = testsJob('webkit-commit-gate-fast-retry');
+      const retryJob = jobBlock(testWorkflow, 'webkit-commit-gate-fast-retry');
       const concurrency = retryJob.match(/^ {4}concurrency:\n((?: {6}.*\n)+)/m)?.[1];
 
       expect(retryJob).toContain('      - name: File the failure\n');
@@ -232,7 +216,7 @@ describe('workflow gates', () => {
 
   describe('WebKit full gate history', () => {
     const restoreScript = runScript(
-      testsJob('webkit-commit-gate-full'),
+      jobBlock(testWorkflow, 'webkit-commit-gate-full'),
       'Restore fast-set history'
     );
 
