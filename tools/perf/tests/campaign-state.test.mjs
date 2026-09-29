@@ -486,7 +486,8 @@ describe('the Settings selectors both transports share', () => {
 
   it('finds the dialog and its close control in SettingsModal', () => {
     expect(SETTINGS_MODAL).toBe('#settingsModal');
-    expect(settingsModal).toContain('id="settingsModal"');
+    expect(source('state/ui.svelte.ts')).toContain("SETTINGS_MODAL_ID = 'settingsModal';");
+    expect(settingsModal).toContain('id={SETTINGS_MODAL_ID}');
     expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
     expect(settingsModal).toContain('<DialogHeader');
     expect(settingsModal).toMatch(/<DialogHeader[^>]*\bcloseFeedback\b/s);
