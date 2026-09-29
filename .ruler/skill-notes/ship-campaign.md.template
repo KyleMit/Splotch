@@ -135,6 +135,21 @@ Two failures to keep in mind:
   `main` after two posted rival rounds, and the flag was a false positive. Checking live state
   settled it in a minute.
 
+## 2026-09-29 a refused merge pauses the queue
+
+In the #2467 parallel campaign the classifier refused the orchestrator's first merge, and from 09:57
+the run downgraded the queue as a reviewer outage does: every unit stopped at shippable as an open
+PR. #2493 later wrote that downgrade into the skill. At 12:00 the user rejected that: "no
+no no - we're supposed to be merging as we go to prevent merge conflicts". By then 29 reviewed PRs
+sat open against one base, and no later unit could build on an earlier one; the guarantee the
+campaign's shape exists for had been gone for three hours. The pause rule replaced #2493's
+downgrade: start no new unit, and take the block to the user at once. The reviewer-outage downgrade
+stays, because there review is missing, not merging.
+
+The same day the user made merge approval a preflight item: "make merge approval part of the
+preflight - ask me to explicitly say merges are approved for this campaign, so there's something
+noted in the chat history". Their quoted approval now travels with the authorization block.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign
