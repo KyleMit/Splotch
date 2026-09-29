@@ -449,4 +449,25 @@ describe('a store that could not be read', () => {
     await vi.waitFor(() => expect(store.write).toHaveBeenCalledOnce());
     expect(store.held).toMatchObject([{ signature: 'never shown' }]);
   });
+
+  it.each(['saved by a retry', 'dismissed'] as const)(
+    'never brings back a picture this session wrote and then %s after a read failed',
+    async (release) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const store = memoryStore();
+      const failure = failureWith(saverReturning({ status: 'photos' }), store);
+      await failure.restoreUnsavedPictures();
+      await failure.reportSaveFailure('denied', picture('written this session'));
+      await vi.waitFor(() => expect(store.held).toHaveLength(1));
+      store.read.mockRejectedValueOnce(new Error('blocked'));
+      await failure.restoreUnsavedPictures();
+
+      if (release === 'dismissed') failure.dismissSaveFailure();
+      else await failure.retryUnsavedPictures();
+
+      await vi.waitFor(() => expect(store.held).toBeNull());
+      expect(failure.pictureCount).toBe(0);
+      expect(failure.outcome).toBeNull();
+    }
+  );
 });
