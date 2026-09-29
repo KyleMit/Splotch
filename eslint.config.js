@@ -316,7 +316,6 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/tests/bootstrap-worktree.test.mjs': 643,
   'tools/tests/codex-transcript-tools.test.mjs': 503,
   'tools/tests/fetch-image-reports.test.mjs': 568,
-  'tools/tests/workflow-hygiene.test.mjs': 511,
 };
 
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
