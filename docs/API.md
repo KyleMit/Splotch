@@ -172,7 +172,9 @@ explicitly report a possible false positive without making the refused drawing d
 **`502`** is a genuine upstream/empty failure (retryable). A managed or free request on a deploy
 with no project OpenAI key is `503`, as `/api/free-generation-grant` answers the same gap; the body
 names no configuration, and the `[generate-image]` log line tells the operator which key is unset.
-BYOK requests never need that key. The route talks to the model through the provider-agnostic
+BYOK requests never need that key. A managed token the access-token store gave no answer about is
+also `503`, with the same body, rather than `403 Invalid access token` (see
+`/api/verify-access-code`). The route talks to the model through the provider-agnostic
 `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
 appears in route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
 `isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
@@ -447,9 +449,15 @@ hours. See ADR-0104.
 { "ok": false, "error": "Invalid API key" }
 // 502 — the private issue could not be opened (rejected or timed out); the bundle is deleted
 { "ok": false, "error": "Could not send your AI report. Please try again later." }
-// 503 — private reporting or evidence storage unavailable, or the BYO key check got no answer
+// 503 — GITHUB_ISSUE_TOKEN is unset, or the evidence could not be stored
+// 503 — the access-token store or the BYO key check gave no answer about the credential
+// 503 — REPORT_TOKEN_SECRET is unset and the report is free-tier or carries a report token
+// 503 — a refusal report carries no signed refusal context
 { "ok": false, "error": "AI reporting is not available right now. Please try again later." }
 ```
+
+Every `503` carries that one sentence, `AI_REPORTING_UNAVAILABLE_MESSAGE` in
+`web/src/lib/server/imageReportUnavailable.ts`, whichever check refused.
 
 ---
 
