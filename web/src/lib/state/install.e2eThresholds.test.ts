@@ -14,7 +14,7 @@ const HELPERS_PATH = '../../../tests/helpers.ts';
 const helpersSource = readFileSync(new URL(HELPERS_PATH, import.meta.url), 'utf8');
 
 function helperLiteral(name: string): number | undefined {
-  const match = helpersSource.match(new RegExp(`export const ${name} = (\\d+);`, 'u'));
+  const match = helpersSource.match(new RegExp(`^export const ${name} = (\\d+);`, 'mu'));
   return match ? Number(match[1]) : undefined;
 }
 
