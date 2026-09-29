@@ -15,6 +15,7 @@
 </script>
 
 <script lang="ts">
+  import { ADMIN_FORM_FIELDS } from '$lib/adminForm';
   import type { Invite } from '$lib/adminFormat';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
@@ -203,7 +204,7 @@
         <input
           id={accessKeyId}
           type="password"
-          name="access-key"
+          name={ADMIN_FORM_FIELDS.accessKey}
           placeholder="Admin access key"
           autocomplete="current-password"
           autocapitalize="off"
@@ -248,7 +249,7 @@
           <input
             id={newTokenId}
             type="text"
-            name="token"
+            name={ADMIN_FORM_FIELDS.token}
             placeholder="Add a code…"
             autocomplete="off"
             autocapitalize="off"
