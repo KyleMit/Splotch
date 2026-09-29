@@ -4,8 +4,6 @@ import { promiseWithResolvers } from '$lib/promiseWithResolvers';
 
 vi.mock('$lib/idle', () => ({ scheduleIdle: vi.fn() }));
 
-vi.mock('$lib/idb', () => ({ requestPersistentStorage: vi.fn() }));
-
 import { createWebColoringPackStore } from './webStore';
 import {
   DIGESTS,
