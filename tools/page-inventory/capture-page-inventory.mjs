@@ -24,7 +24,7 @@ import {
   validateThemeCaptureDifferences,
 } from './lib/page-inventory-data.mjs';
 import { CAPTURE_ATTEMPTS, assertCaptureRendered } from './lib/page-inventory-capture.mjs';
-import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, TCP_PORT, isMain, parseNumberFlag, runMain } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import {
@@ -933,9 +933,7 @@ export function parsePageInventoryOptions(argv) {
     },
     strict: true,
   }).values;
-  const port = Number(parsed.port);
-  if (!Number.isInteger(port) || port < 1 || port > 65_535)
-    throw new Error(`Invalid --port: ${parsed.port}`);
+  const port = parseNumberFlag('port', parsed.port, TCP_PORT);
   const surfaces = parsed.surface ?? [];
   const viewports = parsed.viewport ?? [];
   const themes = parsed.theme ?? [];
