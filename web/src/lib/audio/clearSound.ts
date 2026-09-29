@@ -52,7 +52,6 @@ const CLEAR_PAGE_TURN_GAIN = 1;
 
 let clearPageTurnBuffer: AudioBuffer | null = null;
 const clearLoadPromises = new Map<string, Promise<void>>();
-const clearFailedUrls = new Set<string>();
 let clearGestureActive = false;
 let clearPageTurnRequested = false;
 let clearLastStep = -1;
@@ -67,7 +66,6 @@ function canPlayDeleteSound() {
 function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
   const existing = clearLoadPromises.get(url);
   if (existing) return existing;
-  if (clearFailedUrls.has(url)) return Promise.resolve();
 
   const pending = fetch(url)
     .then((response) => response.arrayBuffer())
@@ -77,7 +75,6 @@ function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
     })
     .catch(() => {
       clearLoadPromises.delete(url);
-      clearFailedUrls.add(url);
     })
     .then(() => playClearPageTurnIfReady())
     .catch(() => {});
@@ -91,7 +88,6 @@ export function startClearSound() {
   const ctx = ensureAudioContext();
   if (!ctx) return;
 
-  clearFailedUrls.clear();
   clearGestureActive = true;
   void loadClearPageTurn(ctx, CLEAR_PAGE_TURN_URL);
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
