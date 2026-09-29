@@ -214,9 +214,11 @@ picture is handed over.
 | `503`  | `{ ok:false, code:"GENERATION_UNAVAILABLE", error }` — the job store could not be read; keep polling |
 
 Send the same credential headers as the generation itself. They are not re-authorized (the job id
-already is the capability) — they are what the report token is bound to, and omitting them only
-costs the ability to report that picture. Rate-limited per IP, with a budget sized for waiting
-rather than guessing.
+already is the capability). A BYO key or an access code is what the report token is bound to, and
+omitting it only costs the ability to report that picture. A free job's report token is bound to the
+installation id the job stored when it started, never to the poll's `X-Installation-Id`, so a job
+started with another credential gets no free-tier token. Rate-limited per IP, with a budget sized
+for waiting rather than guessing.
 
 Settling the free-generation reservation and minting the report token both happen **here**, not in
 the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why

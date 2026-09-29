@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { API_KEY_HEADER, ACCESS_TOKEN_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
+import { API_KEY_HEADER, ACCESS_TOKEN_HEADER } from '$lib/apiHeaders';
 import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { apiHandler, throttled } from '$lib/server/http';
 import {
@@ -45,14 +45,17 @@ function unavailable(): Response {
   return Response.json(body, { status: UNAVAILABLE_STATUS });
 }
 
+// The poll is authorized by the job id alone, so its credential headers arrive
+// unchecked. A key or an access code can still bind a token, because
+// /api/report-image verifies that credential itself before it reads the token.
+// A free token is all the proof the free door asks for, so it binds only to the
+// installation id the start authorized and stored with the job.
 function reportBinding(request: Request, context: GenerationJobContext): ReportTokenBinding | null {
   const apiKey = request.headers.get(API_KEY_HEADER)?.trim();
   if (apiKey) return { kind: 'byok', credential: apiKey };
   const token = request.headers.get(ACCESS_TOKEN_HEADER)?.trim();
   if (token) return { kind: 'managed', credential: token };
-  const installationId =
-    context.free?.installationId ?? request.headers.get(INSTALLATION_ID_HEADER);
-  if (installationId) return { kind: 'free', credential: installationId };
+  if (context.free) return { kind: 'free', credential: context.free.installationId };
   return null;
 }
 
