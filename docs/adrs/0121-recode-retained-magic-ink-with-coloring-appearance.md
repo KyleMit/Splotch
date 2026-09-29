@@ -4,7 +4,8 @@
 [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md),
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md),
 [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md), and
-[ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md) **Date:** 2026-08
+[ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md); amended 2026-09-29 so the page restore
+on Undo follows the Coloring Book setting (see the amendment below) **Date:** 2026-08
 
 ## Context
 
@@ -73,3 +74,22 @@ pen/crayon-only drawing keep the prior behavior and do not consume undo depth.
 * − Undo restoration owns a narrow callback from drawing history back to coloring-page state. New
   non-drawing appearance changes must not reuse that hook unless the product explicitly defines them
   as drawing undo units.
+
+## Amendment (2026-09-29): the page restore follows the Coloring Book setting
+
+ADR-0103 makes the Coloring Book master toggle clear the active page and hide the canvas action. A
+page-change undo unit can outlive that switch, and its callback put the earlier page back
+unconditionally, so an Undo after a parent switched the feature off returned a page the child had no
+control left to remove.
+
+The callback asks the setting's owner when it runs. `restoreColoringPage` in
+`web/src/lib/drawing/coloringAppearance.ts` restores the prior page and orientation only while
+`settingsState.coloringBookEnabled` is true, and clears the page otherwise. Both undo units go
+through it: the one a page change opens and the one a page removal opens. The Decision's "Undo
+restores those three pieces as one action" and the matching Consequence hold while the feature is
+on.
+
+The ink half of the unit is unchanged. Undo still returns each recoded op to its previous sheet, so
+after a switch-off the magic ink takes the earlier page's fill colors while no page shows.
+`web/src/lib/drawing/coloringAppearance.test.ts` and
+`web/tests/flows-coloring-book-off-undo.spec.ts` pin the guard.
