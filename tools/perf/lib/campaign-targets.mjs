@@ -1,4 +1,4 @@
-export const SPLIT_TRANSPORT = 'split';
+const SPLIT_TRANSPORT = 'split';
 
 // `captureRuntime` names the input-fidelity expectations for each target.
 // `refreshRegime` names its measured presentation rate; null keeps a new
