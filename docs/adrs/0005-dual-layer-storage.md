@@ -68,5 +68,7 @@ one to forget. The web build never touches Preferences, so it keeps neither list
 `web/src/lib/storageKeys.webOnly.test.ts` holds every writer of a web-only key to the guard that
 keeps it off native.
 
-The decision is unchanged: every key native writes is mirrored and restored, and a new key joins
-hydration automatically unless it is added to the web-only list.
+The decision is unchanged: every `STORAGE_KEYS` key native writes through the `storage.ts` helpers
+is mirrored and restored, and a new key joins hydration automatically unless it is added to the
+web-only list. A value written straight to Preferences, outside the registry, is outside this
+decision (ADR-0151's probe reports are one).

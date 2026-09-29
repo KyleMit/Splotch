@@ -16,8 +16,9 @@
   command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # reads. The paths on the `ignore` line below are the whole watched set. Its
-  # tools/ folders are enumerated rather than watching all of tools/, so a
-  # change to a tool the build never runs does not redeploy.
+  # tools/ capability folders are enumerated rather than watching all of tools/,
+  # so a change inside a folder the build never runs does not redeploy; every
+  # flat tools/*.mjs entry point is watched, whether the build runs it or not.
   # pnpm-workspace.yaml is watched alongside the lockfile because it carries the
   # dependency overrides, so editing it changes what the build installs.
   #
@@ -25,8 +26,10 @@
   # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
   # under tools/ rather than only the flat ones, rebuilding on every
   # capability-folder change. tools/tests/enumerated-build-paths.test.mjs pins
-  # that semantics, and fails when the build runs a tools/ folder the `ignore`
-  # line leaves out.
+  # that semantics, and fails when the npm prebuild/build/postbuild scripts, or
+  # the tools/ modules they import, reach a tools/ folder the `ignore` line
+  # leaves out. It does not read the `command` line above, so a folder only
+  # tools/stage-netlify-functions.mjs imports is not checked.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
