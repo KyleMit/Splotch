@@ -311,7 +311,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/tests/xcuitest-actions.test.mjs': 1795,
   'tools/perf/web/run-undo-scenarios.mjs': 1081,
   'tools/scrapbook/clear-sound-sheet/sheet.js': 1716,
-  'tools/scrapbook/lib/scrapbook-index.mjs': 746,
+  'tools/scrapbook/lib/scrapbook-index.mjs': 738,
   'tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js': 571,
   'tools/tests/bootstrap-worktree.test.mjs': 643,
   'tools/tests/codex-transcript-tools.test.mjs': 503,
