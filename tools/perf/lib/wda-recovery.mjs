@@ -84,7 +84,7 @@ export function grantFromRunnerLaunch({ ready, log }) {
 }
 
 const DISCOVERY_PREFIX =
-  'The borrowed Appium could not see the iPad (`Unknown device or simulator UDID`): its device ' +
+  'The borrowed Appium could not see the iOS device (`Unknown device or simulator UDID`): its device ' +
   'discovery is stale, which is not the automation grant.';
 
 const GRANT_REASON = {

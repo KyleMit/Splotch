@@ -37,6 +37,21 @@ the hardware UDID that `idevice_id -l` prints (`00008103-…`). Passing the Core
 **"Could not find a pair record for device …"**, which reads like an unreachable device or a missing
 tunnel and is neither. `perf:preflight` prints the right one and rejects the wrong one.
 
+The preflight also reads CoreDevice's Developer Mode status before attempting a WebDriverAgent
+launch. When it is off, it stops there and asks for **Settings → Privacy & Security → Developer Mode
+→ On**, a restart, an unlock, and confirmation of **Turn On** on the device. An unreadable status is
+a warning; launch verification still supplies the final readiness verdict. This check caught a new
+iPhone that was paired over USB and had a live RemoteXPC tunnel, but whose first WebDriverAgent
+build ended with Xcode code 70 before any prompt appeared on the phone.
+
+For a newly attached iOS device, preflight also checks the local Xcode development profile that can
+sign WebDriverAgent for the configured team. It blocks when the profile excludes the device and
+points to registration and profile refresh in Xcode. This inspects the cached profile; it cannot
+prove whether the device is already registered on Apple's developer portal. The Apple account signed
+in on the phone does not control developer signing. Use `--ios-only` for an iPhone capture session
+without an Android device; `--verify-ios-launch` stops before building when either Developer Mode or
+WebDriverAgent provisioning is blocked.
+
 ## Report the failing connection layer, not an inferred OS incompatibility
 
 An empty `idevice_id -l` means that command cannot see the device through its USB capture transport.

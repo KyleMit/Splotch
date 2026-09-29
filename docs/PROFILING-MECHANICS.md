@@ -33,7 +33,7 @@ every number already banked.
 
 ## Which transport drives which target
 
-`tools/perf/lib/campaign-plan.mjs` owns this table;
+`tools/perf/lib/campaign-targets.mjs` owns this table;
 `tools/perf/tests/profiling-mechanics-doc.test.mjs` fails if the two disagree. Change the module,
 not this table.
 
@@ -43,6 +43,8 @@ not this table.
 | `ipad-simulator-native`   | iPad Simulator · native   | `appium`  | `appium`  | `ios-capacitor-webview`     | `60hz`  |
 | `ipad-device-web`         | iPad device · web         | `appium`  | `appium`  | `ios-safari`                | `60hz`  |
 | `ipad-device-native`      | iPad device · native      | `appium`  | `appium`  | `ios-capacitor-webview`     | `60hz`  |
+| `iphone-device-web`       | iPhone device · web       | `appium`  | `appium`  | `ios-safari`                | `none`  |
+| `iphone-device-native`    | iPhone device · native    | `appium`  | `appium`  | `ios-capacitor-webview`     | `none`  |
 | `android-emulator-web`    | Android emulator · web    | `split`   | `cdp`     | `android-chrome`            | `60hz`  |
 | `android-emulator-native` | Android emulator · native | `split`   | `appium`  | `android-capacitor-webview` | `60hz`  |
 | `android-device-web`      | Android device · web      | `split`   | `cdp`     | `android-chrome`            | `120hz` |
@@ -54,7 +56,7 @@ not this table.
 Two asymmetries in that table are the whole story of how it got this way. **Android draws and acts
 over different transports** — Appium under-drives the drawing stream badly enough that its cells
 cannot be scored, while it taps perfectly well, so drawing left and actions stayed. And **the iPad
-rows are the only ones still on a transport that needs a human**, because Appium's device discovery
+physical iOS rows still use a transport that needs a human**, because Appium's device discovery
 needs a root-owned tunnel whose password prompt an overnight run cannot answer.
 
 Targets outside this table exist and are not campaign cells: `perf:web`, `perf:web:mount`,

@@ -130,7 +130,7 @@ export function describeGrantHistory(
     device: grantLogDevice(udid),
     now,
   });
-  if (!summary.attempts) return 'Grant log: no recorded launch attempts for this iPad yet.';
+  if (!summary.attempts) return 'Grant log: no recorded launch attempts for this iOS device yet.';
   const lastOk =
     summary.lastOkAgeMs === null
       ? 'no successful launch on record'

@@ -7,6 +7,7 @@
 //   npm run perf:preflight -- --verify-android-input drive a real touch, read the cadence, and
 //                                                    prove the device and page both rotate
 //   npm run perf:preflight -- --json                machine-readable, for a campaign runner
+//   npm run perf:preflight -- --ios-only           skip Android when capturing an iPhone alone
 //
 // Every check here exists because a campaign produced numbers without it and the
 // numbers were wrong. See docs/PROFILING-CAMPAIGNS.md for what each failure looks
@@ -24,7 +25,7 @@ import { createServer } from 'node:net';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
 import { portListenerOwners } from '../lib/vite-server.mjs';
 import {
   ANDROID_PORT_ROLES,
@@ -32,7 +33,7 @@ import {
   classifyAppiumLog,
   classifyLaunchProbe,
   deviceAccessProblem,
-  iosIdentifierProblem,
+  iosLaunchBlocker,
   pageFollowedRotation,
   safariWindowProblem,
   PORT_ROLES,
@@ -42,17 +43,14 @@ import {
   androidVerificationBlockers,
 } from './lib/capture-readiness.mjs';
 import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
-import {
-  DEVICECTL_LIST_ARGS,
-  emptyUsbListDetail,
-  parseDevicectlListing,
-} from './lib/ios-attachment.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { overlayCheck, readOverlayVerdict } from './lib/android-overlay-verdict.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { selectAndroidSerial } from './lib/android-serial.mjs';
+import { iosChecks } from './lib/ios-device-checks.mjs';
+import { WDA_BUNDLE_ID } from './lib/ios-provisioning.mjs';
 import {
   DEVICE_WDA_PORT,
   describeRecovery,
@@ -152,58 +150,6 @@ export function androidChecks({ fix, explicit, run = sh }) {
   checks.push(overlayCheck(readOverlayVerdict(serial)));
 
   return { checks, serial, devices };
-}
-
-function iosChecks() {
-  const checks = [];
-  if (!hasCommand('idevice_id')) {
-    checks.push({
-      name: 'ios tooling',
-      status: 'blocked',
-      detail: 'idevice_id is missing — brew install libimobiledevice',
-    });
-    return { checks, udid: null, udids: null };
-  }
-  const udids = sh('idevice_id', ['-l']).out.split('\n').filter(Boolean);
-  if (udids.length === 0) {
-    checks.push({
-      name: 'ios device',
-      status: 'blocked',
-      detail: emptyUsbListDetail(
-        parseDevicectlListing(sh('xcrun', DEVICECTL_LIST_ARGS).out),
-        argFlag('ios-udid', null)
-      ),
-    });
-    return { checks, udid: null, udids };
-  }
-  const udid = argFlag('ios-udid', udids[0]);
-  const problem = iosIdentifierProblem(udid);
-  checks.push({
-    name: 'ios device',
-    status: problem ? 'blocked' : 'ok',
-    detail: problem ?? `${udid} (hardware UDID — not the devicectl CoreDevice UUID)`,
-  });
-
-  // The tunnel is root-owned and its password prompt cannot be answered
-  // unattended, so a running one is reused rather than restarted.
-  const tunnel = sh('pgrep', ['-fl', 'tunnel-creation.mjs']).out;
-  const tunnelForDevice = tunnel.includes(udid);
-  checks.push({
-    name: 'ios remotexpc tunnel',
-    status: tunnelForDevice ? 'ok' : 'blocked',
-    detail: tunnelForDevice
-      ? 'already running for this device — reused, no approval needed'
-      : 'not running. Start it once, then leave it up:\n' +
-        `      osascript -e 'do shell script "$(which node) ~/.appium/node_modules/appium-xcuitest-driver/scripts/tunnel-creation.mjs --udid ${udid} --disconnect-retry-max-attempts 3 > /tmp/ios-tunnel.log 2>&1" with administrator privileges'`,
-  });
-
-  checks.push({
-    name: 'ios signing config',
-    status: existsSync(join(ROOT, 'ios', 'local.xcconfig')) ? 'ok' : 'blocked',
-    detail: 'ios/local.xcconfig',
-  });
-
-  return { checks, udid, udids };
 }
 
 // Short: a live server answers immediately on loopback, and a hung one must not
@@ -633,8 +579,6 @@ const defaultDiagnosticAppium = (port) =>
     detached: true,
   });
 
-const WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
-
 function safariSessionBody(udid, transport) {
   return {
     capabilities: {
@@ -1012,6 +956,8 @@ export async function prepareCapture(
     ...result,
     androidSerial: android.serial,
     iosUdid: ios.udid,
+    iosDeveloperModeEnabled: ios.developerModeEnabled ?? null,
+    iosProvisioningReady: ios.provisioningReady ?? null,
     ports: ports.resolved,
     portDecisions: ports.decisions,
     androidVerificationBlockers: androidVerificationBlockers({
@@ -1038,7 +984,7 @@ export async function prepareCapture(
 if (isMain(import.meta.url)) {
   runMain(async () => {
     const argv = process.argv.slice(2);
-    const report = await prepareCapture(argv);
+    const report = await prepareCapture(argv, { android: !argv.includes('--ios-only') });
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
     const androidBlockers = report.androidVerificationBlockers;
@@ -1070,7 +1016,11 @@ if (isMain(import.meta.url)) {
       console.log(`${rotation.ok ? '✓' : '✗'} ${'android rotation'.padEnd(22)} ${rotation.detail}`);
       if (!rotation.ok) process.exitCode = 1;
     }
-    if (argv.includes('--verify-ios-launch') && report.iosUdid) {
+    const launchBlocker = iosLaunchBlocker(report);
+    if (argv.includes('--verify-ios-launch') && report.iosUdid && launchBlocker) {
+      console.log(`✗ ${'ios launch'.padEnd(22)} not attempted — ${launchBlocker}`);
+      process.exitCode = 1;
+    } else if (argv.includes('--verify-ios-launch') && report.iosUdid) {
       console.log(
         '\nprobing a real WebDriverAgent launch and a rotation ' +
           '(this builds WDA and takes a minute)…'
@@ -1079,8 +1029,8 @@ if (isMain(import.meta.url)) {
       // prompt exists ONLY while this launch is failing — so the warning has
       // to land before the attempt, while someone nearby can still look.
       console.log(
-        '  If the automation grant has expired, the iPad will show "Enter iPad ' +
-          'Passcode for XCTest" DURING this minute and nowhere else — watch the device.'
+        '  If the automation grant has expired, watch the iOS device for an XCTest ' +
+          'passcode / Enable UI Automation prompt DURING this minute.'
       );
       console.log(`  ${describeGrantHistory(report.iosUdid)}`);
       const launch = await probeIosLaunch({
