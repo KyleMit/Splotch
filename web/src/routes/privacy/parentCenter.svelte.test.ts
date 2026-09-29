@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearRequestedSettingsSection, settingsModal } from '$lib/state/ui.svelte';
+import { DIALOG_CLOSING_CLASS } from '$lib/actions/modalDialog.svelte';
+import {
+  clearRequestedSettingsSection,
+  SETTINGS_MODAL_ID,
+  settingsModal,
+} from '$lib/state/ui.svelte';
 import { createPrivacyParentCenter } from './parentCenter.svelte';
 
 vi.mock('$lib/components/SettingsModal.svelte', () => ({ default: vi.fn() }));
@@ -17,17 +22,22 @@ function afterDialogRetirementCheck() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
 }
 
+function openSettingsDialog() {
+  const dialog = document.body.appendChild(document.createElement('dialog'));
+  dialog.id = SETTINGS_MODAL_ID;
+  dialog.showModal();
+  return dialog;
+}
+
 afterEach(() => {
   settingsModal.hide();
   clearRequestedSettingsSection();
-  document.querySelector('#settingsModal')?.remove();
+  document.getElementById(SETTINGS_MODAL_ID)?.remove();
 });
 
 describe('privacy Parent Center', () => {
   it('keeps its modal mounted when Settings reopens during retirement', async () => {
-    const dialog = document.body.appendChild(document.createElement('dialog'));
-    dialog.id = 'settingsModal';
-    dialog.showModal();
+    const dialog = openSettingsDialog();
     const { parentCenter, destroy } = createParentCenterUnderEffects();
 
     try {
@@ -44,6 +54,26 @@ describe('privacy Parent Center', () => {
     } finally {
       destroy();
       dialog.close();
+      dialog.remove();
+    }
+  });
+
+  it('keeps its modal mounted until the Settings dialog finishes its exit', async () => {
+    const dialog = openSettingsDialog();
+    dialog.classList.add(DIALOG_CLOSING_CLASS);
+    const { parentCenter, destroy } = createParentCenterUnderEffects();
+
+    try {
+      parentCenter.openParentCenter(null);
+      await Promise.resolve();
+      settingsModal.hide();
+      await afterDialogRetirementCheck();
+
+      expect(parentCenter.managingPolicies).toBe(true);
+      dialog.close();
+      await vi.waitFor(() => expect(parentCenter.managingPolicies).toBe(false));
+    } finally {
+      destroy();
       dialog.remove();
     }
   });
