@@ -366,6 +366,23 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
     });
   });
 
+  // A ref name may hold `)` and `%(`, so a base interpolated by name into
+  // `%(ahead-behind:…)` closes the atom early and counts against `main`.
+  it('listBranchRefs counts against a base whose name holds format syntax', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['branch', 'main)%(symref', 'main']);
+    sh(['checkout', '-q', '-b', 'topic']);
+    commit('t.txt', 't', 'topic work');
+    sh(['checkout', '-q', 'main']);
+    sh(['merge', '-q', '--ff-only', 'topic']);
+
+    const refs = listBranchRefs(repo, { base: 'main)%(symref', namespace: 'refs/heads' });
+    expect(refs.find((ref) => ref.name === 'topic')).toMatchObject({ ahead: 1, behind: 0 });
+    expect(() => listBranchRefs(repo, { base: 'no-such-base', namespace: 'refs/heads' })).toThrow(
+      /no-such-base/
+    );
+  });
+
   it('listWorktrees reads a worktree whose path holds a newline', () => {
     const { sh, repo } = fixture;
     const checkout = sh(['rev-parse', '--show-toplevel']);

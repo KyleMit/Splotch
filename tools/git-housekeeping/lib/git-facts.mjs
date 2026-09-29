@@ -187,8 +187,16 @@ export function parseBranchRefs(text) {
 // is still a prefix match there, which would also hide a real branch like `HEAD/x`.
 const SYMBOLIC_REF_NAME_FORMAT = '%(if)%(symref)%(then)%(refname:short)%(end)';
 
+// The base goes into the format as a commit id, never as the name it was given:
+// a ref name may hold `)` and `%(`, and `main)%(symref` would close the atom
+// early and count every branch against `main` instead.
 export function listBranchRefs(cwd, { base, namespace }) {
-  const format = [...REF_FIELDS, `%(ahead-behind:${base})`].map((field) => `${field}%00`).join('');
+  const baseCommit = git(['rev-parse', '--verify', '--end-of-options', `${base}^{commit}`], {
+    cwd,
+  });
+  const format = [...REF_FIELDS, `%(ahead-behind:${baseCommit})`]
+    .map((field) => `${field}%00`)
+    .join('');
   const symbolic = new Set(
     git(['for-each-ref', `--format=${SYMBOLIC_REF_NAME_FORMAT}`, namespace], { cwd })
       .split('\n')

@@ -518,20 +518,36 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(sh(['rev-parse', 'tabbed'])).toBe(tip);
   });
 
-  // The forced path overrides git's refusal, so it proves ancestry itself
-  // instead of trusting the tier a plan row arrives with.
-  it('refuses to force-delete a merged row whose commit is not on the base', () => {
+  // `git branch -d` judges a branch that has an upstream against that upstream,
+  // not the base, and a plan row can be misread or stale by the time it applies.
+  it('refuses to delete a merged row that is not on the base or moved after planning', () => {
     const { sh, commit, repo } = fixture;
     sh(['checkout', '-q', '-b', 'unmerged']);
     const tip = commit('u.txt', 'u', 'unmerged work');
+    sh(['checkout', '-q', '-b', 'moved', 'main']);
+    sh(['push', '-q', '-u', 'origin', 'moved']);
     sh(['checkout', '-q', 'main']);
+    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
 
     const misread = { name: 'unmerged', tip, tier: 'merged', reason: 'merged into origin/main' };
-    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
     expect(deleteLocalBranch(misread, options)).toEqual({
       outcome: 'kept',
-      reason: `refusing to force-delete: ${tip.slice(0, 12)} is not an ancestor of origin/main, so unmerged is not merged into it`,
+      reason: `refusing to delete: ${tip.slice(0, 12)} is not an ancestor of origin/main, so unmerged is not merged into it`,
     });
     expect(sh(['rev-parse', 'unmerged'])).toBe(tip);
+
+    const planned = planLocalBranchPrune({ ...options, prIndex: new Map(), prLookupOk: true }).find(
+      (row) => row.name === 'moved'
+    );
+    expect(planned.tier).toBe('merged');
+    sh(['checkout', '-q', 'moved']);
+    const moved = commit('m.txt', 'm', 'work after planning');
+    sh(['push', '-q', 'origin', 'moved']);
+    sh(['checkout', '-q', 'main']);
+    expect(deleteLocalBranch(planned, { ...options, includeEquivalent: false })).toEqual({
+      outcome: 'kept',
+      reason: `refusing to delete: moved no longer points at the planned ${planned.tip.slice(0, 12)}`,
+    });
+    expect(sh(['rev-parse', 'moved'])).toBe(moved);
   });
 });
