@@ -2,7 +2,8 @@
 // Delete local branches that are mechanically dead and report why every other
 // one stays. Plans by default; `--apply` deletes. Two proofs of death:
 //
-//   merged      the tip is an ancestor of the base — `git branch -d` accepts it
+//   merged      the tip is an ancestor of the base — `git branch -d` would accept
+//               it, and it is deleted at that proven commit id
 //   equivalent  a patch-id match (rebase-merged, or the PR's squash commit)
 //               *and* every file the branch touched byte-identical on the base,
 //               because patch-ids ignore whitespace. `-d` refuses these since
@@ -187,51 +188,60 @@ function firstLine(text) {
   return text.split('\n')[0];
 }
 
-// Every forced deletion goes through the proven commit id, never the branch
-// name: `git branch -D` would resolve the name again at deletion time and
-// destroy whatever it points at now.
-function forceDeleteAtProvenTip(row, cwd, reason) {
-  const forced = deleteRefAtCommit(row.name, row.tip, cwd);
-  if (forced.ok) return { outcome: 'deleted', reason };
+// Every deletion goes through the proven commit id, never the branch name.
+// `git branch -D` and `-d` both resolve the name again at deletion time, and
+// `-d` then judges whatever it finds there against the branch's upstream, not
+// the base: a commit that lands after the proof and reaches the upstream is
+// deleted with work the base does not hold. `update-ref` deletes only while the
+// ref still holds the proven commit. The branch's config section, which
+// `git branch` drops with the branch, is dropped after it.
+function deleteAtProvenTip(row, cwd, reason) {
+  const deleted = deleteRefAtCommit(row.name, row.tip, cwd);
+  if (!deleted.ok) {
+    return {
+      outcome: 'kept',
+      reason: `refusing to delete: ${row.name} no longer points at the proven ${row.tip.slice(0, 12)} (${firstLine(deleted.stderr)})`,
+    };
+  }
+  tryGit(['config', '--remove-section', `branch.${row.name}`], { cwd });
+  return { outcome: 'deleted', reason };
+}
+
+// The commit `git branch -d` would require the branch to be merged into: its
+// upstream while that resolves, and HEAD otherwise. The rule is applied to the
+// proven commit without running `-d`, which would reread the branch.
+function branchDeleteReference(name, cwd) {
+  const upstream = tryGit(
+    ['rev-parse', '--symbolic-full-name', '--verify', '--quiet', `${name}@{upstream}`],
+    { cwd }
+  );
+  return upstream.ok ? upstream.stdout : 'HEAD';
+}
+
+// The plan can admit a row to this tier on a parsed ahead count alone, so the
+// proven commit is shown to be on the base before anything is deleted.
+function deleteMergedRow(row, { cwd, base, includeEquivalent }) {
+  const tip = row.tip.slice(0, 12);
+  if (!isAncestor(row.tip, base, cwd)) {
+    return {
+      outcome: 'kept',
+      reason: `refusing to delete: ${tip} is not an ancestor of ${base}, so ${row.name} is not merged into it`,
+    };
+  }
+  const reference = branchDeleteReference(row.name, cwd);
+  if (isAncestor(row.tip, reference, cwd)) return deleteAtProvenTip(row, cwd, row.reason);
+  const refusal = `git branch -d would refuse: ${tip} is not merged into ${reference}`;
+  if (includeEquivalent) {
+    return deleteAtProvenTip(row, cwd, `${row.reason}; ${refusal}, deleted at the proven commit`);
+  }
   return {
     outcome: 'kept',
-    reason: `refusing to force-delete: ${row.name} no longer points at the proven ${row.tip.slice(0, 12)} (${firstLine(forced.stderr)})`,
+    reason: `${refusal} — rerun once it is, or pass --include-equivalent`,
   };
 }
 
-// `git branch -d` judges a branch against its upstream when it has one, and
-// against HEAD otherwise, never against the base. A branch that gained a commit
-// after planning and pushed it to its own upstream passes `-d` with work the
-// base does not hold, and the plan can admit a row to this tier on a parsed
-// ahead count alone. So before either deletion runs, the planned commit is
-// proved to be on the base and the branch to still point at it.
-function staleMergedRowReason(row, { cwd, base }) {
-  const tip = row.tip.slice(0, 12);
-  if (!isAncestor(row.tip, base, cwd)) {
-    return `${tip} is not an ancestor of ${base}, so ${row.name} is not merged into it`;
-  }
-  const current = tryGit(['rev-parse', '--verify', '--quiet', `refs/heads/${row.name}`], { cwd });
-  return current.stdout === row.tip ? null : `${row.name} no longer points at the planned ${tip}`;
-}
-
 export function deleteLocalBranch(row, { cwd, base, includeEquivalent }) {
-  if (row.tier === 'merged') {
-    const stale = staleMergedRowReason(row, { cwd, base });
-    if (stale) return { outcome: 'kept', reason: `refusing to delete: ${stale}` };
-    const safe = tryGit(['branch', '-d', row.name], { cwd });
-    if (safe.ok) return { outcome: 'deleted', reason: row.reason };
-    if (includeEquivalent) {
-      return forceDeleteAtProvenTip(
-        row,
-        cwd,
-        `${row.reason}; -d refused because HEAD is behind ${base}, deleted at the proven commit`
-      );
-    }
-    return {
-      outcome: 'kept',
-      reason: `git branch -d refused (${firstLine(safe.stderr)}); HEAD is behind ${base} — rerun from a current checkout or pass --include-equivalent`,
-    };
-  }
+  if (row.tier === 'merged') return deleteMergedRow(row, { cwd, base, includeEquivalent });
   if (row.tier === 'equivalent') {
     if (!includeEquivalent) {
       return {
@@ -239,7 +249,7 @@ export function deleteLocalBranch(row, { cwd, base, includeEquivalent }) {
         reason: `${row.reason} — pass --include-equivalent to delete at the proven commit`,
       };
     }
-    return forceDeleteAtProvenTip(row, cwd, `${row.reason}; deleted at the proven commit`);
+    return deleteAtProvenTip(row, cwd, `${row.reason}; deleted at the proven commit`);
   }
   return null;
 }

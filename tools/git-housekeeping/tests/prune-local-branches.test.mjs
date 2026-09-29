@@ -382,6 +382,7 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(sh(['branch', '--list', '--format=%(refname:short)']).split('\n').sort()).toEqual(
       ['closed', 'current', 'held', 'main', 'open', 'rebased', 'squashed', 'unmerged'].sort()
     );
+    expect(sh(['config', '--list'])).not.toContain('branch.gone.');
 
     expect(applyAll(true)).toMatchObject({ rebased: 'deleted', squashed: 'deleted' });
     expect(sh(['branch', '--list', '--format=%(refname:short)']).split('\n').sort()).toEqual(
@@ -481,7 +482,9 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
       includeEquivalent: false,
     });
     expect(refused.outcome).toBe('kept');
-    expect(refused.reason).toMatch(/git branch -d refused/);
+    expect(refused.reason).toMatch(
+      /git branch -d would refuse: [0-9a-f]{12} is not merged into HEAD/
+    );
     expect(sh(['branch', '--list', 'merged-later'])).toContain('merged-later');
 
     const forced = deleteLocalBranch(row, {
@@ -518,8 +521,8 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(sh(['rev-parse', 'tabbed'])).toBe(tip);
   });
 
-  // `git branch -d` judges a branch that has an upstream against that upstream,
-  // not the base, and a plan row can be misread or stale by the time it applies.
+  // `git branch -d` rereads the branch and judges one with an upstream against
+  // that upstream, so a commit pushed there after planning would pass it.
   it('refuses to delete a merged row that is not on the base or moved after planning', () => {
     const { sh, commit, repo } = fixture;
     sh(['checkout', '-q', '-b', 'unmerged']);
@@ -544,9 +547,9 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     const moved = commit('m.txt', 'm', 'work after planning');
     sh(['push', '-q', 'origin', 'moved']);
     sh(['checkout', '-q', 'main']);
-    expect(deleteLocalBranch(planned, { ...options, includeEquivalent: false })).toEqual({
+    expect(deleteLocalBranch(planned, { ...options, includeEquivalent: false })).toMatchObject({
       outcome: 'kept',
-      reason: `refusing to delete: moved no longer points at the planned ${planned.tip.slice(0, 12)}`,
+      reason: expect.stringMatching(/^refusing to delete: moved no longer points at the proven /),
     });
     expect(sh(['rev-parse', 'moved'])).toBe(moved);
   });
