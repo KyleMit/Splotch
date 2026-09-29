@@ -7,6 +7,7 @@ import { LANDSCAPE_COLORS } from '$lib/landscapeToolbar';
 import { appearanceState } from '$lib/state/appearance.svelte';
 import {
   BLACK_INK,
+  BLACK_SWATCH_FILL,
   PALETTE_COLORS,
   WHITE_INK,
   colorsState,
@@ -25,6 +26,12 @@ const PURPLE = PALETTE_COLORS[0].hex;
 
 function expectedInk(hex: string, theme: ResolvedTheme): string {
   return theme === 'dark' && hex === BLACK_INK ? WHITE_INK : hex;
+}
+
+// The palette's Black swatch names the themed token instead of a color, so its
+// markup is the same in both themes and the prerendered swatch needs no repaint.
+function expectedPaletteFill(hex: string): string {
+  return hex === BLACK_INK ? BLACK_SWATCH_FILL : hex;
 }
 
 function switchTheme(theme: ResolvedTheme) {
@@ -65,11 +72,11 @@ function tap(button: HTMLButtonElement) {
 }
 
 // The selected Black swatch as it renders now — fill, name, and selection ring
-// — alongside the ink it paints. `fill` is the style declaration naming its color.
+// — alongside the ink it paints. `fill` is the style declaration it carries.
 function expectSelectedBlack(button: HTMLButtonElement, fill: string, theme: ResolvedTheme) {
   const ink = expectedInk(BLACK_INK, theme);
   const style = button.getAttribute('style');
-  expect(style).toContain(`${fill}: ${ink};`);
+  expect(style).toContain(fill);
   expect(style).toContain(getRingColor(ink));
   expect(button.getAttribute('aria-label')).toBe(ink === WHITE_INK ? 'White' : 'Black');
   expect(colorsState.activeSwatch).toBe(BLACK_INK);
@@ -98,7 +105,9 @@ describe('palette swatch ink', () => {
     for (const { hex, label } of PALETTE_COLORS) {
       const swatch = paletteSwatch(root, hex);
       const ink = expectedInk(hex, theme);
-      expect(swatch.getAttribute('style'), hex).toContain(`background-color: ${ink};`);
+      expect(swatch.getAttribute('style'), hex).toContain(
+        `background-color: ${expectedPaletteFill(hex)};`
+      );
       expect(swatch.getAttribute('aria-label'), hex).toBe(ink === WHITE_INK ? 'White' : label);
 
       tap(swatch);
@@ -137,14 +146,15 @@ describe('ink across a theme switch mid-session', () => {
   ] as const)('selected Black chosen in %s follows a switch to %s and back', (from, to) => {
     switchTheme(from);
     const black = paletteSwatch(mountInto(ColorPalette), BLACK_INK);
+    const fill = `background-color: ${BLACK_SWATCH_FILL};`;
     tap(black);
-    expectSelectedBlack(black, 'background-color', from);
+    expectSelectedBlack(black, fill, from);
 
     switchTheme(to);
-    expectSelectedBlack(black, 'background-color', to);
+    expectSelectedBlack(black, fill, to);
 
     switchTheme(from);
-    expectSelectedBlack(black, 'background-color', from);
+    expectSelectedBlack(black, fill, from);
   });
 
   it.each([
@@ -158,13 +168,13 @@ describe('ink across a theme switch mid-session', () => {
         LANDSCAPE_COLORS.findIndex(({ hex }) => hex === BLACK_INK)
       ];
       tap(black);
-      expectSelectedBlack(black, 'background', from);
+      expectSelectedBlack(black, `background: ${expectedInk(BLACK_INK, from)};`, from);
 
       switchTheme(to);
-      expectSelectedBlack(black, 'background', to);
+      expectSelectedBlack(black, `background: ${expectedInk(BLACK_INK, to)};`, to);
 
       switchTheme(from);
-      expectSelectedBlack(black, 'background', from);
+      expectSelectedBlack(black, `background: ${expectedInk(BLACK_INK, from)};`, from);
     }
   );
 

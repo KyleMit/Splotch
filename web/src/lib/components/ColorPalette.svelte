@@ -9,6 +9,7 @@
     colorsState,
     selectPaletteColor,
     selectCustomSwatch,
+    swatchFill,
   } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
@@ -92,7 +93,7 @@
     <ColorSwatch
       variant="flat"
       {hex}
-      color={shown}
+      color={swatchFill(hex)}
       label={shown === hex ? label : 'White'}
       trimRank={trimRank.get(hex)}
       {active}

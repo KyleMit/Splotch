@@ -1,4 +1,5 @@
 import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
+import { BLACK_INK } from '../palette.ts';
 
 // Design-token single source of truth (ADR-0071).
 //
@@ -356,6 +357,14 @@ export interface ThemeTokens {
    * Inert in light mode, where dark ink already reads on the light cards.
    */
   darkInkKeyline: string;
+  /**
+   * The fill of the palette's Black swatch, which shows white on dark paper.
+   * A token so the prerendered swatch already wears the theme's color: a fill
+   * resolved in JS paints black until hydration and then fades to white.
+   * colors.svelte.ts owns the ink the swatch draws with;
+   * colors.svelte.test.ts holds the two to the same answer.
+   */
+  blackSwatchInk: string;
 }
 
 export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
@@ -405,6 +414,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     floatBorder: 'transparent',
     floatShadow: '0 2px 6px rgb(93 84 68 / 14%), 0 6px 16px rgb(93 84 68 / 10%)',
     darkInkKeyline: 'transparent',
+    blackSwatchInk: BLACK_INK,
   },
   dark: {
     appBg: '#17171d',
@@ -452,6 +462,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     floatBorder: 'rgb(255 255 255 / 10%)',
     floatShadow: '0 0 0 1px rgb(255 255 255 / 6%), 0 3px 10px rgb(0 0 0 / 50%)',
     darkInkKeyline: '#e9e7f0',
+    blackSwatchInk: '#ffffff',
   },
 };
 
@@ -506,6 +517,7 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   floatBorder: true,
   floatShadow: false,
   darkInkKeyline: true,
+  blackSwatchInk: true,
 };
 
 // `appBg` → `app-bg`, `surface2` → `surface-2`. Exported for iconTokens.ts, which

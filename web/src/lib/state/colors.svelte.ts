@@ -5,6 +5,18 @@ export { BLACK_INK, PALETTE_COLORS, TRIM_ORDER };
 
 export const WHITE_INK = '#ffffff';
 
+// What a palette swatch fills itself with. Black takes the themed token rather
+// than themedSwatchColor's answer, so the prerendered swatch already wears the
+// theme's color and hydration has nothing to repaint. The token is named
+// literally because design/tokens.ts stays off the startup path (theme.ts
+// explains the boundary); colors.svelte.test.ts holds the name and both theme
+// values to that source.
+export const BLACK_SWATCH_FILL = 'var(--black-swatch-ink)';
+
+export function swatchFill(hex: string): string {
+  return hex === BLACK_INK ? BLACK_SWATCH_FILL : hex;
+}
+
 export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
 
 export const CUSTOM_SWATCH = 'custom';
