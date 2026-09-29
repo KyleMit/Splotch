@@ -6,6 +6,7 @@
 //
 //   npm run perf:android            (build native w/ PERF_MARKS, install, profile)
 //   node tools/perf/android/capture-webview-session.mjs --no-build   (profile the installed app as-is)
+//   --device-id=<serial> picks one device when adb lists several
 //
 // Local-only: needs an Android emulator/device on adb and the toolchain. The
 // installed app must be a PERF_MARKS=true build for the engine.* marks to appear
@@ -13,7 +14,19 @@
 
 import { spawnSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
-import { sleep, pollUntil, run, fail, isMain, runMain } from '../../lib/proc.mjs';
+import {
+  sleep,
+  pollUntil,
+  run,
+  fail,
+  isMain,
+  parseOrFail,
+  readSwitch,
+  readValueFlag,
+  rejectUnknownFlags,
+  runMain,
+} from '../../lib/proc.mjs';
+import { resolveAndroidDevice } from '../lib/android-serial.mjs';
 import { driveSession } from '../lib/toddler-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
@@ -25,26 +38,18 @@ const WEBVIEW_SOCKET_POLL_INTERVAL_MS = 1_000;
 const WEBVIEW_PAGE_TIMEOUT_MS = 10_000;
 const WEBVIEW_PAGE_POLL_INTERVAL_MS = 500;
 
-const args = process.argv.slice(2);
-const build = !args.includes('--no-build');
+const ADB_ON_PATH = 'adb';
 
-const adb = (cmdArgs, opts = {}) => spawnSync('adb', cmdArgs, { encoding: 'utf8', ...opts });
-
-function requireDevice() {
-  const out = adb(['devices']).stdout || '';
-  const devices = out
-    .split('\n')
-    .slice(1)
-    .map((l) => l.trim())
-    .filter((l) => l.endsWith('\tdevice'));
-  if (devices.length === 0) {
-    fail('No Android device/emulator on adb. Boot one (npm run android:boot) and retry.');
-  }
-}
+// Every device step goes through this, so none can reach a device other than
+// the one resolveAndroidDevice picked.
+const adbOn =
+  (serial) =>
+  (cmdArgs, opts = {}) =>
+    spawnSync(ADB_ON_PATH, ['-s', serial, ...cmdArgs], { encoding: 'utf8', ...opts });
 
 // The WebView exposes its DevTools over an abstract unix socket named
 // webview_devtools_remote_<pid>. Prefer the app's own pid; fall back to any.
-export function readWebviewSocket() {
+export function readWebviewSocket(adb) {
   const pid = (adb(['shell', 'pidof', APP_ID]).stdout || '').trim().split(/\s+/)[0];
   const unix = adb(['shell', 'cat', '/proc/net/unix']).stdout || '';
   const sockets = unix
@@ -59,8 +64,8 @@ export function readWebviewSocket() {
 
 // A freshly (re)installed app can take several seconds to cold-start its
 // WebView and register the socket, so poll instead of a single fixed wait.
-export async function findWebviewSocket(timeoutMs = WEBVIEW_SOCKET_TIMEOUT_MS) {
-  return pollUntil(readWebviewSocket, timeoutMs, WEBVIEW_SOCKET_POLL_INTERVAL_MS);
+export async function findWebviewSocket(adb, timeoutMs = WEBVIEW_SOCKET_TIMEOUT_MS) {
+  return pollUntil(() => readWebviewSocket(adb), timeoutMs, WEBVIEW_SOCKET_POLL_INTERVAL_MS);
 }
 
 export async function getWebviewPage(browser) {
@@ -78,19 +83,26 @@ export async function getWebviewPage(browser) {
   return page;
 }
 
-export async function runAndroidProfile() {
-  requireDevice();
+export async function runAndroidProfile(argv = process.argv.slice(2)) {
+  rejectUnknownFlags(['no-build', 'device-id'], argv);
+  const build = !parseOrFail(() => readSwitch(argv, 'no-build'));
+  const requested = parseOrFail(() => readValueFlag(argv, 'device-id'));
+  const serial = resolveAndroidDevice(requested, ADB_ON_PATH);
+  const adb = adbOn(serial);
 
   if (build) {
     warnIfNoPerfMarks('npm run perf:android');
-    // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug.
+    // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug, which
+    // installs onto whichever device ANDROID_SERIAL names (every attached one
+    // when unset), so it names the device this run profiles.
+    process.env.ANDROID_SERIAL = serial;
     run('npm', ['run', 'android:run']);
   }
 
   console.log('Launching app…');
   adb(['shell', 'am', 'start', '-n', `${APP_ID}/.MainActivity`], { stdio: 'ignore' });
 
-  const socket = await findWebviewSocket();
+  const socket = await findWebviewSocket(adb);
   if (!socket) {
     fail(
       'No WebView DevTools socket found. Is the app a debug build (WebView debugging on) and in the foreground?'
