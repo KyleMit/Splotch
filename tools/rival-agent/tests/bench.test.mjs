@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cellId, parseBenchArgs, planCells } from '../bench/run-bench.mjs';
 import { DECLINE_REASONS, judgeRequest } from '../bench/lib/handler.mjs';
 import { renderReport } from '../bench/lib/report.mjs';
@@ -302,6 +303,23 @@ describe('the corpus', () => {
       expect(seed.control || seed.key.lines[0] <= seed.key.lines[1]).toBe(true);
     }
     expect(() => loadSeeds(undefined, ['no-such-seed'])).toThrow(/no seed named/);
+  });
+
+  // Each patch is written against main, so an edit to a file a seed touches can silently leave the
+  // seed unappliable until a bench run tries it. `applySeed` passes the same whitespace flag.
+  it('applies every seed patch to this checkout', () => {
+    const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
+    const unappliable = loadSeeds()
+      .map((seed) => ({
+        name: seed.name,
+        result: spawnSync('git', ['apply', '--check', '--whitespace=nowarn', seed.patchPath], {
+          cwd: repoRoot,
+          encoding: 'utf8',
+        }),
+      }))
+      .filter(({ result }) => result.status !== 0)
+      .map(({ name, result }) => `${name}: ${result.stderr || result.error}`);
+    expect(unappliable).toEqual([]);
   });
 
   // Validation is the promise the bench makes before spending anything: a seed whose repro does

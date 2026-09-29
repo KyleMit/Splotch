@@ -12,10 +12,11 @@ const DRIVER_LOOKUP_SOURCES = [
 // The Claude skill quotes the unanchored wait loop on purpose, as the example that never exits.
 const DOCUMENTED_ANTI_EXAMPLE = "until ! pgrep -f 'audit-burndown/run-burndown.mjs'";
 
-const PGREP_PATTERN = /pgrep(?:\s+-[a-zA-Z]+)+\s+(?:'([^']*)'|"([^"]*)"|([^\s`|>]+))/g;
+const PROCESS_MATCH_PATTERN =
+  /(?:pgrep|pkill)(?:\s+-[a-zA-Z]+)+\s+(?:'([^']*)'|"([^"]*)"|([^\s`|>]+))/g;
 
 function driverLookupPatterns(text) {
-  return [...text.matchAll(PGREP_PATTERN)]
+  return [...text.matchAll(PROCESS_MATCH_PATTERN)]
     .map((match) => match[1] ?? match[2] ?? match[3])
     .filter((pattern) => pattern.includes('burndown'));
 }
@@ -44,13 +45,14 @@ describe('DRIVER_PROCESS_PATTERN', () => {
     "pgrep -f -l 'audit-burndown/run-burndown.mjs'",
     'pgrep -lf "audit-burndown/run-burndown.mjs"',
     'pgrep -af run-burndown.mjs | grep -v bash',
+    "pkill -TERM -f 'audit-burndown/run-burndown.mjs'",
   ])('extracts the lookup pattern from %s', (command) => {
     expect(driverLookupPatterns(command)).toEqual([
       command.includes('audit-burndown/') ? 'audit-burndown/run-burndown.mjs' : 'run-burndown.mjs',
     ]);
   });
 
-  it.each(DRIVER_LOOKUP_SOURCES)('is the only driver lookup pattern in %s', (path) => {
+  it.each(DRIVER_LOOKUP_SOURCES)('is the only driver lookup or kill pattern in %s', (path) => {
     const patterns = driverLookupPatterns(read(path).replace(DOCUMENTED_ANTI_EXAMPLE, ''));
     expect(patterns.length).toBeGreaterThan(0);
     expect(patterns).toEqual(patterns.map(() => DRIVER_PROCESS_PATTERN));
