@@ -14,7 +14,11 @@ const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
 // The prerendered home page, precached under the build-unique URL
 // web/src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
 export const APP_SHELL_PRECACHE_URL_PATTERN = /^\/\?app-shell-build=[^&]+$/;
-const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png']);
+const SERVED_ONLY_ASSET_URLS = new Set([
+  'large-image.png',
+  'web-app-manifest-192x192.png',
+  'web-app-manifest-512x512.png',
+]);
 // Leaves room for ordinary app growth while rejecting a second bundled coloring book.
 export const MAX_PWA_PRECACHE_BYTES = 12_000_000;
 

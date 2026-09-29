@@ -93,17 +93,23 @@ it('rejects responsive precache entries, missing fallbacks, and an oversized bun
   ]);
 });
 
-it('rejects the served-only social card', () => {
+it('rejects assets that are served but never fetched', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: [appShellUrl, 'large-image.png'],
+      precacheUrls: [
+        appShellUrl,
+        'large-image.png',
+        'web-app-manifest-192x192.png',
+        'web-app-manifest-512x512.png',
+        'web-app-manifest-maskable-512x512.png',
+      ],
       appShellFallbackLookups,
       precacheBytes: 1,
       responsiveAssetUrls: [],
       coloringManifest,
     })
   ).toEqual([
-    'Assets served but never fetched by the application remain in the PWA precache: large-image.png',
+    'Assets served but never fetched by the application remain in the PWA precache: large-image.png, web-app-manifest-192x192.png, web-app-manifest-512x512.png',
   ]);
 });
 
