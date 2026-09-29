@@ -47,20 +47,17 @@ describe('AiValueProp free-allowance claim', () => {
   });
 });
 
-// Shown on every platform, so it states only what holds on each: on iPhone
-// and iPad the saved key can also move to a new device inside an encrypted
-// backup, which the Settings key note says where it applies.
+// Shown on every platform, and true on each: the saved key stays on this
+// device (docs/MOBILE/compliance.md, Apple 5.1.1).
 describe('AiValueProp key-storage claim', () => {
-  it('reads "After that, use your own OpenAI key — saved securely on your device." with no credential', () => {
-    expect(claims()[1]).toBe(
-      'After that, use your own OpenAI key — saved securely on your device.'
-    );
+  it('reads "After that, use your own OpenAI key — saved on this device only." with no credential', () => {
+    expect(claims()[1]).toBe('After that, use your own OpenAI key — saved on this device only.');
   });
 
-  it('reads "Your key stays saved securely on your device." once a key is saved', () => {
+  it('reads "Your key stays saved on this device only." once a key is saved', () => {
     settingsState.mirrorAiUserApiKey('sk-test');
     try {
-      expect(claims()[1]).toBe('Your key stays saved securely on your device.');
+      expect(claims()[1]).toBe('Your key stays saved on this device only.');
     } finally {
       settingsState.mirrorAiUserApiKey('');
     }

@@ -124,10 +124,9 @@
             Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are
             stored on your device and never sent to us. An access code or your own OpenAI key is
             stored on the device too, in the device's secure storage (the Keychain on Apple devices)
-            and encrypted in the browser on the web. On iPhone and iPad, the saved code or key can
-            move to a new device inside an encrypted computer backup. The access code or OpenAI key
-            is sent to us when a grown-up adds it so we can check it. It is sent again with each AI
-            picture made or reported using it.
+            and encrypted in the browser on the web. The access code or OpenAI key is sent to us
+            when a grown-up adds it so we can check it. It is sent again with each AI picture made
+            or reported using it.
           </p>
         </section>
 

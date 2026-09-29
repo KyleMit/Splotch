@@ -63,7 +63,7 @@
   };
 
   const KEY_STORAGE_NOTE: Record<Platform, string> = {
-    ios: "Your key is saved in this device's iOS Keychain — encrypted by the system. It can move to a new iPhone or iPad inside an encrypted computer backup.",
+    ios: "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device.",
     android:
       "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device.",
     web: 'Your key is encrypted and stored only in this browser on this device.',
@@ -247,8 +247,8 @@
                 Add your own OpenAI API key to create AI art while the free allowance is
                 unavailable.
               {/if}
-              Your key is saved securely on your device, used only for pictures made here, and billed
-              to your OpenAI account. We never keep a copy of it.
+              Your key is saved only on this device, used only for pictures made here, and billed to your
+              OpenAI account. We never keep a copy of it.
             </p>
 
             <OpenAiKeyHowTo />

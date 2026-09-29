@@ -230,17 +230,13 @@ ten-creation free allowance; the feedback device snapshot is opt-in and off-by-d
 reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
 gate protects action boundaries and is not itself legal consent.
 
-**Stored AI credentials on iOS travel in encrypted backups, by choice.** A saved access code or
-OpenAI key is a Keychain item with `whenUnlocked` access and iCloud Keychain sync off, both passed
-on every write in `web/src/lib/secureStorage.ts` rather than inherited from the plugin. Such an item
-is never synced through iCloud Keychain and can move to a new iPhone or iPad inside an encrypted
-computer backup. An iCloud Backup does not carry it to a new device: Apple's "Security of iCloud
-Backup" says the backed-up local keychain is encrypted with a device-unique key and restores only
-onto the device it came from. Current iOS also keeps Keychain items after the app is deleted, an
-observed behaviour Apple does not guarantee, so nothing here promises it. The user chose this on
-2026-09-28 over `whenUnlockedThisDeviceOnly`: a parent who moves to a new iPhone should find AI
-still working where iOS allows it, and the key stays encrypted in between. `/privacy` and the iOS
-Settings key note say so. Android differs on purpose (see the Families data-practices entry).
+**Stored AI credentials stay on the device, on every platform.** A saved access code or OpenAI key
+is an iOS Keychain item written `whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, both
+passed on every write in `web/src/lib/secureStorage.ts`, so no sync or backup carries it to another
+device. That matches Android, where `android:allowBackup="false"` keeps it out of cloud backup. The
+user chose this on 2026-09-28 so one plain sentence in `/privacy` holds everywhere; iCloud Keychain
+sync and backup-portable storage were considered and not adopted. Current iOS may keep a Keychain
+item after the app is deleted, which Apple does not guarantee, so no copy promises deletion.
 
 ### 5.1.4 Kids
 
@@ -328,10 +324,9 @@ ADR-0094's 2026-09-12 amendment records both models and the longer-horizon figur
 location permission. The free-allowance installation pseudonym was designed against this rule: an
 app-purpose SHA-256 hash, never the raw device identifier, never combined with IP, account,
 advertising ID, or fingerprint (ADR-0105). `android:allowBackup="false"` keeps settings and stored
-credentials out of cloud backup, so an Android credential stays on the device it was entered on; the
-iOS build lets it move in an encrypted backup on purpose (see Apple 5.1.1). Collection that does
-happen (the allowance pseudonym and accounting, drawings on tap, reports, and feedback) is disclosed
-in `/privacy` and the Data safety form.
+credentials out of cloud backup. Collection that does happen (the allowance pseudonym and
+accounting, drawings on tap, reports, and feedback) is disclosed in `/privacy` and the Data safety
+form.
 
 ### Families policy — APIs and SDKs
 

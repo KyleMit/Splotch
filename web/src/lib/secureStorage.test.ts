@@ -283,10 +283,10 @@ describe('native save/load round trip', () => {
     await expect(secureStorage.loadAccessCode()).resolves.toBe('native-code');
   });
 
-  // A parent's key restores onto a new iPhone or iPad from an encrypted backup
-  // and never syncs through iCloud Keychain. Each write states that itself, so
-  // a plugin default changing cannot move the key somewhere else.
-  it('writes each Keychain item unsynced with whenUnlocked access', async () => {
+  // A parent's key stays on this device: no iCloud Keychain sync, and an access
+  // class no backup carries to another device. Each write states that itself,
+  // so a plugin default changing cannot move the key somewhere else.
+  it('writes each Keychain item unsynced with device-only access', async () => {
     platform.native = true;
     const { KeychainAccess } = await vi.importActual<
       typeof import('@aparajita/capacitor-secure-storage')
@@ -295,7 +295,7 @@ describe('native save/load round trip', () => {
     await secureStorage.saveApiKey('native-key');
     await secureStorage.saveAccessCode('native-code');
 
-    const pinned = { sync: false, access: KeychainAccess.whenUnlocked };
+    const pinned = { sync: false, access: KeychainAccess.whenUnlockedThisDeviceOnly };
     expect(nativeWriteOptions).toEqual([pinned, pinned]);
   });
 

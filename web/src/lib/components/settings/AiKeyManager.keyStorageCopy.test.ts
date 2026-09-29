@@ -40,13 +40,12 @@ function renderedCopy(on: Platform) {
   };
 }
 
-// A saved key is an iOS Keychain item that an encrypted computer backup can
-// carry to a new iPhone or iPad (docs/MOBILE/compliance.md, Apple 5.1.1), so
-// only iOS says it can move; the words are pinned as a parent reads them.
+// A saved key stays on this device on every platform (docs/MOBILE/compliance.md,
+// Apple 5.1.1); the words are pinned as a parent reads them.
 describe('AiKeyManager key-storage copy', () => {
-  it('tells an iPhone parent the key can move inside an encrypted computer backup', () => {
+  it('tells an iPhone parent the key is kept only on this device', () => {
     expect(renderedCopy('ios').note).toBe(
-      "Your key is saved in this device's iOS Keychain — encrypted by the system. It can move to a new iPhone or iPad inside an encrypted computer backup."
+      "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device."
     );
   });
 
@@ -56,9 +55,9 @@ describe('AiKeyManager key-storage copy', () => {
     );
   });
 
-  it('says the key is saved securely on your device on every platform', () => {
+  it('says the key is saved only on this device on every platform', () => {
     expect(renderedCopy('ios').form).toContain(
-      'Your key is saved securely on your device, used only for pictures made here, and billed to your OpenAI account. We never keep a copy of it.'
+      'Your key is saved only on this device, used only for pictures made here, and billed to your OpenAI account. We never keep a copy of it.'
     );
   });
 });

@@ -66,13 +66,9 @@ slots on native and AES-GCM-encrypted IndexedDB rows on web. Live credential sta
 boot hydration completes. Native hydration first recovers legacy plaintext values from Preferences,
 then migrates them into secure storage and removes both plaintext copies.
 
-The two native stores differ in where a saved credential can go, deliberately. An iOS Keychain item
-never syncs through iCloud Keychain, and it can move to a new iPhone or iPad inside an encrypted
-computer backup, so AI keeps working after a parent restores that backup onto a new phone. An iCloud
-Backup restores the local keychain only onto the device it came from. Current iOS keeps the item
-after app deletion, which Apple does not guarantee. An Android credential never leaves the device
-(`android:allowBackup="false"`) and is removed with the app. `docs/MOBILE/compliance.md` (Apple
-5.1.1) records the decision.
+Both native stores keep a saved credential on the device: the iOS Keychain item is written
+`whenUnlockedThisDeviceOnly` with iCloud Keychain sync off, and the Android copy is never backed up
+(`android:allowBackup="false"`). `docs/MOBILE/compliance.md` (Apple 5.1.1) records the decision.
 
 ### Loading native plugins (read before adding one)
 

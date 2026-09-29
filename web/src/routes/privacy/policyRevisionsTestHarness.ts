@@ -29,8 +29,8 @@ const POLICY_REVISIONS: readonly { lastUpdated: string; textSha256: Record<Build
   {
     lastUpdated: 'September 28, 2026',
     textSha256: {
-      web: '1fdcd89ff033d092db081e6aef1f0fb9c1452c9412c5b237ec8771fad7f16e3a',
-      native: '42922652d5d69e8cd888a2fedf4d0610a8992b842f2999cefd7b30353f2c0395',
+      web: 'ad84977c6dfff90410f33e6a47a7a89968f1e79afbfbb799570a700ec6b453ad',
+      native: '4ff3fc90a68c4e0ec1a1371a02ee595ec8176ef874c94c1e5af825c213ad67ae',
     },
   },
 ];
