@@ -9,6 +9,7 @@ import { IMAGE_REPORT_FORM_FIELDS } from '$lib/imageReport';
 import { isReportingConfigured } from '$lib/server/github';
 import { MAX_REPORT_REQUEST_BYTES, submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
+import { AI_REPORTING_UNAVAILABLE_MESSAGE } from '$lib/server/imageReportUnavailable';
 import { apiHandler, readFormBody } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -17,10 +18,7 @@ export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; 
 export const POST: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   if (!isReportingConfigured()) {
     return json(
-      {
-        ok: false,
-        error: 'AI reporting is not available right now. Please try again later.',
-      } satisfies ImageReportResponse,
+      { ok: false, error: AI_REPORTING_UNAVAILABLE_MESSAGE } satisfies ImageReportResponse,
       { status: 503 }
     );
   }
