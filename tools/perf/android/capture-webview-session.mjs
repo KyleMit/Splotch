@@ -87,11 +87,15 @@ export async function runAndroidProfile(argv = process.argv.slice(2)) {
   rejectUnknownFlags(['no-build', 'device-id'], argv);
   const build = !parseOrFail(() => readSwitch(argv, 'no-build'));
   const requested = parseOrFail(() => readValueFlag(argv, 'device-id'));
-  const adb = adbOn(resolveAndroidDevice(requested, ADB_ON_PATH));
+  const serial = resolveAndroidDevice(requested, ADB_ON_PATH);
+  const adb = adbOn(serial);
 
   if (build) {
     warnIfNoPerfMarks('npm run perf:android');
-    // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug.
+    // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug, which
+    // installs onto whichever device ANDROID_SERIAL names (every attached one
+    // when unset), so it names the device this run profiles.
+    process.env.ANDROID_SERIAL = serial;
     run('npm', ['run', 'android:run']);
   }
 

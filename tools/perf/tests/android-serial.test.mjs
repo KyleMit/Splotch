@@ -13,6 +13,8 @@ const WEBVIEW_SESSION = join(import.meta.dirname, '..', 'android', 'capture-webv
 // The refusal lands before the first device step, so a run that gets further
 // polls for a WebView socket for tens of seconds; this ends it first.
 const WEBVIEW_REFUSAL_TIMEOUT_MS = 15_000;
+// Distinct from the 1 every refusal exits with, so the install is what ended the run.
+const FAKE_INSTALL_EXIT_STATUS = 3;
 
 const listing = (...rows) => ({
   ok: true,
@@ -190,26 +192,50 @@ describe('perf:android device selection', () => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
   });
 
-  // A fake adb first on PATH lists the rig and logs every call it receives.
-  function runWebviewSession(rig, args) {
+  const readLog = (path) => {
+    const log = existsSync(path) ? readFileSync(path, 'utf8').trim() : '';
+    return log ? log.split('\n') : [];
+  };
+
+  // A fake adb first on PATH lists the rig and logs every call it receives; a
+  // fake npm logs each install with the ANDROID_SERIAL it inherited, then fails
+  // it, which ends the run before the app launch.
+  function runWebviewSession(rig, args, env = {}) {
     const root = mkdtempSync(join(tmpdir(), 'splotch-fake-adb-'));
     roots.push(root);
     const calls = join(root, 'calls.log');
+    const installs = join(root, 'installs.log');
     const listing = join(root, 'devices.txt');
     writeFileSync(listing, rig.out);
     writeFileSync(
       join(root, 'adb'),
       `#!/bin/sh\necho "$*" >> "${calls}"\n[ "$1" = devices ] && cat "${listing}"\nexit 0\n`
     );
+    writeFileSync(
+      join(root, 'npm'),
+      `#!/bin/sh\necho "$ANDROID_SERIAL $*" >> "${installs}"\nexit ${FAKE_INSTALL_EXIT_STATUS}\n`
+    );
     chmodSync(join(root, 'adb'), 0o755);
+    chmodSync(join(root, 'npm'), 0o755);
     const result = spawnSync(process.execPath, [WEBVIEW_SESSION, ...args], {
       encoding: 'utf8',
       timeout: WEBVIEW_REFUSAL_TIMEOUT_MS,
-      env: { ...process.env, PATH: `${root}${delimiter}${process.env.PATH}` },
+      env: { ...process.env, ...env, PATH: `${root}${delimiter}${process.env.PATH}` },
     });
-    const log = existsSync(calls) ? readFileSync(calls, 'utf8').trim() : '';
-    return { ...result, calls: log ? log.split('\n') : [] };
+    return { ...result, calls: readLog(calls), installs: readLog(installs) };
   }
+
+  it('installs the fresh build onto the device it profiles', () => {
+    const run = runWebviewSession(
+      attached(FAKE_ANDROID_SERIAL, EMULATOR),
+      [`--device-id=${EMULATOR}`],
+      { ANDROID_SERIAL: FAKE_ANDROID_SERIAL }
+    );
+
+    expect(run.status).toBe(FAKE_INSTALL_EXIT_STATUS);
+    expect(run.installs).toEqual([`${EMULATOR} run android:run`]);
+    expect(run.calls).toEqual(['devices']);
+  });
 
   it('refuses two attached devices before any device step', () => {
     const run = runWebviewSession(attached(FAKE_ANDROID_SERIAL, EMULATOR), ['--no-build']);
