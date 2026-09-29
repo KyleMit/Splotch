@@ -87,7 +87,7 @@
       <figcaption class="value">splotchy.svg</figcaption>
     </figure>
     <figure>
-      <BrandMark wordmark="Splotch for Android" />
+      <BrandMark suffix="beta" />
       <figcaption class="value">
         brand mark · page/BrandMark.svelte, as PageShell wears it
       </figcaption>

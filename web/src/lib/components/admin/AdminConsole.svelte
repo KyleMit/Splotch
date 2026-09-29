@@ -181,7 +181,7 @@
   }
 </script>
 
-<PageShell title="Admin" wordmark="Splotch Admin">
+<PageShell title="Admin" wordmarkSuffix="Admin">
   {#snippet lede()}
     Manage AI access codes
   {/snippet}
@@ -365,10 +365,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
-  }
-
-  .block :global(.status-message) {
-    margin: 0;
   }
 
   .grant-metrics {

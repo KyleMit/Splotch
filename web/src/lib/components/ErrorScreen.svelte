@@ -75,9 +75,14 @@
     max-width: 320px;
   }
 
+  /* The Button primitive's size="hero", restated with fallbacks because the
+     crash path renders without tokens and so cannot import the primitive.
+     ErrorScreen.heroButton.test.ts holds the shared values equal. */
   .error-restart {
     margin-top: 8px;
-    padding: 14px 32px;
+    min-width: 240px;
+    min-height: 56px;
+    padding: 0 32px;
     border: none;
     border-radius: var(--radius-pill, 999px);
     /* --brand-solid, not --brand: an 18px bold label sits below WCAG's
@@ -87,6 +92,7 @@
     font: inherit;
     font-size: var(--font-size-lg, 18px);
     font-weight: var(--font-weight-bold, 700);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand, #ab71e1) 40%, transparent);
     cursor: pointer;
     transition:
       background var(--duration-base, 0.2s) ease,

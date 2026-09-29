@@ -11,6 +11,7 @@
     { size: 'lg', dimensions: '16px label, 14px vertical padding', use: 'a screen’s one decision' },
     { size: 'md', dimensions: '14px label, 12px vertical padding', use: 'the default' },
     { size: 'sm', dimensions: '14px label, 8px vertical padding', use: 'inline retry, dense rows' },
+    { size: 'hero', dimensions: '18px bold label, 56px pill', use: 'kid-facing recovery' },
   ] as const;
 
   let busy = $state(false);
@@ -52,7 +53,7 @@
     <code>wash</code> is secondary or selected; <code>outline</code> is the quiet secondary for
     dense rows and toolbars; <code>danger</code> confirms something destructive. Disabled drops
     every variant to the same neutral treatment (<code>--control-track</code> fill,
-    <code>--text-soft</code>
+    <code>--text</code>
     label at <code>--disabled-opacity</code>; outline keeps a <code>--border</code> hairline
     instead), so a parked button cannot be mistaken for a live one on either paper. Busy is the
     <code>busy</code>
@@ -84,7 +85,7 @@
       {/each}
     </div>
 
-    <div class="card sizes" role="group" aria-label="Button sizes">
+    <div class="card sizes" role="group" aria-label="Button sizes" style:--size-rows={sizes.length}>
       <span class="card-label">Sizes</span>
       {#each sizes as specimen (specimen.size)}
         <code>{specimen.size}</code>
@@ -175,8 +176,7 @@
     background: var(--brand-wash);
   }
   .states :global(.preview-hover.danger) {
-    background: var(--danger-text);
-    color: var(--danger-wash);
+    background: var(--danger-wash-hover);
   }
   .states :global(.preview-pressed) {
     transform: scale(0.96);
@@ -191,7 +191,7 @@
     gap: var(--space-3);
   }
   .sizes .card-label {
-    grid-row: span 3;
+    grid-row: span var(--size-rows);
   }
   .sizes :global(.btn) {
     justify-self: start;

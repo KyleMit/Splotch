@@ -115,6 +115,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
     'Crayon contribution to a numbered-step digit: tinted in light mode, full --text-strong at night.',
   appBg: 'The ground behind parent-page content (never the drawing paper).',
   surface: 'Modal cards, the palette bar — the default card fill.',
+  surfaceRgb:
+    '--surface as RGB channels, for a fade to the surface that must paint without color-mix().',
   surface2: 'Inset panels and setting cards sitting on --surface.',
   surfaceHover:
     'The one hover fill for quiet controls — paper-toned chrome (modal close disc, Install Banner) included.',
@@ -144,6 +146,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   successWash: 'Success banner and confirmation fills.',
   successText: 'The one success green: ink on --success-wash and confirmation checks/icons alike.',
   dangerWash: 'Destructive-action fills and error banners.',
+  dangerWashHover: 'The hovered step of --danger-wash; keeps --danger-text as its ink.',
   dangerText: 'Ink on --danger-wash.',
   warningWash: 'Warning banners: degraded but working (persistence off, sampled data).',
   warningText: 'Ink on --warning-wash.',

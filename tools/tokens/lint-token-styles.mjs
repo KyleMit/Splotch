@@ -110,9 +110,6 @@ const FONT_SIZE_BASELINE = new Map(
   Object.entries({
     // The button handoff specifies compact matrix captions below the control label ramp.
     'lib/components/styleguide/ButtonSpecimens.svelte': 1,
-    // The wordmark lockup's 10px tagline — brand typography sized to the mark
-    // it locks up with, not UI text on the ramp.
-    'lib/components/page/BrandMark.svelte': 1,
     // The Play feature graphic's display type (128px wordmark, 38px tagline,
     // 24px sub) — sized to a fixed 1024×500 store canvas, not the UI ramp.
     'routes/dev/store-frames/lib/FeatureGraphic.svelte': 3,

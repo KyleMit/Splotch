@@ -95,7 +95,7 @@
   </aside>
 {/snippet}
 
-<PageShell title={sent ? 'Thank you — your report is in.' : 'Send us feedback'} wordmark="Splotch">
+<PageShell title={sent ? 'Thank you — your report is in.' : 'Send us feedback'}>
   {#snippet lede()}
     {#if sent}
       A real person reads every one of these. There's no account attached to it, so we can't write
@@ -181,10 +181,11 @@
   }
 
   /* Three radii on the page, one family: the sheet on xl, the buttons, fields,
-     and the kind control on md, its nested options one step in on sm. The
-     picker primitive already lands on that family; these two don't. */
+     the error banner, and the kind control on md, its nested options one step
+     in on sm. The picker primitive already lands on that family; these don't. */
   .card :global(.report-textarea),
-  .card :global(.report-device-details) {
+  .card :global(.report-device-details),
+  .card :global(.status-message) {
     border-radius: var(--radius-md);
   }
 
@@ -195,9 +196,6 @@
     margin-top: 4px;
   }
 
-  /* A callout in the step ledger's language rather than three lines floating in
-     the corner — the same left-ruled, washed block /beta closes each
-     step with, so the two pages share a second element besides the button. */
   /* Its own line inside the banner: the error is one sentence and the way out is
      another, and running them together reads as a single long apology. */
   .fallback {
@@ -214,6 +212,9 @@
     white-space: nowrap;
   }
 
+  /* A callout in the step ledger's language rather than three lines floating in
+     the corner — the same left-ruled, washed block /beta closes each
+     step with, so the two pages share a second element besides the button. */
   .aside {
     flex: 0 1 250px;
     min-width: 0;
@@ -223,10 +224,13 @@
     background: var(--brand-wash);
   }
 
+  /* A step above the list it heads, so it reads as the callout's title rather
+     than a bold first line. */
   .aside h2 {
-    margin: 0 0 8px;
-    font-size: var(--font-size-sm);
+    margin: 0 0 10px;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
+    line-height: 1.3;
     color: var(--page-ink);
   }
 

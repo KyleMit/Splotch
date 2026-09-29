@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
+  import Icon from '../Icon.svelte';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
 
@@ -20,14 +21,15 @@
     /** The <h1>. Also the only heading the shell owns. */
     title: string;
     /** Small-caps mark beside the crayon strip, e.g. "Splotch for Android". */
-    wordmark: string;
+    /** Forwarded to BrandMark: the word after "Splotch" in the mark. */
+    wordmarkSuffix?: string;
     lede?: Snippet;
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
     children: Snippet;
   }
 
-  let { title, wordmark, lede, actions, children }: Props = $props();
+  let { title, wordmarkSuffix, lede, actions, children }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
   const hydration = createHydratedFlag();
@@ -40,7 +42,7 @@
       <!-- The mark is the masthead's second way home; the strip is decorative
            (aria-hidden), so the wordmark is the link's whole accessible name. -->
       <a class="brand" href={DRAWING_ROUTE}>
-        <BrandMark {wordmark} />
+        <BrandMark suffix={wordmarkSuffix} />
       </a>
     </div>
 
@@ -56,8 +58,12 @@
               aria-controls={ledeId}
               onclick={() => (ledeOpen = !ledeOpen)}
             >
-              Why we ask
-              <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">›</span>
+              About this page
+              <!-- An icon, not a "›" glyph: the glyph sat on the label's
+                   baseline and read smaller than BackLink's chevron above it. -->
+              <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">
+                <Icon name="chevron-right" class="lede-chevron-icon" />
+              </span>
             </button>
           {/if}
           <p class="lede" id={ledeId} class:collapsed={hydration.hydrated && !ledeOpen}>
@@ -248,9 +254,23 @@
     cursor: pointer;
   }
 
+  /* The negative margin hands back the glyph's side bearing, so the toggle's
+     right edge is the chevron's ink rather than empty icon box. */
   .lede-chevron {
-    font-size: var(--font-size-lg);
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    margin-right: -4px;
     transition: transform var(--duration-base) ease;
+  }
+
+  .lede-chevron :global(.lede-chevron-icon) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .lede-chevron :global(.lede-chevron-icon svg) {
+    fill: currentColor;
   }
 
   .lede-chevron.open {

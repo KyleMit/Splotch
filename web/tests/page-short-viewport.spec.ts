@@ -17,7 +17,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       }) => {
         await page.setViewportSize(viewport);
         await page.goto('/feedback');
-        await expect(page.getByRole('button', { name: 'Why we ask' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'About this page' })).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
         await expect(page.getByRole('radiogroup', { name: 'Report type' })).toBeInViewport({
           ratio: 1,
@@ -53,7 +53,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     test('the disclosure remains accessible in both states', async ({ page }) => {
       await page.setViewportSize(SHORT_VIEWPORTS[0]);
       await page.goto('/feedback');
-      const trigger = page.getByRole('button', { name: 'Why we ask' });
+      const trigger = page.getByRole('button', { name: 'About this page' });
       await expect(trigger).toBeVisible();
       const closed = await new AxeBuilder({ page }).analyze();
       expect(closed.violations.filter((v) => ['serious', 'critical'].includes(v.impact!))).toEqual(
@@ -77,7 +77,7 @@ for (const route of ['/feedback', '/changelog', '/beta']) {
       test('the introduction can be opened, closed, and read after rotation', async ({ page }) => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(route);
-        const trigger = page.getByRole('button', { name: 'Why we ask' });
+        const trigger = page.getByRole('button', { name: 'About this page' });
         const lede = page.locator('.lede');
         await expect(trigger).toHaveAttribute('aria-expanded', 'false');
         await expect(lede).toBeHidden();
@@ -119,7 +119,7 @@ for (const route of ['/feedback', '/changelog', '/beta']) {
     const page = await context.newPage();
     await page.goto(route);
     await expect(page.locator('.lede')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Why we ask' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'About this page' })).toHaveCount(0);
     await context.close();
   });
 }
@@ -128,7 +128,7 @@ test('portrait keeps its display heading and visible introduction', async ({ pag
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/feedback');
   await expect(page.locator('.lede-toggle')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Why we ask' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'About this page' })).toBeHidden();
   await expect(page.locator('.lede')).toBeVisible();
   await expect(page.locator('h1')).toHaveCSS('font-size', '34px');
   await expect(page.locator('.page')).toHaveCSS('padding', '0px');
@@ -137,7 +137,7 @@ test('portrait keeps its display heading and visible introduction', async ({ pag
 test('narrow short windows retain the phone reading width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 480 });
   await page.goto('/feedback');
-  await expect(page.getByRole('button', { name: 'Why we ask' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'About this page' })).toBeVisible();
   await expect(page.locator('.page')).toHaveCSS('padding-left', '0px');
   await expect(page.locator('.page')).toHaveCSS('padding-right', '0px');
   await expect(page.locator('.sheet')).toHaveCSS('padding-left', '20px');
@@ -163,6 +163,6 @@ test('the introduction stays readable until the disclosure is interactive', asyn
   } finally {
     releaseScripts();
   }
-  await expect(page.getByRole('button', { name: 'Why we ask' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'About this page' })).toBeVisible();
   await expect(page.locator('.lede')).toBeHidden();
 });

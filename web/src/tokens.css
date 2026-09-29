@@ -52,7 +52,7 @@
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-drawer: cubic-bezier(0.4, 0, 0.2, 1);
-  --disabled-opacity: 0.55;
+  --disabled-opacity: 0.65;
   --shadow-control: 0 1px 4px rgb(0 0 0 / 18%);
   --shadow-pop: 0 8px 32px rgb(0 0 0 / 30%);
   --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
@@ -83,6 +83,7 @@
 
   --app-bg: #f5f5f5;
   --surface: #ffffff;
+  --surface-rgb: 255 255 255;
   --surface-2: #f8f8f8;
   --step-wash-strength: 9%;
   --step-ink-strength: 45%;
@@ -94,19 +95,20 @@
   --control-track-hover: #ccc;
   --slider-notch: rgb(0 0 0 / 22%);
   --text-strong: #333;
-  --text: #555;
+  --text: #474747;
   --text-soft: #666;
   --label-ink: #666;
   --icon-ink: #1f1f1f;
   --icon-muted: #737373;
   --brand-wash: #ede7f6;
-  --brand-wash-hover: #e3d7f5;
+  --brand-wash-hover: #ede1ff;
   --brand-text: #7c50bb;
   --brand-solid: #7c50bb;
   --brand-solid-hover: #6b3fbf;
   --success-wash: #e9f7ec;
   --success-text: #2e7d4f;
   --danger-wash: #fdecec;
+  --danger-wash-hover: #ffe6e6;
   --danger-text: #b04a4a;
   --warning-wash: #fff2d3;
   --warning-text: #895a0a;
@@ -151,6 +153,7 @@
   color-scheme: dark;
   --app-bg: #17171d;
   --surface: #23232b;
+  --surface-rgb: 35 35 43;
   --step-wash-strength: 24%;
   --step-ink-strength: 0%;
   --surface-2: #2d2d37;
@@ -162,9 +165,9 @@
   --control-track-hover: #575765;
   --slider-notch: rgb(255 255 255 / 40%);
   --text-strong: #eceaf2;
-  --text: #c9c7d3;
+  --text: #d3d1dc;
   --text-soft: #bdbbc8;
-  --label-ink: #c9c7d3;
+  --label-ink: #d3d1dc;
   --icon-ink: #dedce8;
   --icon-muted: #a8a6b3;
   --brand-wash: #3b2f4f;
@@ -175,6 +178,7 @@
   --success-wash: #24382b;
   --success-text: #8bcfa4;
   --danger-wash: #422a2c;
+  --danger-wash-hover: #4e3134;
   --danger-text: #e09393;
   --warning-wash: #3e331c;
   --warning-text: #f2d488;
@@ -220,6 +224,7 @@
     color-scheme: dark;
     --app-bg: #17171d;
     --surface: #23232b;
+    --surface-rgb: 35 35 43;
     --step-wash-strength: 24%;
     --step-ink-strength: 0%;
     --surface-2: #2d2d37;
@@ -231,9 +236,9 @@
     --control-track-hover: #575765;
     --slider-notch: rgb(255 255 255 / 40%);
     --text-strong: #eceaf2;
-    --text: #c9c7d3;
+    --text: #d3d1dc;
     --text-soft: #bdbbc8;
-    --label-ink: #c9c7d3;
+    --label-ink: #d3d1dc;
     --icon-ink: #dedce8;
     --icon-muted: #a8a6b3;
     --brand-wash: #3b2f4f;
@@ -244,6 +249,7 @@
     --success-wash: #24382b;
     --success-text: #8bcfa4;
     --danger-wash: #422a2c;
+    --danger-wash-hover: #4e3134;
     --danger-text: #e09393;
     --warning-wash: #3e331c;
     --warning-text: #f2d488;

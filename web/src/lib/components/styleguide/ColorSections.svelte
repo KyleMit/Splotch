@@ -107,6 +107,7 @@
       'successWash',
       'successText',
       'dangerWash',
+      'dangerWashHover',
       'dangerText',
       'warningWash',
       'warningText',
