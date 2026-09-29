@@ -1,7 +1,7 @@
 <script lang="ts">
   import RuleLabel from '$lib/components/design/RuleLabel.svelte';
   import Button from '$lib/components/design/Button.svelte';
-  import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
+  import SidebarToc, { type SidebarTocButtonItem } from '$lib/components/nav/SidebarToc.svelte';
 
   // Composed specimens — the styleguide's bridge from single tokens to real
   // surfaces. Every rule in these specimens is a token reference; each recipe
@@ -15,7 +15,7 @@
     { id: 'color', label: 'Color', group: 'Foundations' },
     { id: 'type', label: 'Type scale', group: 'Foundations' },
     { id: 'motion', label: 'Motion', group: 'Foundations' },
-  ] as const satisfies readonly SidebarTocItem[];
+  ] as const satisfies readonly SidebarTocButtonItem[];
 
   let tocActive = $state<(typeof TOC_ITEMS)[number]['id']>('color');
 </script>
