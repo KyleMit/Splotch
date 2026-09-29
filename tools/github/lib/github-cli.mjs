@@ -37,13 +37,11 @@ export function resolveRepository(repo, run = runGitHub) {
 }
 
 // The number is positional, so a rejection keeps this message instead of parseNumberFlag's
-// `--number` wording, and the String() comparison keeps rejecting a leading zero.
+// `--number` wording.
 export function parseIssueNumber(value) {
   try {
-    const number = parseNumberFlag('number', value, POSITIVE_INTEGER);
-    if (String(number) === value) return number;
+    return parseNumberFlag('number', value, POSITIVE_INTEGER);
   } catch {
-    // Every rejection is reported below.
+    throw new Error(`Expected a positive issue or PR number, got ${value ?? '(missing)'}`);
   }
-  throw new Error(`Expected a positive issue or PR number, got ${value ?? '(missing)'}`);
 }

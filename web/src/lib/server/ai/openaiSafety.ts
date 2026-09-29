@@ -15,7 +15,7 @@ import type {
 // on this repo's red-team corpus it returned a finished image for a drawn gun.
 
 export type SafetyClassification =
-  | { kind: 'image'; data: string; mimeType: string }
+  | { kind: 'image'; data: string; mimeType: string; droppedDeclines: string[] }
   | { kind: 'safety'; reason: string }
   | { kind: 'empty'; reason: string };
 
@@ -111,7 +111,7 @@ function hasTypedRefusal(response: OpenAiResponse): boolean {
 /**
  * The machine-readable declines on a response, each named by where it sits and
  * never by its text: a refusal or policy message can describe the child's
- * drawing, and these names go to the server log.
+ * drawing, and the adapter logs these names.
  */
 function declineSignalNames(response: OpenAiResponse): string[] {
   const code = policyErrorCode(response);
@@ -121,16 +121,6 @@ function declineSignalNames(response: OpenAiResponse): string[] {
     ...(reason ? [`incomplete_details.reason=${reason}`] : []),
     ...(hasTypedRefusal(response) ? ['refusal part'] : []),
   ];
-}
-
-// A completed image wins over a decline beside it, so the child gets the
-// picture and the decline goes unheeded. This line is the only trace that the
-// model or the platform also said no.
-function warnOfDroppedDeclines(response: OpenAiResponse): void {
-  const dropped = declineSignalNames(response);
-  if (dropped.length > 0) {
-    console.warn(`[openai-safety] delivered an image despite ${dropped.join(', ')}`);
-  }
 }
 
 /** The prose the model answered with, across every message part. */
@@ -154,8 +144,12 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
 
   const call = output.find((item) => item.type === 'image_generation_call');
   if (call?.result) {
-    warnOfDroppedDeclines(response);
-    return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
+    return {
+      kind: 'image',
+      data: call.result,
+      mimeType: `image/${outputFormatOf(call)}`,
+      droppedDeclines: declineSignalNames(response),
+    };
   }
 
   const policy = policySignal(response) || typedRefusal(response);

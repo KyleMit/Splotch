@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GENERATE_DEADLINE_MS, VERIFY_KEY_DEADLINE_MS } from '$lib/ai/limits';
 import { openAiProvider } from './openai';
 
@@ -65,6 +65,62 @@ describe('openAiProvider.generateImage', () => {
       kind: 'image',
       data: 'BBBB',
       mimeType: 'image/webp',
+    });
+  });
+
+  describe('with a decline beside the delivered image', () => {
+    let warn: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      warn.mockRestore();
+    });
+
+    it('logs each dropped decline by name only and still returns the image', async () => {
+      create.mockResolvedValue({
+        ...imageResponse,
+        status: 'incomplete',
+        output: [
+          ...imageResponse.output,
+          { type: 'message', content: [{ type: 'refusal', refusal: 'I cannot draw this.' }] },
+        ],
+        error: { code: 'bio_policy', message: 'The drawing shows something blocked.' },
+        incomplete_details: { reason: 'content_filter' },
+      });
+      await expect(openAiProvider.generateImage(request)).resolves.toEqual({
+        kind: 'image',
+        data: 'BBBB',
+        mimeType: 'image/webp',
+      });
+      // An exact match, so neither the refusal prose nor the policy message can
+      // reach the log: either one can describe the child's drawing.
+      expect(warn.mock.calls).toEqual([
+        [
+          '[openai-safety] delivered an image despite error.code=bio_policy, ' +
+            'incomplete_details.reason=content_filter, refusal part',
+        ],
+      ]);
+    });
+
+    it.each([
+      { label: 'an image alone', response: imageResponse },
+      {
+        label: 'a refusal beside a failed tool call',
+        response: {
+          status: 'completed',
+          output: [
+            { type: 'image_generation_call', status: 'failed', result: null },
+            { type: 'message', content: [{ type: 'refusal', refusal: 'I cannot draw this.' }] },
+          ],
+        },
+      },
+    ])('logs nothing for $label, which drops no decline', async ({ response }) => {
+      create.mockResolvedValue(response);
+      await openAiProvider.generateImage(request);
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

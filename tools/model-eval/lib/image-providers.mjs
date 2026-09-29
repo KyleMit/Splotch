@@ -14,6 +14,7 @@
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import OpenAI from 'openai';
+import { imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
 import { ORCHESTRATOR_MODEL, ORCHESTRATOR_REASONING_EFFORT } from './model-eval.mjs';
 
 // Tighten every configurable Gemini harm category to its most aggressive
@@ -36,21 +37,12 @@ const GEMINI_SAFETY_REASONS = new Set([
   'SPII',
 ]);
 
-// The three canonical OpenAI image sizes, keyed by the shape of the input
-// canvas. Gemini infers the aspect from the drawing it is handed; the image tool
-// has to be told, and an aspect mismatch would letterbox the child's own
-// composition, so the harness measures the same mapping production will send.
-const OPENAI_SIZES = { square: '1024x1024', wide: '1536x1024', tall: '1024x1536' };
-// Aspect ratios within this band of 1:1 are treated as square rather than
-// pushed to a 3:2 canvas the drawing never filled.
-const SQUARE_ASPECT_TOLERANCE = 0.15;
-
-export function sizeForAspect(width, height) {
-  if (!width || !height) return OPENAI_SIZES.square;
-  const aspect = width / height;
-  if (Math.abs(aspect - 1) <= SQUARE_ASPECT_TOLERANCE) return OPENAI_SIZES.square;
-  return aspect > 1 ? OPENAI_SIZES.wide : OPENAI_SIZES.tall;
-}
+// Gemini infers the aspect from the drawing it is handed; the image tool has to
+// be told, and an aspect mismatch would letterbox the child's own composition,
+// so the harness asks production's own mapping. Unread dimensions arrive as 0,
+// which production's header reader reports as null, so both render square.
+const imageToolSize = ({ width, height }) =>
+  imageSizeFor(width && height ? { width, height } : null);
 
 const firstLine = (err) => (err?.message || String(err)).split('\n')[0];
 
@@ -202,7 +194,7 @@ async function callOpenAi({
           type: 'image_generation',
           model: variant.model,
           quality: variant.quality,
-          size: sizeForAspect(image.width, image.height),
+          size: imageToolSize(image),
           // Experiment-only extra tool params (e.g. input_fidelity) from the
           // adherence lab; production parity holds when this is absent.
           ...imageToolOverrides,

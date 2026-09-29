@@ -29,12 +29,12 @@ describe('README hero CLI preflight', () => {
 
   afterEach(() => rmSync(directory, { recursive: true, force: true }));
 
-  it.each(['0', '-1', '65536', 'not-a-port'])(
+  it.each(['0', '-1', '65536', 'not-a-port', '080'])(
     'rejects port %s without replacing output',
     (port) => {
       const result = runHeroCli(`--port=${port}`, '--out', output);
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain('Invalid --port');
+      expect(result.stderr).toContain(`--port must be an integer >= 1 and <= 65535, got "${port}"`);
       expect(readFileSync(output)).toEqual(EXISTING_IMAGE);
     }
   );

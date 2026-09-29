@@ -130,6 +130,27 @@ describe('modalDialog', () => {
     }
   });
 
+  it('settles on the close event alone while its frame fallback is held', async () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const heldFrame = vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(0);
+    try {
+      dialog.showModal();
+      dialog.classList.add(DIALOG_CLOSING_CLASS);
+
+      let settled = false;
+      void waitForDialogRetirement(dialog).then(() => (settled = true));
+      expect(heldFrame).toHaveBeenCalledOnce();
+
+      dialog.close();
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(settled).toBe(true);
+    } finally {
+      heldFrame.mockRestore();
+      if (dialog.open) dialog.close();
+      dialog.remove();
+    }
+  });
+
   it('clears an anchored origin when the same dialog reopens without one', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));

@@ -45,7 +45,7 @@ describe('Playwright port isolation', () => {
     );
   });
 
-  it.each(['', 'abc', '1.5', '0', '-1', '65536'])(
+  it.each(['', 'abc', '1.5', '0', '-1', '65536', '080'])(
     'rejects invalid override %j clearly',
     async (value) => {
       await expect(loadShared(value)).rejects.toThrow(
@@ -53,6 +53,12 @@ describe('Playwright port isolation', () => {
       );
     }
   );
+
+  it('accepts the highest TCP port', async () => {
+    const shared = await loadShared('65535');
+
+    expect(shared.playwrightPort).toBe(65_535);
+  });
 
   it('keeps both production configs strict and isolated', async () => {
     process.env.SPLOTCH_E2E_PORT = '43127';

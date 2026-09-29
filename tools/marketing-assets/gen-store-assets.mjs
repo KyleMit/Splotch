@@ -30,6 +30,7 @@ import { chromium } from '@playwright/test';
 import { copyFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
+import { FREE_GENERATION_LIMIT } from '../../web/src/lib/freeGenerations.ts';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 import {
@@ -89,14 +90,22 @@ const RENDER_STATE_TIMEOUT_MS = 30_000;
 // ── Scene setup mocks ───────────────────────────────────────────────────────
 
 // The preview server's real /api/free-generation-grant has no configuration and
-// fails, which hides the AI wand from the drawer — mock a fresh 10-of-10 grant
+// fails, which hides the AI wand from the drawer — mock a fresh, unspent grant
 // so the drawer shows the app as a configured install sees it.
+// Exported for tests/free-grant-stub.test.mjs, which holds its fields to
+// FreeGenerationGrantStatus: this untyped script cannot use `satisfies`.
+export const FRESH_FREE_GRANT = {
+  ok: true,
+  limit: FREE_GENERATION_LIMIT,
+  remaining: FREE_GENERATION_LIMIT,
+};
+
 const mockFreeGrant = (page) =>
   page.route('**/api/free-generation-grant', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 10, exhausted: false }),
+      body: JSON.stringify(FRESH_FREE_GRANT),
     })
   );
 
