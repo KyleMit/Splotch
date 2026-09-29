@@ -226,7 +226,8 @@ async function runSmoke(base, env = {}) {
   let stderr = '';
   child.stdout.on('data', (chunk) => (stdout += chunk));
   child.stderr.on('data', (chunk) => (stderr += chunk));
-  const [code] = await once(child, 'exit');
+  // 'close', not 'exit': Node may emit 'exit' while the child's stdio is still unread.
+  const [code] = await once(child, 'close');
   return { code, stdout, stderr };
 }
 

@@ -51,7 +51,20 @@ function causeMessages(err) {
 
 export function summarize() {
   console.log(`\n${passed} passed, ${failed} failed`);
-  process.exit(failed === 0 ? 0 : 1);
+  return exitWhenFlushed(failed === 0 ? 0 : 1);
+}
+
+// process.exit() discards output a pipe has not accepted yet (Node's "A note on process I/O"), so a
+// run whose reader falls a pipe's capacity behind loses its last lines: the failures and the tally.
+// An empty write calls back only after every earlier write on its stream has flushed. The promise
+// never settles, so `await exitWhenFlushed(code)` stops its caller where process.exit() would.
+export function exitWhenFlushed(code) {
+  return new Promise(() => {
+    let unflushed = 2;
+    const exitAfterBoth = () => --unflushed === 0 && process.exit(code);
+    process.stdout.write('', exitAfterBoth);
+    process.stderr.write('', exitAfterBoth);
+  });
 }
 
 export const json = (res) => res.json().catch(() => null);
