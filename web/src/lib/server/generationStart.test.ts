@@ -24,7 +24,8 @@ vi.mock('./generationJobs', async (importOriginal) => ({
 vi.mock('./config', () => ({ config: { reportTokenSecret: () => 'test-secret' } }));
 vi.mock('$env/dynamic/private', () => ({ env: {} }));
 
-import { startBackgroundGeneration } from './generationStart';
+import { deadlineAfterFailedHandoffMs, startBackgroundGeneration } from './generationStart';
+import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
 
 const context = { free: null, style: null };
 const image = { bytes: new ArrayBuffer(8), mimeType: 'image/png' };
@@ -34,7 +35,7 @@ const start = () => startBackgroundGeneration('https://splotch.art', context, im
 
 beforeEach(() => {
   claimJob.mockReset().mockResolvedValue('fallback-claim');
-  discardJob.mockReset().mockResolvedValue(undefined);
+  discardJob.mockReset().mockResolvedValue(null);
   issueWorkTicket.mockReset().mockReturnValue('ticket');
   markJobPending.mockReset().mockResolvedValue(undefined);
   putJobInput.mockReset().mockResolvedValue(undefined);
@@ -113,7 +114,10 @@ describe('startBackgroundGeneration', () => {
 
     it('still answers in-line when the cleanup fails too', async () => {
       markJobPending.mockRejectedValue(new Error('store unreachable'));
-      discardJob.mockRejectedValue(new Error('store unreachable'));
+      discardJob.mockResolvedValue({
+        failedDeletes: 3,
+        firstFailure: new Error('store unreachable'),
+      });
 
       await expect(start()).resolves.toBeNull();
     });
@@ -161,9 +165,30 @@ describe('startBackgroundGeneration', () => {
     // the bytes. A failed delete must not turn a recoverable handoff failure
     // into a 500.
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('socket hang up')));
-    discardJob.mockRejectedValue(new Error('store unreachable'));
+    discardJob.mockResolvedValue({
+      failedDeletes: 3,
+      firstFailure: new Error('store unreachable'),
+    });
 
     await expect(start()).resolves.toBeNull();
+  });
+
+  // Without this line a drawing left at rest by a failed cleanup has no record
+  // in the function log until the purge reaches it.
+  it('logs the deletes a failed cleanup left behind without naming the job', async () => {
+    const jobId = 'a'.repeat(64);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+    discardJob.mockResolvedValue({
+      failedDeletes: 1,
+      firstFailure: new Error(`delete ${jobId}/input failed`),
+    });
+
+    await start();
+
+    const logged = vi.mocked(console.warn).mock.calls.flat().map(String).join('\n');
+    expect(logged).toContain('failed deletes: 1');
+    expect(logged).toContain('/input failed');
+    expect(logged).not.toContain(jobId);
   });
 
   it('writes nothing at all when the signing secret is unset', async () => {
@@ -172,5 +197,21 @@ describe('startBackgroundGeneration', () => {
     await expect(start()).resolves.toBeNull();
     expect(markJobPending).not.toHaveBeenCalled();
     expect(putJobInput).not.toHaveBeenCalled();
+  });
+});
+
+describe('deadlineAfterFailedHandoffMs', () => {
+  it('leaves the in-line call what the handoff did not spend', () => {
+    expect(deadlineAfterFailedHandoffMs(5_000)).toBe(GENERATE_DEADLINE_MS - 5_000);
+  });
+
+  // Less than the quickest answer the model gives: the call could only end in
+  // the deadline's 502, after it had been paid for.
+  it('refuses when too little is left for the model to answer at all', () => {
+    expect(deadlineAfterFailedHandoffMs(GENERATE_DEADLINE_MS - 1_000)).toBeNull();
+  });
+
+  it('refuses when the handoff spent the whole deadline', () => {
+    expect(deadlineAfterFailedHandoffMs(GENERATE_DEADLINE_MS + 1)).toBeNull();
   });
 });

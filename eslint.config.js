@@ -238,6 +238,13 @@ const ASSERTION_HELPER_PREFIX = 'expect';
 // `expect(paths.has(asset.target), asset.target)`. Playwright's expect takes only the value
 // under test, so its block keeps the default cap.
 const VITEST_EXPECT_MAX_ARGS = 2;
+// The Playwright rules that judge an assertion's own shape rather than the test around it. The
+// shared E2E helpers hold assertions but define no tests, so they get only these.
+const PLAYWRIGHT_ASSERTION_SHAPE_RULES = {
+  'playwright/valid-expect': 'error',
+  'playwright/valid-expect-in-promise': 'error',
+  'playwright/missing-playwright-await': 'error',
+};
 const VACUOUS_TEST_RULES = {
   vitest: {
     'vitest/expect-expect': ['error', { assertFunctionNames: [`${ASSERTION_HELPER_PREFIX}*`] }],
@@ -256,9 +263,7 @@ const VACUOUS_TEST_RULES = {
     'playwright/no-focused-test': 'error',
     'playwright/no-skipped-test': ['error', { allowConditional: true }],
     'playwright/no-conditional-expect': 'error',
-    'playwright/valid-expect': 'error',
-    'playwright/valid-expect-in-promise': 'error',
-    'playwright/missing-playwright-await': 'error',
+    ...PLAYWRIGHT_ASSERTION_SHAPE_RULES,
   },
 };
 
@@ -849,6 +854,22 @@ export default tseslint.config(
       'playwright/valid-title': 'error',
       'playwright/no-get-by-title': 'error',
     },
+  },
+  {
+    // The shared E2E helpers hold the retrying opens every spec leans on, so a dropped await
+    // inside one goes vacuous in every caller. expect-expect and no-conditional-expect judge a
+    // test, and a helper is not one.
+    files: ['web/tests/**/*.ts'],
+    ignores: ['web/tests/**/*.spec.ts'],
+    plugins: { playwright },
+    rules: PLAYWRIGHT_ASSERTION_SHAPE_RULES,
+  },
+  {
+    // A *TestHarness module is imported by the *.test.ts files that share it and can define it()
+    // blocks of its own (describePolicyRevisions), so it gets the whole vacuous-test set.
+    files: ['web/src/**/*TestHarness.ts'],
+    plugins: { vitest },
+    rules: VACUOUS_TEST_RULES.vitest,
   },
   {
     // The ONE type-aware exception to the fast non-type-aware design above: floating promises
