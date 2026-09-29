@@ -15,6 +15,9 @@ export function adminClient(base) {
       method,
       headers: body === undefined ? headers : { 'Content-Type': 'application/json', ...headers },
       body: body === undefined ? undefined : JSON.stringify(body),
+      // A followed 307/308 re-sends the admin secret to wherever it points, plain http included,
+      // past the https check the deployed entries made on the original URL.
+      redirect: 'error',
     });
     return { res, body: await json(res) };
   };

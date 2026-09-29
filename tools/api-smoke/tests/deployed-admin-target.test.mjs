@@ -9,11 +9,13 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const HTTP_TEST_FLAG = 'DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS';
 const servers = [];
 
-async function startRecordingServer() {
+const notFound = (_request, response) => response.writeHead(404).end();
+
+async function startRecordingServer(respond = notFound) {
   const requests = [];
   const server = createServer((request, response) => {
     requests.push(`${request.method} ${request.url}`);
-    response.writeHead(404).end();
+    respond(request, response);
   });
   servers.push(server);
   server.listen(0, '127.0.0.1');
@@ -94,6 +96,22 @@ describe('deployed admin-secret target rule', () => {
 
       expect(result.code, result.stderr).toBe(1);
       expect(server.requests).toContain('POST /api/admin/login');
+    }
+  );
+
+  it.each(entries)(
+    '%s refuses to follow an admin 307 to plain http with the secret',
+    async (script, targetArg) => {
+      const receiver = await startRecordingServer();
+      const target = await startRecordingServer((request, response) => {
+        if (!request.url.startsWith('/api/admin/')) return notFound(request, response);
+        response.writeHead(307, { Location: `${receiver.base}${request.url}` }).end();
+      });
+      const result = await runEntry(script, targetArg(target.base), true);
+
+      expect(result.code, result.stderr).toBe(1);
+      expect(target.requests).toContain('POST /api/admin/login');
+      expect(receiver.requests).not.toContain('POST /api/admin/login');
     }
   );
 });
