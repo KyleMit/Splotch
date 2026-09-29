@@ -22,7 +22,7 @@ import { esc } from '../../lib/html.mjs';
 
 // The brand crayon strip — the app's 7 palette hues. `size` picks a preset:
 // "lg" for the masthead, "sm" for the footer.
-function crayons(size = 'lg') {
+export function crayons(size = 'lg') {
   const hues = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'];
   return (
     `<span class="crayons crayons-${size}" aria-hidden="true">` +
