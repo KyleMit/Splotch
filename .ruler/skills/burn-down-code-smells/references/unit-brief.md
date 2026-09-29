@@ -80,8 +80,12 @@ orchestrator then pauses the queue and asks the user.
   exactly:
   * Every catch-up with `main` starts with the `reconcile-with-main` survey, including the first one
     after review. Merge commits carry the attribution line.
+  * Catch up once, after review. Don't chase `main` if it moves again while your CI runs: each chase
+    costs a CI round, and later moves are the orchestrator's (an integration trial, or a resume).
   * When CI is green on your gated head, stop, and report
-    `ready: PR <n>, head <sha>, gated main <sha>`, copying both SHAs from command output.
+    `ready: PR <n>, head <sha>, gated main <sha>`, copying both SHAs from command output. Take the
+    gated `main` from `git rev-parse HEAD^2` on your merge commit, never from `origin/main`:
+    worktrees share that ref, and another lane's fetch can move it mid-gate.
   * If the orchestrator resumes you because `main` moved, repeat the gate against the new commit.
 
   Apply any broadcast the orchestrator sends before you report ready, and record which path you
@@ -133,6 +137,12 @@ read goes out before the read's output does.
   * Vitest fake timers don't drive Node's `AbortSignal.timeout`.
   * `vi.resetModules()` detaches Svelte's runtime from a test's `$effect.root`.
   * The API smoke uses `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`.
+  * A test that spawns a tool calling `adb` keeps it off real devices by setting `ANDROID_HOME` to
+    an empty directory (`tools/perf/tests/cli-inputs.test.mjs`).
+* **Posting the rival's review:** `tools/rival-agent/post-review.mjs` blocks a finding whose text
+  pairs `serial` or `device-id` with a value containing a digit, even a harmless one such as an
+  emulator name. Post it through the `--sanitized-findings` recovery in
+  `tools/rival-agent/README.md`.
 * **Main-merge checks:** a push to `main` runs fewer checks than a PR (no ADR-integrity job, no
   Dependabot review). Don't wait for a PR-sized count after a merge.
 * **Wait loops:** never key a CI wait on a fixed check count. The count varies by PR: it drops when

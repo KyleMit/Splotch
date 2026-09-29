@@ -60,11 +60,17 @@ another lane landed never arrives through an ungated merge. The worker, after re
    * `unrelated`: merge.
 2. Commits the merge, pushes, and waits for CI on that head.
 3. Stops at shippable and reports `ready: PR <n>, head <sha>, gated main <sha>`. It copies both SHAs
-   from command output.
+   from command output, taking the gated `main` from `git rev-parse HEAD^2` on its merge commit:
+   worktrees share `refs/remotes/origin/main`, so another lane's fetch can move it mid-gate.
 
 What the survey can't see (a shared string, an event name, a storage key) still escalates the merge
 to `coupled` when it turns up in the reading or in a failing check. The worker records which path it
 took in the PR body.
+
+**Catch up once.** The worker runs this gate once, after review, and reports ready against the
+`main` it merged, even if `main` moves again while its CI runs. Chasing each later move costs a CI
+round per move; later moves are the orchestrator's to cover, with an integration trial or a resume
+(below).
 
 ## Merging
 
@@ -82,11 +88,29 @@ The orchestrator handles ready PRs one at a time:
    `gh pr merge <n> --merge --delete-branch --match-head-commit <head>`, then verify it from live
    state (the live-state check in `ship-campaign` step 2). The `--match-head-commit` flag refuses a
    PR whose head moved after its gate.
-4. If `main` moved, resume that worker with the new `main` commit. The worker repeats the gate
-   against it, and the orchestrator moves on to the next ready PR. When the survey says `unrelated`,
-   the worker may run a local trial merge (`git merge --no-commit --no-ff origin/main`, then
-   `npm run check`, `npm run lint`, and its targeted tests) instead of a CI round. It then aborts
-   the trial and reports ready against the new commit. A second consecutive move takes the CI round.
+4. If `main` moved, run an integration trial (below), or resume that worker with the new `main`
+   commit. A resumed worker repeats the gate against it, and the orchestrator moves on to the next
+   ready PR. When the survey says `unrelated`, the worker may run a local trial merge
+   (`git merge --no-commit --no-ff origin/main`, then `npm run check`, `npm run lint`, and its
+   targeted tests) instead of a CI round. It then aborts the trial and reports ready against the new
+   commit. A second consecutive move takes the CI round.
+
+**The integration trial.** When `main` has moved under one or more ready PRs, the orchestrator can
+gate them itself instead of resuming each worker:
+
+1. Survey each PR's head against the current `origin/main`. Only PRs whose verdict is `unrelated`
+   join the trial; admission already keeps their file sets and contracts disjoint from each other.
+2. In a scratch worktree at that `origin/main`, merge the joining heads, then run `npm run check`,
+   `npm run lint`, and `npm run test:browserless` once.
+3. On green, merge the PRs one at a time with `--match-head-commit` at the heads the trial covered,
+   re-reading each PR's live state first and verifying each merge after, as steps 2 and 3 of the
+   merging list do. A PR that moved, or work that reached `main` from outside the trial, voids the
+   trial for what is left.
+
+A PR whose survey says `adjacent` or `coupled` still takes its worker's CI round. A trial failure is
+diagnosed head-versus-base (`ship-campaign` step 3) before any unit is blamed: run the failing test
+alone on the trial merge and on plain `main`. Record each trial in the ledger: its base, the PRs it
+covered, and the commands' results.
 
 When a priority PR is nearly ready and another unit must edit the same file after it, hold the other
 green PRs for a few minutes. The priority PR then merges against the `main` its CI covered, with no
@@ -110,8 +134,10 @@ genuinely needs one locally, the orchestrator schedules it while no other lane i
   one per message; launched together, some are refused with "git metadata that could not be
   resolved".
 * **Every agent shares one account usage limit**: each lane, each auditor, and each helper an agent
-  spawns. Reaching it ends them all at once, so size the lanes by every agent running. Late in a
-  run, prefer finishing open PRs over opening new lanes, so an interruption can't eat the reserve.
+  spawns. Reaching it ends them all at once, so size the lanes by every agent running, and re-read
+  the usage windows before each launch against the thresholds agreed at preflight (`ship-campaign`
+  step 1). Late in a run, prefer finishing open PRs over opening new lanes, so an interruption can't
+  eat the reserve.
 * **Never in parallel:**
   * `profile=performance` units, the device rig, and performance captures;
   * the full Playwright suite and full `npm test`;

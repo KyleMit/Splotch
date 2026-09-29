@@ -107,6 +107,11 @@ fix done before declaring the campaign started.
   campaign, and quote them in the ledger and in the authorization block every unit carries. If they
   say instead that PRs should stay open, run every unit as step 3's reviewer-outage downgrade does:
   `ship-issue`'s default mode, verified as an open, mergeable PR rather than a merge.
+* **Usage windows.** Every agent the campaign runs draws on one account usage limit, and reaching it
+  ends them all at once. Read the plan's usage windows (through the host's usage tool when it has
+  one), agree two thresholds with the user — one where no new unit or agent launches, one where the
+  campaign wraps up (step 5) — and record both in the ledger. Re-read usage before each launch; a
+  window's reset reopens launches.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
 * **Devices.** When any queued unit needs the rig, the performance profile's device preflight
   applies.
@@ -148,10 +153,14 @@ For each unit, finish every step before starting the next:
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
    is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
    that SHA registered and finished green; and, for an issue unit, the issue is closed and
-   `in-progress` is gone. `ship-issue` assigns the issue when it claims it and does not unassign it,
-   so remove that assignee here and re-read the issue to confirm. A free-form unit has no issue to
-   check; its PR body carries the spec, and the ledger records it. Copy every SHA from command
-   output. A report and the API disagreeing is itself a finding for the morning report.
+   `in-progress` is gone. The post-merge jobs, per merge, are the standard jobs of the push `Tests`
+   run. Its WebKit commit gate (fast) is serialized across commits (`.github/workflows/test.yml`)
+   and can run hours behind on a merge-heavy day, so don't wait on it per unit: collect those gates
+   once, before the morning report, and list any still pending there. `ship-issue` assigns the issue
+   when it claims it and does not unassign it, so remove that assignee here and re-read the issue to
+   confirm. A free-form unit has no issue to check; its PR body carries the spec, and the ledger
+   records it. Copy every SHA from command output. A report and the API disagreeing is itself a
+   finding for the morning report.
 5. **Update the ledger** and continue.
 
 **A unit that stops before opening a PR is skipped.** `ship-issue` stops without a PR when the work
