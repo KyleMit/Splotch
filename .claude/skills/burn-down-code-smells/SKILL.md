@@ -60,7 +60,8 @@ the user these questions, all at once, and no others:
 3. **Standards doc.** The final update to `docs/CODING-STANDARDS.md` ships as an open PR for the
    user to approve (recommended) or merges like any other unit.
 4. **Merge approval.** Say explicitly that merges are approved for this campaign (`ship-campaign`
-   step 1). Without it, every unit's PR stays open.
+   step 1), or confirm that every unit's PR stays open. The campaign starts only after one of the
+   two.
 
 Open the tracking issue. Keep the ledger as one comment on it, edited in place. Also keep a private
 queue file under `${TMPDIR:-/tmp}` holding pending clusters, rejected findings, parked questions,

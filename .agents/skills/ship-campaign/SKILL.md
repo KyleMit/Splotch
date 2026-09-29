@@ -104,7 +104,8 @@ fix done before declaring the campaign started.
   unit's gate. Then ask the user to say explicitly, in their own words, that merges are approved for
   this campaign, and quote them in the ledger and in the authorization block every unit carries.
   Without that approval the campaign does not merge as it goes: say plainly that every PR will be
-  left open, and ask whether that is what they want.
+  left open, and ask whether that is what they want. A bare "go" answers neither, so the campaign
+  does not start until the user has approved merges or confirmed that PRs stay open.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
 * **Devices.** When any queued unit needs the rig, the performance profile's device preflight
   applies.
