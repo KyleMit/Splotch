@@ -282,7 +282,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/model-eval/gen-model-inputs.mjs': 512,
   'tools/model-eval/lib/composition-score.mjs': 627,
   'tools/model-eval/lib/model-eval-report.mjs': 763,
-  'tools/page-inventory/capture-page-inventory.mjs': 1025,
+  'tools/page-inventory/capture-page-inventory.mjs': 1023,
   'tools/page-inventory/lib/page-inventory-report.mjs': 557,
   'tools/page-inventory/tests/page-inventory.test.mjs': 928,
   'tools/perf/android/capture-bundled-frames.mjs': 759,
