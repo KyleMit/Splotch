@@ -14,7 +14,7 @@ vi.mock('$lib/server/github', async (original) => ({
   createIssue,
 }));
 
-import type { DeviceInfo } from '$lib/platform/deviceReport';
+import { DEVICE_INFO_FIELDS } from '$lib/platform/deviceReport';
 import { MAX_REPORT_MESSAGE_LENGTH, REPORT_FORM_FIELDS } from '$lib/report';
 import { MAX_REPORT_BODY_BYTES } from '$lib/server/report';
 import { actions } from './+page.server';
@@ -133,20 +133,7 @@ describe('/feedback form action', () => {
   // character; the cap must still admit the longest message the textarea lets a
   // reporter type, beside a device snapshot whose every field is escape-heavy.
   it('accepts the longest message the form allows in its costliest encoding', async () => {
-    const fields = [
-      'app',
-      'platform',
-      'os',
-      'device',
-      'browser',
-      'screen',
-      'viewport',
-      'pixelRatio',
-      'language',
-      'display',
-      'online',
-    ] satisfies (keyof DeviceInfo)[];
-    const device = Object.fromEntries(fields.map((key) => [key, '"'.repeat(200)]));
+    const device = Object.fromEntries(DEVICE_INFO_FIELDS.map((key) => [key, '"'.repeat(200)]));
     const body = new URLSearchParams({
       kind: 'bug',
       message: 'あ'.repeat(MAX_REPORT_MESSAGE_LENGTH),
