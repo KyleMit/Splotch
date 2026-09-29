@@ -61,6 +61,17 @@ describe('fatal', () => {
     expect(printed).toEqual(['\nFATAL: fetch failed', '  caused by: unexpected redirect']);
   });
 
+  it('masks a bearer credential written into any message it prints', () => {
+    const header = new Error(`Authorization: Bearer ${REQUEST_SECRET}== rejected`);
+
+    fatal(new Error(`POST with bearer ${REQUEST_SECRET} failed`, { cause: header }));
+
+    expect(printed).toEqual([
+      '\nFATAL: POST with bearer [redacted] failed',
+      '  caused by: Authorization: Bearer [redacted] rejected',
+    ]);
+  });
+
   it('stops following a cyclic chain after a bounded depth', () => {
     const loop = new Error('loop');
     loop.cause = loop;

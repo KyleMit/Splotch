@@ -7,6 +7,9 @@
 // never the error object, so a request's headers or body cannot reach the log. The cap bounds a
 // cyclic chain.
 const MAX_CAUSE_DEPTH = 5;
+// A message is free text, so a bearer credential (the one the smoke tools send) is masked in every
+// line fatal() prints. The value class is RFC 6750's b64token.
+const BEARER_CREDENTIAL = /\b(Bearer)\s+[\w.~+/-]+=*/gi;
 
 let passed = 0;
 let failed = 0;
@@ -23,9 +26,11 @@ export function check(name, ok, detail = '') {
 
 export function fatal(err) {
   failed++;
-  console.error(`\nFATAL: ${err.message}`);
-  for (const reason of causeMessages(err)) console.error(`  caused by: ${reason}`);
+  console.error(`\nFATAL: ${redactBearer(err.message)}`);
+  for (const reason of causeMessages(err)) console.error(`  caused by: ${redactBearer(reason)}`);
 }
+
+const redactBearer = (text) => String(text).replace(BEARER_CREDENTIAL, '$1 [redacted]');
 
 function causeMessages(err) {
   const reasons = [];
