@@ -33,9 +33,10 @@ import {
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 const RUNNER = join(ROOT, 'tools/page-load/run-lighthouse-ci.mjs');
 const PAGE_LOAD_JOB = 'page-load-performance';
+// Whole lines of the job, indentation aside, so a commented-out line is not mistaken for one.
 const WIRED_LINES = [
   'browsers: chromium',
-  'npm run test:lighthouse:ci -- --port=4197',
+  'run: npm run test:lighthouse:ci -- --port=4197',
   'path: lighthouse-reports/ci/',
   'if-no-files-found: warn',
 ];
@@ -61,8 +62,12 @@ function measurements(value) {
   );
 }
 
-const unwiredLines = (workflow) =>
-  WIRED_LINES.filter((line) => !jobBlock(workflow, PAGE_LOAD_JOB).includes(line));
+function unwiredLines(workflow) {
+  const jobLines = jobBlock(workflow, PAGE_LOAD_JOB)
+    .split('\n')
+    .map((line) => line.trim());
+  return WIRED_LINES.filter((line) => !jobLines.includes(line));
+}
 
 // Every folder these tests judge or fill sits under the system temp folder, and `repository`
 // stands in for the checkout, so no refusal that fails to fire can reach a real one.
@@ -207,10 +212,17 @@ describe('the Lighthouse CI metric contract', () => {
     const job = jobBlock(testWorkflow, PAGE_LOAD_JOB);
     const movedToAnotherJob =
       testWorkflow.replace(job, () => job.replace(line, '')) +
-      `\n  decoy:\n    steps:\n      - run: echo ${line}\n`;
+      `\n  decoy:\n    steps:\n      - name: Decoy\n        ${line}\n`;
 
     expect(movedToAnotherJob).toContain(line);
     expect(unwiredLines(movedToAnotherJob)).toEqual([line]);
+  });
+
+  it.each(WIRED_LINES)('misses "%s" once it is commented out', (line) => {
+    const job = jobBlock(testWorkflow, PAGE_LOAD_JOB);
+    const commentedOut = testWorkflow.replace(job, () => job.replace(line, `# ${line}`));
+
+    expect(unwiredLines(commentedOut)).toEqual([line]);
   });
 
   it('reads the baseline an absolute path names', () => {
