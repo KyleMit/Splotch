@@ -11,7 +11,7 @@
 <script lang="ts">
   import { paletteHex } from '$lib/palette';
   import { colorFamilyShade } from '$lib/hexPickerLayout';
-  import { parentalGateState } from '$lib/state/parentalGate.svelte';
+  import { gateAnswer, parentalGateState } from '$lib/state/parentalGate.svelte';
   import VisuallyHidden from './design/VisuallyHidden.svelte';
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
@@ -27,7 +27,7 @@
   // One dab per answer digit, filled left-to-right as the adult types.
   const dabs = $derived(
     Array.from(
-      { length: String(parentalGateState.x * parentalGateState.y).length },
+      { length: gateAnswer(parentalGateState).length },
       (_, i) => parentalGateState.input[i] ?? ''
     )
   );
