@@ -38,8 +38,11 @@ answer comes from a process listing (`lsof -d cwd`, or `/proc` on Linux), and a 
 always names the process that asked for it. One that does not has failed — `lsof` is off `PATH`, or
 the shell may not inspect processes — and cannot say that a worktree is unused. Both scripts then
 report every unlocked worktree as `skip (use unknown)`, print what the listing needs, and exit 1
-under `--apply` having moved and removed nothing from a live worktree. A listing that names this
-process and hides others still passes; the check catches a listing that failed, not one that lies.
+under `--apply` having moved and removed nothing from a live worktree. An `lsof` that exits non-zero
+still counts, because it does so whenever any process refuses inspection; one killed by a signal or
+cut off at the output buffer does not, because it stops at an arbitrary point. A listing that names
+this process and hides others still passes; the check catches a listing that failed, not one that
+lies.
 
 `worktrees:salvage` skips a locked worktree and one some process has as its cwd, exactly as the
 prune does, and rechecks both immediately before each move — a plan is minutes old by the time
@@ -58,8 +61,7 @@ says so if the fetch fails) and then removes a worktree only when every guard pa
 
 | Outcome              | Guard                                                                        |
 | -------------------- | ---------------------------------------------------------------------------- |
-| `keep`               | Directory already gone, detached, and no ref holds its commit                |
-| `prunable`           | Directory already gone; `--apply` removes that one entry                     |
+| `keep`               | Directory already gone; the entry is left in place (see below)               |
 | `skip (locked)`      | `git worktree lock` was set, with its reason                                 |
 | `skip (use unknown)` | The process listing failed, so nobody can say the worktree is unused         |
 | `skip (in use)`      | A process has its cwd inside (`lsof -d cwd`, or `/proc` on Linux), with pids |
@@ -68,14 +70,14 @@ says so if the fetch fails) and then removes a worktree only when every guard pa
 | `keep`               | `HEAD` is not an ancestor of `origin/main`, with the commit count ahead      |
 | `remove`             | Clean, merged, salvaged, unused — `git worktree remove` without `--force`    |
 
-A worktree whose directory is gone has only its admin entry left, and for a detached `HEAD` that
-entry can be the last reference to its commits: a branch outlives the entry, a detached commit that
-no branch, tag, or remote holds does not. Such a row is a `keep` whose reason names the commit;
-`git branch <name> <commit>` gives it a ref, and the next run reports it `prunable`. Under `--apply`
-each `prunable` entry is removed by path with `git worktree remove`, never with
-`git worktree prune`, which takes no path and drops every prunable entry in the repository — the
-ones outside every root included. Because `git worktree remove` also deletes a directory that
-exists, the entry is read again first and left alone unless git still reports it prunable.
+A worktree whose directory is gone has only its admin entry left, which holds that worktree's `HEAD`
+and `HEAD` reflog. Either can be the last reference to a commit: a detached commit, one a reset left
+only in the reflog, or a branch deleted while still checked out. The script never drops such an
+entry, because neither way to drop one is safe unattended. `git worktree prune` takes no path and
+drops every prunable entry in the repository, the ones outside every root included.
+`git worktree remove <path>` drops one entry, but deletes the directory too if it has come back by
+the time the command runs. Once you have checked what the entry holds, `git worktree remove <path>`
+drops it; `git gc` also expires such entries after `gc.worktreePruneExpire`.
 
 ## Local branches
 

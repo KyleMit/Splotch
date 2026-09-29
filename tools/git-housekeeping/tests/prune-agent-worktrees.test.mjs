@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdirSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { listProcessCwds } from '../lib/process-cwds.mjs';
 import {
   parsePruneWorktreesArgs,
   planWorktreePrune,
   pruneAgentWorktrees,
-  removeVanishedWorktree,
   removeWorktree,
 } from '../prune-agent-worktrees.mjs';
 import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs';
@@ -14,6 +13,7 @@ import { createTempRepo, REAL_REPO_TEST_OPTIONS } from './fixtures/temp-repo.mjs
 const listing = (entries = []) => ({ ok: true, entries });
 const failedListing = () => listProcessCwds({ readers: [() => []] });
 const VANISHED = 'gitdir file points to non-existent location';
+const VANISHED_REASON = `${VANISHED}; its entry holds this worktree's HEAD and reflog, which can be a commit's only reference`;
 
 function outcomes(plan) {
   return Object.fromEntries(plan.rows.map((row) => [row.id, row.outcome]));
@@ -175,79 +175,18 @@ describe('planWorktreePrune on a real repository', REAL_REPO_TEST_OPTIONS, () =>
     expect(fromInside.excluded.map((w) => w.reason)).toContain('current worktree');
   });
 
-  it('reports a worktree whose directory vanished as prunable rather than failing', () => {
-    const gone = addWorktree('gone');
-    rmSync(gone, { recursive: true, force: true });
-
-    const planned = plan();
-
-    expect(outcomes(planned)).toEqual({ gone: 'prunable' });
-    expect(reasons(planned).gone).toMatch(
-      new RegExp(`^${VANISHED}; \\S+ holds detached [0-9a-f]{12}$`)
-    );
-  });
-
-  it('keeps a vanished worktree while its entry is the only reference to a detached commit', () => {
-    const { commit, sh } = fixture;
+  it('keeps every worktree whose directory vanished, merged or not, detached or on a branch', () => {
+    const { commit } = fixture;
+    const merged = addWorktree('merged');
     const detached = addWorktree('detached');
-    const only = commit('work.txt', 'the only copy', 'unmerged work, detached', { cwd: detached });
+    commit('work.txt', 'the only copy', 'unmerged work, detached', { cwd: detached });
     const branched = addWorktree('branched', ['-b', 'wt-ahead', 'main']);
-    commit('ahead.txt', 'a', 'unmerged work, on a branch', { cwd: branched });
-    rmSync(detached, { recursive: true, force: true });
-    rmSync(branched, { recursive: true, force: true });
+    for (const path of [merged, detached, branched]) rmSync(path, { recursive: true, force: true });
 
     const planned = plan();
 
-    expect(outcomes(planned)).toEqual({ detached: 'keep', branched: 'prunable' });
-    expect(reasons(planned)).toEqual({
-      detached: `${VANISHED}, and no ref holds detached ${only} — \`git branch <name> ${only}\` keeps its commits`,
-      branched: `${VANISHED}; branch wt-ahead keeps its commits`,
-    });
-
-    sh(['branch', 'rescued', only]);
-
-    expect(plan().rows.find((row) => row.id === 'detached')).toMatchObject({
-      outcome: 'prunable',
-      reason: `${VANISHED}; rescued holds detached ${only.slice(0, 12)}`,
-    });
-  });
-
-  // `git worktree remove` deletes a directory that exists, ignored files and
-  // all, so a plan that saw none must not be trusted once one is back.
-  it('leaves a worktree whose directory came back after the plan was made', () => {
-    const { root, sh } = fixture;
-    const back = addWorktree('back');
-    mkdirSync(join(back, 'perf-profiles', 'run-1'), { recursive: true });
-    writeFileSync(join(back, 'perf-profiles', 'run-1', 'trace.json'), '{}');
-    const away = join(root, 'unmounted');
-    renameSync(back, away);
-    const planned = plan();
-    expect(outcomes(planned)).toEqual({ back: 'prunable' });
-    renameSync(away, back);
-
-    expect(removeVanishedWorktree(planned.rows[0], planned)).toEqual({
-      outcome: 'kept',
-      reason: 'no longer prunable — rerun to classify it again',
-    });
-    expect(existsSync(join(back, 'perf-profiles', 'run-1', 'trace.json'))).toBe(true);
-    expect(sh(['worktree', 'list', '--porcelain'])).toContain(back);
-  });
-
-  it('leaves a vanished worktree whose commit lost its last ref after the plan was made', () => {
-    const { commit, sh } = fixture;
-    const detached = addWorktree('detached');
-    const only = commit('work.txt', 'the only copy', 'unmerged work, detached', { cwd: detached });
-    sh(['branch', 'rescued', only]);
-    rmSync(detached, { recursive: true, force: true });
-    const planned = plan();
-    expect(outcomes(planned)).toEqual({ detached: 'prunable' });
-    sh(['branch', '-D', 'rescued']);
-
-    expect(removeVanishedWorktree(planned.rows[0], planned)).toEqual({
-      outcome: 'kept',
-      reason: `${VANISHED}, and no ref holds detached ${only} — \`git branch <name> ${only}\` keeps its commits`,
-    });
-    expect(sh(['worktree', 'list', '--porcelain'])).toContain(detached);
+    expect(outcomes(planned)).toEqual({ merged: 'keep', detached: 'keep', branched: 'keep' });
+    expect(new Set(Object.values(reasons(planned)))).toEqual(new Set([VANISHED_REASON]));
   });
 });
 
@@ -293,18 +232,31 @@ describe('pruneAgentWorktrees --apply on a real repository', REAL_REPO_TEST_OPTI
       .map((line) => line.slice('worktree '.length));
   }
 
-  it('drops only the vanished entries it planned, never one outside every root', async () => {
-    const { repo, root, commit } = fixture;
+  // Each entry below is the only reference to something: a commit left only in
+  // the HEAD reflog by a reset, a HEAD naming a branch that was deleted, or a
+  // worktree outside every root, which this script promises never to touch.
+  it('leaves every vanished entry in place, inside the roots and outside them', async () => {
+    const { repo, root, commit, sh } = fixture;
     const merged = addDetachedWorktree(join(agents, 'merged'));
-    const unmerged = addDetachedWorktree(join(agents, 'unmerged'));
-    commit('work.txt', 'the only copy', 'unmerged work, detached', { cwd: unmerged });
+    const reset = addDetachedWorktree(join(agents, 'reset'));
+    commit('work.txt', 'the only copy', 'unmerged work, then reset away', { cwd: reset });
+    sh(['reset', '-q', '--hard', 'main'], { cwd: reset });
+    const branch = join(agents, 'deleted-branch');
+    sh(['worktree', 'add', '-q', '-b', 'doomed', branch, 'main']);
+    const branchReal = realpathSync(branch);
+    sh(['update-ref', '-d', 'refs/heads/doomed']);
     const outside = addDetachedWorktree(join(root, 'elsewhere'));
-    for (const path of [merged, unmerged, outside]) rmSync(path, { recursive: true, force: true });
+    const vanished = [merged, reset, branchReal, outside];
+    for (const path of vanished) rmSync(path, { recursive: true, force: true });
 
     const applied = await run(listing);
 
-    expect(outcomes(applied)).toEqual({ merged: 'pruned', unmerged: 'kept' });
-    expect(listedWorktrees().sort()).toEqual([unmerged, outside, realpathSync(repo)].sort());
+    expect(outcomes(applied)).toEqual({
+      merged: 'kept',
+      reset: 'kept',
+      'deleted-branch': 'kept',
+    });
+    expect(listedWorktrees().sort()).toEqual([realpathSync(repo), ...vanished].sort());
     expect(process.exitCode).toBeUndefined();
   });
 

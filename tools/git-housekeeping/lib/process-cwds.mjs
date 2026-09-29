@@ -3,9 +3,14 @@
 // directory out from under one fails strangely later, so the prune treats a
 // live cwd as "in use" rather than trusting git's clean/merged verdict alone.
 
+import { spawnSync } from 'node:child_process';
 import { readdirSync, readlinkSync } from 'node:fs';
 
-import { hasCommand, tryCapture } from '../../lib/proc.mjs';
+import { hasCommand } from '../../lib/proc.mjs';
+
+// Room for the whole listing, so that running out of it means something went
+// wrong. A busy macOS host with about six hundred processes printed 27.5 KB.
+const LSOF_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
 // `lsof -F` prints one field per line: `p<pid>` opens a process block, `c<cmd>`
 // names it, and each file record contributes `f<fd>` then `n<name>`.
@@ -29,11 +34,22 @@ export function parseLsofCwds(text) {
   return entries;
 }
 
-function readLsofCwds() {
+// lsof exits non-zero when any process refuses inspection, which is every run
+// on a multi-user host, and that partial listing is still the answer. A spawn
+// error or a signal is different: it cuts the output off at an arbitrary
+// point, and a listing cut short can name this process and still miss the one
+// sitting in a worktree. So those read as no listing at all.
+//
+// `maxBufferBytes` is a seam for tests, which cannot cheaply overflow the real
+// buffer.
+export function readLsofCwds({ maxBufferBytes = LSOF_MAX_BUFFER_BYTES } = {}) {
   if (!hasCommand('lsof')) return [];
-  // lsof exits non-zero when any process refuses inspection, which is every
-  // run on a multi-user host; the partial listing is still the answer.
-  return parseLsofCwds(tryCapture('lsof', ['-w', '-d', 'cwd', '-Fpcn']).stdout);
+  const result = spawnSync('lsof', ['-w', '-d', 'cwd', '-Fpcn'], {
+    encoding: 'utf8',
+    maxBuffer: maxBufferBytes,
+  });
+  if (result.error || result.signal) return [];
+  return parseLsofCwds(result.stdout);
 }
 
 function readProcCwds() {

@@ -2,7 +2,8 @@
 // Remove agent worktrees that are clean, merged into the base, hold no
 // unsalvaged evidence, and are nobody's working directory. Plans by default;
 // `--apply` removes. Never touches the main checkout, the current worktree, a
-// worktree outside every root, or any branch.
+// worktree outside every root, a worktree whose directory is gone, or any
+// branch.
 //
 // Usage:
 //   node tools/git-housekeeping/prune-agent-worktrees.mjs [--apply] [--root=<dir>]...
@@ -18,7 +19,7 @@ import {
   unsalvagedEvidence,
   worktreeHold,
 } from './lib/agent-worktrees.mjs';
-import { fetchBase, git, isAncestor, listWorktrees, tryGit } from './lib/git-facts.mjs';
+import { fetchBase, git, isAncestor, tryGit } from './lib/git-facts.mjs';
 import { formatOutcomeLine, formatSummary, outcomeWidth } from './lib/outcome-report.mjs';
 import { listProcessCwds } from './lib/process-cwds.mjs';
 
@@ -45,43 +46,21 @@ export function parsePruneWorktreesArgs(argv) {
   };
 }
 
-// A worktree whose directory is gone leaves only its admin entry. A branch
-// outlives that entry, but a detached HEAD is recorded nowhere else: when no
-// ref holds its commit, dropping the entry leaves the commit unreachable and
-// `git gc` deletes it later. The reason carries the whole commit id because it
-// is the one handle the work can still be recovered by.
-function classifyVanishedWorktree(worktree, cwd) {
-  const { prunable: gone, head } = worktree;
-  if (!worktree.detached) {
-    const kept = worktree.branch
-      ? `branch ${worktree.branch} keeps its commits`
-      : 'its HEAD names no commit';
-    return { outcome: 'prunable', reason: `${gone}; ${kept}` };
-  }
-  const holder = tryGit(
-    ['for-each-ref', '--count=1', '--format=%(refname:short)', `--contains=${head}`],
-    { cwd }
-  );
-  if (!holder.ok) {
-    return {
-      outcome: 'keep',
-      reason: `${gone}, and looking for a ref that holds detached ${head} failed: ${holder.stderr.split('\n')[0]}`,
-    };
-  }
-  if (!holder.stdout) {
-    return {
-      outcome: 'keep',
-      reason: `${gone}, and no ref holds detached ${head} — \`git branch <name> ${head}\` keeps its commits`,
-    };
-  }
+// A worktree whose directory is gone leaves only its admin entry, which holds
+// that worktree's HEAD and HEAD reflog. Either can be the only reference to a
+// commit, and no way of dropping the entry is safe to automate: `git worktree
+// prune` drops every prunable entry in the repository, the ones outside every
+// root included, and `git worktree remove <path>` deletes the directory as well
+// if it has come back by the time the command runs. So the entry is kept.
+function classifyVanishedWorktree(worktree) {
   return {
-    outcome: 'prunable',
-    reason: `${gone}; ${holder.stdout} holds detached ${head.slice(0, 12)}`,
+    outcome: 'keep',
+    reason: `${worktree.prunable}; its entry holds this worktree's HEAD and reflog, which can be a commit's only reference`,
   };
 }
 
 export function classifyWorktree(worktree, { base, processCwds, cwd }) {
-  if (worktree.prunable) return classifyVanishedWorktree(worktree, cwd);
+  if (worktree.prunable) return classifyVanishedWorktree(worktree);
   const held = worktreeHold(worktree, processCwds);
   if (held) return held;
   const evidence = unsalvagedEvidence(worktree.real);
@@ -120,37 +99,17 @@ export function planWorktreePrune({ cwd, roots, base, processCwds, onProgress })
   return { ...discovered, rows };
 }
 
-function refusal(result) {
-  return {
-    outcome: 'kept',
-    reason: `git worktree remove refused: ${result.stderr.split('\n')[0]}`,
-  };
-}
-
 export function removeWorktree(row, { mainCheckout, listCwds }) {
   // Same reason the salvage rechecks: the plan is minutes old and removing a
   // directory under a live session fails strangely later.
   const held = stillHeld(row.real, mainCheckout, listCwds);
   if (held) return held;
   const result = tryGit(['worktree', 'remove', row.real], { cwd: mainCheckout });
-  return result.ok ? { outcome: 'removed', reason: row.reason } : refusal(result);
-}
-
-// Drops one entry, by path. `git worktree prune` takes no path: it drops every
-// prunable entry in the repository, the ones outside every root included.
-// `git worktree remove` is the scoped form, but it also deletes the directory
-// when there is one, passing none of the guards a live worktree gets. So the
-// entry is read again first, and removed only while git still calls it prunable
-// and it still passes the guard the plan applied.
-export function removeVanishedWorktree(row, { mainCheckout }) {
-  const live = listWorktrees(mainCheckout).find((worktree) => worktree.path === row.path);
-  if (!live?.prunable) {
-    return { outcome: 'kept', reason: 'no longer prunable — rerun to classify it again' };
-  }
-  const verdict = classifyVanishedWorktree(live, mainCheckout);
-  if (verdict.outcome !== 'prunable') return { outcome: 'kept', reason: verdict.reason };
-  const result = tryGit(['worktree', 'remove', live.path], { cwd: mainCheckout });
-  return result.ok ? { outcome: 'pruned', reason: verdict.reason } : refusal(result);
+  if (result.ok) return { outcome: 'removed', reason: row.reason };
+  return {
+    outcome: 'kept',
+    reason: `git worktree remove refused: ${result.stderr.split('\n')[0]}`,
+  };
 }
 
 function printReport(plan, { json }) {
@@ -195,14 +154,13 @@ export async function pruneAgentWorktrees(
   if (apply) {
     for (const row of plan.rows) {
       if (row.outcome === 'remove') Object.assign(row, removeWorktree(row, { ...plan, listCwds }));
-      else if (row.outcome === 'prunable') Object.assign(row, removeVanishedWorktree(row, plan));
       else if (row.outcome === 'keep') row.outcome = 'kept';
     }
   }
   printReport(plan, { json });
   const warning = unknownUseWarning(plan.rows);
   if (warning) note(warning);
-  if (!apply) note('Dry run. Pass --apply to act on the `remove` and `prunable` rows.');
+  if (!apply) note('Dry run. Pass --apply to remove the `remove` rows.');
   else if (warning) process.exitCode = 1;
   return plan;
 }
