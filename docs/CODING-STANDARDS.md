@@ -416,10 +416,10 @@ a failed decrypt, so the documented `web/.env` was never read and the library ha
 `rejectUnknownFlags` and `parseNumberFlag` in `tools/lib/proc.mjs`, `parsePerfArgs` in
 `tools/perf/lib/cli-args.mjs`, and `tools/tests/tool-entry-flags.test.mjs` (which also fails a flag
 read in an exported function's parameter default); `max-lines` with `TOOLS_GRANDFATHERED_MAX_LINES`
-in `eslint.config.js`; `no-undef` across `tools/`; `freePort` in `tools/lib/vite-server.mjs` throws
-on a listener outside the checkout, and `ensureDevServer` in `tools/app-driver/lib/app-driver.mjs`
-starts its own server and rejects an answer from any other process
-(`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
+in `eslint.config.js`; `no-undef` across `tools/` and the skill-package scripts; `freePort` in
+`tools/lib/vite-server.mjs` throws on a listener outside the checkout, and `ensureDevServer` in
+`tools/app-driver/lib/app-driver.mjs` starts its own server and rejects an answer from any other
+process (`tools/app-driver/tests/ensure-dev-server.test.mjs`). `generateFromValidatedSources` in
 `tools/ruler/apply-ruler.mjs` runs read-only plans before generating, and the bad-source cases in
 `tools/ruler/tests/apply-ruler.test.mjs` assert that generation never ran. In `cut-release.mjs`,
 `main()` parses the arguments and `chooseVersionCode` decides the version code before the first
