@@ -68,6 +68,29 @@ function jobBlocks(workflow) {
 
 const steps = (job) => job.split(/^(?= {6}- )/m).slice(1);
 
+// Every `permissions` key that is not a block of `scope: level` lines, or the
+// empty mapping that grants nothing.
+function unreadablePermissions(workflow) {
+  const lines = workflow.split('\n');
+  return lines.flatMap((line, index) => {
+    const header = line.match(/^( *)permissions:(.*)$/);
+    if (!header) return [];
+
+    const entryIndent = header[1].length + 2;
+    const entry = new RegExp(`^ {${entryIndent}}[a-z-]+: (?:read|write|none)$`);
+    const end = lines.findIndex(
+      (candidate, at) => at > index && candidate.search(/\S/) < entryIndent
+    );
+    const entries = lines
+      .slice(index + 1, end < 0 ? undefined : end)
+      .filter((candidate) => !candidate.trimStart().startsWith('#'));
+    const grantsNothing = header[2] === ' {}' && entries.length === 0;
+    const readable =
+      header[2] === '' && entries.length > 0 && entries.every((grant) => entry.test(grant));
+    return grantsNothing || readable ? [] : [`line ${index + 1}: ${line.trim()}`];
+  });
+}
+
 function testsJob(id) {
   const tests = workflows.find(({ name }) => name === 'test.yml');
   const job = jobBlocks(tests.text).find((candidate) => candidate.id === id);
@@ -135,6 +158,13 @@ describe('workflow gates', () => {
         .filter((job) => /^ {6}issues: write$/m.test(job.text))
         .map((job) => ({ job: `${name} ${job.id}`, text: job.text }))
     );
+
+    // The holders are found by reading grants line by line, so a grant spelled
+    // any other way is one nothing here holds to account: `write-all`, an
+    // inline mapping, or an entry carrying a comment.
+    it.each(workflows)('$name spells every permissions block one scope per line', ({ text }) => {
+      expect(unreadablePermissions(text)).toEqual([]);
+    });
 
     it('finds the jobs holding a job-level issues: write', () => {
       expect(holders.map(({ job }) => job)).toContain('test.yml webkit-commit-gate-fast-retry');
