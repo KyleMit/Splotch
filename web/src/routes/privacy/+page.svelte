@@ -32,7 +32,13 @@
   import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
   import { createSectionLinks } from './sectionLinks.svelte';
 
-  const LAST_UPDATED = 'September 28, 2026';
+  const LAST_UPDATED = '2026-09-28';
+  const updatedLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(LAST_UPDATED));
   const DESCRIPTION =
     "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.";
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
@@ -73,13 +79,13 @@
 
 <SocialCard path="/privacy" title="Splotch Privacy Policy" description={DESCRIPTION} />
 
-{#snippet feedbackLink()}
+{#snippet feedbackLink(label: string)}
   {#if __IS_CAPACITOR__}
     <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:gatedLink
-      >private feedback form<ExternalMark variant="inline" /></a
+      >{label}<ExternalMark variant="inline" /></a
     >
   {:else}
-    <a href="/feedback">private feedback form</a>
+    <a href="/feedback">{label}</a>
   {/if}
 {/snippet}
 
@@ -90,7 +96,11 @@
       version is easy to remember.
     {/snippet}
 
-    <PolicySummary updated={LAST_UPDATED} />
+    <p class="policy-updated updated">
+      <span class="updated-dot" aria-hidden="true"></span>
+      <span>Updated <time datetime={LAST_UPDATED}>{updatedLabel}</time></span>
+    </p>
+    <PolicySummary />
 
     <RuleLabel>The details</RuleLabel>
 
@@ -257,7 +267,8 @@
             us where to look; it carries report details, never the images. We investigate and
             respond within {IMAGE_REPORT_REVIEW_HOURS} hours. A daily cleanup deletes the report after
             <strong>{IMAGE_REPORT_RETENTION_DAYS} days</strong>. To ask us to delete one sooner, use
-            the {@render feedbackLink()} and include the reference shown after sending.
+            the {@render feedbackLink('private feedback form')} and include the reference shown after
+            sending.
           </p>
           <p>
             If the AI refuses a harmless drawing, a grown-up can choose “Report this refusal”
@@ -357,8 +368,12 @@
           />
           <p>
             If this policy changes, the date at the top changes with it. Questions or concerns? Send
-            them through our {@render feedbackLink()} and we'll take a look.
+            them through our {@render feedbackLink('private feedback form')} and we'll take a look.
           </p>
+          <div class="policy-ask" data-policy-chrome>
+            <strong>Questions about privacy?</strong>
+            {@render feedbackLink('Send us a note')}
+          </div>
         </section>
       </div>
     </div>
@@ -375,6 +390,47 @@
 {/if}
 
 <style>
+  .policy-updated {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: calc(-1 * var(--space-4)) 0 var(--space-6);
+    color: var(--page-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .updated-dot {
+    flex: 0 0 10px;
+    height: 10px;
+    border-radius: var(--radius-blob-1);
+    background: var(--hue-purple);
+  }
+
+  .policy-ask {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    background: var(--brand-wash);
+    font-size: var(--font-size-md);
+  }
+
+  .policy-ask strong {
+    color: var(--page-ink);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .policy-ask a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: var(--font-weight-semibold);
+  }
+
   /* Everything colored here reads PageShell's --page-* palette or a themed app
      token, so the policy follows the parent's night-mode preference like every
      other page. Theme-invariant tokens (--font-size-*, --font-weight-*,
@@ -433,7 +489,7 @@
     min-height: calc(100dvh - var(--spy-line) - var(--page-tail));
   }
 
-  p,
+  .sections p,
   .sections ul {
     max-width: var(--page-measure);
     margin: 0 0 12px;

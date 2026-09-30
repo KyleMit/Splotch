@@ -1,17 +1,10 @@
 <script lang="ts">
   import { paletteHex } from '$lib/palette';
   import { HIGHLIGHTS } from './contents';
-
-  let { updated }: { updated: string } = $props();
+  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
 </script>
 
-<!-- RuleLabel's hairline is terminal (::after), so this variant with the
-     date sitting flush right after the rule is inlined here instead. -->
-<h2 class="short-version">
-  <span>The short version</span>
-  <span class="rule" aria-hidden="true"></span>
-  <span class="updated">Last updated {updated}</span>
-</h2>
+<RuleLabel>The short version</RuleLabel>
 
 <ul class="highlights">
   {#each HIGHLIGHTS as { label, lead, body } (label)}
@@ -23,37 +16,6 @@
 </ul>
 
 <style>
-  /* RuleLabel's look with the last-updated date flush right after the hairline.
-     flex-wrap lets the date drop under the rule rather than squeeze the label;
-     the rule's min-width forces that wrap before the date crowds in. */
-  .short-version {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-    margin: 0;
-    padding-bottom: var(--space-5);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-muted);
-  }
-
-  .short-version .rule {
-    flex: 1;
-    min-width: var(--space-8);
-    height: var(--border-width);
-    background: var(--page-rule);
-  }
-
-  .short-version .updated {
-    text-transform: none;
-    font-weight: var(--font-weight-medium);
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-  }
-
   /* The headline "no ___" promises, as a bordered checklist whose rows lead
      with crayon chips — the one block that escapes the reading measure and
      fills the sheet. The brand washes are the panel's tint on either paper:
