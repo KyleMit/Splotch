@@ -298,6 +298,15 @@
     }
   }
 
+  /* NARROW_PHONE_MIN_WIDTH_PX, less BREAKPOINT_EPSILON_PX; phoneStep.test.ts
+     guards the CSS boundary. The strip is aria-hidden, so the link home keeps
+     its whole accessible name. */
+  @media (max-width: 359.98px) {
+    .brand :global(.crayons) {
+      display: none;
+    }
+  }
+
   /* SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
   @media (max-height: 500px) {
     .page {

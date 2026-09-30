@@ -102,10 +102,16 @@
   }
 
   /* SHORT_PAGE_HEIGHT_PX: PageShell's topbar padding drops to 10px, so the
-     margin follows it and the blob stays inside the bar. */
+     margin follows it, and the blob shrinks inside the unchanged 44px target
+     so it keeps clear of the sheet's top edge. */
   @media (max-height: 500px) {
     .back {
       margin-block: -10px;
+    }
+
+    .back-blob {
+      width: 36px;
+      height: 36px;
     }
   }
 </style>

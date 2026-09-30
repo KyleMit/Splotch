@@ -60,6 +60,7 @@
         <div
           class="radius-box"
           class:pill={key === 'radiusPill'}
+          class:blob={key === 'radiusBlob'}
           style:border-radius={cssVar(key)}
         ></div>
         <code>{toCssVarName(key)}</code>
@@ -234,6 +235,12 @@
 
   .radius-box.pill {
     height: 24px;
+  }
+
+  /* The blob's percentages read as an ellipse on a wide tile; the square it is
+     worn on shows the shape. */
+  .radius-box.blob {
+    width: 40px;
   }
 
   .border-box {

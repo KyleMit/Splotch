@@ -41,6 +41,12 @@ export const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 // CSS sites restate this value, enforced by phoneStep.test.ts.
 export const PHONE_MAX_WIDTH_PX = 540;
 
+// Below this width PageShell's topbar can't hold the back link and the whole
+// brand mark on one row, so the mark drops its decorative crayon strip and keeps
+// the wordmark; 360px phones and up keep both. CSS restates it, enforced by
+// phoneStep.test.ts.
+export const NARROW_PHONE_MIN_WIDTH_PX = 360;
+
 // The large-tablet floor, one step above it: a 13-inch iPad measures 1024 CSS
 // px on its short side (1032 on the M4), so this is the smallest side that
 // admits only the biggest tablets — an 11-inch iPad stays below it in either

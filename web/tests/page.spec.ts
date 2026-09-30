@@ -106,7 +106,11 @@ const backLink = (page: Page) => page.locator('.topbar').getByRole('link').first
 test('a cold visit keeps the start label across client navigation between pages', async ({
   page,
 }) => {
+  // PageShell renders its lede toggle only once hydrated, and only on a short
+  // viewport: the sentinel that the label below is the resolved one, not SSR's.
+  await page.setViewportSize({ width: 812, height: 375 });
   await page.goto('/privacy');
+  await expect(page.getByRole('button', { name: 'About this page' })).toBeVisible();
   await expect(backLink(page)).toHaveText('Start drawing');
 
   await spaNavigate(page, '/changelog');
