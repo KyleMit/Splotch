@@ -4,27 +4,36 @@ import { describe, expect, it } from 'vitest';
 
 const SCRIPT = join(import.meta.dirname, '..', 'launch-overnight.mjs');
 
-describe('an invalid finding count', () => {
-  it.each(['6OO', '0', '1; echo detached'])('exits 2 before launching for %j', (count) => {
-    const result = spawnSync(process.execPath, [SCRIPT, count], {
-      encoding: 'utf8',
-      env: { ...process.env, AGENT_RUNNER: 'unsupported' },
-    });
-
-    expect(result.status).toBe(2);
-    expect(result.stderr.trim()).toBe(
-      `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
-    );
-    expect(result.stdout).toBe('');
+// An unsupported runner fails preflight before any auth or git probe, so a count that passes
+// validation ends there instead of launching a detached run.
+function launch(argv) {
+  return spawnSync(process.execPath, [SCRIPT, ...argv], {
+    encoding: 'utf8',
+    env: { ...process.env, AGENT_RUNNER: 'unsupported' },
   });
+}
+
+describe('an invalid finding count', () => {
+  it.each(['6OO', '0', '01', '0600', '99999999999999999999', '1; echo detached'])(
+    'exits 2 before launching for %j',
+    (count) => {
+      const result = launch([count]);
+
+      expect(result.status).toBe(2);
+      expect(result.stderr.trim()).toBe(
+        `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
+      );
+      expect(result.stdout).toBe('');
+    }
+  );
 });
 
-describe('a positive count with leading zeros', () => {
-  it('reaches preflight instead of rejecting the count', () => {
-    const result = spawnSync(process.execPath, [SCRIPT, '01'], {
-      encoding: 'utf8',
-      env: { ...process.env, AGENT_RUNNER: 'unsupported' },
-    });
+describe('a valid finding count', () => {
+  it.each([
+    { label: 'an explicit 600', argv: ['600'] },
+    { label: 'the default', argv: [] },
+  ])('reaches preflight for $label', ({ argv }) => {
+    const result = launch(argv);
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('unsupported AGENT_RUNNER: unsupported');
