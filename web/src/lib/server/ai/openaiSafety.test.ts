@@ -284,6 +284,21 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
     });
   });
 
+  it('does not name a blank refusal part that sits beside a real decline', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'incomplete',
+        output: [imageCall(), message([{ type: 'refusal', refusal: '   ' }])],
+        incomplete_details: { reason: 'content_filter' },
+      })
+    );
+    expect(r).toEqual({
+      kind: 'safety',
+      reason: 'content_filter',
+      imageDiscardedBy: ['incomplete_details.reason=content_filter'],
+    });
+  });
+
   it('still refuses when a malformed message part sits beside the refusal', () => {
     const r = classifyOpenAiResponse(
       resp({
