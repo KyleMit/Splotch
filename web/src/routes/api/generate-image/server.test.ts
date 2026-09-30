@@ -468,16 +468,22 @@ describe('POST /api/generate-image', () => {
     });
   });
 
-  // ADR-0063's margin under the platform ceiling was sized for a request that
-  // goes straight to the provider. A handoff that failed slowly has spent part of
-  // it, and a provider call started with the full deadline would let the platform
-  // end the request before the route's own 502.
-  describe('after a failed handoff', () => {
+  // ADR-0063's margin under the platform ceiling is sized for a request that
+  // goes straight to the provider. A request falling back after a failed handoff
+  // has spent part of it — on its reservations as well as the handoff — and a
+  // provider call started with the full deadline would let the platform end the
+  // request before the route's own 502.
+  describe('deadline accounting before the provider call', () => {
+    const RESERVATIONS_MS = 3_000;
     const HANDOFF_MS = 7_000;
+    const SPENT_MS = RESERVATIONS_MS + HANDOFF_MS;
 
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['Date'] });
-      mocks.reserveDaily.mockResolvedValue({ reserved: true, remaining: 400 });
+      mocks.reserveDaily.mockImplementation(async () => {
+        vi.setSystemTime(Date.now() + RESERVATIONS_MS);
+        return { reserved: true, remaining: 400 };
+      });
       mocks.acceptsBackground.mockReturnValue(true);
       mocks.startBackground.mockImplementation(async () => {
         vi.setSystemTime(Date.now() + HANDOFF_MS);
@@ -491,14 +497,14 @@ describe('POST /api/generate-image', () => {
       vi.useRealTimers();
     });
 
-    it('gives the in-line call only what the handoff left of the deadline', async () => {
-      mocks.deadlineAfterHandoff.mockReturnValue(17_000);
+    it('gives a fallback only what the whole request left of the deadline', async () => {
+      mocks.deadlineAfterHandoff.mockReturnValue(14_000);
 
       await post();
 
-      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(HANDOFF_MS);
+      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(SPENT_MS);
       expect(mocks.generateImage).toHaveBeenCalledWith(
-        expect.objectContaining({ deadlineMs: 17_000 })
+        expect.objectContaining({ deadlineMs: 14_000 })
       );
     });
 
@@ -512,12 +518,26 @@ describe('POST /api/generate-image', () => {
         ok: false,
         error: 'There was not enough time left to make that creation',
       });
-      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(HANDOFF_MS);
+      expect(mocks.deadlineAfterHandoff).toHaveBeenCalledExactlyOnceWith(SPENT_MS);
       expect(mocks.generateImage).not.toHaveBeenCalled();
       expect(mocks.failGrant).toHaveBeenCalledExactlyOnceWith(
         'a'.repeat(64),
         'upstream',
         'reservation-1'
+      );
+    });
+
+    // A direct request's routine pre-work is charged to the margin rather than
+    // the deadline, because a shorter deadline would fail every direct
+    // generation that finishes just under it (ADR-0063's pre-work amendment).
+    it('keeps the full deadline for a request that never asked for the handoff', async () => {
+      mocks.acceptsBackground.mockReturnValue(false);
+
+      await post();
+
+      expect(mocks.deadlineAfterHandoff).not.toHaveBeenCalled();
+      expect(mocks.generateImage).toHaveBeenCalledWith(
+        expect.objectContaining({ deadlineMs: 1_000 })
       );
     });
   });
