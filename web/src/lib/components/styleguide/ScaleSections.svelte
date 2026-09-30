@@ -24,6 +24,7 @@
     radiusMd: 'controls',
     radiusLg: 'cards & sheets',
     radiusPill: 'pills & toggle tracks',
+    radiusBlob: 'paint blobs',
   };
   const durationShorts: Record<Extract<ScaleKey, `duration${string}`>, string> = {
     durationFast: 'presses & hovers',

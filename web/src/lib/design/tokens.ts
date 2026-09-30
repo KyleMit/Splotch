@@ -57,6 +57,10 @@ export const scale = {
   radiusMd: '12px',
   radiusLg: '16px',
   radiusPill: '999px',
+  // The lopsided paint-blob corner: the parental gate's first operand and the
+  // standalone pages' back link wear it, so the way back to the canvas reads
+  // as the same paint the kid-facing chrome is made of.
+  radiusBlob: '58% 42% 55% 45% / 45% 58% 42% 55%',
 
   borderWidth: '1px',
   focusRingWidth: '2px',

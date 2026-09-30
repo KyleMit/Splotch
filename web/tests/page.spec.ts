@@ -98,6 +98,36 @@ test('client-side nav off the drawing route drops the app-surface locks (effect 
   expect(after.userSelect).not.toBe('none');
 });
 
+// The standalone pages' back link names the way to the canvas by how the
+// visitor arrived (lib/components/page/backLabel.ts): a cold visit is invited
+// to start drawing, a parent who came from the canvas goes back to it.
+const backLink = (page: Page) => page.locator('.topbar').getByRole('link').first();
+
+test('a cold visit keeps the start label across client navigation between pages', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+  await expect(backLink(page)).toHaveText('Start drawing');
+
+  await spaNavigate(page, '/changelog');
+  await expect(page.getByRole('heading', { level: 1, name: 'Changelog' })).toBeVisible();
+  await expectNoReload(page);
+  await expect(backLink(page)).toHaveText('Start drawing');
+  await expect(backLink(page)).toHaveAttribute('href', '/');
+});
+
+test('a visit from the canvas offers the way back, through a reload', async ({ page }) => {
+  await gotoApp(page);
+
+  await spaNavigate(page, '/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoReload(page);
+  await expect(backLink(page)).toHaveText('Back to drawing');
+
+  await page.reload();
+  await expect(backLink(page)).toHaveText('Back to drawing');
+});
+
 // <meta name="theme-color"> is the browser address bar and the PWA status bar.
 // The drawing route is the one page that overrides it — NotchBand tints it with
 // the active drawing color — so leaving that route has to hand the tag back, or

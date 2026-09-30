@@ -29,6 +29,7 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   radiusLg:
     'Everything bigger than a control: cards, grouped panels, modal cards, banners, page sheets.',
   radiusPill: 'Fully-round pills and toggle tracks.',
+  radiusBlob: 'Paint blobs: a square fill that should read as a dab of paint, not a control.',
 
   borderWidth: 'The one hairline width; color comes from a themed border token.',
   focusRingWidth:
