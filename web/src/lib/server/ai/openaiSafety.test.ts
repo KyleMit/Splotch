@@ -17,13 +17,15 @@ const imageCall = (overrides: Record<string, unknown> = {}) => ({
 
 const message = (content: unknown[]) => ({ type: 'message', status: 'completed', content });
 
+// A refusal that threw no finished picture away.
+const refused = (reason: string) => ({ kind: 'safety', reason, imageDiscardedBy: [] });
+
 describe('classifyOpenAiResponse', () => {
   it('returns the image when the tool produced one', () => {
     expect(classifyOpenAiResponse(resp({ status: 'completed', output: [imageCall()] }))).toEqual({
       kind: 'image',
       data: 'AAAA',
       mimeType: 'image/png',
-      droppedDeclines: [],
     });
   });
 
@@ -50,10 +52,7 @@ describe('classifyOpenAiResponse', () => {
         ],
       })
     );
-    expect(r).toEqual({
-      kind: 'safety',
-      reason: "I can't turn that drawing into a picture.",
-    });
+    expect(r).toEqual(refused("I can't turn that drawing into a picture."));
   });
 
   it('treats the SDK typed refusal part as a safety refusal', () => {
@@ -63,7 +62,7 @@ describe('classifyOpenAiResponse', () => {
         output: [message([{ type: 'refusal', refusal: 'I cannot help with that.' }])],
       })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'I cannot help with that.' });
+    expect(r).toEqual(refused('I cannot help with that.'));
   });
 
   it('prefers the image when the model both drew and commented', () => {
@@ -108,7 +107,7 @@ describe('classifyOpenAiResponse', () => {
       const r = classifyOpenAiResponse(
         resp({ status: 'failed', output: [], error: { code, message: 'blocked by policy' } })
       );
-      expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+      expect(r).toEqual(refused('blocked by policy'));
     }
   );
 
@@ -120,10 +119,10 @@ describe('classifyOpenAiResponse', () => {
   });
 
   it('honours a typed refusal even when the image tool also failed', () => {
-    // With no image bytes, a `refusal` content part is machine-readable in
-    // exactly the way the error codes are, so it outranks any reasoning about
-    // what the tool did. Filing it as retryable would offer the child the same
-    // drawing the model just declined.
+    // A `refusal` content part is machine-readable in exactly the way the error
+    // codes are, so it outranks any reasoning about what the tool did. Filing it
+    // as retryable would offer the child the same drawing the model just
+    // declined.
     const r = classifyOpenAiResponse(
       resp({
         status: 'completed',
@@ -133,14 +132,14 @@ describe('classifyOpenAiResponse', () => {
         ],
       })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'I cannot help with that.' });
+    expect(r).toEqual(refused('I cannot help with that.'));
   });
 
   it('reads a content-filter stop off incomplete_details', () => {
     const r = classifyOpenAiResponse(
       resp({ status: 'incomplete', output: [], incomplete_details: { reason: 'content_filter' } })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'content_filter' });
+    expect(r).toEqual(refused('content_filter'));
   });
 
   it('prefers the policy error message over a content-filter stop', () => {
@@ -152,7 +151,7 @@ describe('classifyOpenAiResponse', () => {
         incomplete_details: { reason: 'content_filter' },
       })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+    expect(r).toEqual(refused('blocked by policy'));
   });
 
   it('falls back to the policy error code when its message is empty', () => {
@@ -164,7 +163,7 @@ describe('classifyOpenAiResponse', () => {
         incomplete_details: { reason: 'content_filter' },
       })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'bio_policy' });
+    expect(r).toEqual(refused('bio_policy'));
   });
 
   it('does not mistake a non-policy incomplete reason for a refusal', () => {
@@ -199,12 +198,13 @@ describe('classifyOpenAiResponse', () => {
   });
 });
 
-// ADR-0023 lets a completed image-tool call win. Whether a machine-readable
-// decline should outrank it is a child-safety decision nobody has made, so these
-// pin the order that ships and the names the adapter logs for what it dropped.
+// ADR-0023's 2026-09 amendment: a machine-readable decline outranks a completed
+// image beside it. Each signal is pinned on its own, so narrowing the rule for
+// one of them is a deliberate edit here rather than a silent reorder.
 describe('classifyOpenAiResponse with a completed image beside a decline', () => {
   const REFUSAL_TEXT = 'I cannot draw the thing in this picture.';
   const POLICY_MESSAGE = 'The drawing shows something blocked by policy.';
+  const IMAGE = { kind: 'image', data: 'AAAA', mimeType: 'image/png' };
   let warn: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -224,16 +224,21 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
         status: 'completed',
         output: [imageCall(), message([{ type: 'refusal', refusal: REFUSAL_TEXT }])],
       },
-      dropped: ['refusal part'],
+      reason: REFUSAL_TEXT,
+      discardedBy: ['refusal part'],
     },
     {
       decline: 'a policy error code',
       response: {
         status: 'failed',
         output: [imageCall()],
-        error: { code: 'image_content_policy_violation', message: POLICY_MESSAGE },
+        error: {
+          code: 'image_content_policy_violation',
+          message: POLICY_MESSAGE,
+        },
       },
-      dropped: ['error.code=image_content_policy_violation'],
+      reason: POLICY_MESSAGE,
+      discardedBy: ['error.code=image_content_policy_violation'],
     },
     {
       decline: 'a content_filter stop',
@@ -242,20 +247,24 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
         output: [imageCall()],
         incomplete_details: { reason: 'content_filter' },
       },
-      dropped: ['incomplete_details.reason=content_filter'],
+      reason: 'content_filter',
+      discardedBy: ['incomplete_details.reason=content_filter'],
     },
-  ])('delivers the image over $decline and names it only', ({ response, dropped }) => {
-    // An exact match, so neither the refusal prose nor the policy message can
-    // reach the log: either one can describe the child's drawing.
-    expect(classifyOpenAiResponse(resp(response))).toEqual({
-      kind: 'image',
-      data: 'AAAA',
-      mimeType: 'image/png',
-      droppedDeclines: dropped,
-    });
-  });
+  ])(
+    'refuses over $decline and names only what discarded the image',
+    ({ response, reason, discardedBy }) => {
+      // An exact match, so the image bytes go nowhere and the names carry
+      // neither the refusal prose nor the policy message: either one can
+      // describe the child's drawing.
+      expect(classifyOpenAiResponse(resp(response))).toEqual({
+        kind: 'safety',
+        reason,
+        imageDiscardedBy: discardedBy,
+      });
+    }
+  );
 
-  it('names every dropped decline', () => {
+  it('names every decline that discarded the image', () => {
     const r = classifyOpenAiResponse(
       resp({
         status: 'incomplete',
@@ -264,9 +273,10 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
         incomplete_details: { reason: 'content_filter' },
       })
     );
-    expect(r).toMatchObject({
-      kind: 'image',
-      droppedDeclines: [
+    expect(r).toEqual({
+      kind: 'safety',
+      reason: POLICY_MESSAGE,
+      imageDiscardedBy: [
         'error.code=bio_policy',
         'incomplete_details.reason=content_filter',
         'refusal part',
@@ -274,7 +284,7 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
     });
   });
 
-  it('still delivers the image when a message part beside it is malformed', () => {
+  it('still refuses when a malformed message part sits beside the refusal', () => {
     const r = classifyOpenAiResponse(
       resp({
         status: 'completed',
@@ -285,31 +295,63 @@ describe('classifyOpenAiResponse with a completed image beside a decline', () =>
       })
     );
     expect(r).toEqual({
-      kind: 'image',
-      data: 'AAAA',
-      mimeType: 'image/png',
-      droppedDeclines: ['refusal part'],
+      kind: 'safety',
+      reason: REFUSAL_TEXT,
+      imageDiscardedBy: ['refusal part'],
     });
+  });
+
+  it('still delivers the image when the malformed parts beside it decline nothing', () => {
+    // The refusal reader runs before the image is read, so a part it cannot
+    // parse is skipped rather than thrown on, and does not count as a decline.
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'completed',
+        output: [imageCall(), message([null, 'stray text', 42, { type: 'refusal', refusal: 7 }])],
+      })
+    );
+    expect(r).toEqual(IMAGE);
   });
 
   it.each([
-    { label: 'an image alone', output: [imageCall()] },
+    {
+      label: 'an image alone',
+      response: { status: 'completed', output: [imageCall()] },
+    },
     {
       label: 'an image with a comment',
-      output: [imageCall(), message([{ type: 'output_text', text: 'Here you go!' }])],
+      response: {
+        status: 'completed',
+        output: [imageCall(), message([{ type: 'output_text', text: 'Here you go!' }])],
+      },
     },
     {
       label: 'an image beside a blank refusal part',
-      output: [imageCall(), message([{ type: 'refusal', refusal: '   ' }])],
+      response: {
+        status: 'completed',
+        output: [imageCall(), message([{ type: 'refusal', refusal: '   ' }])],
+      },
     },
-  ])('names no dropped decline for $label', ({ output }) => {
-    expect(classifyOpenAiResponse(resp({ status: 'completed', output }))).toMatchObject({
-      kind: 'image',
-      droppedDeclines: [],
-    });
+    {
+      label: 'an image beside a non-policy stop',
+      response: {
+        status: 'incomplete',
+        output: [imageCall()],
+        incomplete_details: { reason: 'max_output_tokens' },
+      },
+    },
+    {
+      label: 'an image beside an ordinary error code',
+      response: {
+        status: 'failed',
+        output: [imageCall()],
+        error: { code: 'server_error', message: 'boom' },
+      },
+    },
+  ])('delivers $label, which carries no decline', ({ response }) => {
+    expect(classifyOpenAiResponse(resp(response))).toEqual(IMAGE);
   });
 });
-
 describe('isSafetyError', () => {
   it('treats a platform moderation block as a safety error', () => {
     expect(
