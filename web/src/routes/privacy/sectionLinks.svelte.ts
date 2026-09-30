@@ -1,3 +1,4 @@
+import { tick } from 'svelte';
 import { SITE_ORIGIN } from '$lib/siteUrl';
 import { SECTIONS, type SectionId } from './contents';
 
@@ -23,7 +24,10 @@ export function createSectionLinks() {
     try {
       await navigator.clipboard.writeText(sectionUrl(id));
     } catch {
-      if (!disposed && currentRequest === request) location.hash = id;
+      if (!disposed && currentRequest === request) {
+        if (location.hash === `#${id}`) document.getElementById(id)?.scrollIntoView();
+        else location.hash = id;
+      }
       return;
     }
     if (disposed || currentRequest !== request) return;
@@ -32,6 +36,9 @@ export function createSectionLinks() {
     copied = id;
     const section = SECTIONS.find((section) => section.id === id);
     if (!section) throw new Error(`Unknown privacy section: ${id}`);
+    announcement = '';
+    await tick();
+    if (disposed || currentRequest !== request) return;
     announcement = `Link to “${section.label}” copied.`;
     timer = setTimeout(() => {
       copied = null;

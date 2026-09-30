@@ -28,8 +28,7 @@ function renderedSections(page: Page) {
 test('the contents rail links every section by its own heading', async ({ page }) => {
   await page.goto('/privacy');
 
-  // Derived from the sections the page actually renders, not a written list —
-  // this is the drift guard for the id/label list the component keeps twice.
+  // Rendered section ids must agree with the heading and contents metadata.
   const sections = await renderedSections(page);
   expect(sections.length).toBeGreaterThan(0);
 
@@ -108,6 +107,39 @@ for (const clipboard of ['missing', 'rejected'] as const) {
     await expect(anchor).not.toHaveClass(/copied/);
   });
 }
+
+test('a rejected recopy navigates to a section already named in the URL', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await page.goto('/privacy#counting');
+  const section = SECTIONS[2];
+  const anchor = page.locator(`#${section.id} .section-anchor`);
+  await expect(async () => {
+    await anchor.click();
+    await expect(page.getByRole('status')).toHaveText(`Link to “${section.label}” copied.`);
+  }).toPass();
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new Error('Denied'));
+    scrollTo(0, 0);
+  });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await anchor.dispatchEvent('click', { button: 0 });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+});
+
+test('the desktop section-link hit area stays outside the contents rail', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/privacy');
+  const rail = await page.locator('.contents-rail').boundingBox();
+  const anchor = await page.locator('.section-anchor').first().boundingBox();
+  expect(rail).not.toBeNull();
+  expect(anchor).not.toBeNull();
+  expect(anchor!.x).toBeGreaterThanOrEqual(rail!.x + rail!.width);
+});
 
 test('section links reveal on keyboard focus with a full size focus ring', async ({ page }) => {
   await page.goto('/privacy');

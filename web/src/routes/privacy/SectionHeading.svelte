@@ -34,6 +34,8 @@
 
 <style>
   .section-head {
+    --section-link-size: 44px;
+
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -51,9 +53,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
+    flex: 0 0 var(--section-link-size);
+    width: var(--section-link-size);
+    height: var(--section-link-size);
     text-decoration: none;
   }
 
@@ -93,9 +95,13 @@
   }
 
   @media (min-width: 921px) and (hover: hover) {
+    .section-head {
+      gap: calc(var(--page-rail-gutter) - var(--section-link-size));
+    }
+
     .section-anchor {
       order: -1;
-      margin-left: -56px;
+      margin-left: calc(-1 * var(--page-rail-gutter));
     }
   }
 

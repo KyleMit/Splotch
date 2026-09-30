@@ -18,6 +18,8 @@ export const HIGHLIGHTS: { label: PaletteLabel; lead: string; body: string }[] =
   { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
 ];
 
+// Section bodies keep literal ids; privacy.spec.ts guards their agreement with
+// the heading and link metadata from this list.
 export const SECTIONS = [
   { id: 'on-device', label: 'What stays on your device' },
   { id: 'ai-pictures', label: 'Making an AI picture' },

@@ -1,3 +1,4 @@
+import { flushSync } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSectionLinks, sectionUrl } from './sectionLinks.svelte';
 import { SECTIONS } from './contents';
@@ -46,6 +47,32 @@ describe('privacy section links', () => {
     vi.advanceTimersByTime(1500);
     expect(links.copied).toBeNull();
     links.dispose();
+  });
+
+  it('publishes a fresh announcement when the same section is copied again', async () => {
+    const { links } = setup();
+    const announcements: string[] = [];
+    const stop = $effect.root(() => {
+      $effect(() => {
+        announcements.push(links.announcement);
+      });
+    });
+    try {
+      flushSync();
+      await links.copy(new MouseEvent('click'), 'contact');
+      flushSync();
+      await links.copy(new MouseEvent('click'), 'contact');
+      flushSync();
+      expect(announcements).toEqual([
+        '',
+        'Link to “Changes and contact” copied.',
+        '',
+        'Link to “Changes and contact” copied.',
+      ]);
+    } finally {
+      stop();
+      links.dispose();
+    }
   });
 
   it('leaves normal anchor navigation available without a clipboard', async () => {
