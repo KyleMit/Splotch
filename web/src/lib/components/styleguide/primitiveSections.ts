@@ -8,4 +8,5 @@ export const primitiveSections = {
   disclosure: { id: 'disclosure', label: 'Disclosure' },
   scrollCue: { id: 'scroll-cue', label: 'Scroll cue' },
   visuallyHidden: { id: 'visually-hidden', label: 'Visually hidden' },
+  externalMark: { id: 'external-mark', label: 'External mark' },
 } as const;

@@ -132,6 +132,14 @@
     text-wrap: pretty;
   }
 
+  /* Selected text wears a crayon highlighter instead of the system blue. Scoped
+     to the page, so a dialog opening over it (the parental gate, /privacy's
+     Parent Center) keeps the system selection. No color: every ink keeps its
+     own, and --selection-highlight holds each of them at AA. */
+  .page :global(::selection) {
+    background-color: var(--selection-highlight);
+  }
+
   .sheet {
     max-width: 760px;
     margin: 0 auto;

@@ -8,6 +8,7 @@
   import type { ResolvedTheme } from '$lib/theme';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import ScrollCueSpecimens from './ScrollCueSpecimens.svelte';
+  import ExternalMarkSpecimens from './ExternalMarkSpecimens.svelte';
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
@@ -218,6 +219,8 @@
     > menu
   </p>
   <p class="sub-intro">A screen reader reads the line above as “Open the three-dot menu.”</p>
+
+  <ExternalMarkSpecimens />
 </section>
 
 <style>

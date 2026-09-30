@@ -12,6 +12,7 @@
   // revision list move together.
 
   import { onMount } from 'svelte';
+  import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
@@ -69,7 +70,7 @@
 {#snippet feedbackLink()}
   {#if __IS_CAPACITOR__}
     <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:gatedLink
-      >private feedback form</a
+      >private feedback form<ExternalMark variant="inline" /></a
     >
   {:else}
     <a href="/feedback">private feedback form</a>
@@ -158,7 +159,7 @@
               rel="noopener noreferrer"
               use:gatedLink
             >
-              OpenAI Services Agreement</a
+              OpenAI Services Agreement<ExternalMark variant="inline" /></a
             >. By default, OpenAI does not use what we send to train its models — only an account
             that opts in shares content that way. OpenAI does keep a copy to check for abuse. That
             copy is normally kept for up to 30 days; OpenAI's
@@ -168,7 +169,7 @@
               rel="noopener noreferrer"
               use:gatedLink
             >
-              published policy</a
+              published policy<ExternalMark variant="inline" /></a
             > lets it keep one longer where the law requires it or where a copy is needed to stop harm.
             If a safety scan flags a picture as possible child sexual abuse material, OpenAI keeps it
             for a person to review, whatever the account settings say. Those copies are OpenAI's, not

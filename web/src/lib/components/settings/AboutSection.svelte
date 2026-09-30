@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
+  import ExternalMark from '../design/ExternalMark.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import { APP_VERSION } from '$lib/appVersion';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
@@ -24,7 +25,7 @@
     <p class="github-link">
       <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" use:parentalGateLink>
         <Icon name="github" class="github-icon" aria-hidden="true" />
-        View on GitHub
+        View on GitHub<ExternalMark variant="standalone" />
       </a>
     </p>
     <p class="version-text">Version {APP_VERSION}</p>

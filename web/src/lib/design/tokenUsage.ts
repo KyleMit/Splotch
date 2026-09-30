@@ -159,6 +159,10 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   ruleSecondaryOpacity: 'Strength of the second printed margin pass.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
+  selectionHighlight:
+    "Selected text on a standalone page: the highlighter yellow PageShell's ::selection paints. Leaves the text's own ink alone.",
+  externalMarkWash:
+    'The blob behind the arrow on a standalone outbound link (ExternalMark). An inline link inside prose takes --brand-wash instead.',
   holeStroke: 'The dashed outline of the size-eraser hole previews.',
   lineartFilter: 'Coloring-page line art inversion — dark mode turns lines to chalk.',
   lineartBlend: 'The blend mode pairing --lineart-filter.',

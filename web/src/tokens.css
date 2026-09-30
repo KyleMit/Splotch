@@ -121,6 +121,8 @@
   --rule-opacity: 1;
   --rule-secondary-opacity: .6;
   --paper-margin: #f1efeb;
+  --selection-highlight: #fce69e;
+  --external-mark-wash: #f1efeb;
   --hole-stroke: #8a8a93;
   --lineart-filter: none;
   --lineart-blend: multiply;
@@ -192,6 +194,8 @@
   --rule-opacity: .55;
   --rule-secondary-opacity: .33;
   --paper-margin: #1a1922;
+  --selection-highlight: #4e4632;
+  --external-mark-wash: #33333e;
   --hole-stroke: #b9b9c2;
   --lineart-filter: invert(1);
   --lineart-blend: screen;
@@ -264,6 +268,8 @@
     --rule-opacity: .55;
     --rule-secondary-opacity: .33;
     --paper-margin: #1a1922;
+    --selection-highlight: #4e4632;
+    --external-mark-wash: #33333e;
     --hole-stroke: #b9b9c2;
     --lineart-filter: invert(1);
     --lineart-blend: screen;

@@ -272,6 +272,11 @@
     text-wrap: pretty;
   }
 
+  /* The standalone pages' highlighter (PageShell), worn here too. */
+  .page :global(::selection) {
+    background-color: var(--selection-highlight);
+  }
+
   .page :global(p code) {
     white-space: nowrap;
   }
