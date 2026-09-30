@@ -354,3 +354,54 @@ test('copying a sentence leaves out the external mark but its link still announc
   expect(copied).toContain('OpenAI Services Agreement');
   expect(copied).not.toContain('opens outside Splotch');
 });
+
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 375, height: 667 },
+]) {
+  test(`the policy revision date is beside the title above the fold at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/privacy');
+    const updated = page.locator('.policy-updated');
+    await expect(updated).toHaveText('Updated September 28, 2026');
+    await expect(updated).toBeInViewport({ ratio: 1 });
+    await expect(updated.locator('time')).toHaveAttribute('datetime', '2026-09-28');
+    const bounds = await updated.boundingBox();
+    const summary = await page.getByRole('heading', { name: 'The short version' }).boundingBox();
+    expect(bounds!.y + bounds!.height).toBeLessThan(summary!.y);
+  });
+}
+
+test('the contact section offers a full size feedback link after its policy paragraph', async ({
+  page,
+}) => {
+  await page.goto('/privacy#contact');
+  const prompt = page.locator('#contact > .policy-ask');
+  await expect(prompt).toContainText('Questions about privacy?');
+  const link = prompt.getByRole('link', { name: 'Send us a note', exact: true });
+  await expect(link).toHaveAttribute('href', '/feedback');
+  const paragraph = await page.locator('#contact > p').boundingBox();
+  const box = await link.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(box!.y).toBeGreaterThan(paragraph!.y + paragraph!.height);
+  await link.focus();
+  await expect(link).toHaveCSS('outline-style', 'solid');
+  await link.click();
+  await expect(page).toHaveURL(/\/feedback$/);
+});
+
+test('the wide rail stays pinned while all eight sections become active', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/privacy');
+  const rail = page.locator('.contents-rail');
+  for (const section of SECTIONS) {
+    await page.locator(`#${section.id}`).evaluate((node) => node.scrollIntoView());
+    await expect(rail.getByRole('link', { name: section.label })).toHaveAttribute(
+      'aria-current',
+      'location'
+    );
+    await expect.poll(async () => Math.round((await rail.boundingBox())!.y)).toBe(24);
+  }
+});

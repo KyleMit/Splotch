@@ -41,14 +41,25 @@ const POLICY_REVISIONS: readonly { lastUpdated: string; textSha256: Record<Build
 // copy nor an inline tag around a word changes that, while any changed word —
 // including the value of a constant the page interpolates from another module
 // — or link destination does. The chrome around the policy (masthead, contents
-// rail, section anchors) and inside its links (ExternalMark's "opens outside
+// rail, section anchors, the dedicated closing prompt) and inside its links (ExternalMark's "opens outside
 // Splotch" cue) is left out so a shared-component change doesn't read as a
 // policy change.
-function renderedPolicy() {
+function renderedPolicy(html: string, build: Build) {
   const { document } = new Window();
-  document.body.innerHTML = render(PrivacyPage).body;
+  document.body.innerHTML = html;
   for (const anchor of document.querySelectorAll('.section-anchor')) anchor.remove();
   for (const mark of document.querySelectorAll('[data-external-mark]')) mark.remove();
+  const prompt = document.querySelector('#contact > .policy-ask[data-policy-chrome]');
+  if (prompt) {
+    expect(prompt.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Questions about privacy? Send us a note'
+    );
+    expect([...prompt.children].map((child) => child.tagName)).toEqual(['STRONG', 'A']);
+    expect(prompt.querySelector('a')?.getAttribute('href')).toBe(
+      build === 'native' ? 'https://splotch.art/feedback' : '/feedback'
+    );
+    prompt.remove();
+  }
   const blocks = (selector: string) =>
     [...document.querySelectorAll(selector)].map((block) => {
       const text = (block.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -59,13 +70,22 @@ function renderedPolicy() {
     lede: blocks('.lede'),
     highlights: blocks('.highlights li'),
     sections: blocks('.sections section'),
-    updated: document.querySelector('.short-version .updated')?.textContent,
+    updated: document.querySelector('.policy-updated')?.textContent?.replace(/\s+/g, ' ').trim(),
+    datetime: document.querySelector('.policy-updated time')?.getAttribute('datetime'),
   };
+}
+
+function policyHash(html: string, build: Build) {
+  const { lede, highlights, sections } = renderedPolicy(html, build);
+  return createHash('sha256')
+    .update([...lede, ...highlights, ...sections].join('\n\n'))
+    .digest('hex');
 }
 
 export function describePolicyRevisions(build: Build) {
   describe(`privacy policy "Last updated" date in the ${build} build`, () => {
-    const { lede, highlights, sections, updated } = renderedPolicy();
+    const html = render(PrivacyPage).body;
+    const { lede, highlights, sections, updated, datetime } = renderedPolicy(html, build);
     const latest = POLICY_REVISIONS[POLICY_REVISIONS.length - 1];
 
     it('hashes the lede, every summary line, and every contents section', () => {
@@ -75,9 +95,7 @@ export function describePolicyRevisions(build: Build) {
     });
 
     it('moves with the policy text', () => {
-      const textSha256 = createHash('sha256')
-        .update([...lede, ...highlights, ...sections].join('\n\n'))
-        .digest('hex');
+      const textSha256 = policyHash(html, build);
       expect(
         textSha256,
         `The rendered ${build} privacy policy changed. Set LAST_UPDATED in web/src/routes/privacy/+page.svelte to the date this change publishes, then append a revision with that date to POLICY_REVISIONS in web/src/routes/privacy/policyRevisionsTestHarness.ts. Its textSha256.${build} is '${textSha256}'; the other build's suite (npm run test:unit runs both) reports its own.`
@@ -85,7 +103,60 @@ export function describePolicyRevisions(build: Build) {
     });
 
     it('shows the date of the newest revision', () => {
-      expect(updated).toBe(`Last updated ${latest.lastUpdated}`);
+      expect(updated).toBe(`Updated ${latest.lastUpdated}`);
+      expect(datetime).toBe(new Date(`${latest.lastUpdated} UTC`).toISOString().slice(0, 10));
+    });
+
+    it('excludes only the dedicated closing prompt from the policy revision', () => {
+      const { document } = new Window();
+      document.body.innerHTML = html;
+      const prompt = document.querySelector('#contact > .policy-ask[data-policy-chrome]');
+      expect(prompt?.textContent).toContain('Questions about privacy?');
+      expect(prompt?.querySelector('a')?.getAttribute('href')).toBe(
+        build === 'native' ? 'https://splotch.art/feedback' : '/feedback'
+      );
+      const link = prompt!.querySelector('a')!;
+      expect(link.getAttribute('target')).toBe(build === 'native' ? '_blank' : null);
+      expect(link.querySelector('[data-external-mark]') !== null).toBe(build === 'native');
+      expect(document.querySelectorAll('[data-policy-chrome]')).toHaveLength(1);
+      prompt!.setAttribute('data-layout-test', 'changed');
+      expect(policyHash(document.body.innerHTML, build)).toBe(latest.textSha256[build]);
+    });
+
+    it('rejects policy words added inside the excluded closing prompt', () => {
+      const { document } = new Window();
+      document.body.innerHTML = html;
+      const prompt = document.querySelector('#contact > .policy-ask[data-policy-chrome]')!;
+      prompt.append(' We share drawings with advertising partners.');
+      expect(() => policyHash(document.body.innerHTML, build)).toThrow();
+    });
+
+    it('rejects a policy paragraph added inside the excluded closing prompt', () => {
+      const { document } = new Window();
+      document.body.innerHTML = html;
+      const prompt = document.querySelector('#contact > .policy-ask[data-policy-chrome]')!;
+      prompt.appendChild(document.createElement('p'));
+      expect(() => policyHash(document.body.innerHTML, build)).toThrow();
+    });
+
+    it('still detects a policy word changed beside the closing prompt', () => {
+      const { document } = new Window();
+      document.body.innerHTML = html;
+      const paragraph = document.querySelector('#contact > p')!;
+      paragraph.innerHTML = paragraph.innerHTML.replace(
+        'Questions or concerns?',
+        'Questions only?'
+      );
+      paragraph.setAttribute('data-policy-chrome', '');
+      expect(policyHash(document.body.innerHTML, build)).not.toBe(latest.textSha256[build]);
+    });
+
+    it('still detects a policy link destination changed beside the closing prompt', () => {
+      const { document } = new Window();
+      document.body.innerHTML = html;
+      const link = document.querySelector('#contact > p a')!;
+      link.setAttribute('href', '/different-feedback');
+      expect(policyHash(document.body.innerHTML, build)).not.toBe(latest.textSha256[build]);
     });
 
     it('gives every revision its own date', () => {
