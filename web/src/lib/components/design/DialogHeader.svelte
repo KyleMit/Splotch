@@ -95,6 +95,7 @@
   @media (forced-colors: active) {
     .dialog-back {
       border: 2px solid ButtonText;
+      padding: calc(var(--space-3) - 2px);
     }
   }
 
