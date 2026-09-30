@@ -101,3 +101,16 @@ targets, both orientations, the color/eraser states, and the no-cutout case, wit
   bar with `viewport-fit=cover`, which needs on-device verification (revisit `capacitor.config.json`
   `ios.contentInset` if the band doesn't extend under the notch). A non-installed iOS Safari tab
   reports ~0 top inset in portrait, so it shows no band — acceptable (kids use the PWA/native app).
+
+## Amendment — 2026-09: explicit Android edge-to-edge and Capacitor insets
+
+`MainActivity` calls `WindowCompat.enableEdgeToEdge(getWindow())` after bridge creation, so the
+window also draws edge-to-edge on supported Android releases before system enforcement. Navigation
+stays immersive, the legacy status-bar caller still controls portrait/landscape visibility, and the
+CSS Notch Band still owns the cutout color.
+
+The shared `--safe-area-*` properties prefer Capacitor's `--safe-area-inset-*` values with `env()`
+fallbacks. Capacitor SystemBars owns native padding and injects only the remaining CSS insets:
+explicit zero wins when native padding already reserves the space. CSS handling and the initial
+`cover` hint are explicit in the native configuration. The fallback behavior and WebView version
+boundaries are recorded in [the safe-area guide](../SAFE-AREA.md).

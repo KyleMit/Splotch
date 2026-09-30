@@ -17,7 +17,7 @@ on `:root` and every consumer — CSS and the JS probe alike — reads those:
 
 ```css
 :root {
-  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   /* right, bottom, left */
 }
 ```
@@ -28,7 +28,16 @@ are UA-defined, and the `env(x, fallback)` second argument fires only when the v
 fallback is dead code and `env(safe-area-inset-top, 44px)` yields `0px` on your desktop. One level
 of indirection is the only way a harness can render the app under someone else's insets.
 
-Two tests hold the seam together, and both matter:
+On Android native, Capacitor SystemBars injects `--safe-area-inset-*`. Those values take precedence,
+including explicit zero: WebViews before version 140 (or a viewport without `cover`) are padded
+natively and receive zero CSS insets. With WebView 140+ and `viewport-fit=cover`, Capacitor leaves
+system/cutout space to CSS and injects density-independent pixels. The keyboard is padded natively;
+Capacitor injects zero bottom safe area while it is visible. Keep `insetsHandling: "css"` and
+`initialViewportFitValueHint: "cover"` in `capacitor.config.json`; do not add another native inset
+listener or combine the injected and `env()` values. See the installed Capacitor SystemBars source
+and [its configuration reference](https://capacitorjs.com/docs/apis/system-bars).
+
+Three tests hold the seam together:
 
 * `web/src/lib/platform/safeAreaProperties.test.ts` — `app.css` seeds every edge, and no other
   source calls `env(safe-area-inset-*)` directly. A consumer that slips back to `env()` still looks
@@ -36,7 +45,9 @@ Two tests hold the seam together, and both matter:
   the harness.
 * `safe-area-matrix.spec.ts` — at runtime, `var(--safe-area-top)` resolves to the same number as
   `env(safe-area-inset-top)`. The static guard proves nobody bypassed the properties; this proves
-  the properties still carry the value.
+  the properties still carry the value when Capacitor has not supplied one.
+* `capacitor-safe-area.spec.ts` — injected portrait/landscape values and explicit zero override
+  conflicting `env()` values; removing an injected property restores the web fallback.
 
 `measureSafeAreaInsets()` (`lib/platform/safeArea.ts`) reads the numbers with a hidden
 fixed-position probe rather than `getComputedStyle` on the custom property — the property read is
