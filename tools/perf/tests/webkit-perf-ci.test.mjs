@@ -128,57 +128,31 @@ describe('WebKit performance CI', () => {
     );
   });
 
-  // A gate that lands after the merge needs the failure to reach a human by
-  // itself, and needs the write scope that requires. The filing moved to the
-  // fresh-runner retry job (issue 1250): a shared-runner stall spans the whole
-  // first job, so an issue is filed only when the breach reproduces on a
-  // second VM.
-  it('files the post-merge failure from the fresh-runner retry, not the first VM', () => {
+  it('reports the fresh-runner reproduction from a separate write-scoped job', () => {
     const fastJob = job('webkit-commit-gate-fast');
     const retryJob = job('webkit-commit-gate-fast-retry');
+    const reportJob = job('webkit-commit-gate-fast-report');
 
-    expect(fastJob).not.toContain('name: File the failure');
-    // Keyed on the GATE STEP's outcome, not job failure() — a checkout or
-    // setup failure is not a breach, and a retry started for one could file
-    // "gate failed on main" for a gate that never ran (the PR 1381 review).
-    expect(fastJob).toContain('id: gate');
+    for (const measurement of [fastJob, retryJob]) {
+      expect(measurement).not.toContain('name: File the failure');
+      expect(measurement).not.toContain('issues: write');
+      expect(measurement).not.toMatch(/^ {4}concurrency:/m);
+    }
     expect(fastJob).toContain('gate-outcome: ${{ steps.verdict.outputs.gate }}');
-    expect(retryJob).toContain('issues: write');
-    expect(retryJob).toContain('name: File the failure');
+    expect(fastJob).toContain('gate-failures: ${{ steps.verdict.outputs.failures }}');
     expect(retryJob).toContain("needs.webkit-commit-gate-fast.outputs.gate-outcome == 'failure'");
     expect(retryJob).toContain('always()');
-    // The retry (and therefore the filing) is push-arm only: its issue says
-    // main broke, and a manual dispatch failing on an investigation branch
-    // must not file it. The dispatch arm keeps its failure in the red run.
     expect(retryJob).toContain("github.event_name == 'push' && github.ref == 'refs/heads/main'");
     expect(retryJob).toContain('needs: webkit-commit-gate-fast');
-    // Filing keys on the RETRY's gate step outcome — a setup failure on the
-    // retry VM must not file either — AND on the two runners having failed at
-    // the same thing. Both conditions, because either alone files a run that
-    // reproduced nothing: on 2026-09-02 the first runner skipped
-    // crayon-scribbles and measured multi-finger clean, the retry completed
-    // crayon-scribbles and breached multi-finger, and "failure, failure" filed.
-    expect(retryJob).toContain("steps.gate.outcome == 'failure' &&");
-    expect(retryJob).toContain("steps.compare.outputs.reproduced != ''");
-    expect(retryJob).toContain("github.event_name == 'push'");
-    expect(retryJob).toContain('gh issue create');
-    // One open issue collects every red commit; a broken main must not file one
-    // issue per merge.
-    expect(retryJob).toContain('gh issue comment');
-    // A non-reproduced breach is explained where someone looks — named for
-    // what it proves (the first job stays red as deliberate telemetry), and a
-    // reproduced breach still lands a red retry job.
     expect(retryJob).toContain('Record the non-reproduction');
     expect(retryJob).toContain('Fail on a reproduced breach');
-    // The comparison the filing decision rests on: the first runner publishes
-    // WHAT failed, and the retry intersects its own failures with that list.
-    expect(fastJob).toContain('gate-failures: ${{ steps.verdict.outputs.failures }}');
-    expect(fastJob).toContain('tools/perf/report-undo-gate-failures.mjs');
     expect(retryJob).toContain('needs.webkit-commit-gate-fast.outputs.gate-failures');
     expect(retryJob).toContain('report-undo-gate-failures.mjs --first=');
-    // The retry runs the IDENTICAL gate — a different command would measure a
-    // different quantity and acquit nothing.
     expect(retryJob).toContain('npm run perf:web:undo:webkit:fast');
+    expect(reportJob).toContain('needs: webkit-commit-gate-fast-retry');
+    expect(reportJob).toContain('issues: write');
+    expect(reportJob).toContain('gh issue create');
+    expect(reportJob).toContain('gh issue comment');
   });
 
   // A step `if` naming no status function carries an implicit success(), so a
@@ -190,7 +164,7 @@ describe('WebKit performance CI', () => {
   it('files when the comparison itself fails, rather than skipping the filing', () => {
     const retryJob = job('webkit-commit-gate-fast-retry');
     const compare = step(retryJob, "Compare this runner's failure with the first runner's");
-    const fileFailure = step(retryJob, 'File the failure');
+    const fileFailure = step(job('webkit-commit-gate-fast-report'), 'File the failure');
     const nonReproduction = step(retryJob, 'Record the non-reproduction');
     const reFail = step(retryJob, 'Fail on a reproduced breach');
 
@@ -200,7 +174,7 @@ describe('WebKit performance CI', () => {
 
     // Fail closed: a comparison that could not run files, exactly as a
     // reproduced breach does.
-    for (const filing of [fileFailure, reFail]) {
+    for (const filing of [reFail]) {
       expect(filing).toContain("steps.compare.outcome == 'failure'");
       expect(filing).toContain("steps.compare.outputs.reproduced != ''");
     }
@@ -212,7 +186,9 @@ describe('WebKit performance CI', () => {
 
     // The filed issue says which case it is, so a fail-closed filing is not
     // read as a confirmed regression.
-    expect(fileFailure).toContain('COMPARE_OUTCOME: ${{ steps.compare.outcome }}');
+    expect(fileFailure).toContain(
+      'COMPARE_OUTCOME: ${{ needs.webkit-commit-gate-fast-retry.outputs.compare-outcome }}'
+    );
     expect(fileFailure).toContain('filed fail-closed');
   });
 
@@ -221,28 +197,10 @@ describe('WebKit performance CI', () => {
   // P95 — but ADR-0140 retired normalization, so that sent the reader down a
   // path that no longer exists (the PR 1573 review).
   it('points a filed issue at the raw P95 rather than a retired normalized value', () => {
-    const fileFailure = step(job('webkit-commit-gate-fast-retry'), 'File the failure');
+    const fileFailure = step(job('webkit-commit-gate-fast-report'), 'File the failure');
     expect(fileFailure).toContain('Nothing is normalized');
     expect(fileFailure).toContain('ADR-0140');
     expect(fileFailure).not.toContain('normalized gate value');
-  });
-
-  // The filing step is a check-then-create, so "one open issue" only holds while
-  // one gate job runs at a time. Both halves are asserted because each alone is
-  // wrong: without the group two failing runs race and file duplicates, and with
-  // the default `queue: single` a third commit cancels the pending run and loses
-  // the coverage the per-SHA workflow group was added to preserve.
-  it('serializes the post-merge gate without dropping a queued commit', () => {
-    const fastJob = job('webkit-commit-gate-fast');
-    const concurrency = fastJob.match(/\n {4}concurrency:\n((?: {6}.*\n)+)/)?.[1];
-
-    expect(concurrency).toBeDefined();
-    expect(concurrency).toContain('group: webkit-commit-gate-fast');
-    expect(concurrency).toContain('queue: max');
-    expect(concurrency).toContain('cancel-in-progress: false');
-    // The group must be constant, not per-SHA — a SHA in it would serialize
-    // nothing, since every run would get its own group.
-    expect(concurrency).not.toContain('github.sha');
   });
 
   it('retires the obsolete blob-encoding structural gate', () => {

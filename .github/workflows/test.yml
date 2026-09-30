@@ -366,19 +366,6 @@ jobs:
       (github.event_name == 'workflow_dispatch' && contains(fromJSON('["fast", "both"]'), inputs.gate))
     runs-on: macos-latest
     timeout-minutes: 15
-    # Serialized across commits, deliberately against the per-SHA workflow group
-    # above, in one group shared with webkit-commit-gate-fast-retry. That job's
-    # filing step is a check-then-create, so two failing retries reaching it
-    # together would both find no open issue and both create one. One gate job
-    # at a time, first run or retry, makes that check atomic by construction.
-    # This job files nothing, so it holds no issues scope.
-    # `queue: max` is load-bearing: the default `queue: single` cancels the
-    # pending run when a third commit lands, which would reopen the very
-    # coverage hole the per-SHA workflow group exists to close.
-    concurrency:
-      group: webkit-commit-gate-fast
-      cancel-in-progress: false
-      queue: max
     permissions:
       contents: read
     outputs:
@@ -475,16 +462,12 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     timeout-minutes: 15
-    # The group webkit-commit-gate-fast declares, where the reasoning is. This
-    # job's membership is the one the filing step below depends on;
-    # tools/tests/workflow-gates.test.mjs pins it.
-    concurrency:
-      group: webkit-commit-gate-fast
-      cancel-in-progress: false
-      queue: max
     permissions:
       contents: read
-      issues: write
+    outputs:
+      gate-outcome: ${{ steps.gate.outcome }}
+      compare-outcome: ${{ steps.compare.outcome }}
+      reproduced: ${{ steps.compare.outputs.reproduced }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -494,7 +477,7 @@ jobs:
       # confirmation already re-measures, and the 2026-08-26 failure breached
       # both halves with a 197 ms stall spanning them. A fresh runner is the
       # only rerun that changes the environment the breach happened in.
-      # continue-on-error so the filing/acquittal steps below always run from
+      # continue-on-error so the comparison/acquittal steps below run from
       # this step's recorded outcome; the last step re-fails the job when the
       # breach reproduced, so a real regression still lands a red retry.
       - name: Re-run the fast WebKit commit gate on a fresh runner
@@ -524,16 +507,11 @@ jobs:
       # and asking anyway would report the uncomparable sentinel for a run that
       # reproduced nothing because there was nothing to reproduce.
       #
-      # continue-on-error so THIS step's failure stays readable as an outcome
-      # instead of skipping the steps below it. The reporter is not guaranteed
-      # to exit 0 — it deliberately rethrows a TypeError/ReferenceError so a
-      # broken reporter or a malformed artifact cannot masquerade as "no
-      # failures" (issue 1296) — and a step `if` naming no status function
-      # carries an implicit success(), so a crashed comparator would skip both
-      # `File the failure` and `Fail on a reproduced breach` and leave a real
-      # breach unreported on a red main. The conditions below therefore read
-      # `steps.compare.outcome` as well as its output, and a failed comparison
-      # files (the PR 1573 review).
+      # continue-on-error lets the remaining retry steps read this outcome.
+      # The comparator deliberately rethrows TypeError/ReferenceError rather
+      # than let a malformed artifact masquerade as no failures (issue 1296).
+      # Non-reproduction requires a successful comparison; the downstream
+      # reporter reads its outcome and files a failed comparison fail-closed.
       - name: Compare this runner's failure with the first runner's
         id: compare
         if: steps.gate.outcome == 'failure'
@@ -580,6 +558,35 @@ jobs:
             echo 'on the same scenario.'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # continue-on-error above kept this job green so far; a reproduced
+      # breach must still land a red retry job.
+      - name: Fail on a reproduced breach
+        if: >-
+          steps.gate.outcome == 'failure' &&
+          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
+        run: exit 1
+
+  webkit-commit-gate-fast-report:
+    name: WebKit commit gate (failure report)
+    needs: webkit-commit-gate-fast-retry
+    if: >-
+      !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.webkit-commit-gate-fast-retry.outputs.gate-outcome == 'failure' &&
+      (needs.webkit-commit-gate-fast-retry.outputs.compare-outcome == 'failure' ||
+      needs.webkit-commit-gate-fast-retry.outputs.reproduced != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Check-then-create must run under one constant lock to prevent duplicate
+    # issues. queue:max retains up to 100 pending reporters rather than replacing
+    # an existing pending reporter; additional pending jobs can still be canceled.
+    concurrency:
+      group: webkit-commit-gate-fast-report
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      issues: write
+    steps:
       # A post-merge gate nobody is watching is not a gate. One open issue
       # collects every red commit until it is closed, so a broken main does not
       # file one issue per merge.
@@ -593,14 +600,12 @@ jobs:
       # open or append a false production-breakage report. A dispatch failure
       # is delivered by the red run itself, to the person who fired it.
       - name: File the failure
-        if: >-
-          steps.gate.outcome == 'failure' && github.event_name == 'push' &&
-          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
         env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          REPRODUCED: ${{ steps.compare.outputs.reproduced }}
-          COMPARE_OUTCOME: ${{ steps.compare.outcome }}
+          REPRODUCED: ${{ needs.webkit-commit-gate-fast-retry.outputs.reproduced }}
+          COMPARE_OUTCOME: ${{ needs.webkit-commit-gate-fast-retry.outputs.compare-outcome }}
         run: |
           verdict="on two runners, in the same way: ${REPRODUCED}"
           if [[ "$COMPARE_OUTCOME" != 'success' ]]; then
@@ -631,14 +636,6 @@ jobs:
           else
             gh issue create --title "$title" --label type:bug --label area:ci-testing --body-file "$body_file"
           fi
-
-      # continue-on-error above kept this job green so far; a reproduced
-      # breach must still land a red retry job.
-      - name: Fail on a reproduced breach
-        if: >-
-          steps.gate.outcome == 'failure' &&
-          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
-        run: exit 1
 
   webkit-commit-gate-full:
     name: WebKit commit gate (full)
