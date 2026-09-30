@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { ActionResult } from '@sveltejs/kit';
 import { supportEmail } from '../src/lib/supportEmail';
 import { expectNoReload, spaNavigate } from './helpers';
 
@@ -234,6 +235,41 @@ for (const kind of ['bug', 'feature'] as const) {
     await expectNoReload(page);
   });
 }
+
+test('Back from the thank-you opens an empty form, not the report just sent', async ({ page }) => {
+  const sentRedirect: ActionResult = {
+    type: 'redirect',
+    status: 303,
+    location: '/feedback?sent=1',
+  };
+  await page.route('**/feedback', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await route.fulfill({ json: sentRedirect });
+  });
+  await page.goto('/feedback');
+  await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
+
+  // Every field leaves its default — the device box is ticked while the kind
+  // is still a bug — so the form Back returns to has to put all three back.
+  await retryClick(
+    page,
+    () => page.getByRole('checkbox').check(),
+    () => expect(page.getByText('What will be sent?')).toBeVisible()
+  );
+  await page.getByRole('radio', { name: 'I have an idea' }).check();
+  await page.locator('#reportMessage').fill('Add a glitter brush');
+  await page.getByRole('button', { name: 'Send idea' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Thank you — your report is in.', level: 1 })
+  ).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
+  await expect(page.getByRole('radio', { name: "Something's broken" })).toBeChecked();
+  await expect(page.locator('#reportMessage')).toHaveValue('');
+  await expect(page.getByRole('checkbox')).not.toBeChecked();
+  await expectNoReload(page);
+});
 
 test('an enhanced delivery failure retains the report draft and device choice', async ({
   page,
