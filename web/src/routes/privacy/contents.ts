@@ -18,9 +18,6 @@ export const HIGHLIGHTS: { label: PaletteLabel; lead: string; body: string }[] =
   { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
 ];
 
-// The contents entries and the section ids/headings in the page markup are the
-// same list twice, like /design's — a mismatch is a dead anchor, caught by
-// privacy.spec.ts walking every rail link to its section.
 export const SECTIONS = [
   { id: 'on-device', label: 'What stays on your device' },
   { id: 'ai-pictures', label: 'Making an AI picture' },

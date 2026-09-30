@@ -24,6 +24,9 @@
     radiusMd: 'controls',
     radiusLg: 'cards & sheets',
     radiusPill: 'pills & toggle tracks',
+    radiusBlob1: 'first paint daub',
+    radiusBlob2: 'second paint daub',
+    radiusBlob3: 'third paint daub',
   };
   const durationShorts: Record<Extract<ScaleKey, `duration${string}`>, string> = {
     durationFast: 'presses & hovers',

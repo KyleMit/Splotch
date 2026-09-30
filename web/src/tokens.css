@@ -30,6 +30,9 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 999px;
+  --radius-blob-1: 58% 42% 55% 45% / 45% 58% 42% 55%;
+  --radius-blob-2: 45% 55% 48% 52% / 55% 45% 58% 42%;
+  --radius-blob-3: 52% 48% 55% 45% / 45% 55%;
   --border-width: 1px;
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;

@@ -46,6 +46,7 @@ const POLICY_REVISIONS: readonly { lastUpdated: string; textSha256: Record<Build
 function renderedPolicy() {
   const { document } = new Window();
   document.body.innerHTML = render(PrivacyPage).body;
+  for (const anchor of document.querySelectorAll('.section-anchor')) anchor.remove();
   const blocks = (selector: string) =>
     [...document.querySelectorAll(selector)].map((block) => {
       const text = (block.textContent ?? '').replace(/\s+/g, ' ').trim();

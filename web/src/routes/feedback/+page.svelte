@@ -9,6 +9,7 @@
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
   import { supportEmail } from '$lib/supportEmail';
+  import { paletteHex } from '$lib/palette';
   import type { PageProps } from './$types';
 
   const DESCRIPTION =
@@ -87,10 +88,21 @@
 {#snippet nextSteps()}
   <aside class="aside">
     <h2>What happens next</h2>
-    <ol>
-      <li>Your note opens a private support issue that only the Splotch maintainer can read.</li>
-      <li>We read it, and it joins the list of things to fix or build.</li>
-      <li>Nothing else is collected — see the <a href="/privacy">privacy policy</a>.</li>
+    <ol role="list">
+      <li style:--step-hue={paletteHex('Yellow')}>
+        <span class="step-number step-number--blob" aria-hidden="true">1</span>
+        <span
+          >Your note opens a private support issue that only the Splotch maintainer can read.</span
+        >
+      </li>
+      <li style:--step-hue={paletteHex('Blue')}>
+        <span class="step-number step-number--blob" aria-hidden="true">2</span>
+        <span>We read it, and it joins the list of things to fix or build.</span>
+      </li>
+      <li style:--step-hue={paletteHex('Green')}>
+        <span class="step-number step-number--blob" aria-hidden="true">3</span>
+        <span>Nothing else is collected — see the <a href="/privacy">privacy policy</a>.</span>
+      </li>
     </ol>
   </aside>
 {/snippet}
@@ -216,6 +228,7 @@
      the corner — the same left-ruled, washed block /beta closes each
      step with, so the two pages share a second element besides the button. */
   .aside {
+    --step-number-size: var(--space-6);
     flex: 0 1 250px;
     min-width: 0;
     padding: 14px 18px;
@@ -236,17 +249,34 @@
 
   .aside ol {
     margin: 0;
-    padding-left: 1.1em;
+    padding: 0;
+    list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .aside li {
+    display: grid;
+    grid-template-columns: var(--step-number-size) minmax(0, 1fr);
+    column-gap: var(--space-3);
+    align-items: start;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1.55;
     color: var(--page-body);
+  }
+
+  .aside .step-number {
+    /* Small yellow digits need more heading ink to clear the text contrast floor. */
+    --small-step-ink-scale: 0.75;
+    --number-ink: color-mix(
+      in srgb,
+      var(--step-hue) calc(var(--step-ink-strength) * var(--small-step-ink-scale)),
+      var(--text-strong)
+    );
+    font-size: var(--font-size-xs);
+    margin-top: calc((1.55 * var(--font-size-sm) - var(--step-number-size)) / 2);
   }
 
   .done {

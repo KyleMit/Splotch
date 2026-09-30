@@ -27,6 +27,9 @@
   import type { SectionId } from './contents';
   import { createPrivacyParentCenter } from './parentCenter.svelte';
   import PolicySummary from './PolicySummary.svelte';
+  import SectionHeading from './SectionHeading.svelte';
+  import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
+  import { createSectionLinks } from './sectionLinks.svelte';
 
   const LAST_UPDATED = 'September 28, 2026';
   const DESCRIPTION =
@@ -52,6 +55,9 @@
       entered = reading.entered;
     })
   );
+
+  const sectionLinks = createSectionLinks();
+  $effect(() => sectionLinks.dispose);
 
   const parentCenter = createPrivacyParentCenter();
   const gatedLink = parentCenter.gatedLink;
@@ -104,9 +110,14 @@
         stickyTop="0px"
       />
 
+      <VisuallyHidden role="status">{sectionLinks.announcement}</VisuallyHidden>
       <div class="sections">
         <section id="on-device">
-          <h3>What stays on your device</h3>
+          <SectionHeading
+            section={SECTIONS[0]}
+            copied={sectionLinks.copied === SECTIONS[0].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Ordinary drawing never leaves your device. Splotch does not build a profile of you or
             your child, does not sell information, and shows no advertising. Three features can send
@@ -131,7 +142,11 @@
         </section>
 
         <section id="ai-pictures">
-          <h3>Making an AI picture</h3>
+          <SectionHeading
+            section={SECTIONS[1]}
+            copied={sectionLinks.copied === SECTIONS[1].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             The AI image button redraws your child's drawing in a chosen art style. It is Splotch's
             one big online feature: when someone taps the button, the current drawing is sent to our
@@ -185,7 +200,11 @@
         </section>
 
         <section id="counting">
-          <h3>How the counting works</h3>
+          <SectionHeading
+            section={SECTIONS[2]}
+            copied={sectionLinks.copied === SECTIONS[2].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             To count the {FREE_GENERATION_LIMIT} free pictures fairly, the app has to recognize an install
             without knowing whose it is. So it sends a one-way code — a scrambled value that cannot be
@@ -219,7 +238,11 @@
         </section>
 
         <section id="reports">
-          <h3>Reporting a picture</h3>
+          <SectionHeading
+            section={SECTIONS[3]}
+            copied={sectionLinks.copied === SECTIONS[3].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Every finished AI picture is labeled “AI-generated picture.” If one is wrong or
             inappropriate, a grown-up can choose “Report this picture,” review exactly what will be
@@ -244,7 +267,11 @@
         </section>
 
         <section id="feedback">
-          <h3>Sending feedback</h3>
+          <SectionHeading
+            section={SECTIONS[4]}
+            copied={sectionLinks.copied === SECTIONS[4].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send
             report,” only what you type is sent to our <strong>private</strong> support tracker on GitHub.
@@ -263,7 +290,11 @@
         </section>
 
         <section id="hosting">
-          <h3>Hosting and downloads</h3>
+          <SectionHeading
+            section={SECTIONS[5]}
+            copied={sectionLinks.copied === SECTIONS[5].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Splotch — the website, the API, and the stored reports above — is hosted by Netlify.
             Loading the app there works like loading any website: the request carries normal details
@@ -290,7 +321,11 @@
         </section>
 
         <section id="children">
-          <h3>Children's privacy</h3>
+          <SectionHeading
+            section={SECTIONS[6]}
+            copied={sectionLinks.copied === SECTIONS[6].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Splotch is made for young children, so the protection is built into the design: no
             accounts, no ads, no analytics or tracking code, no chat, comments, or public sharing,
@@ -314,7 +349,11 @@
         </section>
 
         <section id="contact">
-          <h3>Changes and contact</h3>
+          <SectionHeading
+            section={SECTIONS[7]}
+            copied={sectionLinks.copied === SECTIONS[7].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             If this policy changes, the date at the top changes with it. Questions or concerns? Send
             them through our {@render feedbackLink()} and we'll take a look.
@@ -391,13 +430,6 @@
     --page-tail: 16px;
 
     min-height: calc(100dvh - var(--spy-line) - var(--page-tail));
-  }
-
-  h3 {
-    margin: 0 0 6px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--page-ink);
   }
 
   p,
