@@ -22,7 +22,7 @@
   const OPERAND_FILLS = [paletteHex('Purple'), colorFamilyShade('blues', 4)];
   // Organic blob shapes; plain geometry, one per operand so the pair reads as
   // two hand-made daubs rather than stamped circles.
-  const OPERAND_RADII = ['58% 42% 55% 45% / 45% 58% 42% 55%', '45% 55% 48% 52% / 55% 45% 58% 42%'];
+  const OPERAND_RADII = ['var(--radius-blob)', '45% 55% 48% 52% / 55% 45% 58% 42%'];
 
   // One dab per answer digit, filled left-to-right as the adult types.
   const dabs = $derived(

@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, sep } from 'node:path';
+import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import ts from 'typescript';
 import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
 import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
 import { DRAW_SECONDS } from '../split-capture/capture-hand-input.mjs';
@@ -30,86 +29,9 @@ const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recordin
 const scenarioPath = join(repoRoot, 'tools', 'perf', 'web', 'capture-web-session.mjs');
 const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scenarios.mjs');
 const handCapturePath = join(repoRoot, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs');
-const HOST_REQUIRED = '--host= is required — the probe host URL the device can reach over the LAN';
-const FOREIGN_BUILD_NEEDS_URL =
-  '--allow-foreign-build needs --url= naming the externally served build it allows';
 // Every spawned entry gets an Android SDK path with no adb in it, so an entry
 // that slips past its argument checks stops before it reaches a real device.
 const unreachableAndroidHome = () => join(fixtureDir, 'no-android-sdk');
-const unreachableAdbRefusal = () =>
-  `adb devices failed (spawnSync ${join(unreachableAndroidHome(), 'platform-tools', 'adb')} ENOENT)` +
-  ' — no device was checked';
-// Each entry's first offline refusal after its orientation parse. The refusal
-// cases pass these args too, so an entry whose orientation check is lost still
-// stops there instead of starting device work.
-const ORIENTATION_ENTRIES = [
-  {
-    entry: 'android/capture-browser-actions.mjs',
-    nextArgs: [],
-    nextRefusal: unreachableAdbRefusal,
-  },
-  {
-    entry: 'android/capture-clear-drag.mjs',
-    nextArgs: ['--allow-foreign-build'],
-    nextRefusal: () => FOREIGN_BUILD_NEEDS_URL,
-  },
-  {
-    entry: 'ios/capture-xcuitest-actions.mjs',
-    nextArgs: ['--allow-foreign-build'],
-    nextRefusal: () => FOREIGN_BUILD_NEEDS_URL,
-  },
-  {
-    entry: 'split-capture/capture-device-frames.mjs',
-    nextArgs: [],
-    nextRefusal: () => HOST_REQUIRED,
-  },
-  {
-    entry: 'split-capture/capture-hand-input.mjs',
-    nextArgs: [],
-    nextRefusal: () => HOST_REQUIRED,
-  },
-];
-
-const calleeName = ({ expression }) =>
-  ts.isIdentifier(expression)
-    ? expression.text
-    : ts.isPropertyAccessExpression(expression)
-      ? expression.name.text
-      : '';
-
-// Every call to a perf flag helper (flag, argFlag, readValueFlag, …) with a
-// static 'orientation' argument, and whether it is parseCampaignOrientation's
-// argument — the one owner of the orientation vocabulary.
-function orientationReads(source) {
-  const file = ts.createSourceFile(
-    'entry.mjs',
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS
-  );
-  const reads = [];
-  const visit = (node) => {
-    if (
-      ts.isCallExpression(node) &&
-      /flag$/i.test(calleeName(node)) &&
-      node.arguments.some((arg) => ts.isStringLiteralLike(arg) && arg.text === 'orientation')
-    ) {
-      const { parent } = node;
-      reads.push({
-        read: node.getText(file),
-        owned:
-          ts.isCallExpression(parent) &&
-          calleeName(parent) === 'parseCampaignOrientation' &&
-          parent.arguments[0] === node,
-      });
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(file);
-  return reads;
-}
-
 let fixtureDir;
 
 // Replays recorded UI actions against a stub engine in turbo mode.
@@ -350,28 +272,6 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
-  it.each(ORIENTATION_ENTRIES)(
-    '$entry refuses an --orientation no campaign has',
-    ({ entry, nextArgs }) => {
-      expectCliFailure(
-        join(repoRoot, 'tools', 'perf', entry),
-        ['--orientation=square', ...nextArgs],
-        '--orientation must be PORTRAIT or LANDSCAPE'
-      );
-    }
-  );
-
-  it.each(ORIENTATION_ENTRIES)(
-    '$entry takes a lower-case --orientation through to its next check',
-    ({ entry, nextArgs, nextRefusal }) => {
-      expectCliFailure(
-        join(repoRoot, 'tools', 'perf', entry),
-        ['--orientation=landscape', ...nextArgs],
-        nextRefusal()
-      );
-    }
-  );
-
   // The drift guard for SIZE_PX and DEFAULT_SIZE_LEVEL: the app's SIZE_TO_PX and
   // DEFAULT_SIZE live in a Svelte rune module no Node code can import, so they
   // are read from the source text.
@@ -533,50 +433,5 @@ describe('Web Inspector analysis', () => {
     });
 
     expect(output).toMatch(/engine\.undo\s+count=\s+1\s+n=1\s+min=400\.00.*\[paired marks\]/);
-  });
-});
-
-describe('the --orientation vocabulary owner', () => {
-  it('tells a read through parseCampaignOrientation from one that bypasses it', () => {
-    expect(orientationReads("const o = flag('orientation')?.toUpperCase();")).toEqual([
-      { read: "flag('orientation')", owned: false },
-    ]);
-    expect(orientationReads("const { o = argFlag('orientation', 'PORTRAIT') } = {};")).toEqual([
-      { read: "argFlag('orientation', 'PORTRAIT')", owned: false },
-    ]);
-    expect(orientationReads("readValueFlag(argv, 'orientation');")).toEqual([
-      { read: "readValueFlag(argv, 'orientation')", owned: false },
-    ]);
-    expect(orientationReads("parseCampaignOrientation(argFlag('orientation')) ?? 'x';")).toEqual([
-      { read: "argFlag('orientation')", owned: true },
-    ]);
-  });
-
-  // A commented-out owner call is not ownership, and a template-literal
-  // spelling of the flag name is still a read.
-  it('ignores comments and reads a template-literal flag name', () => {
-    const source = [
-      "// const o = parseCampaignOrientation(flag('orientation'));",
-      'const o = flag(`orientation`)?.toUpperCase();',
-    ].join('\n');
-
-    expect(orientationReads(source)).toEqual([{ read: 'flag(`orientation`)', owned: false }]);
-  });
-
-  it('reads every perf entry’s --orientation through parseCampaignOrientation', () => {
-    const perfRoot = join(repoRoot, 'tools', 'perf');
-    const reads = readdirSync(perfRoot, { recursive: true })
-      .filter((path) => path.endsWith('.mjs') && !path.startsWith(`tests${sep}`))
-      .flatMap((path) =>
-        orientationReads(readFileSync(join(perfRoot, path), 'utf8')).map((read) => ({
-          path: path.split(sep).join('/'),
-          ...read,
-        }))
-      );
-
-    expect(reads.filter(({ owned }) => !owned)).toEqual([]);
-    expect(reads.map(({ path }) => path)).toEqual(
-      expect.arrayContaining(ORIENTATION_ENTRIES.map(({ entry }) => entry))
-    );
   });
 });

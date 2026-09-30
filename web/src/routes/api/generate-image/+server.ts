@@ -228,6 +228,7 @@ async function recordFreeGeneration(
 }
 
 const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
+  const requestStartedAt = Date.now();
   const source = await readGenerationRequest(request, url);
 
   const authorization = await authorizeGenerationRequest({
@@ -266,6 +267,11 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     // genuinely failed, and answering in-line is better than leaving a child
     // watching a job nobody is working on — even though it will usually outrun
     // the deadline.
+    //
+    // A request that never asked for the handoff keeps the full deadline: its
+    // routine pre-work is charged to the margin under the platform ceiling, since
+    // charging it to the deadline would cut every direct call short (ADR-0063's
+    // pre-work amendment).
     let deadlineMs = synchronousDeadlineMs();
     if (clientAcceptsBackgroundGeneration(request)) {
       const handoffStartedAt = Date.now();
@@ -288,12 +294,18 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
           status: GENERATION_ACCEPTED_STATUS,
         });
       }
-      const handoffMs = Date.now() - handoffStartedAt;
-      const remainingMs = deadlineAfterFailedHandoffMs(handoffMs);
+      const fallbackStartedAt = Date.now();
+      const elapsedMs = fallbackStartedAt - requestStartedAt;
+      const remainingMs = deadlineAfterFailedHandoffMs(elapsedMs);
       if (remainingMs === null) {
         console.warn(
-          `[generate-image] the failed handoff took ${handoffMs} ms; not answering in-line`
+          `[generate-image] ${elapsedMs} ms spent, ${fallbackStartedAt - handoffStartedAt} ms of it in the failed handoff; not answering in-line`
         );
+        // The daily provider-start slot reserved above stays spent. Giving it
+        // back would add a write on the one key every free start serializes
+        // on, in the branch that exists to answer before the platform ceiling,
+        // during the stall that led here. The over-count errs toward spending
+        // less (ADR-0063's pre-work amendment).
         throw error(502, 'There was not enough time left to make that creation');
       }
       deadlineMs = remainingMs;

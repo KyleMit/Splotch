@@ -148,7 +148,7 @@ Safari pages; use the manual console for this engine workload on the current iPa
 real-screen/action commands exercise their own workloads.
 
 ```sh
-npm run perf:ios:webkit:gates                                # all four scenarios
+npm run perf:ios:webkit:gates                                # every scenario
 npm run perf:ios:webkit:gates -- --scenarios=crayon-scribbles # one of them
 npm run perf:ios:webkit:gates --ignore-scripts               # skip the rebuild
 ```
@@ -264,13 +264,13 @@ npm run perf:ios:xcuitest:screen -- --device-id=<UDID> --allow-provisioning
 # Exercise one brush for a longer session:
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --brush=magic --gesture-repeats=3 --repeat-pause-ms=1500
-# Score ten serial undos after twenty commands:
+# Score ten serial undos after two gesture repeats:
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=2 --undo-count=10
 # Exercise rebuilt patches after rotation:
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=2 --undo-count=10 --rotate-before-undo
-# Let a thirty-command history fully compact, then undo all retained steps:
+# Let a three-repeat history fully compact, then undo every retained step (MAX_UNDO_DEPTH):
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=3 --history-settle-ms=17000 --undo-count=20
 ```
@@ -288,9 +288,11 @@ serially and records both `engine.undo` and the first action-local animation fra
 can finish. `--rotate-before-undo` changes orientation, waits for the new viewport and two visual
 frames, measures undo in the settled layout, and restores the original orientation.
 
-The base gesture contains two long interpolated strokes and eight short strokes. WebDriverAgent
-emits native touch samples along each interpolation; splitting the same gesture into hundreds of 8
-ms WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
+The base gesture (`trustedGestureActions` in `tools/perf/ios/capture-xcuitest-screen.mjs`) draws a
+long interpolated stroke per `LONG_STROKE_SEEDS` entry, then a short stroke per
+`SHORT_STROKE_ORIGINS` entry, `STROKES_PER_GESTURE_REPEAT` commands in all. WebDriverAgent emits
+native touch samples along each interpolation; splitting the same gesture into hundreds of 8 ms
+WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
 
 Before measurement the driver dismisses the install banner through its owned storage key,
 unregisters service workers and clears CacheStorage on both sides of a cache-busted reload, then
@@ -307,11 +309,12 @@ ADR-0086 gates are engine P95 ≤20 ms, next-frame P95 ≤33 ms, and next-frame 
 next-frame figure is the frame's `requestAnimationFrame` stamp, its vsync time, so a busy main
 thread can report it before the click. The summary's `callback` distribution (each action's
 `callbackMs`, read with `performance.now()` inside that callback) says when the frame actually ran.
-It is diagnostic and never gated. A forensic episode is a frame gap over four presentation budgets.
-Trusted-move count and engine share stay visible even when either would once have discarded the
-episode, and marked engine time is subtracted from its unexplained duration. Lead with **lost frame
-%** and **worst gap**, then use episodes/commit for attribution: the 1.5x mitigation split the
-baseline's large freezes into more, smaller episodes, so episode count alone inverted the result.
+It is diagnostic and never gated. A forensic episode is a frame gap over `STARVATION_FRAME_MULTIPLE`
+presentation budgets (`tools/perf/lib/real-screen-stats.mjs`). Trusted-move count and engine share
+stay visible even when either would once have discarded the episode, and marked engine time is
+subtracted from its unexplained duration. Lead with **lost frame %** and **worst gap**, then use
+episodes/commit for attribution: the 1.5x mitigation split the baseline's large freezes into more,
+smaller episodes, so episode count alone inverted the result.
 
 For a system-level attribution run, start Apple's **Animation Hitches** template in one terminal:
 
@@ -381,7 +384,8 @@ clears the ephemeral key and flushes that removal on success, refusal, timeout, 
 artifact records `pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
 
 For an experimental real-finger control, keep the same installed build and add
-`--hand-input --seconds=20` (maximum 60 seconds). The command counts down before opening the drawing
+`--hand-input --seconds=20`, up to `HAND_MAX_SECONDS` (the probe's contact budget in
+`tools/perf/ios/capture-xcuitest-screen.mjs`). The command counts down before opening the drawing
 window and does not synthesize the drawing input. WebDriverAgent remains attached throughout,
 however, and its effect on touch delivery is unmeasured. The artifact records that condition; do not
 bank its coalescing number as a clean witness until a paired attached-vs-detached run, or a proven
@@ -713,16 +717,20 @@ on the iPad page and:
 * preflights the build with a probe stroke — if the probe emits no `engine.commit` measure,
   `PERF_MARKS` was off in the build and the driver bails immediately with a rebuild message instead
   of stalling through every undo wait,
-* drives four real-volume scenarios — 22 long ~1200-op squiggles, 22 five-finger ~2400-op drags, 22
-  crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching
-  `npm run perf:web:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes,
-  and each scenario resets to blank paper **and** zero history first so its counts are its own,
+* drives the real-volume scenarios — long squiggles, five-finger drags, crayon squiggles, and crayon
+  reversal-scribbles (mid-stroke pass splits) — matching `npm run perf:web:undo`. Each draws the
+  probe's `STROKES` strokes: about `OPS` ops per single-pointer stroke, and
+  `MULTI_FINGERS * MULTI_PER_FINGER` per five-finger drag. The table's `scenario` column prints each
+  row's stroke count. This run's `STROKES` default is `MAX_UNDO_DEPTH + STROKES_PAST_UNDO_DEPTH`, so
+  it draws past the app's undo cap (`MAX_UNDO_DEPTH` in `web/src/lib/drawing/undoHistory.ts`) and
+  the overflow path executes. Each scenario resets to blank paper **and** zero history first so its
+  counts are its own,
 * prints a `console.table` with, per scenario: undo entries, retained history commands, folded base
   tiles, **`commit max ms`**, **`undo avg/p95/max ms`**, and direct patch/base/total history MiB —
   then the ADR-0066 gates verbatim.
 
 Narrow it to some scenarios with `window.__perfScenarios = 'crayon-scribbles'` (comma-separated for
-several) set in its own console statement first; unset runs all four. Keep the iPad screen awake and
+several) set in its own console statement first; unset runs them all. Keep the iPad screen awake and
 the tab foregrounded while it runs (a minute or two).
 
 Read the table against the gates in [Reading the results](#reading-the-results). If every row
@@ -761,12 +769,14 @@ window.__perfTimeline = true;
 window.__perfScenarios = 'crayon-scribbles';
 ```
 
-Timeline mode runs the same code path at roughly a twentieth of the volume — 6 strokes of ~200 ops
-instead of 22 of ~1200. Draw marks and event records both scale with op count, so cutting ops cuts
-the noise at its source. Six strokes is plenty for the shape of a commit — since ADR-0082 the
-resident window is a byte budget, so thin strokes encode nothing at any depth, and a recording is
-for where the time goes rather than for watching the tier demote. Override with
-`window.__perfStrokes` / `window.__perfOps` in either mode.
+Timeline mode runs the same code path at a small fraction of the volume: the `TIMELINE` branches of
+the probe's `STROKES` and `OPS` defaults draw a handful of short strokes where the gates run draws
+past a full undo stack of long ones, and the table's `scenario` column prints the count used. Draw
+marks and event records both scale with op count, so cutting ops cuts the noise at its source. A
+handful of strokes is plenty for the shape of a commit — since ADR-0082 the resident window is a
+byte budget, so thin strokes encode nothing at any depth, and a recording is for where the time goes
+rather than for watching the tier demote. Override with `window.__perfStrokes` / `window.__perfOps`
+in either mode.
 
 Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
 `crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:web:undo -- --scenarios=`

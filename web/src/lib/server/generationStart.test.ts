@@ -201,7 +201,7 @@ describe('startBackgroundGeneration', () => {
 });
 
 describe('deadlineAfterFailedHandoffMs', () => {
-  it('leaves the in-line call what the handoff did not spend', () => {
+  it('leaves the in-line call what the request has not yet spent', () => {
     expect(deadlineAfterFailedHandoffMs(5_000)).toBe(GENERATE_DEADLINE_MS - 5_000);
   });
 
@@ -211,7 +211,7 @@ describe('deadlineAfterFailedHandoffMs', () => {
     expect(deadlineAfterFailedHandoffMs(GENERATE_DEADLINE_MS - 1_000)).toBeNull();
   });
 
-  it('refuses when the handoff spent the whole deadline', () => {
+  it('refuses when the request spent the whole deadline before falling back', () => {
     expect(deadlineAfterFailedHandoffMs(GENERATE_DEADLINE_MS + 1)).toBeNull();
   });
 });

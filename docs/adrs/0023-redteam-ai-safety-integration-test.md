@@ -73,8 +73,9 @@ behind the `AiImageProvider` seam — ADR-0047/0113):
 
 * `classifyOpenAiResponse()` → `image` | `safety` | `empty`: a completed image-tool call is an
   image, a message containing refusal or output text is a safety decline, and a response with no
-  usable output is an upstream failure. `isSafetyError()` also catches platform moderation blocks
-  thrown before the model returns a response.
+  usable output is an upstream failure. A machine-readable decline beside a completed image makes
+  the response a decline (2026-09 amendment below). `isSafetyError()` also catches platform
+  moderation blocks thrown before the model returns a response.
 * A **prose-only response (no image output) is classified `safety`**, not `empty`. The original
   Gemini red-team run established the provider-independent reason: image models often decline by
   replying in text without a structured safety signal. For this endpoint, text instead of an image
@@ -153,6 +154,50 @@ showed the original wording also scores 6/6 on the block corpus and resists a wr
 injection just as well. **A safety-critical string should not change on evidence that turned out to
 be an artifact.**
 
+### Amendment (2026-09): a machine-readable decline outranks a completed image
+
+The classifier recognizes three machine-readable declines: a policy `error.code`
+(`POLICY_ERROR_CODES`), an `incomplete_details.reason` of `content_filter`
+(`POLICY_INCOMPLETE_REASONS`), and a non-blank `refusal` content part. It used to read a completed
+image-tool call first, so a response carrying both a finished picture and one of those declines
+delivered the picture and only logged the decline's name.
+
+OpenAI's documentation does not settle the case. The Structured Outputs guide describes a `refusal`
+part as the safety system refusing the request, and a `content_filter` stop as the output including
+restricted content; the SDK describes `error` as the model failing to generate a response. Nothing
+says whether any of them can arrive beside an `image_generation_call` that has a `result`, or which
+output item a refusal or a filter stop concerns: `incomplete_details` carries only a reason string,
+and a refusal part has no link to the image call.
+
+Alternatives weighed:
+
+* **Keep image-first, and record it as deliberate.** A finished image has passed OpenAI's platform
+  image moderation, and a needless refusal dead-ends a child whose drawing was safe. Rejected:
+  platform moderation is not a toddler standard. ADR-0113 measured `/v1/images/edits`, which has
+  only that moderation, returning a finished image for the `block-gun` fixture. Resolving the
+  ambiguity toward the picture shows a two-year-old an image that a safety signal in the same
+  response said no to.
+* **Let some signals win and not others**, for example a refusal part and a policy code but not
+  `content_filter`. Rejected: the response does not say which item a signal concerns, so any split
+  is a guess, and a guess that fails toward showing the picture.
+
+**Every machine-readable decline now outranks a completed image.** `classifyOpenAiResponse` reads
+the decline first. Its precedence is a machine-readable decline, then a completed image, then a tool
+call without bytes, then prose. Prose beside a picture is still not a decline, because an
+`output_text` part there is usually a caption. The refusal reader now runs before any image is read,
+so it skips a malformed message part instead of throwing. A `safety` classification carries
+`imageDiscardedBy`: the names, never the text, of the declines that discarded a completed image.
+`openai.ts` logs `[openai-safety] discarded a completed image for <names>` when that list is
+non-empty. The provider contract and the `422` are unchanged. The child sees the existing refusal
+copy, the free-generation reservation is released rather than spent, and a parent can still report
+the refusal as a possible false positive.
+
+The cost is a safe drawing that draws a stray decline: it loses its picture, and the render is paid
+for and thrown away. That log line is the evidence for narrowing the rule for one signal, together
+with parents' refusal reports and any OpenAI documentation that a signal beside a completed image
+concerns only non-image output. A count alone does not justify returning to image-first, because it
+cannot show that the discarded pictures were safe.
+
 ## Consequences
 
 * **+** Red-teaming is possible at all, covering both false-negative and false-positive axes, with
@@ -172,6 +217,9 @@ be an artifact.**
   model decides. The 2026-08 amendment fixes the one instance of that we found; a future provider
   could differ somewhere else the corpus does not probe, and the suite would again fail quietly.
   When a run looks *too* clean, ask the model to describe what it sees before believing it.
+* **−** Since the 2026-09 amendment, a safe drawing that arrives with a stray machine-readable
+  decline loses its finished picture, and that paid render is discarded. The
+  `[openai-safety] discarded a completed image` log line counts how often it happens.
 * **−** Anyone with `REDTEAM_FIXTURE_KEY` can decrypt the committed corpus; the encryption is
   at-rest obfuscation for a test corpus, not a security boundary. Treat the key like any shared
   secret.

@@ -22,6 +22,7 @@ import {
   SINGLE_BRUSH_ATTRIBUTE,
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
+import { DRAWING_VISITED_FLAG, DRAWING_VISITED_SESSION_KEY } from './lib/components/page/backLabel';
 import { PORTRAIT_QUERY } from './lib/breakpoints';
 import { STORAGE_KEYS } from './lib/storage';
 import { FREE_GENERATION_LIMIT } from './lib/freeGenerations';
@@ -324,6 +325,14 @@ describe("app.html's boot script mirrors the state modules", () => {
       `expected the +page.svelte at '${DRAWING_ROUTE}' to set/clear data-app-surface`
     ).toMatch(/setAttribute\('data-app-surface', ''\)/);
     expect(pageSource).toMatch(/removeAttribute\('data-app-surface'\)/);
+    // The same route stamps the back link's session flag as an inline literal
+    // (importing backLabel.ts would cross the startup bundle boundary).
+    expect(
+      pageSource,
+      `expected the +page.svelte at '${DRAWING_ROUTE}' to stamp the back link's session flag`
+    ).toContain(
+      `sessionStorage.setItem('${DRAWING_VISITED_SESSION_KEY}', '${DRAWING_VISITED_FLAG}')`
+    );
   });
 });
 
