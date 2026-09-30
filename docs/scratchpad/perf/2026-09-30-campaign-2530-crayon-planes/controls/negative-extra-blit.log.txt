@@ -1,0 +1,38 @@
+$ vitest run src/lib/drawing/crayonGlazeDirect.test.ts -t never blits
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vitest.config.ts:3:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /private/tmp/splotch-campaign-2530/d4/web
+
+ ❯ src/lib/drawing/crayonGlazeDirect.test.ts (4 tests | 1 failed | 3 skipped) 4ms
+   ❯ the glaze applied per op, directly on the tile (2)
+     × never blits, so nothing touches the composited tile but the paint 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/drawing/crayonGlazeDirect.test.ts > the glaze applied per op, directly on the tile > never blits, so nothing touches the composited tile but the paint
+AssertionError: expected [ …(2) ] to have a length of +0 but got 2
+
+- Expected
++ Received
+
+- 0
++ 2
+
+ ❯ src/lib/drawing/crayonGlazeDirect.test.ts:128:29
+    126|     renderOp(target, { kind: 'crayonFlush' });
+    127|
+    128|     expect(blitsOf(target)).toHaveLength(0);
+       |                             ^
+    129|   });
+    130| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 skipped (4)
+   Start at  23:21:28
+   Duration  195ms (environment 60%, transform 29%, import 5%, tests 3%, setup 2%, worker 1%)
+

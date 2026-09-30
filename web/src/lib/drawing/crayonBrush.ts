@@ -627,10 +627,8 @@ export function seedPhase(seed: number, tileSize: number): [number, number] {
   return [px, py];
 }
 
-// A live pointer-move frame calls crayonPatternFor up to passes × 3 times with
-// the same (seed, tile) pair (renderCrayonOp fans one op out to buf.ctx, its
-// mirror, and the paper-space buffer). seedPhase is pure, so a 1-entry cache
-// keyed on both inputs skips the re-hash for every call after the first.
+// Canvas paints within a pass share the same seed and tile. seedPhase is pure,
+// so a 1-entry cache skips the re-hash for every call after the first.
 let lastSeedPhase: { seed: number; tileSize: number; px: number; py: number } | null = null;
 
 function cachedSeedPhase(seed: number, tileSize: number): [number, number] {

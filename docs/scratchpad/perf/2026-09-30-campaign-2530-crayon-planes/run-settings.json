@@ -1,0 +1,52 @@
+{
+  "chromium": {
+    "target": "web/dev-engine (headless Chromium (Blink/V8) \u2014 not WebKit/JavaScriptCore or the iPad GPU)",
+    "engine": "chromium",
+    "browserVersion": "153.0.8010.12",
+    "host": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "25.6.0",
+      "node": "v24.16.0"
+    },
+    "device": "ipad-pro-12.9",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "label": "ipad-pro-12.9"
+    },
+    "throttle": 0,
+    "refreshHz": 120,
+    "frameBudgetMs": 8.333333333333334,
+    "longOps": 1200,
+    "buildMode": "production-preview",
+    "captureMode": "cdp-trace",
+    "fidelity": "Headless Chromium (Blink/V8) is **not** WebKit/JavaScriptCore or the iPad GPU \u2014 SwiftShader software rendering exaggerates canvas copies and restores. CPU throttle models a slow CPU, not the tighter 8.3 ms ProMotion frame."
+  },
+  "webkit": {
+    "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+    "engine": "webkit",
+    "browserVersion": "26.6",
+    "host": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "25.6.0",
+      "node": "v24.16.0"
+    },
+    "device": "ipad-pro-12.9",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "label": "ipad-pro-12.9"
+    },
+    "throttle": 0,
+    "refreshHz": 120,
+    "frameBudgetMs": 8.333333333333334,
+    "longOps": 1200,
+    "buildMode": "production-preview (reused build)",
+    "captureMode": "user-timing (no CDP on WebKit)",
+    "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons."
+  }
+}

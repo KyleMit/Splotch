@@ -1,0 +1,451 @@
+
+> splotch@1.6.0 prebuild:cap
+> node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases
+
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+> splotch@1.6.0 gen:icon-names
+> node tools/icons/gen-icon-names.mjs
+
+Wrote 94 icon names to web/src/lib/components/icon-names.d.ts
+
+> splotch@1.6.0 gen:releases
+> node tools/release/gen-release-notes.mjs
+
+Generating release artifacts from 8 release file(s)…
+  wrote web/src/lib/releases.json
+  wrote web/src/lib/components/settings/CurrentReleaseNotes.svelte
+  wrote web/src/lib/components/page/ReleaseHistory.svelte
+  wrote fastlane/metadata/android/en-US/changelogs/8.txt
+  wrote fastlane/metadata/android/en-US/changelogs/7.txt
+  wrote fastlane/metadata/android/en-US/changelogs/6.txt
+  wrote fastlane/metadata/android/en-US/changelogs/5.txt
+  wrote fastlane/metadata/android/en-US/changelogs/4.txt
+  wrote fastlane/metadata/android/en-US/changelogs/3.txt
+  wrote fastlane/metadata/android/en-US/changelogs/2.txt
+  wrote fastlane/metadata/android/en-US/changelogs/1.txt
+  wrote fastlane/metadata/en-US/release_notes.txt
+Done.
+
+> splotch@1.6.0 build:cap
+> CAPACITOR=true node tools/run-web-tool.mjs vite build && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/strip-static-assets.mjs
+
+$ vite build
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.0 building ssr environment for production...
+transforming...
+✓ 786 modules transformed.
+rendering chunks...
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 797 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/client/version.json                                                             0.01 kB │ gzip:  0.03 kB
+.svelte-kit/output/client/_app/version.json                                                        0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/client/_app/immutable/workers/magicSheet.worker-Cn2gl-rH.js                     2.65 kB
+.svelte-kit/output/client/_app/immutable/workers/pngEncoder.worker-CSFc3kKn.js                     4.43 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-vietnamese-wght-normal.ei70gACF.woff2    8.84 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-latin-ext-wght-normal.CrJ75Ewg.woff2    26.61 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-latin-wght-normal.Buj9m_3d.woff2        28.24 kB
+.svelte-kit/output/client/.vite/manifest.json                                                     35.69 kB │ gzip:  4.23 kB
+.svelte-kit/output/client/_app/immutable/assets/splotchy.1qKHAmAF.svg                             88.46 kB │ gzip: 32.59 kB
+.svelte-kit/output/client/coloring/manifest-1.6.0.json                                           185.32 kB │ gzip: 38.24 kB
+.svelte-kit/output/client/_app/immutable/assets/SocialCard.DxktcHA6.css                            0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/assets/systemBackHandler.Bz2_grRK.css                     0.14 kB │ gzip:  0.11 kB
+.svelte-kit/output/client/_app/immutable/assets/releases.KHS6j_Re.css                              0.23 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/assets/DialogHeader.DnKoSJ7x.css                          0.54 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/assets/StatusMessage.CfdGb-If.css                         0.69 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/assets/ScrollCue.CGX-ZSW_.css                             0.88 kB │ gzip:  0.40 kB
+.svelte-kit/output/client/_app/immutable/assets/ErrorScreen.BAsnDDLh.css                           1.23 kB │ gzip:  0.60 kB
+.svelte-kit/output/client/_app/immutable/assets/7.BusncTR0.css                                     2.49 kB │ gzip:  0.71 kB
+.svelte-kit/output/client/_app/immutable/assets/Button.CgPk23bj.css                                2.75 kB │ gzip:  0.83 kB
+.svelte-kit/output/client/_app/immutable/assets/18.D1P502XL.css                                    2.98 kB │ gzip:  0.92 kB
+.svelte-kit/output/client/_app/immutable/assets/TocDisclosure.CXUsQ9NF.css                         3.19 kB │ gzip:  0.97 kB
+.svelte-kit/output/client/_app/immutable/assets/Disclosure.C3bXXdXm.css                            3.85 kB │ gzip:  1.16 kB
+.svelte-kit/output/client/_app/immutable/assets/RuleLabel.De2CCrjC.css                             4.29 kB │ gzip:  1.20 kB
+.svelte-kit/output/client/_app/immutable/assets/PrimitiveSections.BCLPvJox.css                     6.75 kB │ gzip:  1.51 kB
+.svelte-kit/output/client/_app/immutable/assets/ParentalGate.Bd8iV_Zg.css                          7.87 kB │ gzip:  1.79 kB
+.svelte-kit/output/client/_app/immutable/assets/SegmentedPicker.CVxqC1MU.css                       8.35 kB │ gzip:  1.87 kB
+.svelte-kit/output/client/_app/immutable/assets/8.CaH7kabx.css                                    22.54 kB │ gzip:  4.18 kB
+.svelte-kit/output/client/_app/immutable/assets/SettingsModal.Dgy69XB-.css                        25.89 kB │ gzip:  4.99 kB
+.svelte-kit/output/client/_app/immutable/assets/3.wpUBl_1m.css                                    38.11 kB │ gzip:  6.58 kB
+.svelte-kit/output/client/_app/immutable/assets/overlayChunk.4xof2n4w.css                         39.63 kB │ gzip:  7.69 kB
+.svelte-kit/output/client/_app/immutable/assets/0.D3zJusa3.css                                    44.71 kB │ gzip: 16.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/BqnRcyd6.js                                        0.03 kB │ gzip:  0.05 kB
+.svelte-kit/output/client/_app/immutable/chunks/xihTtKlq.js                                        0.06 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/chunks/CKXPEqmE.js                                        0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/chunks/DiT_wUz9.js                                        0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/entry/start.QvkpzGFP.js                                   0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/chunks/uACUK6Yj.js                                        0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/chunks/DfAwNQ4d.js                                        0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/nodes/17.CCNKEYAG.js                                      0.09 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/5.CCNKEYAG.js                                       0.09 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/DlF1qk3_.js                                        0.09 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/chunks/C422sMwG.js                                        0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/10.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/12.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/13.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/14.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/15.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/16.bm81bsL-.js                                      0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/4.bm81bsL-.js                                       0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/9.bm81bsL-.js                                       0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/DCByc0N7.js                                        0.12 kB │ gzip:  0.11 kB
+.svelte-kit/output/client/_app/immutable/chunks/DK3Fl9T5.js                                        0.15 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/nodes/1.DOi0cwdB.js                                       0.17 kB │ gzip:  0.13 kB
+.svelte-kit/output/client/_app/immutable/nodes/2.BQ23xV8A.js                                       0.17 kB │ gzip:  0.16 kB
+.svelte-kit/output/client/_app/immutable/chunks/ayZlCzLY.js                                        0.20 kB │ gzip:  0.18 kB
+.svelte-kit/output/client/_app/immutable/nodes/11.4Ll2TPWw.js                                      0.21 kB │ gzip:  0.16 kB
+.svelte-kit/output/client/_app/immutable/nodes/6.4Ll2TPWw.js                                       0.21 kB │ gzip:  0.16 kB
+.svelte-kit/output/client/_app/immutable/chunks/B5PCCYwe.js                                        0.24 kB │ gzip:  0.19 kB
+.svelte-kit/output/client/_app/immutable/chunks/hdTOJSNC.js                                        0.31 kB │ gzip:  0.23 kB
+.svelte-kit/output/client/_app/immutable/chunks/YTZXNDjq.js                                        0.32 kB │ gzip:  0.23 kB
+.svelte-kit/output/client/_app/immutable/chunks/B8JeB_j_.js                                        0.32 kB │ gzip:  0.24 kB
+.svelte-kit/output/client/_app/immutable/chunks/CCyrCKKi.js                                        0.33 kB │ gzip:  0.23 kB
+.svelte-kit/output/client/_app/immutable/chunks/BHb0ew6j.js                                        0.35 kB │ gzip:  0.24 kB
+.svelte-kit/output/client/_app/immutable/chunks/DjWpDeoF.js                                        0.39 kB │ gzip:  0.28 kB
+.svelte-kit/output/client/_app/immutable/chunks/3LwgwrtO.js                                        0.43 kB │ gzip:  0.31 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bf5DwDHP.js                                        0.44 kB │ gzip:  0.30 kB
+.svelte-kit/output/client/_app/immutable/chunks/DzwI71UU.js                                        0.45 kB │ gzip:  0.31 kB
+.svelte-kit/output/client/_app/immutable/chunks/CI_wNO4z.js                                        0.52 kB │ gzip:  0.36 kB
+.svelte-kit/output/client/_app/immutable/chunks/hcmVgo7H.js                                        0.57 kB │ gzip:  0.35 kB
+.svelte-kit/output/client/_app/immutable/chunks/BuQfFw3R.js                                        0.61 kB │ gzip:  0.33 kB
+.svelte-kit/output/client/_app/immutable/chunks/A1ujoGsC.js                                        0.72 kB │ gzip:  0.32 kB
+.svelte-kit/output/client/_app/immutable/chunks/BLobNAcX.js                                        0.72 kB │ gzip:  0.24 kB
+.svelte-kit/output/client/_app/immutable/chunks/Jjd-plQB.js                                        0.75 kB │ gzip:  0.38 kB
+.svelte-kit/output/client/_app/immutable/chunks/jqU63Afc.js                                        0.84 kB │ gzip:  0.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/CF424tWl.js                                        0.88 kB │ gzip:  0.54 kB
+.svelte-kit/output/client/_app/immutable/chunks/cHhrYHjn.js                                        0.90 kB │ gzip:  0.56 kB
+.svelte-kit/output/client/_app/immutable/chunks/DxoeXJIH.js                                        0.94 kB │ gzip:  0.47 kB
+.svelte-kit/output/client/_app/immutable/chunks/As_iETY2.js                                        1.03 kB │ gzip:  0.59 kB
+.svelte-kit/output/client/_app/immutable/chunks/DUfDAN1j.js                                        1.05 kB │ gzip:  0.34 kB
+.svelte-kit/output/client/_app/immutable/chunks/BspBZ4QJ.js                                        1.09 kB │ gzip:  0.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/BUGoQGX8.js                                        1.09 kB │ gzip:  0.53 kB
+.svelte-kit/output/client/_app/immutable/chunks/Di3nLDVW.js                                        1.18 kB │ gzip:  0.54 kB
+.svelte-kit/output/client/_app/immutable/chunks/B9l0slTC.js                                        1.19 kB │ gzip:  0.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/B1g_2rhm.js                                        1.21 kB │ gzip:  0.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/uBIymjUX.js                                        1.23 kB │ gzip:  0.68 kB
+.svelte-kit/output/client/_app/immutable/chunks/Ca0HfzfC.js                                        1.31 kB │ gzip:  0.74 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bjy-W4x2.js                                        1.36 kB │ gzip:  0.65 kB
+.svelte-kit/output/client/_app/immutable/chunks/CzYkrnRs.js                                        1.53 kB │ gzip:  0.60 kB
+.svelte-kit/output/client/_app/immutable/chunks/CddBUjZ_.js                                        1.55 kB │ gzip:  0.85 kB
+.svelte-kit/output/client/_app/immutable/chunks/CeqX7wPw.js                                        1.55 kB │ gzip:  0.77 kB
+.svelte-kit/output/client/_app/immutable/nodes/0.DHY3ac2X.js                                       1.56 kB │ gzip:  0.85 kB
+.svelte-kit/output/client/_app/immutable/chunks/DlWAhjcG.js                                        1.69 kB │ gzip:  0.58 kB
+.svelte-kit/output/client/_app/immutable/chunks/Beo1zMOb.js                                        1.88 kB │ gzip:  0.98 kB
+.svelte-kit/output/client/_app/immutable/chunks/Cpkckkis.js                                        1.94 kB │ gzip:  1.00 kB
+.svelte-kit/output/client/_app/immutable/chunks/u2KMo0YI.js                                        2.04 kB │ gzip:  0.79 kB
+.svelte-kit/output/client/_app/immutable/chunks/BrTlAeGm.js                                        2.05 kB │ gzip:  0.88 kB
+.svelte-kit/output/client/_app/immutable/chunks/BKZUNDpe.js                                        2.07 kB │ gzip:  0.92 kB
+.svelte-kit/output/client/_app/immutable/chunks/DT4TrLOT.js                                        2.31 kB │ gzip:  1.05 kB
+.svelte-kit/output/client/_app/immutable/chunks/DahsD2Ap.js                                        2.35 kB │ gzip:  1.20 kB
+.svelte-kit/output/client/_app/immutable/chunks/CHRk_7Hq.js                                        2.56 kB │ gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/chunks/DOT41ZnX.js                                        2.69 kB │ gzip:  1.21 kB
+.svelte-kit/output/client/_app/immutable/chunks/CsaYDY9u.js                                        2.86 kB │ gzip:  1.53 kB
+.svelte-kit/output/client/_app/immutable/chunks/W9veCZ00.js                                        2.97 kB │ gzip:  1.41 kB
+.svelte-kit/output/client/_app/immutable/chunks/DhKRm7j8.js                                        3.44 kB │ gzip:  1.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/Dlep2hRW.js                                        4.04 kB │ gzip:  1.77 kB
+.svelte-kit/output/client/_app/immutable/chunks/CwvECurd.js                                        4.27 kB │ gzip:  1.68 kB
+.svelte-kit/output/client/_app/immutable/chunks/D5hQr65x.js                                        4.86 kB │ gzip:  2.04 kB
+.svelte-kit/output/client/_app/immutable/chunks/Di3mOGNN.js                                        5.37 kB │ gzip:  2.27 kB
+.svelte-kit/output/client/_app/immutable/chunks/DODfTvmi.js                                        6.36 kB │ gzip:  2.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/DRJmI6ZN.js                                        6.55 kB │ gzip:  2.56 kB
+.svelte-kit/output/client/_app/immutable/chunks/BB0eABd4.js                                        6.59 kB │ gzip:  3.06 kB
+.svelte-kit/output/client/_app/immutable/chunks/C563Faab.js                                        6.95 kB │ gzip:  2.99 kB
+.svelte-kit/output/client/_app/immutable/entry/app.DAK-gvAH.js                                     7.20 kB │ gzip:  2.48 kB
+.svelte-kit/output/client/_app/immutable/chunks/DPDWu04o.js                                        7.72 kB │ gzip:  3.13 kB
+.svelte-kit/output/client/_app/immutable/chunks/Dhrj-3P3.js                                        7.75 kB │ gzip:  3.09 kB
+.svelte-kit/output/client/_app/immutable/chunks/WmoaxfQB.js                                        7.77 kB │ gzip:  2.91 kB
+.svelte-kit/output/client/_app/immutable/chunks/CagtTXZx.js                                        8.82 kB │ gzip:  3.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/BXEwqdEB.js                                        9.01 kB │ gzip:  3.51 kB
+.svelte-kit/output/client/_app/immutable/nodes/7.CeDf07qH.js                                       9.58 kB │ gzip:  3.67 kB
+.svelte-kit/output/client/_app/immutable/chunks/BH8--RI3.js                                       14.40 kB │ gzip:  5.89 kB
+.svelte-kit/output/client/_app/immutable/chunks/_XL7rT6G.js                                       18.34 kB │ gzip:  6.43 kB
+.svelte-kit/output/client/_app/immutable/nodes/18.BKLHhW1B.js                                     20.12 kB │ gzip:  7.95 kB
+.svelte-kit/output/client/_app/immutable/chunks/DR2daRiR.js                                       21.99 kB │ gzip:  8.43 kB
+.svelte-kit/output/client/_app/immutable/chunks/yGghIC6u.js                                       36.41 kB │ gzip: 13.70 kB
+.svelte-kit/output/client/_app/immutable/chunks/qQxMwUp2.js                                       47.04 kB │ gzip: 17.28 kB
+.svelte-kit/output/client/_app/immutable/nodes/8.C4dM6INr.js                                      54.89 kB │ gzip: 17.75 kB
+.svelte-kit/output/client/_app/immutable/nodes/3.BiUFJIvT.js                                      56.40 kB │ gzip: 20.63 kB
+.svelte-kit/output/client/_app/immutable/chunks/DAyPDk4Z.js                                       58.14 kB │ gzip: 21.34 kB
+.svelte-kit/output/client/_app/immutable/chunks/COHD1P6n.js                                       60.37 kB │ gzip: 23.02 kB
+.svelte-kit/output/client/_app/immutable/chunks/DJiBDWd7.js                                       61.23 kB │ gzip: 22.03 kB
+.svelte-kit/output/client/_app/immutable/chunks/BcUBT5Gi.js                                       67.67 kB │ gzip: 22.79 kB
+.svelte-kit/output/client/_app/immutable/chunks/ClndlPwG.js                                       70.22 kB │ gzip: 25.46 kB
+
+✓ built in 527ms
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+computing gzip size...
+.svelte-kit/output/server/version.json                                                             0.01 kB │ gzip:  0.03 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-vietnamese-wght-normal.ei70gACF.woff2    8.84 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-latin-ext-wght-normal.CrJ75Ewg.woff2    26.61 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-latin-wght-normal.Buj9m_3d.woff2        28.24 kB
+.svelte-kit/output/server/.vite/manifest.json                                                     40.27 kB │ gzip:  4.70 kB
+.svelte-kit/output/server/_app/immutable/assets/splotchy.1qKHAmAF.svg                             88.46 kB │ gzip: 32.59 kB
+.svelte-kit/output/server/coloring/manifest-1.6.0.json                                           185.32 kB │ gzip: 38.24 kB
+.svelte-kit/output/server/_app/immutable/assets/SplotchyIcon.DToonNnk.css                          0.11 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/_app/immutable/assets/Icon.DxktcHA6.css                                  0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/_app/immutable/assets/systemBackHandler.Bz2_grRK.css                     0.14 kB │ gzip:  0.11 kB
+.svelte-kit/output/server/_app/immutable/assets/VisuallyHidden.DIg8UxqZ.css                        0.16 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/_app/immutable/assets/releases.KHS6j_Re.css                              0.23 kB │ gzip:  0.15 kB
+.svelte-kit/output/server/_app/immutable/assets/DialogHeader.DnKoSJ7x.css                          0.54 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/_app/immutable/assets/StatusMessage.CfdGb-If.css                         0.69 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/_app/immutable/assets/ScrollCue.CGX-ZSW_.css                             0.88 kB │ gzip:  0.40 kB
+.svelte-kit/output/server/_app/immutable/assets/ErrorScreen.BAsnDDLh.css                           1.23 kB │ gzip:  0.60 kB
+.svelte-kit/output/server/_app/immutable/assets/Disclosure.BZ153DKy.css                            1.39 kB │ gzip:  0.52 kB
+.svelte-kit/output/server/_app/immutable/assets/SidebarToc.CSQDyEC5.css                            2.19 kB │ gzip:  0.75 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.BusncTR0.css                                 2.49 kB │ gzip:  0.71 kB
+.svelte-kit/output/server/_app/immutable/assets/Button.CgPk23bj.css                                2.75 kB │ gzip:  0.83 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.D1P502XL.css                                 2.98 kB │ gzip:  0.92 kB
+.svelte-kit/output/server/_app/immutable/assets/TocDisclosure.CXUsQ9NF.css                         3.19 kB │ gzip:  0.97 kB
+.svelte-kit/output/server/_app/immutable/assets/ToggleRow.DEyMZQBC.css                             3.55 kB │ gzip:  1.02 kB
+.svelte-kit/output/server/_app/immutable/assets/RuleLabel.De2CCrjC.css                             4.29 kB │ gzip:  1.20 kB
+.svelte-kit/output/server/_app/immutable/assets/SegmentedPicker.BPj6HJom.css                       4.79 kB │ gzip:  1.18 kB
+.svelte-kit/output/server/_app/immutable/assets/PrimitiveSections.BCLPvJox.css                     6.75 kB │ gzip:  1.51 kB
+.svelte-kit/output/server/_app/immutable/assets/ParentalGate.Bd8iV_Zg.css                          7.87 kB │ gzip:  1.79 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.CaH7kabx.css                                22.54 kB │ gzip:  4.18 kB
+.svelte-kit/output/server/_app/immutable/assets/SettingsModal.Dgy69XB-.css                        25.89 kB │ gzip:  4.99 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.wpUBl_1m.css                                38.11 kB │ gzip:  6.58 kB
+.svelte-kit/output/server/_app/immutable/assets/overlayChunk.4xof2n4w.css                         39.63 kB │ gzip:  7.69 kB
+.svelte-kit/output/server/_app/immutable/assets/_layout.D3zJusa3.css                              44.71 kB │ gzip: 16.52 kB
+.svelte-kit/output/server/chunks/ErrorScreen2.js                                                   0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/entries/pages/_layout.ts.js                                              0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/chunks/ParentalGate2.js                                                  0.09 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/entries/pages/beta/_page.ts.js                                           0.09 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/chunks/SettingsModal2.js                                                 0.09 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/entries/pages/ios-beta/_page.ts.js                                       0.09 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/entries/pages/dev/engine/_page.ts.js                                     0.09 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/entries/pages/android-beta/_page.ts.js                                   0.10 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/chunks/coloringPacks.svelte.js                                           0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/chunks/inviteLink.js                                                     0.13 kB │ gzip:  0.12 kB
+.svelte-kit/output/server/chunks/persistedState2.js                                                0.13 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/chunks/sleep.js                                                          0.14 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/entries/pages/dev/_page.svelte.js                                        0.14 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/entries/pages/beta/_page.svelte.js                                       0.14 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/entries/pages/admin/_page.svelte.js                                      0.14 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/overlayChunkLoader.js                                             0.15 kB │ gzip:  0.12 kB
+.svelte-kit/output/server/entries/pages/feedback/_page.svelte.js                                   0.15 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/usageRecord.js                                                    0.15 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/crash/_page.svelte.js                                  0.15 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/notch/_page.svelte.js                                  0.15 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/engine/_page.svelte.js                                 0.15 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/store-frames/_page.svelte.js                           0.16 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/notch/frame/_page.svelte.js                            0.16 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/pages/dev/store-frames/render/_page.svelte.js                    0.17 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/chunks/systemBack.js                                                     0.17 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/appSettings.js                                                    0.17 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/siteUrl.js                                                        0.17 kB │ gzip:  0.15 kB
+.svelte-kit/output/server/chunks/photoLibrary.js                                                   0.18 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/chunks/sensorOrientation.js                                              0.20 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/env.js                                                                   0.22 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/chunks/releaseSections.js                                                0.22 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/entries/pages/dev/_layout.server.ts.js                                   0.23 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/entries/pages/_error.svelte.js                                           0.23 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/chunks/installationId.js                                                 0.24 kB │ gzip:  0.19 kB
+.svelte-kit/output/server/entries/pages/design/_page.ts.js                                         0.25 kB │ gzip:  0.18 kB
+.svelte-kit/output/server/chunks/freeGenerations.js                                                0.25 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/entries/fallbacks/layout.svelte.js                                       0.28 kB │ gzip:  0.21 kB
+.svelte-kit/output/server/chunks/env.js                                                            0.28 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/chunks/internal2.js                                                      0.32 kB │ gzip:  0.18 kB
+.svelte-kit/output/server/chunks/folderSave.js                                                     0.32 kB │ gzip:  0.16 kB
+.svelte-kit/output/server/chunks/generationResult.js                                               0.34 kB │ gzip:  0.22 kB
+.svelte-kit/output/server/chunks/config.js                                                         0.36 kB │ gzip:  0.25 kB
+.svelte-kit/output/server/chunks/imageReport.js                                                    0.38 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/devHarness.js                                                     0.38 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/entries/endpoints/dev/store-frames/identity/_server.ts.js                0.38 kB │ gzip:  0.24 kB
+.svelte-kit/output/server/chunks/haptics.js                                                        0.46 kB │ gzip:  0.31 kB
+.svelte-kit/output/server/internal.js                                                              0.48 kB │ gzip:  0.21 kB
+.svelte-kit/output/server/chunks/apiHeaders.js                                                     0.52 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/chunks/StatusMessage.js                                                  0.56 kB │ gzip:  0.33 kB
+.svelte-kit/output/server/chunks/server.js                                                         0.58 kB │ gzip:  0.29 kB
+.svelte-kit/output/server/chunks/limits.js                                                         0.59 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/shared-server.js                                                  0.60 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/chunks/SplotchyIcon.js                                                   0.61 kB │ gzip:  0.36 kB
+.svelte-kit/output/server/chunks/savedFile.js                                                      0.72 kB │ gzip:  0.41 kB
+.svelte-kit/output/server/chunks/dottie-stumped.js                                                 0.78 kB │ gzip:  0.42 kB
+.svelte-kit/output/server/chunks/SocialCard.js                                                     0.84 kB │ gzip:  0.46 kB
+.svelte-kit/output/server/chunks/ErrorScreen.js                                                    0.92 kB │ gzip:  0.49 kB
+.svelte-kit/output/server/chunks/canvas.svelte.js                                                  0.94 kB │ gzip:  0.37 kB
+.svelte-kit/output/server/entries/pages/_layout.svelte.js                                          0.96 kB │ gzip:  0.40 kB
+.svelte-kit/output/server/chunks/idb.js                                                            1.03 kB │ gzip:  0.42 kB
+.svelte-kit/output/server/chunks/pencilEraser.js                                                   1.11 kB │ gzip:  0.51 kB
+.svelte-kit/output/server/chunks/logRedaction.js                                                   1.11 kB │ gzip:  0.59 kB
+.svelte-kit/output/server/chunks/androidGallery.js                                                 1.33 kB │ gzip:  0.65 kB
+.svelte-kit/output/server/chunks/keyFormat.js                                                      1.35 kB │ gzip:  0.77 kB
+.svelte-kit/output/server/entries/endpoints/api/free-generation-grant/_server.ts.js                1.36 kB │ gzip:  0.56 kB
+.svelte-kit/output/server/chunks/ScrollCue.js                                                      1.38 kB │ gzip:  0.61 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/login/_server.ts.js                          1.38 kB │ gzip:  0.76 kB
+.svelte-kit/output/server/chunks/fonts.js                                                          1.39 kB │ gzip:  0.81 kB
+.svelte-kit/output/server/chunks/modalDialog.svelte.js                                             1.46 kB │ gzip:  0.73 kB
+.svelte-kit/output/server/chunks/Disclosure.js                                                     1.55 kB │ gzip:  0.71 kB
+.svelte-kit/output/server/chunks/releases.js                                                       1.57 kB │ gzip:  0.58 kB
+.svelte-kit/output/server/chunks/Button.js                                                         1.57 kB │ gzip:  0.75 kB
+.svelte-kit/output/server/entries/endpoints/api/verify-key/_server.ts.js                           1.65 kB │ gzip:  0.83 kB
+.svelte-kit/output/server/chunks/singleFlight.js                                                   1.66 kB │ gzip:  0.81 kB
+.svelte-kit/output/server/chunks/nativeStore.js                                                    1.70 kB │ gzip:  0.67 kB
+.svelte-kit/output/server/chunks/policy.js                                                         1.72 kB │ gzip:  0.62 kB
+.svelte-kit/output/server/entries/endpoints/api/report/_server.ts.js                               1.85 kB │ gzip:  0.96 kB
+.svelte-kit/output/server/chunks/persistedState.js                                                 1.93 kB │ gzip:  0.83 kB
+.svelte-kit/output/server/chunks/readonlyView.js                                                   2.04 kB │ gzip:  0.73 kB
+.svelte-kit/output/server/chunks/imageSave.js                                                      2.06 kB │ gzip:  0.92 kB
+.svelte-kit/output/server/entries/endpoints/api/verify-access-code/_server.ts.js                   2.07 kB │ gzip:  0.96 kB
+.svelte-kit/output/server/entries/pages/feedback/_page.server.ts.js                                2.21 kB │ gzip:  0.98 kB
+.svelte-kit/output/server/chunks/DialogHeader.js                                                   2.38 kB │ gzip:  0.94 kB
+.svelte-kit/output/server/chunks/coloringPacks2.svelte.js                                          2.41 kB │ gzip:  0.70 kB
+.svelte-kit/output/server/chunks/RuleLabel.js                                                      2.51 kB │ gzip:  0.89 kB
+.svelte-kit/output/server/chunks/idbDatabase.js                                                    2.53 kB │ gzip:  0.73 kB
+.svelte-kit/output/server/chunks/generateImagePolicy.js                                            2.61 kB │ gzip:  1.28 kB
+.svelte-kit/output/server/chunks/admin.js                                                          2.62 kB │ gzip:  1.25 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/tokens/_server.ts.js                         2.66 kB │ gzip:  1.01 kB
+.svelte-kit/output/server/chunks/palette.js                                                        2.69 kB │ gzip:  1.31 kB
+.svelte-kit/output/server/chunks/report.js                                                         2.75 kB │ gzip:  1.34 kB
+.svelte-kit/output/server/chunks/github.js                                                         2.96 kB │ gzip:  1.57 kB
+.svelte-kit/output/server/entries/endpoints/dev/store-frames/assets/_...file_/_server.ts.js        3.37 kB │ gzip:  1.47 kB
+.svelte-kit/output/server/chunks/systemBackHandler.js                                              3.39 kB │ gzip:  1.20 kB
+.svelte-kit/output/server/chunks/idle.js                                                           3.42 kB │ gzip:  1.03 kB
+.svelte-kit/output/server/chunks/reportToken.js                                                    3.58 kB │ gzip:  1.15 kB
+.svelte-kit/output/server/entries/pages/admin/_page.server.ts.js                                   3.69 kB │ gzip:  1.43 kB
+.svelte-kit/output/server/chunks/report2.js                                                        3.79 kB │ gzip:  1.68 kB
+.svelte-kit/output/server/chunks/folderSave2.js                                                    3.81 kB │ gzip:  1.30 kB
+.svelte-kit/output/server/chunks/aiGeneration.svelte.js                                            3.81 kB │ gzip:  1.18 kB
+.svelte-kit/output/server/chunks/styles.js                                                         3.92 kB │ gzip:  1.77 kB
+.svelte-kit/output/server/entries/endpoints/api/csp-report/_server.ts.js                           3.94 kB │ gzip:  1.60 kB
+.svelte-kit/output/server/entries/endpoints/api/generation-result/_server.ts.js                    4.18 kB │ gzip:  1.54 kB
+.svelte-kit/output/server/chunks/SidebarToc.js                                                     4.21 kB │ gzip:  1.36 kB
+.svelte-kit/output/server/chunks/promiseWithResolvers.js                                           4.77 kB │ gzip:  1.67 kB
+.svelte-kit/output/server/chunks/ToggleRow.js                                                      4.79 kB │ gzip:  1.42 kB
+.svelte-kit/output/server/chunks/index-server.js                                                   4.83 kB │ gzip:  1.77 kB
+.svelte-kit/output/server/chunks/flatBackgroundPunch.js                                            5.29 kB │ gzip:  1.85 kB
+.svelte-kit/output/server/chunks/TocDisclosure.js                                                  6.04 kB │ gzip:  2.39 kB
+.svelte-kit/output/server/chunks/SegmentedPicker.js                                                6.39 kB │ gzip:  2.29 kB
+.svelte-kit/output/server/entries/hooks.server.js                                                  7.38 kB │ gzip:  2.98 kB
+.svelte-kit/output/server/chunks/appearance.svelte.js                                              7.48 kB │ gzip:  2.65 kB
+.svelte-kit/output/server/chunks/generationJobs.js                                                 8.96 kB │ gzip:  3.39 kB
+.svelte-kit/output/server/chunks/sessionCounters.svelte.js                                         8.99 kB │ gzip:  2.62 kB
+.svelte-kit/output/server/chunks/ParentalGate.js                                                   9.71 kB │ gzip:  3.25 kB
+.svelte-kit/output/server/chunks/http.js                                                           9.80 kB │ gzip:  3.41 kB
+.svelte-kit/output/server/chunks/freeGenerationGrants.js                                          10.14 kB │ gzip:  2.71 kB
+.svelte-kit/output/server/chunks/books.js                                                         10.33 kB │ gzip:  3.28 kB
+.svelte-kit/output/server/chunks/shared.js                                                        10.58 kB │ gzip:  3.38 kB
+.svelte-kit/output/server/entries/pages/changelog/_page.svelte.js                                 11.01 kB │ gzip:  3.08 kB
+.svelte-kit/output/server/chunks/manager.js                                                       11.08 kB │ gzip:  3.19 kB
+.svelte-kit/output/server/chunks/exports.js                                                       11.26 kB │ gzip:  3.63 kB
+.svelte-kit/output/server/entries/endpoints/api/report-image/_server.ts.js                        11.93 kB │ gzip:  3.61 kB
+.svelte-kit/output/server/chunks/provider.js                                                      12.54 kB │ gzip:  4.90 kB
+.svelte-kit/output/server/chunks/exportDrawing.js                                                 12.65 kB │ gzip:  3.42 kB
+.svelte-kit/output/server/chunks/tokens.js                                                        13.26 kB │ gzip:  4.47 kB
+.svelte-kit/output/server/chunks/settings.svelte.js                                               14.87 kB │ gzip:  4.24 kB
+.svelte-kit/output/server/chunks/parentalGate.svelte.js                                           15.41 kB │ gzip:  4.68 kB
+.svelte-kit/output/server/entries/endpoints/api/generate-image/_server.ts.js                      16.01 kB │ gzip:  4.88 kB
+.svelte-kit/output/server/chunks/primitiveSections.js                                             16.22 kB │ gzip:  6.14 kB
+.svelte-kit/output/server/chunks/storage.js                                                       18.20 kB │ gzip:  6.75 kB
+.svelte-kit/output/server/entries/pages/privacy/_page.svelte.js                                   20.55 kB │ gzip:  6.91 kB
+.svelte-kit/output/server/chunks/PrimitiveSections2.js                                            23.22 kB │ gzip:  5.91 kB
+.svelte-kit/output/server/chunks/install.svelte.js                                                28.00 kB │ gzip:  7.73 kB
+.svelte-kit/output/server/chunks/utils.js                                                         31.78 kB │ gzip:  9.35 kB
+.svelte-kit/output/server/chunks/internal.js                                                      51.15 kB │ gzip: 15.17 kB
+.svelte-kit/output/server/entries/pages/_page.svelte.js                                           54.43 kB │ gzip: 13.45 kB
+.svelte-kit/output/server/remote-entry.js                                                         54.55 kB │ gzip: 12.03 kB
+.svelte-kit/output/server/chunks/overlayChunk.js                                                  58.81 kB │ gzip: 14.75 kB
+.svelte-kit/output/server/chunks/VisuallyHidden.js                                                59.70 kB │ gzip: 21.48 kB
+.svelte-kit/output/server/entries/pages/design/_page.svelte.js                                    68.13 kB │ gzip: 17.40 kB
+.svelte-kit/output/server/chunks/Icon.js                                                          74.22 kB │ gzip: 25.06 kB
+.svelte-kit/output/server/chunks/SettingsModal.js                                                 90.27 kB │ gzip: 22.11 kB
+.svelte-kit/output/server/chunks/server2.js                                                      123.41 kB │ gzip: 32.51 kB
+.svelte-kit/output/server/index.js                                                               126.14 kB │ gzip: 31.93 kB
+.svelte-kit/output/server/chunks/aiImage.js                                                      142.41 kB │ gzip: 36.87 kB
+
+✓ built in 1.89s
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-static
+  Wrote site to "build"
+  ✔ done
+[strip-static-assets] no web-only books — nothing to strip.
+[strip-static-assets] stripped 7/7 downloadable coloring book(s), 22.48 MB freed.
+[strip-static-assets] stripped 14 web-only file(s), 799 KB freed.
+[strip-static-assets] stripped 2 asset-pipeline cover source(s), 0.10 MB freed.
+[strip-static-assets] stripped 2/2 web-responsive coloring tier root(s).
+
+> splotch@1.6.0 postbuild:cap
+> node tools/check-release-seams.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-build-version.mjs --native && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/check-static-bundle.mjs && node tools/check-bundle-budgets.mjs --native
+
+[release-seams] release client contains no profiling seams or engine marks
+[build-version] client, server, and coloring manifest all carry 1.6.0
+[check-static-bundle] native export references none of: play.google.com, groups.google.com, apps.apple.com, testflight.apple.com; no admin-console copy (2 sentinel(s)); no dev store-frames copy; no web-only support email; no web-only boot code (5 marker(s)); native-only lifecycle code is present (2 marker(s)); required pages privacy.html, changelog.html are present and linked; every HTML document carries one native CSP; privacy links to the hosted feedback form; only farm is bundled; canonical page SVGs are present and web-only coloring rasters are absent
+[bundle-budgets] native export 6076971/7000000 bytes across 236 files (28/28 index.html modulepreloads)

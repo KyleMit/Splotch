@@ -151,3 +151,23 @@ A screenshot-diff gate over a crossing would close that, and does not exist.
 the pass as the unit of mixing — including ADR-0065's buildup argument and ADR-0085's pass-tracker
 splits — now describes only the web pipeline. The splits and checkpoints still re-phase the seed on
 native and still matter for texture, but they no longer bound a mixing unit.
+
+## Proposed test-only planes retirement (campaign 2530)
+
+The delegated decision is to retire the unsupported `planes` mode from `crayonPassBuffer.ts`,
+retaining web restamp and native glaze-direct. Removing unused modes and closing the supported union
+won over preserving a runnable historical comparison; git retains the comparison if a real
+experiment needs it. The independent rival agreed after one reconciliation.
+
+**Implementation held; this proposal is not shipped.** A narrow candidate preserves surface APIs,
+canvas/context topology, live registration and glaze coefficients. Its interleaved headless host
+measurement nevertheless increased Chromium crayon draw time in both candidate arms. The cause is
+unproven, so the performance veto holds the candidate even though both release builds and
+within-engine nonblank pixel parity passed. The active production decision above remains in force.
+
+[The measurement record](../scratchpad/perf/2026-09-30-campaign-2530-crayon-planes/README.md)
+contains source hashes, raw samples, release counts/bytes and the limits of host evidence. A causal
+split of the deletion and faithful repeat measurement are required before implementation proceeds;
+headless host data does not establish native device performance. To reverse the retirement choice,
+restore the exclusive planes implementation/tests from the recorded baseline and document the
+current caller or experiment that needs it, without changing shipping selections or coefficients.

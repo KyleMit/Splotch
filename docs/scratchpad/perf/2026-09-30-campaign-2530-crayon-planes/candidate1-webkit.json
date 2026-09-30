@@ -1,0 +1,6334 @@
+{
+  "settings": {
+    "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) — the iOS app's engine family, desktop build)",
+    "engine": "webkit",
+    "browserVersion": "26.6",
+    "host": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "25.6.0",
+      "node": "v24.16.0"
+    },
+    "device": "ipad-pro-12.9",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "label": "ipad-pro-12.9"
+    },
+    "throttle": 0,
+    "refreshHz": 120,
+    "frameBudgetMs": 8.333333333333334,
+    "longOps": 1200,
+    "buildMode": "production-preview (reused build)",
+    "captureMode": "user-timing (no CDP on WebKit)",
+    "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds — read them as coarse magnitudes, never as sub-ms comparisons.",
+    "startedAt": "2026-09-30T03:11:56.489Z",
+    "durationMs": 34679
+  },
+  "scenarios": [
+    {
+      "key": "multi-finger",
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "paths": [
+        "commit",
+        "undo",
+        "depth-cap",
+        "multi-pointer"
+      ],
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      },
+      "settle": {
+        "settled": true,
+        "samples": 161,
+        "elapsedMs": 16721,
+        "trace": [
+          {
+            "atMs": 1,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 1,
+              "firstMs": 7,
+              "lastMs": 7,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 105,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 208,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 30,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 312,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 418,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 521,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 625,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 730,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 99,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 833,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 93,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 936,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1040,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 3,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1146,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1250,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 93,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1355,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1461,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1566,
+            "readMs": 4,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                5
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 96,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1670,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1775,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 103,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1878,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1983,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2088,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2193,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2298,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 96,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2403,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2506,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2612,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2718,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2823,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 88,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2927,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3031,
+            "readMs": 3,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 96,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3136,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3240,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3345,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3448,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3557,
+            "readMs": 7,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 8,
+              "lastMs": 108,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3662,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 97,
+              "maxGapMs": 22
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3765,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3870,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3975,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 102,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4080,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4185,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 93,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4290,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 4,
+              "lastMs": 103,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4394,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4500,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4605,
+            "readMs": 3,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                5
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 89,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4709,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4813,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 97,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 4919,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5024,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5128,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 99,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5233,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5336,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5440,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5545,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5650,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5755,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5858,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 5963,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 19,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6068,
+            "readMs": 2,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                3
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 93,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6171,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6274,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6379,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6483,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 94,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6589,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6693,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6798,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 6904,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7008,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7113,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7215,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 93,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7319,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7422,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 4,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 18,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7526,
+            "readMs": 2,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                2
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 17,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7632,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 97,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7737,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 7,
+              "lastMs": 91,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7840,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 102,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 7944,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8048,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8152,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8256,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8359,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8462,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8566,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8672,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8775,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 102,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8880,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 97,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 8985,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 93,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 17,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9089,
+            "readMs": 2,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 89,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9194,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9298,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9402,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9507,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9612,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9717,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9821,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 9924,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 102,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10029,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10134,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10239,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10345,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10450,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 16,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10553,
+            "readMs": 2,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                5
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 22
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10657,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 103,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10761,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10864,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 10969,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11074,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11178,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11283,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11386,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11490,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 3,
+              "lastMs": 87,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11594,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 99,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11699,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11803,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 7,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 11907,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 4,
+              "lastMs": 104,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12012,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 97,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 15,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12116,
+            "readMs": 3,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 92,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12220,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12325,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 103,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12430,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12533,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 93,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12638,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 88,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12743,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12848,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 96,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 12951,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13055,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 88,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13160,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13265,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 96,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13371,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13476,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 14,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13580,
+            "readMs": 4,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 98,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13685,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13791,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 88,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13894,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 13996,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14099,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 93,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14203,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 90,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14307,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14412,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 19
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14517,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14623,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14728,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14833,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 96,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 14938,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 7,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 13,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15044,
+            "readMs": 5,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 2,
+              "lastMs": 86,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15149,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15255,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 7,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15360,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15465,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 96,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15569,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 92,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15673,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15777,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15880,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 15984,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16090,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 88,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16194,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16300,
+            "readMs": 4,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16404,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16510,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 102,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 12,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16615,
+            "readMs": 3,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                4
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 97,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 11,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 16720,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 91,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 11,
+              "liveRasters": 11,
+              "rasterBytes": 123943512,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 11,
+              "pendingCommands": 0
+            }
+          }
+        ]
+      },
+      "undoSteps": 11,
+      "draw": {
+        "harnessWallMs": 744,
+        "measures": {
+          "engine.draw": {
+            "count": 22,
+            "total": 36,
+            "max": 3,
+            "durationsMs": [
+              3,
+              2,
+              2,
+              2,
+              1,
+              2,
+              1,
+              1,
+              2,
+              2,
+              2,
+              2,
+              2,
+              1,
+              1,
+              1,
+              2,
+              2,
+              1,
+              2,
+              1,
+              1
+            ]
+          },
+          "engine.commit": {
+            "count": 22,
+            "total": 146,
+            "max": 45,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              1,
+              13,
+              11,
+              3,
+              8,
+              45,
+              13,
+              0,
+              0,
+              1,
+              0,
+              6,
+              13,
+              9,
+              4,
+              5,
+              7,
+              7
+            ]
+          },
+          "engine.undoPatchCapture": {
+            "count": 420,
+            "total": 1,
+            "max": 1,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "engine.undoPatchCrop": {
+            "count": 21,
+            "total": 145,
+            "max": 45,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              1,
+              13,
+              10,
+              3,
+              8,
+              45,
+              13,
+              0,
+              0,
+              1,
+              0,
+              6,
+              13,
+              9,
+              4,
+              5,
+              7,
+              7
+            ]
+          }
+        },
+        "ops": 22,
+        "totalMs": 36,
+        "commitCount": 22,
+        "commitMs": 146,
+        "commitP95Ms": 13,
+        "headroomRatio": 0.52,
+        "commitMaxMs": 45,
+        "commitDurationsMs": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          13,
+          11,
+          3,
+          8,
+          45,
+          13,
+          0,
+          0,
+          1,
+          0,
+          6,
+          13,
+          9,
+          4,
+          5,
+          7,
+          7
+        ]
+      },
+      "undo": {
+        "harnessWallMs": 185,
+        "measures": {
+          "engine.undoInkMotion": {
+            "count": 22,
+            "total": 6,
+            "max": 1,
+            "durationsMs": [
+              1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "engine.undo": {
+            "count": 11,
+            "total": 9,
+            "max": 2,
+            "durationsMs": [
+              2,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1
+            ]
+          }
+        },
+        "steps": 11,
+        "totalMs": 9,
+        "avgMs": 0.8181818181818182,
+        "maxMs": 2
+      },
+      "heap": {
+        "afterDrawMB": null,
+        "afterUndoMB": null
+      },
+      "historyRasterMB": 139.54549407958984,
+      "observers": {
+        "longTasks": [],
+        "frames": {
+          "count": 1031,
+          "durationMs": 17650,
+          "fps": 58.35694050991501,
+          "longFrames": 2
+        },
+        "heapBytes": null
+      }
+    },
+    {
+      "key": "crayon-scribbles",
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "paths": [
+        "commit",
+        "undo",
+        "depth-cap",
+        "crayon-fold",
+        "crayon-pass-split"
+      ],
+      "strokes": 22,
+      "crayon": true,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      },
+      "settle": {
+        "settled": true,
+        "samples": 32,
+        "elapsedMs": 3691,
+        "trace": [
+          {
+            "atMs": 1,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 1,
+              "firstMs": 4,
+              "lastMs": 4,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 104,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 207,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 310,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 413,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 516,
+            "readMs": 1,
+            "changed": false,
+            "measures": {
+              "engine.crayonShadow": [
+                0
+              ]
+            },
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 620,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 88,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 725,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 828,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 931,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1033,
+            "readMs": 0,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1137,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 3,
+              "lastMs": 86,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1242,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1345,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1450,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2025,
+            "readMs": 474,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                526
+              ]
+            },
+            "frames": {
+              "count": 3,
+              "firstMs": 2,
+              "lastMs": 37,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2128,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 95,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2231,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 9,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2334,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2440,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 102,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2543,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2647,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 94,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2751,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 88,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2856,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 2,
+              "lastMs": 103,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2961,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3066,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 10,
+              "lastMs": 93,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3170,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 88,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3276,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3379,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3484,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3588,
+            "readMs": 2,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                16
+              ]
+            },
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 103,
+              "maxGapMs": 21
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3691,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 16,
+              "lastMs": 99,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          }
+        ]
+      },
+      "undoSteps": 20,
+      "draw": {
+        "harnessWallMs": 8885,
+        "measures": {
+          "engine.draw": {
+            "count": 22,
+            "total": 1693,
+            "max": 605,
+            "durationsMs": [
+              388,
+              6,
+              509,
+              6,
+              90,
+              605,
+              6,
+              5,
+              6,
+              6,
+              6,
+              6,
+              6,
+              5,
+              6,
+              5,
+              5,
+              6,
+              5,
+              5,
+              6,
+              5
+            ]
+          },
+          "engine.commit": {
+            "count": 22,
+            "total": 6510,
+            "max": 599,
+            "durationsMs": [
+              0,
+              35,
+              0,
+              291,
+              0,
+              0,
+              592,
+              54,
+              507,
+              291,
+              385,
+              597,
+              538,
+              57,
+              503,
+              288,
+              385,
+              599,
+              550,
+              54,
+              496,
+              288
+            ]
+          },
+          "engine.undoPatchCapture": {
+            "count": 124,
+            "total": 0,
+            "max": 0,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "engine.undoPatchCrop": {
+            "count": 21,
+            "total": 6510,
+            "max": 599,
+            "durationsMs": [
+              35,
+              0,
+              291,
+              0,
+              0,
+              592,
+              54,
+              507,
+              291,
+              385,
+              597,
+              538,
+              57,
+              503,
+              288,
+              385,
+              599,
+              550,
+              54,
+              496,
+              288
+            ]
+          }
+        },
+        "ops": 22,
+        "totalMs": 1693,
+        "commitCount": 22,
+        "commitMs": 6510,
+        "commitP95Ms": 597,
+        "headroomRatio": 23.88,
+        "commitMaxMs": 599,
+        "commitDurationsMs": [
+          0,
+          35,
+          0,
+          291,
+          0,
+          0,
+          592,
+          54,
+          507,
+          291,
+          385,
+          597,
+          538,
+          57,
+          503,
+          288,
+          385,
+          599,
+          550,
+          54,
+          496,
+          288
+        ]
+      },
+      "undo": {
+        "harnessWallMs": 630,
+        "measures": {
+          "engine.undoInkMotion": {
+            "count": 40,
+            "total": 343,
+            "max": 329,
+            "durationsMs": [
+              329,
+              0,
+              2,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "engine.undo": {
+            "count": 20,
+            "total": 344,
+            "max": 329,
+            "durationsMs": [
+              329,
+              2,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "engine.crayonShadow": {
+            "count": 10,
+            "total": 0,
+            "max": 0,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "steps": 20,
+        "totalMs": 344,
+        "avgMs": 17.2,
+        "maxMs": 329
+      },
+      "heap": {
+        "afterDrawMB": null,
+        "afterUndoMB": null
+      },
+      "historyRasterMB": 49.326080322265625,
+      "observers": {
+        "longTasks": [],
+        "frames": {
+          "count": 201,
+          "durationMs": 13200,
+          "fps": 15.151515151515152,
+          "longFrames": 4
+        },
+        "heapBytes": null
+      }
+    }
+  ],
+  "confirmations": [
+    {
+      "key": "crayon-scribbles",
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "paths": [
+        "commit",
+        "undo",
+        "depth-cap",
+        "crayon-fold",
+        "crayon-pass-split"
+      ],
+      "strokes": 22,
+      "crayon": true,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      },
+      "settle": {
+        "settled": true,
+        "samples": 32,
+        "elapsedMs": 3681,
+        "trace": [
+          {
+            "atMs": 1,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 1,
+              "firstMs": 4,
+              "lastMs": 4,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 104,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 207,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 310,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 0,
+              "firstMs": null,
+              "lastMs": null,
+              "maxGapMs": 0
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 413,
+            "readMs": 1,
+            "changed": false,
+            "measures": {
+              "engine.crayonShadow": [
+                0
+              ]
+            },
+            "frames": {
+              "count": 2,
+              "firstMs": 93,
+              "lastMs": 102,
+              "maxGapMs": 9
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 515,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 17,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 620,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 100,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 723,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 828,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 7,
+              "lastMs": 92,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 930,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 4,
+              "lastMs": 87,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1033,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 0,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1137,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 14,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1242,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 95,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1344,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 90,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 1449,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 5,
+              "lastMs": 88,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 0,
+              "baseRasterBytes": 0,
+              "historyLength": 22,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2010,
+            "readMs": 460,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                511
+              ]
+            },
+            "frames": {
+              "count": 3,
+              "firstMs": 0,
+              "lastMs": 31,
+              "maxGapMs": 16
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2113,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 9,
+              "firstMs": 0,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2217,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 17,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2321,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2426,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2531,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 88,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2636,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2740,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 12,
+              "lastMs": 96,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2845,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 92,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 2949,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 3,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3054,
+            "readMs": 2,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 15,
+              "lastMs": 98,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3159,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 11,
+              "lastMs": 94,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3264,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 6,
+              "lastMs": 89,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3369,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 1,
+              "lastMs": 101,
+              "maxGapMs": 17
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3474,
+            "readMs": 3,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 6,
+              "firstMs": 13,
+              "lastMs": 96,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 21,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3577,
+            "readMs": 1,
+            "changed": true,
+            "measures": {
+              "engine.fold": [
+                17
+              ]
+            },
+            "frames": {
+              "count": 6,
+              "firstMs": 8,
+              "lastMs": 91,
+              "maxGapMs": 31
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          },
+          {
+            "atMs": 3681,
+            "readMs": 1,
+            "changed": false,
+            "measures": {},
+            "frames": {
+              "count": 7,
+              "firstMs": 4,
+              "lastMs": 103,
+              "maxGapMs": 18
+            },
+            "reading": {
+              "snapshots": 20,
+              "liveRasters": 20,
+              "rasterBytes": 29341600,
+              "baseRasters": 20,
+              "baseRasterBytes": 22380544,
+              "historyLength": 20,
+              "pendingCommands": 0
+            }
+          }
+        ]
+      },
+      "undoSteps": 20,
+      "draw": {
+        "harnessWallMs": 8974,
+        "measures": {
+          "engine.draw": {
+            "count": 22,
+            "total": 1702,
+            "max": 620,
+            "durationsMs": [
+              390,
+              5,
+              507,
+              5,
+              89,
+              620,
+              6,
+              5,
+              6,
+              5,
+              5,
+              6,
+              6,
+              5,
+              5,
+              5,
+              5,
+              7,
+              5,
+              5,
+              5,
+              5
+            ]
+          },
+          "engine.commit": {
+            "count": 22,
+            "total": 6622,
+            "max": 618,
+            "durationsMs": [
+              0,
+              40,
+              0,
+              291,
+              0,
+              0,
+              571,
+              51,
+              506,
+              287,
+              387,
+              601,
+              546,
+              54,
+              507,
+              298,
+              390,
+              618,
+              585,
+              55,
+              532,
+              303
+            ]
+          },
+          "engine.undoPatchCapture": {
+            "count": 124,
+            "total": 1,
+            "max": 1,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "engine.undoPatchCrop": {
+            "count": 21,
+            "total": 6620,
+            "max": 618,
+            "durationsMs": [
+              40,
+              0,
+              291,
+              0,
+              0,
+              571,
+              51,
+              505,
+              287,
+              386,
+              601,
+              546,
+              54,
+              507,
+              298,
+              390,
+              618,
+              585,
+              55,
+              532,
+              303
+            ]
+          }
+        },
+        "ops": 22,
+        "totalMs": 1702,
+        "commitCount": 22,
+        "commitMs": 6622,
+        "commitP95Ms": 601,
+        "headroomRatio": 24.04,
+        "commitMaxMs": 618,
+        "commitDurationsMs": [
+          0,
+          40,
+          0,
+          291,
+          0,
+          0,
+          571,
+          51,
+          506,
+          287,
+          387,
+          601,
+          546,
+          54,
+          507,
+          298,
+          390,
+          618,
+          585,
+          55,
+          532,
+          303
+        ]
+      },
+      "undo": {
+        "harnessWallMs": 667,
+        "measures": {
+          "engine.undoInkMotion": {
+            "count": 40,
+            "total": 375,
+            "max": 366,
+            "durationsMs": [
+              366,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          "engine.undo": {
+            "count": 20,
+            "total": 378,
+            "max": 366,
+            "durationsMs": [
+              366,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              0,
+              1,
+              1,
+              1
+            ]
+          },
+          "engine.crayonShadow": {
+            "count": 10,
+            "total": 0,
+            "max": 0,
+            "durationsMs": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "steps": 20,
+        "totalMs": 378,
+        "avgMs": 18.9,
+        "maxMs": 366
+      },
+      "heap": {
+        "afterDrawMB": null,
+        "afterUndoMB": null
+      },
+      "historyRasterMB": 49.326080322265625,
+      "observers": {
+        "longTasks": [],
+        "frames": {
+          "count": 201,
+          "durationMs": 13316,
+          "fps": 15.019525382997898,
+          "longFrames": 4
+        },
+        "heapBytes": null
+      }
+    }
+  ],
+  "gate": {
+    "engine": "webkit",
+    "gated": true,
+    "enforced": false,
+    "budgetMs": 25,
+    "percentile": 0.95,
+    "breaches": [
+      "crayon-scribbles"
+    ],
+    "scenarioTimings": [
+      {
+        "key": "multi-finger",
+        "rawP95Ms": 13,
+        "gateP95Ms": 13,
+        "hostSlowdown": null,
+        "drawTotalMs": 36,
+        "slowdownFactor": 1,
+        "normalized": false,
+        "stalled": false,
+        "evaluable": true,
+        "breached": false
+      },
+      {
+        "key": "crayon-scribbles",
+        "rawP95Ms": 597,
+        "gateP95Ms": 597,
+        "hostSlowdown": 0.027845394736842104,
+        "drawTotalMs": 1693,
+        "slowdownFactor": 1,
+        "normalized": false,
+        "stalled": false,
+        "evaluable": true,
+        "breached": true
+      }
+    ],
+    "confirmationTimings": [
+      {
+        "key": "crayon-scribbles",
+        "rawP95Ms": 601,
+        "gateP95Ms": 601,
+        "hostSlowdown": 0.02799342105263158,
+        "drawTotalMs": 1702,
+        "slowdownFactor": 1,
+        "normalized": false,
+        "stalled": false,
+        "evaluable": true,
+        "breached": true
+      }
+    ],
+    "breachDispositions": {
+      "crayon-scribbles": "confirmed"
+    }
+  },
+  "fastSetEvaluation": null
+}

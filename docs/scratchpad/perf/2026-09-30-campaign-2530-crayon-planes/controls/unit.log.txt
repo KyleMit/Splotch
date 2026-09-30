@@ -1,0 +1,13 @@
+$ vitest run src/lib/drawing/crayonPassBuffer.test.ts src/lib/drawing/crayonGlazeDirect.test.ts src/lib/drawing/crayonShadowRefresh.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vitest.config.ts:3:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /private/tmp/splotch-campaign-2530/d4/web
+
+
+ Test Files  3 passed (3)
+      Tests  10 passed (10)
+   Start at  23:20:25
+   Duration  330ms (environment 66%, transform 24%, import 5%, tests 3%, setup 2%, worker 1%)
+

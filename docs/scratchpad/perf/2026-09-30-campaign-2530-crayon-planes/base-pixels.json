@@ -1,0 +1,10 @@
+{
+  "chromium": {
+    "bytes": 1788800,
+    "sha256": "4e02711a5334b41b2ff46ed87892746e36da5a5a7c6c7f5336bd61c0306a7c15"
+  },
+  "webkit": {
+    "bytes": 1788800,
+    "sha256": "e21c11805b5ef8f8957b7c31e97af0a7f876dd2aa1f9795458f9c77492574bb1"
+  }
+}

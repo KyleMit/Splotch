@@ -1,0 +1,6 @@
+{
+  "tools/perf/web/run-undo-scenarios.mjs": "b00c5dc9f71e5294ced87f9ed32cddb18732407596e8e070faa6c00d5bf348d8",
+  "tools/perf/lib/undo-scenario-keys.mjs": "8ba100bb5e5922a739f4252b9cc657cb7006ff96600404c424c844ada0039338",
+  "tools/perf/lib/profile-preview.mjs": "04f3bdc7ce6ed3b5ec1d8e40e56fcb28eec1f9f92b2641d220425f20316851b7",
+  "web/src/routes/dev/engine/+page.svelte": "4f8512c36d93b0f8efc260c91c81e7df263794c6c94587151a9c8620d33a4067"
+}

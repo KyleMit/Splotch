@@ -1,0 +1,22 @@
+{
+  "docs/adrs/0148-crayon-per-op-glaze-on-native.md": {
+    "baseline": "ab13cc2127006094c8cb6cf623820fab766bb56fdba5dd187be27de0515e3596",
+    "candidate": "ab13cc2127006094c8cb6cf623820fab766bb56fdba5dd187be27de0515e3596"
+  },
+  "web/src/lib/drawing/crayonBrush.ts": {
+    "baseline": "59f66ab3a1e3d5aaff5642ebe31f9030c52e2f1ba8bee1cf8240cc6231fea764",
+    "candidate": "8de4a47064aa6053f402f22a5f29d2e463eaec7874efa82ecf8367053c7fcbea"
+  },
+  "web/src/lib/drawing/crayonPassBuffer.test.ts": {
+    "baseline": "5e13b26967a4e745cea84b045b4baacb4cb5730423f41042f65ee59ea1487d49",
+    "candidate": "8c7e2d42792f4f7d972873556d6bb03df60d920e5c75b82823fb7d4c48c58cef"
+  },
+  "web/src/lib/drawing/crayonPassBuffer.ts": {
+    "baseline": "7b3c54d2cdad01ea60f25aa0d8894334b938e355669d17b0d922ccbb7be64e55",
+    "candidate": "28c99946aa0e36881d1273c0a1494c975f3358982f34b1fdc2e67535ce71405a"
+  },
+  "web/tests/global.d.ts": {
+    "baseline": "928dcbb87d0fbe85683f67a03303ec7488b0c6fc9f3ae337c8feb8c13b3aeaf9",
+    "candidate": "078f7690b52cb78c521e0926a5212c906aa524a109020ac9d93b380f9398cdd4"
+  }
+}

@@ -1,0 +1,354 @@
+{
+  "base1-chromium": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 117.39999997615814,
+      "medianMs": 5.1500000059604645,
+      "minMs": 3.899999976158142,
+      "maxMs": 8.600000023841858,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 2952.7000002264977,
+      "medianMs": 135.69999998807907,
+      "minMs": 125.20000004768372,
+      "maxMs": 141.4000000357628,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "base2-chromium": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 108.89999997615814,
+      "medianMs": 4.800000011920929,
+      "minMs": 3.699999988079071,
+      "maxMs": 8,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 2982.899999856949,
+      "medianMs": 136.85000002384186,
+      "minMs": 126.5,
+      "maxMs": 152.0999999642372,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "candidate1-chromium": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 126.09999996423721,
+      "medianMs": 5.549999982118607,
+      "minMs": 4.300000011920929,
+      "maxMs": 9.399999976158142,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 3632.100000023842,
+      "medianMs": 166.5,
+      "minMs": 156.4000000357628,
+      "maxMs": 174.5,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "candidate2-chromium": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 114.40000003576279,
+      "medianMs": 4.850000023841858,
+      "minMs": 3.600000023841858,
+      "maxMs": 11.399999976158142,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 3195.2999998927116,
+      "medianMs": 144.9500000178814,
+      "minMs": 129,
+      "maxMs": 173.5999999642372,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "base1-webkit": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 35,
+      "medianMs": 2.0,
+      "minMs": 1,
+      "maxMs": 3,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 1702,
+      "medianMs": 5.5,
+      "minMs": 5,
+      "maxMs": 576,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "base2-webkit": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 32,
+      "medianMs": 1.0,
+      "minMs": 1,
+      "maxMs": 3,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 1954,
+      "medianMs": 6.0,
+      "minMs": 5,
+      "maxMs": 670,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "candidate1-webkit": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 36,
+      "medianMs": 2.0,
+      "minMs": 1,
+      "maxMs": 3,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 1693,
+      "medianMs": 6.0,
+      "minMs": 5,
+      "maxMs": 605,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ],
+  "candidate2-webkit": [
+    {
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "count": 22,
+      "totalMs": 37,
+      "medianMs": 2.0,
+      "minMs": 1,
+      "maxMs": 3,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 11,
+        "liveRasters": 11,
+        "rasterBytes": 123943512,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 11,
+        "patchBytes": 123943512,
+        "pendingCommands": 0
+      }
+    },
+    {
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "count": 22,
+      "totalMs": 1684,
+      "medianMs": 6.0,
+      "minMs": 5,
+      "maxMs": 585,
+      "strokes": 22,
+      "debug": {
+        "strokeRevision": 22,
+        "snapshots": 20,
+        "liveRasters": 20,
+        "rasterBytes": 29341600,
+        "blobBytes": 0,
+        "baseRasters": 20,
+        "baseRasterBytes": 22380544,
+        "historyLength": 20,
+        "patchBytes": 29341600,
+        "pendingCommands": 0
+      }
+    }
+  ]
+}

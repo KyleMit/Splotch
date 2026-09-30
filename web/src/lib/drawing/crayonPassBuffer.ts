@@ -147,14 +147,6 @@ function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathO
 //     under) the close-time stamp applied once — later ops only repaint
 //     pixels inside their own padded rect, which is exactly the region they
 //     restamp — so per-op stamping cannot compound.
-//   * 'planes' (the Capacitor WKWebView): the ADR-0085 architecture — the
-//     buffer IS the tile's bottom preview plane (mix-blend-mode: darken), a
-//     top mirror plane at 1−mix opacity previews the exact glaze through CSS
-//     compositing, and 'crayonFlush' stamps the buffer onto the tile at pass
-//     close. The same day's A/B measured restamp REGRESSING the WKWebView
-//     (1.76–2.12% against the plane pipeline's 1.19–1.39%, at merge caps 8
-//     and 3 alike, and 4.4–5.5% at per-move granularity). ADR-0148 moved
-//     native to 'glaze-direct' (below), so no shipping build runs planes.
 //
 // Three constraints the campaign measured bound any rework of the restamp
 // path:
@@ -170,7 +162,7 @@ function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathO
 // tile itself — no accumulation buffer, no preview planes, and no blit, which
 // is what the WKWebView actually charges for (this campaign's D1 measured the
 // composited planes, not the bake, as the plane pipeline's cost).
-type CrayonDepositionMode = 'restamp' | 'planes' | 'glaze-direct';
+type CrayonDepositionMode = 'restamp' | 'glaze-direct';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -215,31 +207,17 @@ export function configureCrayonDeposition(
 // resolves in a plain Node context and cannot find — it took every E2E shard
 // down. The dev harness sets PUBLIC_ENABLE_DEV_HARNESS explicitly, so the
 // literal alone is sufficient for every caller this has.
-// Deliberately NARROWER than CrayonDepositionMode. Switching to 'planes' here
-// would not produce a plane topology: setCrayonBufferForTarget registers a
-// tile's paired preview canvases only while the mode is already 'planes' at tile
-// adoption, and the web build adopts as 'restamp' — so a later switch would
-// lazily create an offscreen buffer with no mirror while the real plane canvases
-// stayed hidden and unbacked. The seam would appear to work and render something
-// that is not the plane pipeline. Re-adopting the live surfaces on switch is the
-// alternative, and no caller needs it.
-export function setCrayonDepositionForTuning(mode: 'restamp' | 'glaze-direct') {
+export function setCrayonDepositionForTuning(mode: CrayonDepositionMode) {
   if (!__DEV_HARNESS__) return;
   configureCrayonDeposition(mode, strokeActiveProbe);
 }
 
-// Whether crayon ops mutate the normal ink tile directly (restamp) — the
-// renderer uses this to decide tile visibility and plane backing allocation.
 export function crayonDepositsOnTiles() {
-  return depositionMode !== 'planes';
+  return true;
 }
 
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
-  // 'planes' mode: the tile's top preview plane, kept a byte-identical mirror
-  // of the buffer by copying each op's rect. Null in 'restamp' mode and for
-  // offscreen targets (history base, export).
-  mirror: CanvasRenderingContext2D | null;
   // 'restamp' mode: offscreen shadow of the target's pre-pass pixels,
   // restored under the glaze on every restamp.
   under: CanvasRenderingContext2D | null;
@@ -264,11 +242,8 @@ const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>()
 // which every live tile adoption calls and no offscreen target does.
 const liveTileTargets = new WeakSet<CanvasRenderingContext2D>();
 
-// 'planes' mode registers the tile's paired preview canvases as the pass
-// buffer and its mirror; 'restamp' mode keeps the planes hidden all session
-// and never gives them a backing — every target gets a lazily created
-// offscreen buffer instead. Keeping the planes registered-but-hidden leaves
-// the LiveSurface contract identical across runtimes.
+// The surface contract retains unbacked preview canvases; both shipping
+// pipelines keep them hidden and use the normal tile for deposition.
 export function setCrayonBufferForTarget(
   target: CanvasRenderingContext2D,
   buffer: CanvasRenderingContext2D,
@@ -277,16 +252,6 @@ export function setCrayonBufferForTarget(
   liveTileTargets.add(target);
   buffer.canvas.hidden = true;
   mirror.canvas.hidden = true;
-  if (depositionMode !== 'planes') return;
-  bufferByTarget.set(target, {
-    ctx: buffer,
-    mirror,
-    under: null,
-    underValid: false,
-    virgin: false,
-    dirty: false,
-    bounds: null,
-  });
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -302,7 +267,6 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     g.lineJoin = 'round';
     buf = {
       ctx: g,
-      mirror: null,
       under: null,
       underValid: false,
       virgin: false,
@@ -458,13 +422,9 @@ function restampRect(
 // is the only moment blankness is knowable without reading pixels.
 const blankAtPassOpen = new WeakSet<CanvasRenderingContext2D>();
 
-// The renderer's one-call seam for a crayon ink op's tile visibility: plane
-// deposition previews on the composited planes, so the tile must stay as it
-// was (returns false); restamp deposition mutates the tile directly, so it is
-// shown like any ink op — and a still-hidden tile is blank
-// (prepareTileForMutation has run), which is what opens the virgin fast path.
+// Tile visibility reveals blankness without a pixel read, so the first
+// restamp pass can skip its under shadow.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
-  if (depositionMode === 'planes') return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
 }
@@ -482,7 +442,7 @@ export function crayonBufferIsDirty(target: CanvasRenderingContext2D) {
 // points bound the curve's hull, the pad covers the stroke's half-width plus AA
 // bleed, and a transformed rect unions its mapped corners.
 // The op's user-space box mapped into device pixels and clamped to the buffer,
-// or null when it falls outside. Shared by the bounds union, the mirror blit,
+// or null when it falls outside. Shared by the bounds union
 // and the restamp, so they can never disagree about which pixels an op
 // touched.
 function deviceRectFor(
@@ -532,21 +492,14 @@ function unionCrayonBounds(
 function clearCrayonBounds(buf: CrayonPassBuffer) {
   const b = buf.bounds;
   if (b) {
-    for (const g of [buf.ctx, buf.mirror]) {
-      if (!g) continue;
-      g.save();
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
-      g.restore();
-    }
+    buf.ctx.save();
+    buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    buf.ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    buf.ctx.restore();
   }
   buf.bounds = null;
   buf.dirty = false;
   buf.virgin = false;
-  if (depositionMode === 'planes') {
-    buf.ctx.canvas.hidden = true;
-    if (buf.mirror) buf.mirror.canvas.hidden = true;
-  }
 }
 
 function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, blit: () => void) {
@@ -561,9 +514,6 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 
 // Close the target's open pass (if any).
 //
-// 'planes': stamp the buffered pass onto the target as the two-blit glaze —
-// buffer and target share backing dimensions and ops were painted through the
-// target's own transform, so the blits are 1:1 rect copies in device space.
 // 'restamp': the target already holds the exact pass-close pixels — every op
 // painted or restamped them — so only reset pass state; the pass's own wax
 // made the shadow stale, so queue a post-lift refresh.
@@ -572,21 +522,6 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   if (depositionMode === 'glaze-direct') return;
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  if (depositionMode === 'planes') {
-    const b = buf.bounds;
-    if (b) {
-      const w = b.x1 - b.x0;
-      const h = b.y1 - b.y0;
-      target.save();
-      target.setTransform(1, 0, 0, 1, 0, 0);
-      stampSubtractiveGlaze(target, getCrayonMix(), () => {
-        target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-      });
-      target.restore();
-    }
-    clearCrayonBounds(buf);
-    return;
-  }
   clearCrayonBounds(buf);
   buf.underValid = false;
   markShadowStale(target);
@@ -614,8 +549,8 @@ function dropCrayonBuffer(target: CanvasRenderingContext2D) {
 }
 
 // Deposit a crayon ink op through the configured pipeline (see the pass-buffer
-// notes above). Both pipelines paint the buffer through the target's own
-// transform and grow the pass bounds by the op's padded rect.
+// notes above). Restamp paints the buffer through the target's own
+// transform and grows the pass bounds by the op's padded rect.
 export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   // Zero mix = the pre-mixing pipeline exactly: paint the target directly
   // (opaque wax, no buffer, no stamp) — the dev harness's A/B baseline and a
@@ -631,39 +566,6 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   const buf = crayonBufferFor(target);
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  if (depositionMode === 'planes') {
-    buf.ctx.canvas.hidden = false;
-    if (buf.mirror) buf.mirror.canvas.hidden = false;
-    paintCrayon(buf.ctx, op);
-    buf.dirty = true;
-    const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
-    if (buf.mirror && rect) {
-      // The mirror's pixels are the buffer's pixels — same op, same seed,
-      // same patterns — so re-running the pattern fill to produce them is
-      // pure duplicate work. Clearing and copying the op's own rect gives
-      // byte-identical output for one blit instead of `passes`
-      // pattern-filled strokes.
-      const width = rect.x1 - rect.x0;
-      const height = rect.y1 - rect.y0;
-      buf.mirror.save();
-      buf.mirror.setTransform(1, 0, 0, 1, 0, 0);
-      buf.mirror.clearRect(rect.x0, rect.y0, width, height);
-      buf.mirror.drawImage(
-        buf.ctx.canvas,
-        rect.x0,
-        rect.y0,
-        width,
-        height,
-        rect.x0,
-        rect.y0,
-        width,
-        height
-      );
-      buf.mirror.restore();
-    }
-    unionCrayonBounds(buf, rect);
-    return;
-  }
   if (!buf.dirty) {
     // Pass open: a tile the renderer marked blank takes the virgin fast path.
     // A non-virgin pass reads the target only when the post-lift refresh has
