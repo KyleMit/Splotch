@@ -88,20 +88,21 @@ body {
   scrollbar-color: var(--icon-muted) transparent;
 }
 
-/* The OS safe-area insets, seeded once here so every consumer in the app reads
-   a custom property instead of calling env() directly. env() itself is only
+/* Capacitor supplies CSS insets only for space not already padded natively;
+   its explicit 0px must win over env() to avoid reserving the same space twice.
+   Web and iOS fall back to env(). Every consumer reads this seam. env() is only
    overridable through CDP (Emulation.setSafeAreaInsetsOverride), which reaches
    Playwright and nothing else; one level of indirection lets the /dev/notch
    harness re-declare these four on a subtree and render the real HUD as any
    device sees it. The 0px fallbacks keep a declaration valid on an engine with
    no env() support, where an unresolved var() would otherwise fall all the way
    back to the property's initial value. safeArea.ts declares the same four
-   names for its JS-side probe; safeArea.test.ts fails if the two sets drift. */
+   names for its JS-side probe; safeAreaProperties.test.ts guards the seam. */
 :root {
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
 }
 
 /* The paper grain every paper surface paints: the drawing route's paper sheet

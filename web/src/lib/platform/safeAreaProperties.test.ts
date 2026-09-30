@@ -18,7 +18,8 @@ const appCss = readFileSync(join(srcDir, 'app.css'), 'utf8');
 
 // The seed block is the sole legitimate env() call site, so it is excluded from
 // the sweep by matching it exactly rather than by line number.
-const SEED_PATTERN = /--safe-area-(top|right|bottom|left):\s*env\(safe-area-inset-\1,\s*0px\)/g;
+const SEED_PATTERN =
+  /--safe-area-(top|right|bottom|left):\s*var\(--safe-area-inset-\1,\s*env\(safe-area-inset-\1,\s*0px\)\)/g;
 
 // The seed's own spelling carries a fallback, so a consumer copied from it does
 // too; the pattern has to see past `, 0px` and padding inside the parens.
@@ -36,11 +37,13 @@ function collectSources(dir: string, found: string[] = []): string[] {
 }
 
 describe('safe-area inset custom properties', () => {
-  it('app.css seeds every edge from its env() counterpart', () => {
+  it('app.css prefers the Capacitor inset with an env() fallback for every edge', () => {
     const seeded = [...appCss.matchAll(SEED_PATTERN)].map((match) => match[1]);
     expect(seeded.sort()).toEqual([...SAFE_AREA_EDGES].sort());
     for (const edge of SAFE_AREA_EDGES) {
-      expect(appCss).toContain(`${SAFE_AREA_PROPERTIES[edge]}: env(safe-area-inset-${edge}, 0px)`);
+      expect(appCss).toContain(
+        `${SAFE_AREA_PROPERTIES[edge]}: var(--safe-area-inset-${edge}, env(safe-area-inset-${edge}, 0px))`
+      );
     }
   });
 

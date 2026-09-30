@@ -7,5 +7,11 @@
   },
   "ios": {
     "contentInset": "never"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
+    }
   }
 }
