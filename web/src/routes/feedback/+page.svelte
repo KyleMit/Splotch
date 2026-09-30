@@ -72,6 +72,7 @@
       // The fields are bound to the state above, so letting SvelteKit reset the
       // <form> element would leave the DOM and that state disagreeing.
       await update({ reset: false });
+      // Same-route navigation retains this instance; a sent report must not return on Back or Send another.
       if (result.type === 'redirect') {
         kind = 'bug';
         message = '';

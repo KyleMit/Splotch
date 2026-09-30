@@ -10,8 +10,9 @@ import { expectNoReload, spaNavigate } from './helpers';
 // page — that it renders, composes the payload the action reads, and can post at all.
 //
 // The report bucket is 5 requests/minute per IP and /api/report shares it, so
-// exactly one test here actually submits to the server. Success tests intercept the POST. Adding a second submitting test would
-// spend the budget CI's retries need.
+// exactly one test here submits to the server; enhanced success and failure
+// tests fulfill the POST themselves. A second real submission would spend
+// the budget CI's retries need.
 //
 // Every scripted control on this page is driven by a Svelte handler, so a click
 // that lands before hydration is swallowed with no way to recover — hence
@@ -207,6 +208,7 @@ for (const kind of ['bug', 'feature'] as const) {
       });
     });
     await page.goto('/feedback');
+    await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
     await retryClick(
       page,
       () => page.getByRole('checkbox').check(),
@@ -229,6 +231,7 @@ for (const kind of ['bug', 'feature'] as const) {
     await expect(page.getByRole('checkbox')).not.toBeChecked();
     await expect(page.locator('input[name="device"]')).toHaveValue('');
     await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
+    await expectNoReload(page);
   });
 }
 
@@ -245,7 +248,7 @@ test('an enhanced delivery failure retains the report draft and device choice', 
       { kind: 3, message: 4, includeDevice: 5 },
       'feature',
       message,
-      true,
+      false,
     ]);
     await route.fulfill({
       contentType: 'application/json',
@@ -263,6 +266,7 @@ test('an enhanced delivery failure retains the report draft and device choice', 
     () => page.getByRole('radio', { name: 'I have an idea' }).check(),
     () => expect(page.getByRole('button', { name: 'Send idea' })).toBeVisible()
   );
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
   await page.locator('#reportMessage').fill(message);
   await page.getByRole('button', { name: 'Send idea' }).click();
 
