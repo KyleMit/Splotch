@@ -50,7 +50,7 @@
     "candidate2-webkit.json": "8b2172f56ce4c679323766e5135734c0bf988b848b3e44594ebc3fdf380fbce4",
     "controls/base-cap-build.log.txt": "6d3446b4ee5c714d8f9415a981779255923830000812c602159616d00405fc08",
     "controls/base-web-build.log.txt": "01155c4913a8356b125264288fa49aab81abbb41410a3da8159ba3bbc6eab039",
-    "controls/browserless.log.txt": "1f4a43b0b48d74eed1b0ea90be7450c2bed7e923635c07a4971649d977a5f05d",
+    "controls/browserless.log.txt": "069c2c1505824c77d31b5431dbbf2cb3bea1dad79ad880797182bc4186e9ad22",
     "controls/candidate-cap-build.log.txt": "c6f16998900c4a26edd5b86760a2a306112d7c24c354cfd111b9395ea4611f5c",
     "controls/candidate-web-build.log.txt": "cc95274abbe7366df87474f80c4569420f8e441904f72b3830619f008f62255f",
     "controls/check.log.txt": "bae5037aaa4508c3fc1b5804d251b29572769d379d7a2e114f99c00a6fafdda0",
@@ -63,5 +63,6 @@
     "run-settings.json": "ed82727b381525a9c651519079e467ec840c2ee000922486b323a2c8b2e8075e",
     "source-hashes.json": "d61ad848ddd22d5a4cdfdc6163ca9332148edc58b3b3ffb7c8a0301e0dd48aea",
     "summary.json": "afa0d29f895a4717409c4b7f370269dc42506334e528896935251115b76b2567"
-  }
+  },
+  "logNormalization": "Trailing whitespace removed from stdout logs; measurement JSON unchanged."
 }
