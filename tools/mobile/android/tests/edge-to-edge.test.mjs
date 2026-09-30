@@ -19,6 +19,15 @@ describe('Android edge-to-edge startup contract', () => {
     );
   });
 
+  it('preserves the system contrast scrim for transient three-button navigation', () => {
+    expect(activity).toMatch(
+      /WindowCompat\.enableEdgeToEdge\(getWindow\(\)\);\s*preserveNavigationBarContrast\(\);/
+    );
+    expect(activity).toMatch(
+      /if \(Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.Q\)\s*\{\s*getWindow\(\)\.setNavigationBarContrastEnforced\(true\);/
+    );
+  });
+
   it('lets Capacitor reconcile native padding and CSS insets with the cover viewport from startup', () => {
     expect(config.plugins.SystemBars).toEqual({
       insetsHandling: 'css',

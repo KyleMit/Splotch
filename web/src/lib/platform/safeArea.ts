@@ -19,10 +19,10 @@ export const SAFE_AREA_EDGES: readonly SafeAreaEdge[] = ['top', 'right', 'bottom
 
 // Every inset consumer — CSS and JS alike — reads these custom properties rather
 // than calling env() directly. app.css seeds them from Capacitor or env() on
-// :root; the indirection also lets a harness
-// override the insets on a subtree (routes/dev/notch) without CDP, which is the
-// only inset-emulation seam Chromium offers and one Playwright alone can reach.
-// app.css is the other side of this agreement — safeArea.test.ts fails if the
+// :root; the indirection also lets a harness override the insets on a subtree
+// (routes/dev/notch) without CDP, which is the only inset-emulation seam Chromium
+// offers and one Playwright alone can reach.
+// app.css is the other side of this agreement — safeAreaProperties.test.ts fails if the
 // stylesheet stops declaring one of these on :root.
 export const SAFE_AREA_PROPERTIES = {
   top: '--safe-area-top',

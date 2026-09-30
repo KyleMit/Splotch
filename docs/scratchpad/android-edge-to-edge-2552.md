@@ -49,8 +49,20 @@ setting. Changing the navigation overlay recreates the native activity, so Setti
 * Existing safe-area matrix plus the four new runtime cases: 71 passed.
 * App units: 4088 passed; SSR guards: 19 passed.
 * Full tools tier initially caught the compatibility register's stale CSS anchor. Updating the
-  living documentation made its 60 targeted tests pass; the full tier is rerun before push.
+  living documentation made its 60 targeted tests pass; the full tier passed 6596 tests.
 * `npm run check`, `npm run lint`, native debug APK build, and Android Release Java compile pass.
 
 The debug native screenshots demonstrate the real WebView/layout and OS keyboard. Release Java
 compilation validates the release source configuration; it does not replace release device testing.
+
+## Independent review dispositions
+
+The first Claude review found no blocking defect and confirmed the native/CSS ownership and startup
+ordering. AndroidX's disabling of navigation contrast enforcement is a real change, so the Activity
+restores the preexisting system contrast scrim for transient three-button navigation. The native
+startup guard pins the Android 10 minimum and restoration after edge-to-edge enabling.
+
+The retained `SHORT_EDGES` call limits long-edge cutouts on Android 11–14. This existing policy is
+explicit in the Activity and ADR amendment; removing the legacy cutout call belongs to the
+subsequent deprecated-API cleanup. The incorrect safe-area guard comment points to
+`safeAreaProperties.test.ts`.

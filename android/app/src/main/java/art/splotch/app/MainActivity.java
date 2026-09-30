@@ -19,16 +19,16 @@ import com.getcapacitor.BridgeActivity;
  * from accidentally navigating away.
  *
  * <p>The bar is hidden with immersive-sticky behaviour: it stays gone but can be
- * swiped back temporarily. Its background is made transparent so that, while it
- * is transiently shown, the app's own content (the "app color") shows through
- * the cutout instead of a jarring black/white system bar. AndroidX enables
- * edge-to-edge across supported Android versions; Capacitor handles the
+ * swiped back temporarily. A transparent background lets the app color show
+ * through, with the system contrast scrim keeping three-button navigation
+ * legible over drawings. AndroidX enables edge-to-edge; Capacitor handles the
  * WebView insets and the CSS Notch Band paints the cutout.
  *
  * <p>We also opt the window into the display cutout on the short edges so the
  * canvas extends under the hole-punch. In landscape the device's physical top
  * rotates to a side, so this is what lets the Notch Band paint the cutout there
  * (and the WebView reclaim that strip) instead of the system letterboxing it.
+ * Long-edge cutouts on Android 11–14 retain the short-edge letterboxing policy.
  */
 public class MainActivity extends BridgeActivity {
     @Override
@@ -41,9 +41,16 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(SensorOrientationPlugin.class);
         super.onCreate(savedInstanceState);
         WindowCompat.enableEdgeToEdge(getWindow());
+        preserveNavigationBarContrast();
         updateWebViewBackground();
         drawUnderDisplayCutout();
         hideNavigationBar();
+    }
+
+    private void preserveNavigationBarContrast() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(true);
+        }
     }
 
     @Override

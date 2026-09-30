@@ -109,6 +109,12 @@ window also draws edge-to-edge on supported Android releases before system enfor
 stays immersive, the legacy status-bar caller still controls portrait/landscape visibility, and the
 CSS Notch Band still owns the cutout color.
 
+AndroidX disables navigation-bar contrast enforcement, so the Activity explicitly restores the
+system scrim for transient three-button navigation on Android 10 and later. Icons remain legible
+over arbitrary drawings. The existing `SHORT_EDGES` cutout policy is retained: Android 11–14
+long-edge cutouts can remain letterboxed, while Android 15 and later interpret this mode as
+`ALWAYS`. Removing that legacy cutout call is scoped to the subsequent deprecated-API cleanup.
+
 The shared `--safe-area-*` properties prefer Capacitor's `--safe-area-inset-*` values with `env()`
 fallbacks. Capacitor SystemBars owns native padding and injects only the remaining CSS insets:
 explicit zero wins when native padding already reserves the space. CSS handling and the initial
