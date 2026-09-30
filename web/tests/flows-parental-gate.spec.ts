@@ -271,7 +271,9 @@ test('external links inside Settings follow the Every time policy', async ({ pag
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
 
-  await page.getByRole('link', { name: 'View source on GitHub' }).click();
+  const link = page.getByRole('link', { name: 'View on GitHub', exact: true });
+  await expect(link).toHaveText('View on GitHub', { useInnerText: true });
+  await link.click();
   const gate = page.locator('#parentalGate');
   await expect(gate).toBeVisible();
   const popup = context.waitForEvent('page');
@@ -314,7 +316,7 @@ test('external links can skip a second gate only within a solved session', async
   await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
-  const link = page.getByRole('link', { name: 'View source on GitHub' });
+  const link = page.getByRole('link', { name: 'View on GitHub', exact: true });
 
   await link.click();
   await expect(page.locator('#parentalGate')).toBeVisible();
