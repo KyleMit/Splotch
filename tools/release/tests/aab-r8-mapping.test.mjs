@@ -67,6 +67,17 @@ describe('Android release mapping verification', () => {
     const result = inspectArtifacts(expected, ['android']);
     expect(result.matched).toEqual([]);
     expect(result.stale).toHaveLength(1);
-    expect(result.stale[0].problems[0]).toContain('unreadable:');
+    expect(result.stale[0].problems[0]).toContain('R8 mapping:');
+  });
+
+  it('reports both a stale version and missing R8 mapping', () => {
+    writeBundle(undefined);
+    const result = inspectArtifacts({ version: '1.7.0', versionCode: 9 }, ['android']);
+    expect(result.matched).toEqual([]);
+    expect(result.stale[0].problems).toEqual([
+      'versionName is 1.6.0, expected 1.7.0',
+      'versionCode is 8, expected 9',
+      expect.stringContaining('R8 mapping:'),
+    ]);
   });
 });

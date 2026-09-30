@@ -3,7 +3,7 @@
 //   node tools/release/publish-release-artifacts.mjs                 publish package.json's version
 //   node tools/release/publish-release-artifacts.mjs 1.4.0           publish a specific version
 //   node tools/release/publish-release-artifacts.mjs --only=android  just the .aab (or ios for just the .ipa)
-//   node tools/release/publish-release-artifacts.mjs --dry-run       verify versions, upload nothing
+//   node tools/release/publish-release-artifacts.mjs --dry-run       verify artifacts, upload nothing
 //
 // This is deliberately a third step rather than part of cut-release.mjs. A release
 // has to bump the version and tag it *before* an artifact carrying that version
@@ -12,8 +12,8 @@
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by
-// reading the version out of the binary itself — a stale build is refused, not
-// uploaded.
+// reading the version out of the binary itself and checking Android's embedded
+// R8 mapping — stale or unmapped builds are refused, not uploaded.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,7 +32,7 @@ const ARTIFACTS = {
   android: {
     label: 'Android bundle',
     path: RELEASE_AAB,
-    read: (path) => ({ ...readAabVersion(path), r8: readAabR8Metadata(path) }),
+    read: readAabVersion,
     rebuild: 'npm run android:bundle',
   },
   ios: { label: 'iOS app', path: RELEASE_IPA, read: readIpaVersion, rebuild: 'npm run ios:ipa' },
@@ -144,6 +144,13 @@ export function inspectArtifacts(expected, platforms) {
       continue;
     }
     const problems = compareArtifactVersion(expected, actual);
+    if (platform === 'android') {
+      try {
+        readAabR8Metadata(artifact.path);
+      } catch (error) {
+        problems.push(`R8 mapping: ${error.message}`);
+      }
+    }
     if (problems.length) stale.push({ platform, ...artifact, actual, problems });
     else matched.push({ platform, ...artifact, actual });
   }
