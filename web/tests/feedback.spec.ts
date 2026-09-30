@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { ActionResult } from '@sveltejs/kit';
 import { supportEmail } from '../src/lib/supportEmail';
 import { expectNoReload, spaNavigate } from './helpers';
+import { expectTextContrast } from './text-contrast';
+import { paletteHex } from '../src/lib/palette';
 
 // /feedback is the standalone, link-shareable twin of Settings' Send
 // Feedback section: the same fields, posted to a form action instead of
@@ -10,8 +13,9 @@ import { expectNoReload, spaNavigate } from './helpers';
 // page — that it renders, composes the payload the action reads, and can post at all.
 //
 // The report bucket is 5 requests/minute per IP and /api/report shares it, so
-// exactly one test here actually submits. Adding a second submitting test would
-// spend the budget CI's retries need.
+// exactly one test here submits to the server; enhanced success and failure
+// tests fulfill the POST themselves. A second real submission would spend
+// the budget CI's retries need.
 //
 // Every scripted control on this page is driven by a Svelte handler, so a click
 // that lands before hydration is swallowed with no way to recover — hence
@@ -31,6 +35,30 @@ test('the feedback page renders the shell and the report form', async ({ page })
   await expect(page.getByRole('link', { name: 'Start drawing' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`feedback steps retain list semantics and readable blob numerals in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/feedback');
+    const list = page.locator('.aside').getByRole('list');
+    await expect(list).toHaveAttribute('role', 'list');
+    await expect(list.getByRole('listitem')).toHaveCount(3);
+    const numerals = list.locator('.step-number--blob');
+    await expect(numerals).toHaveText(['1', '2', '3']);
+    for (const index of [0, 1, 2]) {
+      await expect(numerals.nth(index)).toHaveAttribute('aria-hidden', 'true');
+      await expect(numerals.nth(index)).toHaveCSS('width', '24px');
+      await expect(numerals.nth(index)).toHaveCSS('font-size', '12px');
+    }
+    const hues = await list
+      .locator('li')
+      .evaluateAll((items) => items.map((item) => item.style.getPropertyValue('--step-hue')));
+    expect(hues).toEqual([paletteHex('Yellow'), paletteHex('Blue'), paletteHex('Green')]);
+    await expectTextContrast(page.locator('.aside'));
+  });
+}
 
 test('the privacy contact stays inside Splotch and points to the feedback page', async ({
   page,
@@ -195,4 +223,118 @@ test('Back from the drawing app renders the feedback page again, not just its UR
   await expect(page.locator('#drawingCanvas')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
   await expectNoReload(page);
+});
+
+for (const kind of ['bug', 'feature'] as const) {
+  test(`Send another starts an empty report after sending a ${kind}`, async ({ page }) => {
+    await page.route('**/feedback', async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ type: 'redirect', status: 303, location: '/feedback?sent=1' }),
+      });
+    });
+    await page.goto('/feedback');
+    await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
+    await retryClick(
+      page,
+      () => page.getByRole('checkbox').check(),
+      () => expect(page.getByText('What will be sent?')).toBeVisible()
+    );
+    await retryClick(
+      page,
+      () => page.locator(`input[name="kind"][value="${kind}"]`).check(),
+      () => expect(page.locator('input[name="kind"]:checked')).toHaveValue(kind)
+    );
+    await page.locator('#reportMessage').fill('The purple crayon draws green');
+    await page.getByRole('button', { name: kind === 'bug' ? 'Send report' : 'Send idea' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Thank you — your report is in.' })
+    ).toBeVisible();
+    await page.getByRole('link', { name: 'Send another' }).click();
+
+    await expect(page.locator('#reportMessage')).toHaveValue('');
+    await expect(page.getByRole('radio', { name: "Something's broken" })).toBeChecked();
+    await expect(page.getByRole('checkbox')).not.toBeChecked();
+    await expect(page.locator('input[name="device"]')).toHaveValue('');
+    await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
+    await expectNoReload(page);
+  });
+}
+
+test('Back from the thank-you opens an empty form, not the report just sent', async ({ page }) => {
+  const sentRedirect: ActionResult = {
+    type: 'redirect',
+    status: 303,
+    location: '/feedback?sent=1',
+  };
+  await page.route('**/feedback', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await route.fulfill({ json: sentRedirect });
+  });
+  await page.goto('/feedback');
+  await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
+
+  // Every field leaves its default — the device box is ticked while the kind
+  // is still a bug — so the form Back returns to has to put all three back.
+  await retryClick(
+    page,
+    () => page.getByRole('checkbox').check(),
+    () => expect(page.getByText('What will be sent?')).toBeVisible()
+  );
+  await page.getByRole('radio', { name: 'I have an idea' }).check();
+  await page.locator('#reportMessage').fill('Add a glitter brush');
+  await page.getByRole('button', { name: 'Send idea' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Thank you — your report is in.', level: 1 })
+  ).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
+  await expect(page.getByRole('radio', { name: "Something's broken" })).toBeChecked();
+  await expect(page.locator('#reportMessage')).toHaveValue('');
+  await expect(page.getByRole('checkbox')).not.toBeChecked();
+  await expectNoReload(page);
+});
+
+test('an enhanced delivery failure retains the report draft and device choice', async ({
+  page,
+}) => {
+  const message = 'The purple crayon draws green';
+  await page.route('**/feedback', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    // SvelteKit action data uses devalue's indexed wire format.
+    const data = JSON.stringify([
+      { error: 1, values: 2 },
+      'Reporting is not available right now',
+      { kind: 3, message: 4, includeDevice: 5 },
+      'feature',
+      message,
+      false,
+    ]);
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ type: 'failure', status: 503, data }),
+    });
+  });
+  await page.goto('/feedback');
+  await retryClick(
+    page,
+    () => page.getByRole('checkbox').check(),
+    () => expect(page.getByText('What will be sent?')).toBeVisible()
+  );
+  await retryClick(
+    page,
+    () => page.getByRole('radio', { name: 'I have an idea' }).check(),
+    () => expect(page.getByRole('button', { name: 'Send idea' })).toBeVisible()
+  );
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
+  await page.locator('#reportMessage').fill(message);
+  await page.getByRole('button', { name: 'Send idea' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Reporting is not available right now');
+  await expect(page.locator('#reportMessage')).toHaveValue(message);
+  await expect(page.getByRole('radio', { name: 'I have an idea' })).toBeChecked();
+  await page.getByRole('radio', { name: "Something's broken" }).check();
+  await expect(page.getByRole('checkbox')).toBeChecked();
 });

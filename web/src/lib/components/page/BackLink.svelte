@@ -60,7 +60,7 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-blob);
+    border-radius: var(--radius-blob-1);
     background-color: var(--brand-solid);
     box-shadow: 0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent);
     transition:

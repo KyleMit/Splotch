@@ -41,7 +41,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-blob);
+    border-radius: var(--radius-blob-3);
   }
 
   .inline {
