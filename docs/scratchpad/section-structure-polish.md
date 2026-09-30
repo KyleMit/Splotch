@@ -58,3 +58,20 @@ rendering tasks, checks request ownership, and is cleared on disposal. Regressio
 repetition, disposal, and a newer pending copy. VoiceOver and NVDA speech output has not been
 tested; automated checks verify reactive state and browser behavior, not spoken output. No third
 review round is requested under the workflow's two-round bound.
+
+## Reconciliation with main
+
+Merged the four incoming commits through 0bc1ef6cddd00a4d82f3e824a589b030fb5537b0, bringing in
+arrival-aware back-link labels and responsive masthead behavior. All incoming diffs and merged
+overlapping sources were reviewed. No dependency, ADR, skill-registry or backlog scope changed.
+
+The eight textual conflicts covered the radius tokens, generated CSS, gate, specimens, usage rules
+and design references. Both branches had extracted the same first blob radius. The three numbered
+tokens remain canonical; the new back link uses the first, and the square specimen treatment applies
+to all three. The gate geometry and both features are preserved. Generated CSS and provider skills
+were rebuilt from their sources.
+
+Type checks, ESLint, formatting, generated-instruction drift and ADR integrity passed. The full
+`npm test` run passed: 4,088 app tests, 19 SSR tests, 277 asset tests, 23 stored-drawing tests,
+6,391 tooling tests and all 1,024 production browser tests, including Firefox and WebKit smoke
+checks. The reconciliation remains local until a push is requested.

@@ -76,6 +76,19 @@
     return () => document.documentElement.removeAttribute('data-app-surface');
   });
 
+  // Tells the standalone pages' back link this tab has a drawing to go back
+  // to (lib/components/page/backLabel.ts). The key is written inline, not
+  // imported: backLabel.ts ships with those lazy pages, and a startup-path
+  // import of it would re-partition the startup chunks (startup-bundle.spec.ts).
+  // app.html.test.ts holds the literal to DRAWING_VISITED_SESSION_KEY.
+  onMount(() => {
+    try {
+      sessionStorage.setItem('splotch-drawing-visited', '1');
+    } catch {
+      // Blocked storage leaves the back link on its cold-visit label.
+    }
+  });
+
   // First-visit service worker registration waits for the Install Banner's
   // "a few strokes drawn" signal so the offline install never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through
