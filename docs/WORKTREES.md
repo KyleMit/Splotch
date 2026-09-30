@@ -231,14 +231,21 @@ the `prune-git-workspace` skill runs them in order with the branch cleanup that 
    and red-team `decrypted/` and `output/` — to `~/Code/splotch-worktree-evidence/<worktree id>/`.
    `git worktree remove` deletes ignored paths without asking, so this runs first.
 2. `npm run worktrees:prune` removes each agent worktree that is clean, merged into `origin/main`,
-   salvaged, locked by nobody, and no process's working directory, printing `removed`, `kept`, or
-   `skip (in use)` with the reason. It never touches the main checkout, the worktree it runs from, a
-   worktree outside the agent roots (`.claude/worktrees/`, `~/.codex/worktrees/`, `/tmp`), or any
-   branch.
+   salvaged, locked by nobody, and no process's working directory, printing `removed`, `kept`,
+   `skip (in use)`, or `skip (use unknown)` with the reason. `--apply` asks every guard again of the
+   live entry just before each removal, and keeps a worktree whose `HEAD` moved since the plan. A
+   worktree whose directory is gone is a `keep` row: its entry holds that worktree's `HEAD` and
+   reflog, so the script never runs `git worktree prune`. It never touches the main checkout, the
+   worktree it runs from, a worktree outside the agent roots (`.claude/worktrees/`,
+   `~/.codex/worktrees/`, `/tmp`), or any branch.
 
 Both are dry runs until `-- --apply`. A worktree another session is using shows up as
 `skip (in use)` with the process ids, which is the expected shape on a host running several agents
-at once; leave it.
+at once; leave it. A process listing that failed (`lsof` off `PATH`, or a shell that may not inspect
+processes) cannot say a worktree is unused, so each unlocked worktree it was asked about is
+`skip (use unknown)` and left alone, and `--apply` exits 1. The listing is taken again before each
+row is applied, so a failure partway through leaves the earlier rows applied; read every row.
+`tools/git-housekeeping/README.md` has the full guard table.
 
 ## Sharing the host
 

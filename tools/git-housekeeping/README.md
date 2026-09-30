@@ -92,7 +92,8 @@ reported as `skip`: the base branch, the current checkout, any branch checked ou
 
 | Plan row | Proof                                                                                           | On `--apply`                        |
 | -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `delete` | Tip is an ancestor of `origin/main` (`--merged` semantics; a gone upstream is noted)            | `git branch -d`                     |
+| `delete` | Tip is an ancestor of `origin/main` (`--merged` semantics; a gone upstream is noted)            | Deleted at the proven commit id     |
+|          |                                                                                                 | once `-d`'s merged check passes     |
 | `proven` | Every commit has a **verbatim** counterpart on the base, or the branch's whole diff matches its | Deleted at the proven commit id,    |
 |          | merged PR's squash commit verbatim                                                              | only with `--include-equivalent`    |
 | `keep`   | Unique commits, or a whitespace-blind patch-id match with no verbatim counterpart               | Nothing — the skill's judgment pass |
@@ -111,20 +112,23 @@ base's files today. A branch whose work landed and whose files the base then edi
 times is still fully recoverable from the base; demanding present-tense equality would refuse every
 real rebase-merge in a repository that keeps moving, which on this checkout was all seven of them.
 
-Forced deletion goes through `git update-ref -d refs/heads/<name> <proven tip>`, never
-`git branch -D`. The name would be resolved again at deletion time, so a branch that gained a commit
-during the tens of seconds classification takes would be destroyed on the strength of a proof about
-a commit it no longer carries. `update-ref` is also lower-level than `git branch -D` and drops that
-command's refusal to delete a branch checked out in another worktree, so that check is made
-explicitly against a worktree list read at deletion time. `git branch -d` needs neither guard: it
-re-derives merged-ness itself and refuses a branch that moved somewhere unmerged.
+Every deletion goes through `git update-ref -d refs/heads/<name> <proven tip>`, never
+`git branch -d` or `-D`. Either resolves the name again at deletion time, so a branch that gained a
+commit during the tens of seconds classification takes would be destroyed on the strength of a proof
+about a commit it no longer carries. `update-ref` is also lower-level than `git branch -D` and drops
+that command's refusal to delete a branch checked out in another worktree, so that check is made
+explicitly against a worktree list read at deletion time. `-d` also judges whatever it finds against
+the branch's upstream rather than the base, so a commit that reached the upstream after the proof
+would be deleted with it.
 
-`git branch -d` is the safety mechanism and the script never bypasses it for the `delete` tier. It
-judges merged-ness against the invoking checkout's `HEAD`, so a checkout behind `origin/main`
-refuses a branch the base already contains; the row then reads `kept (git branch -d refused …)` and
-`--include-equivalent` — the flag that permits deletion after the script's own proof — is the
-documented way past it. `--apply` refuses to run without PR state, because an open PR is in the
-never-delete set and cannot be excluded blind; fix `gh auth status` and rerun.
+The `delete` tier keeps `-d`'s own rule without running `-d`. It proves the planned commit an
+ancestor of the base again, then applies `-d`'s merged check to that commit: against the branch's
+upstream while that resolves, and the invoking checkout's `HEAD` otherwise. A row that fails the
+first proof is `kept` with `refusing to delete: …`. A row `-d` would refuse — typically a checkout
+behind `origin/main` — reads `kept (git branch -d would refuse: …)`, and `--include-equivalent`, the
+flag that permits deletion after the script's own proof, is the documented way past it. `--apply`
+refuses to run without PR state, because an open PR is in the never-delete set and cannot be
+excluded blind; fix `gh auth status` and rerun.
 
 `branches:gather` is the remote half's fact table (ahead, behind, `inbase`, age, tip subject, and a
 `*` on the current checkout's branch), oldest first. `inbase=yes` means the tip is already on the
