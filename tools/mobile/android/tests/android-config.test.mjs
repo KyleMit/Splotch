@@ -6,7 +6,7 @@ import {
   MIN_ANDROID_RELEASE,
 } from '../../../../web/src/lib/components/beta/androidBeta.ts';
 import { themes } from '../../../../web/src/lib/design/tokens.ts';
-import { jobBlock } from '../../../ci-mirror/tests/workflow-job-steps.mjs';
+import { jobBlock, runScriptIn, stepBlock } from '../../../ci-mirror/tests/workflow-job-steps.mjs';
 import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 import {
   androidEmulatorApiLevels,
@@ -55,20 +55,6 @@ function androidSupportMatrixRows() {
       artifactApi: Number(artifactApi),
     })
   );
-}
-
-function workflowStepScript(stepName) {
-  const escapedName = stepName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = androidWorkflow.match(
-    new RegExp(
-      `      - name: ${escapedName}\\n(?:        [^\\n]*\\n)*?        run: \\|\\n((?:          .*\\n)+)`
-    )
-  );
-  expect(match, `workflow step "${stepName}" has no multiline run script`).not.toBeNull();
-  return match[1]
-    .split('\n')
-    .map((line) => line.slice(10))
-    .join('\n');
 }
 
 function currentApiClaimOffsets(text) {
@@ -123,7 +109,9 @@ describe('Android emulator API levels', () => {
   });
 
   it('propagates a resolver process failure before writing the output', () => {
-    const resolverScript = workflowStepScript('Read emulator API levels').replace(
+    const resolverScript = runScriptIn(
+      stepBlock(jobBlock(androidWorkflow, 'build'), 'Read emulator API levels')
+    ).replace(
       'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs',
       "node -e 'process.exit(17)'"
     );

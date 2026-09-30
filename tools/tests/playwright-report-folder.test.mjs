@@ -3,6 +3,7 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { playwrightReportFolder } from '../../web/playwright.shared.ts';
+import { jobBlocks, stepBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // playwright.shared.ts pins the folder both Playwright reporters write to, and
 // test.yml uploads it by a literal path YAML cannot import. This is the guard
@@ -10,39 +11,25 @@ import { playwrightReportFolder } from '../../web/playwright.shared.ts';
 // job uploading nothing (if-no-files-found: error) — or, worse, an old copy.
 
 const repoRoot = join(import.meta.dirname, '..', '..');
-const workflowLines = readFileSync(
-  join(repoRoot, '.github', 'workflows', 'test.yml'),
-  'utf8'
-).split('\n');
 const gitignore = readFileSync(join(repoRoot, '.gitignore'), 'utf8').split('\n');
-
-const indentOf = (line) => line.match(/^ */)[0].length;
 
 /**
  * Every upload-artifact step as its own `{ name, path }`, each read only from
  * that step's `with:` block — never borrowed from a neighbouring step or job.
  */
-function uploadArtifactSteps(lines) {
-  const steps = [];
-  for (const [index, line] of lines.entries()) {
-    if (!/^\s+(- )?uses: actions\/upload-artifact/.test(line)) continue;
-    const stepIndent = line.indexOf('uses:');
-    const step = { name: undefined, path: undefined };
-    for (const next of lines.slice(index + 1)) {
-      const blank = next.trim() === '';
-      const leavesStep = !blank && (indentOf(next) < stepIndent || /^\s+- /.test(next));
-      if (leavesStep) break;
-      step.name ??= next.match(/^\s+name: (\S.*)$/)?.[1];
-      step.path ??= next.match(/^\s+path: (\S+)$/)?.[1];
-    }
-    steps.push(step);
-  }
-  return steps;
+function uploadArtifactSteps(workflow) {
+  return jobBlocks(workflow)
+    .flatMap(({ text }) => stepBlocks(text))
+    .filter(({ text }) => /^ {6}(?:- | {2})uses: actions\/upload-artifact/m.test(text))
+    .map(({ text }) => ({
+      name: text.match(/^ {10}name: (\S.*)$/m)?.[1],
+      path: text.match(/^ {10}path: (\S+)$/m)?.[1],
+    }));
 }
 
 describe('Playwright report folder', () => {
   const folder = relative(repoRoot, playwrightReportFolder);
-  const reportUploads = uploadArtifactSteps(workflowLines).filter(({ name }) =>
+  const reportUploads = uploadArtifactSteps(testWorkflow).filter(({ name }) =>
     name?.startsWith('playwright-report-')
   );
 
@@ -65,33 +52,40 @@ describe('Playwright report folder', () => {
 
 describe('upload-artifact step parsing', () => {
   // A lookup that ran past a step's own `with:` block paired one artifact name
-  // with the next step's path and still satisfied the assertion above.
+  // with the next step's path and still satisfied the assertion above. The
+  // step's own display name is not an artifact name either.
   it('reads a path only from the step that owns it', () => {
-    const steps = uploadArtifactSteps([
-      '      - name: Upload report',
-      '        uses: actions/upload-artifact@sha',
-      '        with:',
-      '          name: playwright-report-firefox',
-      '',
-      '      - name: Upload shard',
-      '        uses: actions/upload-artifact@sha',
-      '        with:',
-      '          name: playwright-report-shard-${{ matrix.shard }}',
-      '          path: playwright-report/',
-      '',
-      '      - name: Upload other',
-      '        uses: actions/upload-artifact@sha',
-      '        with:',
-      '          name: playwright-report-webkit',
-      '          # a comment between keys',
-      '          path: playwright-report/',
-      '  next-job:',
-      '    steps:',
-      '      - uses: actions/upload-artifact@sha',
-      '        with:',
-      '          path: elsewhere/',
-      '          name: lighthouse',
-    ]);
+    const steps = uploadArtifactSteps(
+      [
+        'jobs:',
+        '  report:',
+        '    steps:',
+        '      - name: Upload report',
+        '        uses: actions/upload-artifact@sha',
+        '        with:',
+        '          name: playwright-report-firefox',
+        '',
+        '      - name: Upload shard',
+        '        uses: actions/upload-artifact@sha',
+        '        with:',
+        '          name: playwright-report-shard-${{ matrix.shard }}',
+        '          path: playwright-report/',
+        '',
+        '      - name: Upload other',
+        '        uses: actions/upload-artifact@sha',
+        '        with:',
+        '          name: playwright-report-webkit',
+        '          # a comment between keys',
+        '          path: playwright-report/',
+        '  next-job:',
+        '    steps:',
+        '      - uses: actions/upload-artifact@sha',
+        '        name: Upload the Lighthouse report',
+        '        with:',
+        '          path: elsewhere/',
+        '          name: lighthouse',
+      ].join('\n')
+    );
     expect(steps).toEqual([
       { name: 'playwright-report-firefox', path: undefined },
       { name: 'playwright-report-shard-${{ matrix.shard }}', path: 'playwright-report/' },
