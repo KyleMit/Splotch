@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSectionLinks, sectionUrl } from './sectionLinks.svelte';
 import { SECTIONS } from './contents';
 
+const REANNOUNCE_WAIT_MS = 150;
+
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -63,6 +65,9 @@ describe('privacy section links', () => {
       flushSync();
       await links.copy(new MouseEvent('click'), 'contact');
       flushSync();
+      expect(links.announcement).toBe('');
+      await vi.advanceTimersByTimeAsync(REANNOUNCE_WAIT_MS);
+      flushSync();
       expect(announcements).toEqual([
         '',
         'Link to “Changes and contact” copied.',
@@ -73,6 +78,31 @@ describe('privacy section links', () => {
       stop();
       links.dispose();
     }
+  });
+
+  it('cancels a pending repeat announcement when disposed', async () => {
+    const { links } = setup();
+    await links.copy(new MouseEvent('click'), 'contact');
+    await links.copy(new MouseEvent('click'), 'contact');
+    links.dispose();
+    vi.runAllTimers();
+    expect(links.announcement).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not publish an older repeat announcement during a newer pending copy', async () => {
+    let finish!: () => void;
+    const { links, writeText } = setup();
+    await links.copy(new MouseEvent('click'), 'contact');
+    await links.copy(new MouseEvent('click'), 'contact');
+    writeText.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
+    const pending = links.copy(new MouseEvent('click'), 'reports');
+    vi.advanceTimersByTime(REANNOUNCE_WAIT_MS);
+    expect(links.announcement).toBe('');
+    finish();
+    await pending;
+    expect(links.announcement).toBe('Link to “Reporting a picture” copied.');
+    links.dispose();
   });
 
   it('leaves normal anchor navigation available without a clipboard', async () => {

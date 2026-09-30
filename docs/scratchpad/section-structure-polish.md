@@ -44,10 +44,17 @@ rail gutter, a repeated live announcement that did not mutate, and a stale metad
 browser probes reproduced the first two: the rejected recopy left scroll at zero, and the hit area
 started eight pixels inside the rail. A reactive subscriber test also failed on a repeated copy.
 
-The controller scrolls the existing fragment on rejection and flushes an empty announcement before
-publishing another confirmation, with ownership checked after the flush. The desktop gap and offset
-derive from the rail gutter and the named target size. Literal section ids remain beside their
-policy prose, with the metadata agreement guard documented: deriving those ids from array indices
-would conceal mismatched prose after a reorder. All 27 focused production tests pass with the new
-browser regressions; the subscriber regression passes too. Both dev failures also reproduce on a
-complete clean main checkout. Follow-up investigation drafts are on the PR.
+The controller scrolls the existing fragment on rejection. The desktop gap and offset derive from
+the rail gutter and the named target size. Literal section ids remain beside their policy prose,
+with the metadata agreement guard documented: deriving those ids from array indices would conceal
+mismatched prose after a reorder. All 27 focused production tests pass with the new browser
+regressions; the subscriber regression passes too. Both dev failures also reproduce on a complete
+clean main checkout. Follow-up investigation drafts are on the PR.
+
+Claude's second round accepted those dispositions and questioned whether clearing and setting a live
+region in one task reaches assistive technology. Repeated confirmation uses the parental gate's
+existing delayed announcement pattern instead: a tracked timer leaves the live region empty across
+rendering tasks, checks request ownership, and is cleared on disposal. Regression tests cover
+repetition, disposal, and a newer pending copy. VoiceOver and NVDA speech output has not been
+tested; automated checks verify reactive state and browser behavior, not spoken output. No third
+review round is requested under the workflow's two-round bound.
