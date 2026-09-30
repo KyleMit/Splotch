@@ -4,6 +4,19 @@
 amended by [ADR-0161](0161-history-settle-waits-for-the-fold-loop-and-never-decides-coverage.md)
 **Date:** 2026-09
 
+## Amendment — 2026-09-30: a separate job files what the retry decides
+
+The retry still makes the filing decision described below, but it no longer files. It holds only
+`contents: read` and publishes its gate step's outcome, its comparison step's outcome and the
+reproduced fingerprint as job outputs. `webkit-commit-gate-fast-report` files from those outputs
+under the same predicate as `Fail on a reproduced breach`, restricted to pushes to `main`. It runs
+on Ubuntu, checks out and builds nothing, and is the only job holding `issues: write`, so the write
+token never shares a VM with the checked-out code the retry builds and runs. It alone keeps the
+constant concurrency group the check-then-create needs, so the first run and the retry measure
+independently across commits. `docs/TESTING.md` describes the jobs, and
+`tools/perf/tests/webkit-failure-reporter.test.mjs` pins the reporter's condition to the retry's.
+Everything else here stands.
+
 ## Amendment — 2026-09-06: the settle wait no longer decides coverage
 
 ADR-0161 traced the settle timeout this ADR guarded. The 10 s went to a browser task and the crayon
