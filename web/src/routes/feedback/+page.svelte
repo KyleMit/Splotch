@@ -26,17 +26,25 @@
   // JavaScript unavailable — the one thing the in-app form can't offer.
   let { data, form }: PageProps = $props();
 
+  // What a plain GET of this page starts with, and so what a sent report
+  // leaves behind: one value for both, so "Send another" can't drift from it.
+  const BLANK_FIELDS: { kind: ReportKind; message: string; includeDevice: boolean } = {
+    kind: 'bug',
+    message: '',
+    includeDevice: false,
+  };
+
   // Seeded from the failed submission so a browser with no JavaScript — which
   // re-renders this page from scratch on every POST — hands the reporter back
   // what they wrote instead of an empty box. Deliberately the INITIAL value
   // only: with `use:enhance` the component never remounts, so re-seeding from a
   // later `form` would overwrite whatever the reporter has since typed.
   // svelte-ignore state_referenced_locally
-  let kind = $state<ReportKind>(form?.values.kind ?? 'bug');
+  let kind = $state<ReportKind>(form?.values.kind ?? BLANK_FIELDS.kind);
   // svelte-ignore state_referenced_locally
-  let message = $state(form?.values.message ?? '');
+  let message = $state(form?.values.message ?? BLANK_FIELDS.message);
   // svelte-ignore state_referenced_locally
-  let includeDevice = $state(form?.values.includeDevice ?? false);
+  let includeDevice = $state(form?.values.includeDevice ?? BLANK_FIELDS.includeDevice);
   let submitting = $state(false);
 
   // Sent and unsent are two states of one page, not one page with a banner: the
@@ -66,13 +74,24 @@
     if (sent) history.replaceState(history.state, '', '/feedback');
   });
 
+  function clearFields() {
+    kind = BLANK_FIELDS.kind;
+    message = BLANK_FIELDS.message;
+    includeDevice = BLANK_FIELDS.includeDevice;
+  }
+
   const submit: SubmitFunction = () => {
     submitting = true;
-    return async ({ update }) => {
+    return async ({ result, update }) => {
       // The fields are bound to the state above, so letting SvelteKit reset the
       // <form> element would leave the DOM and that state disagreeing.
       await update({ reset: false });
       submitting = false;
+      // A sent report redirects to the thank-you by client-side navigation,
+      // which keeps this component and its fields, so "Send another" or Back
+      // would otherwise show the report just sent, one tap from a duplicate.
+      // Without JavaScript, "Send another" is a fresh GET, which starts blank.
+      if (result.type === 'redirect') clearFields();
     };
   };
 </script>

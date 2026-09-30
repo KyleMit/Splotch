@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { ActionResult } from '@sveltejs/kit';
 import { supportEmail } from '../src/lib/supportEmail';
 import { expectNoReload, spaNavigate } from './helpers';
 
@@ -10,7 +11,7 @@ import { expectNoReload, spaNavigate } from './helpers';
 // page — that it renders, composes the payload the action reads, and can post at all.
 //
 // The report bucket is 5 requests/minute per IP and /api/report shares it, so
-// exactly one test here actually submits. Adding a second submitting test would
+// exactly one test here posts to the form action. Adding a second one would
 // spend the budget CI's retries need.
 //
 // Every scripted control on this page is driven by a Svelte handler, so a click
@@ -179,6 +180,64 @@ test('the private-report thank-you is a GET with no issue link', async ({ page }
   // query it arrived with rather than handing the next visitor a stale thank-you.
   await expect.poll(() => new URL(page.url()).search).toBe('');
 });
+
+// With use:enhance the page component outlives the redirect to the thank-you,
+// so both ways back to the form reach the same instance that held the report.
+for (const { way, returnToForm } of [
+  {
+    way: 'Send another',
+    returnToForm: (page: Page) => page.getByRole('link', { name: 'Send another' }).click(),
+  },
+  {
+    way: 'Back',
+    returnToForm: async (page: Page) => {
+      await page.goBack();
+    },
+  },
+]) {
+  test(`${way} from the thank-you opens an empty form, not the report just sent`, async ({
+    page,
+  }) => {
+    // A real success can't be reached here: the tracker token is blanked, and
+    // the report bucket has room for only the one test above that posts. So the
+    // enhanced POST is answered with the action's own redirect, which drives the
+    // client through the same applyAction → goto a real success takes.
+    const sentRedirect: ActionResult = {
+      type: 'redirect',
+      status: 303,
+      location: '/feedback?sent=1',
+    };
+    await page.goto('/feedback');
+
+    // Every field leaves its default — the device box is ticked while the kind
+    // is still a bug — so the fresh form has to put all three back.
+    await retryClick(
+      page,
+      () => page.getByRole('checkbox').check(),
+      () => expect(page.getByText('What will be sent?')).toBeVisible()
+    );
+    await page.getByRole('radio', { name: 'I have an idea' }).check();
+    await page.locator('#reportMessage').fill('Add a glitter brush');
+
+    await page.route(
+      (url) => url.pathname === '/feedback',
+      (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ json: sentRedirect })
+          : route.fallback()
+    );
+    await page.getByRole('button', { name: 'Send idea' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Thank you — your report is in.', level: 1 })
+    ).toBeVisible();
+
+    await returnToForm(page);
+    await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
+    await expect(page.getByRole('radio', { name: "Something's broken" })).toBeChecked();
+    await expect(page.locator('#reportMessage')).toHaveValue('');
+    await expect(page.getByRole('checkbox')).not.toBeChecked();
+  });
+}
 
 test('Back from the drawing app renders the feedback page again, not just its URL', async ({
   page,
