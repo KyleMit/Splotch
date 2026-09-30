@@ -155,29 +155,22 @@ describe('WebKit performance CI', () => {
     expect(reportJob).toContain('gh issue comment');
   });
 
-  // A step `if` naming no status function carries an implicit success(), so a
-  // comparator that exits non-zero would skip every step below it — including
-  // the filing — and a real breach on a red main would go unreported. The
-  // reporter can exit non-zero by design: it rethrows a TypeError/ReferenceError
-  // rather than let a broken reporter read as "no failures" (issue 1296).
-  // Reproduced in the PR 1573 review from a malformed artifact.
-  it('files when the comparison itself fails, rather than skipping the filing', () => {
+  // Comparator errors cannot masquerade as an empty fingerprint. The retry
+  // classifies its step outcome; the downstream reporter receives that outcome
+  // independently of the retry's implicit step success conditions.
+  it('preserves fail-closed retry and report behavior when comparison fails', () => {
     const retryJob = job('webkit-commit-gate-fast-retry');
     const compare = step(retryJob, "Compare this runner's failure with the first runner's");
     const fileFailure = step(job('webkit-commit-gate-fast-report'), 'File the failure');
     const nonReproduction = step(retryJob, 'Record the non-reproduction');
     const reFail = step(retryJob, 'Fail on a reproduced breach');
 
-    // Without this the comparator's failure fails the job silently instead of
-    // becoming an outcome the steps below can read.
+    // Keep the local classification steps eligible after a failed comparison.
     expect(compare).toContain('continue-on-error: true');
 
-    // Fail closed: a comparison that could not run files, exactly as a
-    // reproduced breach does.
-    for (const filing of [reFail]) {
-      expect(filing).toContain("steps.compare.outcome == 'failure'");
-      expect(filing).toContain("steps.compare.outputs.reproduced != ''");
-    }
+    // webkit-failure-reporter.test.mjs pins the reporter to this predicate.
+    expect(reFail).toContain("steps.compare.outcome == 'failure'");
+    expect(reFail).toContain("steps.compare.outputs.reproduced != ''");
 
     // And the acquittal requires a comparison that actually succeeded — an
     // empty `reproduced` is also what a crashed step reports.
