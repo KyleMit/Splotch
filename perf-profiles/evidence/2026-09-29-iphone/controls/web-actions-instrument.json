@@ -13,5 +13,6 @@
     "tools/perf/lib/service-worker-guard.mjs": "fcb214f05e321fa5806470917d378851e8183c0a15535427b572c5e1d12326a9",
     "tools/perf/lib/unavailable-undo-cue.mjs": "8f07e8d5ccd15af8a783d953efc496f6f2818d350936f27ff8b394acae52c6cf",
     "tools/perf/probes/action-probe.js": "6a9fa37b61c3823b4b7ee59ce357ba86f17beac41861d9073003e4e5d33e7b19"
-  }
+  },
+  "capturedSourceCommit": "d5a3614e09959875912022456363e79352b5a10e"
 }

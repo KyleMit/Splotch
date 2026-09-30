@@ -279,7 +279,11 @@ describe('parseNumberFlag', () => {
   it.each([
     ['4', POSITIVE_INTEGER, 4],
     ['0', NON_NEGATIVE_INTEGER, 0],
+    ['0', { min: 0 }, 0],
     ['2.5', POSITIVE_NUMBER, 2.5],
+    ['0.5', POSITIVE_NUMBER, 0.5],
+    ['10', POSITIVE_INTEGER, 10],
+    ['-10', { integer: true }, -10],
     ['65535', TCP_PORT, 65_535],
   ])('accepts %j', (raw, rule, expected) => {
     expect(parseNumberFlag('value', raw, rule)).toBe(expected);
@@ -298,6 +302,11 @@ describe('parseNumberFlag', () => {
     ['41x', TCP_PORT, 'an integer >= 1 and <= 65535'],
     ['0', TCP_PORT, 'an integer >= 1 and <= 65535'],
     ['65536', TCP_PORT, 'an integer >= 1 and <= 65535'],
+    ['080', TCP_PORT, 'an integer >= 1 and <= 65535'],
+    ['00', NON_NEGATIVE_INTEGER, 'an integer >= 0'],
+    ['-05', { integer: true }, 'an integer'],
+    ['00.5', POSITIVE_NUMBER, 'a number > 0'],
+    ['05.5', POSITIVE_NUMBER, 'a number > 0'],
     ['99999999999999999999', POSITIVE_INTEGER, 'an integer >= 1'],
     // Overflows to Infinity, which the open upper bound of these rules admits.
     ['9'.repeat(400), POSITIVE_NUMBER, 'a number > 0'],

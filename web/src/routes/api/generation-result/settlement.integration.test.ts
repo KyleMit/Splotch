@@ -439,6 +439,23 @@ describe('the background worker', () => {
     expect(loggedText()).not.toContain(jobId);
   });
 
+  // A discard or the purge can remove the job while the model is still working.
+  it('logs an outcome the job store no longer takes, without the job id', async () => {
+    const { jobId, dispatch } = await startHandedOffGeneration();
+    provider.generateImage.mockImplementation(async () => {
+      blobs.stores.get(GENERATION_JOB_STORE_NAME)?.delete(`${jobId}/status.json`);
+      return { kind: 'image', data: PICTURE.toString('base64'), mimeType: 'image/png' };
+    });
+
+    expect((await runWorker(dispatch)).status).toBe(200);
+
+    expect(loggedText()).toContain(
+      "[generate-image-background] the job's outcome (image) was superseded and not recorded"
+    );
+    expect(loggedText()).not.toContain(jobId);
+    expect(jobBlobKeys(jobId)).toEqual([]);
+  });
+
   it('answers 200 even when it cannot record the failure, leaving the slot to lapse', async () => {
     provider.generateImage.mockRejectedValue(new Error('socket hang up'));
     const { jobId, dispatch } = await startHandedOffGeneration();

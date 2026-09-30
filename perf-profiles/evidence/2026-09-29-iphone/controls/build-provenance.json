@@ -30,5 +30,15 @@
         "productCommit": "704edcdb1092420e204b684b80378149bbd890cd"
       }
     }
-  ]
+  ],
+  "postIntegrationRestoration": {
+    "checkedAt": "2026-09-30T02:07:59.616Z",
+    "savedHtmlMatches": true,
+    "webBinding": {
+      "buildEntry": "/_app/immutable/entry/start.DFEg549_.js",
+      "buildDigest": "f1a39062c01bc705afdbe3324cf227d1c8eb5a9bbc9777eda1a5679a43735a9c",
+      "productCommit": "704edcdb1092420e204b684b80378149bbd890cd"
+    },
+    "nativeIndexMatchesSnapshot": true
+  }
 }

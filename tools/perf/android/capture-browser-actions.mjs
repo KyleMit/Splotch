@@ -9,6 +9,7 @@ import {
   TCP_PORT,
   fail,
   isMain,
+  parseOrFail,
   pollUntil,
   runMain,
   sleep,
@@ -36,11 +37,13 @@ import {
 import { SERVICE_WORKER_REGISTRATION_GUARD_SOURCE } from '../lib/service-worker-guard.mjs';
 import { ensurePreviewServer } from '../lib/profile-device-session.mjs';
 import { reverseToLocalhost } from '../lib/android-localhost-route.mjs';
+import { resolveAndroidDevice } from '../lib/android-serial.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { servedBuildBinding } from '../lib/profile-preview.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
 import {
   ensureCampaignTheme,
+  parseCampaignOrientation,
   parseCampaignTheme,
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
@@ -90,35 +93,13 @@ export function deviceUptimeSecondsFrom(procUptimeOutput) {
 }
 
 export function adb(deviceId, args, { allowFailure = false } = {}) {
-  const result = spawnSync(ADB, [...(deviceId ? ['-s', deviceId] : []), ...args], {
+  const result = spawnSync(ADB, ['-s', deviceId, ...args], {
     encoding: 'utf8',
   });
   if (!allowFailure && result.status !== 0) {
     throw new Error(`adb ${args.join(' ')} failed: ${result.stderr?.trim() || result.status}`);
   }
   return result.stdout?.trim() ?? '';
-}
-
-export function connectedAndroidDevices(output) {
-  return output
-    .split('\n')
-    .slice(1)
-    .map((line) => line.trim().split(/\s+/))
-    .filter(([, state]) => state === 'device')
-    .map(([id]) => id);
-}
-
-export function resolveAndroidDevice(requested) {
-  const devices = connectedAndroidDevices(adb(null, ['devices']));
-  if (requested && !devices.includes(requested)) {
-    fail(
-      `Android device ${requested} is not connected. Available: ${devices.join(', ') || 'none'}`
-    );
-  }
-  if (requested) return requested;
-  if (devices.length === 0) fail('No Android device is connected through ADB');
-  if (devices.length > 1) fail(`Multiple Android devices are connected; pass --device-id=`);
-  return devices[0];
 }
 
 export function profilerUrl(base, token) {
@@ -277,11 +258,8 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   }
   const actions = selectedActions(flag('actions'));
   const requestedTheme = parseCampaignTheme(flag('theme'));
-  const requestedOrientation = flag('orientation')?.toUpperCase();
-  if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
-    fail('--orientation must be PORTRAIT or LANDSCAPE');
-  }
-  const deviceId = resolveAndroidDevice(flag('device-id'));
+  const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
+  const deviceId = resolveAndroidDevice(flag('device-id'), ADB);
   const token = `${Date.now()}`;
   const endpoint = `http://127.0.0.1:${cdpPort}`;
   const originalAutoRotation = adb(deviceId, [

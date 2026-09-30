@@ -40,24 +40,53 @@ const ENTRIES = [
   ],
 ];
 
+// Device entries, each with the argv of its offline mode: spawned in it, an
+// entry whose refusal went missing prints a checklist instead of waking a phone.
+const DEVICE_ENTRIES = [
+  [
+    'tools/perf/run-operator-session.mjs',
+    ['--plan'],
+    [
+      'plan',
+      'steps',
+      'brushes',
+      'orientations',
+      'theme',
+      'seconds',
+      'probe-port',
+      'android-serial',
+      'ios-udid',
+    ],
+  ],
+  // No build, and a serial adb cannot list: a missing refusal stops at the
+  // device listing instead of rebuilding the app and driving a phone.
+  [
+    'tools/perf/android/capture-webview-session.mjs',
+    ['--no-build', '--device-id=no-such-device'],
+    ['no-build', 'device-id'],
+  ],
+];
+
 const runEntry = (script, args) =>
   spawnSync(process.execPath, [join(repoRoot, script), ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
   });
 
+function expectUnknownFlagRefused(result, known) {
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(1);
+  expect(result.stdout).toBe('');
+  expect(result.stderr).toBe(
+    `Unknown flag --definitely-not-a-flag — known flags: ${known.toSorted().join(', ')}\n`
+  );
+}
+
 describe('non-device tool entries', () => {
   // An empty stdout is the proof the refusal came first: every one of these
   // prints, builds, or writes as soon as it starts work.
   it.each(ENTRIES)('%s refuses an unknown flag before doing any work', (script, known) => {
-    const result = runEntry(script, ['--definitely-not-a-flag']);
-
-    expect(result.error).toBeUndefined();
-    expect(result.status).toBe(1);
-    expect(result.stdout).toBe('');
-    expect(result.stderr).toBe(
-      `Unknown flag --definitely-not-a-flag — known flags: ${known.toSorted().join(', ')}\n`
-    );
+    expectUnknownFlagRefused(runEntry(script, ['--definitely-not-a-flag']), known);
   });
 
   // gen:performance-matrix takes its manifest positionally; given the staleness
@@ -96,6 +125,44 @@ describe('non-device tool entries', () => {
     expect(result.stdout).toBe('');
     expect(result.stderr).toBe('--strict is a switch: write --strict with no value\n');
   });
+});
+
+describe('device tool entries', () => {
+  it.each(DEVICE_ENTRIES)(
+    '%s refuses an unknown flag before doing any work',
+    (script, offline, known) => {
+      expectUnknownFlagRefused(runEntry(script, [...offline, '--definitely-not-a-flag']), known);
+    }
+  );
+});
+
+const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+const ENV_ASSIGNMENTS = /^(?:[A-Z_]+=\S+ )+/;
+
+// The npm scripts that run an entry with no arguments of their own, so every
+// flag a caller adds to one is learned from `npm run info`.
+const bareScriptsRunning = (script) =>
+  Object.entries(packageJson.scripts)
+    .filter(([, command]) => command.replace(ENV_ASSIGNMENTS, '') === `node ${script}`)
+    .map(([name]) => name);
+
+describe('npm run info', () => {
+  it.each([...ENTRIES, ...DEVICE_ENTRIES.map(([script, , known]) => [script, known])])(
+    'names every flag %s accepts',
+    (script, known) => {
+      const scripts = bareScriptsRunning(script);
+      const unnamed = scripts.flatMap((name) =>
+        known
+          .filter(
+            (flag) => !new RegExp(`--${flag}(?![a-z-])`).test(packageJson['scripts-info'][name])
+          )
+          .map((flag) => `${name}: --${flag}`)
+      );
+
+      expect(scripts).not.toEqual([]);
+      expect(unnamed).toEqual([]);
+    }
+  );
 });
 
 const hasExportModifier = (node) =>

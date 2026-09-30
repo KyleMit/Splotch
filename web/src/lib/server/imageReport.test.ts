@@ -37,6 +37,12 @@ const saved = {
   deleteAfter: '2026-09-07T12:00:00.000Z',
 };
 
+const REPORTING_UNAVAILABLE_RESULT = {
+  ok: false,
+  status: 503,
+  error: 'AI reporting is not available right now. Please try again later.',
+};
+
 beforeEach(() => {
   createIssue.mockReset().mockResolvedValue(undefined);
   saveImageReport.mockReset().mockResolvedValue(saved);
@@ -151,8 +157,29 @@ describe('submitImageReport', () => {
         style: 'Felt',
         reportContext: null,
       })
-    ).resolves.toMatchObject({ ok: false, status: 503 });
+    ).resolves.toEqual(REPORTING_UNAVAILABLE_RESULT);
     expect(saveImageReport).not.toHaveBeenCalled();
+  });
+
+  it('answers 503 and sends no notification when the evidence cannot be stored', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    saveImageReport.mockRejectedValue(new Error('Blobs unavailable'));
+
+    await expect(
+      submitImageReport({
+        kind: 'picture',
+        drawing: new Blob(['drawing'], { type: 'image/png' }),
+        output: new Blob(['output'], { type: 'image/png' }),
+        style: '',
+        reportContext: null,
+      })
+    ).resolves.toEqual(REPORTING_UNAVAILABLE_RESULT);
+    expect(createIssue).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[report-image] evidence storage failed',
+      expect.any(Error)
+    );
+    consoleError.mockRestore();
   });
 
   it('deletes retained evidence when the private notification fails', async () => {

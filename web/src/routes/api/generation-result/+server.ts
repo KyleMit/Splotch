@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { API_KEY_HEADER, ACCESS_TOKEN_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
+import { API_KEY_HEADER, ACCESS_TOKEN_HEADER } from '$lib/apiHeaders';
 import { GENERATION_JOB_PARAM } from '$lib/apiParams';
 import { apiHandler, throttled } from '$lib/server/http';
 import {
@@ -45,14 +45,20 @@ function unavailable(): Response {
   return Response.json(body, { status: UNAVAILABLE_STATUS });
 }
 
+// The poll is authorized by the job id alone, so its credential headers arrive
+// unchecked. A key or an access code can still bind a token, because
+// /api/report-image verifies that credential itself before it reads the token.
+// A free token is all the proof the free door asks for, so it binds only to the
+// installation id the start authorized and stored with the job. The order is
+// authorizeImageReport's precedence, and deliberately so for a free job polled
+// with a key or a code: the client reports with the credential it polls with,
+// and a token bound to the stored id would fail that report's check.
 function reportBinding(request: Request, context: GenerationJobContext): ReportTokenBinding | null {
   const apiKey = request.headers.get(API_KEY_HEADER)?.trim();
   if (apiKey) return { kind: 'byok', credential: apiKey };
   const token = request.headers.get(ACCESS_TOKEN_HEADER)?.trim();
   if (token) return { kind: 'managed', credential: token };
-  const installationId =
-    context.free?.installationId ?? request.headers.get(INSTALLATION_ID_HEADER);
-  if (installationId) return { kind: 'free', credential: installationId };
+  if (context.free) return { kind: 'free', credential: context.free.installationId };
   return null;
 }
 
@@ -84,6 +90,18 @@ async function settleFreeGeneration(
   }
 }
 
+// Every caller here is already answering, so a delete that fails is logged, not
+// thrown: the drawing it leaves at rest is the scheduled purge's to remove.
+async function discard(jobId: string): Promise<void> {
+  const failure = await discardJob(jobId);
+  if (failure) {
+    console.warn(
+      `[generation-result] could not discard the job (failed deletes: ${failure.failedDeletes}):`,
+      loggableError(failure.firstFailure)
+    );
+  }
+}
+
 const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   const { limited, retryAfter } = rateLimit(
     generationResultBucket(getClientAddress()),
@@ -107,7 +125,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     // will ever name this job — the client stops polling on a 404. Anything
     // still sitting under that id has no reader left, so it goes now rather
     // than waiting for the scheduled purge.
-    await discardJob(jobId);
+    await discard(jobId);
     throw error(404, 'That creation is no longer available');
   }
   if (job.status === 'pending') return new Response(null, { status: GENERATION_ACCEPTED_STATUS });
@@ -116,13 +134,13 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
 
   if (job.status === 'refusal') {
     await settleFreeGeneration(job.context, false, 'safety');
-    await discardJob(jobId);
+    await discard(jobId);
     return safetyRefusalResponse(job.reason, binding);
   }
 
   if (job.status === 'error') {
     await settleFreeGeneration(job.context, false, 'upstream');
-    await discardJob(jobId);
+    await discard(jobId);
     throw error(502, job.reason);
   }
 
@@ -150,12 +168,12 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     );
   } catch (cause) {
     await settleFreeGeneration(job.context, false, 'upstream');
-    await discardJob(jobId);
+    await discard(jobId);
     throw cause;
   }
 
   const freeRemaining = await settleFreeGeneration(job.context, true, 'upstream');
-  await discardJob(jobId);
+  await discard(jobId);
 
   return pictureResponse(prepared, {
     freeRemaining,

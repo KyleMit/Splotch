@@ -2,12 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedColoringPackManifest } from './manifest';
 import { coloringPackMarkerPath, coloringPackMarkerValue } from './cacheKeys';
 
-vi.mock('$lib/idle', () => ({
-  scheduleIdle: (callback: () => void) => {
-    callback();
-    return () => {};
-  },
-}));
+vi.mock('$lib/idle', () => ({ scheduleIdle: vi.fn() }));
 
 vi.mock('$lib/idb', () => ({ requestPersistentStorage: vi.fn() }));
 
@@ -363,6 +358,57 @@ describe('adopting a version-scoped cache from the earlier store layout', () => 
     expect(installedIds(await store.installed(deployed))).toEqual(['space']);
     expect(cachedPaths(currentCache)).not.toContain(coloringPackMarkerPath('dinosaur'));
     expect(world.fake.entries(LEGACY_CACHE_NAME)).toBeUndefined();
+  });
+});
+
+// EventTarget ignores a removal of a listener it does not hold, so only a
+// removal that follows its add detaches anything.
+function liveAbortListeners(signal: AbortSignal): ReadonlySet<unknown> {
+  const live = new Set<unknown>();
+  const add = signal.addEventListener.bind(signal);
+  const remove = signal.removeEventListener.bind(signal);
+  vi.spyOn(signal, 'addEventListener').mockImplementation((type, listener, options) => {
+    if (type === 'abort') live.add(listener);
+    add(type, listener, options);
+  });
+  vi.spyOn(signal, 'removeEventListener').mockImplementation((type, listener, options) => {
+    if (type === 'abort') live.delete(listener);
+    remove(type, listener, options);
+  });
+  return live;
+}
+
+// Removing downloaded books or switching downloads off aborts the install's
+// signal, and on the web that abort can land while a file waits for idle time.
+describe('an install whose signal aborts during an idle wait', () => {
+  it('rejects with the abort reason, cancels the idle slice, and downloads nothing', async () => {
+    world.idle.hold();
+    const controller = new AbortController();
+    const reason = new DOMException('Coloring books removed', 'AbortError');
+
+    const installing = createWebColoringPackStore().install(
+      released,
+      dinosaur,
+      false,
+      controller.signal
+    );
+    await vi.waitFor(() => expect(world.idle.pending).toBe(1));
+    controller.abort(reason);
+
+    await expect(installing).rejects.toBe(reason);
+    expect(world.idle.pending).toBe(0);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(cachedPaths(currentCache)).toEqual([]);
+  });
+
+  it('leaves no abort listener on the signal once its idle waits finish', async () => {
+    const { signal } = new AbortController();
+    const listeners = liveAbortListeners(signal);
+
+    await createWebColoringPackStore().install(released, dinosaur, false, signal);
+
+    expect(signal.addEventListener).toHaveBeenCalledTimes(dinosaur.files.length);
+    expect(listeners.size).toBe(0);
   });
 });
 

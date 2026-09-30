@@ -20,7 +20,7 @@
     AI_LOADING_TITLE,
     AI_READY_ANNOUNCEMENT,
   } from '$lib/ai/loadingCopy';
-  import { saveAiResult } from '$lib/ai/resultDownload';
+  import { saveAiResult } from '$lib/ai/resultSave';
   import { stampMotionAtStart } from '$lib/platform/reducedMotion';
   import { AI_IMAGE_BUTTON_ID, DRAWER_TOGGLE_ID } from '$lib/actionButtonLayout';
 

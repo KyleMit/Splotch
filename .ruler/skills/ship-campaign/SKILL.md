@@ -46,14 +46,16 @@ The input names the queue and, optionally, a deadline:
 
 Invoking the skill is the user's standing authorization, for every unit in the queue, to: create
 branches and worktrees, push, open PRs, post the rival's reviews, apply and remove `in-progress`,
-merge each PR through `ship-issue`'s autonomous gate, comment on queued issues and their epic, and
-ship two kinds of unqueued **free-form unit**: a trunk-repair PR that fixes `main` forward after it
-turns red during the campaign (step 4), and a gate-repair PR for a check proven broken on its own
-base (step 3). It does **not** authorize bypassing branch protection, weakening a test or gate to
-get green, force-pushing a shared branch, closing an issue except through `Fixes` on merge, filing
-new issues, or touching work outside the queue and those two exceptions. Carry this block verbatim
-into every unit's instructions: an unattended unit must never have to infer its authority, and a
-runner that sees "never merge" anywhere in its instructions will refuse the merge.
+merge each PR through `ship-issue`'s autonomous gate (step 1 puts that approval on record in the
+user's own words), comment on queued issues and their epic, and ship two kinds of unqueued
+**free-form unit**: a trunk-repair PR that fixes `main` forward after it turns red during the
+campaign (step 4), and a gate-repair PR for a check proven broken on its own base (step 3). It does
+**not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
+a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
+work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
+quoted merge approval when one was given, into every unit's instructions: an unattended unit must
+never have to infer its authority, and a runner that sees "never merge" anywhere in its instructions
+will refuse the merge.
 
 **A denied tool call is not a withdrawn authorization.** A single rejected command — a permission
 prompt declined, a hook refusing an edit, a call interrupted mid-turn — says nothing about the grant
@@ -66,7 +68,13 @@ quarantine, not a question for the user. Handing a pre-authorized merge back cos
 round trip the campaign exists to spare them, at the moment they are least likely to be watching.
 (2026-09-22, unit 12 of the 2161–2170 campaign: a declined `broker.mjs next`, whose rival had
 already finished and written its findings to disk, was read as the merge authority lapsing; the
-queue stopped with a green, reviewed PR unmerged.)
+queue stopped with a green, reviewed PR unmerged.) The exception is a guardrail denial that forbids
+the outcome rather than the call, such as the auto-mode classifier refusing a merge: respect it, and
+never reach that outcome by another route. A refused merge **pauses** the queue; it does not
+downgrade it. Start no new unit, let in-flight units finish to shippable, and tell the user at once
+that merging is blocked, by what, and what would unblock it. Then wait for their decision. Units
+that keep shipping unmerged all branch from one base, so none can build on another, and the
+guarantee this skill's shape exists for is silently gone.
 
 **Report an interruption from live state, never from assumption.** What step 5 requires of
 **status** binds harder on an unplanned stop, because that report is what the user decides on:
@@ -94,7 +102,16 @@ fix done before declaring the campaign started.
   An unattended run whose rival bridge is missing reviews nothing and merges nothing.
 * **Prove the merge path.** `gh auth status`, and `gh --version` at or above the release
   `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
-  unit's gate.
+  unit's gate. Invoking the campaign approves its merges; put that on record now, before the user
+  leaves: ask them to say explicitly, in their own words, that merges are approved for this
+  campaign, and quote them in the ledger and in the authorization block every unit carries. If they
+  say instead that PRs should stay open, run every unit as step 3's reviewer-outage downgrade does:
+  `ship-issue`'s default mode, verified as an open, mergeable PR rather than a merge.
+* **Usage windows.** Every agent the campaign runs draws on one account usage limit, and reaching it
+  ends them all at once. Read the plan's usage windows (through the host's usage tool when it has
+  one), agree two thresholds with the user — one where no new unit or agent launches, one where the
+  campaign wraps up (step 5) — and record both in the ledger. Re-read usage before each launch; a
+  window's reset reopens launches.
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
 * **Devices.** When any queued unit needs the rig, the performance profile's device preflight
   applies.
@@ -136,10 +153,14 @@ For each unit, finish every step before starting the next:
 4. **Verify from live state, never from the unit's report.** The PR reads merged; its merge commit
    is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
    that SHA registered and finished green; and, for an issue unit, the issue is closed and
-   `in-progress` is gone. `ship-issue` assigns the issue when it claims it and does not unassign it,
-   so remove that assignee here and re-read the issue to confirm. A free-form unit has no issue to
-   check; its PR body carries the spec, and the ledger records it. Copy every SHA from command
-   output. A report and the API disagreeing is itself a finding for the morning report.
+   `in-progress` is gone. The post-merge jobs, per merge, are the standard jobs of the push `Tests`
+   run. Its WebKit commit gate (fast) is serialized across commits (`.github/workflows/test.yml`)
+   and can run hours behind on a merge-heavy day, so don't wait on it per unit: collect those gates
+   once, before the morning report, and list any still pending there. `ship-issue` assigns the issue
+   when it claims it and does not unassign it, so remove that assignee here and re-read the issue to
+   confirm. A free-form unit has no issue to check; its PR body carries the spec, and the ledger
+   records it. Copy every SHA from command output. A report and the API disagreeing is itself a
+   finding for the morning report.
 5. **Update the ledger** and continue.
 
 **A unit that stops before opening a PR is skipped.** `ship-issue` stops without a PR when the work
@@ -152,7 +173,8 @@ in step 3.
 
 Never end the turn to ask a question. The user is not there, and a campaign that stops to ask sits
 idle until morning. Park the question in the ledger, apply the unit's quarantine or skip rule, and
-continue with the next independent eligible unit.
+continue with the next independent eligible unit. The one exception is a refused merge, which only
+the user can clear: it pauses the queue (see "Invocation and authority").
 
 ## 3. When a unit fails — quarantine it, don't stall
 
@@ -205,7 +227,8 @@ the morning report and stop.
 **A reviewer outage downgrades the queue instead of stopping it.** If the rival cannot run after one
 retry, a substituted review withdraws the merge authority (`ship-issue` step 4). Keep going in
 `ship-issue`'s default mode: each unit ends as an open, mergeable PR branched from `main`, and the
-morning report lists them for the user to merge.
+morning report lists them for the user to merge. A successor that needs one of those unmerged PRs is
+dependency-blocked and skipped, as after a quarantine.
 
 ## 4. When `main` goes red during the campaign — roll forward
 
@@ -230,17 +253,18 @@ write the morning report and stop.
 
 ## 5. Stop and report
 
-**Deadline reserve.** Unless a queue-wide blocker (step 3), a red-`main` pause (step 4), or a pause
-or wrap-up control message has stopped the queue, keep taking the next independent eligible unit
-after each merge, quarantine, or skip. Reserve only the final 15 minutes before the deadline for
-live-state verification, ledger updates, and the morning report; never scale that reserve to the
-longest completed unit. Before starting another unit, choose a bounded checkpoint whose work and, if
-needed, full step 3 quarantine can finish before the reserve begins. Scope the work to the time left
-instead of idling through hours of review, CI, or device waits from an earlier unit. If its review
-and merge gate cannot finish in time, apply step 3 quarantine by the reserve start: leave a draft PR
-with the exact evidence, blocker, and next step, unwind any issue claim, and do not call it shipped.
-At reserve start, begin no new unit; verify live state and report by the deadline. If an unexpected
-in-flight unit remains, quarantine it promptly. Do not overrun the deadline merely to merge.
+**Deadline reserve.** Unless a queue-wide blocker (step 3), a red-`main` pause (step 4), a refused
+merge, or a pause or wrap-up control message has stopped the queue, keep taking the next independent
+eligible unit after each merge, quarantine, or skip. Reserve only the final 15 minutes before the
+deadline for live-state verification, ledger updates, and the morning report; never scale that
+reserve to the longest completed unit. Before starting another unit, choose a bounded checkpoint
+whose work and, if needed, full step 3 quarantine can finish before the reserve begins. Scope the
+work to the time left instead of idling through hours of review, CI, or device waits from an earlier
+unit. If its review and merge gate cannot finish in time, apply step 3 quarantine by the reserve
+start: leave a draft PR with the exact evidence, blocker, and next step, unwind any issue claim, and
+do not call it shipped. At reserve start, begin no new unit; verify live state and report by the
+deadline. If an unexpected in-flight unit remains, quarantine it promptly. Do not overrun the
+deadline merely to merge.
 
 **Control messages** steer the running campaign; they do not replace it.
 

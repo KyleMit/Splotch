@@ -17,16 +17,36 @@ const LISTEN_ON_ANY_PORT =
 
 // Every test spawns the listeners it inspects, because freePort stops one: a
 // listener shared across tests is gone for whichever test runs after that.
-async function listenFrom(cwd) {
-  const child = spawn(process.execPath, ['-e', LISTEN_ON_ANY_PORT], {
+async function listenFrom(cwd, script = LISTEN_ON_ANY_PORT) {
+  const child = spawn(process.execPath, ['-e', script], {
     cwd,
-    stdio: ['ignore', 'pipe', 'ignore'],
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
   onTestFinished(() => child.kill());
-  const port = await new Promise((resolve) => {
-    child.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
-  });
+  const port = await firstPrintedPort(child);
   return { child, port };
+}
+
+// A listener that dies before printing its port would otherwise leave the test
+// waiting out its timeout with no reason; reject with what the child reported.
+function firstPrintedPort(child) {
+  let stderr = '';
+  child.stderr.on('data', (chunk) => (stderr += chunk));
+  return new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (code, signal) =>
+      reject(
+        new Error(
+          `listener exited before printing a port (code ${code}, signal ${signal}): ${stderr.trim()}`
+        )
+      )
+    );
+    child.stdout.once('data', (chunk) => {
+      const line = String(chunk).trim();
+      if (/^[1-9]\d*$/.test(line)) resolve(Number(line));
+      else reject(new Error(`listener printed ${JSON.stringify(line)} instead of a port`));
+    });
+  });
 }
 
 // The same listener command from two places: somewhere that is deliberately not
@@ -34,6 +54,20 @@ async function listenFrom(cwd) {
 const foreignRoot = mkdtempSync(join(tmpdir(), 'splotch-foreign-'));
 
 afterAll(() => rmSync(foreignRoot, { recursive: true, force: true }));
+
+describe('listenFrom', () => {
+  it('rejects with the exit code when the listener exits before printing a port', async () => {
+    await expect(
+      listenFrom(foreignRoot, 'console.error("cannot bind");process.exit(3)')
+    ).rejects.toThrow('listener exited before printing a port (code 3, signal null): cannot bind');
+  });
+
+  it('rejects a printed line that is not a port', async () => {
+    await expect(listenFrom(foreignRoot, 'console.log("ready")')).rejects.toThrow(
+      'listener printed "ready" instead of a port'
+    );
+  });
+});
 
 describe('foreignPortListeners', () => {
   it('identifies a listener owned by another checkout', async () => {

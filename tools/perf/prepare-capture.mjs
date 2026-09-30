@@ -33,6 +33,7 @@ import {
   classifyAppiumLog,
   classifyLaunchProbe,
   deviceAccessProblem,
+  iosLaunchBlocker,
   pageFollowedRotation,
   safariWindowProblem,
   PORT_ROLES,
@@ -1015,14 +1016,9 @@ if (isMain(import.meta.url)) {
       console.log(`${rotation.ok ? '✓' : '✗'} ${'android rotation'.padEnd(22)} ${rotation.detail}`);
       if (!rotation.ok) process.exitCode = 1;
     }
-    const iosLaunchBlocker =
-      report.iosDeveloperModeEnabled === false
-        ? 'Developer Mode is off'
-        : report.iosProvisioningReady === false
-          ? 'WebDriverAgent provisioning profile excludes this device'
-          : null;
-    if (argv.includes('--verify-ios-launch') && report.iosUdid && iosLaunchBlocker) {
-      console.log(`✗ ${'ios launch'.padEnd(22)} not attempted — ${iosLaunchBlocker}`);
+    const launchBlocker = iosLaunchBlocker(report);
+    if (argv.includes('--verify-ios-launch') && report.iosUdid && launchBlocker) {
+      console.log(`✗ ${'ios launch'.padEnd(22)} not attempted — ${launchBlocker}`);
       process.exitCode = 1;
     } else if (argv.includes('--verify-ios-launch') && report.iosUdid) {
       console.log(

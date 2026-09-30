@@ -19,9 +19,10 @@
   // flipping mid-session. That is these two and no others: Auto-Save is
   // set-and-forget, and so is the tool drawer switch — a parent declutters the
   // drawer once, not per session. Night Mode is binary over the *resolved* theme — the same
-  // quick toggle CompactShell and /design's header carry, with the same
-  // accepted trade that flipping it while on System pins the preference; the
-  // three-way choice including System stays in the Appearance section.
+  // quick toggle CompactShell carries, with the same accepted trade that
+  // flipping it while on System pins the preference; the three-way choice
+  // including System stays in the Appearance section. /design's Light/Dark
+  // picker is deliberately not this toggle: it pins an explicit theme (ADR-0096).
   interface HubToggle {
     id: string;
     label: string;
@@ -159,9 +160,8 @@
     transform: scale(0.97);
   }
 
-  /* Untiled: the icon takes the space the tile's padding used to. The box stays
-     44px as the optical column that keeps every row's title left-aligned — it is
-     layout, not a hit target (the row itself is the target). */
+  /* The untiled icon's box is the optical column that keeps every row's title
+     left-aligned — it is layout, not a hit target (the row itself is the target). */
   .hub-icon {
     display: flex;
     align-items: center;

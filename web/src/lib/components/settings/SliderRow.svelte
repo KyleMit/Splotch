@@ -16,17 +16,15 @@
     min?: number;
     max?: number;
     snap?: number;
-    valueText?: string;
     icon?: CommonIconName;
     help?: string;
     onInput: (value: number) => void;
     onActiveChange?: (active: boolean) => void;
   }
 
-  let { id, label, value, min, max, snap, valueText, icon, help, onInput, onActiveChange }: Props =
-    $props();
+  let { id, label, value, min, max, snap, icon, help, onInput, onActiveChange }: Props = $props();
 
-  const displayedValueText = $derived(valueText ?? `${value}%`);
+  const valueText = $derived(`${value}%`);
 </script>
 
 <div class="slider-row" class:indented={!icon}>
@@ -39,7 +37,7 @@
     {:else}
       <span class="slider-label-name">{label}</span>
     {/if}
-    <span>{displayedValueText}</span>
+    <span>{valueText}</span>
   </div>
   <Slider
     {value}
@@ -47,7 +45,7 @@
     {max}
     {snap}
     labelId={id}
-    valueText={displayedValueText}
+    {valueText}
     describedBy={help ? `${id}-help` : undefined}
     {onInput}
     {onActiveChange}

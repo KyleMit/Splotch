@@ -1,3 +1,5 @@
+import { once } from 'node:events';
+import { createServer } from 'node:http';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const os = vi.hoisted(() => ({ networkInterfaces: vi.fn() }));
@@ -7,9 +9,17 @@ vi.mock('node:os', async (importOriginal) => {
   return { ...actual, default: { ...actual.default }, networkInterfaces: os.networkInterfaces };
 });
 
-const { lanAddresses } = await import('../lib/net.mjs');
+const { lanAddresses, waitForUrl } = await import('../lib/net.mjs');
 
-afterEach(() => os.networkInterfaces.mockReset());
+// Shorter than waitForUrl's pause between attempts, so each call makes exactly one attempt.
+const ONE_ATTEMPT_TIMEOUT_MS = 100;
+
+const servers = [];
+
+afterEach(async () => {
+  os.networkInterfaces.mockReset();
+  await Promise.all(servers.splice(0).map((server) => new Promise((done) => server.close(done))));
+});
 
 const ipv4 = (address, internal = false) => ({ address, family: 'IPv4', internal });
 
@@ -50,5 +60,49 @@ describe('lanAddresses', () => {
     });
 
     expect(lanAddresses()).toEqual([]);
+  });
+});
+
+async function listen(respond) {
+  const server = createServer(respond);
+  servers.push(server);
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  return `http://127.0.0.1:${server.address().port}`;
+}
+
+async function refusedUrl() {
+  const url = await listen(() => {});
+  const server = servers.pop();
+  await new Promise((done) => server.close(done));
+  return url;
+}
+
+async function timeoutOf(url) {
+  try {
+    await waitForUrl(url, ONE_ATTEMPT_TIMEOUT_MS);
+  } catch (err) {
+    return err;
+  }
+  throw new Error(`${url} unexpectedly became ready`);
+}
+
+describe('waitForUrl', () => {
+  it('names the refused connection behind a timeout', async () => {
+    const url = await refusedUrl();
+
+    const timeout = await timeoutOf(url);
+
+    expect(timeout.message).toBe(`${url} did not become ready within ${ONE_ATTEMPT_TIMEOUT_MS}ms`);
+    expect(timeout.cause.message).toBe('fetch failed');
+    expect(timeout.cause.cause.code).toBe('ECONNREFUSED');
+  });
+
+  it('names the status of an answer that was never ready', async () => {
+    const url = await listen((_request, response) => response.writeHead(503).end());
+
+    const timeout = await timeoutOf(url);
+
+    expect(timeout.cause.message).toBe('answered HTTP 503');
   });
 });

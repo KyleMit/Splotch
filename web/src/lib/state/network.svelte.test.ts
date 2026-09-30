@@ -199,3 +199,82 @@ describe('native network status', () => {
     expect(state.online).toBe(true);
   });
 });
+
+describe('native network status when the plugin fails', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    mocks.native = true;
+    vi.clearAllMocks();
+    localStorage.removeItem(STORAGE_KEYS.lastNetworkOnline);
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => warn.mockRestore());
+
+  it('logs and follows navigator.onLine and the window events when the plugin fails to load', async () => {
+    const state = createNetwork(() => Promise.reject(new Error('plugin missing')), false);
+    network = state;
+    state.install();
+
+    await vi.waitFor(() => expect(state.online).toBe(true));
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('true');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[network]'), expect.any(Error));
+
+    window.dispatchEvent(new Event('offline'));
+    expect(state.online).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('false');
+  });
+
+  it('logs and reads navigator.onLine when the initial device status read fails', async () => {
+    mocks.getStatus.mockRejectedValue(new Error('status unavailable'));
+    let listener: StatusListener | undefined;
+    mocks.addListener.mockImplementation(async (_event, callback) => {
+      listener = callback;
+      return { remove: () => {} };
+    });
+    const state = createNetwork(undefined, false);
+    network = state;
+    state.install();
+
+    await vi.waitFor(() => expect(state.online).toBe(true));
+    expect(warn).toHaveBeenCalledOnce();
+
+    await vi.waitFor(() => expect(listener).toBeDefined());
+    listener!({ connected: false });
+    expect(state.online).toBe(false);
+  });
+
+  it('logs and follows the window events when the device status listener cannot be added', async () => {
+    mocks.getStatus.mockResolvedValue({ connected: false });
+    mocks.addListener.mockRejectedValue(new Error('listener unavailable'));
+    const state = installNetwork();
+
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledOnce();
+      expect(state.online).toBe(false);
+    });
+
+    window.dispatchEvent(new Event('online'));
+    expect(state.online).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBe('true');
+  });
+
+  it('falls back to nothing once disposed', async () => {
+    let failPlugin!: (error: Error) => void;
+    const state = createNetwork(
+      () => new Promise((_resolve, reject) => (failPlugin = reject)),
+      false
+    );
+    network = state;
+    state.install();
+
+    state.dispose();
+    failPlugin(new Error('plugin missing'));
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled());
+    window.dispatchEvent(new Event('online'));
+
+    expect(state.online).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.lastNetworkOnline)).toBeNull();
+  });
+});

@@ -3,6 +3,12 @@
 // perf:release unpins it. One rule for both, so the device a session held is
 // the device its release lets go of.
 
+import { spawnSync } from 'node:child_process';
+import { parseOrFail } from '../../lib/proc.mjs';
+
+const RIG_SERIAL_FLAG = 'android-serial';
+const CAPTURE_SERIAL_FLAG = 'device-id';
+
 function attachedAndroidSerials(adbDevicesOutput) {
   return adbDevicesOutput
     .split('\n')
@@ -16,9 +22,10 @@ function attachedAndroidSerials(adbDevicesOutput) {
 // missing from PATH, a daemon the sandbox will not let start) lists nothing,
 // and reading that as "nothing attached" lets a release report a phone still
 // pinned awake as nothing to reset. The rig has one phone: with several
-// attached, emulators included, and no --android-serial there is no honest
-// pick — the first one listed is whoever plugged in first.
-export function selectAndroidSerial(devices, explicit) {
+// attached, emulators included, and no serial named there is no honest pick —
+// the first one listed is whoever plugged in first. `serialFlag` is the flag
+// the refusal tells the user to pass.
+export function selectAndroidSerial(devices, explicit, serialFlag = RIG_SERIAL_FLAG) {
   if (!devices.ok) {
     return {
       serial: null,
@@ -31,7 +38,7 @@ export function selectAndroidSerial(devices, explicit) {
     return {
       serial: null,
       attached,
-      problem: `--android-serial=${explicit} is not attached (adb lists ${attached.join(', ') || 'none'})`,
+      problem: `--${serialFlag}=${explicit} is not attached (adb lists ${attached.join(', ') || 'none'})`,
     };
   }
   if (explicit) return { serial: explicit, attached };
@@ -39,8 +46,32 @@ export function selectAndroidSerial(devices, explicit) {
     return {
       serial: null,
       attached,
-      problem: `several devices attached (${attached.join(', ')}) — pass --android-serial=`,
+      problem: `several devices attached (${attached.join(', ')}) — pass --${serialFlag}=`,
     };
   }
   return { serial: attached[0] ?? null, attached };
+}
+
+// A capture runner drives one device for its whole run, so where the
+// preflight reports an empty rig as a blocked check, a runner stops before its
+// first device step. Throws rather than exiting, so its tests read the refusal.
+export function requireCaptureSerial(devices, requested) {
+  const { serial, problem } = selectAndroidSerial(devices, requested, CAPTURE_SERIAL_FLAG);
+  if (serial) return serial;
+  throw new Error(
+    problem ??
+      'No Android device is attached — connect a phone or boot an emulator (npm run android:boot)'
+  );
+}
+
+// `adb` is the binary the runner drives the device with, so the listing and
+// every later `adb -s <serial>` call talk to the same adb server.
+export function resolveAndroidDevice(requested, adb) {
+  const listed = spawnSync(adb, ['devices'], { encoding: 'utf8' });
+  const devices = {
+    ok: listed.status === 0,
+    out: listed.stdout ?? '',
+    err: listed.error?.message ?? (listed.stderr ?? '').trim(),
+  };
+  return parseOrFail(() => requireCaptureSerial(devices, requested));
 }

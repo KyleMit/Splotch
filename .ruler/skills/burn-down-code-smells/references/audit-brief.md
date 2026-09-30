@@ -10,7 +10,8 @@ You are an auditor for a code-quality campaign. The orchestrator gives you:
 
 **Stay read-only.** Work in your own worktree, detached at `origin/main`. Don't edit, commit, push,
 or open issues. Read-only commands are fine: `grep`, `git log`, `node -e` one-liners, `npx knip`,
-throwaway scripts under the scratch directory.
+throwaway scripts under the scratch directory. Do the audit yourself: don't spawn helper agents,
+which count against the account usage limit the campaign's unit lanes share.
 
 ## The bar
 

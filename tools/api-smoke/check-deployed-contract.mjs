@@ -11,10 +11,11 @@ import {
 } from '../../web/securityPolicy.ts';
 import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
-import { check, fatal, json, summarize } from '../lib/smoke.mjs';
+import { check, exitWhenFlushed, fatal, json, summarize } from '../lib/smoke.mjs';
 import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
+import { isLoopbackHostname, parseAdminSecretTarget } from './lib/deployed-admin-target.mjs';
 
 const mainModule = isMain(import.meta.url);
 const { values: options } = parseArgs({
@@ -29,7 +30,6 @@ const ADMIN_CACHE_CONTROL = ['no-store'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
 const HSTS_HEADER = 'Strict-Transport-Security';
 const CSP_HEADER = 'Content-Security-Policy';
-const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const NETLIFY_HOST_SUFFIX = '.netlify.app';
 const MINIMUM_HSTS_MAX_AGE_SECONDS = 31_536_000;
 const NETLIFY_EDGE_SECURITY_HEADERS = new Set([HSTS_HEADER, 'X-Content-Type-Options']);
@@ -43,7 +43,6 @@ const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
 const EXPECTED_VERSION = buildMetadata({ isCapacitor: false, packageVersion }).appVersion;
-const ALLOW_HTTP_FOR_TESTS = process.env.DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS === '1';
 const REQUIRE_CURRENT_VERSION = process.env.DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION !== 'false';
 
 function missingHeaders(response, expected) {
@@ -64,7 +63,7 @@ function hasCacheDirectives(response, expected) {
 
 function hstsProblems(response, hostname) {
   const platformManagesHsts =
-    hostname.endsWith(NETLIFY_HOST_SUFFIX) || LOOPBACK_HOSTS.has(hostname);
+    hostname.endsWith(NETLIFY_HOST_SUFFIX) || isLoopbackHostname(hostname);
   if (!platformManagesHsts) {
     return missingHeaders(response, { [HSTS_HEADER]: SECURITY_HEADERS[HSTS_HEADER] });
   }
@@ -343,18 +342,8 @@ async function run(target) {
 }
 
 export async function checkDeployedContract() {
-  let parsedBase;
-  try {
-    parsedBase = new URL(BASE);
-  } catch {
-    parsedBase = null;
-  }
-
-  const allowedHttpHost =
-    ALLOW_HTTP_FOR_TESTS &&
-    parsedBase?.protocol === 'http:' &&
-    LOOPBACK_HOSTS.has(parsedBase.hostname);
-  if (!parsedBase || (parsedBase.protocol !== 'https:' && !allowedHttpHost) || !ADMIN_SECRET) {
+  const target = parseAdminSecretTarget(BASE);
+  if (!target || !ADMIN_SECRET) {
     console.error(
       [
         '[deploy-smoke] Missing or invalid config.',
@@ -363,13 +352,13 @@ export async function checkDeployedContract() {
         '       ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke',
       ].join('\n')
     );
-    process.exit(2);
+    await exitWhenFlushed(2);
   }
 
   console.log(`[deploy-smoke] target: ${BASE}`);
   console.log(`[deploy-smoke] expected version: ${EXPECTED_VERSION}\n`);
   try {
-    await run(parsedBase);
+    await run(target);
   } catch (err) {
     fatal(err);
   }

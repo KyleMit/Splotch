@@ -1,6 +1,7 @@
 <script lang="ts">
   import { applyAction, deserialize } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
+  import { ADMIN_FORM_FIELDS, type AdminAction } from '$lib/adminForm';
   import AdminConsole from '$lib/components/admin/AdminConsole.svelte';
   import type { PageData, ActionData } from './$types';
 
@@ -14,10 +15,10 @@
   // and feeds the result through `applyAction` (SvelteKit's documented
   // programmatic-submission pattern), which follows the login/logout redirects
   // and updates the `form` prop.
-  async function submit(action: string, fields: Record<string, string> = {}) {
+  async function submit(action: AdminAction, fields: Record<string, string> = {}) {
     const body = new FormData();
     for (const [name, value] of Object.entries(fields)) body.append(name, value);
-    const response = await fetch(action, {
+    const response = await fetch(`?/${action}`, {
       method: 'POST',
       headers: { 'x-sveltekit-action': 'true' },
       body,
@@ -49,12 +50,12 @@
   freeGrantStats={data.freeGrantStats}
   {flash}
   loginError={form?.loginError ?? null}
-  onlogin={(key) => submit('?/login', { 'access-key': key })}
+  onlogin={(key) => submit('login', { [ADMIN_FORM_FIELDS.accessKey]: key })}
   onlogout={async () => {
-    await submit('?/logout');
+    await submit('logout');
   }}
-  onadd={(token) => submit('?/add', { token })}
+  onadd={(token) => submit('add', { [ADMIN_FORM_FIELDS.token]: token })}
   onremove={async (token) => {
-    await submit('?/remove', { token });
+    await submit('remove', { [ADMIN_FORM_FIELDS.token]: token });
   }}
 />

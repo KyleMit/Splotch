@@ -226,23 +226,26 @@ async function runSmoke(base, env = {}) {
   let stderr = '';
   child.stdout.on('data', (chunk) => (stdout += chunk));
   child.stderr.on('data', (chunk) => (stderr += chunk));
-  const [code] = await once(child, 'exit');
+  // 'close', not 'exit': Node may emit 'exit' while the child's stdio is still unread.
+  const [code] = await once(child, 'close');
   return { code, stdout, stderr };
 }
 
+const MODULE_SPECIFIER_TAIL = String.raw`['"]([^'"\r\n]+)['"](?:[ \t]+(?:with|assert)[ \t]*\{[^}\r\n]*\})?[ \t]*;?[ \t]*$`;
+const SIDE_EFFECT_IMPORT = new RegExp(
+  String.raw`^[ \t]*import[ \t]*${MODULE_SPECIFIER_TAIL}`,
+  'gm'
+);
+const STATIC_IMPORT_OR_REEXPORT = new RegExp(
+  String.raw`^[ \t]*(?:import[ \t]+(?!['"])|export[ \t]*(?:type[ \t]+)?[*{])[\s\S]*?\sfrom\s+${MODULE_SPECIFIER_TAIL}`,
+  'gm'
+);
+const DYNAMIC_IMPORT = /\bimport\s*\(\s*['"]([^'"\r\n]+)['"]\s*[,)]/g;
+
 function importSpecifiers(source) {
-  const sideEffectSpecifiers = [
-    ...source.matchAll(/^[ \t]*import[ \t]*['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm),
-  ].map((match) => match[1]);
-  const staticSpecifiers = [
-    ...source.matchAll(
-      /^[ \t]*import[ \t]+(?!['"])[\s\S]*?\sfrom\s+['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm
-    ),
-  ].map((match) => match[1]);
-  const dynamicSpecifiers = [...source.matchAll(/\bimport\s*\(\s*['"]([^'"\r\n]+)['"]\s*\)/g)].map(
-    (match) => match[1]
+  return [SIDE_EFFECT_IMPORT, STATIC_IMPORT_OR_REEXPORT, DYNAMIC_IMPORT].flatMap((pattern) =>
+    [...source.matchAll(pattern)].map((match) => match[1])
   );
-  return [...sideEffectSpecifiers, ...staticSpecifiers, ...dynamicSpecifiers];
 }
 
 function bareImports(entry, visited = new Set()) {
@@ -262,13 +265,21 @@ describe('hosted deploy contract smoke', () => {
     const source = [
       "import 'side-effect-package';",
       "import value from 'static-package';",
+      "export * from 'star-reexport-package';",
+      "export { named } from 'named-reexport-package';",
+      "export { default as data } from 'attributed-reexport-package' with { type: 'json' };",
       "const loaded = import('dynamic-package');",
+      "const configured = import('dynamic-options-package', { with: { type: 'json' } });",
     ].join('\n');
 
     expect(importSpecifiers(source)).toEqual([
       'side-effect-package',
       'static-package',
+      'star-reexport-package',
+      'named-reexport-package',
+      'attributed-reexport-package',
       'dynamic-package',
+      'dynamic-options-package',
     ]);
   });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { collectPrState, formatPrState } from '../show-pr-state.mjs';
+import { parseIssueNumber } from '../lib/github-cli.mjs';
+import { collectPrState, formatPrState, showPrState } from '../show-pr-state.mjs';
 
 const head = 'a'.repeat(40);
 const basePr = {
@@ -131,5 +132,36 @@ describe('show-pr-state', () => {
     expect(() =>
       collectPrState({ number: 42, repository: 'KyleMit/Splotch', run: gh.run })
     ).toThrow('Review threads response is incomplete');
+  });
+});
+
+describe('parseIssueNumber', () => {
+  it('reads a positive issue or PR number', () => {
+    expect(parseIssueNumber('1')).toBe(1);
+    expect(parseIssueNumber('2467')).toBe(2467);
+  });
+
+  it.each(['0', '-3', '1.5', '080', '42junk', '1e3', '0x2a', ' 42', '', '9007199254740993'])(
+    'rejects %j with the positional message',
+    (value) => {
+      expect(() => parseIssueNumber(value)).toThrow(
+        new Error(`Expected a positive issue or PR number, got ${value}`)
+      );
+    }
+  );
+
+  it('names a missing number', () => {
+    expect(() => parseIssueNumber(undefined)).toThrow(
+      new Error('Expected a positive issue or PR number, got (missing)')
+    );
+  });
+
+  it('rejects a bad number before calling gh', async () => {
+    const run = (args) => {
+      throw new Error(`Unexpected gh call: ${args.join(' ')}`);
+    };
+    await expect(showPrState(['1.5'], run)).rejects.toThrow(
+      new Error('Expected a positive issue or PR number, got 1.5')
+    );
   });
 });

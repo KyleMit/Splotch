@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { iosProvisioningCheck } from '../lib/ios-provisioning.mjs';
+import { iosProvisioningCheck, iosProvisioningReady } from '../lib/ios-provisioning.mjs';
 
 const team = 'EXAMPLETEAM';
 const udid = 'new-device';
@@ -15,6 +15,22 @@ describe('iOS provisioning preflight', () => {
     expect(iosProvisioningCheck({ udid, team, profiles: [profile([udid])] })).toMatchObject({
       status: 'ok',
     });
+  });
+
+  it('accepts a prefix wildcard profile covering WebDriverAgent', () => {
+    expect(
+      iosProvisioningCheck({
+        udid,
+        team,
+        profiles: [profile([udid], `${team}.art.splotch.*`)],
+      })
+    ).toMatchObject({ status: 'ok' });
+  });
+
+  it('does not treat an absent signing config as ready', () => {
+    expect(iosProvisioningReady(null)).toBe(false);
+    expect(iosProvisioningReady({ status: 'blocked' })).toBe(false);
+    expect(iosProvisioningReady({ status: 'ok' })).toBe(true);
   });
 
   it('flags a new device missing from the cached development profile', () => {

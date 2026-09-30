@@ -1,18 +1,9 @@
 import { createServer } from 'node:net';
 import { parseArgs } from 'node:util';
-import { isMain, runMain } from './lib/proc.mjs';
+import { isMain, parseNumberFlag, runMain, TCP_PORT } from './lib/proc.mjs';
 
 const DEFAULT_FROM_PORT = 5300;
 const DEFAULT_TO_PORT = 5399;
-const MAX_PORT = 65535;
-
-function parsePort(value, name) {
-  const port = Number(value);
-  if (!Number.isSafeInteger(port) || port < 1 || port > MAX_PORT || String(port) !== value) {
-    throw new Error(`${name} must be an integer from 1 to ${MAX_PORT}`);
-  }
-  return port;
-}
 
 function probeAddress(port, host, allowUnavailable) {
   return new Promise((resolve, reject) => {
@@ -61,8 +52,9 @@ export async function showFreePort(argv = process.argv.slice(2)) {
     allowPositionals: false,
   });
   if (positionals.length) throw new Error('Unexpected positional arguments');
-  const from = values.from === undefined ? DEFAULT_FROM_PORT : parsePort(values.from, '--from');
-  const to = values.to === undefined ? DEFAULT_TO_PORT : parsePort(values.to, '--to');
+  const from =
+    values.from === undefined ? DEFAULT_FROM_PORT : parseNumberFlag('from', values.from, TCP_PORT);
+  const to = values.to === undefined ? DEFAULT_TO_PORT : parseNumberFlag('to', values.to, TCP_PORT);
   const port = await findFreePort({ from, to, host: values.host });
   console.log(port);
 }

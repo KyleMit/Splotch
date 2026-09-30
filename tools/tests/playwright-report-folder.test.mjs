@@ -32,7 +32,7 @@ function uploadArtifactSteps(lines) {
       const blank = next.trim() === '';
       const leavesStep = !blank && (indentOf(next) < stepIndent || /^\s+- /.test(next));
       if (leavesStep) break;
-      step.name ??= next.match(/^\s+name: (\S+)$/)?.[1];
+      step.name ??= next.match(/^\s+name: (\S.*)$/)?.[1];
       step.path ??= next.match(/^\s+path: (\S+)$/)?.[1];
     }
     steps.push(step);
@@ -46,8 +46,14 @@ describe('Playwright report folder', () => {
     name?.startsWith('playwright-report-')
   );
 
+  // Pinned by name, not counted: a step whose name fails to parse drops out of the filter, and
+  // the steps that remain keep any count above zero.
   it('is what every Playwright job in test.yml uploads', () => {
-    expect(reportUploads.length).toBeGreaterThan(0);
+    expect(reportUploads.map(({ name }) => name).sort()).toEqual([
+      'playwright-report-firefox',
+      'playwright-report-shard-${{ matrix.shard }}',
+      'playwright-report-webkit',
+    ]);
     for (const { name, path } of reportUploads)
       expect({ name, path }).toEqual({ name, path: `${folder}/` });
   });
@@ -67,6 +73,12 @@ describe('upload-artifact step parsing', () => {
       '        with:',
       '          name: playwright-report-firefox',
       '',
+      '      - name: Upload shard',
+      '        uses: actions/upload-artifact@sha',
+      '        with:',
+      '          name: playwright-report-shard-${{ matrix.shard }}',
+      '          path: playwright-report/',
+      '',
       '      - name: Upload other',
       '        uses: actions/upload-artifact@sha',
       '        with:',
@@ -82,6 +94,7 @@ describe('upload-artifact step parsing', () => {
     ]);
     expect(steps).toEqual([
       { name: 'playwright-report-firefox', path: undefined },
+      { name: 'playwright-report-shard-${{ matrix.shard }}', path: 'playwright-report/' },
       { name: 'playwright-report-webkit', path: 'playwright-report/' },
       { name: 'lighthouse', path: 'elsewhere/' },
     ]);

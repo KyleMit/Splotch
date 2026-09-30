@@ -23,6 +23,17 @@ const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
   persistAiUserApiKey
 );
 
+export const setAiUserApiKey = aiKeyWriteCoordinator.setCredential;
+
+export async function setUserSubmittedAiUserApiKey(value: string, ownsRequest?: () => boolean) {
+  const persisted = await setAiUserApiKey(value, ownsRequest);
+  // Best-effort, and only after a successful explicit save: requesting during
+  // boot hydration makes Firefox prompt parents who have not touched the feature
+  // (ADR-0128).
+  if (persisted && value) void requestPersistentStorage();
+  return persisted;
+}
+
 // Dev-harness scenario for the Settings E2E regression: it reaches the otherwise
 // timing-dependent state through the real persistence and coordinator paths.
 export async function prepareRefusedAiKeyForget(value: string) {
@@ -32,15 +43,6 @@ export async function prepareRefusedAiKeyForget(value: string) {
   await aiKeyWriteCoordinator
     .runHydration(() => Promise.reject(new Error('forced secure storage failure')))
     .catch(() => undefined);
-}
-
-export async function setAiUserApiKey(value: string, ownsRequest?: () => boolean) {
-  const persisted = await aiKeyWriteCoordinator.setCredential(value, ownsRequest);
-  // Best-effort, and only after a successful explicit save: requesting during
-  // boot hydration makes Firefox prompt parents who have not touched the feature
-  // (ADR-0128).
-  if (persisted && value) void requestPersistentStorage();
-  return persisted;
 }
 
 export function hydrateApiKey() {

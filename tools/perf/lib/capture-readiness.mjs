@@ -34,6 +34,14 @@ export function iosIdentifierProblem(value) {
   return `${value} is not a recognizable iOS device identifier`;
 }
 
+export function iosLaunchBlocker({ iosDeveloperModeEnabled, iosProvisioningReady }) {
+  if (iosDeveloperModeEnabled === false) return 'Developer Mode is off';
+  if (iosProvisioningReady === false) {
+    return 'WebDriverAgent signing is not ready';
+  }
+  return null;
+}
+
 // A port already in use is not automatically a problem. Something that required
 // a human approval — the root-owned RemoteXPC tunnel above all — is worth
 // reusing rather than restarting, and something cheap is worth moving off.

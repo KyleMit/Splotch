@@ -156,6 +156,10 @@ describe('POST /api/report-image', () => {
     const response = await post('not multipart');
 
     expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'AI reporting is not available right now. Please try again later.',
+    });
     expect(authorizeImageReport).not.toHaveBeenCalled();
     expect(submitImageReport).not.toHaveBeenCalled();
   });

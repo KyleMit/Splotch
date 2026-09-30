@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { mockFreeGrant } from './ai-harness';
 import { gotoApp, seedAiEnabled } from './helpers';
 
 const LANDSCAPE_VIEWPORTS = [
@@ -123,8 +124,8 @@ async function startupPanelGeometry(page: Page) {
 }
 
 for (const scenario of [
-  { name: 'grant arrives', status: 200, viewport: PORTRAIT_VIEWPORTS[0] },
-  { name: 'grant is unavailable', status: 503, viewport: LANDSCAPE_VIEWPORTS[1] },
+  { name: 'grant arrives', granted: true, viewport: PORTRAIT_VIEWPORTS[0] },
+  { name: 'grant is unavailable', granted: false, viewport: LANDSCAPE_VIEWPORTS[1] },
 ] as const) {
   test(`opted-in AI button paints without moving the drawer when ${scenario.name}`, async ({
     browser,
@@ -144,13 +145,9 @@ for (const scenario of [
 
     let releaseGrant!: () => void;
     const grantGate = new Promise<void>((resolve) => (releaseGrant = resolve));
-    await page.route('**/api/free-generation-grant', async (route) => {
+    await mockFreeGrant(page, async () => {
       await grantGate;
-      await route.fulfill({
-        status: scenario.status,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: scenario.status === 200, remaining: 7 }),
-      });
+      return scenario.granted ? { remaining: 7 } : 'unavailable';
     });
     await seedAiEnabled(page);
     await page.addInitScript(() => localStorage.setItem('splotch-drawer-open', 'true'));
@@ -167,7 +164,7 @@ for (const scenario of [
     await expect(page.locator('#aiImageButton')).toBeVisible();
     await expect(page.locator('#aiImageButton')).toHaveAttribute(
       'aria-label',
-      scenario.status === 200 ? /Create AI image/ : 'AI image unavailable'
+      scenario.granted ? /Create AI image/ : 'AI image unavailable'
     );
     const settled = await startupPanelGeometry(page);
 
@@ -177,7 +174,7 @@ for (const scenario of [
     expect(pending.aiPainted).toBe(true);
     expect(pending.badgeCount).toBe('7');
     expect(settled.aiPainted).toBe(true);
-    expect(settled.badgeCount).toBe(scenario.status === 200 ? '7' : null);
+    expect(settled.badgeCount).toBe(scenario.granted ? '7' : null);
     expect(pending.count).toBe(firstPaint.count);
     expect(settled.count).toBe(firstPaint.count);
     expect(pending.panel).toEqual(firstPaint.panel);
@@ -211,9 +208,7 @@ for (const cached of [null, 'false', 'true'] as const) {
     const firstPaint = await startupPanelGeometry(firstPaintPage);
     await firstPaintContext.close();
 
-    await page.route('**/api/free-generation-grant', (route) =>
-      route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
-    );
+    await mockFreeGrant(page, 'unavailable');
     await seedOffline(page);
     await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
     await gotoApp(page);
@@ -250,9 +245,7 @@ test('a changed network state replaces the stored first-paint guess', async ({ b
   const firstPaint = await startupPanelGeometry(firstPaintPage);
   await firstPaintContext.close();
 
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({ status: 503, body: JSON.stringify({ ok: false }) })
-  );
+  await mockFreeGrant(page, 'unavailable');
   await seedStoredOffline(page);
   await page.setViewportSize(PORTRAIT_VIEWPORTS[0]);
   await gotoApp(page);
@@ -284,13 +277,9 @@ test('AI-only drawer paints its count before the grant arrives', async ({ browse
 
   let releaseGrant!: () => void;
   const grantGate = new Promise<void>((resolve) => (releaseGrant = resolve));
-  await page.route('**/api/free-generation-grant', async (route) => {
+  await mockFreeGrant(page, async () => {
     await grantGate;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, remaining: 7 }),
-    });
+    return { remaining: 7 };
   });
   await seedAiEnabled(page);
   await seedPersistedHiddenControls(page, AI_ONLY_HIDDEN_CONTROLS);
@@ -317,13 +306,7 @@ test('AI-only drawer paints its count before the grant arrives', async ({ browse
 });
 
 test('a usable AI button stays hidden with the closed drawer', async ({ page }) => {
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, remaining: 7 }),
-    })
-  );
+  await mockFreeGrant(page, { remaining: 7 });
   await seedAiEnabled(page);
   await gotoApp(page);
   await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');

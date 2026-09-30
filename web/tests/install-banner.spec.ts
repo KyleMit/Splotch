@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import {
   ANDROID_UA,
@@ -7,6 +7,7 @@ import {
   INSTALL_BANNER_EARNING_STROKES,
   drawInstallBannerStrokes,
   gotoApp,
+  readDrawingHistory,
 } from './helpers';
 
 test.use({
@@ -27,15 +28,56 @@ test.use({
 // that the failure it predicts), against ~20x for every assertion around it.
 const PARTING_EXIT_TIMEOUT_MS = 20_000;
 
+const STROKE_COMMIT_TIMEOUT_MS = 10_000;
+// The idle overlay pump mounts one resident per interaction-quiet slice, spaced
+// by lib/idle.ts, so draining it is a multi-second floor before contention
+// stretches it.
+const OVERLAY_PUMP_DRAIN_TIMEOUT_MS = 30_000;
+
+async function committedStrokeRevision(page: Page): Promise<number> {
+  const history = await readDrawingHistory(page);
+  if (history?.strokeRevision === undefined) {
+    throw new Error('drawing stroke revision is unavailable');
+  }
+  return history.strokeRevision;
+}
+
+// Whether the banner is earned is decided synchronously from two inputs: the
+// committed stroke count (canvasState.strokeCount ticks in the same engine
+// commit that advances the drawing history's strokeRevision) and a mounted
+// InstallBanner, whose `visible` derives from it. Below the threshold nothing
+// demands the banner, so it mounts in the idle overlay pump's slice before
+// Settings; bootHiddenOverlays.test.ts pins that order. A closed #settingsModal
+// in the DOM therefore means the banner component is live and has already
+// evaluated the stroke count, so its absence is a decision, not a race.
+async function waitForBannerEarningDecision(page: Page, strokeRevision: number) {
+  await expect
+    .poll(
+      async () => {
+        const history = await readDrawingHistory(page);
+        return history
+          ? { strokeRevision: history.strokeRevision, pendingCommands: history.pendingCommands }
+          : null;
+      },
+      { timeout: STROKE_COMMIT_TIMEOUT_MS }
+    )
+    .toEqual({ strokeRevision, pendingCommands: 0 });
+  await expect(page.locator('#settingsModal')).toBeAttached({
+    timeout: OVERLAY_PUMP_DRAIN_TIMEOUT_MS,
+  });
+}
+
 test('the install banner parts after five additional strokes', async ({ page }) => {
-  // Eight strokes plus that fixed ~4.6s exit measured 17.7s at 8 workers, so the
-  // default 30s per-test budget is the tightest bound in the spec once latency
+  // Eight strokes, the overlay pump's drain, and that fixed ~4.6s exit make the
+  // default 30s per-test budget the tightest bound in the spec once latency
   // inflates (ADR-0078 §2). test.slow() triples it.
   test.slow();
   await gotoApp(page);
   const banner = page.locator('.install-banner');
+  const baseline = await committedStrokeRevision(page);
 
   await drawInstallBannerStrokes(page, INSTALL_BANNER_EARNING_STROKES - 1);
+  await waitForBannerEarningDecision(page, baseline + INSTALL_BANNER_EARNING_STROKES - 1);
   await expect(banner).toHaveCount(0);
 
   await drawInstallBannerStrokes(page, 1);

@@ -43,8 +43,8 @@ A **manual, token-gated, human-reviewed** red-team suite, plus a safety/error sp
 **Encrypted, committed fixture corpus** (`tools/redteam/`):
 
 * `tools/redteam/lib/fixture-crypto.mjs` — AES-256-GCM (`[12B iv][16B authTag][ct]`), key =
-  `scryptSync(REDTEAM_FIXTURE_KEY, 'splotch-redteam', 32)`. The key lives in `.env`, shared
-  out-of-band, never committed.
+  `scryptSync(REDTEAM_FIXTURE_KEY, 'splotch-redteam', 32)`. The key lives in `web/.env` (or the
+  shell), shared out-of-band, never committed.
 * `tools/redteam/manage-encrypted-fixtures.mjs` — `encrypt` (`source/` → `encrypted/`) / `decrypt`
   (`encrypted/` → `decrypted/`).
 * Only `encrypted/*.enc` is committed; `source/`, `decrypted/`, `output/` are gitignored. The
@@ -63,8 +63,10 @@ prefix, decrypts the corpus, boots a throwaway `vite dev` with `ALLOWED_TOKENS_L
 POSTs each drawing to `/api/generate-image`, and writes `tools/redteam/output/<runId>/` with each
 input, any output image, `report.json`, and a standalone `report.html` (input → output side by side,
 safe cases first then block cases; a missing image shows the returned error/refusal message). The
-run prints a `file://` link and opens the report in the default browser. It **always exits 0** and
-never asserts pass/fail — the verdict is the human review.
+run prints a `file://` link and opens the report in the default browser. It never asserts pass/fail
+— the verdict is the human review — so no safety outcome changes its exit status. It exits nonzero
+only when the run aborted before every case was sent, and the report then carries an error row for
+each case that never ran: a truncated run must not read as a smaller clean one.
 
 **Safety classification** (`web/src/lib/server/ai/openaiSafety.ts`, part of the OpenAI adapter
 behind the `AiImageProvider` seam — ADR-0047/0113):

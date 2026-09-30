@@ -108,9 +108,9 @@ on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export them.
 | `TUNNEL_HOST`               | `vite.config.ts`                     | Adds the tunnel hostname to `server.allowedHosts` for cloud preview                                                              |
 | `GEMINI_API_KEY`            | `tools/asset-gen/`, `model-eval`     | **Not read by the app.** These read `process.env` directly with no `.env` loading, so a `web/.env` entry needs `node --env-file` |
 
-`REDTEAM_FIXTURE_KEY` is a third case: `tools/redteam/lib/fixture-crypto.mjs` calls
-`process.loadEnvFile('.env')`, so it comes from a **repo-root** `.env` — not `web/.env`, not the
-shell.
+`REDTEAM_FIXTURE_KEY` is a third case: the red-team entry points load `web/.env` themselves
+(`REDTEAM_ENV_FILE` in `tools/redteam/lib/fixture-crypto.mjs`), so it and the red-team run's
+`OPENAI_API_KEY` come from the shell or, failing that, `web/.env`. A repo-root `.env` is not read.
 
 `web/playwright.shared.ts` declares the full private set the served app reads, with the
 outbound-write credentials neutralised; it is the list to check against when adding a row here.

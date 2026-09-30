@@ -59,7 +59,9 @@ names its constants, restricts the inset to iPhone handsets, and formats the dri
 not rewrite accepted fingerprints or ledgers. The saved pre-publication driver also remains in the
 local session for reproducing those captures. `controls/web-actions-instrument.json` records the
 actual driver and helper hashes used by the four completed HTTPS sweeps; their index entries retain
-that fingerprint separately from the earlier drawing and native captures.
+that fingerprint separately from the earlier drawing and native captures. Its `capturedSourceCommit`
+reproduces those module bytes after the branch reconciles later upstream harness changes; no
+accepted fingerprint is rewritten for that merge.
 
 ## HTTPS verification
 

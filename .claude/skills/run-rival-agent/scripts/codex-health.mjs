@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import { isMain } from '../../../../tools/lib/proc.mjs';
 import { assertSubscriptionBilling, AUTH_PATH } from './codex-subscription-auth.mjs';
 
 const SUBSCRIPTION_LOGIN_PATTERN = /logged in using chatgpt/i;
@@ -40,7 +41,7 @@ function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (isMain(import.meta.url)) {
   try {
     main();
   } catch (error) {

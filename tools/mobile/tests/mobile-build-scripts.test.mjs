@@ -226,8 +226,10 @@ describe('mobile build script entry points', () => {
       { cwd: repoRoot, encoding: 'utf8' }
     );
 
-    expect(result.status).toBe(0);
+    // Stderr first: a failing check's own line is there, and the status
+    // assertion alone would report only `expected 1 to be +0`.
     expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
     expect(result.stdout).toContain('[check-coloring-assets] all checks passed.');
   });
 

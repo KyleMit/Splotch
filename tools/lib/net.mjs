@@ -20,16 +20,19 @@ export function lanAddresses() {
 }
 
 // Poll a URL until `ready(res)` (plain HTTP reachability by default) or throw
-// at the deadline.
+// at the deadline, with the last attempt's failure as the error's cause.
 export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
   const deadline = Date.now() + timeoutMs;
+  let lastFailure;
   while (Date.now() < deadline) {
     try {
-      if (ready(await fetch(url))) return;
-    } catch {
-      // not up yet
+      const res = await fetch(url);
+      if (ready(res)) return;
+      lastFailure = new Error(`answered HTTP ${res.status}`);
+    } catch (err) {
+      lastFailure = err;
     }
     await sleep(500);
   }
-  throw new Error(`${url} did not become ready within ${timeoutMs}ms`);
+  throw new Error(`${url} did not become ready within ${timeoutMs}ms`, { cause: lastFailure });
 }

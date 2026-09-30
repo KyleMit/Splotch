@@ -135,8 +135,11 @@
   // imperative operations the app invokes from buttons (undo/clear) and for
   // reading the resulting bitmap.
   // Annotated against the ambient Window.__engine contract (web/tests/global.d.ts)
-  // that the Playwright specs compile against, so a harness member that drifts
-  // from that spec-facing contract errors here instead of type-checking silently.
+  // that the Playwright specs compile against, so a missing member, or one whose
+  // signature is not assignable to that contract, errors here. Assignability
+  // cannot catch a renamed key in an all-optional parameter object, so a member
+  // that passes an engine export straight through (setCrayonParams) takes its
+  // type from that export in global.d.ts instead of restating it.
   function buildEngineApi(): Window['__engine'] {
     return {
       setColor,

@@ -6,6 +6,7 @@ import {
   settleFlyIn,
   settleSettingsPane,
 } from './helpers';
+import { mockFreeGrant } from './ai-harness';
 import { solveParentalGate } from './flows-harness';
 
 // The privacy page has no Settings button: Parent Center is reached through a
@@ -40,9 +41,7 @@ async function openPrivacyParentCenter(page: Page) {
 }
 
 test('Parent Center reached from privacy hydrates its persisted settings', async ({ page }) => {
-  await page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' })
-  );
+  await mockFreeGrant(page, 'unavailable');
   await seedAiEnabled(page);
   await seedParentalGatePolicies(page, 'always');
   await page.goto('/privacy');

@@ -99,9 +99,13 @@ stores those raw bytes without first base64-encoding them, and the drawing stays
 provider seam; the single base64 encode happens inside the adapter, which needs it for the vendor's
 data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected.
 The server still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured
-signing secret), and a client that never sends the header always gets the synchronous shape. Since
-every OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
-controlled `502`.
+signing secret) and whenever the handoff fails with no worker owning the job (the job store could
+not take it, or the worker refused it), and a client that never sends the header always gets the
+synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
+now usually ends in the controlled `502`. After a failed handoff the in-line call gets only what the
+handoff left of that deadline, so a slow store failure still answers before the platform ceiling
+(ADR-0063); when too little is left for the model to answer at all, the model is not called and the
+answer is the same controlled `502`, with the free reservation released.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -147,8 +151,8 @@ completions can never claim one slot — but it is no longer allowed to destroy 
 ledger write that fails is logged and the image returned without the remaining-count header, leaving
 the daily ceiling as the spending boundary. A separate durable compare-and-set counter reserves
 every free provider start before the model is called and caps project-funded traffic across all
-installations and function instances at 500 calls per UTC day. Provider failures and safety refusals
-are not refunded from that daily ceiling.
+installations and function instances at 500 calls per UTC day. Provider failures, safety refusals,
+and an in-line fallback skipped for lack of time (above) are not refunded from that daily ceiling.
 
 On success returns the image bytes. Sticker results are keyed server-side into a transparent PNG, so
 the paper shows through in the result and the downloaded image retains transparency. A Sticker
@@ -171,7 +175,9 @@ explicitly report a possible false positive without making the refused drawing d
 **`502`** is a genuine upstream/empty failure (retryable). A managed or free request on a deploy
 with no project OpenAI key is `503`, as `/api/free-generation-grant` answers the same gap; the body
 names no configuration, and the `[generate-image]` log line tells the operator which key is unset.
-BYOK requests never need that key. The route talks to the model through the provider-agnostic
+BYOK requests never need that key. A managed token the access-token store gave no answer about is
+also `503`, with the same body, rather than `403 Invalid access token` (see
+`/api/verify-access-code`). The route talks to the model through the provider-agnostic
 `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
 appears in route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
 `isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
@@ -213,9 +219,11 @@ picture is handed over.
 | `503`  | `{ ok:false, code:"GENERATION_UNAVAILABLE", error }` — the job store could not be read; keep polling |
 
 Send the same credential headers as the generation itself. They are not re-authorized (the job id
-already is the capability) — they are what the report token is bound to, and omitting them only
-costs the ability to report that picture. Rate-limited per IP, with a budget sized for waiting
-rather than guessing.
+already is the capability). A BYO key or an access code is what the report token is bound to, and
+omitting it only costs the ability to report that picture. A free job's report token is bound to the
+installation id the job stored when it started, never to the poll's `X-Installation-Id`, so a job
+started with another credential gets no free-tier token. Rate-limited per IP, with a budget sized
+for waiting rather than guessing.
 
 Settling the free-generation reservation and minting the report token both happen **here**, not in
 the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
@@ -237,7 +245,21 @@ valid families behind one NAT never spend it.
 { "ok": false, "error": "That access code was not recognized." }
 // 400 — missing, non-string, or blank code
 { "ok": false, "error": "No access code provided" }
+// 503 — the allowlist could not be read, so nothing was learned about the code
+{ "ok": false, "code": "KEY_CHECK_UNAVAILABLE", "error": "We couldn't check that key just now. Please try again." }
 ```
+
+An allowlist that could not be read is a **third** answer, as it is for `/api/verify-key`: a code
+added in `/admin` is not wrong just because the token store failed to answer. The verdict comes from
+`checkAccessToken` in `web/src/lib/server/tokens.ts`, which reports `unavailable` when a lost seed
+race could not be confirmed, and when a Blobs read threw and the env-seed stand-in lacks the code. A
+runtime with no Blobs at all (a production preview) still treats its seed as the whole list and
+answers a miss as unrecognized. The same verdict decides the failed-guess charge: an `unavailable`
+answer spends a guess only when it depended on the code. After a failed Blobs read, a seed code is
+still accepted, so a miss there is an answer about the code and is charged like a wrong one; with no
+list at all, every code gets the same `503` and nothing is charged. `generate-image` and
+`report-image` apply the same verdict to `X-Access-Token`, answering `503` with their own
+unavailable message where a wrong token gets `403`.
 
 ### `POST /api/verify-key`
 
@@ -430,9 +452,15 @@ hours. See ADR-0104.
 { "ok": false, "error": "Invalid API key" }
 // 502 — the private issue could not be opened (rejected or timed out); the bundle is deleted
 { "ok": false, "error": "Could not send your AI report. Please try again later." }
-// 503 — private reporting or evidence storage unavailable, or the BYO key check got no answer
+// 503 — GITHUB_ISSUE_TOKEN is unset, or the evidence could not be stored
+// 503 — the access-token store or the BYO key check gave no answer about the credential
+// 503 — REPORT_TOKEN_SECRET is unset and the report is free-tier or carries a report token
+// 503 — a refusal report carries no signed refusal context
 { "ok": false, "error": "AI reporting is not available right now. Please try again later." }
 ```
+
+Every `503` carries that one sentence, `AI_REPORTING_UNAVAILABLE_MESSAGE` in
+`web/src/lib/server/imageReportUnavailable.ts`, whichever check refused.
 
 ---
 
@@ -538,6 +566,12 @@ round-trip only on Netlify preview hostnames.
 | `GET`    | —                     | List tokens + invite URLs                                                         |
 | `POST`   | `{ "token": "name" }` | Add a token. `400 { ok: false, error }` when empty or duplicate.                  |
 | `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). Also requests immediate deletion of its usage tally. |
+
+A mutation's snapshot also carries `changed`: whether the request wrote anything. A `DELETE` whose
+token matched nothing in the list read is still `200`, but with `changed: false`; it writes nothing
+and deletes no tally, and the `/admin` console says the token was not in the list instead of
+confirming a removal. Under eventual consistency that read can lag a recent add, so an operator
+revoking a code that should be there checks the returned `tokens` and retries.
 
 Mutations are etag compare-and-set writes with a few retries; if concurrent admin mutations keep
 colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE` return

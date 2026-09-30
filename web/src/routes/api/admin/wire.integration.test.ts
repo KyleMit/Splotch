@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { envState, getTokensStatus, addToken, removeToken } = vi.hoisted(() => ({
   envState: {} as Record<string, string | undefined>,
-  getTokensStatus: vi.fn(),
-  addToken: vi.fn(),
-  removeToken: vi.fn(),
+  getTokensStatus: vi.fn<typeof import('$lib/server/tokens').getTokensStatus>(),
+  addToken: vi.fn<typeof import('$lib/server/tokens').addToken>(),
+  removeToken: vi.fn<typeof import('$lib/server/tokens').removeToken>(),
 }));
 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
@@ -115,6 +115,7 @@ describe('admin JSON API wire responses', () => {
       ok: true,
       tokens: ['existing', 'new-token'],
       persistent: true,
+      changed: true,
     });
 
     const response = await tokenRequest('POST', 'new-token');
@@ -135,6 +136,24 @@ describe('admin JSON API wire responses', () => {
         },
       ],
       persistent: true,
+      changed: true,
+    });
+  });
+
+  // Still a 200, since removal is idempotent, but a client can tell that the
+  // token it meant to revoke was not there to remove.
+  it('reports a DELETE that matched no token as unchanged', async () => {
+    removeToken.mockResolvedValue({ ok: true, tokens: [], persistent: true, changed: false });
+
+    const response = await tokenRequest('DELETE', 'typo');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ok: true,
+      tokens: [],
+      invites: [],
+      persistent: true,
+      changed: false,
     });
   });
 

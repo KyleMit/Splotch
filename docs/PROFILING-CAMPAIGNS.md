@@ -1337,7 +1337,7 @@ driver changes its context naming, and prove the new name before adding a fallba
 
 ## A capture that does not record its brush is filed as pen
 
-`brushOf` (`tools/perf/rescore-captures.mjs`) resolves a capture's brush from the artifact's own
+`brushOf` (`tools/perf/lib/capture-rescore.mjs`) resolves a capture's brush from the artifact's own
 `brush` field, then from a brush name in the path, and **falls back to `pen`** — silently.
 
 That fallback is load-bearing for old artifacts and dangerous for new ones. On 2026-08-27 a campaign

@@ -1,4 +1,5 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
+import { ADMIN_FORM_FIELDS } from '$lib/adminForm';
 import {
   beginAdminLogin,
   buildInvites,
@@ -117,7 +118,7 @@ async function tokenMutation(
   cookies: Cookies,
   request: Request,
   op: (token: string) => Promise<MutationResult>,
-  verb: 'Added' | 'Removed'
+  describe: (token: string, changed: boolean) => string
 ) {
   requireAdmin(cookies);
   const body = await readFormBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
@@ -125,10 +126,10 @@ async function tokenMutation(
     const { status, message } = unreadableFormBody(body.reason);
     return fail(status, { error: message });
   }
-  const token = formStringField(body.form, 'token').trim();
+  const token = formStringField(body.form, ADMIN_FORM_FIELDS.token).trim();
   const result = await op(token);
   if (!result.ok) return fail(MUTATION_FAILURE_STATUS[result.reason], { error: result.error });
-  return { success: true, message: `${verb} “${token}”` };
+  return { success: true, message: describe(token, result.changed) };
 }
 
 export const actions: Actions = {
@@ -143,7 +144,7 @@ export const actions: Actions = {
       const { status, message } = unreadableFormBody(body.reason);
       return fail(status, { loginError: message });
     }
-    if (!attempt.verify(formStringField(body.form, 'access-key')).ok) {
+    if (!attempt.verify(formStringField(body.form, ADMIN_FORM_FIELDS.accessKey)).ok) {
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);
@@ -153,6 +154,12 @@ export const actions: Actions = {
     cookies.delete(SESSION_COOKIE, { path: '/admin' });
     throw redirect(303, '/admin');
   },
-  add: ({ request, cookies }) => tokenMutation(cookies, request, addToken, 'Added'),
-  remove: ({ request, cookies }) => tokenMutation(cookies, request, removeToken, 'Removed'),
+  add: ({ request, cookies }) =>
+    tokenMutation(cookies, request, addToken, (token) => `Added “${token}”`),
+  // An operator revoking a leaked code must not read "Removed" for a code that
+  // is still valid because this read missed it.
+  remove: ({ request, cookies }) =>
+    tokenMutation(cookies, request, removeToken, (token, changed) =>
+      changed ? `Removed “${token}”` : `“${token}” was not in the list — nothing was removed`
+    ),
 };

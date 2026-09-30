@@ -8,7 +8,7 @@ const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf
 
 // The console driver is a paste-into-Safari snippet, so it can't import the
 // desktop harness's key manifest. A row found hot on the iPad must still name the
-// `npm run perf:web:undo --scenarios=` run that reproduces it on the desktop.
+// `npm run perf:web:undo -- --scenarios=` run that reproduces it on the desktop.
 const scenarioKeys = (source) => [...source.matchAll(/^\s*key: '([a-z-]+)',$/gm)].map((m) => m[1]);
 
 // The driver's only interface is globals an operator types into the Safari

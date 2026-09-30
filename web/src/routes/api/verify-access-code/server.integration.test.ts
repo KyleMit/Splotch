@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Only the allowlist read is mocked; the real rateLimit module (its shared
 // module-level Map) is exercised end-to-end to prove the charging policy.
-const { isAllowedToken } = vi.hoisted(() => ({ isAllowedToken: vi.fn() }));
-vi.mock('$lib/server/tokens', () => ({ isAllowedToken }));
+const { checkAccessToken } = vi.hoisted(() => ({
+  checkAccessToken: vi.fn<typeof import('$lib/server/tokens').checkAccessToken>(),
+}));
+vi.mock('$lib/server/tokens', () => ({ checkAccessToken }));
 
 import { POST } from './+server';
 import { peekRateLimit } from '$lib/server/rateLimit';
@@ -23,12 +25,12 @@ function post(address: string, body: unknown) {
 }
 
 beforeEach(() => {
-  isAllowedToken.mockReset();
+  checkAccessToken.mockReset();
 });
 
 describe('POST /api/verify-access-code (real rateLimit)', () => {
   it('does not consume the shared budget across a burst of successful verifications', async () => {
-    isAllowedToken.mockResolvedValue(true);
+    checkAccessToken.mockResolvedValue({ verdict: 'allowed' });
     const address = '198.51.100.77';
 
     for (let i = 0; i < 20; i++) {
@@ -44,8 +46,24 @@ describe('POST /api/verify-access-code (real rateLimit)', () => {
     });
   });
 
+  // A family retrying through a token-store outage must still have its budget
+  // when the store comes back.
+  it('does not consume the shared budget while the allowlist cannot be read', async () => {
+    checkAccessToken.mockResolvedValue({ verdict: 'unavailable', spendsGuess: false });
+    const address = '198.51.100.99';
+
+    for (let i = 0; i < 20; i++) {
+      const response = await post(address, { code: 'console-added' });
+      expect(response.status).toBe(503);
+    }
+
+    expect(
+      peekRateLimit(verifyAccessCodeBucket(address), rateLimitPolicy.verifyAccessCode)
+    ).toEqual({ limited: false, retryAfter: 0 });
+  });
+
   it('throttles a burst of failed guesses from one IP before touching the allowlist', async () => {
-    isAllowedToken.mockResolvedValue(false);
+    checkAccessToken.mockResolvedValue({ verdict: 'denied', spendsGuess: true });
     const address = '198.51.100.88';
 
     for (let i = 0; i < 10; i++) {
@@ -53,10 +71,10 @@ describe('POST /api/verify-access-code (real rateLimit)', () => {
       expect(response.status).toBe(200);
     }
 
-    isAllowedToken.mockClear();
+    checkAccessToken.mockClear();
     const response = await post(address, { code: 'bad-guess' });
 
     expect(response.status).toBe(429);
-    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(checkAccessToken).not.toHaveBeenCalled();
   });
 });

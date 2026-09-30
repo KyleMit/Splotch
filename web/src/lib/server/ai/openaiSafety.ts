@@ -15,7 +15,7 @@ import type {
 // on this repo's red-team corpus it returned a finished image for a drawn gun.
 
 export type SafetyClassification =
-  | { kind: 'image'; data: string; mimeType: string }
+  | { kind: 'image'; data: string; mimeType: string; droppedDeclines: string[] }
   | { kind: 'safety'; reason: string }
   | { kind: 'empty'; reason: string };
 
@@ -58,12 +58,20 @@ const POLICY_ERROR_CODES = new Set<ResponseError['code']>([
 ]);
 const POLICY_INCOMPLETE_REASONS = new Set(['content_filter']);
 
-function policySignal(response: OpenAiResponse): string | null {
+function policyErrorCode(response: OpenAiResponse): ResponseError['code'] | null {
   const code = response?.error?.code;
-  if (code && POLICY_ERROR_CODES.has(code)) return response.error?.message || code;
+  return code && POLICY_ERROR_CODES.has(code) ? code : null;
+}
+
+function policyIncompleteReason(response: OpenAiResponse): string | null {
   const reason = response?.incomplete_details?.reason;
-  if (reason && POLICY_INCOMPLETE_REASONS.has(reason)) return reason;
-  return null;
+  return reason && POLICY_INCOMPLETE_REASONS.has(reason) ? reason : null;
+}
+
+function policySignal(response: OpenAiResponse): string | null {
+  const code = policyErrorCode(response);
+  if (code) return response.error?.message || code;
+  return policyIncompleteReason(response);
 }
 
 const messageParts = (response: OpenAiResponse) =>
@@ -72,15 +80,47 @@ const messageParts = (response: OpenAiResponse) =>
     .flatMap((item) => item.content ?? []);
 
 /**
- * The SDK's typed decline. This is machine-readable in exactly the way the codes
- * above are, so it outranks any reasoning about what the image tool did — a
- * model that emitted a `refusal` part has declined, whatever else came back.
+ * The SDK's typed decline. It is machine-readable in exactly the way the codes
+ * above are, so when the image tool produced no bytes it outranks any reasoning
+ * about what the tool did: a failed tool call beside a `refusal` part is a
+ * decline, not a retry. A completed image still wins over it (ADR-0023).
  */
 function typedRefusal(response: OpenAiResponse): string {
   return messageParts(response)
     .map((part) => ('refusal' in part ? (part.refusal ?? '') : ''))
     .join(' ')
     .trim();
+}
+
+/**
+ * Whether any message part is a non-blank typed refusal. Unlike `typedRefusal`
+ * it tolerates a malformed part, because it runs beside an image that must still
+ * be delivered.
+ */
+function hasTypedRefusal(response: OpenAiResponse): boolean {
+  return messageParts(response).some(
+    (part: unknown) =>
+      typeof part === 'object' &&
+      part !== null &&
+      'refusal' in part &&
+      typeof part.refusal === 'string' &&
+      part.refusal.trim() !== ''
+  );
+}
+
+/**
+ * The machine-readable declines on a response, each named by where it sits and
+ * never by its text: a refusal or policy message can describe the child's
+ * drawing, and the adapter logs these names.
+ */
+function declineSignalNames(response: OpenAiResponse): string[] {
+  const code = policyErrorCode(response);
+  const reason = policyIncompleteReason(response);
+  return [
+    ...(code ? [`error.code=${code}`] : []),
+    ...(reason ? [`incomplete_details.reason=${reason}`] : []),
+    ...(hasTypedRefusal(response) ? ['refusal part'] : []),
+  ];
 }
 
 /** The prose the model answered with, across every message part. */
@@ -95,13 +135,21 @@ function messageText(response: OpenAiResponse): string {
  * The image tool's own terminal states. A tool call that ran and failed is an
  * upstream failure, not a policy decision — the model's policy decision is to
  * not call the tool at all.
+ *
+ * Precedence, first match wins: a completed image (ADR-0023), a machine-readable
+ * decline, a tool call without bytes, then the model's prose.
  */
 export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassification {
   const output = response?.output ?? [];
 
   const call = output.find((item) => item.type === 'image_generation_call');
   if (call?.result) {
-    return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
+    return {
+      kind: 'image',
+      data: call.result,
+      mimeType: `image/${outputFormatOf(call)}`,
+      droppedDeclines: declineSignalNames(response),
+    };
   }
 
   const policy = policySignal(response) || typedRefusal(response);

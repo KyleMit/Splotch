@@ -238,6 +238,13 @@ const ASSERTION_HELPER_PREFIX = 'expect';
 // `expect(paths.has(asset.target), asset.target)`. Playwright's expect takes only the value
 // under test, so its block keeps the default cap.
 const VITEST_EXPECT_MAX_ARGS = 2;
+// The Playwright rules that judge an assertion's own shape rather than the test around it. The
+// shared E2E helpers hold assertions but define no tests, so they get only these.
+const PLAYWRIGHT_ASSERTION_SHAPE_RULES = {
+  'playwright/valid-expect': 'error',
+  'playwright/valid-expect-in-promise': 'error',
+  'playwright/missing-playwright-await': 'error',
+};
 const VACUOUS_TEST_RULES = {
   vitest: {
     'vitest/expect-expect': ['error', { assertFunctionNames: [`${ASSERTION_HELPER_PREFIX}*`] }],
@@ -256,9 +263,7 @@ const VACUOUS_TEST_RULES = {
     'playwright/no-focused-test': 'error',
     'playwright/no-skipped-test': ['error', { allowConditional: true }],
     'playwright/no-conditional-expect': 'error',
-    'playwright/valid-expect': 'error',
-    'playwright/valid-expect-in-promise': 'error',
-    'playwright/missing-playwright-await': 'error',
+    ...PLAYWRIGHT_ASSERTION_SHAPE_RULES,
   },
 };
 
@@ -277,12 +282,12 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/model-eval/gen-model-inputs.mjs': 512,
   'tools/model-eval/lib/composition-score.mjs': 627,
   'tools/model-eval/lib/model-eval-report.mjs': 763,
-  'tools/page-inventory/capture-page-inventory.mjs': 1025,
+  'tools/page-inventory/capture-page-inventory.mjs': 1023,
   'tools/page-inventory/lib/page-inventory-report.mjs': 557,
   'tools/page-inventory/tests/page-inventory.test.mjs': 928,
   'tools/perf/android/capture-bundled-frames.mjs': 759,
   'tools/perf/gen-performance-matrix.mjs': 2878,
-  'tools/perf/ios/capture-xcuitest-actions.mjs': 2626,
+  'tools/perf/ios/capture-xcuitest-actions.mjs': 2625,
   'tools/perf/ios/capture-xcuitest-screen.mjs': 1267,
   'tools/perf/lib/campaign-plan.mjs': 742,
   'tools/perf/lib/person-session.mjs': 502,
@@ -290,7 +295,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/prepare-capture.mjs': 875,
   'tools/perf/probes/real-screen-probe.js': 684,
   'tools/perf/run-campaign.mjs': 633,
-  'tools/perf/split-capture/capture-device-frames.mjs': 818,
+  'tools/perf/split-capture/capture-device-frames.mjs': 815,
   'tools/perf/split-capture/lib/page-bootstrap.mjs': 542,
   'tools/perf/tests/bootstrap-theme.test.mjs': 834,
   'tools/perf/tests/campaign-artifact-acceptance.test.mjs': 685,
@@ -306,12 +311,11 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/tests/xcuitest-actions.test.mjs': 1795,
   'tools/perf/web/run-undo-scenarios.mjs': 1081,
   'tools/scrapbook/clear-sound-sheet/sheet.js': 1716,
-  'tools/scrapbook/lib/scrapbook-index.mjs': 746,
+  'tools/scrapbook/lib/scrapbook-index.mjs': 738,
   'tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js': 571,
   'tools/tests/bootstrap-worktree.test.mjs': 643,
   'tools/tests/codex-transcript-tools.test.mjs': 503,
   'tools/tests/fetch-image-reports.test.mjs': 568,
-  'tools/tests/workflow-hygiene.test.mjs': 511,
 };
 
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
@@ -523,15 +527,22 @@ export default tseslint.config(
     },
   },
   {
-    // No TypeScript program covers tools/ — neither its scripts nor the .ts modules Node runs
-    // through type stripping — so nothing else resolves its identifiers. Re-enable no-undef here so
-    // a used-but-unimported binding — e.g. dropping `import { existsSync } from 'node:fs'` while a
-    // call remains — fails lint instead of throwing ReferenceError only when someone runs the
-    // script (for a device capture, mid-campaign on a physical device). The shared browser + Node
-    // globals are the right set for tools/: Node scripts carry page.evaluate() callbacks that read
-    // window and document, and the page-side probes and generated-page clients are browser
-    // scripts. A glob that narrows fails tools/tests/tools-no-undef-lint.test.mjs.
-    files: ['tools/**/*.{mjs,js,ts}'],
+    // No TypeScript program covers tools/ or the skill-package scripts — neither the scripts nor
+    // the .ts modules Node runs through type stripping — so nothing else resolves their
+    // identifiers. Re-enable no-undef here so a used-but-unimported binding — e.g. dropping
+    // `import { existsSync } from 'node:fs'` while a call remains — fails lint instead of throwing
+    // ReferenceError only when someone runs the script (for a device capture, mid-campaign on a
+    // physical device, or when an agent runs a skill). The shared browser + Node globals are the
+    // right set: Node scripts carry page.evaluate() callbacks that read window and document, and
+    // the page-side probes and generated-page clients are browser scripts. A glob that narrows
+    // fails tools/tests/tools-no-undef-lint.test.mjs.
+    files: [
+      'tools/**/*.{mjs,js,ts}',
+      '.ruler/skills/**/*.mjs',
+      '.ruler/skill-forks/**/*.mjs',
+      '.claude/skills/**/*.mjs',
+      '.agents/skills/**/*.mjs',
+    ],
     rules: {
       'no-undef': 'error',
     },
@@ -842,6 +853,22 @@ export default tseslint.config(
       'playwright/valid-title': 'error',
       'playwright/no-get-by-title': 'error',
     },
+  },
+  {
+    // The shared E2E helpers hold the retrying opens every spec leans on, so a dropped await
+    // inside one goes vacuous in every caller. expect-expect and no-conditional-expect judge a
+    // test, and a helper is not one.
+    files: ['web/tests/**/*.ts'],
+    ignores: ['web/tests/**/*.spec.ts'],
+    plugins: { playwright },
+    rules: PLAYWRIGHT_ASSERTION_SHAPE_RULES,
+  },
+  {
+    // A *TestHarness module is imported by the *.test.ts files that share it and can define it()
+    // blocks of its own (describePolicyRevisions), so it gets the whole vacuous-test set.
+    files: ['web/src/**/*TestHarness.ts'],
+    plugins: { vitest },
+    rules: VACUOUS_TEST_RULES.vitest,
   },
   {
     // The ONE type-aware exception to the fast non-type-aware design above: floating promises

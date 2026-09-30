@@ -204,6 +204,15 @@ export function gateAcceptsInput(gate: DeepReadonly<ParentalGateFields>): boolea
   return isKeypadIdle(gate) && gate.lockoutUntil === null;
 }
 
+/**
+ * The digits that solve the problem on the card. The check compares against it,
+ * and its length is both the dab count ParentalGateProblem draws and the point
+ * past which a digit counts as wrong.
+ */
+export function gateAnswer(gate: { readonly x: number; readonly y: number }): string {
+  return String(gate.x * gate.y);
+}
+
 export function createParentalGate(): ParentalGateState {
   const s: ParentalGateFields = $state({
     policies: readPolicies(),
@@ -413,7 +422,7 @@ export function createParentalGate(): ParentalGateState {
   function pressGateDigit(digit: number) {
     settleLockoutBeforeInput();
     if (!gateAcceptsInput(s)) return;
-    if (s.input.length >= String(s.x * s.y).length) fail();
+    if (s.input.length >= gateAnswer(s).length) fail();
     else s.input += String(digit);
   }
 
@@ -427,8 +436,7 @@ export function createParentalGate(): ParentalGateState {
   function submitGateAnswer() {
     settleLockoutBeforeInput();
     if (!gateAcceptsInput(s)) return;
-    const answer = String(s.x * s.y);
-    if (s.input === answer) succeed();
+    if (s.input === gateAnswer(s)) succeed();
     else fail();
   }
 

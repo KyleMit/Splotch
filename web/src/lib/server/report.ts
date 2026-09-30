@@ -24,9 +24,10 @@ import {
 // message the form allows in its costliest encoding.
 export const MAX_REPORT_BODY_BYTES = 64 * 1024;
 
-// Identifies every in-app submission at a glance; each kind's type label mirrors
-// the repo's taxonomy (docs/ISSUE-WORKFLOW.md). All are declared in
-// .github/labels.yml, but GitHub also auto-creates any missing label on write.
+// Identifies every in-app submission at a glance; each kind's label is a type
+// label from the repo's taxonomy (docs/ISSUE-WORKFLOW.md). GitHub auto-creates
+// any missing label on write, so tools/tests/report-labels.test.mjs fails when
+// .github/labels.yml does not define one this file writes.
 const REPORT_LABEL = 'user-report';
 
 // Everything a report's kind decides about the issue it files, so a new

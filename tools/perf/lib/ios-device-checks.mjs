@@ -9,7 +9,7 @@ import {
   parseDevicectlListing,
 } from './ios-attachment.mjs';
 import { iosDeveloperModeCheck } from './ios-developer-mode.mjs';
-import { checkIosProvisioning } from './ios-provisioning.mjs';
+import { checkIosProvisioning, iosProvisioningReady } from './ios-provisioning.mjs';
 
 const IOS_DETAILS_TIMEOUT_SECONDS = 8;
 
@@ -94,6 +94,6 @@ export function iosChecks() {
     udid,
     udids,
     developerModeEnabled: developerMode.enabled,
-    provisioningReady: provisioning?.status !== 'blocked',
+    provisioningReady: iosProvisioningReady(provisioning),
   };
 }

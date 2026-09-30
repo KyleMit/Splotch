@@ -46,8 +46,18 @@ live session's cwd. Salvage first, then prune.
 2. `npm run worktrees:prune` — one row per agent worktree under `.claude/worktrees/`,
    `~/.codex/worktrees/`, and `/tmp` (`--root=<dir>` to add or replace). `remove` rows are clean,
    merged into `origin/main`, salvaged, and nobody's cwd. Every `keep` and `skip (in use)` row says
-   why; a `keep (uncommitted changes)` is usually another session mid-work — leave it. Then
-   `npm run worktrees:prune -- --apply`.
+   why; a `keep (uncommitted changes)` is usually another session mid-work — leave it. A worktree
+   whose directory is gone is a `keep` row too: its entry holds that worktree's `HEAD` and reflog,
+   so the script never runs `git worktree prune`. Leave those entries unless you have checked what
+   each holds (`tools/git-housekeeping/README.md` says how to drop one). Then
+   `npm run worktrees:prune -- --apply`, which asks every guard again of each `remove` row just
+   before removing it and reports a worktree whose `HEAD` moved since the plan as `kept`.
+
+If either pass prints `skip (use unknown)` rows, its process listing failed (`lsof` off `PATH`, or a
+shell that may not inspect processes), so it could not tell those worktrees were unused and left
+them alone; `--apply` exits 1. The listing is taken again before each row is applied, so rows done
+before it failed stay done: read every row. Fix the listing the warning names, then rerun; don't
+work around it.
 
 Removing a worktree frees its branch for Part 2, so run Part 1 to completion before planning
 branches.
@@ -59,12 +69,12 @@ branches.
 `npm run branches:prune` fetches with `--prune`, loads every PR's state through `gh`, and classifies
 each local branch:
 
-| Row      | Meaning                                                                         | `--apply` does                                    |
-| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `delete` | Tip is an ancestor of `origin/main`                                             | `git branch -d` — the safety valve stays in place |
-| `proven` | Every commit has a **verbatim** counterpart on main, or a verbatim squash match | Nothing, until `--include-equivalent`             |
-| `keep`   | Unique commits, or a patch-id match with no verbatim counterpart                | Nothing — the judgment pass below                 |
-| `skip`   | The never-touch set, with the worktree path or PR number                        | Nothing                                           |
+| Row      | Meaning                                                                         | `--apply` does                                                          |
+| -------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `delete` | Tip is an ancestor of `origin/main`                                             | Re-proves it, applies `-d`'s merged check, deletes at the proven commit |
+| `proven` | Every commit has a **verbatim** counterpart on main, or a verbatim squash match | Nothing, until `--include-equivalent`                                   |
+| `keep`   | Unique commits, or a patch-id match with no verbatim counterpart                | Nothing — the judgment pass below                                       |
+| `skip`   | The never-touch set, with the worktree path or PR number                        | Nothing                                                                 |
 
 A plain patch-id match proves nothing here: every patch-id git computes ignores whitespace, and this
 repository reformats Markdown, so a reformat branch can match a main it genuinely differs from. The
@@ -75,12 +85,13 @@ read those rows, they are the interesting ones.
 Run `npm run branches:prune -- --apply` for the `delete` tier. Glance at the `proven` rows — each
 carries its proof and PR — then `npm run branches:prune -- --apply --include-equivalent`. That flag
 is the one place the scripted pass deletes a branch git itself would refuse, and only behind the
-script's own two-part proof; it is also the way past a `kept (git branch -d refused …)` row, which
-means the current checkout's `HEAD` is behind `origin/main`, not that the branch is unmerged. Those
-deletions name the proven commit id and re-check the worktree list, so a branch another session
-pushed to or checked out since the plan was made is reported as `kept` rather than destroyed.
-Without PR state the script plans but refuses to apply — an open PR is in the never-touch set and
-cannot be excluded blind.
+script's own two-part proof; it is also the way past a `kept (git branch -d would refuse: …)` row,
+which means the branch's upstream (or, with none, the current checkout's `HEAD`) does not hold the
+tip yet, not that the branch is unmerged into `origin/main`. Every deletion, in either tier, goes
+through `git update-ref -d` at the proven commit id and re-checks the worktree list, so a branch
+another session pushed to or checked out since the plan was made is reported as `kept` rather than
+destroyed. Without PR state the script plans but refuses to apply — an open PR is in the never-touch
+set and cannot be excluded blind.
 
 ### Judgment pass (agent)
 

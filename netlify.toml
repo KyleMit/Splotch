@@ -4,9 +4,9 @@
 # writes its output under web/; tools/stage-netlify-functions.mjs then copies web/.netlify ->
 # .netlify so Netlify finds the SSR function at the root; static assets publish from web/build.
 #
-# Local development uses web/netlify.toml instead (via `npm run dev:netlify`, which runs
-# `netlify dev --cwd web`). Keep these two in sync only where it matters — headers live here
-# because they apply to the deployed site.
+# Local development reads web/netlify.toml instead (`npm run dev:netlify` runs
+# `netlify dev --cwd web`), which configures only the dev server and which the deploy never reads.
+# The two files share no settings, so everything the deployed site needs lives here.
 [build]
   # `git fetch --tags` first: Netlify's blobless clone has the full commit graph
   # but does NOT fetch tags, so `git describe` in web/buildVersion.ts can't see the
@@ -15,14 +15,10 @@
   # still produces a valid per-commit version.
   command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
-  # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
-  # asset-gen internals. The watched paths are everything the build reads: the
-  # app (web/), custom functions (netlify/), the build+prebuild tools the build
-  # actually runs (the flat tools/*.mjs entry points plus tools/lib, tools/icons,
-  # tools/release) — enumerated rather than all of tools/, so an asset-gen,
-  # store-drawings, perf, or vectorize change does not trigger a rebuild the old
-  # scripts/ filter never triggered — gen:releases input (releases/), the
-  # toolchain (package.json + the two pnpm files), and this config.
+  # reads. The paths on the `ignore` line below are the whole watched set. Its
+  # tools/ capability folders are enumerated rather than watching all of tools/,
+  # so a change inside a folder the build never runs does not redeploy; every
+  # flat tools/*.mjs entry point is watched, whether the build runs it or not.
   # pnpm-workspace.yaml is watched alongside the lockfile because it carries the
   # dependency overrides, so editing it changes what the build installs.
   #
@@ -30,7 +26,10 @@
   # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
   # under tools/ rather than only the flat ones, rebuilding on every
   # capability-folder change. tools/tests/enumerated-build-paths.test.mjs pins
-  # both the semantics and the enumeration.
+  # that semantics, and checks the enumeration against the tools/ folders the
+  # npm prebuild/build/postbuild scripts reach through relative `from '…'`
+  # imports. That check does not follow the `command` line's staging step or
+  # other import forms (side-effect or dynamic imports).
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
@@ -141,8 +140,9 @@
 # appends `/_app/immutable/*` -> `public, immutable, max-age=31536000` to the _headers
 # file it writes into the publish dir, and the deployed woff2/js under that path serve
 # with that header (verified 2026-07-22, issue #459). The two rules below cover hashed
-# output OUTSIDE /_app: today that's the root-level workbox-<hash>.js emitted by
-# vite-plugin-pwa and the service worker's content-hashed page-cache cleanup import. Rule order matters — a later matching rule's Cache-Control replaces
+# output OUTSIDE /_app, such as the root-level workbox-<hash>.js emitted by
+# vite-plugin-pwa and the service worker's content-hashed page-cache cleanup import.
+# Rule order matters — a later matching rule's Cache-Control replaces
 # an earlier one's, which is how the /sw.js no-cache rule below beats /*.js.
 [[headers]]
   for = "/*.js"

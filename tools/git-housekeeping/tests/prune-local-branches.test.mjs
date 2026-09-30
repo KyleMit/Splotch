@@ -382,6 +382,7 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(sh(['branch', '--list', '--format=%(refname:short)']).split('\n').sort()).toEqual(
       ['closed', 'current', 'held', 'main', 'open', 'rebased', 'squashed', 'unmerged'].sort()
     );
+    expect(sh(['config', '--list'])).not.toContain('branch.gone.');
 
     expect(applyAll(true)).toMatchObject({ rebased: 'deleted', squashed: 'deleted' });
     expect(sh(['branch', '--list', '--format=%(refname:short)']).split('\n').sort()).toEqual(
@@ -481,7 +482,9 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
       includeEquivalent: false,
     });
     expect(refused.outcome).toBe('kept');
-    expect(refused.reason).toMatch(/git branch -d refused/);
+    expect(refused.reason).toMatch(
+      /git branch -d would refuse: [0-9a-f]{12} is not merged into HEAD/
+    );
     expect(sh(['branch', '--list', 'merged-later'])).toContain('merged-later');
 
     const forced = deleteLocalBranch(row, {
@@ -492,5 +495,62 @@ describe('planning and deleting on a real repository', REAL_REPO_TEST_OPTIONS, (
     expect(forced.outcome).toBe('deleted');
     expect(forced.reason).toMatch(/deleted at the proven commit/);
     expect(sh(['branch', '--list', 'merged-later'])).toBe('');
+  });
+
+  // A tab-separated listing reads a subject of `…<TAB>0 0 …` as zero commits
+  // ahead, which is the merged verdict.
+  it('keeps an unmerged branch whose subject holds a tab and two zeros', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    commit('main2.txt', 'x', 'main moves');
+    pushMain();
+    sh(['checkout', '-q', '-b', 'tabbed', 'HEAD~1']);
+    commit('t1.txt', '1', 'first unmerged commit');
+    const tip = commit('t2.txt', '2', 'Add rows\t0 0 to the table');
+    sh(['checkout', '-q', 'main']);
+
+    const row = planLocalBranchPrune({
+      cwd: repo,
+      base: 'origin/main',
+      prIndex: new Map(),
+      prLookupOk: true,
+    }).find((r) => r.name === 'tabbed');
+    expect(row).toMatchObject({ tier: 'keep', reason: '2 unique commits, no PR — judgment pass' });
+
+    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
+    expect(deleteLocalBranch(row, options)).toBeNull();
+    expect(sh(['rev-parse', 'tabbed'])).toBe(tip);
+  });
+
+  // `git branch -d` rereads the branch and judges one with an upstream against
+  // that upstream, so a commit pushed there after planning would pass it.
+  it('refuses to delete a merged row that is not on the base or moved after planning', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['checkout', '-q', '-b', 'unmerged']);
+    const tip = commit('u.txt', 'u', 'unmerged work');
+    sh(['checkout', '-q', '-b', 'moved', 'main']);
+    sh(['push', '-q', '-u', 'origin', 'moved']);
+    sh(['checkout', '-q', 'main']);
+    const options = { cwd: repo, base: 'origin/main', includeEquivalent: true };
+
+    const misread = { name: 'unmerged', tip, tier: 'merged', reason: 'merged into origin/main' };
+    expect(deleteLocalBranch(misread, options)).toEqual({
+      outcome: 'kept',
+      reason: `refusing to delete: ${tip.slice(0, 12)} is not an ancestor of origin/main, so unmerged is not merged into it`,
+    });
+    expect(sh(['rev-parse', 'unmerged'])).toBe(tip);
+
+    const planned = planLocalBranchPrune({ ...options, prIndex: new Map(), prLookupOk: true }).find(
+      (row) => row.name === 'moved'
+    );
+    expect(planned.tier).toBe('merged');
+    sh(['checkout', '-q', 'moved']);
+    const moved = commit('m.txt', 'm', 'work after planning');
+    sh(['push', '-q', 'origin', 'moved']);
+    sh(['checkout', '-q', 'main']);
+    expect(deleteLocalBranch(planned, { ...options, includeEquivalent: false })).toMatchObject({
+      outcome: 'kept',
+      reason: expect.stringMatching(/^refusing to delete: moved no longer points at the proven /),
+    });
+    expect(sh(['rev-parse', 'moved'])).toBe(moved);
   });
 });

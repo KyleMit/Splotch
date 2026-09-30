@@ -26,7 +26,9 @@ quarantine rules, and the morning report around the cluster loop this skill defi
 An explicit user request to run this improvement campaign authorizes its normal in-repository
 branches, commits, pushes, PRs, rival reviews, `start-capture-session` device reservation, and
 merging each cluster's PR through `ship-issue`'s autonomous merge gate. Merely loading the skill for
-planning or reference authorizes none of it.
+planning or reference authorizes none of it. At the start, ask the user to say explicitly, in their
+own words, that merges are approved for this campaign, and quote them in the campaign ledger, as
+`ship-campaign` step 1 does.
 
 ## The campaign advances one merged PR at a time
 

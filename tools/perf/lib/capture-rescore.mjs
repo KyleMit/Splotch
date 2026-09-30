@@ -81,29 +81,41 @@ export function targetOf(parsed, relativePath, fallback) {
   return isKnownTarget(fallback) ? fallback : null;
 }
 
-// Every index entry under the corpus, keyed by the capture's path relative to
-// the corpus ROOT. The corpus nests one campaign directory per promotion, each
-// with its own index, so reading only `<root>/index.json` (or keying per index)
-// fell through to the path segment and mis-targeted every capture.
+// One evidence index's kept entries, as keep-capture-evidence wrote them. The
+// rescorer and perf:analyze:frames both read an index through this, so a renamed
+// field or a changed parse reaches every reader at once.
 //
 // An index that does not parse throws rather than being skipped: keep-capture-
 // evidence writes these files, so an unreadable one is a broken corpus, and it
 // is the only record of which captures are unattributable — skipping it would
 // silently re-admit them and re-target the rest.
+export function readEvidenceIndex(indexPath) {
+  let index;
+  try {
+    index = JSON.parse(readFileSync(indexPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`${relative(ROOT, indexPath)}: evidence index is not valid JSON`, {
+      cause: error,
+    });
+  }
+  return (index.kept ?? []).filter((entry) => entry?.file);
+}
+
+// Absence of the marking means attributable: keep-capture-evidence stamps only
+// a capture whose nonce contradicts its label.
+export function isUnattributable(entry) {
+  return entry.cellAttributable === false;
+}
+
+// Every index entry under the corpus, keyed by the capture's path relative to
+// the corpus ROOT. The corpus nests one campaign directory per promotion, each
+// with its own index, so reading only `<root>/index.json` (or keying per index)
+// fell through to the path segment and mis-targeted every capture.
 export function evidenceIndexEntries(root) {
   const entries = [];
   for (const file of findCaptureFiles(root)) {
     if (basename(file) !== 'index.json') continue;
-    let index;
-    try {
-      index = JSON.parse(readFileSync(file, 'utf8'));
-    } catch (error) {
-      throw new Error(`${relative(ROOT, file)}: evidence index is not valid JSON`, {
-        cause: error,
-      });
-    }
-    for (const entry of index.kept ?? []) {
-      if (!entry?.file) continue;
+    for (const entry of readEvidenceIndex(file)) {
       entries.push({ key: relative(root, join(dirname(file), entry.file)), entry });
     }
   }
@@ -129,7 +141,7 @@ export function evidenceIndexTargets(root) {
 export function evidenceIndexUnattributable(root) {
   const unattributable = new Map();
   for (const { key, entry } of evidenceIndexEntries(root)) {
-    if (entry.cellAttributable !== false) continue;
+    if (!isUnattributable(entry)) continue;
     unattributable.set(key, { reportNonce: entry.reportNonce ?? null });
   }
   return unattributable;

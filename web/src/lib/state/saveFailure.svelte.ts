@@ -87,11 +87,17 @@ export function createSaveFailure({
   let generation = 0;
   // Bumped by each picture-less report, so a retry clears only the one it saw when it started.
   let uncapturedVersion = 0;
-  // Intentionally untracked: stored pictures are restored into memory once, however many times boot
-  // and durable hydration ask, because a picture whose signature could not be computed has no
-  // content identity to deduplicate a second restore against.
+  // Intentionally untracked: set once memory holds every picture the record does, because a
+  // restore brought them in or a write from this session landed. No read runs after that, however
+  // many times boot, durable hydration, and writes after a failed read ask: a picture whose
+  // signature could not be computed has no content identity to deduplicate a second restore
+  // against, and a second read would bring back a picture a retry saved or a dismissal released.
   let restoration: Promise<void> | null = null;
-  let restored = false;
+  let memoryCoversRecord = false;
+  // Intentionally untracked: set by a read of the stored pictures that failed and cleared by one
+  // that succeeds. Every write replaces the whole record, so while it is set a write first reads
+  // the record into memory, and is skipped if that read fails too.
+  let storeUnread = false;
   // Intentionally untracked: one queue for every read and write of the stored pictures. Each write
   // takes the state as it is when its turn comes, and a restore's read runs before any write queued
   // behind it, so a failure reported during boot cannot overwrite the pictures being restored.
@@ -103,8 +109,42 @@ export function createSaveFailure({
     return queued;
   }
 
+  // Runs inside the store queue. Resolves whether it brought stored pictures into memory; a
+  // dismissal after `sinceGeneration` releases them instead.
+  async function restoreFromStore(sinceGeneration: number): Promise<boolean> {
+    if (memoryCoversRecord) return false;
+    let held: HeldPicture[] | null;
+    try {
+      held = await pictureStore.read();
+    } catch (err) {
+      console.error('Reading unsaved pictures failed:', err);
+      storeUnread = true;
+      return false;
+    }
+    storeUnread = false;
+    if (!held || held.length === 0) return false;
+    memoryCoversRecord = true;
+    if (sinceGeneration !== generation) return false;
+    pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
+    demandOverlay('saveFailureBanner');
+    return true;
+  }
+
+  async function writeToStore() {
+    if (storeUnread) {
+      await restoreFromStore(generation);
+      if (storeUnread) return;
+    }
+    try {
+      await pictureStore.write(pictures.length > 0 ? pictures : null);
+      memoryCoversRecord = true;
+    } catch (err) {
+      console.error('Keeping unsaved pictures failed:', err);
+    }
+  }
+
   function persist() {
-    void enqueue(() => pictureStore.write(pictures.length > 0 ? pictures : null));
+    void enqueue(writeToStore);
   }
 
   return {
@@ -168,17 +208,12 @@ export function createSaveFailure({
     },
 
     restoreUnsavedPictures() {
-      if (restored) return Promise.resolve();
+      if (memoryCoversRecord) return Promise.resolve();
       restoration ??= (async () => {
         const restoreGeneration = generation;
-        const held = await enqueue(() => pictureStore.read());
+        const broughtIn = await enqueue(() => restoreFromStore(restoreGeneration));
         restoration = null;
-        if (!held || held.length === 0) return;
-        restored = true;
-        if (restoreGeneration !== generation) return;
-        pictures = pictures.reduce(withPicture, held.slice(-UNSAVED_PICTURE_LIMIT));
-        persist();
-        demandOverlay('saveFailureBanner');
+        if (broughtIn) persist();
       })();
       return restoration;
     },
@@ -191,7 +226,8 @@ export const { reportSaveFailure, retryUnsavedPictures, dismissSaveFailure } = s
 
 // The flag that gates the IndexedDB read lives in localStorage, which a native WebView can evict
 // while its Capacitor Preferences mirror keeps it; hydration then restores the flag, so the restore
-// runs again; once a restore has found pictures, later calls do nothing.
+// runs again; once a restore has found pictures or this session has written the record, later calls
+// do nothing.
 if (browser) {
   void saveFailureState.restoreUnsavedPictures();
   onDurableRestore(() => void saveFailureState.restoreUnsavedPictures());

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, vi } from 'vitest';
+import { scheduleIdle } from '$lib/idle';
 import { coloringPackCacheName } from './cacheKeys';
 import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 
@@ -73,6 +74,31 @@ function createFakeCacheStorage() {
   };
 }
 
+// Production's scheduleIdle never calls back before it returns, and its cancel
+// works, so an install's abort can land while an idle wait is pending. Each
+// slice runs on a microtask unless hold() is in force, and stays pending until
+// then or until its cancel removes it.
+function createDeferredIdle() {
+  const queued = new Set<{ callback: () => void }>();
+  let holding = false;
+  return {
+    schedule(callback: () => void): () => void {
+      const slice = { callback };
+      queued.add(slice);
+      queueMicrotask(() => {
+        if (!holding && queued.delete(slice)) callback();
+      });
+      return () => queued.delete(slice);
+    },
+    hold() {
+      holding = true;
+    },
+    get pending() {
+      return queued.size;
+    },
+  };
+}
+
 // Serializes like the browser's Web Locks within one "tab"; a test that
 // abandons a held lock models a closed tab by installing a fresh manager.
 export function createFakeLockManager() {
@@ -128,9 +154,12 @@ export function installedIds(packs: { id: string }[]): string[] {
 }
 
 // Registers per-test hooks, so each test file calls it once at its top level
-// and reads `fake` through the returned getter to see that test's instance.
+// and reads `fake` and `idle` through the returned getters to see that test's
+// instances. The file mocks `$lib/idle` as `{ scheduleIdle: vi.fn() }`, which
+// each test's hook points at a fresh deferred idle.
 export function useWebStoreWorld() {
   let fake: ReturnType<typeof createFakeCacheStorage>;
+  let idle: ReturnType<typeof createDeferredIdle>;
   let served = new Map<string, Content>();
 
   function serve(manifest: ResolvedColoringPackManifest) {
@@ -146,6 +175,8 @@ export function useWebStoreWorld() {
 
   beforeEach(() => {
     fake = createFakeCacheStorage();
+    idle = createDeferredIdle();
+    vi.mocked(scheduleIdle).mockImplementation(idle.schedule);
     vi.stubGlobal('caches', fake.storage);
     openNewTab();
     serve(released);
@@ -162,6 +193,9 @@ export function useWebStoreWorld() {
   return {
     get fake() {
       return fake;
+    },
+    get idle() {
+      return idle;
     },
     deploy(books: ResolvedColoringPackBookManifest[]): ResolvedColoringPackManifest {
       const manifest = { ...released, appVersion: '1.2.4-test', books };
