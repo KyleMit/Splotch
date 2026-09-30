@@ -81,8 +81,21 @@
     margin-inline-end: var(--space-2);
     padding: var(--space-3);
     border: 0;
-    background: var(--surface-2);
+    border-radius: var(--radius-blob-1);
+    background: var(--brand-wash);
     box-shadow: none;
+  }
+
+  @media (hover: hover) {
+    .dialog-back:not(:disabled):hover {
+      background: var(--brand-wash-hover);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .dialog-back {
+      border: 2px solid ButtonText;
+    }
   }
 
   .floating {

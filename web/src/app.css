@@ -501,11 +501,11 @@ body {
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
    across all icon-style modal close buttons and, in its static-position
-   variant below, the banners' dismiss disc. An outlined white disc sized to
+   variant below, the banners' dismiss blob. An outlined surface sized to
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
-   the padding below keeps the glyph itself visibly smaller than the disc, so
+   the padding below keeps the glyph itself visibly smaller than the blob, so
    the extra box reads as hit area and the ring that makes it pop. Outlined,
-   not raised: beside the flat back disc a shadow made the header's pair read
+   not raised: beside the flat back blob a shadow made the header's pair read
    heavier than the section's own controls. */
 :is(.modal-close-btn, .dialog-header-control, .banner-dismiss) {
   position: absolute;
@@ -515,7 +515,7 @@ body {
   height: var(--modal-close-size);
   background: var(--surface);
   border: 2px solid var(--border-warm);
-  border-radius: 50%;
+  border-radius: var(--radius-blob-2);
   cursor: pointer;
   padding: 10px;
   display: flex;
