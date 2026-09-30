@@ -4,6 +4,7 @@
   import { calm } from '$lib/platform/calmTransition';
   import Icon from './Icon.svelte';
   import Button from './design/Button.svelte';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
   import {
     saveFailureState,
     retryUnsavedPictures,
@@ -30,6 +31,18 @@
   // picture already paid for (ADR-0116); the banner waits for it.
   const visible = $derived(outcome !== null && !aiGenerationState.minimized);
 
+  // A live region inserted already holding its words is not reliably announced, so the banner's
+  // words go to a status region that is mounted with the component, before any failure, and are
+  // written a frame after each change, as in AiImageResult. The banner's controls stay outside it,
+  // so a retry's "Saving…" does not re-read the banner.
+  const announcement = $derived(visible && copy ? `${copy.heading}. ${copy.detail}` : '');
+  let announcedStatus = $state('');
+  $effect(() => {
+    const message = announcement;
+    const frame = requestAnimationFrame(() => (announcedStatus = message));
+    return () => cancelAnimationFrame(frame);
+  });
+
   async function openAppSettings() {
     if (!__IS_CAPACITOR__) return;
     try {
@@ -50,8 +63,10 @@
   }
 </script>
 
+<VisuallyHidden as="p" role="status">{announcedStatus}</VisuallyHidden>
+
 {#if visible && copy}
-  <div class="save-failure-banner" role="status" in:bannerEnter out:bannerExit>
+  <div class="save-failure-banner" in:bannerEnter out:bannerExit>
     <div class="save-failure-main">
       <span class="save-failure-mascot" aria-hidden="true">
         <Icon name="dottie-hiccup" class="save-failure-mascot-icon" />
