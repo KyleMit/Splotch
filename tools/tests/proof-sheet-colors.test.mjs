@@ -91,27 +91,79 @@ function topLevelTemplateText(source, fileName, constName) {
   ].join('\n');
 }
 
+// Splits a stylesheet, comments stripped, into its top-level rules. An at-rule
+// keeps its nested rules inside its body, so `@media (…) { :root {…} }` is one
+// rule whose prelude is the query.
+function topLevelRules(css, label) {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [];
+  let depth = 0;
+  let preludeStart = 0;
+  let bodyStart = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') {
+      if (depth === 0) bodyStart = i + 1;
+      depth++;
+    } else if (text[i] === '}') {
+      depth--;
+      if (depth < 0) throw new Error(`${label}: unbalanced braces`);
+      if (depth > 0) continue;
+      rules.push({
+        prelude: text.slice(preludeStart, bodyStart - 1).trim(),
+        body: text.slice(bodyStart, i),
+      });
+      preludeStart = i + 1;
+    }
+  }
+  if (depth !== 0) throw new Error(`${label}: unbalanced braces`);
+  return rules;
+}
+
+// Every segment must read as `name: value`, so a declaration the guard cannot
+// parse fails it rather than dropping out of the comparison.
+function declarations(body, label) {
+  return body
+    .split(';')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => {
+      const declaration = /^([\w-]+)\s*:\s*(\S[\s\S]*)$/.exec(segment);
+      if (!declaration) throw new Error(`${label}: unreadable :root declaration "${segment}"`);
+      return [declaration[1], declaration[2]];
+    });
+}
+
 function rootCustomProperties(css, label) {
-  const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const root = /(?:^|[\s}]):root\s*\{([^}]*)\}/.exec(uncommented);
-  if (!root) throw new Error(`${label}: no plain :root block`);
+  const roots = topLevelRules(css, label).filter(({ prelude }) => prelude === ':root');
+  if (roots.length !== 1) {
+    throw new Error(`${label}: expected one plain :root rule, found ${roots.length}`);
+  }
   return Object.fromEntries(
-    [...root[1].matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [
-      name,
-      value.trim(),
-    ])
+    declarations(roots[0].body, label)
+      .filter(([name]) => name.startsWith('--'))
+      .map(([name, value]) => [name.slice(2), value])
   );
+}
+
+function customPropertiesOutsideRoot(css, label) {
+  return topLevelRules(css, label)
+    .filter(({ prelude }) => prelude !== ':root')
+    .flatMap(({ body }) =>
+      [...body.matchAll(/(?:^|[{;])\s*--([\w-]+)\s*:/g)].map(([, name]) => name)
+    );
 }
 
 function pageTokens() {
   const chromeSource = readFileSync(join(repoRoot, CHROME), 'utf8');
   const chromeCss = topLevelTemplateText(chromeSource, CHROME, 'CHROME_CSS');
+  const sheetCss = readFileSync(join(repoRoot, SHEET_CSS), 'utf8');
   return {
     chrome: {
       ...topLevelStringMap(chromeSource, CHROME, 'LIGHT_TOKENS'),
       ...rootCustomProperties(chromeCss, CHROME),
     },
-    sheet: rootCustomProperties(readFileSync(join(repoRoot, SHEET_CSS), 'utf8'), SHEET_CSS),
+    sheet: rootCustomProperties(sheetCss, SHEET_CSS),
+    sheetOverrides: customPropertiesOutsideRoot(sheetCss, SHEET_CSS),
   };
 }
 
@@ -150,21 +202,39 @@ describe('proof-sheet runtimes composite on the app paper', () => {
 });
 
 describe('proof-sheet page CSS restates the scrapbook chrome palette', () => {
-  it('reads the first plain :root block, not a comment or a themed variant', () => {
+  it('reads the plain :root rule, not a comment, a themed variant, or an at-rule', () => {
     const css = [
       '/* :root { --ink: #000000; } */',
       ':root[data-theme=dark] { --ink: #111111; }',
       ':root {',
       '  /* --ink: #222222; */',
-      '  --ink: #23212a;',
       '  color-scheme: light;',
+      '  --ink: #23212a',
       '}',
       '@media (prefers-color-scheme: dark) { :root { --ink: #333333; } }',
     ].join('\n');
     expect(rootCustomProperties(css, 'fixture.css')).toEqual({ ink: '#23212a' });
-    expect(() => rootCustomProperties('/* :root { --ink: #000000; } */', 'fixture.css')).toThrow(
-      'no plain :root block'
-    );
+  });
+
+  it('fails closed on a stylesheet it cannot read whole', () => {
+    const cases = [
+      ['/* :root { --ink: #000000; } */', 'expected one plain :root rule, found 0'],
+      [':root { --ink: #23212a; }\n:root { --ink: #000000; }', 'found 2'],
+      [':root { --ink #23212a; }', 'unreadable :root declaration "--ink #23212a"'],
+      [':root { --ink: #23212a;', 'unbalanced braces'],
+    ];
+    for (const [css, error] of cases) {
+      expect(() => rootCustomProperties(css, 'fixture.css')).toThrow(error);
+    }
+  });
+
+  it('finds custom properties declared outside the plain :root rule', () => {
+    const css = [
+      ':root { --ink: #23212a; }',
+      '.wrap { color: var(--ink); --paper: #000000; }',
+      '@media (min-width: 1px) { :root { --muted: #000000; } }',
+    ].join('\n');
+    expect(customPropertiesOutsideRoot(css, 'fixture.css')).toEqual(['paper', 'muted']);
   });
 
   it('reads the tokens a template spells out, skipping its substitutions', () => {
@@ -187,8 +257,15 @@ describe('proof-sheet page CSS restates the scrapbook chrome palette', () => {
     expect(pick(sheet, shared)).toEqual(pick(chrome, shared));
   });
 
+  it(`${SHEET_CSS} declares the chrome's tokens only in its :root rule`, () => {
+    const { chrome, sheetOverrides } = pageTokens();
+    expect(sheetOverrides.filter((name) => Object.hasOwn(chrome, name))).toEqual([]);
+  });
+
   it('lists as sheet-only only tokens the sheet declares and the chrome lacks', () => {
     const { chrome, sheet } = pageTokens();
-    expect(SHEET_ONLY_TOKENS.filter((name) => !(name in sheet) || name in chrome)).toEqual([]);
+    expect(
+      SHEET_ONLY_TOKENS.filter((name) => !Object.hasOwn(sheet, name) || Object.hasOwn(chrome, name))
+    ).toEqual([]);
   });
 });
