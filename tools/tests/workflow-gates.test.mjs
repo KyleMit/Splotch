@@ -12,7 +12,14 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { jobBlock, jobBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
+import {
+  jobBlock,
+  jobBlocks,
+  runScriptIn,
+  stepBlock,
+  stepBlocks,
+  testWorkflow,
+} from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // Line-oriented for the reason workflow-hygiene.test.mjs gives: no YAML parser
 // ships in this repo's dependency tree, and job keys, steps, and job-level
@@ -57,8 +64,6 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-const steps = (job) => job.split(/^(?= {6}- )/m).slice(1);
-
 const isBlankOrComment = (line) => /^\s*(?:#.*)?$/.test(line);
 
 // Every `permissions` key that is not a block of `scope: level` lines, or the
@@ -86,13 +91,6 @@ function unreadablePermissions(workflow) {
     const readable = line === `${indent}permissions:${value}` && (grantsNothing || grantsByScope);
     return readable ? [] : [`line ${index + 1}: ${line.trim()}`];
   });
-}
-
-function runScript(job, stepName) {
-  const step = steps(job).find((candidate) => candidate.startsWith(`      - name: ${stepName}\n`));
-  const script = step?.match(/^ {8}run: \|\n((?: {10}.*\n|\n)+)/m)?.[1];
-  if (!script) throw new Error(`No "${stepName}" step carrying a shell script`);
-  return script.replace(/^ {10}/gm, '');
 }
 
 function writeExecutable(path, body) {
@@ -225,9 +223,8 @@ describe('workflow gates', () => {
   });
 
   describe('WebKit full gate history', () => {
-    const restoreScript = runScript(
-      jobBlock(testWorkflow, 'webkit-commit-gate-full'),
-      'Restore fast-set history'
+    const restoreScript = runScriptIn(
+      stepBlock(jobBlock(testWorkflow, 'webkit-commit-gate-full'), 'Restore fast-set history')
     );
 
     it.each([
@@ -293,7 +290,8 @@ describe('workflow gates', () => {
     it('uploads the history artifact from release tags only', () => {
       const uploads = workflows
         .flatMap(({ text }) => jobBlocks(text))
-        .flatMap((job) => steps(job.text))
+        .flatMap((job) => stepBlocks(job.text))
+        .map(({ text }) => text)
         .filter((step) => step.includes(`\n          name: ${HISTORY_ARTIFACT}\n`));
 
       expect(uploads).toHaveLength(1);

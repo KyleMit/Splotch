@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { jobBlocks } from '../../ci-mirror/tests/workflow-job-steps.mjs';
+import { jobBlocks, stepBlocks } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   FLAKY_HISTORY_ARTIFACT_NAME,
@@ -23,8 +23,8 @@ const workflow = (name) => readFileSync(join(ROOT, '.github', 'workflows', name)
 function reportUploads(text) {
   return jobBlocks(text).flatMap(({ text: job }) => {
     const jobName = /^ {4}name: (.+)$/m.exec(job)?.[1];
-    const uploads = job
-      .split(/\n(?= {6}- )/)
+    const uploads = stepBlocks(job)
+      .map(({ text }) => text)
       .filter((step) => step.includes('actions/upload-artifact@'));
     return uploads.map((step) => ({
       jobName,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { jobBlock, jobBlocks } from './workflow-job-steps.mjs';
+import { jobBlock, jobBlocks, runScriptIn, stepBlock, stepBlocks } from './workflow-job-steps.mjs';
 
 const buildJob = [
   '  build:',
@@ -72,6 +72,113 @@ describe('jobBlocks', () => {
   it('throws on a key at job indent it cannot read, rather than dropping that job', () => {
     expect(() => jobBlocks(`${workflow}  "lint":\n    runs-on: ubuntu-latest\n`)).toThrow(
       'Unreadable job key under jobs: "lint":'
+    );
+  });
+});
+
+const checkoutStep = ['      - uses: actions/checkout@sha'];
+const compareStep = [
+  '      - name: Compare',
+  '        id: compare',
+  '        # A comment indented inside a step stays with it.',
+  '        run: |',
+  '          first',
+  '',
+  '            second',
+  '        env:',
+  '          RESULT: ${{ steps.gate.outcome }}',
+];
+const reportStep = ['      - name: Report', '        run: echo report'];
+const retryJob = [
+  '  retry:',
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  ...checkoutStep,
+  ...compareStep,
+  '',
+  '      # Introduces Report and names echo report, which Compare never runs.',
+  ...reportStep,
+  '',
+].join('\n');
+const block = (lines) => `${lines.join('\n')}\n`;
+
+describe('stepBlocks', () => {
+  it('ends each step at the next one, named or not, as a verbatim slice of the job', () => {
+    expect(stepBlocks(retryJob)).toEqual([
+      { name: undefined, text: block(checkoutStep) },
+      { name: 'Compare', text: block(compareStep) },
+      { name: 'Report', text: block(reportStep) },
+    ]);
+  });
+
+  it('ends a step before a comment at step indent, which belongs to neither step', () => {
+    const [, compare, report] = stepBlocks(retryJob);
+
+    expect(retryJob).toContain('Introduces Report');
+    expect(compare.text).not.toContain('Introduces Report');
+    expect(report.text).not.toContain('Introduces Report');
+  });
+
+  it('ends the last step at the end of the job', () => {
+    expect(stepBlocks(retryJob).at(-1).text).toBe(block(reportStep));
+    expect(stepBlocks(retryJob.trimEnd()).at(-1).text).toBe(reportStep.join('\n'));
+  });
+
+  it('ends the last step at a job key after the list', () => {
+    const withOutputs = `${retryJob}    outputs:\n      compared: \${{ steps.compare.outcome }}\n`;
+
+    expect(stepBlocks(withOutputs).at(-1).text).toBe(block(reportStep));
+  });
+
+  it('finds no steps in a job without a steps: key', () => {
+    expect(stepBlocks('  call:\n    uses: ./.github/workflows/deploy.yml\n')).toEqual([]);
+  });
+
+  it.each([
+    ['a flow-style list', '    steps: []\n', 'Unreadable steps key: steps: []'],
+    ['items at the key indent', '    steps:\n    - run: x\n', 'No step at six-space indent'],
+    ['a key at step indent', '    steps:\n      run: x\n', 'Unreadable step: run: x'],
+  ])('throws on %s rather than hiding the steps', (_label, steps, message) => {
+    expect(() => stepBlocks(`  lint:\n${steps}`)).toThrow(message);
+  });
+});
+
+describe('stepBlock', () => {
+  it('slices the one step of that name', () => {
+    expect(stepBlock(retryJob, 'Compare')).toBe(block(compareStep));
+  });
+
+  it('reads the job it is handed, not a same-named step in another job', () => {
+    const rerunJob = ['  rerun:', '    steps:', '      - name: Report', '        run: echo rerun'];
+    const workflowWithRetry = `${workflow}${retryJob}${block(rerunJob)}`;
+
+    expect(stepBlock(jobBlock(workflowWithRetry, 'retry'), 'Report')).toBe(block(reportStep));
+    expect(stepBlock(jobBlock(workflowWithRetry, 'rerun'), 'Report')).toContain('echo rerun');
+  });
+
+  it('throws for a step the job does not declare, or declares twice', () => {
+    expect(() => stepBlock(retryJob, 'Deploy')).toThrow('Expected one step named Deploy, found 0');
+    expect(() => stepBlock(`${retryJob}${block(reportStep)}`, 'Report')).toThrow(
+      'Expected one step named Report, found 2'
+    );
+  });
+});
+
+describe('runScriptIn', () => {
+  it("dedents a step's run: | block through its blank lines, up to the step's next key", () => {
+    expect(runScriptIn(stepBlock(retryJob, 'Compare'))).toBe('first\n\n  second\n');
+  });
+
+  it('ends a script at the end of its step in one newline', () => {
+    const lastStep = block(compareStep.slice(0, 7));
+
+    expect(runScriptIn(`${lastStep}\n\n`)).toBe('first\n\n  second\n');
+    expect(runScriptIn(lastStep.trimEnd())).toBe('first\n\n  second\n');
+  });
+
+  it('throws for a step whose run: is not a block', () => {
+    expect(() => runScriptIn(stepBlock(retryJob, 'Report'))).toThrow(
+      'No run: | script in step: - name: Report'
     );
   });
 });

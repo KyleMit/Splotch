@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { jobBlock } from '../../ci-mirror/tests/workflow-job-steps.mjs';
+import { jobBlock, stepBlock } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 import {
   BREACH_CONFIRMATIONS,
   COMMIT_GATE_MS,
@@ -22,16 +22,6 @@ const setupAction = readFileSync(
 );
 
 const job = (id) => jobBlock(workflow, id);
-
-// One step's block, so a per-step key (`continue-on-error`) can be asserted
-// against the step that must carry it rather than against anything in the job.
-function step(jobBody, name) {
-  const body = jobBody.match(
-    new RegExp(`\n      - name: ${name}\n([\\s\\S]*?)(?=\n      - name: |$)`)
-  )?.[1];
-  if (!body) throw new Error(`Workflow step not found: ${name}`);
-  return body;
-}
 
 function timingScenario({ key = 'crayon-scribbles', commitP95Ms, drawTotalMs, drawOps }) {
   return {
@@ -104,8 +94,8 @@ describe('WebKit performance CI', () => {
 
   it('surfaces green gate findings and reporter failures without changing retry inputs', () => {
     const fastJob = job('webkit-commit-gate-fast');
-    const verdict = step(fastJob, 'Record the gate verdict');
-    const summary = step(fastJob, 'Surface WebKit gate finding on green runs');
+    const verdict = stepBlock(fastJob, 'Record the gate verdict');
+    const summary = stepBlock(fastJob, 'Surface WebKit gate finding on green runs');
 
     expect(verdict).toContain(
       'if raw_fingerprint=$(node tools/perf/report-undo-gate-failures.mjs)'
@@ -160,10 +150,10 @@ describe('WebKit performance CI', () => {
   // independently of the retry's implicit step success conditions.
   it('preserves fail-closed retry and report behavior when comparison fails', () => {
     const retryJob = job('webkit-commit-gate-fast-retry');
-    const compare = step(retryJob, "Compare this runner's failure with the first runner's");
-    const fileFailure = step(job('webkit-commit-gate-fast-report'), 'File the failure');
-    const nonReproduction = step(retryJob, 'Record the non-reproduction');
-    const reFail = step(retryJob, 'Fail on a reproduced breach');
+    const compare = stepBlock(retryJob, "Compare this runner's failure with the first runner's");
+    const fileFailure = stepBlock(job('webkit-commit-gate-fast-report'), 'File the failure');
+    const nonReproduction = stepBlock(retryJob, 'Record the non-reproduction');
+    const reFail = stepBlock(retryJob, 'Fail on a reproduced breach');
 
     // Keep the local classification steps eligible after a failed comparison.
     expect(compare).toContain('continue-on-error: true');
@@ -190,7 +180,7 @@ describe('WebKit performance CI', () => {
   // P95 — but ADR-0140 retired normalization, so that sent the reader down a
   // path that no longer exists (the PR 1573 review).
   it('points a filed issue at the raw P95 rather than a retired normalized value', () => {
-    const fileFailure = step(job('webkit-commit-gate-fast-report'), 'File the failure');
+    const fileFailure = stepBlock(job('webkit-commit-gate-fast-report'), 'File the failure');
     expect(fileFailure).toContain('Nothing is normalized');
     expect(fileFailure).toContain('ADR-0140');
     expect(fileFailure).not.toContain('normalized gate value');
@@ -333,7 +323,7 @@ describe('WebKit performance CI', () => {
   it('restores and durably persists the rolling full-run history', () => {
     const fullJob = job('webkit-commit-gate-full');
     // The upload's release-tag condition is pinned by workflow-gates.test.mjs.
-    const persist = step(fullJob, 'Persist WebKit full-run history');
+    const persist = stepBlock(fullJob, 'Persist WebKit full-run history');
 
     expect(workflow).toContain('actions: read');
     expect(fullJob).toContain('name=webkit-undo-full-history');

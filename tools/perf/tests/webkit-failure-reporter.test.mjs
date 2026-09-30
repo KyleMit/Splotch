@@ -2,7 +2,12 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-import { jobBlock } from '../../ci-mirror/tests/workflow-job-steps.mjs';
+import {
+  jobBlock,
+  runScriptIn,
+  stepBlock,
+  stepBlocks,
+} from '../../ci-mirror/tests/workflow-job-steps.mjs';
 
 const workflow = readFileSync(
   new URL('../../../.github/workflows/test.yml', import.meta.url),
@@ -37,8 +42,7 @@ function eligible(expression, { gate, compare, reproduced, event, ref, canceled 
 }
 
 const expression = condition(reporter, 4);
-const reproduction = retry.slice(retry.indexOf('      - name: Fail on a reproduced breach'));
-const reFailExpression = condition(reproduction, 8)
+const reFailExpression = condition(stepBlock(retry, 'Fail on a reproduced breach'), 8)
   .replaceAll('steps.gate.outcome', `needs.${retryId}.outputs.gate-outcome`)
   .replaceAll('steps.compare.outcome', `needs.${retryId}.outputs.compare-outcome`)
   .replaceAll('steps.compare.outputs.reproduced', `needs.${retryId}.outputs.reproduced`);
@@ -84,8 +88,9 @@ describe('WebKit failure reporter boundary', () => {
     expect(reporter).toContain('GH_REPO: ${{ github.repository }}');
     expect(reporter).toContain(`REPRODUCED: \${{ needs.${retryId}.outputs.reproduced }}`);
     expect(reporter).toContain(`COMPARE_OUTCOME: \${{ needs.${retryId}.outputs.compare-outcome }}`);
-    const script = reporter.slice(reporter.indexOf('        run: |'));
-    expect(script).not.toContain('${{');
+    const scripts = stepBlocks(reporter).map(({ text }) => runScriptIn(text));
+    expect(scripts).not.toEqual([]);
+    for (const script of scripts) expect(script).not.toContain('${{');
     expect(reporter).not.toContain('uses:');
     expect(reporter).toContain('runs-on: ubuntu-latest');
   });
