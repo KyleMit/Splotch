@@ -75,15 +75,18 @@ export function synchronousDeadlineMs(): number {
 const MIN_INLINE_DEADLINE_MS = 2_000;
 
 /**
- * The in-line deadline once a failed handoff has spent `handoffMs` of it, or null
- * when too little is left for the model to answer at all. ADR-0063's margin under
- * the platform ceiling was sized for a request that goes straight to the
- * provider, so the handoff's time has to come out of the deadline: a job store
- * that fails slowly would otherwise let the platform end the request before the
- * route's own 502 could.
+ * The in-line deadline for a request that falls back after a failed handoff,
+ * `elapsedMs` after the handler began, or null when too little is left for the
+ * model to answer at all. ADR-0063's margin under the platform ceiling is sized
+ * for a request that goes straight to the provider, so everything spent before
+ * falling back — the body read, authorization, the free reservations, and the
+ * failed handoff — has to come out of the deadline: a store that fails slowly
+ * would otherwise let the platform end the request before the route's own 502
+ * could. Counting it costs no request that went normally, since a fallback only
+ * runs after something failed.
  */
-export function deadlineAfterFailedHandoffMs(handoffMs: number): number | null {
-  const remainingMs = synchronousDeadlineMs() - handoffMs;
+export function deadlineAfterFailedHandoffMs(elapsedMs: number): number | null {
+  const remainingMs = synchronousDeadlineMs() - elapsedMs;
   return remainingMs >= MIN_INLINE_DEADLINE_MS ? remainingMs : null;
 }
 
