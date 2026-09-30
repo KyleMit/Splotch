@@ -29,6 +29,9 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   radiusLg:
     'Everything bigger than a control: cards, grouped panels, modal cards, banners, page sheets.',
   radiusPill: 'Fully-round pills and toggle tracks.',
+  radiusBlob1: 'First paint daub: gate operands, numbered steps and back links.',
+  radiusBlob2: 'Second paint daub: gate operands, numbered steps and section links.',
+  radiusBlob3: 'Third paint daub: gate answer dabs and numbered steps.',
 
   borderWidth: 'The one hairline width; color comes from a themed border token.',
   focusRingWidth:

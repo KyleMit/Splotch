@@ -169,8 +169,8 @@ For each unit, finish every step before starting the next:
    is on `origin/main` (`git merge-base --is-ancestor <sha> origin/main`); the post-merge jobs on
    that SHA registered and finished green; and, for an issue unit, the issue is closed and
    `in-progress` is gone. The post-merge jobs, per merge, are the standard jobs of the push `Tests`
-   run. Its WebKit commit gate (fast) is serialized across commits (`.github/workflows/test.yml`)
-   and can run hours behind on a merge-heavy day, so don't wait on it per unit: collect those gates
+   run. Its WebKit commit gate (fast) runs per commit on a macOS runner, with a retry and a report
+   after a failure (`.github/workflows/test.yml`), so don't wait on it per unit: collect those gates
    once, before the morning report, and list any still pending there. `ship-issue` assigns the issue
    when it claims it and does not unassign it, so remove that assignee here and re-read the issue to
    confirm. A free-form unit has no issue to check; its PR body carries the spec, and the ledger

@@ -916,11 +916,20 @@ both runners** — a shared runner can stall long enough to span one whole job, 
 confirmation together, so a second VM is the only rerun that changes the environment the failure
 happened in. Each runner publishes a failure fingerprint derived from its own `undo-scenarios.json`
 (`multi-finger:breach`, `crayon-scribbles:incomplete`, `run:no-commit-samples`) via
-`tools/perf/report-undo-gate-failures.mjs`, and the retry files the intersection. Comparing job
-outcomes instead filed a 2026-09-02 run where one runner skipped `crayon-scribbles` and the other
-breached `multi-finger` — two failures with nothing in common (ADR-0158). A pair that cannot be
-compared at all files, which is the fail-closed direction. The issue comments on the existing open
-one rather than filing per red commit, and the first job stays red either way as telemetry.
+`tools/perf/report-undo-gate-failures.mjs`, and the retry publishes the intersection to
+`webkit-commit-gate-fast-report`. Comparing job outcomes instead filed a 2026-09-02 run where one
+runner skipped `crayon-scribbles` and the other breached `multi-finger` — two failures with nothing
+in common (ADR-0158). A pair that cannot be compared at all files, which is the fail-closed
+direction. The issue comments on the existing open one rather than filing per red commit, and the
+first job stays red either way as telemetry.
+
+The first run and retry measure independently across commits. Only the downstream Ubuntu reporter
+holds `issues: write`; it checks out no source and installs or builds nothing. The reporter receives
+the retry gate outcome, comparison outcome and reproduced fingerprint through job outputs, including
+after a reproduced breach re-fails the retry. Its constant concurrency group serializes the issue
+check and create. `cancel-in-progress: false` and `queue: max` retain up to 100 pending reporters;
+additional pending jobs can still be canceled. This is a bounded queue, not an unlimited guarantee
+of per-commit filing. A canceled workflow does not report.
 
 **Release tags** run all seven scenarios.
 

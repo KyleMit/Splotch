@@ -78,6 +78,7 @@ Foundations and only reach past a default when a rule says so.
 | Radius    | `--radius-sm/md/lg` (8/12/16px), `--radius-pill` — inline chips sm, controls md, everything                                                                                                      |
 |           | card-sized and up (cards, modal cards, banners, page sheets) lg, pills pill. There is no xs step                                                                                                 |
 |           | and no xl step (ADR-0098 folded it into lg)                                                                                                                                                      |
+|           | `--radius-blob-1/2/3` — paint daubs for gate operands, answer dabs, numbered steps, section links and back links.                                                                                |
 | Border    | `--border-width` (1px) — the hairline width; the color comes from a theme token (`--border`,                                                                                                     |
 |           | `--border-warm`, `--float-border`). Older components still write `1px solid` raw — prefer the token                                                                                              |
 | Type      | `--font-size-xs/sm/md/lg/xl` (12/14/16/18/22px) — fine print · UI chrome · body prose ·                                                                                                          |

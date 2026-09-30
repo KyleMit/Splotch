@@ -59,10 +59,21 @@ repo.
   definition it is pushed and often reviewed. Rebasing rewrites history a reviewer has read. It also
   destroys the legibility the skill depends on — after a rebase there is no incoming set to report
   on. Left as a user-requested override rather than a default.
-* **Auto-push after reconciling.** Reconciling is local, reversible work; pushing is neither.
 * **Making it a `git` alias or a script that does the merge.** The merge is the trivial part. The
   value is entirely in the review pass, which cannot be scripted — so the helper deliberately stops
   at gathering facts and never moves a ref.
+
+## Push after verification (2026-09-30)
+
+The initial version excluded pushing. During the section-structure polish PR, the agent followed
+that rule, completed and verified the merge, and left it local until the user separately requested a
+push. The user identified the skill's rule as the problem and asked to change it: "it's fine to
+push".
+
+Reconciliation includes committing and normally pushing the verified result to the branch's
+upstream, publishing to `origin` if there is no upstream. Separate push permission is unnecessary;
+an explicit local-only request still takes precedence. Required verification remains before the
+push, and the final report includes its outcome.
 
 ## The relation verdict (2026-09-28)
 

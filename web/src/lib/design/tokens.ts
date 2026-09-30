@@ -57,6 +57,9 @@ export const scale = {
   radiusMd: '12px',
   radiusLg: '16px',
   radiusPill: '999px',
+  radiusBlob1: '58% 42% 55% 45% / 45% 58% 42% 55%',
+  radiusBlob2: '45% 55% 48% 52% / 55% 45% 58% 42%',
+  radiusBlob3: '52% 48% 55% 45% / 45% 55%',
 
   borderWidth: '1px',
   focusRingWidth: '2px',
