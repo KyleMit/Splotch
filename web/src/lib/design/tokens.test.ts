@@ -95,6 +95,43 @@ describe('wash hovers', () => {
   });
 });
 
+describe('selectionHighlight', () => {
+  const AA_MIN_CONTRAST = 4.5;
+  // The inks PageShell's ::selection rules paint: --page-ink everywhere, and
+  // --page-link on links.
+  const SELECTED_INKS = [
+    'textStrong',
+    'brandText',
+  ] as const satisfies readonly (keyof ThemeTokens)[];
+
+  describe.each(SELECTED_INKS)('%s', (ink) => {
+    it.each(THEME_NAMES)('%s stays at AA while selected', (theme) => {
+      const tokens = themes[theme];
+      expect(
+        colorContrast(tokens[ink], tokens.selectionHighlight, tokens.surface)
+      ).toBeGreaterThanOrEqual(AA_MIN_CONTRAST);
+    });
+  });
+});
+
+describe('external mark washes', () => {
+  const NON_TEXT_MIN_CONTRAST = 3;
+  const MARK_INKS = [
+    ['externalMarkWash', 'iconMuted'],
+    ['externalMarkWash', 'iconInk'],
+    ['brandWash', 'brandText'],
+  ] as const satisfies readonly (readonly [keyof ThemeTokens, keyof ThemeTokens])[];
+
+  describe.each(MARK_INKS)('%s under %s', (wash, ink) => {
+    it.each(THEME_NAMES)('%s holds the non-text minimum', (theme) => {
+      const tokens = themes[theme];
+      expect(colorContrast(tokens[ink], tokens[wash], tokens.surface)).toBeGreaterThanOrEqual(
+        NON_TEXT_MIN_CONTRAST
+      );
+    });
+  });
+});
+
 // The colour-function calls in a CSS value that use legacy notation: an rgba()/
 // hsla() alias, or a comma between the function's own top-level arguments.
 // Names match case-insensitively, as CSS does. Nested calls are skipped while

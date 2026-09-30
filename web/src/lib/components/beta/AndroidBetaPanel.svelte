@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { supportEmail } from '$lib/supportEmail';
@@ -107,7 +108,7 @@
       You aren't opted in yet, or the browser is signed in to a different Google account. Go back to <a
         href={BETA_OPT_IN_URL}
         target="_blank"
-        rel="noopener noreferrer">the tester page</a
+        rel="noopener noreferrer">the tester page<ExternalMark variant="inline" /></a
       >, check the account shown in the top-right corner, and opt in there first.
     </p>
   </div>
@@ -118,7 +119,7 @@
       or it went through on a different Google account. Open <a
         href={TESTERS_GROUP_URL}
         target="_blank"
-        rel="noopener noreferrer">the group page</a
+        rel="noopener noreferrer">the group page<ExternalMark variant="inline" /></a
       > again, check the account in the top-right corner, and join from there.
     </p>
   </div>
@@ -155,7 +156,9 @@
   <div class="row">
     <h4>Leaving the beta</h4>
     <p>
-      Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">the tester page</a>
+      Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+        >the tester page<ExternalMark variant="inline" /></a
+      >
       again and press “Leave the program”, which stops the beta updates. If a public Android version is
       out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch over;
       until there is one, leaving the beta also means you won't be able to reinstall the Android app.

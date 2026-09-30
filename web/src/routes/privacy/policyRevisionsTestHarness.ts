@@ -41,12 +41,14 @@ const POLICY_REVISIONS: readonly { lastUpdated: string; textSha256: Record<Build
 // copy nor an inline tag around a word changes that, while any changed word —
 // including the value of a constant the page interpolates from another module
 // — or link destination does. The chrome around the policy (masthead, contents
-// rail) is left out so a shared-component change doesn't read as a policy
-// change.
+// rail, section anchors) and inside its links (ExternalMark's "opens outside
+// Splotch" cue) is left out so a shared-component change doesn't read as a
+// policy change.
 function renderedPolicy() {
   const { document } = new Window();
   document.body.innerHTML = render(PrivacyPage).body;
   for (const anchor of document.querySelectorAll('.section-anchor')) anchor.remove();
+  for (const mark of document.querySelectorAll('[data-external-mark]')) mark.remove();
   const blocks = (selector: string) =>
     [...document.querySelectorAll(selector)].map((block) => {
       const text = (block.textContent ?? '').replace(/\s+/g, ' ').trim();

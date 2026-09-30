@@ -344,6 +344,20 @@ export interface ThemeTokens {
   /** the flat tone behind the rotation-locked sheet */
   paperMargin: string;
   /**
+   * The crayon-yellow highlighter a standalone page paints selected text with:
+   * palette Yellow over the sheet, flattened to an opaque hex because browsers
+   * treat a translucent ::selection inconsistently (Chrome adds its own alpha).
+   * Held to 4.5:1 under the two inks a selection wears — --text-strong, and
+   * --brand-text on links (tokens.test.ts).
+   */
+  selectionHighlight: string;
+  /**
+   * The paint blob behind the "leaves the app" arrow on a standalone outbound
+   * link (Settings › About). Not --paper-margin: its dark step sits below the
+   * sheet and the blob would vanish. Holds 3:1 under --icon-muted.
+   */
+  externalMarkWash: string;
+  /**
    * Dashed outline of the size-eraser "hole" previews (ActionsPanel flyout +
    * trigger icon) — neutral gray so the holes never read as ink. Their fill
    * is --paper, so the holes literally show the canvas through the flyout.
@@ -429,6 +443,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     ruleOpacity: '1',
     ruleSecondaryOpacity: '.6',
     paperMargin: '#f1efeb',
+    selectionHighlight: '#fce69e',
+    externalMarkWash: '#f1efeb',
     holeStroke: '#8a8a93',
     lineartFilter: 'none',
     lineartBlend: 'multiply',
@@ -479,6 +495,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     ruleOpacity: '.55',
     ruleSecondaryOpacity: '.33',
     paperMargin: '#1a1922',
+    selectionHighlight: '#4e4632',
+    externalMarkWash: '#33333e',
     holeStroke: '#b9b9c2',
     lineartFilter: 'invert(1)',
     lineartBlend: 'screen',
@@ -536,6 +554,8 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   ruleOpacity: false,
   ruleSecondaryOpacity: false,
   paperMargin: true,
+  selectionHighlight: true,
+  externalMarkWash: true,
   holeStroke: true,
   lineartFilter: false,
   lineartBlend: false,

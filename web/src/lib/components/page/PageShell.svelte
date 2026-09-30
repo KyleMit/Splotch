@@ -132,6 +132,22 @@
     text-wrap: pretty;
   }
 
+  /* Selected text wears a crayon highlighter instead of the system blue. Scoped
+     to the page, so a dialog opening over it (the parental gate, /privacy's
+     Parent Center) keeps the system selection. The selection sets its own ink
+     rather than keeping each element's: a filled control's --on-brand label is
+     white, and white on the light highlight is unreadable. Links keep theirs so
+     a selected link still reads as one; tokens.test.ts holds both inks at AA on
+     --selection-highlight. */
+  .page :global(::selection) {
+    color: var(--page-ink);
+    background-color: var(--selection-highlight);
+  }
+
+  .page :global(a::selection) {
+    color: var(--page-link);
+  }
+
   .sheet {
     max-width: 760px;
     margin: 0 auto;
