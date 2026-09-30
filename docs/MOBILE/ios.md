@@ -316,4 +316,4 @@ policy). The Apple Kids Category adds:
 ## 5. Known follow-ups
 
 See [native.md](native.md) §5 for cross-platform follow-ups (hi-res icon, deep links for AI tokens,
-status-bar/splash plugins, wake lock).
+splash plugin, wake lock).
