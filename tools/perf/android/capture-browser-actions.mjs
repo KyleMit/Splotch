@@ -257,7 +257,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
-  const requestedTheme = parseCampaignTheme(flag('theme'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
   const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
   const deviceId = resolveAndroidDevice(flag('device-id'), ADB);
   const token = `${Date.now()}`;
