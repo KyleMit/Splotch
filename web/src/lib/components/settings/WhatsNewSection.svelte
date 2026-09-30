@@ -5,6 +5,7 @@
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
   import Icon from '../Icon.svelte';
+  import type { SectionHeadingLevel } from './SectionBody.svelte';
   import '$lib/components/deferredIcons';
 
   // Called once the staged reveal below has no more blocks to add. A parent that
@@ -15,10 +16,22 @@
   // Deliberately a line comment: a JSDoc block anywhere in this component's
   // props makes knip stop seeing the CurrentReleaseNotes import, and report the
   // generated file as unused (npm run lint:dead).
+  //
+  // sectionHeadingLevel is the level of the heading the shell puts over this
+  // section. The release date sits one level under it and the release's own
+  // sections one level under the date, so a screen reader's heading list files
+  // the notes inside the section in either shell.
   interface Props {
+    sectionHeadingLevel: SectionHeadingLevel;
     onSettled?: () => void;
   }
-  let { onSettled }: Props = $props();
+  let { sectionHeadingLevel, onSettled }: Props = $props();
+
+  const RELEASE_HEADINGS = {
+    2: { date: 'h3', sections: 4 },
+    3: { date: 'h4', sections: 5 },
+  } as const satisfies Record<SectionHeadingLevel, { date: string; sections: number }>;
+  const releaseHeadings = $derived(RELEASE_HEADINGS[sectionHeadingLevel]);
 
   const INITIAL_RELEASE_SECTION_COUNT = 1;
   const currentRelease = releases[0];
@@ -49,11 +62,14 @@
 <section class="setting-group">
   {#if currentRelease}
     <div class="whats-new">
-      <h3 class="whats-new-heading">
+      <svelte:element this={releaseHeadings.date} class="whats-new-heading">
         <span class="whats-new-date">{currentRelease.dateLabel}</span>
-      </h3>
+      </svelte:element>
       <div class="whats-new-body">
-        <CurrentReleaseNotes visibleSections={visibleReleaseSections} />
+        <CurrentReleaseNotes
+          headingLevel={releaseHeadings.sections}
+          visibleSections={visibleReleaseSections}
+        />
       </div>
     </div>
   {/if}
@@ -74,30 +90,28 @@
     border-radius: var(--radius-lg);
   }
 
+  /* The heading's level follows the shell, so every property the UA stylesheet
+     varies by level is set here. */
   .whats-new-heading {
     margin: 0 0 10px;
     display: flex;
     align-items: baseline;
     gap: 8px;
-  }
-
-  .whats-new-date {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--text-strong);
   }
 
-  /* Content is build-time-rendered Markdown, so style its tags globally. */
-  .whats-new-body :global(h4),
-  .whats-new-body :global(h5) {
+  /* Content is build-time-rendered Markdown at a level that follows the shell,
+     so style every heading level it can reach. */
+  .whats-new-body :global(:is(h3, h4, h5, h6)) {
     margin: 12px 0 6px;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     color: var(--text-strong);
   }
 
-  .whats-new-body :global(h4:first-child),
-  .whats-new-body :global(h5:first-child) {
+  .whats-new-body :global(:is(h3, h4, h5, h6):first-child) {
     margin-top: 0;
   }
 
