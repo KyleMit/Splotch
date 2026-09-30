@@ -10,7 +10,7 @@ import { expectNoReload, spaNavigate } from './helpers';
 // page — that it renders, composes the payload the action reads, and can post at all.
 //
 // The report bucket is 5 requests/minute per IP and /api/report shares it, so
-// exactly one test here actually submits. Adding a second submitting test would
+// exactly one test here actually submits to the server. Success tests intercept the POST. Adding a second submitting test would
 // spend the budget CI's retries need.
 //
 // Every scripted control on this page is driven by a Svelte handler, so a click
@@ -195,4 +195,80 @@ test('Back from the drawing app renders the feedback page again, not just its UR
   await expect(page.locator('#drawingCanvas')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Send us feedback', level: 1 })).toBeVisible();
   await expectNoReload(page);
+});
+
+for (const kind of ['bug', 'feature'] as const) {
+  test(`Send another starts an empty report after sending a ${kind}`, async ({ page }) => {
+    await page.route('**/feedback', async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ type: 'redirect', status: 303, location: '/feedback?sent=1' }),
+      });
+    });
+    await page.goto('/feedback');
+    await retryClick(
+      page,
+      () => page.getByRole('checkbox').check(),
+      () => expect(page.getByText('What will be sent?')).toBeVisible()
+    );
+    await retryClick(
+      page,
+      () => page.locator(`input[name="kind"][value="${kind}"]`).check(),
+      () => expect(page.locator('input[name="kind"]:checked')).toHaveValue(kind)
+    );
+    await page.locator('#reportMessage').fill('The purple crayon draws green');
+    await page.getByRole('button', { name: kind === 'bug' ? 'Send report' : 'Send idea' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Thank you — your report is in.' })
+    ).toBeVisible();
+    await page.getByRole('link', { name: 'Send another' }).click();
+
+    await expect(page.locator('#reportMessage')).toHaveValue('');
+    await expect(page.getByRole('radio', { name: "Something's broken" })).toBeChecked();
+    await expect(page.getByRole('checkbox')).not.toBeChecked();
+    await expect(page.locator('input[name="device"]')).toHaveValue('');
+    await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
+  });
+}
+
+test('an enhanced delivery failure retains the report draft and device choice', async ({
+  page,
+}) => {
+  const message = 'The purple crayon draws green';
+  await page.route('**/feedback', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    // SvelteKit action data uses devalue's indexed wire format.
+    const data = JSON.stringify([
+      { error: 1, values: 2 },
+      'Reporting is not available right now',
+      { kind: 3, message: 4, includeDevice: 5 },
+      'feature',
+      message,
+      true,
+    ]);
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ type: 'failure', status: 503, data }),
+    });
+  });
+  await page.goto('/feedback');
+  await retryClick(
+    page,
+    () => page.getByRole('checkbox').check(),
+    () => expect(page.getByText('What will be sent?')).toBeVisible()
+  );
+  await retryClick(
+    page,
+    () => page.getByRole('radio', { name: 'I have an idea' }).check(),
+    () => expect(page.getByRole('button', { name: 'Send idea' })).toBeVisible()
+  );
+  await page.locator('#reportMessage').fill(message);
+  await page.getByRole('button', { name: 'Send idea' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Reporting is not available right now');
+  await expect(page.locator('#reportMessage')).toHaveValue(message);
+  await expect(page.getByRole('radio', { name: 'I have an idea' })).toBeChecked();
+  await page.getByRole('radio', { name: "Something's broken" }).check();
+  await expect(page.getByRole('checkbox')).toBeChecked();
 });
