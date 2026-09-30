@@ -38,6 +38,7 @@ import {
   ROOT,
   fail,
   isMain,
+  parseOrFail,
   pollUntil,
   runMain,
   sleep,
@@ -151,16 +152,18 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   const headless = !has('headed');
   const undoCount = numberFlag('undo-count', 0, NON_NEGATIVE_INTEGER);
   const undoPauseMs = numberFlag('undo-pause-ms', UNDO_ACTION_PAUSE_MS, NON_NEGATIVE_INTEGER);
-  const requestedTheme = parseCampaignTheme(flag('theme'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
   const label = flag('label');
-  const probeConfig = probeConfigScript({
-    phases: flag('phases'),
-    contactMs: contactSeconds * 1000,
-    drive,
-    driveHz: driveHz || undefined,
-    brush,
-    hud: false,
-  });
+  const probeConfig = parseOrFail(() =>
+    probeConfigScript({
+      phases: flag('phases'),
+      contactMs: contactSeconds * 1000,
+      drive,
+      driveHz: driveHz || undefined,
+      brush,
+      hud: false,
+    })
+  );
   const server = externalUrl || has('no-serve') ? null : spawnPerfServe(port);
 
   let browser;

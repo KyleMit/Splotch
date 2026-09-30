@@ -7,6 +7,7 @@ import {
   ROOT,
   fail,
   isMain,
+  parseOrFail,
   pollUntil,
   runMain,
   sleep,
@@ -677,8 +678,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const handSeconds = numberFlag('seconds', HAND_DEFAULT_SECONDS, POSITIVE_INTEGER);
   const handSecondsProblem = handCaptureSecondsProblem(handSeconds);
   if (handSecondsProblem) fail(handSecondsProblem);
-  const requestedOrientation = parseCampaignOrientation(flag('orientation'));
-  const requestedTheme = parseCampaignTheme(flag('theme'));
+  const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   const gestureRepeats = numberFlag('gesture-repeats', 1, POSITIVE_INTEGER);
   const repeatPauseMs = numberFlag('repeat-pause-ms', 0, NON_NEGATIVE_INTEGER);

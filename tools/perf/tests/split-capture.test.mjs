@@ -2225,21 +2225,24 @@ describe('the Android driver hands the rotation back as it found it', () => {
       let stdout = '';
       child.stdout.on('data', (chunk) => (stdout += chunk));
       child.stderr.resume();
-      const exited = new Promise((resolve) =>
-        child.on('exit', (code, signal) => resolve({ code, signal }))
+      // 'close', not 'exit': stdout can still hold unread output when 'exit'
+      // fires. The hand-back's `sleep` runs on spawnSync's own pipes, so it
+      // cannot hold these open.
+      const closed = new Promise((resolve) =>
+        child.on('close', (code, signal) => resolve({ code, signal }))
       );
       try {
         await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10_000 });
 
         process.kill(-child.pid, 'SIGINT');
 
-        expect(await exited).toEqual({ code: 130, signal: null });
+        expect(await closed).toEqual({ code: 130, signal: null });
         expect(stdout).toContain('hand-back ended SIGINT');
         expect(stdout).not.toContain('capture carried on');
       } finally {
         // The fixture's `sleep` outlives a failed assertion; reap the group.
         killProcessGroup(child.pid);
-        await exited;
+        await closed;
         rmSync(dir, { recursive: true, force: true });
       }
     });
