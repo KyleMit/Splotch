@@ -30,6 +30,7 @@ import {
   ROOT,
   fail,
   isMain,
+  parseOrFail,
   runMain,
   sleep,
 } from '../../lib/proc.mjs';
@@ -163,7 +164,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
-  const requestedTheme = parseCampaignTheme(flag('theme'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
   const headless = !has('headed');
   const externalUrl = flag('url');
   if (has('allow-foreign-build') && !externalUrl) {
