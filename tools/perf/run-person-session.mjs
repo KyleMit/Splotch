@@ -1031,7 +1031,7 @@ async function startSecureFronts(session, prompt) {
 // A person looks at the iPad: Safari must refuse the constraint probe, then
 // load the leaf. Only a conclusive verdict (constraintProbeVerdict), with the
 // iPadOS the iPad reports, becomes a row in CONSTRAINT_PROBE_LOG — the evidence
-// CONSTRAINT_PROVEN_IPADOS cites.
+// CONSTRAINT_PROVEN_RELEASES cites.
 async function proveFrontsOnIpad(session, prompt) {
   const ctx = session.state.ctx;
   const ipadOs = ipadOsVersion(ctx.udid);
@@ -1088,8 +1088,7 @@ async function stepSecureOrigin(session, prompt) {
   markStep(session, 'ipad-secure-origin', 'done', { secureUrl: ctx.secureUrl });
 }
 
-// After the update only a person can re-prove the constraint on the new
-// release. Until CONSTRAINT_PROVEN_IPADOS names it, `perf:ios:secure-origin
+// After an OS update the constraint requires a new on-device observation. Until CONSTRAINT_PROVEN_RELEASES includes it, `perf:ios:secure-origin
 // check` refuses the iPad and no unattended sweep can run (issue 2211).
 async function stepConstraintProbe(session, prompt) {
   requireIpadOs(session.state.ctx, IPAD_UPDATE_OS);

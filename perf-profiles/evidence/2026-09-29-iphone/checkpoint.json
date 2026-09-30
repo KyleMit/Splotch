@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-09-29T20:18:29.698Z",
-  "acceptedCells": 36,
+  "checkedAt": "2026-09-30T01:45:17.723Z",
+  "acceptedCells": 40,
   "plannedCells": 40,
   "acceptedReferences": 6,
   "plannedReferences": 6,
@@ -17,47 +17,26 @@
           "portrait-light/crayon",
           "portrait-light/magic",
           "portrait-light/eraser",
+          "portrait-light/actions",
           "portrait-dark/pen-undo",
           "portrait-dark/crayon",
           "portrait-dark/magic",
           "portrait-dark/eraser",
+          "portrait-dark/actions",
           "reference/portrait-light/middle",
           "landscape-light/pen-undo",
           "landscape-light/crayon",
           "landscape-light/magic",
           "landscape-light/eraser",
+          "landscape-light/actions",
           "landscape-dark/pen-undo",
           "landscape-dark/crayon",
           "landscape-dark/magic",
           "landscape-dark/eraser",
+          "landscape-dark/actions",
           "reference/portrait-light/end"
         ],
-        "outstanding": [
-          {
-            "cell": "portrait-light/actions",
-            "attempts": 1,
-            "status": "blocked-coverage",
-            "ledgerDisagrees": false
-          },
-          {
-            "cell": "portrait-dark/actions",
-            "attempts": 0,
-            "status": "missing-or-invalid-json",
-            "ledgerDisagrees": false
-          },
-          {
-            "cell": "landscape-light/actions",
-            "attempts": 0,
-            "status": "missing-or-invalid-json",
-            "ledgerDisagrees": false
-          },
-          {
-            "cell": "landscape-dark/actions",
-            "attempts": 0,
-            "status": "missing-or-invalid-json",
-            "ledgerDisagrees": false
-          }
-        ]
+        "outstanding": []
       },
       "drawings": [
         {
@@ -173,7 +152,110 @@
           "refreshBeatMs": 17
         }
       ],
-      "actions": [],
+      "actions": [
+        {
+          "mode": "portrait-light",
+          "applicableActions": 56,
+          "redBudgets": [
+            "collapse action drawer",
+            "change ink color",
+            "open custom color picker",
+            "select custom color",
+            "open Settings",
+            "switch light theme to dark",
+            "close Settings",
+            "first open of coloring books",
+            "reopen coloring books",
+            "scroll coloring pages",
+            "select coloring page",
+            "clear coloring page",
+            "show AI waiting print",
+            "finish AI waiting print",
+            "clear drawing",
+            "clear drawing on a coloring page",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "portrait-dark",
+          "applicableActions": 56,
+          "redBudgets": [
+            "collapse action drawer",
+            "change ink color",
+            "open custom color picker",
+            "select custom color",
+            "select crayon brush",
+            "open Settings",
+            "close Settings",
+            "first open of coloring books",
+            "reopen coloring books",
+            "scroll coloring pages",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "show AI waiting print",
+            "clear drawing",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-light",
+          "applicableActions": 42,
+          "redBudgets": [
+            "collapse action drawer",
+            "open color menu",
+            "open custom color picker",
+            "select custom color",
+            "open Settings",
+            "enable Night Mode in the compact shell",
+            "close Settings",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "clear drawing",
+            "undo clear after blank rotation",
+            "clear restored drawing after blank rotation",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-dark",
+          "applicableActions": 42,
+          "redBudgets": [
+            "collapse action drawer",
+            "open color menu",
+            "open custom color picker",
+            "select custom color",
+            "select eraser",
+            "open Settings",
+            "disable Night Mode in the compact shell",
+            "enable drawing sounds in the compact shell",
+            "close Settings",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "show AI waiting print",
+            "clear drawing",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "undo clear after blank rotation",
+            "clear restored drawing after blank rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        }
+      ],
       "references": {
         "metric": "lostFrameTimeShare",
         "warningThreshold": {
@@ -522,7 +604,7 @@
       }
     }
   },
-  "blocker": "Person must verify the trusted HTTPS leaf loads and the constraint probe warns on iOS 26.6.2 before web actions.",
+  "blocker": null,
   "previewVerification": "controls/build-provenance.json",
   "nativeBuildProvenance": "controls/build-provenance.json",
   "calibration": {
@@ -530,5 +612,6 @@
     "native": "crayon-real-screen--69d48a7a.json",
     "measuredRegime": "60hz",
     "measuredBeatMs": 17
-  }
+  },
+  "httpsVerification": "controls/https-verification.json"
 }

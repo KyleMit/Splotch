@@ -1,2 +1,3 @@
 timestamp	device	ipados	verdict	detail
 2026-09-24	device-003f826c172a	26.5	refused	backfilled from visit 1 of perf:session:person, session 2026-09-24T01-57-36: bring-up required iPadOS 26.5, and the person saw Safari refuse the constraint probe and then load the leaf (https://github.com/KyleMit/Splotch/issues/2211#issuecomment-5812502007)
+2026-09-30T00:58:37.385Z	device-8e0689ff6880	26.6.2	refused	Codex remotely observed native Safari accessibility and screenshots: trusted leaf loaded before and after constraint-probe privacy warning; no bypass. Evidence: perf-profiles/evidence/2026-09-29-iphone/controls/https-verification.json

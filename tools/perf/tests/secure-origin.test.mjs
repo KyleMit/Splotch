@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   authorityConfig,
   CONSTRAINT_PROBE_LOG,
-  CONSTRAINT_PROVEN_IPADOS,
+  CONSTRAINT_PROVEN_RELEASES,
   constraintProbeFollowUp,
   constraintProbeVerdict,
   constraintProofProblem,
@@ -154,20 +154,23 @@ describe('leafValidityDays', () => {
 
 describe('secureOriginProblems', () => {
   const safe = {
-    ipadOs: CONSTRAINT_PROVEN_IPADOS,
+    ipadOs: CONSTRAINT_PROVEN_RELEASES[0],
     leafTrusted: true,
     probeRefused: true,
     pageStatus: 200,
     deniedStatus: 403,
   };
 
-  it('clears a front on the proven iPadOS whose trust and routes behave', () => {
-    expect(secureOriginProblems(safe)).toEqual([]);
-  });
+  it.each(['26.5', '26.6.2'])(
+    'keeps the previously proven iPad and verified iPhone release %s usable',
+    (ipadOs) => {
+      expect(secureOriginProblems({ ...safe, ipadOs })).toEqual([]);
+    }
+  );
 
   it('refuses an iPad on a release where nobody has watched Safari refuse the probe', () => {
     const [problem] = secureOriginProblems({ ...safe, ipadOs: '27.0' });
-    expect(problem).toContain(`proven only on ${CONSTRAINT_PROVEN_IPADOS}`);
+    expect(problem).toContain(`proven only on ${CONSTRAINT_PROVEN_RELEASES.join(', ')}`);
   });
 
   it('refuses when the iPad version cannot be read', () => {
@@ -198,10 +201,13 @@ describe('secureOriginProblems', () => {
 });
 
 describe('the constraint-probe log', () => {
-  it('holds CONSTRAINT_PROVEN_IPADOS to a committed refusal on that release', () => {
-    const rows = parseConstraintProbeLog(readFileSync(CONSTRAINT_PROBE_LOG, 'utf8'));
-    expect(constraintProofProblem(rows, CONSTRAINT_PROVEN_IPADOS)).toBeNull();
-  });
+  it.each(CONSTRAINT_PROVEN_RELEASES)(
+    'requires a committed refusal for proven release %s',
+    (release) => {
+      const rows = parseConstraintProbeLog(readFileSync(CONSTRAINT_PROBE_LOG, 'utf8'));
+      expect(constraintProofProblem(rows, release)).toBeNull();
+    }
+  );
 
   it('refuses a release with no refusal, and one a person saw accept the probe', () => {
     const refused = { ipadOs: '26.6', verdict: 'refused' };
@@ -239,15 +245,15 @@ describe('the constraint-probe log', () => {
     expect(constraintProbeVerdict({ probeWarned: false, probeLoaded: false })).toBeNull();
   });
 
-  it('names the exact raise after a refusal on a new release, and no raise otherwise', () => {
+  it('names the addition after a refusal on a new release and preserves existing proofs', () => {
     expect(constraintProbeFollowUp({ ipadOs: '26.6', verdict: 'refused' })).toContain(
-      `raise CONSTRAINT_PROVEN_IPADOS in tools/perf/ios/secure-origin.mjs from ${CONSTRAINT_PROVEN_IPADOS} to 26.6`
+      'add 26.6 to CONSTRAINT_PROVEN_RELEASES in tools/perf/ios/secure-origin.mjs'
     );
     expect(constraintProbeFollowUp({ ipadOs: '26.6', verdict: 'accepted' })).toMatch(
-      /leave CONSTRAINT_PROVEN_IPADOS/
+      /leave CONSTRAINT_PROVEN_RELEASES/
     );
     expect(
-      constraintProbeFollowUp({ ipadOs: CONSTRAINT_PROVEN_IPADOS, verdict: 'refused' })
+      constraintProbeFollowUp({ ipadOs: CONSTRAINT_PROVEN_RELEASES[0], verdict: 'refused' })
     ).toMatch(/already/);
   });
 });

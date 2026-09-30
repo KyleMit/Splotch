@@ -65,5 +65,7 @@ describe('published iPhone campaign evidence', () => {
     );
     expect(index.kept.filter((entry) => entry.kind === 'calibration')).toHaveLength(2);
     expect(index.productCommit).toBe(checkpoint.productCommit);
+    expect(index.acceptedCells).toBe(checkpoint.acceptedCells);
+    expect(index.acceptedReferences).toBe(checkpoint.acceptedReferences);
   });
 });
