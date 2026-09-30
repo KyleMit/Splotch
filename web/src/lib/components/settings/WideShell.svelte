@@ -352,7 +352,11 @@
               {#if section.id === 'parentCenter' && !parentCenterRevealed}
                 <ParentCenterLock onUnlock={unlockParentCenter} />
               {:else}
-                <SectionBody id={section.id} onSettled={staging.markStagedContentSettled} />
+                <SectionBody
+                  id={section.id}
+                  sectionHeadingLevel={3}
+                  onSettled={staging.markStagedContentSettled}
+                />
               {/if}
             </section>
           {/each}
