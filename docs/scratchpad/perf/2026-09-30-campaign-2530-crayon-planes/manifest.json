@@ -66,6 +66,6 @@
     "summary.json": "ed247048bf47a852021023aabda57f09869fbd73bc4fb7b55b5848248c3473f0"
   },
   "logNormalization": "Trailing whitespace removed from stdout logs; measurement JSON unchanged.",
-  "hostQuietness": "Not established uniformly; load brackets range3.07\u201312.60 on10 cores, threshold5.0; reserved host alone is insufficient.",
-  "qualityResult": "13 of14 checks passed; pnpm audit --audit-level=high failed on campaign-wide advisory blocker."
+  "hostQuietness": "Not established uniformly; load brackets range 3.07\u201312.60 on 10 cores, threshold 5.0; reserved host alone is insufficient.",
+  "qualityResult": "13 of 14 checks passed; pnpm audit --audit-level=high failed on campaign-wide advisory blocker."
 }
