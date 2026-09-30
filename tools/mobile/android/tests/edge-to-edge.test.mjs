@@ -37,14 +37,33 @@ describe('Android edge-to-edge startup contract', () => {
     expect(activity).not.toContain('setOnApplyWindowInsetsListener');
   });
 
-  it('retains short-edge cutouts and transient navigation hiding on focus re-entry', () => {
-    expect(activity).toContain(
-      'WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES'
-    );
+  it('delegates cutout and color compatibility to AndroidX and keeps transient navigation re-entry', () => {
+    expect(activity).not.toContain('LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES');
+    expect(activity).not.toContain('layoutInDisplayCutoutMode');
+    expect(activity).not.toContain('setNavigationBarColor');
     expect(activity).toMatch(/if \(hasFocus\)\s*\{\s*hideNavigationBar\(\);/);
     expect(activity).toContain('controller.hide(WindowInsetsCompat.Type.navigationBars())');
     expect(activity).toContain(
       'WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE'
     );
+  });
+});
+
+
+describe('native SystemBars dependency contract', () => {
+  it('removes the legacy StatusBar plugin from both native dependency graphs', () => {
+    const packageJson = JSON.parse(read('package.json'));
+    expect(packageJson.dependencies).not.toHaveProperty('@capacitor/status-bar');
+    expect(packageJson.devDependencies).not.toHaveProperty('@capacitor/status-bar');
+    expect(read('pnpm-lock.yaml')).not.toContain('@capacitor/status-bar');
+    expect(read('ios/App/CapApp-SPM/Package.swift')).not.toContain('CapacitorStatusBar');
+  });
+
+  it('keeps native status-bar loading behind the compile-time bundle boundary', () => {
+    const component = read('web/src/lib/components/NotchBand.svelte');
+    expect(component).toMatch(/if \(!__IS_CAPACITOR__ \|\| !isNative\(\)\) return;\s*import\('@capacitor\/core'\)/);
+    expect(component).not.toContain('@capacitor/status-bar');
+    expect(read('web/src/lib/platform/notchBand.ts')).toMatch(/import type .* from '@capacitor\/core'/);
+    expect(read('ios/App/App/Info.plist')).toMatch(/<key>UIViewControllerBasedStatusBarAppearance<\/key>\s*<true\/>/);
   });
 });

@@ -41,9 +41,6 @@ importers:
       '@capacitor/screen-orientation':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.5.2)
-      '@capacitor/status-bar':
-        specifier: ^8.0.3
-        version: 8.0.3(@capacitor/core@8.5.2)
       '@fontsource-variable/quicksand':
         specifier: ^5.3.0
         version: 5.3.0
@@ -786,11 +783,6 @@ packages:
 
   '@capacitor/screen-orientation@8.0.1':
     resolution: {integrity: sha512-DPz/1YGmlAUDMg2ON+AGJp1eFn9IfVNP9VKI5zIU+jD5xAZ4JGxUDlY9MDCvEPQs7UCD53NduJpqvqhcnb32Kw==}
-    peerDependencies:
-      '@capacitor/core': '>=8.0.0'
-
-  '@capacitor/status-bar@8.0.3':
-    resolution: {integrity: sha512-csSpfNeN49Hx9JaQBSJEIiEbOLtXg3kcc2IpScq2fu5L520h3AWEvsxoH8Srk1jxfRKepaJ4S4sqSC3foI4AgA==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -6576,10 +6568,6 @@ snapshots:
       '@capacitor/core': 8.5.2
 
   '@capacitor/screen-orientation@8.0.1(@capacitor/core@8.5.2)':
-    dependencies:
-      '@capacitor/core': 8.5.2
-
-  '@capacitor/status-bar@8.0.3(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
 

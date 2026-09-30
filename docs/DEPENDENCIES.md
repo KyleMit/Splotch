@@ -13,7 +13,9 @@ section)
 
 **Removed since that refresh** (rows and sections dropped; the counts above are the dated snapshot
 and are not restated): `ws`, `marked` and `idb`, 2026-09-13 — each replaced by a platform capability
-or a small in-repo module.
+or a small in-repo module. `@capacitor/status-bar` was removed on 2026-09-30; built-in
+`@capacitor/core` SystemBars owns native status-bar styling/visibility (ADR-0026's SystemBars
+amendment).
 
 ## Verdict summary
 
@@ -36,7 +38,6 @@ Non-`keep` rows first.
 | @capacitor/network                  | prod     | keep                               |
 | @capacitor/preferences              | prod     | keep                               |
 | @capacitor/screen-orientation       | prod     | keep                               |
-| @capacitor/status-bar               | prod     | keep                               |
 | @fontsource-variable/quicksand      | prod     | keep                               |
 | @google/genai                       | dev      | keep                               |
 | @netlify/blobs                      | prod     | keep                               |
@@ -250,22 +251,6 @@ Non-`keep` rows first.
 * **License:** MIT
 * **Health** (checked 2026-07-17): monorepo
   [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.1 on 2026-02-12 ·
-  monorepo last push 2026-07-16
-* **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/status-bar
-
-* **Version:** `^8.0.2` declared · 8.0.2 locked (latest 8.0.3) · prod
-* **Used for:** Status-bar styling/visibility on native (immersive drawing UI).
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-plugins](https://github.com/ionic-team/capacitor-plugins) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): monorepo
-  [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.3 on 2026-07-15 ·
   monorepo last push 2026-07-16
 * **Maintenance:** active
 * **Concerns:** none

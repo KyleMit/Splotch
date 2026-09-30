@@ -61,7 +61,7 @@
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
-  // The literal __IS_CAPACITOR__ keeps the status-bar plugin out of the web
+  // The literal __IS_CAPACITOR__ keeps the SystemBars plugin out of the web
   // bundle; the inline import() resolves to the module namespace, never the
   // plugin proxy, and repeat calls share one module.
   // Android native: hide the status bar in landscape to reclaim the long top
@@ -72,9 +72,9 @@
 
   function pushStatusBar(style: StatusBarStyle | null, hidden: boolean | null) {
     if (!__IS_CAPACITOR__ || !isNative()) return;
-    import('@capacitor/status-bar')
-      .then(({ StatusBar, Style }) => {
-        if (!disposed) statusBar.apply(style, hidden, StatusBar, Style);
+    import('@capacitor/core')
+      .then((systemBars) => {
+        if (!disposed) statusBar.apply(style, hidden, systemBars);
       })
       .catch(() => {});
   }
