@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
@@ -20,7 +20,21 @@ import { mockFreeGrant, prepareAiGeneration } from './ai-harness';
 const webp = readFileSync(new URL('../static/icons/handmade-paper.webp', import.meta.url));
 const AI_KEY_SEED_MARKER = 'splotch-test-ai-key-seeded';
 
-async function enableAiInSettings(page: import('@playwright/test').Page) {
+// Proves a negative. followEligibility (lib/state/freeGenerations.svelte.ts)
+// sends a grant request one await after deciding to, and it decides at
+// hydration, long before any of these reads, so a single read already counts a
+// request sent on time. The window is for one sent late (behind idle work, a
+// timer, or a later effect), which a read taken as the page settles misses; it
+// spans many times that path's own boot-to-request latency. A slower worker
+// only lengthens it.
+const LATE_GRANT_REQUEST_WINDOW_MS = 750;
+
+async function expectNoGrantRequest(page: Page, grant: Awaited<ReturnType<typeof mockFreeGrant>>) {
+  await page.waitForTimeout(LATE_GRANT_REQUEST_WINDOW_MS);
+  expect(grant.requests()).toBe(0);
+}
+
+async function enableAiInSettings(page: Page) {
   const settings = await openSettingsModal(page);
   await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   await page.locator('#aiImageToggle').click();
@@ -52,7 +66,7 @@ test('a fresh installation does not fetch an AI allowance or show the canvas act
   await openDrawer(page);
 
   await expect(page.locator('#aiImageButton')).toBeHidden();
-  expect(grant.requests()).toBe(0);
+  await expectNoGrantRequest(page, grant);
 });
 
 test('returning to the visible app recovers a failed free allowance', async ({ page }) => {
@@ -188,7 +202,7 @@ test('a migrated BYO key reveals the AI button on the next launch', async ({ pag
   await openDrawer(page);
 
   await expect(page.locator('#aiImageButton')).toBeVisible();
-  expect(grant.requests()).toBe(0);
+  await expectNoGrantRequest(page, grant);
 });
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
@@ -232,7 +246,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
   await downloadButton.click();
   await expect((await download).suggestedFilename()).toMatch(/^splotch-ai-.+\.webp$/);
   expect(postedImage).toBe(true);
-  expect(grant.requests()).toBe(0);
+  await expectNoGrantRequest(page, grant);
 });
 
 // A cutout cover ships with real alpha so the picker's own surface shows
