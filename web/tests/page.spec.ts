@@ -11,6 +11,7 @@ import {
 import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
 import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { NARROW_PHONE_MIN_WIDTH_PX } from '../src/lib/breakpoints';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
@@ -131,6 +132,41 @@ test('a visit from the canvas offers the way back, through a reload', async ({ p
   await page.reload();
   await expect(backLink(page)).toHaveText('Back to drawing');
 });
+
+// The masthead holds the back link and the brand mark on one row, inside the
+// sheet's content box, with either label — below NARROW_PHONE_MIN_WIDTH_PX by
+// dropping the crayon strip. The longer label is the one that overflowed.
+for (const width of [320, 360, 375, NARROW_PHONE_MIN_WIDTH_PX]) {
+  for (const cameFromDrawing of [false, true]) {
+    const label = cameFromDrawing ? 'Back to drawing' : 'Start drawing';
+    test(`the masthead fits one row at ${width}px reading "${label}"`, async ({ page }) => {
+      if (cameFromDrawing) {
+        await page.addInitScript(() => sessionStorage.setItem('splotch-drawing-visited', '1'));
+      }
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto('/privacy');
+      await expect(backLink(page)).toHaveText(label);
+      await page.evaluate(() => document.fonts.ready);
+
+      const layout = await page.evaluate(() => {
+        const rect = (selector: string) =>
+          document.querySelector(selector)!.getBoundingClientRect();
+        return {
+          scrollWidth: document.documentElement.scrollWidth,
+          topbarRight: rect('.topbar').right,
+          backRight: rect('.topbar .back').right,
+          brandLeft: rect('.topbar .brand').left,
+          brandRight: rect('.topbar .brand').right,
+          strip: getComputedStyle(document.querySelector('.topbar .crayons')!).display,
+        };
+      });
+      expect(layout.scrollWidth).toBe(width);
+      expect(layout.brandRight).toBeLessThanOrEqual(layout.topbarRight);
+      expect(layout.backRight).toBeLessThan(layout.brandLeft);
+      expect(layout.strip === 'none').toBe(width < NARROW_PHONE_MIN_WIDTH_PX);
+    });
+  }
+}
 
 // <meta name="theme-color"> is the browser address bar and the PWA status bar.
 // The drawing route is the one page that overrides it — NotchBand tints it with

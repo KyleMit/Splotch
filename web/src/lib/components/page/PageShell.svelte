@@ -301,7 +301,7 @@
   /* NARROW_PHONE_MIN_WIDTH_PX, less BREAKPOINT_EPSILON_PX; phoneStep.test.ts
      guards the CSS boundary. The strip is aria-hidden, so the link home keeps
      its whole accessible name. */
-  @media (max-width: 359.98px) {
+  @media (max-width: 389.98px) {
     .brand :global(.crayons) {
       display: none;
     }
