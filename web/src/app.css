@@ -1246,6 +1246,18 @@ html[data-ai-free-count]
   font-variant-numeric: tabular-nums;
 }
 
+.step-number--blob {
+  border-radius: var(--radius-blob-1);
+}
+
+:nth-child(3n + 2) > .step-number--blob {
+  border-radius: var(--radius-blob-2);
+}
+
+:nth-child(3n) > .step-number--blob {
+  border-radius: var(--radius-blob-3);
+}
+
 @keyframes flyout-shell {
   0% {
     opacity: 0;

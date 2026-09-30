@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SECTIONS } from '../src/routes/privacy/contents';
+import { SITE_ORIGIN } from '../src/lib/siteUrl';
 
 import {
   expectBottomedPanelScrollsRowToPin,
@@ -26,8 +28,7 @@ function renderedSections(page: Page) {
 test('the contents rail links every section by its own heading', async ({ page }) => {
   await page.goto('/privacy');
 
-  // Derived from the sections the page actually renders, not a written list —
-  // this is the drift guard for the id/label list the component keeps twice.
+  // Rendered section ids must agree with the heading and contents metadata.
   const sections = await renderedSections(page);
   expect(sections.length).toBeGreaterThan(0);
 
@@ -38,7 +39,139 @@ test('the contents rail links every section by its own heading', async ({ page }
       'href',
       `#${section.id}`
     );
+    await expect(page.locator(`#${section.id} .section-anchor`)).toHaveAttribute(
+      'href',
+      `#${section.id}`
+    );
+    await expect(page.locator(`#${section.id} .section-anchor`)).toHaveAccessibleName(
+      `Copy link to “${section.heading}”`
+    );
   }
+});
+
+test('copying a section link preserves the reading position and navigation history', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/feedback');
+  await page.getByRole('link', { name: 'privacy policy', exact: true }).click();
+  const section = SECTIONS[0];
+  const anchor = page.locator(`#${section.id} .section-anchor`);
+  await anchor.scrollIntoViewIfNeeded();
+  await anchor.hover();
+  const before = await page.evaluate(() => ({
+    scroll: scrollY,
+    historyLength: history.length,
+    state: history.state,
+  }));
+  await expect(async () => {
+    await anchor.click();
+    await expect(page.getByRole('status')).toHaveText(`Link to “${section.label}” copied.`);
+  }).toPass();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    `${SITE_ORIGIN}/privacy#${section.id}`
+  );
+  expect(
+    await page.evaluate(() => ({
+      scroll: scrollY,
+      historyLength: history.length,
+      state: history.state,
+    }))
+  ).toEqual(before);
+  await expect(page).toHaveURL(new RegExp(`#${section.id}$`));
+  await expect(anchor.locator('[data-icon="check"]')).toBeVisible();
+  await expect(anchor).not.toHaveClass(/copied/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/feedback$/);
+});
+
+for (const clipboard of ['missing', 'rejected'] as const) {
+  test(`section links fall back to fragment navigation when the clipboard is ${clipboard}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((mode) => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value:
+          mode === 'missing' ? undefined : { writeText: () => Promise.reject(new Error('Denied')) },
+      });
+    }, clipboard);
+    await page.goto('/privacy');
+    const section = SECTIONS[2];
+    const anchor = page.locator(`#${section.id} .section-anchor`);
+    await anchor.hover();
+    await anchor.click();
+    await expect(page).toHaveURL(new RegExp(`#${section.id}$`));
+    await expect(page.getByRole('status')).toBeEmpty();
+    await expect(anchor).not.toHaveClass(/copied/);
+  });
+}
+
+test('a rejected recopy navigates to a section already named in the URL', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await page.goto('/privacy#counting');
+  const section = SECTIONS[2];
+  const anchor = page.locator(`#${section.id} .section-anchor`);
+  await expect(async () => {
+    await anchor.click();
+    await expect(page.getByRole('status')).toHaveText(`Link to “${section.label}” copied.`);
+  }).toPass();
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new Error('Denied'));
+    scrollTo(0, 0);
+  });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await anchor.dispatchEvent('click', { button: 0 });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+});
+
+test('the desktop section-link hit area stays outside the contents rail', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/privacy');
+  const rail = await page.locator('.contents-rail').boundingBox();
+  const anchor = await page.locator('.section-anchor').first().boundingBox();
+  expect(rail).not.toBeNull();
+  expect(anchor).not.toBeNull();
+  expect(anchor!.x).toBeGreaterThanOrEqual(rail!.x + rail!.width);
+});
+
+test('section links reveal on keyboard focus with a full size focus ring', async ({ page }) => {
+  await page.goto('/privacy');
+  const anchor = page.locator('.section-anchor').first();
+  await page.mouse.move(0, 0);
+  await expect(anchor).toHaveCSS('opacity', '0');
+  await anchor.focus();
+  await expect(anchor).toHaveCSS('opacity', '1');
+  await expect(anchor).toHaveCSS('outline-style', 'solid');
+  const box = await anchor.boundingBox();
+  expect(box?.width).toBe(44);
+  expect(box?.height).toBe(44);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(anchor).toHaveCSS('transition-duration', '0s');
+});
+
+test.describe('touch section links', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  test('section links remain visible after headings without overflowing', async ({ page }) => {
+    await page.goto('/privacy');
+    const anchor = page.locator('.section-anchor').first();
+    await expect(anchor).toHaveCSS('opacity', '1');
+    const boxes = await page
+      .locator('.section-head')
+      .first()
+      .evaluate((head) => ({
+        heading: head.querySelector('h3')!.getBoundingClientRect().right,
+        anchor: head.querySelector('a')!.getBoundingClientRect().left,
+      }));
+    expect(boxes.anchor).toBeGreaterThan(boxes.heading);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
 });
 
 test('the contents rail marks the section being read', async ({ page }) => {

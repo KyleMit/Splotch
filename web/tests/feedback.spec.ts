@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import type { ActionResult } from '@sveltejs/kit';
 import { supportEmail } from '../src/lib/supportEmail';
 import { expectNoReload, spaNavigate } from './helpers';
+import { expectTextContrast } from './text-contrast';
+import { paletteHex } from '../src/lib/palette';
 
 // /feedback is the standalone, link-shareable twin of Settings' Send
 // Feedback section: the same fields, posted to a form action instead of
@@ -33,6 +35,30 @@ test('the feedback page renders the shell and the report form', async ({ page })
   await expect(page.getByRole('link', { name: 'Start drawing' })).toHaveAttribute('href', '/');
   await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`feedback steps retain list semantics and readable blob numerals in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/feedback');
+    const list = page.locator('.aside').getByRole('list');
+    await expect(list).toHaveAttribute('role', 'list');
+    await expect(list.getByRole('listitem')).toHaveCount(3);
+    const numerals = list.locator('.step-number--blob');
+    await expect(numerals).toHaveText(['1', '2', '3']);
+    for (const index of [0, 1, 2]) {
+      await expect(numerals.nth(index)).toHaveAttribute('aria-hidden', 'true');
+      await expect(numerals.nth(index)).toHaveCSS('width', '24px');
+      await expect(numerals.nth(index)).toHaveCSS('font-size', '12px');
+    }
+    const hues = await list
+      .locator('li')
+      .evaluateAll((items) => items.map((item) => item.style.getPropertyValue('--step-hue')));
+    expect(hues).toEqual([paletteHex('Yellow'), paletteHex('Blue'), paletteHex('Green')]);
+    await expectTextContrast(page.locator('.aside'));
+  });
+}
 
 test('the privacy contact stays inside Splotch and points to the feedback page', async ({
   page,
