@@ -136,6 +136,9 @@ describe('stepBlocks', () => {
 
   it.each([
     ['a flow-style list', '    steps: []\n', 'Unreadable steps key: steps: []'],
+    ['a single-quoted key', "    'steps':\n      - run: x\n", "Unreadable steps key: 'steps':"],
+    ['a double-quoted key', '    "steps":\n      - run: x\n', 'Unreadable steps key: "steps":'],
+    ['a space before the colon', '    steps :\n      - run: x\n', 'Unreadable steps key: steps :'],
     ['items at the key indent', '    steps:\n    - run: x\n', 'No step at six-space indent'],
     ['a key at step indent', '    steps:\n      run: x\n', 'Unreadable step: run: x'],
   ])('throws on %s rather than hiding the steps', (_label, steps, message) => {

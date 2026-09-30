@@ -43,7 +43,7 @@ export function jobBlock(yaml, jobKey) {
   return block.text;
 }
 
-const STEPS_KEY = /^ {4}steps:/;
+const STEPS_KEY_ANY_SPELLING = /^ {4}["']?steps["']?\s*:/;
 const READABLE_STEPS_KEY = /^ {4}steps:(?:\s+#.*)?\s*$/;
 const STEP_INDENT = /^ {6}\S/;
 const STEP_ITEM = /^ {6}- /;
@@ -57,10 +57,11 @@ const RUN_SCRIPT_INDENT = ' '.repeat(10);
 // as a verbatim substring of `job`, named by a `- name:` on that line. The same boundary rule as
 // jobBlocks one level down: a comment at step indent after a step's last line introduces the
 // step after it and belongs to neither, and a job key after the list ends its last step. A list
-// this cannot read throws rather than hiding its steps from every guard that enumerates them.
+// this cannot read throws rather than hiding its steps from every guard that enumerates them, and
+// so does a steps key in any spelling but the plain one: Prettier keeps a quoted `'steps':`.
 export function stepBlocks(job) {
   const lines = job.split('\n');
-  const stepsKey = lines.findIndex((line) => STEPS_KEY.test(line));
+  const stepsKey = lines.findIndex((line) => STEPS_KEY_ANY_SPELLING.test(line));
   if (stepsKey === -1) return [];
   if (!READABLE_STEPS_KEY.test(lines[stepsKey])) {
     throw new Error(`Unreadable steps key: ${lines[stepsKey].trim()}`);
