@@ -11,7 +11,7 @@
 //   • theme-color    — <meta name="theme-color">. The only thing that tints the
 //                      Android web status bar (Chrome tab / installed PWA);
 //                      ignored elsewhere, so harmless to set unconditionally.
-//   • status-bar icons — native-only StatusBar.setStyle, to flip the system
+//   • status-bar icons — native-only SystemBars.setStyle, to flip the system
 //                      clock/battery light or dark for contrast on the band.
 //
 // All of the platform-independent decisions live here as pure functions so the
@@ -21,10 +21,8 @@ import { isLightColor } from '../colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
 import type { Orientation, Platform } from './index';
-// Type-only — same purity guarantee as the Platform import above. The Style
-// enum's *values* are passed in by the call site (NotchBand.svelte), not
-// imported here, so this file never touches @capacitor/status-bar at runtime.
-import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
+// The module namespace is injected by the native-only dynamic import.
+import type { SystemBars, SystemBarsStyle, SystemBarType } from '@capacitor/core';
 
 // Minimum top safe-area inset (CSS px) we treat as a real display cutout. Above
 // it: iPhone notches / Dynamic Island (~44–59px) and Android hole-punches.
@@ -34,7 +32,7 @@ import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
 // bezel-iPad case and is the single knob to tune if a device misjudges.
 export const NOTCH_INSET_THRESHOLD_PX = 30;
 
-// Capacitor StatusBar.Style string values (mirrored here so the pure layer has
+// Capacitor SystemBarsStyle string values (mirrored here so the pure layer has
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark
 // icons (for a light band).
 export type StatusBarStyle = 'DARK' | 'LIGHT';
@@ -163,8 +161,11 @@ export interface StatusBarApplier {
   apply(
     style: StatusBarStyle | null,
     hidden: boolean | null,
-    bar: Pick<StatusBarPlugin, 'setStyle' | 'hide' | 'show'>,
-    statusBarStyleEnum: { Dark: Style; Light: Style }
+    systemBars: {
+      SystemBars: Pick<typeof SystemBars, 'setStyle' | 'hide' | 'show'>;
+      SystemBarsStyle: { Dark: SystemBarsStyle; Light: SystemBarsStyle };
+      SystemBarType: { StatusBar: SystemBarType.StatusBar };
+    }
   ): void;
   /** Drops the memo, so the next apply re-asserts both values. */
   forget(): void;
@@ -172,8 +173,8 @@ export interface StatusBarApplier {
 
 /**
  * Plugin-call glue for the native status-bar effect in NotchBand.svelte: the
- * `StatusBarStyle` → `Style` enum translation and the hide/show dispatch, both
- * injected (`bar`, `statusBarStyleEnum`) so this stays drivable from the
+ * `StatusBarStyle` → `SystemBarsStyle` enum translation and the hide/show dispatch, both
+ * injected as a module namespace so this stays drivable from the
  * component's dynamic-import call site.
  *
  * It remembers the last pair it dispatched because the state feeding it is
@@ -215,18 +216,22 @@ export function createStatusBarApplier(): StatusBarApplier {
   let lastStyle: StatusBarStyle | null | undefined;
   let lastHidden: boolean | null | undefined;
   return {
-    apply(style, hidden, bar, statusBarStyleEnum) {
+    apply(style, hidden, { SystemBars: bar, SystemBarsStyle: styleEnum, SystemBarType: barType }) {
       if (style && style !== lastStyle) {
         lastStyle = style;
         bar
           .setStyle({
-            style: style === 'DARK' ? statusBarStyleEnum.Dark : statusBarStyleEnum.Light,
+            style: style === 'DARK' ? styleEnum.Dark : styleEnum.Light,
+            bar: barType.StatusBar,
           })
           .catch(() => {});
       }
       if (hidden !== null && hidden !== lastHidden) {
         lastHidden = hidden;
-        (hidden ? bar.hide() : bar.show()).catch(() => {});
+        (hidden
+          ? bar.hide({ bar: barType.StatusBar })
+          : bar.show({ bar: barType.StatusBar })
+        ).catch(() => {});
       }
     },
     forget() {

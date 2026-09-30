@@ -296,8 +296,8 @@ The shared baseline both depend on:
 * [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
       **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
       link opens the app and applies the token automatically.
-* [ ] Consider `@capacitor/status-bar` + `@capacitor/splash-screen` for finer control over the
-      status bar color and splash dismissal timing.
+* [ ] Consider `@capacitor/splash-screen` for finer control over the status bar color and splash
+      dismissal timing.
 * [ ] Verify the **Wake Lock** behavior inside the WebView on real devices; if unreliable, add a
       native keep-awake plugin.
 
