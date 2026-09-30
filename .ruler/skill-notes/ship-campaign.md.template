@@ -183,6 +183,39 @@ The #2500 parallel campaign merged about 20 PRs in under three hours. Four chang
   user reported a reset, which the host's usage tool confirmed. Whether those thresholds suit a
   campaign that starts lower is unvalidated.
 
+## 2026-09-30: two campaigns on one queue
+
+The user started #2529 (a Claude orchestrator) and #2530 (a Codex orchestrator) 94 seconds apart,
+22:48 and 22:49 EDT. Both were on the #2500 leftovers comment, under the same verbatim decision
+instruction. Every unit was free-form, so no `in-progress` label existed for either run to see. The
+first collision was on decision 1: #2530's #2531 merged the same fix #2529's lane was about to open.
+By then #2529 also had duplicate or conflicting drafts on decisions 2 and 3, where the two
+handler-and-rival pairs had split on the hold. That incident is the source of the "No second
+campaign" preflight check and step 2's peer re-check. A preflight search can only find a campaign
+that started earlier, which is why the check repeats before every launch.
+
+* **The split.** #2529 left every decision to #2530, which was further along, and took follow-ups
+  from the far end of #2530's order. It posted the split on #2530's ledger. The rival agreed,
+  correcting one point: a posted claim is a notification, not a lock.
+* **A new advisory hit both campaigns at 03:10Z.** A newly published brace-expansion advisory failed
+  `pnpm audit --audit-level=high` on `main`'s own lockfile. Quality went red on every PR head in
+  both campaigns.
+  * #2530 read step 3 as "`main` red for a reason no campaign merge caused" and stopped (03:39Z).
+  * #2529 read it as a check proven broken on its own base, and shipped a gate repair: two overrides
+    in #2538, merged 03:44Z.
+  * Step 3 now says which reading applies.
+* **Taking over, and a classifier denial.** #2529 then took over the rest of the queue. Its first
+  pick also adopted #2530's two approved drafts (#2532, #2537) under #2530's own documented resume
+  path. The rival disagreed on a fact: every catch-up surveys `coupled` after a lockfile change,
+  which would have stranded both. The auto-mode classifier then denied a plain `gh pr view` of those
+  PRs' files, citing "External System Writes", which read as refusing the adoption itself. So the
+  drafts stayed #2530's, and step 2 now says so. The same classifier later refused the
+  orchestrator's batch removal of its own 13 clean lane worktrees at the end. The parallel reference
+  now prefers cleanup after each merge.
+* **Lanes and the broker.** Two lanes reported that their worktree isolation refused a brokered
+  command that ran git in the rival's worktree, including one whose text only contained "github".
+  Both declined it and supplied their own equivalent result. The parallel reference records this.
+
 ## Open questions
 
 * The trunk-repair authority in step 4 is new and unexercised. The first draft reverted a campaign

@@ -97,6 +97,14 @@ fix done before declaring the campaign started.
   or another session's assignee), or waiting on a decision (`needs-triage`, `needs-scoping`,
   `needs-adr`). Order bug fixes before refactors and standards work, which reshape the modules the
   fixes' tests target. For `backlog`, list the current candidates but do not claim them yet.
+* **No second campaign on the same queue.** A free-form unit carries no `in-progress` label, so two
+  campaigns given the same queue cannot see each other through claims. Search for one:
+  * an open issue or PR that references the same epic or source
+    (`gh search issues "Refs #<n>" --state open`);
+  * open PRs from another runner's branch prefix.
+
+  If one exists, ask the user now which campaign owns which part. Step 2 repeats this check before
+  every launch, because a peer started after this preflight is invisible to it.
 * **Prove the review path.** Claude runs `npm run rival:health`; Codex runs
   `npm run run-claude:policy:check`, which also verifies the `gh`, push, and merge approval rules.
   An unattended run whose rival bridge is missing reviews nothing and merges nothing.
@@ -142,6 +150,13 @@ For each unit, finish every step before starting the next:
    `wont-do`, or a `needs-*` label, which you have not already quarantined or skipped in this
    campaign. Decide at that moment whether the pick needs the device rig. If it does and no device
    preflight ran with the user present, leave it unclaimed, record it as skipped, and pick again.
+   For a free-form unit, "claimed" means a peer campaign has started it. Re-read any peer's ledger
+   and the open PRs before launching.
+   * **A peer found mid-run:** stand down on everything it has started, and take the rest from the
+     far end of its order. Post the split on its ledger. A claim there is a notification, not a
+     lock.
+   * **A peer that has stopped:** its drafts stay its own. Take over only what it never started, and
+     list its drafts in the morning report.
 3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
    cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
    spec in place of an issue number — with the authorization block, the assigned port, and the
@@ -217,12 +232,15 @@ evidence, not a fix, and gate failures spend no repair attempt. A broken gate th
 unit, so repairing it becomes the next unit — a free-form gate-repair unit under the authority
 block, through the same loop, with a negative control that still fails for the defect the gate
 exists to catch — and the blocked unit retries afterward. The exception covers only a check proven
-broken on its own base; anything wider is a queue-wide blocker. Never quarantine a unit for a flake,
-a cancelled job, or an outage.
+broken on its own base; anything wider is a queue-wide blocker. An outside change that fails a check
+on `main`'s own tree is a gate repair, not a stop, when the fix is the gate's own conventional
+remedy. The standard case is a newly published advisory failing `pnpm audit`, fixed with an override
+that lifts only the vulnerable resolved version, like the existing ones in `pnpm-workspace.yaml`.
+Never quarantine a unit for a flake, a cancelled job, or an outage.
 
 **Queue-wide blockers stop the queue:** lost GitHub authentication, GitHub unavailable after retry,
-a gate that cannot be repaired safely, or `main` red for a reason no campaign merge caused. Write
-the morning report and stop.
+a gate that cannot be repaired safely, or `main` red for a reason no campaign merge caused and no
+gate repair can fix. Write the morning report and stop.
 
 **A reviewer outage downgrades the queue instead of stopping it.** If the rival cannot run after one
 retry, a substituted review withdraws the merge authority (`ship-issue` step 4). Keep going in

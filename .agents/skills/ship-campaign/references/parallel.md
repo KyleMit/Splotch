@@ -69,6 +69,13 @@ What the survey can't see (a shared string, an event name, a storage key) still 
 to `coupled` when it turns up in the reading or in a failing check. The worker records which path it
 took in the PR body.
 
+The reverse also happens: a verdict can be `coupled` for purely mechanical reasons. The survey
+treats `pnpm-lock.yaml` and `eslint.config.js` as convention sources, so once a merge changes
+either, every later catch-up across it surveys `coupled`. That includes a dependency override or a
+moved line cap. Such a verdict calls for the full reconcile pass, which is usually quick. It is not
+a reason to leave a PR behind, and it keeps that PR out of an integration trial until the PR has
+caught up past the change.
+
 **Catch up once.** The worker runs this gate once, after review, and reports ready against the
 `main` it merged, even if `main` moves again while its CI runs. Chasing each later move costs a CI
 round per move; later moves are the orchestrator's to cover, with an integration trial or a resume
@@ -123,8 +130,10 @@ extra CI round.
 
 Because the orchestrator is a single process, nothing merges between its fetch and its merge except
 work outside the campaign. The post-merge CI run on `main` is the backstop for that. After a merge,
-the orchestrator resumes the worker once to detach its worktree and delete the local branch, or
-leaves that to the end of the campaign.
+the orchestrator resumes the worker once to detach its worktree and delete the local branch. Prefer
+that to one sweep at the end: the auto-mode classifier refused an orchestrator's end-of-campaign
+batch removal of its own clean lane worktrees (2026-09-30). Worktrees still left at the end go in
+the morning report for `prune-git-workspace`.
 
 **Tests before pushing.** Each unit runs the applicable full tier that isn't host-exclusive before
 it pushes: `npm run test:browserless` (the Vitest tiers plus the API smoke on the unit's own
@@ -138,6 +147,10 @@ genuinely needs one locally, the orchestrator schedules it while no other lane i
   and lanes are mostly waiting on review and CI. From Claude Code, launch worktree-isolated lanes
   one per message; launched together, some are refused with "git metadata that could not be
   resolved".
+* **A worktree-isolated lane cannot run a brokered command that invokes git in the rival's
+  worktree.** The lane's isolation refuses it, and a command whose text merely contains "git" (a
+  `github` path, for example) was refused too. Brief each lane to decline such a request with that
+  reason, run the equivalent check in its own worktree, and hand the rival that result.
 * **Every agent shares one account usage limit**: each lane, each auditor, and each helper an agent
   spawns. Reaching it ends them all at once, so size the lanes by every agent running, and re-read
   the usage windows before each launch against the thresholds agreed at preflight (`ship-campaign`
