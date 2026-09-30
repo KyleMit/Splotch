@@ -22,14 +22,8 @@
   <div class="about-links">
     <p><a href="/privacy">Privacy Policy</a></p>
     <p class="github-link">
-      <a
-        href={GITHUB_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="View source on GitHub"
-        use:parentalGateLink
-      >
-        <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
+      <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" use:parentalGateLink>
+        <Icon name="github" class="github-icon" aria-hidden="true" />
         View on GitHub
       </a>
     </p>
