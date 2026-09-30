@@ -13,8 +13,10 @@ builds retain their published policy revision hashes.
 * Link to plain `/feedback`; retain the existing native external-link gate and ExternalMark.
   Feedback-kind changes and a public revision-history link remain outside this handoff.
 * Exclude only `#contact > .policy-ask[data-policy-chrome]` from the policy digest. A marked policy
-  paragraph remains hashed. Negative controls mutate the adjacent policy sentence and its link
-  destination; each must produce a different digest in both builds.
+  paragraph remains hashed. Before exclusion, the prompt must match its exact copy, direct
+  strong/link child structure, and build-specific href. Negative controls reject words or a
+  paragraph added inside the prompt, and mutate the adjacent policy sentence and its link
+  destination; each outside mutation must produce a different digest in both builds.
 * Verify the already-built contents behavior rather than redesigning it.
 
 ## Evidence
@@ -30,3 +32,10 @@ outside this unit's scope.
 
 Campaign merge authority: “Yes, i explicitly approve merges for the campaign”. The prescribed
 independent Claude review and current-head CI registration/completion gate still apply.
+
+## Independent review
+
+Claude round one reproduced a guard gap by appending policy words inside the excluded prompt. The
+exact text/structure/destination contract before exclusion closes that gap while preserving the
+published digests. The arbitrary prompt-text mutation control was replaced with a nontext attribute
+mutation, and inside-prompt word and element negative controls were added. No production UI changed.
