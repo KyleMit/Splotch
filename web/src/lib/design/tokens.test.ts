@@ -97,8 +97,9 @@ describe('wash hovers', () => {
 
 describe('selectionHighlight', () => {
   const AA_MIN_CONTRAST = 4.5;
+  // The inks PageShell's ::selection rules paint: --page-ink everywhere, and
+  // --page-link on links.
   const SELECTED_INKS = [
-    'text',
     'textStrong',
     'brandText',
   ] as const satisfies readonly (keyof ThemeTokens)[];

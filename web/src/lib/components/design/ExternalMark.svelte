@@ -29,8 +29,12 @@
 >
 
 <style>
+  /* Unselectable, so copying the sentence around a link doesn't pick up the
+     visually hidden suffix; the accessible name still carries it. */
   .external-mark {
     white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .blob {

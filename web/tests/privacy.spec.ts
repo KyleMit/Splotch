@@ -200,3 +200,24 @@ test('an outbound link never strands its external mark on a line of its own', as
   );
   expect(stranded).toEqual([]);
 });
+
+test('copying a sentence leaves out the external mark but its link still announces it', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+  const link = page.getByRole('link', {
+    name: 'OpenAI Services Agreement (opens outside Splotch)',
+    exact: true,
+  });
+  await expect(link).toBeVisible();
+
+  const copied = await link.evaluate((anchor) => {
+    const range = document.createRange();
+    range.selectNodeContents(anchor.closest('p') ?? anchor);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    return getSelection()?.toString() ?? '';
+  });
+  expect(copied).toContain('OpenAI Services Agreement');
+  expect(copied).not.toContain('opens outside Splotch');
+});

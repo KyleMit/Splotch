@@ -348,7 +348,8 @@ export interface ThemeTokens {
    * The crayon-yellow highlighter a standalone page paints selected text with:
    * palette Yellow over the sheet, flattened to an opaque hex because browsers
    * treat a translucent ::selection inconsistently (Chrome adds its own alpha).
-   * Held to 4.5:1 under the page's body, heading and link inks (tokens.test.ts).
+   * Held to 4.5:1 under the two inks a selection wears — --text-strong, and
+   * --brand-text on links (tokens.test.ts).
    */
   selectionHighlight: string;
   /**

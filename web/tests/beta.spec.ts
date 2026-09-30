@@ -7,6 +7,7 @@ import {
 import { betaPathFor } from '../src/lib/components/beta/betaPlatform';
 import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '../src/lib/components/beta/iosBeta';
+import { colorContrast } from '../src/lib/design/colorContrast';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
 import { ANDROID_UA, IPAD_UA, renderedText } from './helpers';
@@ -552,6 +553,47 @@ for (const platform of ['android', 'ios'] as const) {
     for (const sample of samples) {
       expect(sample.ink).toEqual(sample.heading);
       expect(Math.max(...sample.wash) - Math.max(...sample.sheet)).toBeGreaterThanOrEqual(25);
+    }
+  });
+}
+
+// PageShell's highlighter replaces each element's ink with the selection's own,
+// because the filled step buttons' white --on-brand label is unreadable on the
+// light highlight. Selecting the whole panel measures every text-bearing element
+// — prose, links, numerals and the filled buttons — as it actually selects.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`selected text clears 4.5:1 on the highlight in ${colorScheme} mode`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/beta');
+    const panel = shownPanel(page);
+    await expect(panel.locator('.beta-step .btn').first()).toBeVisible();
+
+    const samples = await panel.evaluate((root) => {
+      const range = document.createRange();
+      range.selectNodeContents(root);
+      getSelection()?.removeAllRanges();
+      getSelection()?.addRange(range);
+      return [...root.querySelectorAll('*')]
+        .filter(
+          (el) =>
+            (el as HTMLElement).offsetParent !== null &&
+            [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim())
+        )
+        .map((el) => {
+          const selection = getComputedStyle(el, '::selection');
+          return {
+            where: `${el.tagName.toLowerCase()}.${el.className}`,
+            ink: selection.color,
+            highlight: selection.backgroundColor,
+          };
+        });
+    });
+    expect(samples.some(({ where }) => where.includes('btn'))).toBe(true);
+    for (const { where, ink, highlight } of samples) {
+      expect(
+        colorContrast(ink, highlight, highlight),
+        `${where} while selected`
+      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 }
