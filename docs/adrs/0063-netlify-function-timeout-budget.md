@@ -156,3 +156,45 @@ routes it through ADR-0104's rule that a failed notification deletes the bundle,
 names evidence that is gone, and the parent is told to retry. The same ambiguity already applied to
 a non-`201` answer. Keeping the bundle on an unknown outcome instead would change ADR-0104's
 retention posture, so it was left for the owner to decide rather than taken here.
+
+## Amendment (2026-09-30): where an in-line call's pre-work is charged
+
+ADR-0115 moved most generations to a background worker, but two paths still call the provider inside
+this ceiling. The direct path serves a request that never sent `X-Async-Generation`: native builds
+older than the header, and PWAs on a stale service worker. The fallback serves a request whose
+handoff failed. Before either reaches the provider, the route has read the body, authorized the
+credential, and on the free tier run two compare-and-set reservations. The fallback has also
+attempted the handoff. None of these store calls has a deadline of its own, and `@netlify/blobs`
+retries a failed request after a fixed delay (seconds, not milliseconds; see its `fetchAndRetry`),
+so a single retry can spend more than this ADR's whole margin.
+
+**The fallback counts from handler entry.** `deadlineAfterFailedHandoffMs` in
+`web/src/lib/server/generationStart.ts` subtracts everything the request spent before falling back,
+not only the handoff. When less than `MIN_INLINE_DEADLINE_MS` is left, the route answers its
+controlled `502` without calling the model. A fallback only runs after a failure, so counting the
+pre-work there costs no request that went normally. It lowers the risk of a platform kill without
+removing it: the handoff's cleanup and the settlement writes after the deadline are still unbounded.
+A missing signing secret sends every request down this path, but that is a misconfiguration that
+`startBackgroundGeneration` logs as an error.
+
+**The direct path keeps the full `GENERATE_DEADLINE_MS`.** Its routine pre-work is charged to the
+margin instead. The shipped model's latency tail sits at the deadline
+(`docs/scratchpad/image-model-bakeoff-2026-09-10.md`), so charging pre-work to the deadline would
+fail every direct generation that finishes within that much of it, on every direct request, to guard
+against an incident nobody has observed. The size of that loss is not measured: no production timing
+of the pre-work exists. The accepted risk is that a slow store during a direct request's pre-work
+lets the platform end a long generation before the route's `502`. The child sees the same retry, but
+the free reservation stays held until `FREE_RESERVATION_LEASE_MS` lapses, and a child on their last
+free creation is routed to key setup until then. Revisit with evidence of platform timeouts on
+`/api/generate-image` or of `abandoned` free-grant failures on `/admin`; a measurement showing the
+direct path's pre-work is negligible would make counting it free.
+
+**A skipped fallback keeps its daily provider-start slot.** `reserveDailyFreeGeneration` has already
+counted the start, and the skip branch does not give it back. A refund would be a second store
+write, on the one key every free start serializes on (ADR-0105), in the branch that exists to answer
+before the ceiling, during the stall that led there. Bounded, it would be best-effort and could not
+guarantee the exact count that is its only benefit. One skip over-counts the day's starts by one,
+which only makes the spending ceiling stricter; a handed-off job whose worker fails before reaching
+the model over-counts the same way. The daily figure is therefore a conservative count of reserved
+starts, not of provider calls. Revisit if the route's `not answering in-line` warnings become a
+meaningful share of a day's starts, or a day exhausts its free starts with skips in its logs.
