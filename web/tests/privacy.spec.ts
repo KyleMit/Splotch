@@ -292,3 +292,65 @@ test.describe('phone landscape', () => {
     await expectBottomedPanelScrollsRowToPin(page, contents);
   });
 });
+
+// Paragraph widths to sweep: from a narrow phone column to past the policy's own
+// measure, fine enough that each link's last word lands at a line end somewhere.
+const WRAP_SWEEP_MIN_PX = 160;
+const WRAP_SWEEP_MAX_PX = 520;
+const WRAP_SWEEP_STEP_PX = 2;
+
+test('an outbound link never strands its external mark on a line of its own', async ({ page }) => {
+  // The mark's word joiner is all that binds the blob to the label's last word;
+  // without it Chromium breaks between them at about one width in fifteen.
+  await page.goto('/privacy');
+  const marks = page.locator('.sections a[target] [data-external-mark]');
+  await expect(marks.first()).toBeAttached();
+
+  const stranded = await marks.evaluateAll(
+    (nodes, sweep) =>
+      nodes.flatMap((node) => {
+        const label = node.previousSibling;
+        const paragraph = node.closest('p');
+        const blob = node.querySelector('[data-icon="external"]');
+        if (!label || !paragraph || !blob) return [`unmeasurable mark: ${node.outerHTML}`];
+        const lastChar = (label.textContent ?? '').trimEnd().length - 1;
+        const range = document.createRange();
+        range.setStart(label, lastChar);
+        range.setEnd(label, lastChar + 1);
+        const failures: string[] = [];
+        for (let width = sweep.min; width <= sweep.max; width += sweep.step) {
+          paragraph.style.width = `${width}px`;
+          const word = [...range.getClientRects()].at(-1);
+          const mark = blob.getBoundingClientRect();
+          if (!word || mark.top >= word.bottom || mark.bottom <= word.top) {
+            failures.push(`${label.textContent?.trim()} at ${width}px`);
+          }
+        }
+        paragraph.style.width = '';
+        return failures;
+      }),
+    { min: WRAP_SWEEP_MIN_PX, max: WRAP_SWEEP_MAX_PX, step: WRAP_SWEEP_STEP_PX }
+  );
+  expect(stranded).toEqual([]);
+});
+
+test('copying a sentence leaves out the external mark but its link still announces it', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+  const link = page.getByRole('link', {
+    name: 'OpenAI Services Agreement (opens outside Splotch)',
+    exact: true,
+  });
+  await expect(link).toBeVisible();
+
+  const copied = await link.evaluate((anchor) => {
+    const range = document.createRange();
+    range.selectNodeContents(anchor.closest('p') ?? anchor);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    return getSelection()?.toString() ?? '';
+  });
+  expect(copied).toContain('OpenAI Services Agreement');
+  expect(copied).not.toContain('opens outside Splotch');
+});

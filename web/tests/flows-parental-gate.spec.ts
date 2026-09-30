@@ -33,6 +33,8 @@ const AI_RESULT_WEBP = readFileSync(
 // pointed it at Parent Center.
 const MANAGE_FOOTER = /Manage these checks in/;
 const MANAGE_SUBTITLE = 'Solve the problem to manage grown-up checks';
+// The About link's visible label, then ExternalMark's announced suffix.
+const GITHUB_LINK_NAME = 'View on GitHub (opens outside Splotch)';
 
 // The access-code param supplies the credential, while the master preference
 // explicitly reveals the AI button. `gates` is the seed to leave the policies
@@ -271,8 +273,8 @@ test('external links inside Settings follow the Every time policy', async ({ pag
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
 
-  const link = page.getByRole('link', { name: 'View on GitHub', exact: true });
-  await expect(link).toHaveText('View on GitHub', { useInnerText: true });
+  const link = page.getByRole('link', { name: GITHUB_LINK_NAME, exact: true });
+  await expect(link).toHaveText(/^View on GitHub/, { useInnerText: true });
   await link.click();
   const gate = page.locator('#parentalGate');
   await expect(gate).toBeVisible();
@@ -316,7 +318,7 @@ test('external links can skip a second gate only within a solved session', async
   await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
-  const link = page.getByRole('link', { name: 'View on GitHub', exact: true });
+  const link = page.getByRole('link', { name: GITHUB_LINK_NAME, exact: true });
 
   await link.click();
   await expect(page.locator('#parentalGate')).toBeVisible();

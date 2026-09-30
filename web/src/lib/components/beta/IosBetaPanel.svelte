@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { supportEmail } from '$lib/supportEmail';
@@ -93,7 +94,7 @@
     <h4>The invitation opens in Safari instead of TestFlight</h4>
     <p>
       Install <a href={TESTFLIGHT_APP_URL} target="_blank" rel="noopener noreferrer"
-        >TestFlight from the App Store</a
+        >TestFlight from the App Store<ExternalMark variant="inline" /></a
       > first, then reopen the invitation on the same iPhone or iPad.
     </p>
   </div>
@@ -104,7 +105,7 @@
       group may be full. Try the <a
         href={TESTFLIGHT_INVITE_URL}
         target="_blank"
-        rel="noopener noreferrer">invitation</a
+        rel="noopener noreferrer">invitation<ExternalMark variant="inline" /></a
       > again later.
     </p>
   </div>
