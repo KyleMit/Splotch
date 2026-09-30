@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
-import type { Style } from '@capacitor/status-bar';
+import { SystemBarsStyle, SystemBarType, type SystemBars } from '@capacitor/core';
 import {
   createStatusBarApplier,
   bandColor,
@@ -84,41 +84,48 @@ describe('statusBarStyleForBand', () => {
 });
 
 describe('createStatusBarApplier', () => {
-  const STYLE_ENUM: { Dark: Style; Light: Style } = {
-    Dark: 'DARK' as Style,
-    Light: 'LIGHT' as Style,
-  };
+  const STYLE_ENUM = SystemBarsStyle;
+
+  function pluginModule(bar: Pick<typeof SystemBars, 'setStyle' | 'hide' | 'show'>) {
+    return { SystemBars: bar, SystemBarsStyle, SystemBarType };
+  }
 
   function stubBar() {
     return {
-      setStyle: vi.fn().mockResolvedValue(undefined),
-      hide: vi.fn().mockResolvedValue(undefined),
-      show: vi.fn().mockResolvedValue(undefined),
+      setStyle: vi.fn<(typeof SystemBars)['setStyle']>().mockResolvedValue(undefined),
+      hide: vi.fn<(typeof SystemBars)['hide']>().mockResolvedValue(undefined),
+      show: vi.fn<(typeof SystemBars)['show']>().mockResolvedValue(undefined),
     };
   }
 
   it('translates DARK to the dark style enum value', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply('DARK', null, bar, STYLE_ENUM);
-    expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Dark });
+    createStatusBarApplier().apply('DARK', null, pluginModule(bar));
+    expect(bar.setStyle).toHaveBeenCalledWith({
+      style: STYLE_ENUM.Dark,
+      bar: SystemBarType.StatusBar,
+    });
   });
 
   it('translates LIGHT to the light style enum value', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply('LIGHT', null, bar, STYLE_ENUM);
-    expect(bar.setStyle).toHaveBeenCalledWith({ style: STYLE_ENUM.Light });
+    createStatusBarApplier().apply('LIGHT', null, pluginModule(bar));
+    expect(bar.setStyle).toHaveBeenCalledWith({
+      style: STYLE_ENUM.Light,
+      bar: SystemBarType.StatusBar,
+    });
   });
 
   it('makes no style call when style is null', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply(null, null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, null, pluginModule(bar));
     expect(bar.setStyle).not.toHaveBeenCalled();
   });
 
   it('hides the status bar when hidden is true', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply(null, true, bar, STYLE_ENUM);
-    expect(bar.hide).toHaveBeenCalled();
+    createStatusBarApplier().apply(null, true, pluginModule(bar));
+    expect(bar.hide).toHaveBeenCalledWith({ bar: SystemBarType.StatusBar });
     expect(bar.show).not.toHaveBeenCalled();
   });
 
@@ -129,9 +136,9 @@ describe('createStatusBarApplier', () => {
     const bar = stubBar();
     const statusBar = createStatusBarApplier();
 
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, pluginModule(bar));
+    statusBar.apply('DARK', true, pluginModule(bar));
+    statusBar.apply('DARK', true, pluginModule(bar));
 
     expect(bar.setStyle).toHaveBeenCalledTimes(1);
     expect(bar.hide).toHaveBeenCalledTimes(1);
@@ -141,8 +148,8 @@ describe('createStatusBarApplier', () => {
     const bar = stubBar();
     const statusBar = createStatusBarApplier();
 
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
-    statusBar.apply('LIGHT', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, pluginModule(bar));
+    statusBar.apply('LIGHT', true, pluginModule(bar));
 
     expect(bar.setStyle).toHaveBeenCalledTimes(2);
     expect(bar.hide).toHaveBeenCalledTimes(1);
@@ -154,9 +161,9 @@ describe('createStatusBarApplier', () => {
     const bar = stubBar();
     const statusBar = createStatusBarApplier();
 
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, pluginModule(bar));
     statusBar.forget();
-    statusBar.apply('DARK', true, bar, STYLE_ENUM);
+    statusBar.apply('DARK', true, pluginModule(bar));
 
     expect(bar.setStyle).toHaveBeenCalledTimes(2);
     expect(bar.hide).toHaveBeenCalledTimes(2);
@@ -165,35 +172,35 @@ describe('createStatusBarApplier', () => {
   it('keeps each applier on its own memo', () => {
     const bar = stubBar();
 
-    createStatusBarApplier().apply('DARK', true, bar, STYLE_ENUM);
-    createStatusBarApplier().apply('DARK', true, bar, STYLE_ENUM);
+    createStatusBarApplier().apply('DARK', true, pluginModule(bar));
+    createStatusBarApplier().apply('DARK', true, pluginModule(bar));
 
     expect(bar.setStyle).toHaveBeenCalledTimes(2);
   });
 
   it('shows the status bar when hidden is false', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply(null, false, bar, STYLE_ENUM);
-    expect(bar.show).toHaveBeenCalled();
+    createStatusBarApplier().apply(null, false, pluginModule(bar));
+    expect(bar.show).toHaveBeenCalledWith({ bar: SystemBarType.StatusBar });
     expect(bar.hide).not.toHaveBeenCalled();
   });
 
   it('makes no visibility call when hidden is null', () => {
     const bar = stubBar();
-    createStatusBarApplier().apply(null, null, bar, STYLE_ENUM);
+    createStatusBarApplier().apply(null, null, pluginModule(bar));
     expect(bar.hide).not.toHaveBeenCalled();
     expect(bar.show).not.toHaveBeenCalled();
   });
 
   it('swallows a rejected setStyle call', async () => {
     const bar = { ...stubBar(), setStyle: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => createStatusBarApplier().apply('DARK', null, bar, STYLE_ENUM)).not.toThrow();
+    expect(() => createStatusBarApplier().apply('DARK', null, pluginModule(bar))).not.toThrow();
     await vi.waitFor(() => expect(bar.setStyle).toHaveBeenCalled());
   });
 
   it('swallows a rejected hide/show call', async () => {
     const bar = { ...stubBar(), hide: vi.fn().mockRejectedValue(new Error('nope')) };
-    expect(() => createStatusBarApplier().apply(null, true, bar, STYLE_ENUM)).not.toThrow();
+    expect(() => createStatusBarApplier().apply(null, true, pluginModule(bar))).not.toThrow();
     await vi.waitFor(() => expect(bar.hide).toHaveBeenCalled());
   });
 });

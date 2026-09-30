@@ -28,6 +28,14 @@ are UA-defined, and the `env(x, fallback)` second argument fires only when the v
 fallback is dead code and `env(safe-area-inset-top, 44px)` yields `0px` on your desktop. One level
 of indirection is the only way a harness can render the app under someone else's insets.
 
+AndroidX `WindowCompat.enableEdgeToEdge` owns native edge-to-edge and display-cutout compatibility.
+The app does not override its cutout mode: API 28–29 use short edges, API 30+ use all edges, and
+older supported devices skip the cutout parameter. Native status-bar icon style and visibility use
+`@capacitor/core` SystemBars with an explicit `SystemBarType.StatusBar`; navigation stays under the
+Activity's immersive policy. The legacy StatusBar plugin is absent. AndroidX's supported helper
+still references deprecated bar-color APIs internally; a new Play bundle scan is needed to determine
+remaining warning origins. See ADR-0026's SystemBars amendment.
+
 On Android native, Capacitor SystemBars injects `--safe-area-inset-*`. Those values take precedence,
 including explicit zero: WebViews before version 140 (or a viewport without `cover`) are padded
 natively and receive zero CSS insets. With WebView 140+ and `viewport-fit=cover`, Capacitor leaves
