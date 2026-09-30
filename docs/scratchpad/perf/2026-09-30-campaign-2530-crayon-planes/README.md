@@ -16,9 +16,15 @@ sources measured. ADR text changed after measurement and did not affect the exec
 The orchestrator paused other local heavy work. The atomic campaign perf-lock reserved this window;
 per-arm start/end host-load samples are retained, with ten CPU cores and the repository threshold of
 0.5 load per core. Brackets include builds and are advisory snapshots, not continuous CPU proof.
-Each fresh Chromium arm rebuilt the instrumented preview; WebKit reused that arm's build. The
-preview freshness gate checked the served build against the current source. Shared origin/main moved
-when an unrelated PR merged; the measured checkout HEAD remained fixed.
+**Quietness was not established for every arm:** load ranged 3.07–12.60 across ten cores, exceeding
+the 5.0 quiet threshold at several brackets. Candidate 1 Chromium began/ended at 12.57/10.39,
+baseline 2 at 6.51/4.85, and candidate 2 at 12.60/4.36. Reservation prevented other campaign work
+but did not prove settled host load after each build. The increase is observed evidence for an
+unresolved hold, not a controlled causal regression diagnosis. A repeat must wait for quiet host
+load after building and before starting each capture. Each fresh Chromium arm rebuilt the
+instrumented preview; WebKit reused that arm's build. The preview freshness gate checked the served
+build against the current source. Shared origin/main moved when an unrelated PR merged; the measured
+checkout HEAD remained fixed.
 
 ## Measurements
 
