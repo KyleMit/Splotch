@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { PALETTE_COLORS } from '../palette';
 import { colorContrast } from './colorContrast';
 import { iconTokenEntries } from './iconTokens';
 import {
   brand,
+  hues,
   isColorToken,
   scale,
   themes,
@@ -43,6 +45,7 @@ describe('isColorToken', () => {
       (key) => !isColorToken[key as keyof typeof isColorToken]
     );
     expect(nonColors.sort()).toEqual([
+      'blobShadow',
       'floatShadow',
       'glassTintRgb',
       'lineartBlend',
@@ -50,9 +53,11 @@ describe('isColorToken', () => {
       'ruleBlend',
       'ruleOpacity',
       'ruleSecondaryOpacity',
+      'squiggleStrength',
       'stepInkStrength',
       'stepWashStrength',
       'surfaceRgb',
+      'tapeStrength',
     ]);
   });
 });
@@ -192,5 +197,16 @@ describe('colour notation', () => {
 
   it.each(values)('%s uses the modern rgb() form', (_key, value) => {
     expect(legacyColorCalls(value)).toEqual([]);
+  });
+});
+
+describe('crayon hues', () => {
+  it('maps every non-Black palette hue to its CSS name without changing its color', () => {
+    expect(Object.entries(hues).map(([key, hex]) => [toCssVarName(key), hex])).toEqual(
+      PALETTE_COLORS.filter(({ label }) => label !== 'Black').map(({ label, hex }) => [
+        `--hue-${label.toLowerCase()}`,
+        hex,
+      ])
+    );
   });
 });

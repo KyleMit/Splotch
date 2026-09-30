@@ -114,6 +114,14 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
 export const themeUsage: Record<keyof ThemeTokens, string> = {
   stepWashStrength:
     'Crayon contribution to a numbered-step disc: subtle on light sheets, lifted on dark grounds.',
+  tapeStrength:
+    'Crayon contribution to tape fills on --surface. Use green, blue, orange or pink. Purple is dark-only; yellow does not hold AA at night.',
+  tapeInk: 'Text on tape fills mixed from --tape-strength and --surface.',
+  squiggleStrength: 'Crayon contribution to decorative squiggles on --surface.',
+  linkCrayon: 'Wavy link underlines; the link text keeps --page-link.',
+  highlighter: 'Yellow behind highlighted words or active page navigation.',
+  arrivalWash: 'Yellow arrival glow behind a linked release.',
+  blobShadow: 'The lift under a filled blob button; omitted on dark sheets.',
   stepInkStrength:
     'Crayon contribution to a numbered-step digit: tinted in light mode, full --text-strong at night.',
   appBg: 'The ground behind parent-page content (never the drawing paper).',

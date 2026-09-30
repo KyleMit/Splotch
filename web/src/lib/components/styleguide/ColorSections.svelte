@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     brand,
+    hues,
     isColorToken,
     scale,
     themes,
@@ -113,6 +114,19 @@
       'warningText',
       'warningChip',
     ]),
+    themeFamily('Crayon details', ['tapeInk', 'linkCrayon', 'highlighter', 'arrivalWash']),
+    {
+      label: 'Crayon hues · both themes',
+      chips: Object.entries(hues).map(([key, value]): ColorChip => ({
+        varName: toCssVarName(key),
+        fill: cssVar(key),
+        light: value,
+        dark: value,
+        usage:
+          'Crayon accents and decorative details. Mix tape and squiggles with their strength token against the sheet.',
+        ink: pickChipInk([value], themes.light.appBg),
+      })),
+    },
     themeFamily('Paper', ['paper', 'paperMargin', 'holeStroke']),
     themeFamily('Floating on paper', [
       'floatSurface',
