@@ -123,7 +123,7 @@
         light: value,
         dark: value,
         usage:
-          'Crayon accents and decorative details. Mix tape and squiggles with their strength token against the sheet.',
+          'Crayon accents and decorative details. Follow --tape-strength for which hues can carry tape text; mix squiggles with --squiggle-strength against the sheet.',
         ink: pickChipInk([value], themes.light.appBg),
       })),
     },

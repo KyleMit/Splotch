@@ -447,7 +447,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     linkCrayon: brand.brand,
     highlighter: yellowWash(70),
     arrivalWash: yellowWash(26),
-    blobShadow: '0 3px 8px rgb(124 80 187 / 35%)',
+    blobShadow: '0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent)',
     surfaceHover: '#f5f5f5',
     border: '#e0e0e0',
     borderWarm: '#ddd6cc',

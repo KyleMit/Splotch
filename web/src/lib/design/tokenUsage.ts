@@ -119,7 +119,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   tapeInk: 'Text on tape fills mixed from --tape-strength and --surface.',
   squiggleStrength: 'Crayon contribution to decorative squiggles on --surface.',
   linkCrayon: 'Wavy link underlines; the link text keeps --page-link.',
-  highlighter: 'Yellow behind highlighted words or active page navigation.',
+  highlighter:
+    'Yellow behind highlighted words on --surface. Pair with --text-strong; link and body inks need a different wash.',
   arrivalWash: 'Yellow arrival glow behind a linked release.',
   blobShadow: 'The lift under a filled blob button; omitted on dark sheets.',
   stepInkStrength:

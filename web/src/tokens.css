@@ -111,7 +111,7 @@
   --link-crayon: #ab71e1;
   --highlighter: rgb(249 210 79 / 70%);
   --arrival-wash: rgb(249 210 79 / 26%);
-  --blob-shadow: 0 3px 8px rgb(124 80 187 / 35%);
+  --blob-shadow: 0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent);
   --surface-hover: #f5f5f5;
   --border: #e0e0e0;
   --border-warm: #ddd6cc;
