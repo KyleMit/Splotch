@@ -155,8 +155,11 @@ For each unit, finish every step before starting the next:
    * **A peer found mid-run:** stand down on everything it has started, and take the rest from the
      far end of its order. Post the split on its ledger. A claim there is a notification, not a
      lock.
-   * **A peer that has stopped:** its drafts stay its own. Take over only what it never started, and
-     list its drafts in the morning report.
+   * **A peer that has stopped:** take over only what it never started, and list its drafts in the
+     morning report. Adopting a draft needs the user's explicit hand-over, which does not come from
+     the campaign's own authorization. Once handed over, an adopted draft still needs a survey
+     before its catch-up, a fresh rival review, and a CI round on its new head. The peer's old gates
+     cover none of that.
 3. **Ship it.** Run `ship-issue <n> mode=autonomous` — or, for a free-form unit (a performance
    cluster, a trunk repair, a gate repair), `ship-issue mode=autonomous` with the unit's written
    spec in place of an issue number — with the authorization block, the assigned port, and the

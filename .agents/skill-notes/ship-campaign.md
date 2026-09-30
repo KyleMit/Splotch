@@ -212,9 +212,16 @@ that started earlier, which is why the check repeats before every launch.
   path. The rival disagreed on a fact: every catch-up surveys `coupled` after a lockfile change,
   which would have stranded both. The auto-mode classifier then denied a plain `gh pr view` of those
   PRs' files, citing "External System Writes", which read as refusing the adoption itself. So the
-  drafts stayed #2530's, and step 2 now says so. The same classifier later refused the
-  orchestrator's batch removal of its own 13 clean lane worktrees at the end. The parallel reference
-  now prefers cleanup after each merge.
+  drafts stayed #2530's overnight.
+  * That afternoon the user handed them over explicitly ("You may adopt and update the Codex
+    drafts").
+  * #2529 adopted #2532 and #2537 from a differently named local branch, because the stopped Codex
+    worktrees still had the PR branches checked out. It pushed fast-forward only, ran the survey and
+    a full coupled reconcile, and got a fresh rival review and a new CI round on each new head. Both
+    then merged.
+  * Step 2 records that sequence. The same classifier later refused the orchestrator's batch removal
+    of its own 13 clean lane worktrees at the end. The parallel reference now prefers cleanup after
+    each merge.
 * **Lanes and the broker.** Two lanes reported that their worktree isolation refused a brokered
   command that ran git in the rival's worktree, including one whose text only contained "github".
   Both declined it and supplied their own equivalent result. The parallel reference records this.
