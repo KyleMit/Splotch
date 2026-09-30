@@ -57,8 +57,8 @@ truth that can drift from it. Its Codex GitHub and push approval rules moved int
 
 The overnight failures that cost the most were all discoverable at bedtime:
 
-* 2026-09-11: a Codex campaign stalled from 03:21 to 08:47 because the Claude rival bridge was not
-  installed.
+* Overnight 2026-09-10 to 11: a Codex campaign stalled from 23:21 to 04:47 EDT because the Claude
+  rival bridge was not installed.
 * The machine-global Codex rule forbidding `gh pr merge` stranded PRs in the epic #2020 run until PR
   #2026 removed it.
 * 2026-09-18: neither capture device was usable all night — the iPad's UI-automation grant had
@@ -69,9 +69,9 @@ unattended run has.
 
 ## Never end the turn to ask
 
-2026-09-12: a Claude campaign stopped at 05:06 with "Two things for you" and sat idle until the user
-answered at 08:08. Parking the question in the ledger and continuing costs nothing when the answer
-turns out not to matter, and costs one unit of rework when it does.
+2026-09-12: a Claude campaign stopped at 01:06 EDT with "Two things for you" and sat idle until the
+user answered at 04:08 EDT. Parking the question in the ledger and continuing costs nothing when the
+answer turns out not to matter, and costs one unit of rework when it does.
 
 ## Control messages
 
@@ -176,10 +176,10 @@ The #2500 parallel campaign merged about 20 PRs in under three hours. Four chang
   the gated `main` is read from the merge commit's second parent.
 * **The serialized WebKit gate.** The post-merge WebKit fast gate runs one commit at a time
   (`.github/workflows/test.yml`), and that day it ran about three hours behind: gates for merges at
-  16:36 started at 19:45. Step 2's "finished green", read literally, would have held each unit that
-  long. Verification now takes the push `Tests` run's standard jobs per merge and collects the
-  WebKit gates once at the end. Whether the first-run gate should leave its concurrency group is a
-  CI decision parked for the user in the #2500 ledger.
+  12:36 EDT started at 15:45 EDT. Step 2's "finished green", read literally, would have held each
+  unit that long. Verification now takes the push `Tests` run's standard jobs per merge and collects
+  the WebKit gates once at the end. Whether the first-run gate should leave its concurrency group is
+  a CI decision parked for the user in the #2500 ledger.
 * **Usage thresholds.** Preflight found the weekly usage window at 88%. The user agreed no new
   launch at 94% and wrap-up at 97%. Launches paused at 94% (17:48) and reopened at 17:56 when the
   user reported a reset, which the host's usage tool confirmed. Whether those thresholds suit a

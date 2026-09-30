@@ -14,11 +14,16 @@
   import AboutSection from './AboutSection.svelte';
   import type { SectionId } from './sections';
 
-  // Only WhatsNewSection takes `onSettled` (it keeps growing after it mounts); passing it
-  // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
-  // can't express that, so the map admits both prop shapes and the render site widens to the one
-  // that carries it.
-  type SectionProps = { onSettled?: () => void };
+  // The level of the heading each shell puts over a section body: the wide pane's title, or the
+  // phone drill-in's dialog header. A body's own headings sit below it.
+  export type SectionHeadingLevel = 2 | 3;
+
+  // Only WhatsNewSection takes `onSettled` (it keeps growing after it mounts) and
+  // `sectionHeadingLevel` (its release notes nest two levels deep); passing both uniformly is
+  // fine — Svelte drops props a component doesn't declare — but the generated types can't express
+  // that, so the map admits both prop shapes and the render site widens to the one that carries
+  // them.
+  type SectionProps = { onSettled?: () => void; sectionHeadingLevel: SectionHeadingLevel };
   type SectionComponent = Component<Record<string, never>> | Component<SectionProps>;
 
   const SECTION_CONTENT: Record<SectionId, SectionComponent> = {
@@ -40,13 +45,14 @@
 <script lang="ts">
   interface Props {
     id: SectionId;
+    sectionHeadingLevel: SectionHeadingLevel;
     /** Forwarded to the one section that keeps staging content after it mounts. */
     onSettled?: () => void;
   }
 
-  let { id, onSettled }: Props = $props();
+  let { id, sectionHeadingLevel, onSettled }: Props = $props();
 
   const Content = $derived(SECTION_CONTENT[id] as Component<SectionProps>);
 </script>
 
-<Content {onSettled} />
+<Content {onSettled} {sectionHeadingLevel} />

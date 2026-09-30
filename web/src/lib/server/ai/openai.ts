@@ -174,17 +174,22 @@ export const openAiProvider: AiImageProvider = {
     }
 
     const classified = classifyOpenAiResponse(response);
-    if (classified.kind === 'safety') return { kind: 'refusal', reason: classified.reason };
+    if (classified.kind === 'safety') {
+      // A decline outranks a completed image beside it (ADR-0023), so the child
+      // is refused and the finished picture is thrown away. This line is the only
+      // trace that a picture existed, and its count is the evidence for whether
+      // declines are costing children safe pictures.
+      const { imageDiscardedBy, reason } = classified;
+      if (imageDiscardedBy.length > 0) {
+        console.warn(
+          `[openai-safety] discarded a completed image for ${imageDiscardedBy.join(', ')}`
+        );
+      }
+      return { kind: 'refusal', reason };
+    }
     if (classified.kind === 'empty')
       return { kind: 'error', reason: `Model did not return an image: ${classified.reason}` };
-    const { droppedDeclines, ...delivered } = classified;
-    // A completed image wins over a decline beside it (ADR-0023), so the child
-    // gets the picture and the decline goes unheeded. This line is the only
-    // trace that the model or the platform also said no.
-    if (droppedDeclines.length > 0) {
-      console.warn(`[openai-safety] delivered an image despite ${droppedDeclines.join(', ')}`);
-    }
-    return delivered;
+    return classified;
   },
 
   async verifyKey(apiKey) {

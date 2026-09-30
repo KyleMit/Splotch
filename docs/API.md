@@ -101,11 +101,16 @@ data URL. A job expires after 20 minutes, and an hourly sweep deletes whatever w
 The server still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured
 signing secret) and whenever the handoff fails with no worker owning the job (the job store could
 not take it, or the worker refused it), and a client that never sends the header always gets the
-synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
-now usually ends in the controlled `502`. After a failed handoff the in-line call gets only what the
-handoff left of that deadline, so a slow store failure still answers before the platform ceiling
-(ADR-0063); when too little is left for the model to answer at all, the model is not called and the
-answer is the same controlled `502`, with the free reservation released.
+synchronous shape. A generation slower than the synchronous deadline ends in the controlled `502`
+there, and the shipped model's slow tail reaches it
+(`docs/scratchpad/image-model-bakeoff-2026-09-10.md`). After a failed handoff the in-line call gets
+only what the request has left of that deadline, counted from when the handler began, so the
+reservations and the handoff both come out of it and a slow store is less likely to let the platform
+ceiling end the request first (ADR-0063); when too little is left for the model to answer at all,
+the model is not called and the answer is the same controlled `502`, with the free reservation
+released. A request without the header keeps the full deadline, its routine pre-work charged to
+ADR-0063's margin instead, so a slow store during that pre-work can still reach the platform
+ceiling.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -152,7 +157,10 @@ ledger write that fails is logged and the image returned without the remaining-c
 the daily ceiling as the spending boundary. A separate durable compare-and-set counter reserves
 every free provider start before the model is called and caps project-funded traffic across all
 installations and function instances at 500 calls per UTC day. Provider failures, safety refusals,
-and an in-line fallback skipped for lack of time (above) are not refunded from that daily ceiling.
+and an in-line fallback skipped for lack of time (above) are not refunded from that daily ceiling,
+nor is a handed-off job whose worker fails before reaching the model, so the counter is a
+conservative count of reserved starts rather than an exact count of provider calls (ADR-0063's
+pre-work amendment records why the skip is not refunded).
 
 On success returns the image bytes. Sticker results are keyed server-side into a transparent PNG, so
 the paper shows through in the result and the downloaded image retains transparency. A Sticker

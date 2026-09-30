@@ -2,7 +2,7 @@
   import Icon from './Icon.svelte';
   import { RELEASE_SECTION_ICONS, type ReleaseSection } from '$lib/releaseSections';
 
-  let { title, level }: { title: ReleaseSection; level: 3 | 4 } = $props();
+  let { title, level }: { title: ReleaseSection; level: 3 | 4 | 5 } = $props();
   const icon = $derived(RELEASE_SECTION_ICONS[title]);
 </script>
 

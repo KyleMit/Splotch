@@ -16,6 +16,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { openSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseNumberFlag, POSITIVE_INTEGER } from '../lib/proc.mjs';
 import {
   chdirRoot,
   ensureWorkDirs,
@@ -25,13 +26,20 @@ import {
   WORK,
 } from './lib/burndown-core.mjs';
 
-const count = process.argv[2] ?? '600';
-if (!/^\d+$/.test(count) || Number(count) < 1) {
-  console.error(
-    `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
-  );
-  process.exit(2);
+// The count is positional, so a rejection keeps this message instead of parseNumberFlag's
+// `--count` wording.
+function readFindingCount(raw = '600') {
+  try {
+    return parseNumberFlag('count', raw, POSITIVE_INTEGER);
+  } catch {
+    console.error(
+      `overnight: finding count must be a positive integer, got ${JSON.stringify(raw)}`
+    );
+    process.exit(2);
+  }
 }
+
+const count = readFindingCount(process.argv[2]);
 
 chdirRoot();
 ensureWorkDirs();
