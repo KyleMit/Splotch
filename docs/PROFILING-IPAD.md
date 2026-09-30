@@ -470,6 +470,13 @@ is excluded.
 4. **⟨iPad⟩** Settings → General → About → **Certificate Trust Settings** → turn the root on →
    Continue. Installing the profile alone does not make Safari trust it.
 
+An agent with a healthy native Appium/XCUITest session can drive these Settings screens on an iPhone
+or iPad. Use native accessibility and screenshots when the TLS warning prevents a web session from
+attaching. The user enters the device passcode on the device; the agent can complete installation
+and enable the verified root. Reuse the existing CA and compare its fingerprint before installation.
+If AirDrop is unavailable, a temporary LAN endpoint can serve only the existing public `.crt`; stop
+it after download.
+
 **Serve and verify — ⟨Mac⟩ + ⟨iPad⟩.** Start the preview, then two fronts: the leaf, and the
 constraint probe as a negative control. `<lan>` is `ipconfig getifaddr en0`. Bind that address,
 never `0.0.0.0`, which also listens on every VPN, Tailscale, and bridge interface.
@@ -488,6 +495,12 @@ show "This Connection Is Not Private". If the probe loads, the device is not enf
 constraint: remove the profile at once and do not capture. Always connect by the `.local` name. The
 root's address entry matches only while the Mac keeps the DHCP address it had at `make-ca`, and the
 name keeps working after the address changes.
+
+Remote verification must observe both Safari outcomes on the physical device: the trusted leaf loads
+without a warning, the constraint probe warns without a bypass, and the leaf loads again afterward.
+Save screenshots and accessibility evidence with hashes, identify the actual observer, and record
+the device’s exact OS release in the constraint-probe log. Host TLS checks alone do not prove the
+device outcome. Stop the probe front once the observation is complete.
 
 **Capture — ⟨Mac⟩.** The host's served-build check fetches the same URL, so give Node the root:
 
@@ -516,18 +529,19 @@ npm run perf:ios:secure-origin -- check --url=https://<mac>.local:<tls>/ --devic
 
 It refuses unless all of these hold:
 
-* The iPad runs the iPadOS release named by `CONSTRAINT_PROVEN_IPADOS` in
-  `tools/perf/ios/secure-origin.mjs`. That is the release on which a person watched Safari refuse
-  the probe.
+* The device runs an OS release listed in `CONSTRAINT_PROVEN_RELEASES` in
+  `tools/perf/ios/secure-origin.mjs`. Each entry has a recorded on-device observation of Safari
+  refusing the probe while the trusted leaf loads.
 * The macOS trust engine accepts the leaf for that name and refuses the constraint probe.
 * The front answers 200 for the page and 403 for `/api`.
 
 The sweep then proves the iPad still trusts the root: every AI-waiting sample must report
 `secureContext: true`. After an iPad update, the check refuses until someone repeats "Serve and
-verify" at the iPad on the new release and raises the constant. `npm run perf:session:person` does
-that look in its second visit and appends the verdict, with the iPadOS the iPad reports, to the
-tracked `perf-profiles/evidence/operator/ipad-constraint-probe.tsv`. A raise cites that row, and
-`tools/perf/tests/secure-origin.test.mjs` fails a constant the log does not back.
+verify" at the iPad on the new release and adds the proven release to the list.
+`npm run perf:session:person` does that look in its second visit and appends the verdict, with the
+iPadOS the iPad reports, to the tracked `perf-profiles/evidence/operator/ipad-constraint-probe.tsv`.
+Each addition cites that row, and `tools/perf/tests/secure-origin.test.mjs` fails a constant the log
+does not back.
 
 Claude Code's auto-mode classifier denies an unattended LAN listener ("Expose Local Services")
 unless the maintainer pre-authorizes it. That authorization lives only on the maintainer's Mac and

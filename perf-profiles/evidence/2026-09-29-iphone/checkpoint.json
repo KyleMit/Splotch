@@ -1,0 +1,617 @@
+{
+  "checkedAt": "2026-09-30T01:45:17.723Z",
+  "acceptedCells": 40,
+  "plannedCells": 40,
+  "acceptedReferences": 6,
+  "plannedReferences": 6,
+  "productCommit": "704edcdb1092420e204b684b80378149bbd890cd",
+  "targets": {
+    "iphone-device-web": {
+      "status": {
+        "total": 23,
+        "productCells": 20,
+        "referenceCells": 3,
+        "done": [
+          "reference/portrait-light/start",
+          "portrait-light/pen-undo",
+          "portrait-light/crayon",
+          "portrait-light/magic",
+          "portrait-light/eraser",
+          "portrait-light/actions",
+          "portrait-dark/pen-undo",
+          "portrait-dark/crayon",
+          "portrait-dark/magic",
+          "portrait-dark/eraser",
+          "portrait-dark/actions",
+          "reference/portrait-light/middle",
+          "landscape-light/pen-undo",
+          "landscape-light/crayon",
+          "landscape-light/magic",
+          "landscape-light/eraser",
+          "landscape-light/actions",
+          "landscape-dark/pen-undo",
+          "landscape-dark/crayon",
+          "landscape-dark/magic",
+          "landscape-dark/eraser",
+          "landscape-dark/actions",
+          "reference/portrait-light/end"
+        ],
+        "outstanding": []
+      },
+      "drawings": [
+        {
+          "mode": "portrait-light",
+          "brush": "crayon",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "magic",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "crayon",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "magic",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "crayon",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "magic",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "crayon",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "magic",
+          "passed": false,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        }
+      ],
+      "actions": [
+        {
+          "mode": "portrait-light",
+          "applicableActions": 56,
+          "redBudgets": [
+            "collapse action drawer",
+            "change ink color",
+            "open custom color picker",
+            "select custom color",
+            "open Settings",
+            "switch light theme to dark",
+            "close Settings",
+            "first open of coloring books",
+            "reopen coloring books",
+            "scroll coloring pages",
+            "select coloring page",
+            "clear coloring page",
+            "show AI waiting print",
+            "finish AI waiting print",
+            "clear drawing",
+            "clear drawing on a coloring page",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "portrait-dark",
+          "applicableActions": 56,
+          "redBudgets": [
+            "collapse action drawer",
+            "change ink color",
+            "open custom color picker",
+            "select custom color",
+            "select crayon brush",
+            "open Settings",
+            "close Settings",
+            "first open of coloring books",
+            "reopen coloring books",
+            "scroll coloring pages",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "show AI waiting print",
+            "clear drawing",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-light",
+          "applicableActions": 42,
+          "redBudgets": [
+            "collapse action drawer",
+            "open color menu",
+            "open custom color picker",
+            "select custom color",
+            "open Settings",
+            "enable Night Mode in the compact shell",
+            "close Settings",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "clear drawing",
+            "undo clear after blank rotation",
+            "clear restored drawing after blank rotation",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-dark",
+          "applicableActions": 42,
+          "redBudgets": [
+            "collapse action drawer",
+            "open color menu",
+            "open custom color picker",
+            "select custom color",
+            "select eraser",
+            "open Settings",
+            "disable Night Mode in the compact shell",
+            "enable drawing sounds in the compact shell",
+            "close Settings",
+            "select coloring page",
+            "clear coloring page",
+            "save screenshot",
+            "show AI waiting print",
+            "clear drawing",
+            "empty after clear: LANDSCAPE to PORTRAIT rotation",
+            "undo clear after blank rotation",
+            "clear restored drawing after blank rotation",
+            "with ink: LANDSCAPE to PORTRAIT rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        }
+      ],
+      "references": {
+        "metric": "lostFrameTimeShare",
+        "warningThreshold": {
+          "lostFrameTimeShare": 0.005,
+          "percentagePoints": 0.5
+        },
+        "referenceCell": {
+          "target": "iphone-device-web",
+          "mode": "portrait-light",
+          "brush": "crayon"
+        },
+        "measurements": [
+          {
+            "position": "start",
+            "artifact": "start--ff1e77c6.json",
+            "capturedAt": "2026-09-29T17:42:54.021Z",
+            "captureSession": "fba079db-d0f8-4f3a-b885-6630af399a7a",
+            "lostFrameTimeShare": 0.0111,
+            "lostFrameTimePercentage": 1.11
+          },
+          {
+            "position": "middle",
+            "artifact": "middle--b313cc7c.json",
+            "capturedAt": "2026-09-29T18:15:44.102Z",
+            "captureSession": "e981d699-63f3-43a4-986e-0c13d348594d",
+            "lostFrameTimeShare": 0.0124,
+            "lostFrameTimePercentage": 1.24
+          },
+          {
+            "position": "end",
+            "artifact": "end--320595df.json",
+            "capturedAt": "2026-09-29T18:36:08.013Z",
+            "captureSession": "e981d699-63f3-43a4-986e-0c13d348594d",
+            "lostFrameTimeShare": 0.0115,
+            "lostFrameTimePercentage": 1.15
+          }
+        ],
+        "captureSessions": {
+          "scope": "mixed",
+          "count": 2
+        },
+        "instrument": {
+          "fingerprint": "12cd741d3195a3308b8a2ef4252b9ab1c494469e94b22d5d10283f0ebd3d75ce",
+          "files": {
+            "tools/perf/ios/capture-webkit-frames.mjs": "6b86126bade187af5c93cf1d94ab24389b4106d20e9ce7826be9675593cde87e",
+            "tools/perf/ios/capture-xcuitest-screen.mjs": "9657cb94e126bf33d2592545594e268f9a10b263e0b8c5b31b69e70546a95cea",
+            "tools/perf/lib/brush-buttons.mjs": "ad3ff2bee2239995b8479fc2c37b5f6a95348a1c562b4230da864687d9851d7a",
+            "tools/perf/lib/campaign-state.mjs": "44e0d5f225cd472d02c58e4cac23c246ea9d07e1cb120149871240299b6477bf",
+            "tools/perf/lib/eraser-fill.mjs": "0f7f122f71bb4c09b22c0ac849e5a8bba3fbbefe44fb30ffa348ee35c9a6e700",
+            "tools/perf/lib/service-worker-guard.mjs": "fcb214f05e321fa5806470917d378851e8183c0a15535427b572c5e1d12326a9",
+            "tools/perf/lib/undo-driver.mjs": "57fe4a696686b367458a9addcf67daf2aaae9309447d5717543ff0393e16d594",
+            "tools/perf/probes/real-screen-probe.js": "b5c70174d95370e0704ab488982162a9bd3e27fd504497b5676c89ee566637ae"
+          }
+        },
+        "drift": {
+          "lostFrameTimeShare": 0.001299999999999999,
+          "percentagePoints": 0.1299999999999999,
+          "exceedsWarningThreshold": false
+        }
+      }
+    },
+    "iphone-device-native": {
+      "status": {
+        "total": 23,
+        "productCells": 20,
+        "referenceCells": 3,
+        "done": [
+          "reference/portrait-light/start",
+          "portrait-light/pen-undo",
+          "portrait-light/crayon",
+          "portrait-light/magic",
+          "portrait-light/eraser",
+          "portrait-light/actions",
+          "portrait-dark/pen-undo",
+          "portrait-dark/crayon",
+          "portrait-dark/magic",
+          "portrait-dark/eraser",
+          "portrait-dark/actions",
+          "reference/portrait-light/middle",
+          "landscape-light/pen-undo",
+          "landscape-light/crayon",
+          "landscape-light/magic",
+          "landscape-light/eraser",
+          "landscape-light/actions",
+          "landscape-dark/pen-undo",
+          "landscape-dark/crayon",
+          "landscape-dark/magic",
+          "landscape-dark/eraser",
+          "landscape-dark/actions",
+          "reference/portrait-light/end"
+        ],
+        "outstanding": []
+      },
+      "drawings": [
+        {
+          "mode": "portrait-light",
+          "brush": "crayon",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "magic",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-light",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "crayon",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "magic",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "portrait-dark",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "crayon",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "magic",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-light",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "crayon",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "eraser",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "magic",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        },
+        {
+          "mode": "landscape-dark",
+          "brush": "pen",
+          "passed": true,
+          "fidelityPassed": true,
+          "refreshBeatMs": 17
+        }
+      ],
+      "actions": [
+        {
+          "mode": "portrait-light",
+          "applicableActions": 56,
+          "redBudgets": [
+            "idle frame control",
+            "expand action drawer",
+            "select custom color",
+            "open Settings",
+            "close Settings",
+            "reopen coloring books",
+            "select coloring page",
+            "clear coloring page",
+            "show AI waiting print",
+            "finish AI waiting print",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "portrait-dark",
+          "applicableActions": 56,
+          "redBudgets": [
+            "expand action drawer",
+            "select custom color",
+            "switch dark theme to light",
+            "close Settings",
+            "reopen coloring books",
+            "select coloring page",
+            "clear coloring page",
+            "show AI waiting print",
+            "finish AI waiting print",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "sectioned",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-light",
+          "applicableActions": 42,
+          "redBudgets": [
+            "idle frame control",
+            "select custom color",
+            "enable Night Mode in the compact shell",
+            "close Settings",
+            "first open of coloring books",
+            "open coloring book",
+            "scroll coloring pages",
+            "clear coloring page",
+            "show AI waiting print",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        },
+        {
+          "mode": "landscape-dark",
+          "applicableActions": 42,
+          "redBudgets": [
+            "open color menu",
+            "open custom color picker",
+            "select custom color",
+            "disable Night Mode in the compact shell",
+            "close Settings",
+            "first open of coloring books",
+            "reopen coloring books",
+            "clear coloring page",
+            "show AI waiting print",
+            "finish AI waiting print",
+            "empty after clear: PORTRAIT to LANDSCAPE rotation",
+            "with ink: PORTRAIT to LANDSCAPE rotation"
+          ],
+          "settingsShell": "compact",
+          "repeats": 4
+        }
+      ],
+      "references": {
+        "metric": "lostFrameTimeShare",
+        "warningThreshold": {
+          "lostFrameTimeShare": 0.005,
+          "percentagePoints": 0.5
+        },
+        "referenceCell": {
+          "target": "iphone-device-native",
+          "mode": "portrait-light",
+          "brush": "crayon"
+        },
+        "measurements": [
+          {
+            "position": "start",
+            "artifact": "start--986008a7.json",
+            "capturedAt": "2026-09-29T18:59:09.884Z",
+            "captureSession": "bd975850-14cc-4d37-8f21-b53c82f77af3",
+            "lostFrameTimeShare": 0.0035,
+            "lostFrameTimePercentage": 0.35000000000000003
+          },
+          {
+            "position": "middle",
+            "artifact": "middle--8b4cf035.json",
+            "capturedAt": "2026-09-29T19:38:23.450Z",
+            "captureSession": "bd975850-14cc-4d37-8f21-b53c82f77af3",
+            "lostFrameTimeShare": 0.003,
+            "lostFrameTimePercentage": 0.3
+          },
+          {
+            "position": "end",
+            "artifact": "end--87efa1fc.json",
+            "capturedAt": "2026-09-29T20:15:16.828Z",
+            "captureSession": "bd975850-14cc-4d37-8f21-b53c82f77af3",
+            "lostFrameTimeShare": 0.0033,
+            "lostFrameTimePercentage": 0.33
+          }
+        ],
+        "captureSessions": {
+          "scope": "single",
+          "count": 1
+        },
+        "instrument": {
+          "fingerprint": "12cd741d3195a3308b8a2ef4252b9ab1c494469e94b22d5d10283f0ebd3d75ce",
+          "files": {
+            "tools/perf/ios/capture-webkit-frames.mjs": "6b86126bade187af5c93cf1d94ab24389b4106d20e9ce7826be9675593cde87e",
+            "tools/perf/ios/capture-xcuitest-screen.mjs": "9657cb94e126bf33d2592545594e268f9a10b263e0b8c5b31b69e70546a95cea",
+            "tools/perf/lib/brush-buttons.mjs": "ad3ff2bee2239995b8479fc2c37b5f6a95348a1c562b4230da864687d9851d7a",
+            "tools/perf/lib/campaign-state.mjs": "44e0d5f225cd472d02c58e4cac23c246ea9d07e1cb120149871240299b6477bf",
+            "tools/perf/lib/eraser-fill.mjs": "0f7f122f71bb4c09b22c0ac849e5a8bba3fbbefe44fb30ffa348ee35c9a6e700",
+            "tools/perf/lib/service-worker-guard.mjs": "fcb214f05e321fa5806470917d378851e8183c0a15535427b572c5e1d12326a9",
+            "tools/perf/lib/undo-driver.mjs": "57fe4a696686b367458a9addcf67daf2aaae9309447d5717543ff0393e16d594",
+            "tools/perf/probes/real-screen-probe.js": "b5c70174d95370e0704ab488982162a9bd3e27fd504497b5676c89ee566637ae"
+          }
+        },
+        "drift": {
+          "lostFrameTimeShare": 0.0005,
+          "percentagePoints": 0.05,
+          "exceedsWarningThreshold": false
+        }
+      }
+    }
+  },
+  "blocker": null,
+  "previewVerification": "controls/build-provenance.json",
+  "nativeBuildProvenance": "controls/build-provenance.json",
+  "calibration": {
+    "web": "crayon-real-screen--90cb5536.json",
+    "native": "crayon-real-screen--69d48a7a.json",
+    "measuredRegime": "60hz",
+    "measuredBeatMs": 17
+  },
+  "httpsVerification": "controls/https-verification.json"
+}

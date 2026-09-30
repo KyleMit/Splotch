@@ -22,12 +22,9 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { captureRuntime } from '../lib/input-fidelity.mjs';
-import {
-  ANDROID_NATIVE_PACKAGE,
-  DEVICE_CLASSES,
-  NATIVE_TRANSPORT,
-} from '../lib/campaign-plan.mjs';
-import { readAndroidInputWindows, unoccludedTapPoint } from '../lib/android-touch-occlusion.mjs';
+import { ANDROID_NATIVE_PACKAGE, DEVICE_CLASSES, NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { nativeTapPoint } from '../lib/native-tap-point.mjs';
+import { assertUnavailableUndoCue } from '../lib/unavailable-undo-cue.mjs';
 import {
   ANDROID_PLATFORM,
   DEFAULT_APPIUM_URL,
@@ -373,7 +370,9 @@ function physicalIosWebIdentity({ nativeApp, deviceId, requestedCapabilities, se
     capabilityValue(requestedCapabilities, 'udid'),
   ].some(isPhysicalAppleUdid);
   const isPhysicalIosWeb =
-    !nativeApp && sessionPlatformName({ requestedCapabilities, session }) === 'ios' && physicalDevice;
+    !nativeApp &&
+    sessionPlatformName({ requestedCapabilities, session }) === 'ios' &&
+    physicalDevice;
   return {
     isPhysicalIosWeb,
     namesIpad: deviceName.includes('ipad'),
@@ -420,9 +419,7 @@ export function settingsSectionMeasurement(section, label, settingsModalUsesSide
 
 export function settingsSectionLabelSelector(section, settingsModalUsesSidebar) {
   const selector = settingsSectionRow(section);
-  return settingsModalUsesSidebar
-    ? `${selector} [data-toc-label]`
-    : `${selector} .hub-title`;
+  return settingsModalUsesSidebar ? `${selector} [data-toc-label]` : `${selector} .hub-title`;
 }
 
 export function settingsSectionSetupReady(section, ready, settingsModalUsesSidebar) {
@@ -722,23 +719,6 @@ export async function foregroundAndroidApp(client, sessionId, packageName) {
   });
 }
 
-// Read before the probe arms, so the dumpsys round trip stays outside the
-// measured action. Outside native Android there is nothing to read and the tap
-// keeps its centre.
-export function nativeTapPoint(client, bounds, label, readWindows = readAndroidInputWindows) {
-  const target = client.androidTouchTarget;
-  const windows = target ? readWindows(target.serial) : null;
-  const point = unoccludedTapPoint(bounds, windows, target?.packageName);
-  if (point.occludedBy) {
-    console.warn(
-      `[ipad-actions] ${label}: the target's centre is obscured by ${point.occludedBy.window} ` +
-        `(combined opacity ${point.occludedBy.opacity.toFixed(2)}), which Android drops as an ` +
-        `untrusted touch; tapping (${point.x}, ${point.y}) instead`
-    );
-  }
-  return point;
-}
-
 async function measureClick({
   client,
   sessionId,
@@ -754,7 +734,25 @@ async function measureClick({
   let nativeTarget = null;
   if (!client.webdriverClicks) {
     if (activation === 'native') {
-      nativeTarget = await nativeBoundsForSelector(client, sessionId, execute, selector);
+      if (
+        client.deviceClass === 'handset' &&
+        !client.nativeApp &&
+        client.platformName?.toLowerCase() === 'ios'
+      ) {
+        // iPhone Safari's bottom toolbar makes the viewport-height deficit a
+        // poor estimate of where dock controls are drawn. AX reports their
+        // actual native frames while the touch remains a native pointer event.
+        nativeTarget = await nativeAccessibilityBoundsForSelector(
+          client,
+          sessionId,
+          execute,
+          selector
+        ).catch((error) => {
+          rethrowIfBroken(error);
+          return null;
+        });
+      }
+      nativeTarget ??= await nativeBoundsForSelector(client, sessionId, execute, selector);
     } else if (activation === 'native-accessibility') {
       nativeTarget = await nativeAccessibilityBoundsForSelector(
         client,
@@ -764,7 +762,9 @@ async function measureClick({
       ).catch(() => null);
     }
   }
-  const tapPoint = nativeTarget ? nativeTapPoint(client, nativeTarget.bounds, label) : null;
+  const tapPoint = nativeTarget
+    ? nativeTapPoint(client, nativeTarget.bounds, label, undefined, nativeTarget.nativeWindow)
+    : null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
@@ -951,9 +951,12 @@ export async function measureColoringPageScroll(client, sessionId, execute) {
     const state = await unscrolledColoringDialogState(execute, selector).catch((stateError) => ({
       stateReadError: String(stateError),
     }));
-    throw new Error(`${error.message}\nScroll state: ${JSON.stringify({ ...state, touchGesture })}`, {
-      cause: error,
-    });
+    throw new Error(
+      `${error.message}\nScroll state: ${JSON.stringify({ ...state, touchGesture })}`,
+      {
+        cause: error,
+      }
+    );
   }
   await sleep(ACTION_SETTLE_MS);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
@@ -1023,7 +1026,8 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   if (!webGeometry) throw new Error(`No native-gesture target matches ${selector}`);
   const { displaced } = webGeometry;
   if (displaced && (displaced.x || displaced.y || displaced.vvLeft || displaced.vvTop)) {
-    const reset = displaced.x || displaced.y ? 'scroll reset applied' : 'visual-viewport only, no reset';
+    const reset =
+      displaced.x || displaced.y ? 'scroll reset applied' : 'visual-viewport only, no reset';
     console.warn(
       `web content displaced before ${selector} tap: ${JSON.stringify(displaced)} — ${reset}`
     );
@@ -1248,9 +1252,9 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
         ).catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      }),
+          rethrowIfBroken(error);
+          return false;
+        }),
       READY_TIMEOUT_MS,
       POLL_MS
     );
@@ -1263,9 +1267,9 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
       return typeof window.__actionProbe?.begin === 'function' &&
         document.querySelector('#screenshotButton')?.disabled === false;
     `).catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      });
+      rethrowIfBroken(error);
+      return false;
+    });
     if (stable) return;
   }
   throw new Error('The native WebView did not retain the action probe and setup stroke');
@@ -1340,9 +1344,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   // rotation transition — a window the page cannot paint into. ADR-0142 holds
   // the measurements and the per-runtime meaning of the first-frame gate under
   // this anchor. The orientation events still land in the sample's activities.
-  await execute(
-    `return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['resize']);`
-  );
+  await execute(`return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['resize']);`);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   await client.request('POST', `/session/${sessionId}/orientation`, { orientation: to });
   await sleep(ROTATION_NATIVE_SETTLE_MS);
@@ -1560,7 +1562,11 @@ export function aiReadyCueWaitScript() {
 // (UndoButton.handleUndoClick), so the cue needs an exhausted history to reach.
 async function exhaustUndoHistory(execute) {
   for (let attempt = 0; attempt < MAX_UNDO_EXHAUST_TAPS; attempt += 1) {
-    if (await execute(`return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`))
+    if (
+      await execute(
+        `return document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true';`
+      )
+    )
       return true;
     await clickSetupElement(execute, '#undoButton');
     await sleep(ANIMATED_ACTION_SETTLE_MS);
@@ -2081,8 +2087,7 @@ export async function runActionSweep({
       label: compactSettingsActionLabel('Night Mode'),
       selector: '#quickNightToggle',
       baseline: baselineTheme === 'dark',
-      readyFor: (enabled) =>
-        `${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'`,
+      readyFor: (enabled) => `${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'`,
     });
   }
 
@@ -2422,17 +2427,19 @@ export async function runActionSweep({
         'undo history could not be emptied, so the unavailable cue is unreachable'
       );
     } else {
-      await record(
-        measureClick({
-          client,
-          sessionId,
-          execute,
-          label: 'tap unavailable undo',
-          selector: '#undoButton',
-          ready: `document.querySelector('#undoButton')?.classList.contains('action-unavailable') === true`,
-          settleMs: ANIMATED_ACTION_SETTLE_MS,
-        })
-      );
+      const unavailableSample = await measureClick({
+        client,
+        sessionId,
+        execute,
+        label: 'tap unavailable undo',
+        selector: '#undoButton',
+        // The cue class lasts only for its CSS animation. The probe records
+        // animationstart even when Appium's polling misses that short window.
+        ready: `document.querySelector('#undoButton')?.getAttribute('aria-disabled') === 'true'`,
+        settleMs: ANIMATED_ACTION_SETTLE_MS,
+      });
+      assertUnavailableUndoCue(unavailableSample);
+      await record(unavailableSample);
     }
   }
 
@@ -2550,11 +2557,7 @@ export async function runActionSweep({
       blocked: [...blocked].map(([label, reason]) => ({ label, reason })),
       context: {
         orientation: originalOrientation,
-        settingsShell: settingsInScope
-          ? settingsShellIsCompact
-            ? 'compact'
-            : 'sectioned'
-          : null,
+        settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
         listedColoringBooks,
       },
     },
@@ -2640,9 +2643,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           ?.request('POST', `/session/${sessionId}/orientation`, {
             orientation: restoreOrientation,
           })
-          .catch((error) =>
-            console.warn(`cleanup: orientation restore failed (${error.message})`)
-          );
+          .catch((error) => console.warn(`cleanup: orientation restore failed (${error.message})`));
       }
       if (sessionId && execute && nativeRotationLockRestore?.lockedOrientation) {
         // A silent failure here leaves the iPad rotation-unlocked, which
@@ -2711,6 +2712,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
     client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
     client.nativeApp = nativeApp;
+    client.deviceClass = deviceClass;
     client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
     client.webdriverClicks = has('webdriver-clicks');
     await client.request('GET', '/status');
@@ -2762,9 +2764,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
         ).catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      }),
+          rethrowIfBroken(error);
+          return false;
+        }),
       READY_TIMEOUT_MS,
       POLL_MS
     );
@@ -2793,9 +2795,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
             execute(
               "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
             ).catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      }),
+              rethrowIfBroken(error);
+              return false;
+            }),
           READY_TIMEOUT_MS,
           POLL_MS
         );
@@ -2852,9 +2854,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           execute(
             "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
           ).catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      }),
+            rethrowIfBroken(error);
+            return false;
+          }),
         READY_TIMEOUT_MS,
         POLL_MS
       );
@@ -2870,9 +2872,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         if (entryProblem) throw new Error(`Preview identity mismatch: ${entryProblem}`);
         pageEntries.add(loadedEntry);
       }
-      serviceWorkerRegistrations.add(
-        await blockServiceWorkerRegistrationForMeasurement(execute)
-      );
+      serviceWorkerRegistrations.add(await blockServiceWorkerRegistrationForMeasurement(execute));
     };
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const sweepDocument = await loadActionSweepDocument({

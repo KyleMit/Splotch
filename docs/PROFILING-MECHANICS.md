@@ -43,8 +43,8 @@ not this table.
 | `ipad-simulator-native`   | iPad Simulator · native   | `appium`  | `appium`  | `ios-capacitor-webview`     | `60hz`  |
 | `ipad-device-web`         | iPad device · web         | `appium`  | `appium`  | `ios-safari`                | `60hz`  |
 | `ipad-device-native`      | iPad device · native      | `appium`  | `appium`  | `ios-capacitor-webview`     | `60hz`  |
-| `iphone-device-web`       | iPhone device · web       | `appium`  | `appium`  | `ios-safari`                | `none`  |
-| `iphone-device-native`    | iPhone device · native    | `appium`  | `appium`  | `ios-capacitor-webview`     | `none`  |
+| `iphone-device-web`       | iPhone device · web       | `appium`  | `appium`  | `ios-safari`                | `60hz`  |
+| `iphone-device-native`    | iPhone device · native    | `appium`  | `appium`  | `ios-capacitor-webview`     | `60hz`  |
 | `android-emulator-web`    | Android emulator · web    | `split`   | `cdp`     | `android-chrome`            | `60hz`  |
 | `android-emulator-native` | Android emulator · native | `split`   | `appium`  | `android-capacitor-webview` | `60hz`  |
 | `android-device-web`      | Android device · web      | `split`   | `cdp`     | `android-chrome`            | `120hz` |

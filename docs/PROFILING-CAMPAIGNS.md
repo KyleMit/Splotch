@@ -1559,11 +1559,18 @@ that Capacitor could not load a remote page, and the actual explanation was that
 serving a 404ing manifest since the last `cap:sync`. The build-freshness guard caught it on the next
 capture, minutes after the issue was filed.
 
-Before resuming **web** capture after `cap sync`, rebuild the web target **and restart the preview
-server**. Automated native split capture requires the native static export instead. From a clean
-product checkout, build and stamp its provenance in the same operation, without changing HEAD or
-product sources between the two commands. Unlike `perf:build`, `perf:build:cap` has no automatic
-provenance hook:
+A campaign pinned to a saved product build must restore the matching web preview output as well as
+`web/build`. Vite preview also reads `web/.svelte-kit/output`; restoring only `web/build` can leave
+it serving the native variant. Preserve the native outputs before restoring the web snapshot,
+restart only the owned preview, and prove the served HTML and application-chunk fingerprint match
+the saved web build before capture. The served-build guard caught this mismatch during the physical
+iPhone campaign before any resumed web action was measured.
+
+When no saved web snapshot is being restored, rebuild the web target **and restart the preview
+server** before resuming **web** capture after `cap sync`. Automated native split capture requires
+the native static export instead. From a clean product checkout, build and stamp its provenance in
+the same operation, without changing HEAD or product sources between the two commands. Unlike
+`perf:build`, `perf:build:cap` has no automatic provenance hook:
 
 ```sh
 npm run perf:build:cap && node tools/perf/write-build-provenance.mjs

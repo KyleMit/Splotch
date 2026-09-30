@@ -1,0 +1,78 @@
+{
+  "observedAt": "2026-09-30T00:58:37.381Z",
+  "observer": "Codex directly inspected the physical iPhone through native Appium/XCUITest accessibility and screenshots; user entered the passcode and confirmed installation.",
+  "device": {
+    "model": "iPhone 16 Pro Max",
+    "os": "iOS",
+    "version": "26.6.2"
+  },
+  "certificateIdentity": {
+    "verifiedAt": "2026-09-30T00:50:27.592Z",
+    "fingerprint256": "58:65:88:B1:15:66:9B:E9:86:DA:3E:16:32:DC:C3:94:52:98:45:BF:54:D2:17:12:29:0D:F4:DD:9F:77:13:55",
+    "phoneAccessibilityFingerprintMatches": true,
+    "source": "https-certificate-fingerprint.xml"
+  },
+  "leaf": {
+    "url": "https://rig-mac.local:4174/",
+    "loadedWithoutWarning": true,
+    "reconfirmedAfterProbe": true
+  },
+  "constraintProbe": {
+    "url": "https://rig-mac.local:4176/",
+    "privacyWarning": true,
+    "verdict": "refused",
+    "warningBypassed": false
+  },
+  "evidence": [
+    {
+      "file": "setup/https-capture-root-trusted.xml",
+      "sha256": "5981eabadb0868ede673c224c4f7dcf526ef55a60185373113dd86cd506a0851"
+    },
+    {
+      "file": "setup/https-leaf-trusted.xml",
+      "sha256": "a91976e2ac19a9718e0526e3f07ab10fba334410b65df4fee9fc9f91d93dc40c"
+    },
+    {
+      "file": "setup/https-leaf-trusted.png",
+      "sha256": "6ba0ac3e33fb81a71f6acfaf0702acb5a68ac07119b161b0336bdb4b770bb2e2"
+    },
+    {
+      "file": "setup/https-constraint-probe-trusted.xml",
+      "sha256": "647f7cb5b488dacc3277c220f6c4369b3282cf2f5d5cb07a9d0d727acd6bdf81"
+    },
+    {
+      "file": "setup/https-constraint-probe-trusted.png",
+      "sha256": "c44bb6f0fe90d582e9d85a4be93cc9c1a6a4fad94d95cc221d487ca503b55318"
+    },
+    {
+      "file": "setup/https-leaf-after-probe.xml",
+      "sha256": "52fae0a7f903676fe1a36dec31abb7cdcecd5912a9a5ed6301a5e1afd69f35e1"
+    },
+    {
+      "file": "setup/https-leaf-after-probe.png",
+      "sha256": "54aca5a65ed45f945d4e7cba62fb64f2d9df8bbd2967845d312b3a1fd804d803"
+    },
+    {
+      "file": "setup/https-certificate-fingerprint.xml",
+      "sha256": "285cc42ac1f9bb62aced20763e01b8b1dfe3fa8fe0925870444f7a5fce81d275"
+    },
+    {
+      "file": "setup/https-certificate-identity.json",
+      "sha256": "2b9316ff2d9cf9573ac183ab1a4b1c9b411bbf74879a8e43771946436c13a5c4"
+    },
+    {
+      "file": "setup/safari-advanced-confirmed.xml",
+      "sha256": "4bc18ab55f1cbdcaa47cc60d9db060a97966fe86b6e24309e231d89af638a32f"
+    },
+    {
+      "file": "setup/safari-advanced-confirmed.png",
+      "sha256": "51245855bc967a4bd901beaa35aa1698110c1c9b8817b36bc581869938487d44"
+    }
+  ],
+  "rawEvidenceRoot": "perf-profiles/campaign/2026-09-29-iphone",
+  "safariSettings": {
+    "checkedAt": "2026-09-30T01:47:36.242Z",
+    "webInspectorEnabled": true,
+    "remoteAutomationEnabled": true
+  }
+}

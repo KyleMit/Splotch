@@ -10,8 +10,8 @@ import {
 import {
   androidNativeTouchTarget,
   foregroundAndroidApp,
-  nativeTapPoint,
 } from '../ios/capture-xcuitest-actions.mjs';
+import { nativeTapPoint } from '../lib/native-tap-point.mjs';
 
 // Captured from the SM-G990U1 capture phone during the issue 2214 repro, with
 // the Settings Appearance section open. The ANR section's stale window list is

@@ -1,0 +1,18 @@
+{
+  "fingerprint": "16d3627efffcede513377e3361edcf2451746881683b915af3ed58a13fb7a99c",
+  "files": {
+    "tools/perf/ios/capture-xcuitest-actions.mjs": "b3da7136aa968821c19efd27cfd605191ef02fec33ac47818bbd5dc7169e1ec1",
+    "tools/perf/ios/capture-xcuitest-screen.mjs": "9657cb94e126bf33d2592545594e268f9a10b263e0b8c5b31b69e70546a95cea",
+    "tools/perf/lib/action-applicability.mjs": "e2922c1b8aabb009740fc7e76c75402374bdb02921b01fc75d2e28af19621cb8",
+    "tools/perf/lib/action-stats.mjs": "5930f9313e9ad18db4e5d147dadcd9d471a558e3a0488a7022c1b38e280231dc",
+    "tools/perf/lib/android-touch-occlusion.mjs": "24f511225731d20ddc3a77fae5ebcd929a765d6faced9c7e8dd26d1b91a4e8d5",
+    "tools/perf/lib/android-user-rotation.mjs": "c922c3ff0f336e67781b783acd543628e78094a2778847b6806a51f42f15f84b",
+    "tools/perf/lib/campaign-state.mjs": "44e0d5f225cd472d02c58e4cac23c246ea9d07e1cb120149871240299b6477bf",
+    "tools/perf/lib/coloring-books-ready.mjs": "8de428f03b536d55115fe9311d38d83e185ca178561b0d2a629a40fcfca5558b",
+    "tools/perf/lib/native-tap-point.mjs": "e6a9739ae87c1ba9ba89426324e6dbc48121c314414a2b313210a6fbb326fe56",
+    "tools/perf/lib/service-worker-guard.mjs": "fcb214f05e321fa5806470917d378851e8183c0a15535427b572c5e1d12326a9",
+    "tools/perf/lib/unavailable-undo-cue.mjs": "8f07e8d5ccd15af8a783d953efc496f6f2818d350936f27ff8b394acae52c6cf",
+    "tools/perf/probes/action-probe.js": "6a9fa37b61c3823b4b7ee59ce357ba86f17beac41861d9073003e4e5d33e7b19"
+  },
+  "capturedSourceCommit": "d5a3614e09959875912022456363e79352b5a10e"
+}

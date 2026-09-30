@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "7e2736e10e705d44cfd857d5d63a20eb81a07967",
+  "nativeInstrument": {
+    "fingerprint": "1fa0526de0994bb5f5cb986b6a856a97ad99ac7fa214d3b06b12a59eae5072bb",
+    "files": {
+      "tools/perf/ios/capture-webkit-frames.mjs": "6b86126bade187af5c93cf1d94ab24389b4106d20e9ce7826be9675593cde87e",
+      "tools/perf/ios/capture-xcuitest-actions.mjs": "dc4a3909cb0647e01a57b0a2726623b9a64bd74286cbe73fda129c3b7fb275c0",
+      "tools/perf/ios/capture-xcuitest-screen.mjs": "9657cb94e126bf33d2592545594e268f9a10b263e0b8c5b31b69e70546a95cea",
+      "tools/perf/lib/action-applicability.mjs": "e2922c1b8aabb009740fc7e76c75402374bdb02921b01fc75d2e28af19621cb8",
+      "tools/perf/lib/action-stats.mjs": "5930f9313e9ad18db4e5d147dadcd9d471a558e3a0488a7022c1b38e280231dc",
+      "tools/perf/lib/android-touch-occlusion.mjs": "24f511225731d20ddc3a77fae5ebcd929a765d6faced9c7e8dd26d1b91a4e8d5",
+      "tools/perf/lib/android-user-rotation.mjs": "c922c3ff0f336e67781b783acd543628e78094a2778847b6806a51f42f15f84b",
+      "tools/perf/lib/brush-buttons.mjs": "ad3ff2bee2239995b8479fc2c37b5f6a95348a1c562b4230da864687d9851d7a",
+      "tools/perf/lib/campaign-state.mjs": "44e0d5f225cd472d02c58e4cac23c246ea9d07e1cb120149871240299b6477bf",
+      "tools/perf/lib/coloring-books-ready.mjs": "8de428f03b536d55115fe9311d38d83e185ca178561b0d2a629a40fcfca5558b",
+      "tools/perf/lib/eraser-fill.mjs": "0f7f122f71bb4c09b22c0ac849e5a8bba3fbbefe44fb30ffa348ee35c9a6e700",
+      "tools/perf/lib/service-worker-guard.mjs": "fcb214f05e321fa5806470917d378851e8183c0a15535427b572c5e1d12326a9",
+      "tools/perf/lib/undo-driver.mjs": "57fe4a696686b367458a9addcf67daf2aaae9309447d5717543ff0393e16d594",
+      "tools/perf/probes/action-probe.js": "6a9fa37b61c3823b4b7ee59ce357ba86f17beac41861d9073003e4e5d33e7b19",
+      "tools/perf/probes/real-screen-probe.js": "b5c70174d95370e0704ab488982162a9bd3e27fd504497b5676c89ee566637ae"
+    }
+  },
+  "bankedActionsSourceSha256": "dc4a3909cb0647e01a57b0a2726623b9a64bd74286cbe73fda129c3b7fb275c0",
+  "bankedActionsPatch": "banked-actions.patch.json",
+  "publicationChanges": "Extracted native tap placement and unavailable-undo cue validation into their own modules, named tap inset constants, restricted the home gesture inset to handsets, and formatted the action driver. Existing accepted capture fingerprints and ledgers are unchanged. No accepted Safari action cell exists; finish those with the published driver and record its actual fingerprint."
+}

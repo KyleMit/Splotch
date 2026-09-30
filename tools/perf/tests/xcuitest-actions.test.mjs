@@ -1673,8 +1673,8 @@ describe('the cues #1867 retuned that had no action (issue 1870)', () => {
 
     expect(start).toBeGreaterThan(-1);
     expect(block).toContain('exhaustUndoHistory');
-    expect(block).toContain("classList.contains('action-unavailable')");
-    expect(IPAD_ACTIONS).toContain('MAX_UNDO_EXHAUST_TAPS');
+    expect(block).toContain("getAttribute('aria-disabled') === 'true'");
+    expect(block).toContain('assertUnavailableUndoCue(unavailableSample)');
   });
 
   it('measures the clear sheet over a coloring page as well as a blank page', () => {
