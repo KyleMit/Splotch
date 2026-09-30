@@ -1,10 +1,13 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
+  import { scheduleIdle } from '$lib/idle';
   import Icon from '../Icon.svelte';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
+  import PageFooter from './PageFooter.svelte';
+  import { createPageParentCenter } from './pageParentCenter.svelte';
 
   // The chrome a standalone page wears: a ground, a centered sheet, a masthead
   // (back link + crayon strip + wordmark) and a hero, so a URL handed out in a
@@ -25,16 +28,25 @@
     lede?: Snippet;
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
+    footer?: boolean;
     children: Snippet;
   }
 
-  let { title, wordmarkSuffix, lede, actions, children }: Props = $props();
+  let { title, wordmarkSuffix, lede, actions, footer = true, children }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
   const hydration = createHydratedFlag();
+  const parentCenter = __IS_CAPACITOR__ ? createPageParentCenter() : null;
+  onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
+
+  function mountOutboundGate(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.closest('a[target="_blank"]')) {
+      parentCenter?.mountParentalGate();
+    }
+  }
 </script>
 
-<main class="page">
+<main class="page" onclickcapture={mountOutboundGate}>
   <div class="sheet">
     <div class="topbar">
       <BackLink />
@@ -76,13 +88,27 @@
     </div>
 
     {@render children()}
+    {#if footer}
+      <PageFooter />
+    {/if}
   </div>
 </main>
+
+{#if parentCenter?.gateComponent}
+  {@const Gate = parentCenter?.gateComponent}
+  <Gate manageDestination={parentCenter.openParentCenter} />
+{/if}
+{#if parentCenter?.modalComponent && parentCenter.managingPolicies}
+  {@const Modal = parentCenter.modalComponent}
+  <Modal />
+{/if}
 
 <style>
   /* The drawing route's app-surface locks (app.css) don't reach these routes, so
      the page scrolls, selects, and zooms as a normal document with no opt-out. */
   .page {
+    /* A safe underestimate of footer height keeps the final scrollspy targets reachable. */
+    --page-footer-reserve: 96px;
     --page-ground: var(--app-bg);
     --page-sheet: var(--surface);
     --page-ink: var(--text-strong);

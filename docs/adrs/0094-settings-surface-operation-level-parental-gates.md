@@ -252,3 +252,14 @@ Alternatives considered:
   mental arithmetic.
 * **One wrong answer re-locks after the first lockout.** Rejected for now: it roughly halves the
   remaining odds, but a parent arriving after a child's tapping would get a single try per wait.
+
+## Amendment (2026-09): standalone footer link-outs
+
+The shared standalone-page footer keeps Privacy and Changelog as internal navigation. In native
+builds, Send feedback opens the hosted form through `parentalGateLink`. `PageShell` owns one lazy
+gate and Parent Center host, supplied by `components/page/pageParentCenter.svelte.ts`, so footer and
+body links request the same dialog. Capture-phase outbound clicks mount that host before the
+operation action intercepts the event and retry a failed load; an idle preload warms it without
+blocking the page. The web shell excludes that host at build time, and web privacy retains its
+existing route host for gated policy links. Settings and persisted state load only when Manage opens
+Parent Center. This changes dialog ownership, preserving each operation's gate policy.

@@ -178,7 +178,7 @@
      release, so the page closes on a stated ending instead of a screen of
      blank sheet that reads as a failed load. */
   .history-end {
-    min-height: var(--spy-reserve);
+    min-height: max(0px, calc(var(--spy-reserve) - var(--page-footer-reserve)));
     padding-top: var(--space-6);
     border-top: var(--border-width) solid var(--page-rule);
     text-align: center;
