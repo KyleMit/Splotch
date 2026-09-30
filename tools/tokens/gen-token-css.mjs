@@ -8,7 +8,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { brand, scale, themes, toCssVarName, zIndex } from '../../web/src/lib/design/tokens.ts';
+import {
+  brand,
+  hues,
+  scale,
+  themes,
+  toCssVarName,
+  zIndex,
+} from '../../web/src/lib/design/tokens.ts';
 import { iconTokenEntries } from '../../web/src/lib/design/iconTokens.ts';
 import { ROOT } from '../lib/proc.mjs';
 
@@ -43,6 +50,8 @@ function render() {
   color-scheme: light;
 
 ${declarations(brand, '  ')}
+
+${declarations(hues, '  ')}
 
 ${declarations(scale, '  ')}
 

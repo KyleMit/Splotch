@@ -1,5 +1,5 @@
 import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
-import { BLACK_INK } from '../palette.ts';
+import { BLACK_INK, paletteHex, type PaletteLabel } from '../palette.ts';
 
 // Design-token single source of truth (ADR-0071).
 //
@@ -13,7 +13,31 @@ import { BLACK_INK } from '../palette.ts';
 // The `ThemeTokens` interface is what keeps light and dark structurally
 // identical: a token added to one theme and not the other fails the compiler.
 
+export const hues = {
+  huePurple: paletteHex('Purple'),
+  hueIndigo: paletteHex('Indigo'),
+  hueBlue: paletteHex('Blue'),
+  hueTeal: paletteHex('Teal'),
+  hueMint: paletteHex('Mint'),
+  hueGreen: paletteHex('Green'),
+  hueLime: paletteHex('Lime'),
+  hueYellow: paletteHex('Yellow'),
+  hueOrange: paletteHex('Orange'),
+  hueBrown: paletteHex('Brown'),
+  hueRed: paletteHex('Red'),
+  huePink: paletteHex('Pink'),
+  hueMagenta: paletteHex('Magenta'),
+  hueGrey: paletteHex('Grey'),
+} satisfies Record<`hue${Exclude<PaletteLabel, 'Black'>}`, string>;
+
 const BRAND_HEX = '#ab71e1';
+const DARK_BRAND_TEXT = '#c9a9f0';
+
+function yellowWash(strength: number): string {
+  const channels = hues.hueYellow.slice(1).match(/../g);
+  if (!channels || channels.length !== 3) throw new Error('Yellow must be a six-digit palette hex');
+  return `rgb(${channels.map((pair) => Number.parseInt(pair, 16)).join(' ')} / ${strength}%)`;
+}
 
 // Brand accent used for active/hover chrome across parent + AI UI.
 // Custom properties pierce Svelte's style scoping, so components reference
@@ -240,6 +264,13 @@ export interface ThemeTokens {
   /** Crayon contribution to numbered-step discs and digits. */
   stepWashStrength: string;
   stepInkStrength: string;
+  tapeStrength: string;
+  tapeInk: string;
+  squiggleStrength: string;
+  linkCrayon: string;
+  highlighter: string;
+  arrivalWash: string;
+  blobShadow: string;
   /** hover fill for quiet controls on any surface, paper-toned chrome included */
   surfaceHover: string;
   border: string;
@@ -410,6 +441,13 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surface2: '#f8f8f8',
     stepWashStrength: '9%',
     stepInkStrength: '45%',
+    tapeStrength: '100%',
+    tapeInk: '#333',
+    squiggleStrength: '100%',
+    linkCrayon: brand.brand,
+    highlighter: yellowWash(70),
+    arrivalWash: yellowWash(26),
+    blobShadow: '0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent)',
     surfaceHover: '#f5f5f5',
     border: '#e0e0e0',
     borderWarm: '#ddd6cc',
@@ -461,6 +499,13 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surfaceRgb: '35 35 43',
     stepWashStrength: '24%',
     stepInkStrength: '0%',
+    tapeStrength: '45%',
+    tapeInk: '#f4f1ea',
+    squiggleStrength: '70%',
+    linkCrayon: DARK_BRAND_TEXT,
+    highlighter: yellowWash(30),
+    arrivalWash: yellowWash(14),
+    blobShadow: 'none',
     surface2: '#2d2d37',
     surfaceHover: '#33333e',
     border: '#3d3d49',
@@ -477,7 +522,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     iconMuted: '#a8a6b3',
     brandWash: '#3b2f4f',
     brandWashHover: '#46395c',
-    brandText: '#c9a9f0',
+    brandText: DARK_BRAND_TEXT,
     brandSolid: '#8058c0',
     brandSolidHover: '#6f47b0',
     successWash: '#24382b',
@@ -521,6 +566,13 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   surface2: true,
   stepWashStrength: false,
   stepInkStrength: false,
+  tapeStrength: false,
+  tapeInk: true,
+  squiggleStrength: false,
+  linkCrayon: true,
+  highlighter: true,
+  arrivalWash: true,
+  blobShadow: false,
   surfaceHover: true,
   border: true,
   borderWarm: true,

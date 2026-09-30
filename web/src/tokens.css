@@ -16,6 +16,21 @@
   --brand: #ab71e1;
   --on-brand: #fff;
 
+  --hue-purple: #AB71E1;
+  --hue-indigo: #7A74E7;
+  --hue-blue: #62A2E9;
+  --hue-teal: #4FC4C0;
+  --hue-mint: #5CCC90;
+  --hue-green: #8CC864;
+  --hue-lime: #BEDD40;
+  --hue-yellow: #F9D24F;
+  --hue-orange: #F89C45;
+  --hue-brown: #B5835A;
+  --hue-red: #EC534E;
+  --hue-pink: #F47CB0;
+  --hue-magenta: #E25AD7;
+  --hue-grey: #9AA0AC;
+
   --glass-rail: 77%;
   --glass-strip: 85%;
   --space-1: 4px;
@@ -90,6 +105,13 @@
   --surface-2: #f8f8f8;
   --step-wash-strength: 9%;
   --step-ink-strength: 45%;
+  --tape-strength: 100%;
+  --tape-ink: #333;
+  --squiggle-strength: 100%;
+  --link-crayon: #ab71e1;
+  --highlighter: rgb(249 210 79 / 70%);
+  --arrival-wash: rgb(249 210 79 / 26%);
+  --blob-shadow: 0 3px 8px color-mix(in srgb, var(--brand-solid) 35%, transparent);
   --surface-hover: #f5f5f5;
   --border: #e0e0e0;
   --border-warm: #ddd6cc;
@@ -162,6 +184,13 @@
   --surface-rgb: 35 35 43;
   --step-wash-strength: 24%;
   --step-ink-strength: 0%;
+  --tape-strength: 45%;
+  --tape-ink: #f4f1ea;
+  --squiggle-strength: 70%;
+  --link-crayon: #c9a9f0;
+  --highlighter: rgb(249 210 79 / 30%);
+  --arrival-wash: rgb(249 210 79 / 14%);
+  --blob-shadow: none;
   --surface-2: #2d2d37;
   --surface-hover: #33333e;
   --border: #3d3d49;
@@ -236,6 +265,13 @@
     --surface-rgb: 35 35 43;
     --step-wash-strength: 24%;
     --step-ink-strength: 0%;
+    --tape-strength: 45%;
+    --tape-ink: #f4f1ea;
+    --squiggle-strength: 70%;
+    --link-crayon: #c9a9f0;
+    --highlighter: rgb(249 210 79 / 30%);
+    --arrival-wash: rgb(249 210 79 / 14%);
+    --blob-shadow: none;
     --surface-2: #2d2d37;
     --surface-hover: #33333e;
     --border: #3d3d49;
