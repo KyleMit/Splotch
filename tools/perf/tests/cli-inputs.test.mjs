@@ -24,6 +24,7 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
 });
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
+const perfRoot = join(repoRoot, 'tools', 'perf');
 const analyzePath = join(repoRoot, 'tools', 'perf', 'analyze-chrome-trace.mjs');
 const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-web-inspector.mjs');
 const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recording.mjs');
@@ -39,36 +40,68 @@ const unreachableAndroidHome = () => join(fixtureDir, 'no-android-sdk');
 const unreachableAdbRefusal = () =>
   `adb devices failed (spawnSync ${join(unreachableAndroidHome(), 'platform-tools', 'adb')} ENOENT)` +
   ' — no device was checked';
-// Each entry's first offline refusal after its orientation parse. The refusal
-// cases pass these args too, so an entry whose orientation check is lost still
+// Each entry's first offline refusal after its campaign-flag parses. The
+// refusal cases pass these args too, so an entry whose check is lost still
 // stops there instead of starting device work.
-const ORIENTATION_ENTRIES = [
+const CAMPAIGN_FLAG_ENTRIES = [
   {
     entry: 'android/capture-browser-actions.mjs',
+    flags: ['orientation', 'theme'],
     nextArgs: [],
     nextRefusal: unreachableAdbRefusal,
   },
   {
+    entry: 'android/capture-bundled-frames.mjs',
+    flags: ['orientation', 'theme'],
+    nextArgs: ['--seconds=0'],
+    nextRefusal: () => '--seconds must be a number > 0, got "0"',
+  },
+  {
     entry: 'android/capture-clear-drag.mjs',
+    flags: ['orientation'],
     nextArgs: ['--allow-foreign-build'],
     nextRefusal: () => FOREIGN_BUILD_NEEDS_URL,
   },
   {
     entry: 'ios/capture-xcuitest-actions.mjs',
+    flags: ['orientation', 'theme'],
     nextArgs: ['--allow-foreign-build'],
     nextRefusal: () => FOREIGN_BUILD_NEEDS_URL,
   },
   {
+    entry: 'ios/capture-xcuitest-screen.mjs',
+    flags: ['orientation', 'theme'],
+    // The capabilities file stands in for a signing config and is refused
+    // before it is read; --native-app skips a Safari capture's LAN lookup.
+    nextArgs: ['--capabilities-file=never-read.json', '--native-app', '--gesture-repeats=0'],
+    nextRefusal: () => '--gesture-repeats must be an integer >= 1, got "0"',
+  },
+  {
     entry: 'split-capture/capture-device-frames.mjs',
+    flags: ['orientation'],
     nextArgs: [],
     nextRefusal: () => HOST_REQUIRED,
   },
   {
     entry: 'split-capture/capture-hand-input.mjs',
+    flags: ['orientation'],
     nextArgs: [],
     nextRefusal: () => HOST_REQUIRED,
   },
 ];
+// Per flag: a value no campaign has, its owner's refusal, and a spelling in
+// the other letter case, which the owner folds.
+const CAMPAIGN_FLAGS = {
+  orientation: {
+    unknown: 'square',
+    refusal: '--orientation must be PORTRAIT or LANDSCAPE',
+    folded: 'landscape',
+  },
+  theme: { unknown: 'sepia', refusal: '--theme must be light or dark', folded: 'DARK' },
+};
+const CAMPAIGN_FLAG_CASES = CAMPAIGN_FLAG_ENTRIES.flatMap(({ flags, ...row }) =>
+  flags.map((flag) => ({ ...row, ...CAMPAIGN_FLAGS[flag], flag }))
+);
 
 const calleeName = ({ expression }) =>
   ts.isIdentifier(expression)
@@ -350,25 +383,17 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
-  it.each(ORIENTATION_ENTRIES)(
-    '$entry refuses an --orientation no campaign has',
-    ({ entry, nextArgs }) => {
-      expectCliFailure(
-        join(repoRoot, 'tools', 'perf', entry),
-        ['--orientation=square', ...nextArgs],
-        '--orientation must be PORTRAIT or LANDSCAPE'
-      );
+  it.each(CAMPAIGN_FLAG_CASES)(
+    '$entry refuses a --$flag no campaign has',
+    ({ entry, flag, unknown, refusal, nextArgs }) => {
+      expectCliFailure(join(perfRoot, entry), [`--${flag}=${unknown}`, ...nextArgs], refusal);
     }
   );
 
-  it.each(ORIENTATION_ENTRIES)(
-    '$entry takes a lower-case --orientation through to its next check',
-    ({ entry, nextArgs, nextRefusal }) => {
-      expectCliFailure(
-        join(repoRoot, 'tools', 'perf', entry),
-        ['--orientation=landscape', ...nextArgs],
-        nextRefusal()
-      );
+  it.each(CAMPAIGN_FLAG_CASES)(
+    '$entry takes --$flag=$folded through to its next check',
+    ({ entry, flag, folded, nextArgs, nextRefusal }) => {
+      expectCliFailure(join(perfRoot, entry), [`--${flag}=${folded}`, ...nextArgs], nextRefusal());
     }
   );
 
@@ -564,7 +589,6 @@ describe('the --orientation vocabulary owner', () => {
   });
 
   it('reads every perf entry’s --orientation through parseCampaignOrientation', () => {
-    const perfRoot = join(repoRoot, 'tools', 'perf');
     const reads = readdirSync(perfRoot, { recursive: true })
       .filter((path) => path.endsWith('.mjs') && !path.startsWith(`tests${sep}`))
       .flatMap((path) =>
@@ -576,7 +600,7 @@ describe('the --orientation vocabulary owner', () => {
 
     expect(reads.filter(({ owned }) => !owned)).toEqual([]);
     expect(reads.map(({ path }) => path)).toEqual(
-      expect.arrayContaining(ORIENTATION_ENTRIES.map(({ entry }) => entry))
+      expect.arrayContaining(CAMPAIGN_FLAG_ENTRIES.map(({ entry }) => entry))
     );
   });
 });
