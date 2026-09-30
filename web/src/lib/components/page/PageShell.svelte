@@ -121,7 +121,7 @@
   /* The drawing route's app-surface locks (app.css) don't reach these routes, so
      the page scrolls, selects, and zooms as a normal document with no opt-out. */
   .page {
-    /* A safe underestimate of footer height keeps the final scrollspy targets reachable. */
+    /* Count part of the footer and page-end footprint in the final scrollspy reserve. */
     --page-footer-reserve: 96px;
     --page-ground: var(--app-bg);
     --page-sheet: var(--surface);
@@ -195,6 +195,12 @@
     background: var(--page-sheet);
     border-radius: var(--radius-lg);
     box-shadow: var(--page-shadow);
+  }
+
+  @media (max-width: 540px), (max-height: 500px) {
+    .page {
+      --page-footer-reserve: 160px;
+    }
   }
 
   @media (max-width: 920px) {

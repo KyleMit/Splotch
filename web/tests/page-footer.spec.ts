@@ -1,6 +1,31 @@
 import { expect, test } from '@playwright/test';
 import releases from '../src/lib/releases.json' with { type: 'json' };
 
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 320, height: 568 },
+  { width: 812, height: 375 },
+]) {
+  test(`final sections remain active at maximum scroll on ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    for (const { route, label, href } of [
+      { route: '/changelog', label: 'Changelog contents', href: `#${releases.at(-1)!.id}` },
+      { route: '/privacy', label: 'Privacy policy contents', href: '#contact' },
+    ]) {
+      await page.goto(route);
+      await expect(page.locator('.lede-toggle')).toBeAttached();
+      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await expect(
+        page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
+      ).toHaveAttribute('aria-current', 'location');
+      await expect(page.locator('.page-footer')).toBeInViewport();
+    }
+  });
+}
+
 for (const { route, current } of [
   { route: '/privacy', current: 'Privacy' },
   { route: '/changelog', current: 'Changelog' },

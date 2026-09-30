@@ -1,0 +1,119 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "scrollY": 4722,
+    "max": 4722,
+    "active": "#release-1-0-0",
+    "oldest": {
+      "x": 574,
+      "y": -345.21875,
+      "width": 412,
+      "height": 401.078125,
+      "top": -345.21875,
+      "right": 986,
+      "bottom": 55.859375,
+      "left": 574
+    },
+    "footer": {
+      "x": 294,
+      "y": 559.859375,
+      "width": 692,
+      "height": 128,
+      "top": 559.859375,
+      "right": 986,
+      "bottom": 687.859375,
+      "left": 294
+    },
+    "historyEnd": {
+      "x": 574,
+      "y": 55.859375,
+      "width": 412,
+      "height": 464,
+      "top": 55.859375,
+      "right": 986,
+      "bottom": 519.859375,
+      "left": 574
+    }
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "scrollY": 6063,
+    "max": 6063,
+    "active": "#release-1-0-0",
+    "oldest": {
+      "x": 20,
+      "y": -487.953125,
+      "width": 280,
+      "height": 531.203125,
+      "top": -487.953125,
+      "right": 300,
+      "bottom": 43.25,
+      "left": 20
+    },
+    "footer": {
+      "x": 20,
+      "y": 320.84375,
+      "width": 280,
+      "height": 207.4375,
+      "top": 320.84375,
+      "right": 300,
+      "bottom": 528.28125,
+      "left": 20
+    },
+    "historyEnd": {
+      "x": 20,
+      "y": 43.25,
+      "width": 280,
+      "height": 237.59375,
+      "top": 43.25,
+      "right": 300,
+      "bottom": 280.84375,
+      "left": 20
+    }
+  },
+  {
+    "viewport": {
+      "width": 812,
+      "height": 375
+    },
+    "scrollY": 4242,
+    "max": 4242,
+    "active": "#release-1-0-0",
+    "oldest": {
+      "x": 58,
+      "y": -340.640625,
+      "width": 696,
+      "height": 401.078125,
+      "top": -340.640625,
+      "right": 754,
+      "bottom": 60.4375,
+      "left": 58
+    },
+    "footer": {
+      "x": 58,
+      "y": 186.9375,
+      "width": 696,
+      "height": 128,
+      "top": 186.9375,
+      "right": 754,
+      "bottom": 314.9375,
+      "left": 58
+    },
+    "historyEnd": {
+      "x": 58,
+      "y": 60.4375,
+      "width": 696,
+      "height": 102.5,
+      "top": 60.4375,
+      "right": 754,
+      "bottom": 162.9375,
+      "left": 58
+    }
+  }
+]

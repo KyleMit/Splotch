@@ -157,6 +157,10 @@
   }
 
   @media (max-width: 540px) {
+    ul {
+      column-gap: var(--space-2);
+    }
+
     .footer-row {
       flex-direction: column;
       align-items: flex-start;

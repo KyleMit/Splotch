@@ -17,6 +17,33 @@ action before the original click reaches its anchor; this keeps the trusted tap,
 latch, target and rel semantics. The action mounts on each click, and the shell retains idle
 prewarming. Parent Center continues loading Settings and persisted state on demand.
 
+The web shell does not instantiate or render a native host. Its static factory import does share
+gate policy code with web privacy. Independent review measured the generated JavaScript dependency
+closure on Beta at 288,337 bytes versus 266,810 in its import-removal control; Changelog at 282,595
+versus 259,605; Dev at 265,221 versus 242,231; and Admin at 282,233 versus 259,243. These are raw
+generated JavaScript bytes, not compressed network bytes. The control removes the gate code from
+those secondary pages but raises drawing startup from 40 to 41 modulepreloads, failing the unchanged
+budget. The bounded decision accepts that secondary-page cost, corrects the host-exclusion wording
+and preserves exact 40 web and 28 native startup budgets. A separate startup chunk redesign is not
+part of this footer.
+
+The native 320px probe reproduced wrapping caused by the external mark: Privacy, Changelog and
+Feedback total 257.5px before gaps against 280px of content width. Phone navigation uses the
+existing 8px spacing token between sections, preserving 14px text, the external mark and 44px
+targets. The same compiled-build probe verifies both shipped routes in light and dark and requires
+one cold gate with no external page before solving. The failing 18px-gap measurement is its negative
+control.
+
+Hydrated manual maximum scrolling activates the oldest entry on desktop. At 320×568 and 812×375, the
+initial footer reserve instead moves the oldest entry wholly above the viewport (bottom −20.75px and
+−3.56px); the identical exact-base production probe keeps it in the observer band (130.25px and
+52.44px). Compact layouts count 160px of the footer and page-end footprint toward the reserve, while
+desktop retains 96px. Corrected oldest-entry bottoms are 43.25px and 60.44px, with the oldest
+active. A browser-only control reverting just that reserve to 96px reproduces the failure. The new
+maximum-scroll guard covers Changelog and Privacy at all three sizes; existing anchor, contents cap
+and scroll-chaining assertions remain unchanged. Captures wait for hydration, font readiness and
+final-section activation before saving.
+
 The initial native build added a preload: the shared limit module became a runtime dependency of
 both privacy and lazy AI response handling. Moving the unchanged exhausted-grant wire codes into the
 existing generation-result vocabulary removes that edge. `freeGenerations` imports their types,
