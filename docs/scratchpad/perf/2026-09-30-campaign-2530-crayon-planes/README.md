@@ -49,9 +49,23 @@ All arms had identical stroke counts and history raster/debug counts for each sc
 | Baseline 2  | 2982.9 / 136.85                   | 1954 / 6.0                      | 108.9                         | 32                          |
 | Candidate 2 | 3195.3 / 144.95                   | 1684 / 6.0                      | 114.4                         | 37                          |
 
-Chromium candidate totals exceed the adjacent baselines by approximately 23% and 7%. Two pairs
-support a hold, not a causal performance diagnosis. WebKit's large tail measures mean its median
-alone cannot summarize total work. These numbers do not justify a native claim or a relaxed gate.
+Chromium candidate totals exceed the adjacent baselines by approximately 23% and 7%, but both
+candidate Chromium arms fail the host-quiet gate. Candidate 1 also increases pen control draw time
+and crayon commit/crop/capture measures, so the delta is confounded with co-moving work outside the
+deleted branch. No regression has been shown or ruled out; inadequate quiet-host proof holds the
+implementation. These numbers do not justify a native claim or a relaxed gate.
+
+| Arm         | Chromium worst load/core and trust | WebKit worst load/core and trust | WebKit crayon commit total ms | WebKit crayon harness wall ms |
+| ----------- | ---------------------------------- | -------------------------------- | ----------------------------- | ----------------------------- |
+| Baseline 1  | 0.357 verified                     | 0.341 verified                   | 6957                          | 9302                          |
+| Candidate 1 | 1.257 failed                       | 1.039 failed                     | 6510                          | 8885                          |
+| Baseline 2  | 0.651 failed                       | 0.828 failed                     | 7737                          | 10451                         |
+| Candidate 2 | 1.260 failed                       | 0.406 verified                   | 6833                          | 9188                          |
+
+Trust is derived using `hostQuietTrustState` at threshold 0.5 load/core, with the worst bracket
+sample. Five of eight arms fail. WebKit defers much canvas raster work until commit/crop readback;
+draw alone misses that cost. Its commit and harness-wall measures show no candidate increase in
+these pairs, subject to the same host-load limitations and no native-device claim.
 
 ## Release builds and appearance
 
@@ -77,10 +91,12 @@ attributes, live registration, coefficients and surface APIs. B5 (remove unused 
 the finite supported union) and B2 (maintenance cost) choose it. The delegated Claude rival agreed
 after one reconciliation. The decision is locked; this implementation is held.
 
-A next causal experiment should split the deletion into isolated branch/member/bounds-clear changes,
-measure each under the same lock and interleaved settings, and add actual multi-pointer crayon.
-Preserve assertions and workloads. Restore the saved baseline if retiring the mode requires
-unacceptable cost; never change unrelated production behavior to make this cleanup pass.
+The first next step is a quiet, interleaved repeat: wait for verified quiet load after each build,
+then bracket each capture and add actual multi-pointer crayon. Preserve assertions and workloads.
+Only a repeat that establishes a regression could justify splitting the deletion into isolated
+branch/member/bounds-clear changes to investigate its cause. Restore the saved baseline if retiring
+the mode requires unacceptable cost; never change unrelated production behavior to make this cleanup
+pass.
 
 Reversal: recover the exclusive mode/tests from the baseline commit and amend ADR-0148. Production
 restamp/glaze-direct selections and coefficients are outside the retirement decision.

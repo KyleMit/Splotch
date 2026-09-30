@@ -160,14 +160,17 @@ won over preserving a runnable historical comparison; git retains the comparison
 experiment needs it. The independent rival agreed after one reconciliation.
 
 **Implementation held; this proposal is not shipped.** A narrow candidate preserves surface APIs,
-canvas/context topology, live registration and glaze coefficients. Its interleaved headless host
-measurement nevertheless increased Chromium crayon draw time in both candidate arms. The cause is
-unproven, so the performance veto holds the candidate even though both release builds and
-within-engine nonblank pixel parity passed. The active production decision above remains in force.
+canvas/context topology, live registration and glaze coefficients. The interleaved headless host
+measurement fails the host-quiet gate in five of eight arms, including both candidate Chromium arms.
+The Chromium delta is confounded with load and co-moving non-crayon work; no regression has been
+shown or ruled out. The performance veto holds the candidate pending a quiet repeat even though both
+release builds and within-engine nonblank pixel parity passed. The active production decision above
+remains in force.
 
 [The measurement record](../scratchpad/perf/2026-09-30-campaign-2530-crayon-planes/README.md)
-contains source hashes, raw samples, release counts/bytes and the limits of host evidence. A causal
-split of the deletion and faithful repeat measurement are required before implementation proceeds;
-headless host data does not establish native device performance. To reverse the retirement choice,
-restore the exclusive planes implementation/tests from the recorded baseline and document the
-current caller or experiment that needs it, without changing shipping selections or coefficients.
+contains source hashes, raw samples, release counts/bytes and the limits of host evidence. A
+faithful quiet repeat is required before implementation proceeds; a causal split follows only if
+that repeat establishes a regression. Headless host data does not establish native device
+performance. To reverse the retirement choice, restore the exclusive planes implementation/tests
+from the recorded baseline and document the current caller or experiment that needs it, without
+changing shipping selections or coefficients.

@@ -289,7 +289,7 @@ entry 87. Paths under `web/src/` unless noted.*
 
 32. **4×4 tiled live canvas; input canvas shrunk to a 1×1 px backing** — the visible paper is 16
     tile canvases (each tile's two crayon preview-plane canvases stay hidden and unbacked in both
-    shipped builds, `crayonPassBuffer.ts:267-280`); the pointer-capturing canvas costs nothing to
+    shipped builds, `crayonPassBuffer.ts:245-255`); the pointer-capturing canvas costs nothing to
     composite. `drawing/liveTiles.ts`, `tiledRenderer.ts`, `engine.ts:154`. *ADR-0085, ADR-0089*
 33. **Per-op tile intersection culling** — only tiles a stroke's padded bbox touches pay render,
     allocation, and undo capture. `tiledGeometry.ts`, `tiledRenderer.ts:280-311`. *ADR-0085*
@@ -306,9 +306,9 @@ entry 87. Paths under `web/src/` unless noted.*
 38. **Crayon live preview with nothing extra composited** — the web build restamps: each op restores
     its padded rect from an offscreen "under" shadow and re-applies the glaze onto the ink tile. The
     shadow is normally refreshed once per invalidation, just after finger-lift; a pass that opens
-    before that refresh captures it synchronously (`crayonPassBuffer.ts:667-674`). The native build
+    before that refresh captures it synchronously (`crayonPassBuffer.ts:569-575`). The native build
     applies the glaze per op directly on the tile, with no pass buffer, preview plane, or blit.
-    `crayonPassBuffer.ts:139-149, 169-172`, `engine.ts:682-690`. *ADR-0147, ADR-0148* *(The earlier
+    `crayonPassBuffer.ts:102-110, 161-165`, `engine.ts:682-690`. *ADR-0147, ADR-0148* *(The earlier
     `mix-blend-mode: darken` preview planes, ADR-0085, are retired from both builds.)*
 39. **Capped DPR (2×), fixed per session** — DPR-3 would cost 9× pixels for detail a finger can't
     use. `engine.ts:170-176`. *ADR-0015*
@@ -362,9 +362,11 @@ entry 87. Paths under `web/src/` unless noted.*
     pass, not the canvas." Native's per-op glaze keeps no pass buffer. `crayonPassBuffer.ts`.
     *ADR-0068, ADR-0147*
 54. **Mirror by blit, not repaint** *(retired with the preview planes, ADR-0148)* — the preview
-    plane copied the op rect from the buffer, halving pattern fills per op. The code survives only
-    in the `'planes'` branch (`crayonPassBuffer.ts:640-663`), which no shipping build selects.
-    *commit ae674d71*
+    plane copied the op rect from the buffer, halving pattern fills per op. No shipping build
+    selects that pipeline. Campaign 2530's proposed removal of its test-only implementation is held
+    for performance proof;
+    [the measurement record](scratchpad/perf/2026-09-30-campaign-2530-crayon-planes/README.md)
+    preserves the candidate and its limits. *commit ae674d71*
 55. **Checkpoint at 64 pointermoves** — bounds live buffer memory; counted in moves, not merged ops,
     so frame-merging can't stretch a pass to double wax. `crayonPassBoundaries.ts:15-22, 101-111`.
     *ADR-0085 trial 23*

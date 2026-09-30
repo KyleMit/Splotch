@@ -17,7 +17,7 @@
     "rejected-blank-pixels.json": "Blank fixture; invalid; excluded from parity"
   },
   "files": {
-    "README.md": "d5c7f9de9b27767a92be2bbd413360a1af039cd5b3be9ee4bef512e0d80ae208",
+    "README.md": "a8b1a3b3c4a30a750df1bee0aceb2e086699f398e1ca5452fca945a4bc517ce3",
     "base-cap-bytes.json": "7fc78ac8412d9d10657f82febdd9a733b4cb68337e38d62c7b0385a905d5e3fd",
     "base-pixels.json": "315e7ca575054b84b9ea1a4b36ea7959ac7103ce85988f6c1c70b4ca3aecf790",
     "base-web-bytes.json": "d949ccca3278bb0d305a432cdccd039376d6af9a1301057bb4e1c8f361e5eb16",
@@ -57,13 +57,15 @@
     "controls/e2e.log.txt": "7297434d615958372e09f9b334317fcd67173719e9e39e9b61ac37ce18b6acb8",
     "controls/lint.log.txt": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd",
     "controls/negative-extra-blit.log.txt": "53a3df79ad62938e8dae8c6f4ed23ff7ae73d28f1cb37c1aef998dcb220c29ca",
+    "controls/quality.log.txt": "12898702af88b6e2d5681181f33396157d70debc93918f6cc08f51faabc5df4e",
     "controls/unit.log.txt": "c0c5d1a3b40ff78647c1ea969d7ea4ace42677236a65f7e2a472dc56f80b0055",
     "instrument-hashes.json": "2f87f5ecd6c6ffca9ea65efebfc18679728a073e026efb7234f97fdf1b17c54c",
     "rejected-blank-pixels.json": "58a827cfdfbe4c42e3b24c81220fdd0f805e6d1d9a858200c0874d10a902dfb5",
     "run-settings.json": "ed82727b381525a9c651519079e467ec840c2ee000922486b323a2c8b2e8075e",
     "source-hashes.json": "d61ad848ddd22d5a4cdfdc6163ca9332148edc58b3b3ffb7c8a0301e0dd48aea",
-    "summary.json": "afa0d29f895a4717409c4b7f370269dc42506334e528896935251115b76b2567"
+    "summary.json": "ed247048bf47a852021023aabda57f09869fbd73bc4fb7b55b5848248c3473f0"
   },
   "logNormalization": "Trailing whitespace removed from stdout logs; measurement JSON unchanged.",
-  "hostQuietness": "Not established uniformly; load brackets range3.07\u201312.60 on10 cores, threshold5.0; reserved host alone is insufficient."
+  "hostQuietness": "Not established uniformly; load brackets range3.07\u201312.60 on10 cores, threshold5.0; reserved host alone is insufficient.",
+  "qualityResult": "13 of14 checks passed; pnpm audit --audit-level=high failed on campaign-wide advisory blocker."
 }
