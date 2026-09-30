@@ -98,5 +98,6 @@ verification outputs, not store-upload artifacts.
 
 The mapping guard proves embedded R8 processing/deobfuscation evidence, not every optimizer setting.
 Existing release-configuration guards pin minification, resource shrinking, and the optimized
-default rules. Dependency Gradle scripts still emit deprecations for future Gradle 10; they do not
-prevent the pinned Gradle 9 build.
+default rules. App-owned and dependency Gradle scripts still emit deprecations for future Gradle 10
+(implicit root-project property lookup and space-assignment syntax); they do not prevent the pinned
+Gradle 9 build.
