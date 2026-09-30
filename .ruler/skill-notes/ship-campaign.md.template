@@ -172,12 +172,13 @@ The #2500 parallel campaign merged about 20 PRs in under three hours. Four chang
   ready. The working brief then told units to catch up once, after review, and leave later moves
   to the orchestrator. The same run found that worktrees share `refs/remotes/origin/main` (#2515),
   so the gated `main` is read from the merge commit's second parent.
-* **The serialized WebKit gate.** The post-merge WebKit fast gate runs one commit at a time
+* **The serialized WebKit gate.** The post-merge WebKit fast gate then ran one commit at a time
   (`.github/workflows/test.yml`), and that day it ran about three hours behind: gates for merges at
   12:36 EDT started at 15:45 EDT. Step 2's "finished green", read literally, would have held each unit that
   long. Verification now takes the push `Tests` run's standard jobs per merge and collects the
-  WebKit gates once at the end. Whether the first-run gate should leave its concurrency group is a
-  CI decision parked for the user in the #2500 ledger.
+  WebKit gates once at the end. PR #2537 later took the first-run gate and its retry out of the
+  shared concurrency group (decisions 5 and 6 of the #2500 leftovers); only the failure reporter
+  behind the retry still runs one at a time.
 * **Usage thresholds.** Preflight found the weekly usage window at 88%. The user agreed no new
   launch at 94% and wrap-up at 97%. Launches paused at 94% (17:48) and reopened at 17:56 when the
   user reported a reset, which the host's usage tool confirmed. Whether those thresholds suit a
