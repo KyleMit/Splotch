@@ -719,11 +719,12 @@ on the iPad page and:
   of stalling through every undo wait,
 * drives the real-volume scenarios — long squiggles, five-finger drags, crayon squiggles, and crayon
   reversal-scribbles (mid-stroke pass splits) — matching `npm run perf:web:undo`. Each draws the
-  probe's `STROKES` strokes of about `OPS` ops (a five-finger drag moves `MULTI_PER_FINGER` ops per
-  finger); the table's `scenario` column prints each row's stroke count. This run's `STROKES`
-  default is `MAX_UNDO_DEPTH + STROKES_PAST_UNDO_DEPTH`, so it draws past the app's undo cap
-  (`MAX_UNDO_DEPTH` in `web/src/lib/drawing/undoHistory.ts`) and the overflow path executes. Each
-  scenario resets to blank paper **and** zero history first so its counts are its own,
+  probe's `STROKES` strokes: about `OPS` ops per single-pointer stroke, and
+  `MULTI_FINGERS * MULTI_PER_FINGER` per five-finger drag. The table's `scenario` column prints each
+  row's stroke count. This run's `STROKES` default is `MAX_UNDO_DEPTH + STROKES_PAST_UNDO_DEPTH`, so
+  it draws past the app's undo cap (`MAX_UNDO_DEPTH` in `web/src/lib/drawing/undoHistory.ts`) and
+  the overflow path executes. Each scenario resets to blank paper **and** zero history first so its
+  counts are its own,
 * prints a `console.table` with, per scenario: undo entries, retained history commands, folded base
   tiles, **`commit max ms`**, **`undo avg/p95/max ms`**, and direct patch/base/total history MiB —
   then the ADR-0066 gates verbatim.
