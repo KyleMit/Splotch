@@ -165,8 +165,9 @@ older than the header, and PWAs on a stale service worker. The fallback serves a
 handoff failed. Before either reaches the provider, the route has read the body, authorized the
 credential, and on the free tier run two compare-and-set reservations. The fallback has also
 attempted the handoff. None of these store calls has a deadline of its own, and `@netlify/blobs`
-retries a failed request after a fixed delay (seconds, not milliseconds; see its `fetchAndRetry`),
-so a single retry can spend more than this ADR's whole margin.
+retries a failed request after a default delay of seconds, not milliseconds, which a rate-limit
+reset header from the service can lengthen further (see its `fetchAndRetry`), so a single retry can
+spend more than this ADR's whole margin.
 
 **The fallback counts from handler entry.** `deadlineAfterFailedHandoffMs` in
 `web/src/lib/server/generationStart.ts` subtracts everything the request spent before falling back,
@@ -174,8 +175,8 @@ not only the handoff. When less than `MIN_INLINE_DEADLINE_MS` is left, the route
 controlled `502` without calling the model. A fallback only runs after a failure, so counting the
 pre-work there costs no request that went normally. It lowers the risk of a platform kill without
 removing it: the handoff's cleanup and the settlement writes after the deadline are still unbounded.
-A missing signing secret sends every request down this path, but that is a misconfiguration that
-`startBackgroundGeneration` logs as an error.
+A missing signing secret sends every request that asked for the handoff down this path, but that is
+a misconfiguration that `startBackgroundGeneration` logs as an error.
 
 **The direct path keeps the full `GENERATE_DEADLINE_MS`.** Its routine pre-work is charged to the
 margin instead. The shipped model's latency tail sits at the deadline
