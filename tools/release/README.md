@@ -104,9 +104,15 @@ catalog.
 `lib/release-frontmatter.mjs` owns frontmatter, semver ordering, and deep writes;
 `lib/native-version.mjs` owns Android/iOS project version edits; `lib/artifact-version.mjs` owns
 embedded native-artifact inspection (the aapt2 protobuf scan, the `plutil` plist read, and the
-`.aab`/`.ipa` version semantics); and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing
-read-only `readEntry`. Keep version parsing and validation in these owned modules rather than
-duplicating it in entry points.
+`.aab`/`.ipa` version semantics); `lib/aab-r8-mapping.mjs` requires Android's embedded R8 compiler
+metadata and class mappings before publishing (including a dry run); and `lib/zip.mjs` owns ZIP
+container parsing beneath it, exposing read-only `readEntry`. Keep version parsing and validation in
+these owned modules rather than duplicating it in entry points.
+
+The R8 mapping guard rejects unmapped bundles even when their version matches. It does not measure
+performance or prove all optimizer settings: the native release configuration tests pin code and
+resource shrinking, and a toolchain change also needs effective-configuration inspection and a
+Release APK runtime smoke.
 
 `lib/zip.mjs` is deliberately bounded to reading a trusted build artifact: no writing, no streaming,
 and no zip64 (an archive using the zip64 sentinel is rejected rather than misread). Widening that

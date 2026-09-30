@@ -12,6 +12,25 @@ the Google Play release checklist. For the general build model and shared assets
 
 ## 1. Toolchain setup
 
+The Android project pins **AGP 9.4.1** and **Gradle 9.6.0** (the wrapper verifies the official
+distribution SHA-256).
+[AGP's compatibility table](https://developer.android.com/build/releases/agp-9-4-0-release-notes)
+requires Gradle 9.6.0, SDK Build Tools 36.0.0, and JDK 17 or newer; Capacitor 8 keeps this project's
+full JDK 21 requirement. The app retains compile/target SDK 36 and the API 24 floor.
+
+The [AGP 9 migration](https://developer.android.com/build/releases/agp-9-0-0-release-notes) uses the
+new Android DSL and built-in Kotlin defaults. The Java-only Capacitor modules build with those
+defaults; do not patch generated dependency Gradle files or disable the new DSL/Kotlin integration.
+The app's asset exclusion filter lives in `androidResources`. Release keeps code minification,
+`proguard-android-optimize.txt`, and resource shrinking; AGP 9 integrates resource shrinking into R8
+by default. Keep the Capacitor consumer reflection rules: plugins are created and called by
+reflection, including their constructors.
+
+AGP 9 stops aligning every compile classpath with runtime dependency constraints. The app directly
+declares AndroidX Core at the shared `androidxCoreVersion` because `MainActivity` uses its
+`WindowCompat` API; relying on Capacitor's private dependency would compile against an older
+transitive Core version.
+
 ### macOS
 
 1. **Install Android Studio** (brings the SDK, `adb`, and the emulator):
@@ -101,6 +120,14 @@ npm run android:clean   # gradle clean (no cap:sync)
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate Signed Bundle/APK** to
 produce a release `.aab`.
+
+Before attaching a bundle, `npm run release:publish -- --only=android --dry-run` checks its embedded
+release version and requires an embedded R8 mapping with compiler metadata and class mappings. A
+mapping proves R8 processed the bundle; it does not independently prove every optimization setting
+or a runtime performance gain. Inspect `android/app/build/outputs/mapping/release/` for the
+effective configuration and mapping, and install/smoke the optimized Release APK when changing AGP
+or keep rules. Google Play recommendation clearance can only be checked after Play analyzes the next
+uploaded bundle.
 
 ### Running the web app on a real device
 

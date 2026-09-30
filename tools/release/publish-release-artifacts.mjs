@@ -24,6 +24,7 @@ import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
+import { readAabR8Metadata } from './lib/aab-r8-mapping.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 
@@ -31,7 +32,7 @@ const ARTIFACTS = {
   android: {
     label: 'Android bundle',
     path: RELEASE_AAB,
-    read: readAabVersion,
+    read: (path) => ({ ...readAabVersion(path), r8: readAabR8Metadata(path) }),
     rebuild: 'npm run android:bundle',
   },
   ios: { label: 'iOS app', path: RELEASE_IPA, read: readIpaVersion, rebuild: 'npm run ios:ipa' },
@@ -176,13 +177,13 @@ export function main(args = process.argv.slice(2)) {
 
   if (stale.length) {
     fail(
-      '\nRefusing to upload — these artifacts do not match the release:\n' +
+      '\nRefusing to upload — these artifacts failed release verification:\n' +
         stale
           .map(
             (a) => `  ✗ ${a.label} (${a.path})\n${a.problems.map((p) => `      ${p}`).join('\n')}`
           )
           .join('\n') +
-        '\n\nThey are leftovers from an earlier version. Rebuild them for this release\n' +
+        '\n\nRebuild these artifacts for this release\n' +
         stale.map((a) => `  ${a.rebuild}`).join('\n') +
         '\nor delete the stale file, then re-run. Nothing was uploaded.'
     );
@@ -196,7 +197,7 @@ export function main(args = process.argv.slice(2)) {
   }
 
   if (dryRun) {
-    console.log('\n--dry-run: versions verified, nothing uploaded.');
+    console.log('\n--dry-run: release artifacts verified, nothing uploaded.');
     return;
   }
 
