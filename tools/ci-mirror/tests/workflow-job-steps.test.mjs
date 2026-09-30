@@ -136,13 +136,29 @@ describe('stepBlocks', () => {
 
   it.each([
     ['a flow-style list', '    steps: []\n', 'Unreadable steps key: steps: []'],
-    ['a single-quoted key', "    'steps':\n      - run: x\n", "Unreadable steps key: 'steps':"],
-    ['a double-quoted key', '    "steps":\n      - run: x\n', 'Unreadable steps key: "steps":'],
-    ['a space before the colon', '    steps :\n      - run: x\n', 'Unreadable steps key: steps :'],
-    ['items at the key indent', '    steps:\n    - run: x\n', 'No step at six-space indent'],
+    ['an empty list', '    steps:\n    runs-on: x\n', 'No step at six-space indent'],
     ['a key at step indent', '    steps:\n      run: x\n', 'Unreadable step: run: x'],
-  ])('throws on %s rather than hiding the steps', (_label, steps, message) => {
-    expect(() => stepBlocks(`  lint:\n${steps}`)).toThrow(message);
+    ['items at the key indent', '    steps:\n    - run: x\n', 'Unreadable job key: - run: x'],
+    ['a single-quoted key', "    'steps':\n      - run: x\n", "Unreadable job key: 'steps':"],
+    ['a double-quoted key', '    "steps":\n      - run: x\n', 'Unreadable job key: "steps":'],
+    [
+      'an escaped key',
+      '    "\\u0073teps":\n      - run: x\n',
+      'Unreadable job key: "\\u0073teps":',
+    ],
+    ['an explicit key', '    ? steps\n    :\n      - run: x\n', 'Unreadable job key: ? steps'],
+    ['a tagged key', '    !!str steps:\n      - run: x\n', 'Unreadable job key: !!str steps:'],
+    ['a space before the colon', '    steps :\n      - run: x\n', 'Unreadable job key: steps :'],
+    ['a merge key', '    <<: *defaults\n', 'Unreadable job key: <<: *defaults'],
+  ])('throws on %s rather than hiding the steps', (_label, body, message) => {
+    expect(() => stepBlocks(`  lint:\n${body}`)).toThrow(message);
+  });
+
+  it.each([
+    ['an alias', '  lint: *build\n'],
+    ['a flow-style body', '  lint: { runs-on: x, steps: [] }\n'],
+  ])('throws on a job header carrying %s', (_label, job) => {
+    expect(() => stepBlocks(job)).toThrow(`Unreadable job header: ${job.trim()}`);
   });
 });
 

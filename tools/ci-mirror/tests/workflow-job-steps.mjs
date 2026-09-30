@@ -43,7 +43,10 @@ export function jobBlock(yaml, jobKey) {
   return block.text;
 }
 
-const STEPS_KEY_ANY_SPELLING = /^ {4}["']?steps["']?\s*:/;
+const JOB_HEADER_WITHOUT_VALUE = /^ {2}[\w-]+:(?:\s+#.*)?\s*$/;
+const LINE_AT_JOB_KEY_INDENT = /^ {4}[^\s#]/;
+const PLAIN_JOB_KEY = /^ {4}[\w-]+:(?:\s|$)/;
+const STEPS_KEY = /^ {4}steps:/;
 const READABLE_STEPS_KEY = /^ {4}steps:(?:\s+#.*)?\s*$/;
 const STEP_INDENT = /^ {6}\S/;
 const STEP_ITEM = /^ {6}- /;
@@ -53,15 +56,29 @@ const BLANK_OR_COMMENT_AT_STEP_INDENT = /^(?: {0,6}#.*)?\s*$/;
 const RUN_SCRIPT_KEY = /^ {8}run: \|\s*$/;
 const RUN_SCRIPT_INDENT = ' '.repeat(10);
 
+// Only the plain block form is read: a job header with nothing after its colon, and a plain
+// `key:` on every line at job-key indent. Any other spelling Prettier keeps (a quoted, escaped,
+// tagged, or explicit key, a merge key, an alias or flow-style body) can carry steps this cannot
+// see, so it throws rather than reading the job as step-less.
+function assertPlainJob(lines) {
+  if (!JOB_HEADER_WITHOUT_VALUE.test(lines[0])) {
+    throw new Error(`Unreadable job header: ${lines[0].trim()}`);
+  }
+  const unreadable = lines.find(
+    (line) => LINE_AT_JOB_KEY_INDENT.test(line) && !PLAIN_JOB_KEY.test(line)
+  );
+  if (unreadable !== undefined) throw new Error(`Unreadable job key: ${unreadable.trim()}`);
+}
+
 // Each item of a job's `steps:` list, from its `- ` line through the last line indented past it,
 // as a verbatim substring of `job`, named by a `- name:` on that line. The same boundary rule as
 // jobBlocks one level down: a comment at step indent after a step's last line introduces the
-// step after it and belongs to neither, and a job key after the list ends its last step. A list
-// this cannot read throws rather than hiding its steps from every guard that enumerates them, and
-// so does a steps key in any spelling but the plain one: Prettier keeps a quoted `'steps':`.
+// step after it and belongs to neither, and a job key after the list ends its last step. A job or
+// list this cannot read throws rather than hiding its steps from every guard that enumerates them.
 export function stepBlocks(job) {
   const lines = job.split('\n');
-  const stepsKey = lines.findIndex((line) => STEPS_KEY_ANY_SPELLING.test(line));
+  assertPlainJob(lines);
+  const stepsKey = lines.findIndex((line) => STEPS_KEY.test(line));
   if (stepsKey === -1) return [];
   if (!READABLE_STEPS_KEY.test(lines[stepsKey])) {
     throw new Error(`Unreadable steps key: ${lines[stepsKey].trim()}`);
