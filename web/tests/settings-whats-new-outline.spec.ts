@@ -1,7 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test';
 
 import releases from '../src/lib/releases.json' with { type: 'json' };
-import { gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 
 // What's New renders under a different section heading in each Settings shell:
 // the wide pane's title, and the phone drill-in's dialog header. Its release
@@ -46,7 +46,7 @@ test("What's New nests its release date under the phone drill-in's Updates title
   await page.setViewportSize(PHONE_VIEWPORT);
   await gotoApp(page);
   const modal = await openSettingsModal(page);
-  await modal.locator('.hub-row[data-section="whatsnew"]').click();
+  await openHubSection(page, 'whatsnew', '.whats-new');
 
   await expectReleaseNestedUnder(
     modal.getByRole('heading', { name: 'Updates', exact: true }),
