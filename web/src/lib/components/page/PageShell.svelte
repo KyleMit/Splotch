@@ -39,9 +39,23 @@
   const parentCenter = __IS_CAPACITOR__ ? createPageParentCenter() : null;
   onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
 
+  const nativeLinks: {
+    node: HTMLAnchorElement;
+    action: ReturnType<NonNullable<typeof parentCenter>['gatedLink']>;
+  }[] = [];
+  $effect(() => {
+    return () => {
+      for (const { action } of nativeLinks) action.destroy();
+    };
+  });
+
   function mountOutboundGate(event: MouseEvent) {
-    if (event.target instanceof Element && event.target.closest('a[target="_blank"]')) {
-      parentCenter?.mountParentalGate();
+    // Capture installs the existing action before the same click reaches its anchor,
+    // preserving trusted activation and the action's approved-replay latch.
+    if (!__IS_CAPACITOR__ || !parentCenter || !(event.target instanceof Element)) return;
+    const anchor = event.target.closest<HTMLAnchorElement>('a[target="_blank"]');
+    if (anchor && !nativeLinks.some(({ node }) => node === anchor)) {
+      nativeLinks.push({ node: anchor, action: parentCenter.gatedLink(anchor) });
     }
   }
 </script>

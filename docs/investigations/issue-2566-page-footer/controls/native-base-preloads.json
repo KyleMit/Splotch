@@ -1,0 +1,114 @@
+[
+  {
+    "file": "_app/immutable/entry/start.CWZMMVoW.js",
+    "name": "entry/start"
+  },
+  {
+    "file": "_app/immutable/chunks/d6mH7hm0.js",
+    "name": "client"
+  },
+  {
+    "file": "_app/immutable/chunks/COHD1P6n.js",
+    "name": "index-client"
+  },
+  {
+    "file": "_app/immutable/chunks/DK3Fl9T5.js",
+    "name": "rolldown-runtime"
+  },
+  {
+    "file": "_app/immutable/entry/app.DD6Z4D_z.js",
+    "name": "entry/app"
+  },
+  {
+    "file": "_app/immutable/chunks/uBIymjUX.js",
+    "name": "preload-helper"
+  },
+  {
+    "file": "_app/immutable/chunks/DCByc0N7.js",
+    "name": "errorLog"
+  },
+  {
+    "file": "_app/immutable/chunks/xihTtKlq.js",
+    "name": "disclose-version"
+  },
+  {
+    "file": "_app/immutable/nodes/0.tpZK-yl9.js",
+    "name": "nodes/0"
+  },
+  {
+    "file": "_app/immutable/chunks/ayZlCzLY.js",
+    "name": "fonts"
+  },
+  {
+    "file": "_app/immutable/chunks/CzYkrnRs.js",
+    "name": "idle"
+  },
+  {
+    "file": "_app/immutable/nodes/3.BGcX7pWw.js",
+    "name": "nodes/3"
+  },
+  {
+    "file": "_app/immutable/chunks/BqnRcyd6.js",
+    "name": "legacy"
+  },
+  {
+    "file": "_app/immutable/chunks/DmtK_ztn.js",
+    "name": "readonlyView"
+  },
+  {
+    "file": "_app/immutable/chunks/BO-c-DD7.js",
+    "name": "settings.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/BuOBwMFX.js",
+    "name": "policy"
+  },
+  {
+    "file": "_app/immutable/chunks/qLFnsYcf.js",
+    "name": "sessionCounters.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/BEccz0rf.js",
+    "name": "appearance.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/BN0IWSdO.js",
+    "name": "SocialCard"
+  },
+  {
+    "file": "_app/immutable/chunks/DcGLg-0l.js",
+    "name": "saveFailure.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/BrTlAeGm.js",
+    "name": "promiseWithResolvers"
+  },
+  {
+    "file": "_app/immutable/chunks/Pq51Xzgs.js",
+    "name": "limits"
+  },
+  {
+    "file": "_app/immutable/chunks/CkMZYcLa.js",
+    "name": "scribbleGuard"
+  },
+  {
+    "file": "_app/immutable/chunks/jXjytI6a.js",
+    "name": "aiGeneration.svelte"
+  },
+  {
+    "file": "_app/immutable/chunks/LsXO01j-.js",
+    "name": "aiImage"
+  },
+  {
+    "file": "_app/immutable/chunks/BVm4FBfB.js",
+    "name": "actionUnavailableFeedback"
+  },
+  {
+    "file": "_app/immutable/chunks/BAjCTcrj.js",
+    "name": "haptics"
+  },
+  {
+    "file": "_app/immutable/chunks/UovTW6Um.js",
+    "name": "persistedState"
+  }
+]

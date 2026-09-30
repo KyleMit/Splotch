@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
   import { paletteHex } from '$lib/palette';
   import releases from '$lib/releases.json';
@@ -37,7 +36,7 @@
                 {section.label}
               </span>
             {:else if __IS_CAPACITOR__ && section.id === 'feedback'}
-              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:parentalGateLink>
+              <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
                 {section.label}<ExternalMark variant="inline" />
               </a>
             {:else}

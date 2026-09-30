@@ -60,6 +60,7 @@ vi.mock('$app/forms', () => ({
   deserialize: vi.fn(),
   enhance: () => ({ destroy() {} }),
 }));
+vi.mock('$app/state', () => ({ page: { url: new URL('https://splotch.art/feedback') } }));
 vi.mock('$app/navigation', () => ({
   invalidateAll: vi.fn(),
   goto: vi.fn(),

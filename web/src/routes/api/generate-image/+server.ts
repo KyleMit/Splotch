@@ -3,9 +3,7 @@ import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '$li
 import { GENERATION_STYLE_PARAM } from '$lib/apiParams';
 import type { ReportTokenBinding } from '$lib/server/reportToken';
 import {
-  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
-  FREE_GRANT_EXHAUSTED_CODE,
   type FreeGenerationDailyLimitExhausted,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantExhausted,
@@ -38,6 +36,8 @@ import {
   synchronousDeadlineMs,
 } from '$lib/server/generationStart';
 import {
+  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
+  FREE_GRANT_EXHAUSTED_CODE,
   GENERATION_ACCEPTED_STATUS,
   SAFETY_REFUSAL_STATUS,
   type GenerationStartedBody,

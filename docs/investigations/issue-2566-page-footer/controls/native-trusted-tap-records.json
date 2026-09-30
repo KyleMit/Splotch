@@ -1,0 +1,12 @@
+[
+  {
+    "mode": "never",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  },
+  {
+    "mode": "session",
+    "immediateOriginalClickPopup": true,
+    "gateVisible": false
+  }
+]

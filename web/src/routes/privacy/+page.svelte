@@ -27,7 +27,6 @@
   import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
   import { SECTIONS, SPY_LINE_PX, watchReadingPosition } from './contents';
   import type { SectionId } from './contents';
-  import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import PolicySummary from './PolicySummary.svelte';
   import SectionHeading from './SectionHeading.svelte';
   import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
@@ -65,7 +64,9 @@
   );
 
   const parentCenter = __IS_CAPACITOR__ ? null : createPageParentCenter();
-  const gatedLink = parentCenter?.gatedLink ?? parentalGateLink;
+  function gatedLink(node: HTMLAnchorElement) {
+    if (!__IS_CAPACITOR__) return parentCenter?.gatedLink(node);
+  }
   onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
 
   const sectionLinks = createSectionLinks();

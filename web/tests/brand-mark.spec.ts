@@ -47,6 +47,8 @@ for (const { path, suffix } of [
 test('a mark with no suffix keeps its name on a phone', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await page.goto('/changelog');
-  await expect(page.getByRole('link', { name: 'Splotch', exact: true })).toBeVisible();
+  await expect(
+    page.locator('.topbar').getByRole('link', { name: 'Splotch', exact: true })
+  ).toBeVisible();
   expect((await wordmarkLayout(page)).nameWidth).toBeGreaterThan(1);
 });
