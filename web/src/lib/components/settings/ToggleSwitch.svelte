@@ -59,9 +59,6 @@
     padding: 0;
     position: relative;
     cursor: pointer;
-    transition:
-      background var(--duration-base) ease,
-      box-shadow var(--duration-base) ease;
     flex-shrink: 0;
   }
 
@@ -78,6 +75,15 @@
     /* The OFF track is two shades from its card (1.1:1); this rim gives its
        boundary the 3:1 WCAG 1.4.11 asks of a state you read by position. */
     box-shadow: inset 0 0 0 var(--border-width) var(--icon-muted);
+  }
+
+  .toggle-switch:focus-visible {
+    outline: none;
+  }
+
+  .toggle-switch:focus-visible::before {
+    outline: var(--focus-ring-width) solid var(--brand);
+    outline-offset: var(--focus-ring-offset);
   }
 
   @media (hover: hover) {

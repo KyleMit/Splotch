@@ -38,13 +38,23 @@ for (const viewport of compactViewports) {
       )
     );
     const labels = page.locator('.picker-demo .chip .option-label');
-    await labels.first().evaluate((element) => {
-      element.textContent = 'A longer setting label that wraps inside its choice';
-    });
-    const clipped = await labels.evaluateAll((elements) =>
-      elements.some((element) => element.scrollWidth > element.clientWidth)
-    );
-    expect(clipped).toBe(false);
+    for (const text of [
+      'A longer setting label that wraps inside its choice',
+      'Supercalifragilisticexpialidocious',
+    ]) {
+      await labels.first().evaluate((element, value) => {
+        element.textContent = value;
+      }, text);
+      const overflow = await labels.evaluateAll((elements) =>
+        elements.some((element) => {
+          const option = element.closest('.option')!;
+          return (
+            element.scrollWidth > element.clientWidth || option.scrollWidth > option.clientWidth
+          );
+        })
+      );
+      expect(overflow, text).toBe(false);
+    }
   });
 }
 
@@ -77,6 +87,31 @@ test('hub switch targets occupy separate rows and remain keyboard operable', asy
   await page.keyboard.press('Space');
   await expect(night).toHaveAttribute('aria-checked', 'true');
   await expect(night).toBeFocused();
+  const focus = await night.evaluate((element) => {
+    const host = getComputedStyle(element);
+    const track = getComputedStyle(element, '::before');
+    const trackHeight =
+      element.getBoundingClientRect().height - parseFloat(track.top) - parseFloat(track.bottom);
+    return {
+      visible: element.matches(':focus-visible'),
+      hostOutline: host.outlineStyle,
+      hostRadius: host.borderTopLeftRadius,
+      trackOutline: track.outlineStyle,
+      trackWidth: track.outlineWidth,
+      trackOffset: track.outlineOffset,
+      expectedWidth: host.getPropertyValue('--focus-ring-width').trim(),
+      expectedOffset: host.getPropertyValue('--focus-ring-offset').trim(),
+      radius: parseFloat(track.borderTopLeftRadius),
+      trackHeight,
+    };
+  });
+  expect(focus.visible).toBe(true);
+  expect(focus.hostOutline).toBe('none');
+  expect(focus.hostRadius).toBe('0px');
+  expect(focus.trackOutline).toBe('solid');
+  expect(focus.trackWidth).toBe(focus.expectedWidth);
+  expect(focus.trackOffset).toBe(focus.expectedOffset);
+  expect(focus.radius).toBeGreaterThanOrEqual(focus.trackHeight / 2);
   await page.keyboard.press('Enter');
   await expect(night).toHaveAttribute('aria-checked', 'false');
   await expect(night).toBeFocused();

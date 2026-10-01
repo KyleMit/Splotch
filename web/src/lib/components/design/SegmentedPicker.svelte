@@ -333,14 +333,6 @@
     padding: var(--space-2) 14px;
   }
 
-  /* Collapsed, an option is a square rather than a shrunken pill: the label is
-     what gave it width, and the touch-target floor is what's left. The caller
-     hides .option-label at a width it chooses; this keeps the target legal
-     when it does. */
-  .segment.collapsible .option {
-    min-width: var(--touch-target-min);
-  }
-
   @media (hover: hover) {
     .segment .option:not(.active):hover {
       color: var(--text-strong);
@@ -378,9 +370,6 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    /* The interaction-target floor is a property of the control, not of the
-       viewport: a touch-capable tablet sits above the phone step and still gets
-       fingers. Padding alone leaves the box a pixel short of it. */
     padding: 9px 2px 11px;
     /* Sits ON the rule rather than under it, so the live segment replaces that
        stretch of hairline instead of doubling it. */
