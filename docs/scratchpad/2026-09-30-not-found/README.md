@@ -17,10 +17,10 @@ The shared PageShell remains the visual owner. The existing `CAPACITOR=true` bui
 three entries through `standalonePageEntries.ts`: synchronous web 404 versus a native-only deferred
 404 component, two canonical finite page glyph providers, and the original native PageShell gate
 controller versus a web shim. The web glyph provider embeds only the same two first-party SVGs; the
-native provider keeps the original deferred registry. Native pending or failed page-chunk loading
-displays the existing ErrorScreen with its usable Start over action. A failed local chunk stays on
-that recovery screen until navigation/reload, rather than leaving a blank page. Web SSR never uses
-asynchronous rendering.
+native provider keeps the original deferred registry. Native pending page-chunk loading displays a
+neutral missing-page message with a Start drawing link. A failed local chunk displays the existing
+ErrorScreen and Start over action until navigation/reload. Both states retain recovery. Web SSR
+never uses asynchronous rendering.
 
 The existing font warmer has its own startup entry and a deliberately duplicated family identity on
 both targets. Sharing that import adds a preload chunk; its literal is drift-guarded against the
@@ -35,17 +35,20 @@ other immediate drawing owners as well as the root error loader, so the entire n
 not attributed solely to 404. Raw and independently gzipped resource totals are recorded in
 `web-startup-cost.json` and `native-startup-cost.json`.
 
-| Compared cost                             | Web delta                                     | Native delta                            |
-| ----------------------------------------- | --------------------------------------------- | --------------------------------------- |
-| HTML-linked plus eager-error JS/CSS union | 16 resources / 25,610 raw / 10,384 gzip bytes | 1 resource / 1,980 raw / 902 gzip bytes |
-| Eager-error JavaScript outside HTML links | 9 resources / 11,608 raw / 5,872 gzip bytes   | Deferred friendly page remains absent   |
-| Actual cold drawing JS/CSS requests       | 13 requests / 25,173 raw / 10,074 gzip bytes  | 1 request / 1,980 raw / 894 gzip bytes  |
+| Compared cost                             | Web delta                                     | Native delta                               |
+| ----------------------------------------- | --------------------------------------------- | ------------------------------------------ |
+| HTML-linked plus eager-error JS/CSS union | 16 resources / 25,610 raw / 10,384 gzip bytes | 2 resources / 2,818 raw / 1,372 gzip bytes |
+| Eager-error JavaScript outside HTML links | 9 resources / 11,608 raw / 5,872 gzip bytes   | Deferred friendly page remains absent      |
+| Actual cold drawing JS/CSS requests       | 13 requests / 25,173 raw / 10,074 gzip bytes  | 2 requests / 2,818 raw / 1,364 gzip bytes  |
 
 The remaining web cost is a deliberate consequence of rendering the shared friendly shell in
-synchronous SSR. It is presented explicitly for the second rival review. The existing preload pins
-remain 40/28. The new guard excludes deferred icons/dialog owners from the error closure and checks
-the web linked/error union, including inline CSS, against the existing exported 525KB startup owner.
-No budget or protection is relaxed; native retains the total-export budget.
+synchronous SSR. The second review found no blocking defects and proposed a catch-all route to avoid
+that cost. The retained root-error approach covers load-thrown 404s as well as unmatched URLs
+through the shared shell without introducing route-status hooks or changing prerender semantics.
+ADR-0032 records this accepted tradeoff. The existing preload pins remain 40/28. The new guard
+excludes deferred icons/dialog owners from the error closure and checks the web linked/error union,
+including inline CSS, against the existing exported 525KB startup owner. No budget or protection is
+relaxed; native retains the total-export budget.
 
 ## Native fallback
 
@@ -74,15 +77,16 @@ expected client 404 console diagnostics remain in the log; no unhandled page err
 Each source mutation below was restored in `finally`. The captured failing assertions are in
 `controls/`; passing implementations are covered by the unit and browser tiers.
 
-| Mutation                                       | Failure                                         |
-| ---------------------------------------------- | ----------------------------------------------- |
-| Remove BackLink's optional URL hop             | Actual mounted callback throws on null pathname |
-| Change the startup warm-font family            | Drift guard receives the wrong family           |
-| Remove the footer's error guard                | Missing prefixed paths acquire a current marker |
-| Expand friendly rendering to all 400+ statuses | Non-404 SSR assertions lose ErrorScreen         |
-
-| Compile the reviewed eager full shell graph | Release closure guard rejects deferredIcons | |
-Force page SVGs to 300×150px | Visible browser guard receives150px height instead of24px |
+| Mutation                                       | Failure                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| Remove BackLink's optional URL hop             | Actual mounted callback throws on null pathname             |
+| Change the startup warm-font family            | Drift guard receives the wrong family                       |
+| Remove the footer's error guard                | Missing prefixed paths acquire a current marker             |
+| Expand friendly rendering to all 400+ statuses | Non-404 SSR assertions lose ErrorScreen                     |
+| Compile the reviewed eager full shell graph    | Release closure guard rejects deferredIcons                 |
+| Restore the native pending ErrorScreen         | Document-start observer catches transient alert/title       |
+| Omit the native head await catch               | Forced import failure produces an unhandled page error      |
+| Force page SVGs to 300×150px                   | Visible browser guard receives 150px height instead of 24px |
 
 Browser coverage also pins the true 404 response, title/noindex/noalert, recovery destinations, the
 320px primary-only first row and two wash links second row after fonts are ready, and the 80px/56px
@@ -97,11 +101,15 @@ variants, themes and forced colors, including exact 24px/9px/12px SVG bounds.
 
 `native-recovery.mjs` runs against the compiled static export and manifest. For a frozen export, set
 `SPLOTCH_NATIVE_EXPORT_DIR` and `SPLOTCH_NATIVE_MANIFEST` to its associated build and manifest. It
-owns localhost:5301, delays or aborts the actual 404 chunk, checks existing fallback recovery, and
-exercises cold feedback gates, one gate host, the original destination, Manage's single Settings
-host and close focus, and Never/session original trusted-click popup paths. Its recorded successful
-run is `native-remedy-probes.json`; this is browser execution of the native export, without
-physical-device or signed-shell claims.
+owns localhost:5301, delays or aborts the actual 404 chunk, checks drawing recovery while pending
+and crash recovery only on import failure, and exercises cold feedback gates, one gate host, the
+original destination, Manage's single Settings host and close focus, and Never/session original
+trusted-click popup paths. Its recorded successful run is `native-remedy-probes.json`. A
+document-start MutationObserver checks inserted nodes and title text for transient crash alerts
+before every successful cold 404; forced pending and failed imports also pin zero unhandled page
+errors. The head await has its own catch, because the body catch cannot handle a rejection from a
+separate head await. This is browser execution of the native export, without physical-device or
+signed-shell claims.
 
 ## Final local validation
 
@@ -110,3 +118,11 @@ checks, 277 asset tests, 23 store tests, 6,641 tool tests and 1,061 browser chec
 browser suite used its normal five-worker capacity and included the existing cross-engine smoke
 checks. Quality passed all 14 checks. Production builds retain 40/28 preload pins, and the
 eager-error closure/union guard passes. Only local browser/static-export execution is claimed.
+
+The second review address pass reran all 4,346 app tests and 41 web SSR guards, the complete tools
+tier (6,643 passed), both production builds and Quality. Native-only loading changes leave the
+measured web graph unchanged. The refreshed compiled native probes cover quiet pending drawing
+recovery, failed import recovery without unhandled errors, and the existing trusted link gates.
+Restoring the old pending ErrorScreen makes the initialization observer fail even after the friendly
+page appears; omitting the head catch independently makes the failed-import page-error assertion
+fail. Both source mutations are restored, and their failures are retained in `controls/`.

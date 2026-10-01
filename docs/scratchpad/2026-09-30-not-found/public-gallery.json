@@ -84,10 +84,10 @@
     "sha256": "7221689ff4c36ebf7e4683fba2cae5e8d677ca419357419e243a3c1dd959eda3"
   },
   {
-    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-fallback-pending.png",
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/1e837614e25aa171d32ae4e0af7cdb57f2ea9a40/friendly-not-found/native-fallback-pending.png",
     "status": 200,
     "content_type": "image/png",
-    "sha256": "aa688a58e05f27d0402763891a8ab38a94a3865ce5a73d85fdbd8e5571547b77"
+    "sha256": "8dad53ce17cb695dc6cdce69386fd843909b0ce1f5a7aedafb14f795e0776d64"
   },
   {
     "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-fallback-failed.png",

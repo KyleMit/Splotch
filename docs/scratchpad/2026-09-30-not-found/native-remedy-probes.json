@@ -1,27 +1,32 @@
 [
   {
     "state": "pending",
-    "existingRecoveryVisible": true,
-    "recovered": true
+    "recoveryVisible": true,
+    "recovered": true,
+    "errors": [],
+    "transientErrors": []
   },
   {
     "state": "failed",
-    "existingRecoveryVisible": true,
-    "recovered": true
+    "recoveryVisible": true,
+    "recovered": true,
+    "errors": []
   },
   {
     "path": "privacy/missing",
     "coldGateRequestsBeforeClick": 0,
     "oneDialog": true,
     "originalTarget": true,
-    "errors": []
+    "errors": [],
+    "transientErrors": []
   },
   {
     "path": "no-such-page",
     "coldGateRequestsBeforeClick": 0,
     "oneDialog": true,
     "originalTarget": true,
-    "errors": []
+    "errors": [],
+    "transientErrors": []
   },
   {
     "manageOneSettings": true,
@@ -37,6 +42,7 @@
   },
   {
     "nativeColdDrawingRequests": [
+      "_app/immutable/assets/1.C8YPanP-.css",
       "_app/immutable/assets/ErrorScreen.BAsnDDLh.css",
       "_app/immutable/chunks/0Oponlx8.js",
       "_app/immutable/chunks/B3Ffc_sO.js",
@@ -45,6 +51,7 @@
       "_app/immutable/chunks/BJIi1f6l.js",
       "_app/immutable/chunks/BK3nMQWp.js",
       "_app/immutable/chunks/BSIvad9g.js",
+      "_app/immutable/chunks/BSNO6MoO.js",
       "_app/immutable/chunks/BcYgOSNO.js",
       "_app/immutable/chunks/BpGi9Tao.js",
       "_app/immutable/chunks/BrTlAeGm.js",
@@ -54,24 +61,23 @@
       "_app/immutable/chunks/CZupzuyd.js",
       "_app/immutable/chunks/CzYkrnRs.js",
       "_app/immutable/chunks/D-JAJV8H.js",
-      "_app/immutable/chunks/D1gr8qCe.js",
       "_app/immutable/chunks/DCByc0N7.js",
       "_app/immutable/chunks/DFqFXHtH.js",
       "_app/immutable/chunks/DK3Fl9T5.js",
+      "_app/immutable/chunks/DLPNvRTU.js",
       "_app/immutable/chunks/DPEfkqHq.js",
       "_app/immutable/chunks/DVHbr_SI.js",
       "_app/immutable/chunks/DmB0QIti.js",
       "_app/immutable/chunks/Du-QFCVF.js",
-      "_app/immutable/chunks/JnG_ts9P.js",
       "_app/immutable/chunks/gvsqiA9I.js",
       "_app/immutable/chunks/l9hwtmXV.js",
       "_app/immutable/chunks/uBIymjUX.js",
       "_app/immutable/chunks/wl2ohwfF.js",
       "_app/immutable/chunks/xihTtKlq.js",
-      "_app/immutable/entry/app.lJvRAZvY.js",
-      "_app/immutable/entry/start.CN35AyP-.js",
+      "_app/immutable/entry/app.57o6L4tV.js",
+      "_app/immutable/entry/start.B5glUX3a.js",
       "_app/immutable/nodes/0.DjMrBugu.js",
-      "_app/immutable/nodes/1.DbBUE0-N.js",
+      "_app/immutable/nodes/1.Cud9HHvo.js",
       "_app/immutable/nodes/3.AdebTwBr.js"
     ]
   }

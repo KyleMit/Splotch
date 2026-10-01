@@ -245,8 +245,9 @@ the original linked sets; their counts alone do not establish the complete cold-
 keeps a synchronous friendly 404 using the actual `PageShell`, with two canonical raw page glyphs
 and an unreachable native-controller entry that has no runtime dialog imports. Native keeps the
 existing icon registry and synchronous native link gate; its friendly page loads only when the
-client encounters a 404. While that local chunk loads, or if it fails, the existing `ErrorScreen`
-remains available. There is no async web SSR or duplicated shell.
+client encounters a 404. While that local chunk loads, a neutral missing-page message offers drawing
+recovery without an alert. A failed import retains the existing `ErrorScreen` recovery. There is no
+async web SSR or duplicated shell.
 
 The full shell's idle scheduler and the token's font identity have independent importers. A startup
 import of that identity partitions another linked chunk on both targets. `fonts.ts` owns the
@@ -255,3 +256,11 @@ with an inline identity guarded by `fonts.test.ts`. Exact-base trials without th
 produced an extra native request after deferring the error entry. Both existing preload pins remain
 unchanged. The extra eager web 404 composition is a measured cost, not a zero-cost claim; the PR's
 verification package records the exact base comparison.
+
+The synchronous web composition accepts a measured cold drawing delta of 13 requests, 25,173 raw
+bytes and 10,074 individually gzipped bytes against the exact base under identical idle-disabled
+capture conditions. A catch-all route could avoid this cost for unmatched URLs, but would leave
+`error(404)` from route loads on the crash screen and introduce route-status hooks and prerender
+semantics. The root error branch covers every 404 through the same shared shell and retains real
+no-JavaScript HTTP 404 rendering. The guarded byte union remains below the existing limit; this is
+an explicit tradeoff for uniform recovery, rather than evidence that startup is unchanged.
