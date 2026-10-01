@@ -19,7 +19,7 @@
 
   afterNavigate(({ from }) => {
     label = resolveBackLabel({
-      fromPath: from?.url.pathname ?? null,
+      fromPath: from?.url?.pathname ?? null,
       sessionFlag: readDrawingVisitedFlag(() => sessionStorage),
       referrer: document.referrer,
       origin: location.origin,
