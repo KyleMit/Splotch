@@ -154,10 +154,11 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
 * Numbered step comments (`// 1. …`) or section banners inside one function are the signal to
   extract each step into a named helper — write it that way the first time.
 * **Tuning literals get names.** A numeric literal that encodes a tunable decision — threshold,
-  duration, dimension, curve shaping, byte offset, retry count — gets a named module-scope constant
-  with the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on the
-  constant. Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated and
-  rejected: ~750 hits in this canvas-heavy codebase.)
+  duration, dimension, curve shaping, byte offset, retry count — gets a named constant at module
+  scope, or in a Svelte component at the top of its `<script>` (instance or `<script module>`), with
+  the unit in the name (`_MS`, `_PX`, `SNAP_BAND_FRACTION`); the WHY comment lives on the constant.
+  Plain geometry arithmetic stays inline. (ESLint's `no-magic-numbers` was evaluated and rejected:
+  ~750 hits in this canvas-heavy codebase.)
 * **Cross-file agreement is never maintained by prose.** A value that must agree with another module
   is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
   boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
