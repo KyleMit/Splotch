@@ -81,6 +81,9 @@ test.describe('settings on a rotatable device', () => {
     const orientationCell = page.locator('.quick-toggles > .setting').nth(3);
     for (const choice of ['portrait', 'landscape', 'auto']) {
       await expect(orientationCell.locator(`#orientationOption-${choice}`)).toBeVisible();
+      const box = (await orientationCell.locator(`#orientationOption-${choice}`).boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(48);
+      expect(box.height).toBeGreaterThanOrEqual(48);
     }
     await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
   });

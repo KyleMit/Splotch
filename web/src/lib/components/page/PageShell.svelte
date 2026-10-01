@@ -271,14 +271,10 @@
     flex: 1 1 auto;
   }
 
-  /* Centred on the H1's first line rather than hung from the hero's top edge,
-     so a compact control doesn't float above the title it belongs to. The
-     H1 is fluid (34-46px at line-height 1.08), so the offset is computed
-     from it; a fixed offset was right at one viewport width only. The
-     control is the design system's 44px floor, which every hero action
-     meets (the admin console's Sign out is the one caller). */
+  /* Centre the action on the fluid H1's first line, using the shared Button
+     target floor rather than a fixed offset from the hero's top edge. */
   .hero-actions {
-    --hero-action-height: 44px;
+    --hero-action-height: var(--touch-target-min);
 
     flex-shrink: 0;
     margin-top: calc((var(--font-size-display) * 1.08 - var(--hero-action-height)) / 2);

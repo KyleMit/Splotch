@@ -49,30 +49,50 @@
 
 <style>
   .toggle-switch {
+    --switch-track-height: 32px;
+    --switch-thumb-size: 26px;
+
     width: 52px;
-    height: 32px;
-    background: var(--control-track);
+    height: var(--touch-target-min);
+    background: transparent;
     border: none;
-    border-radius: var(--radius-pill);
     padding: 0;
     position: relative;
     cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch::before {
+    content: '';
+    position: absolute;
+    inset: calc((var(--touch-target-min) - var(--switch-track-height)) / 2) 0;
+    background: var(--control-track);
+    border-radius: var(--radius-pill);
+    pointer-events: none;
     transition:
       background var(--duration-base) ease,
       box-shadow var(--duration-base) ease;
-    flex-shrink: 0;
     /* The OFF track is two shades from its card (1.1:1); this rim gives its
        boundary the 3:1 WCAG 1.4.11 asks of a state you read by position. */
     box-shadow: inset 0 0 0 var(--border-width) var(--icon-muted);
   }
 
+  .toggle-switch:focus-visible {
+    outline: none;
+  }
+
+  .toggle-switch:focus-visible::before {
+    outline: var(--focus-ring-width) solid var(--brand);
+    outline-offset: var(--focus-ring-offset);
+  }
+
   @media (hover: hover) {
-    .toggle-switch:hover {
+    .toggle-switch:hover::before {
       background: var(--control-track-hover);
     }
   }
 
-  .toggle-switch.active {
+  .toggle-switch.active::before {
     background: var(--brand);
     box-shadow: none;
   }
@@ -80,7 +100,7 @@
   @media (hover: hover) {
     /* The textless --brand fill darkens through the same themed ramp the
        labeled fills rest on — there is no separate unthemed hover step. */
-    .toggle-switch.active:hover {
+    .toggle-switch.active:hover::before {
       background: var(--brand-solid);
     }
   }
@@ -89,26 +109,15 @@
     cursor: default;
   }
 
-  /* Nothing interactive goes below 44px, and the track is deliberately 32 tall,
-     so the button takes taps past its own box rather than growing the row it
-     sits in. A ToggleRow's label activates the switch as well; on a hub row
-     this button is the whole target on its side of the split, which is where a
-     32px-tall hit box would be felt. */
-  .toggle-switch::before {
-    content: '';
-    position: absolute;
-    inset: -6px 0;
-  }
-
   .toggle-switch-thumb {
     position: absolute;
-    top: 3px;
+    top: calc((var(--touch-target-min) - var(--switch-thumb-size)) / 2);
     left: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: var(--switch-thumb-size);
+    height: var(--switch-thumb-size);
     background: white;
     border-radius: 50%;
     box-shadow: 0 2px 4px rgb(0 0 0 / 20%);

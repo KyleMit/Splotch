@@ -59,9 +59,8 @@
     /* The header row's height, declared here on the ancestor both rows share
        rather than content-sized on the row: the contents row under it
        subtracts it from its panel's cap, and a custom property only inherits
-       downward. It is the theme pill's 44px options inside the picker track's
-       padding, plus the row's own. */
-    --header-row-height: 72px;
+       downward. It includes the picker target, track padding, and the row's padding. */
+    --header-row-height: calc(var(--touch-target-min) + 2 * var(--space-1) + 20px);
 
     position: sticky;
     top: 0;
@@ -103,11 +102,8 @@
     border-radius: var(--radius-pill);
   }
 
-  /* 44px, not the prototype's 32px: nothing interactive goes below the
-     design system's touch-target floor, headers included. */
   .theme-toggle :global(.picker.segment.md .option) {
     border-radius: var(--radius-pill);
-    min-height: 44px;
     padding: 6px var(--space-3);
   }
 

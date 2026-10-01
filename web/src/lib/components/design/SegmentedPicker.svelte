@@ -220,6 +220,8 @@
        feedback kind leaves the settings panel where it was" in
        web/tests/flows-settings.spec.ts. */
     position: relative;
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
     border: none;
     background: transparent;
     color: var(--text-soft);
@@ -288,7 +290,6 @@
     flex-direction: var(--segment-option-direction, row);
     color: var(--text);
     gap: var(--segment-option-gap, 6px);
-    min-height: 44px;
     padding: var(--segment-option-padding, var(--space-2) var(--space-1));
     font-size: var(--font-size-sm);
     line-height: 1.2;
@@ -325,20 +326,11 @@
 
   .segment.fill .option {
     flex: 1;
-    min-width: 0;
   }
 
   /* A hugging track's options carry their own horizontal room instead of flexing. */
   .segment:not(.fill) .option {
     padding: var(--space-2) 14px;
-  }
-
-  /* Collapsed, an option is a square rather than a shrunken pill: the label is
-     what gave it width, and the touch-target floor is what's left. The caller
-     hides .option-label at a width it chooses; this keeps the target legal
-     when it does. */
-  .segment.collapsible .option {
-    min-width: 44px;
   }
 
   @media (hover: hover) {
@@ -378,10 +370,6 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    /* The interaction-target floor is a property of the control, not of the
-       viewport: a touch-capable tablet sits above the phone step and still gets
-       fingers. Padding alone leaves the box a pixel short of it. */
-    min-height: 44px;
     padding: 9px 2px 11px;
     /* Sits ON the rule rather than under it, so the live segment replaces that
        stretch of hairline instead of doubling it. */
@@ -432,7 +420,6 @@
 
     .underline .option {
       flex: 1 1 0;
-      min-width: 0;
     }
   }
 
@@ -443,7 +430,7 @@
      spending it on the border and its inset. */
   .chip {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(var(--touch-target-min), 1fr));
     gap: 10px;
   }
 
@@ -451,7 +438,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 0;
     padding: 11px 12px;
     border-radius: var(--radius-md);
     background: var(--control-track);

@@ -221,8 +221,8 @@
 <style>
   .ai-result-modal {
     --result-autosave-footer-reserve: 95px;
-    --loading-caption-height: 46px;
-    --keep-drawing-height: 44px;
+    --loading-caption-height: max(46px, var(--touch-target-min));
+    --keep-drawing-height: var(--touch-target-min);
     --result-sizing-air: 1px;
     --result-loading-reserve: calc(
       var(--space-4) + var(--space-4) + var(--space-3) + var(--loading-caption-height) +

@@ -53,7 +53,8 @@
 
   /* ── Download button ── */
   .ai-result-download {
-    height: 44px;
+    min-width: var(--touch-target-min);
+    height: var(--touch-target-min);
     padding: 0 22px;
     /* --brand-solid, not --brand: the fill carries its 14px bold label, and
        --brand is only 3.4:1 against --on-brand (fails WCAG AA below

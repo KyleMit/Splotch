@@ -46,11 +46,10 @@
 </button>
 
 <style>
-  /* The raw dimensions are control sizing: the pill keeps the platform's 44px
-     touch-target floor while the thumbnail and clear mark stay visibly nested. */
+  /* The pill follows the shared dismiss target while the thumbnail and clear
+     mark stay visibly nested. */
   .active-page-chip {
-    /* 44px pill minus the border and padding on each side, so the thumbnail
-       fills the content box exactly instead of bleeding 1px into the padding. */
+    /* The preview stays compact inside the shared target's extra padding. */
     --active-page-thumbnail-size: 34px;
     --active-page-clear-size: 28px;
     height: var(--modal-close-size);

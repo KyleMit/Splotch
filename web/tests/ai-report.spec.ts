@@ -71,10 +71,10 @@ test.describe('AI picture report', () => {
 
     const report = page.getByRole('button', { name: 'Report this picture' });
     // The Report control is deliberately fine print; the tap target around it
-    // still has to clear the app's 44px minimum.
+    // still has to clear the shared 48px minimum.
     const { report: reportBox, strip } = await resultBoxes(page);
-    expect(reportBox.width).toBeGreaterThanOrEqual(44);
-    expect(reportBox.height).toBeGreaterThanOrEqual(44);
+    expect(reportBox.width).toBeGreaterThanOrEqual(48);
+    expect(reportBox.height).toBeGreaterThanOrEqual(48);
     expect(reportBox.height).toBeGreaterThan(strip.height);
 
     await report.focus();
@@ -315,7 +315,7 @@ test.describe('AI picture report', () => {
     await expect(page.getByText('For grown-ups')).toBeVisible();
     await expect(report).toBeVisible();
     const reportBox = await report.boundingBox();
-    expect(reportBox?.height).toBeGreaterThanOrEqual(44);
+    expect(reportBox?.height).toBeGreaterThanOrEqual(48);
 
     await report.focus();
     await page.keyboard.press('Enter');

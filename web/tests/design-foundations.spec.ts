@@ -142,8 +142,8 @@ for (const theme of ['light', 'dark'] as const) {
     const back = specimen.getByRole('button', { name: 'Back', exact: true });
     const close = specimen.getByRole('button', { name: 'Close', exact: true });
     for (const button of [back, close]) {
-      await expect(button).toHaveCSS('width', '44px');
-      await expect(button).toHaveCSS('height', '44px');
+      await expect(button).toHaveCSS('width', '48px');
+      await expect(button).toHaveCSS('height', '48px');
     }
     // Contrast belongs to the settled theme colors, not an interpolated transition frame.
     await specimen.evaluate((root) =>
