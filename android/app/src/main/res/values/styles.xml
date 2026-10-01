@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="AppTheme.Base" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:colorBackground">@color/app_background</item>
-        <!-- WebView reads this framework attribute to resolve prefers-color-scheme. -->
-        <item name="android:isLightTheme">@bool/app_theme_is_light</item>
     </style>
+
+    <style name="AppTheme" parent="AppTheme.Base" />
 
     <!-- Capacitor's BridgeActivity applies this library-named theme before it creates the WebView. -->
     <style name="AppTheme.NoActionBar" parent="AppTheme" />

@@ -288,7 +288,7 @@ describe('Android native theme backgrounds', () => {
   it('sets the AppCompat background used before the web view paints', () => {
     const styles = read('android/app/src/main/res/values/styles.xml');
     expect(styles).toMatch(
-      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
+      /<style name="AppTheme\.Base" parent="Theme\.AppCompat\.DayNight\.NoActionBar">[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
     );
   });
 
@@ -297,11 +297,18 @@ describe('Android native theme backgrounds', () => {
     expect(styles).toMatch(/<style name="AppTheme\.NoActionBar" parent="AppTheme"\s*\/>/);
   });
 
-  it('varies WebView theme detection through one day/night boolean resource', () => {
+  it('keeps API 24–28 on the base theme without the API 29 framework attribute', () => {
     const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(/<style name="AppTheme" parent="AppTheme\.Base"\s*\/>/);
+    expect(styles).not.toContain('android:isLightTheme');
+  });
+
+  it('varies API 29+ WebView theme detection through one day/night boolean resource', () => {
+    const styles = read('android/app/src/main/res/values-v29/styles.xml');
     expect(styles).toMatch(
-      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:isLightTheme">@bool\/app_theme_is_light<\/item>[\s\S]*?<\/style>/
+      /<style name="AppTheme" parent="AppTheme\.Base">[\s\S]*?<item name="android:isLightTheme">@bool\/app_theme_is_light<\/item>[\s\S]*?<\/style>/
     );
+    expect(styles).not.toMatch(/tools:(?:targetApi|ignore)/);
     expect(read('android/app/src/main/res/values/bools.xml')).toContain(
       '<bool name="app_theme_is_light">true</bool>'
     );
