@@ -44,8 +44,8 @@ end-to-end — see the ADR's Verification table.
    feature-branch checkout is never touched. Run the block as written; each part guards a failure
    that concurrent sessions hit:
 
-   * **A unique worktree path.** Agent worktrees share one parent directory, so a fixed path like
-     `../pr-assets-wt` collides between sessions; `mktemp -d` cannot.
+   * **A unique worktree path.** Agent worktrees share one parent directory, so one fixed sibling
+     directory collides between sessions; `mktemp -d` cannot.
    * **Detached at the commit just fetched, never the local branch.** Local branches are shared by
      every worktree and a fetch never moves them, so a stale local `pr-assets` would take the commit
      and the push would be rejected. `FETCH_HEAD` is per worktree and is filled whatever the clone's
