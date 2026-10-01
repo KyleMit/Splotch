@@ -82,6 +82,37 @@ their actual values available to the application or tool; network-proxy placehol
 local cryptographic operations. GitHub repository access through the platform's Git proxy is
 separate from `GITHUB_ISSUE_TOKEN`, which grants feedback-issue access.
 
+### Secret destination domains
+
+The **Manage secrets → Allowed domains** field controls which HTTPS destinations can receive a
+secret through the proxy. Enter exact hostnames, without a scheme, path, or wildcard. Configure each
+credential separately; an empty list leaves a proxy secret inert.
+
+| Secret                     | Destination hostname                        |
+| -------------------------- | ------------------------------------------- |
+| `GEMINI_API_KEY`           | `generativelanguage.googleapis.com`         |
+| `OPENAI_API_KEY`           | `api.openai.com`                            |
+| `ELEVENLABS_API_KEY`       | `api.elevenlabs.io`                         |
+| `GITHUB_ISSUE_TOKEN`       | `api.github.com`                            |
+| `VECTORIZER_AUTHORIZATION` | `api.vectorizer.ai`                         |
+| `CLAUDE_CODE_OAUTH_TOKEN`  | `api.anthropic.com` for Claude API requests |
+
+These are the default provider destinations, not evidence that live calls have been validated.
+Claude CLI installation and OAuth login/refresh have not been tested in this environment; diagnose
+any additional authentication destination before extending that credential's allowed domains.
+
+For Vectorizer proxy secrets, use the prebuilt `VECTORIZER_AUTHORIZATION` value, including its
+`Basic ` prefix. The driver base64-encodes `VECTORIZER_ID` and `VECTORIZER_SECRET` locally; encoding
+proxy placeholders prevents substitution with the real credentials. The ID/secret pair remains
+appropriate when its actual values are available locally.
+
+`ALLOWED_TOKENS_LIST`, `ADMIN_ACCESS_TOKEN`, `REDTEAM_FIXTURE_KEY`, `REPORT_TOKEN_SECRET`, and
+`USAGE_GRANT_ID_SECRET` are consumed locally for access checks, signing, or fixture cryptography.
+They have no outbound destination to put in this field. Their real values require secure direct
+environment-variable injection; assigning a domain to a proxy secret does not make its real value
+available to local code. If direct injection is unavailable, leave them out of cloud setup and use
+the repository's isolated development/test credentials for the standard workflow.
+
 ## Installation, maintenance, and startup instructions
 
 Copy the complete contents of [`.codex/cloud/setup.sh`](../../.codex/cloud/setup.sh) into
