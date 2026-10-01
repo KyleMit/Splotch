@@ -13,6 +13,9 @@ export interface DrawingWorkDebug {
   realizedCrayonBackings: number;
   maxLiveBackingBytes: number;
   totalLiveBackingBytes: number;
+  // Full replays of retained history onto the live tiles, so a spec can prove
+  // a resize rebuilt the drawing rather than only re-presenting it.
+  historyRepaints: number;
   lastCommand: CommandWork | null;
 }
 
@@ -22,6 +25,7 @@ export function createDrawingWorkCounters() {
   let activeCommand: CommandWork | null = null;
   let lastCommand: CommandWork | null = null;
   let strokeRevision = 0;
+  let historyRepaints = 0;
 
   return {
     begin() {
@@ -41,10 +45,14 @@ export function createDrawingWorkCounters() {
       activeCommand = null;
       strokeRevision++;
     },
+    historyRepainted() {
+      historyRepaints++;
+    },
     reset() {
       activeCommand = null;
       lastCommand = null;
       strokeRevision = 0;
+      historyRepaints = 0;
     },
     strokeRevision() {
       return strokeRevision;
@@ -81,6 +89,7 @@ export function createDrawingWorkCounters() {
         realizedCrayonBackings,
         maxLiveBackingBytes,
         totalLiveBackingBytes,
+        historyRepaints,
         lastCommand: lastCommand ? { ...lastCommand } : null,
       };
     },

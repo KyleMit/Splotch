@@ -20,7 +20,7 @@
     setCrayonParams,
     setScreenAngleOverride,
     getViewState,
-    RESIZE_SETTLE_MS,
+    getDrawingWorkDebug,
     type EngineViewState,
   } from '$lib/drawing/engine';
   import {
@@ -30,15 +30,23 @@
     opaqueBounds,
   } from './lib/pixelReadback';
 
-  // Added to the engine's own `RESIZE_SETTLE_MS` debounce so `resizeTo` resolves
-  // after the rebuild it triggers, not in the same tick the debounce fires.
-  const RESIZE_SETTLE_SLACK_MS = 50;
+  // How long `resizeTo` waits for the engine to rebuild before rejecting. Only a
+  // resize the engine never rebuilt reaches it: the `RESIZE_SETTLE_MS` debounce
+  // plus one rebuild finishes far inside it even on a loaded CI worker.
+  const RESIZE_REBUILD_DEADLINE_MS = 5_000;
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Svelte's bind:this idiom: LiveSurface's bind:canvasEl assigns it before onMount reads it
   let canvasEl: HTMLCanvasElement = $state()!;
   let wrapperEl: HTMLDivElement;
   let engine: ReturnType<typeof initDrawingCanvas> | null = null;
   const paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  // The engine reports its view at the end of every resizeCanvas, which is the
+  // rebuild a resize settles into; `resizeTo` resolves on that report.
+  let viewChangeWaiters: Array<() => void> = [];
+
+  function nextViewChange() {
+    return new Promise<void>((resolve) => viewChangeWaiters.push(resolve));
+  }
 
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
@@ -79,6 +87,9 @@
       },
       onViewChange: (view) => {
         Object.assign(paperView, view);
+        const waiters = viewChangeWaiters;
+        viewChangeWaiters = [];
+        for (const resolve of waiters) resolve();
       },
     });
     win.__engineState.canvasEmpty = isCanvasEmpty();
@@ -207,16 +218,35 @@
 
       // Resize the canvas box and fire the resize event the engine listens for,
       // so the spec can verify the tiled drawing survives a resize. The engine
-      // debounces the rebuild until the size settles, so resolve only after that
-      // window has passed.
-      resizeTo(w: number, h: number) {
+      // debounces the rebuild until the size settles; this resolves when that
+      // rebuild reports its view, and rejects when there is no rebuild to wait
+      // for — a box equal to the current one, or an engine that never rebuilt.
+      async resizeTo(w: number, h: number) {
+        const current = wrapperEl.getBoundingClientRect();
+        if (current.width === w && current.height === h) {
+          throw new Error(`resizeTo(${w}, ${h}) is the current box: nothing would rebuild`);
+        }
+        const rebuilt = nextViewChange();
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;
         window.dispatchEvent(new Event('resize'));
-        return new Promise<void>((resolve) =>
-          setTimeout(resolve, RESIZE_SETTLE_MS + RESIZE_SETTLE_SLACK_MS)
-        );
+        let deadline: ReturnType<typeof setTimeout> | undefined;
+        const missed = new Promise<never>((_, reject) => {
+          deadline = setTimeout(
+            () => reject(new Error(`resizeTo(${w}, ${h}): the engine never rebuilt`)),
+            RESIZE_REBUILD_DEADLINE_MS
+          );
+        });
+        try {
+          await Promise.race([rebuilt, missed]);
+        } finally {
+          clearTimeout(deadline);
+        }
       },
+
+      // Retained-history replays onto the live tiles, so a resize spec can
+      // tell a rebuild from a re-presentation of the existing pixels.
+      getDrawingWorkDebug,
 
       // Rotation-while-backgrounded seam (issue #305): a hidden document fires
       // no resize/orientationchange, so apply the new box silently and fire
