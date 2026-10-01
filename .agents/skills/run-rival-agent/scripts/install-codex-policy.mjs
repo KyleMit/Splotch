@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { isMain } from '../../../../tools/lib/proc.mjs';
 import { INSTALL_ROOT, INSTALL_SHIMS, installRunClaude } from './install-run-claude.mjs';
+import { DESKTOP_CLAUDE_PATH } from './claude-runtime.mjs';
 
 const CODEX_DIRECTORY = join(homedir(), '.codex');
 const CONFIG_PATH = join(CODEX_DIRECTORY, 'config.toml');
@@ -42,7 +43,7 @@ prefix_rule(
     justification = "Check local Claude plan authentication and the installed bytes through a fixed read-only wrapper.",
 )
 prefix_rule(pattern = ["claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
-prefix_rule(pattern = ["/Users/kylemit/.local/bin/claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
+prefix_rule(pattern = ["${DESKTOP_CLAUDE_PATH}"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
 prefix_rule(
     pattern = ["gh"],
     decision = "prompt",

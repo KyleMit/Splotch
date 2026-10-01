@@ -73,7 +73,7 @@ Choose credentials by workflow:
 | Encrypted red-team fixtures and evaluation  | `REDTEAM_FIXTURE_KEY`; live evaluation also needs `OPENAI_API_KEY`                                                                                                    |
 | Vectorizer.AI                               | `VECTORIZER_ID` plus `VECTORIZER_SECRET`, or `VECTORIZER_AUTHORIZATION`                                                                                               |
 | ElevenLabs sound generation                 | `ELEVENLABS_API_KEY`                                                                                                                                                  |
-| Claude CLI plan authentication              | `CLAUDE_CODE_OAUTH_TOKEN`, only if an existing plan login is unavailable; the CLI itself needs separate installation                                                  |
+| Claude rival reviews                        | `CLAUDE_CODE_OAUTH_TOKEN`; setup installs the pinned CLI and trusted cloud wrappers                                                                                   |
 
 `web/.env.example` documents the loading rules for each credential. A local `web/.env` is not
 automatically copied to a cloud machine. API credentials also need access to their provider's
@@ -98,8 +98,8 @@ credential separately; an empty list leaves a proxy secret inert.
 | `CLAUDE_CODE_OAUTH_TOKEN`  | `api.anthropic.com` for Claude API requests |
 
 These are the default provider destinations, not evidence that live calls have been validated.
-Claude CLI installation and OAuth login/refresh have not been tested in this environment; diagnose
-any additional authentication destination before extending that credential's allowed domains.
+Claude's local auth status does not establish token validity or remote access. Validate with the
+small question round below; record any blocked request before extending the allowed domains.
 
 For Vectorizer proxy secrets, use the prebuilt `VECTORIZER_AUTHORIZATION` value, including its
 `Basic ` prefix. The driver base64-encodes `VECTORIZER_ID` and `VECTORIZER_SECRET` locally; encoding
@@ -116,12 +116,14 @@ the repository's isolated development/test credentials for the standard workflow
 ## Installation, maintenance, and startup instructions
 
 Copy the complete contents of [`.codex/cloud/setup.sh`](../../.codex/cloud/setup.sh) into
-`install_script`, and [`.codex/cloud/start.md`](../../.codex/cloud/start.md) into `start_skill`.
-Configuration saves persist instructions; they do not execute them or publish a new snapshot.
+`install_script`, [`.codex/cloud/maintenance.sh`](../../.codex/cloud/maintenance.sh) into the
+maintenance field when available, and [`.codex/cloud/start.md`](../../.codex/cloud/start.md) into
+`start_skill`. Select a repository revision containing those files and the cloud rival installer;
+then build a new environment snapshot. Configuration saves persist instructions; they do not execute
+them or publish a new snapshot.
 
-The local copies `/workspace/.cache/splotch-install.sh` and `/workspace/.cache/splotch-start.md`
-carry the same contents as those two source files. Reconcile and copy them manually alongside
-environment settings after future edits.
+If using local copies at `/workspace/.cache/splotch-install.sh` and
+`/workspace/.cache/splotch-start.md`, refresh them manually alongside the environment settings.
 
 Run installation and maintenance from the checkout:
 
@@ -148,6 +150,16 @@ re-pinned: with `packageManager`, there is no second version of the manager to d
 Keep `--frozen-lockfile` in maintenance even when a branch is based on `main`: a cached container
 may retain dependencies from another branch, and a frozen install reproduces exactly the checked-out
 lockfile instead of resolving around the drift.
+
+Both scripts also invoke the trusted cloud rival installer from the canonical `/workspace/Splotch`
+checkout. It installs the exact Claude Code version declared in
+[claude-runtime.mjs](../../.agents/skills/run-rival-agent/scripts/claude-runtime.mjs) through the
+existing npm registry allowance, using an isolated package tree under
+`/workspace/.cache/claude-code`. It does not change the application's package manifest or lockfile.
+The vendor's pinned native-binary installer runs explicitly; dependency lifecycle scripts stay
+disabled. The installer then copies the rival core and Codex-side adapter into a hashed, read-only
+package under `/workspace/.cache/splotch-rival-agent`. No desktop Codex policy is installed or
+rewritten. Installation from a disposable review worktree is refused.
 
 Both scripts are best-effort: they run without `set -e`, so a failed step prints a loud
 `CODEX SETUP WARNING` / `CODEX MAINTENANCE WARNING` banner (plus an end-of-run summary) and the
@@ -179,6 +191,61 @@ task; retained dependencies do not imply a server is running.
 If setup fails, record the exact failed command, host, and error before changing the environment. Do
 not add Android/iOS toolchains, emulators, tunnels, or unrelated allowlist entries to this
 environment unless a task demonstrates a need for them.
+
+## Claude rival reviews
+
+Read the **Codex Cloud** section of the
+[Codex run-rival-agent skill](../../.agents/skills/run-rival-agent/SKILL.md). Activate the
+tool/cache environment from the startup instructions, then verify the installed CLI and wrapper
+bytes:
+
+```bash
+node .agents/skills/run-rival-agent/scripts/install-cloud.mjs --check
+/workspace/.cache/splotch-rival-agent/claude-health.mjs
+```
+
+The health wrapper requires plan authentication and refuses API-key, Bedrock, Vertex, and Foundry
+billing. It uses `CLAUDE_CODE_OAUTH_TOKEN`, the inherited HTTP proxy, and the configured CA trust.
+The CLI's configuration and transcripts live under `/workspace/.cache/claude-code/state`; the
+review-round ledger lives under `/workspace/.cache/splotch-rival-state`. Automatic CLI updates and
+nonessential traffic are disabled so the snapshot keeps the validated version.
+
+Start the first review of new work with `--fresh` so a cached ledger entry for a reused branch name
+does not resume another task's reviewer. Omit `--fresh` for later rounds of that same review, and
+use `--end-session` when the review unit is complete.
+
+This managed machine cannot create the nested user namespace required by Claude's Linux Bash sandbox
+(`bwrap` reports a read-only UID map). The cloud adapter therefore gives the rival only restricted
+file reads and the `run` MCP broker, with no Bash, edit, browser, or direct web tools. Every test,
+build, or reproduction is a broker request that the native Codex handler executes under the
+platform's permission rules or declines. The desktop adapter retains its sandboxed Bash mode.
+
+To validate remote authentication and the broker, create an absolute question file under `/tmp`
+asking Claude to read the review packet and request `node --version` through `run`. Launch:
+
+```bash
+/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main --fresh --question-file /tmp/claude-cloud-question.md
+```
+
+Retain the launcher's process handle. Read its printed session directory and serve
+`broker.mjs next --session <dir> --timeout-seconds 60`, executing or declining each request, until
+it reports `done` or `failed`. Success requires validated findings and an answered broker request,
+not just a local logged-in status. No GitHub comment is posted by a question round. If the token is
+rejected, generate a replacement plan token with `claude setup-token` on a trusted logged-in machine
+and update the environment secret securely; never paste it into chat or a script.
+
+The live cloud acceptance round on 2026-10-01 succeeded with the configured plan token: Claude read
+the packet and package manifest, requested `node --version`, received the handler's successful
+reply, and returned valid findings with no unverified entries. No extra OAuth destination was
+required for that run. Token expiration and future CLI authentication changes still require a fresh
+live check.
+
+Branch and commit reviews need no GitHub CLI credential. The existing `--pr` scope and installed
+publisher need separate GitHub CLI authentication with PR-review permissions; the feedback issue
+token is not proof of those permissions. Without it, the native handler can read and validate the PR
+through GitHub app tools, launch the reviewed branch or commit, and publish the marked findings
+through those tools after checking the exact reviewed base/head. Keep moved-head and sensitive-value
+publication checks; do not silently switch credentials.
 
 ## Relationship to Claude Code Cloud
 

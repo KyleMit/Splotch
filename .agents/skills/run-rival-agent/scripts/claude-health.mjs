@@ -10,8 +10,10 @@ import {
   assertNoApiBillingEnvironment,
 } from './splotch-claude-subscription-auth.mjs';
 import { isEntryPoint } from '../../../../tools/rival-agent/broker-server.mjs';
+import { CLAUDE_RUNTIME } from './claude-runtime.mjs';
 
-export const CLAUDE_PATH = '/Users/kylemit/.local/bin/claude';
+export const CLAUDE_PATH = CLAUDE_RUNTIME.command;
+const HEALTH_TIMEOUT_MS = 30_000;
 export const MANIFEST_NAME = 'manifest.json';
 
 export function digest(content) {
@@ -42,8 +44,12 @@ export function verifyInstalledBytes(directory) {
   return { installed: true, version: manifest.version };
 }
 
-function capture(command, args) {
-  const result = spawnSync(command, args, { encoding: 'utf8' });
+function capture(command, args, environment) {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    env: environment,
+    timeout: HEALTH_TIMEOUT_MS,
+  });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(
@@ -56,7 +62,14 @@ function capture(command, args) {
 export function checkClaudeAuthentication(environment = process.env) {
   assertNoApiBillingEnvironment(environment);
   const installation = verifyInstalledBytes(dirname(fileURLToPath(import.meta.url)));
-  assertClaudePlanAuthentication(JSON.parse(capture(CLAUDE_PATH, ['auth', 'status'])));
+  if (CLAUDE_RUNTIME.cloud && !installation.installed) {
+    throw new Error('use the installed cloud health wrapper, not the checkout source');
+  }
+  assertClaudePlanAuthentication(
+    JSON.parse(
+      capture(CLAUDE_PATH, ['auth', 'status'], { ...environment, ...CLAUDE_RUNTIME.environment })
+    )
+  );
   return installation;
 }
 
@@ -65,7 +78,7 @@ export function main() {
     if (process.argv.length !== 2) throw new Error('claude-health.mjs accepts no arguments');
     const installation = checkClaudeAuthentication();
     console.log(
-      `Claude plan authentication is available outside the Codex sandbox${installation.installed ? ` (installed rival-agent v${installation.version})` : ''}`
+      `Claude plan authentication is configured${installation.installed ? ` (installed rival-agent v${installation.version})` : ''}; a live question round verifies remote access`
     );
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

@@ -55,6 +55,9 @@ fi
 corepack enable --install-directory /workspace/.cache/bin pnpm && corepack install \
   || warn "pnpm setup skipped — the install below will fail until corepack can provision pnpm."
 
+node .agents/skills/run-rival-agent/scripts/install-cloud.mjs \
+  || warn "Claude rival refresh failed — check registry.npmjs.org access and the writable CLI/wrapper caches."
+
 pnpm install --frozen-lockfile --prefer-offline --store-dir /workspace/.cache/pnpm-store \
   || warn "pnpm install failed — dependencies may be stale or incomplete. Usually pnpm-lock.yaml disagreeing with package.json; run 'pnpm install' locally and commit the refreshed lockfile."
 node tools/run-web-tool.mjs svelte-kit sync \

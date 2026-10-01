@@ -278,7 +278,8 @@ export async function launch(
   const repoRoot = resolveRepoRoot(options.cwd);
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
   const recordPath = ledgerPath(
-    ledgerKeyFor({ repoRoot, rival: vendor.rival, scope: options.scope, branch })
+    ledgerKeyFor({ repoRoot, rival: vendor.rival, scope: options.scope, branch }),
+    vendor.ledgerDirectory
   );
 
   if (options.endSession) {
@@ -347,6 +348,7 @@ export async function launch(
         landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
         extraInstructions,
         toolBoundary: vendor.toolBoundary,
+        executionMode: vendor.executionMode,
       });
       return runStreaming({
         command: vendor.command,

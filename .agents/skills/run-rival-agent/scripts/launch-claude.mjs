@@ -17,10 +17,11 @@ import {
 import { claudeReducer } from '../../../../tools/rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../../../../tools/rival-agent/validate-findings.mjs';
 import { git } from '../../../../tools/rival-agent/worktree.mjs';
+import { CLAUDE_RUNTIME } from './claude-runtime.mjs';
 
 export const RIVAL = 'claude';
-export const CLAUDE_PATH = '/Users/kylemit/.local/bin/claude';
-export const CLAUDE_PROJECTS = '/Users/kylemit/.claude/projects';
+export const CLAUDE_PATH = CLAUDE_RUNTIME.command;
+export const CLAUDE_PROJECTS = CLAUDE_RUNTIME.projectsDirectory;
 const MODELS = new Set(['sonnet', 'opus']);
 const DEFAULT_MODEL = 'opus';
 // Measured on opus on 2026-09-02 under the settings below: the worktree, the packet, and the
@@ -34,6 +35,9 @@ export const TOOL_BOUNDARY =
 // sandbox settings below, and the broker for what that sandbox refuses. No web, no edits.
 export const RIVAL_TOOLS = 'Read,Grep,Glob,Bash';
 export const BROKER_TOOL = 'mcp__broker__run';
+export const CLOUD_RIVAL_TOOLS = 'Read,Grep,Glob';
+export const CLOUD_TOOL_BOUNDARY =
+  '* **You have file-reading tools and the `run` broker, and no shell, edit tools, browser, or direct network tools.** Read the worktree and packet with your file tools. Request every test, build, or reproduction through `run`; the native handler executes or declines it under its own permission rules.';
 // The credential directory the other vendor's rival keeps its login in; the rival is Claude, so its
 // own `~/.claude` stays readable — it is the rival's state, not a secret from it.
 export const DENIED_READ_DIRECTORIES = Object.freeze([join(homedir(), '.codex')]);
@@ -89,8 +93,12 @@ export function brokerMcpConfig({ session, brokerServerPath, nodePath }) {
 }
 
 // Claude's own MCP tool timeout would fail a brokered command long before the handler answers.
-export function claudeEnvironment(environment = process.env) {
-  return { ...environment, MCP_TOOL_TIMEOUT: String(PENDING_REQUEST_TIMEOUT_MS) };
+export function claudeEnvironment(environment = process.env, runtime = CLAUDE_RUNTIME) {
+  return {
+    ...environment,
+    ...runtime.environment,
+    MCP_TOOL_TIMEOUT: String(PENDING_REQUEST_TIMEOUT_MS),
+  };
 }
 
 // Claude's --json-schema validator refuses the draft 2020-12 `$schema` declaration ("no schema
@@ -111,7 +119,9 @@ export function buildClaudeArgs({
   model,
   effort,
   rivalSession = { mode: 'create', id: randomUUID() },
+  runtime = CLAUDE_RUNTIME,
 }) {
+  const tools = runtime.cloud ? CLOUD_RIVAL_TOOLS : RIVAL_TOOLS;
   return [
     '--print',
     // --restricted, not --safe-mode: safe mode disables --mcp-config along with everything else,
@@ -122,11 +132,10 @@ export function buildClaudeArgs({
     '--permission-mode',
     'dontAsk',
     '--tools',
-    RIVAL_TOOLS,
+    tools,
     '--allowedTools',
-    `${RIVAL_TOOLS},${BROKER_TOOL}`,
-    '--settings',
-    sandboxSettings(sandboxPaths),
+    `${tools},${BROKER_TOOL}`,
+    ...(!runtime.cloud ? ['--settings', sandboxSettings(sandboxPaths)] : []),
     '--mcp-config',
     brokerMcpConfig({ session, brokerServerPath, nodePath }),
     '--strict-mcp-config',
@@ -180,10 +189,15 @@ export const claudeVendor = Object.freeze({
   rival: RIVAL,
   command: CLAUDE_PATH,
   reducer: claudeReducer,
-  toolBoundary: TOOL_BOUNDARY,
+  toolBoundary: CLAUDE_RUNTIME.cloud ? CLOUD_TOOL_BOUNDARY : TOOL_BOUNDARY,
+  executionMode: CLAUDE_RUNTIME.cloud ? 'broker' : 'hybrid',
+  ledgerDirectory: CLAUDE_RUNTIME.ledgerDirectory,
   prepare() {
     assertNoApiBillingEnvironment();
-    verifyInstalledBytes(dirname(fileURLToPath(import.meta.url)));
+    const installation = verifyInstalledBytes(dirname(fileURLToPath(import.meta.url)));
+    if (CLAUDE_RUNTIME.cloud && !installation.installed) {
+      throw new Error('use the installed cloud launcher, not the checkout source');
+    }
     return { env: claudeEnvironment() };
   },
   resolveModel: resolveClaudeModel,

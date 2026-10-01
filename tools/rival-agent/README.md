@@ -60,6 +60,12 @@ handler, Codex the rival) and `.agents/skills/run-rival-agent/scripts/` (Codex i
 Claude the rival). Each one resolves the scope, creates the worktree and packet, starts the rival
 with the broker attached, and on exit validates the final message into `findings.json`.
 
+On managed Codex Cloud, Claude has restricted file reads and the broker, with every command handled
+by Codex; no nested shell sandbox is required. The cloud bootstrap installs pinned CLI and wrapper
+bytes separately from the app, and directs the round ledger to writable cache storage. The adapter
+selects the broker execution prompt; desktop adapters keep the sandboxed-shell prompt. See
+[the Codex cloud guide](../../docs/CLOUD/Codex.md) for setup, authentication, and publication.
+
 ## Tests
 
 `tests/*.test.mjs`, run by `npm run test:tools`. The broker protocol is exercised end to end with
