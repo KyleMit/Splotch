@@ -9,9 +9,8 @@ import { createSecureCredentialCoordinator } from './secureCredentialCoordinator
 // The parent's own AI provider API key (BYOK). Stored only on this device and sent
 // with each AI request so the server bills the parent's own provider account
 // instead of ours. Either this OR aiAccessToken being set unlocks the AI features.
-// The key itself is no longer kept here in plaintext — it lives in secure
-// storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
-// web).
+// The key is persisted only in secure storage (Keychain/Keystore on native, an
+// encrypted IndexedDB payload on the web), never as plaintext.
 
 async function persistAiUserApiKey(v: string) {
   if (v) await saveApiKey(v);
