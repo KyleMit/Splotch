@@ -109,7 +109,14 @@ describe('Android monochrome launcher artwork', () => {
       'capacitor-assets generate --android && node tools/mobile/android/gen-monochrome-icon.mjs'
     );
     expect(descriptions['gen:android:assets']).toContain(SOURCE);
-    expect(read('docs/MOBILE/native.md')).toContain('npm run gen:android:assets');
-    expect(read('docs/MOBILE/native.md')).not.toContain('@capacitor/assets generate --android');
   });
+
+  it.each(['native', 'android'])(
+    '%s guide preserves monochrome art during regeneration',
+    (guide) => {
+      const doc = read(`docs/MOBILE/${guide}.md`);
+      expect(doc).toContain('npm run gen:android:assets');
+      expect(doc).not.toMatch(/@capacitor\/assets\s+generate(?!\s+--ios\b)/);
+    }
+  );
 });

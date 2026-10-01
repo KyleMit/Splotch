@@ -300,7 +300,7 @@ The shared baseline both depend on:
 
 * [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
       source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
-      `npx @capacitor/assets generate` for both platforms.
+      `npm run gen:android:assets` and `npx @capacitor/assets generate --ios`.
 * [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
       **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
       link opens the app and applies the token automatically.
