@@ -79,6 +79,30 @@ Inspect `git status --short` before and after setup. Expected outputs belong in 
 `/workspace/.cache`; investigate any tracked change and undo only unintended changes made by this
 task.
 
+## Claude rival reviews
+
+Setup and maintenance install a pinned Claude Code CLI separately from the app dependencies, plus
+hashed trusted wrappers at `/workspace/.cache/splotch-rival-agent`. Before using the
+`run-rival-agent` skill, run:
+
+```bash
+node .agents/skills/run-rival-agent/scripts/install-cloud.mjs --check
+/workspace/.cache/splotch-rival-agent/claude-health.mjs
+```
+
+Use the configured `CLAUDE_CODE_OAUTH_TOKEN`, proxy, and CA trust; do not reveal the token or launch
+an interactive login. Authentication status is a local configuration check, so validate actual
+remote access with a small question round before the first review. Read the skill's **Codex Cloud**
+section for the fixed launcher, broker, and PR publication instructions. Claude reads its disposable
+worktree and packet with restricted file tools and requests every command through the Codex broker.
+The platform controls approvals; no desktop Codex policy or Keychain setup is needed here.
+
+Missing or stale wrapper bytes need a setup/maintenance refresh from the trusted canonical checkout.
+Never copy wrappers from the rival's reviewed worktree. Review transcripts and the round ledger are
+under `/workspace/.cache`, and may survive container caching; live reviewer processes must be
+restarted for a new task. GitHub CLI access for `--pr` and automatic posting needs separate
+validation. A local branch or commit review can use the native GitHub app for publication.
+
 The source files for this configuration are `.codex/cloud/setup.sh`, `.codex/cloud/maintenance.sh`,
 and `.codex/cloud/start.md`. Sync their contents to the environment settings and any local copies
 manually when needed.
