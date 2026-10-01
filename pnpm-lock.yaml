@@ -11,6 +11,7 @@ overrides:
   browserslist@4.28.4: ^4.28.7
   brace-expansion@1.1.18: ^1.1.20
   brace-expansion@2.1.4: ^2.1.6
+  devalue@5.9.2: ^5.9.3
   tar: ^7.5.19
 
 importers:
@@ -3110,9 +3111,6 @@ packages:
 
   dettle@1.0.5:
     resolution: {integrity: sha512-ZVyjhAJ7sCe1PNXEGveObOH9AC8QvMga3HJIghHawtG7mE4K5pW9nz/vDGAr/U7a3LWgdOzEE7ac9MURnyfaTA==}
-
-  devalue@5.9.2:
-    resolution: {integrity: sha512-po4PAY5c53tw5XMocSnf8A/5OHhbbUftpr93aEN6BBoAdntUmK7vu7wOATqvt7cXO7m1Cl4gMVn6p7n6n4mj0w==}
 
   devalue@5.9.4:
     resolution: {integrity: sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg==}
@@ -7704,7 +7702,7 @@ snapshots:
       '@types/cookie': 0.6.0
       acorn: 8.18.0
       cookie: 0.6.0
-      devalue: 5.9.2
+      devalue: 5.9.4
       esm-env: 1.2.2
       kleur: 4.1.5
       magic-string: 0.30.21
@@ -8622,8 +8620,6 @@ snapshots:
   detect-libc@2.1.2: {}
 
   dettle@1.0.5: {}
-
-  devalue@5.9.2: {}
 
   devalue@5.9.4: {}
 
