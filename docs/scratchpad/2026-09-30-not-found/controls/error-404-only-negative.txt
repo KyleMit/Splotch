@@ -1,0 +1,57 @@
+$ vitest run src/routes/errorPage.ssr.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vitest.config.ts:3:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+
+stderr | src/routes/errorPage.ssr.test.ts
+localStorage read failed; using fallback ReferenceError: localStorage is not defined
+    at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/storage.ts:214:17
+    at safeStorageRead (/Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/storage.ts:68:12)
+    at readString (/Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/storage.ts:213:10)
+    at readFeatureMode (/Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/state/parentalGate.svelte.ts:90:18)
+    at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/state/parentalGate.svelte.ts:101:55
+    at Array.map (<anonymous>)
+    at readPolicies (/Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/state/parentalGate.svelte.ts:101:28)
+    at createParentalGate (/Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/state/parentalGate.svelte.ts:218:15)
+    at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/src/lib/state/parentalGate.svelte.ts:551:34
+    at VitestModuleEvaluator._runInlinedModule (file:///Users/kylemit/.codex/worktrees/ed28/Splotch/node_modules/vitest/dist/module-evaluator.js:258:4)
+
+ ❯ src/routes/errorPage.ssr.test.ts (5 tests | 4 failed) 18ms
+   ❯ SvelteKit error page (5)
+     × keeps status 400 on the crash recovery screen 3ms
+     × keeps status 403 on the crash recovery screen 2ms
+     × keeps status 500 on the crash recovery screen 2ms
+     × keeps status 503 on the crash recovery screen 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/errorPage.ssr.test.ts > SvelteKit error page > keeps status 400 on the crash recovery screen
+ FAIL  src/routes/errorPage.ssr.test.ts > SvelteKit error page > keeps status 403 on the crash recovery screen
+ FAIL  src/routes/errorPage.ssr.test.ts > SvelteKit error page > keeps status 500 on the crash recovery screen
+ FAIL  src/routes/errorPage.ssr.test.ts > SvelteKit error page > keeps status 503 on the crash recovery screen
+AssertionError: expected undefined to be 'Oops!' // Object.is equality
+
+- Expected:
+"Oops!"
+
++ Received:
+undefined
+
+ ❯ src/routes/ErrorPageTestHarness.ts:51:72
+     49|       document.body.innerHTML = body;
+     50|       document.head.innerHTML = head;
+     51|       expect(document.querySelector('[role="alert"] h1')?.textContent)…
+       |                                                                        ^
+     52|       expect(document.querySelector('.error-restart')?.textContent).to…
+     53|       expect(document.querySelector('.not-found')).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed (5)
+   Start at  20:34:02
+   Duration  522ms (transform 69%, import 26%, tests 4%, setup 1%)
+
