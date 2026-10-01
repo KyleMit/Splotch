@@ -261,6 +261,9 @@ Agent-managed worktrees share host ports and machine capacity, whichever runner 
 for that — explicit ports, `EADDRINUSE` handling, and which suites are host-exclusive — are in the
 root `CLAUDE.md`/`AGENTS.md` under "Concurrent worktrees".
 
-`npm --silent run show:free-port` prints one currently unused loopback port. By default it probes
-both IPv4 and IPv6 localhost; `--host` checks only the named host. It does not reserve the port, so
-pass it to the server immediately and choose another if startup reports `EADDRINUSE`.
+`npm --silent run show:free-port` prints one currently unused port. It probes the named host (by
+default both IPv4 and IPv6 localhost) and also both wildcard addresses and every local interface
+address, so a listener on any address marks the port taken: on macOS a loopback bind succeeds beside
+a wildcard listener, so a loopback-only probe would report another session's `*:<port>` server as
+free. It does not reserve the port, so pass it to the server immediately and choose another if
+startup reports `EADDRINUSE`.

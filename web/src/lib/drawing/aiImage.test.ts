@@ -122,6 +122,20 @@ describe('generateAiImage request ownership', () => {
     expect(console.error).toHaveBeenCalledWith(exportError);
   });
 
+  it('turns an empty canvas export into an error instead of closing the result', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(null);
+    vi.stubGlobal('fetch', vi.fn());
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { generateAiImage } = await import('./aiImage');
+    const { aiGenerationState } = await import('$lib/state/aiGeneration.svelte');
+
+    await generateAiImage();
+
+    expectPhase(aiGenerationState, { kind: 'error', errorKind: 'generic' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('drops a closed run whose canvas export finishes after its replacement starts', async ({
     signal,
   }) => {

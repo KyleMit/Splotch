@@ -27,12 +27,12 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { ROOT, argFlag, capture, fail, isMain, runMain, sleep, tryCapture } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
+import { probePort as portIsFree } from '../show-free-port.mjs';
 import { prepareCapture } from './prepare-capture.mjs';
 import { campaignStatus } from './campaign-status.mjs';
 import { stampedBuildCommit } from './lib/build-provenance.mjs';
@@ -102,14 +102,6 @@ const OVERLAY_POLL_MS = 5_000;
 const OVERLAY_TIMEOUT_MS = 20 * 60_000;
 
 // ---------------------------------------------------------------- utilities
-
-async function portIsFree(port) {
-  return new Promise((resolve) => {
-    const server = createServer();
-    server.once('error', () => resolve(false));
-    server.listen(port, '0.0.0.0', () => server.close(() => resolve(true)));
-  });
-}
 
 // The fetch spec's bad-ports list (4190 among them) is refused by undici here
 // and by the device browser alike, with a bare "bad port". Asking fetch itself
