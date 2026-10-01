@@ -231,9 +231,17 @@ npm run cap:ios       # cap:sync + open the iOS project in Xcode (macOS-only)
 Regenerate launcher icons / splash after changing artwork in `assets/`:
 
 ```bash
-npx @capacitor/assets generate --android
+npm run gen:android:assets
 npx @capacitor/assets generate --ios
 ```
+
+The Android command restores the monochrome layer after Capacitor regenerates the ordinary color
+icons and splash. Edit `assets/icon-monochrome.xml` for the themed launcher artwork: it is a 108dp
+VectorDrawable traced from the smiling S in `assets/icon.png`, with transparent eyes and smile. Its
+centered 48 × 65.5dp silhouette fits within the 66dp circular safe area. The generator copies that
+source to `android/app/src/main/res/drawable/ic_launcher_monochrome.xml` and references it from both
+adaptive icon definitions. Android 13+ themed icons depend on the user's setting and launcher
+support; ordinary color and pre-adaptive launcher icons use their existing artwork.
 
 ## 3. Store listing assets & copywriting (both stores)
 
@@ -292,7 +300,7 @@ The shared baseline both depend on:
 
 * [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
       source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
-      `npx @capacitor/assets generate` for both platforms.
+      `npm run gen:android:assets` and `npx @capacitor/assets generate --ios`.
 * [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
       **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
       link opens the app and applies the token automatically.

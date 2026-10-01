@@ -8,6 +8,7 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 | Entry point                     | Public command(s)                                                                        |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `gen-monochrome-icon.mjs`       | `npm run gen:android:assets` — restores monochrome art after Capacitor generation        |
 | `setup-emulator.mjs`            | `npm run android:setup`                                                                  |
 | `run-emulator.mjs`              | `android:boot`, `android:emulator`, `android:live`                                       |
 | `run-gradle.mjs`                | `android:apk`, `android:apk:release`, `android:run`, `android:bundle`, `android:clean`   |
@@ -24,6 +25,13 @@ requested tasks to the committed wrapper from the `android/` project directory.
 gate test-signs and boots the signed filename. Bundle release commands write and inspect
 `android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals that containing
 directory without changing it.
+
+`gen-monochrome-icon.mjs` copies the authored VectorDrawable from `assets/icon-monochrome.xml` into
+Android resources and restores both adaptive references. The public command runs Capacitor's asset
+generator first, so regenerate through that command rather than invoking the vendor generator alone.
+Missing source/adaptive files or unexpected XML fail before any resource is written. The monochrome
+restoration requires Node only; full asset generation also needs installed Capacitor assets and
+artwork under `assets/`.
 
 The toolchain requires Node 22+, a full JDK 21, and an Android SDK. Emulator setup additionally
 requires `sdkmanager`, `avdmanager`, `emulator`, and `adb`; the smoke test requires Maestro. Release

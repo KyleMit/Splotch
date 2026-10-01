@@ -271,7 +271,7 @@ Three things that will waste your time here:
 * [x] Placeholder launcher icons + splash generated from the logo.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
-      `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
+      `assets/splash.png`), then rerun `npm run gen:android:assets`.
 * [ ] Confirm `npm run release` bumped `versionCode` / `versionName` —
       `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into
       `android/app/build.gradle`, which is the source of truth. Only a hand-built release needs them
