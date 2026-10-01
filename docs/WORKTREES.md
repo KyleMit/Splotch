@@ -217,9 +217,17 @@ mean re-implementing the copying by hand.
 ## Known gap: subagent worktrees
 
 A subagent with `isolation: worktree` in its frontmatter gets its own worktree, but no
-`SessionStart` fires for it, so nothing provisions its dependencies. No agent in this repo declares
-that isolation today. An agent that needs to run `npm run …` in its own worktree has to install
-first.
+`SessionStart` fires for it, so nothing provisions its dependencies. No agent definition in this
+repo declares that isolation, but Claude Code's Agent tool also accepts it per call, and a campaign
+that gives every unit its own worktree that way hits the gap on every unit. Such a worktree still
+gets `.worktreeinclude`'s files, but the bootstrap's steps have to be run by hand, in order:
+
+1. Branch from a fresh `origin/main` (`git fetch origin main`, then
+   `git switch -c <branch> origin/main`): the worktree is cut from whatever ref the shared `.git`
+   last fetched.
+2. `pnpm install --frozen-lockfile --prefer-offline`.
+3. `npm run check` before `npm run test:tools` or `npm run test:asset-gen`: its `precheck` generates
+   the `web/.svelte-kit/` those suites need (`docs/TESTING.md`).
 
 ## Retiring a worktree
 

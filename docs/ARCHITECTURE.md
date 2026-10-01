@@ -1,5 +1,13 @@
 # Splotch – Architecture
 
+<!--
+Editing the tables below: dprint pads every cell in a column to that column's widest cell. A new
+cell wider than the current widest re-pads every row of its table, so a one-row change becomes a
+whole-table diff that conflicts with every concurrent branch touching the table. Keep a new cell no
+wider than the widest one already there, or split the entry into two rows. To resolve a merge
+conflict inside a table, take main's version of the file and re-apply your rows in one edit.
+-->
+
 ## Tech Stack
 
 ### Core Framework
