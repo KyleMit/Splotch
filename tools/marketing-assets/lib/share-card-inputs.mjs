@@ -11,6 +11,7 @@ const VISUAL_INPUT_FILES = [
   'tools/marketing-assets/gen-share-cards.mjs',
   'tools/marketing-assets/lib/share-card-inputs.mjs',
   'web/src/routes/dev/share-cards/+page.svelte',
+  'web/src/routes/dev/share-cards/+page.server.ts',
   'web/src/routes/dev/share-cards/lib/ShareCard.svelte',
   'web/src/routes/+layout.svelte',
   'web/src/lib/components/CrayonStrip.svelte',

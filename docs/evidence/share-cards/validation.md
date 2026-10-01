@@ -50,3 +50,10 @@ It detects changed inputs since generation, rather than proving universal pixel 
 name and title-size source edits each made the provenance guard fail, and the restored files passed.
 Regeneration preserved all four PNGs byte-for-byte. The two touched oversized fixture file caps were
 lowered to their measured sizes, 1391 and 837 lines.
+
+The resumed second review independently verified both negative controls, then found that the server
+load supplying the rendered card also belongs in the producer digest. That source is included; an
+actual upper-case-name edit in the load failed the guard and its restored source passed. All four
+regenerated PNGs again retained their exact hashes and bytes. Both suggestions are addressed; the
+reviewer did not run live capture or release builds, whose evidence is reported separately. The
+review-fix tools suite passed all 6651 tests.
