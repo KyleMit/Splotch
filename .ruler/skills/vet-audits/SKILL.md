@@ -30,7 +30,10 @@ before filing, sharpen the finding so the fix agent can act on it without re-der
 * **Write the verification** — the concrete way the fix agent will prove the problem is real and
   confirm the fix resolves it: repro steps, a command or script to paste, a profile to capture, the
   test that should fail before and pass after. This is the highest-value thing you add; leave no
-  filed issue without it whenever a verification is feasible.
+  filed issue without it whenever a verification is feasible. Run each command as written from the
+  repo root before filing (a Vitest file runs through
+  `node tools/run-web-tool.mjs vitest run src/...`, not `npx vitest run web/src/...`), and scope a
+  done-when check such as a grep to exactly the sites the issue enumerates.
 
 Then open the issue (see **Filing the issue** below).
 

@@ -16,7 +16,9 @@ Why it matters — the problem it solves or the risk it removes.
 
 ## Done when
 
-How we'll know it's finished (tests pass, gate added, doc updated, …).
+How we'll know it's finished (tests pass, gate added, doc updated, …). A verification command must
+run as written from the repo root, and a done-when check (e.g. a grep) must be scoped to exactly the
+sites this issue enumerates.
 
 ## Notes
 
