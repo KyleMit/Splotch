@@ -4,12 +4,19 @@ import { describe, expect, it, vi } from 'vitest';
 import releases from '$lib/releases.json';
 import PageFooter from './PageFooter.svelte';
 
-const page = vi.hoisted(() => ({ url: { pathname: '/privacy' }, status: 200 }));
+const page = vi.hoisted(
+  (): { url: { pathname: string }; status: number; error: App.Error | null } => ({
+    url: { pathname: '/privacy' },
+    status: 200,
+    error: null,
+  })
+);
 vi.mock('$app/state', () => ({ page }));
 
-function renderedFooter(pathname: string, status = 200) {
+function renderedFooter(pathname: string, status = 200, error: App.Error | null = null) {
   page.url.pathname = pathname;
   page.status = status;
+  page.error = error;
   const { document } = new Window();
   document.body.innerHTML = render(PageFooter).body;
   return document;
@@ -59,13 +66,24 @@ export function describePageFooter(native: boolean) {
     it.each(['/privacy/missing', '/changelog/missing', '/feedback/missing'])(
       'keeps sibling links available on a missing page at %s',
       (pathname) => {
-        const document = renderedFooter(pathname, 404);
+        const document = renderedFooter(pathname, 404, { message: 'Not found' });
         expect(document.querySelectorAll('nav [aria-current]')).toHaveLength(0);
         expect(document.querySelector('nav a[href="/privacy"]')).not.toBeNull();
         expect(document.querySelector('nav a[href="/changelog"]')).not.toBeNull();
         expect(document.querySelector('.version a')?.getAttribute('href')).toBe(
           `/changelog#${releases[0].id}`
         );
+      }
+    );
+
+    it.each([400, 429, 502])(
+      'preserves the feedback section after a failed action with status %s',
+      (status) => {
+        const document = renderedFooter('/feedback', status);
+        expect(document.querySelector('nav [aria-current]')?.textContent?.trim()).toBe(
+          native ? undefined : 'Send feedback'
+        );
+        expect(document.querySelector('nav a[href="/feedback"]')).toBeNull();
       }
     );
 

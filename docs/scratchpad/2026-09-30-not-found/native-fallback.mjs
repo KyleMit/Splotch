@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 import { writeFile } from 'node:fs/promises';
-const base = resolve('web/build');
+const base = resolve(process.env.SPLOTCH_NATIVE_EXPORT_DIR ?? 'web/build');
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',

@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import { standalonePageEntries } from './standalonePageEntries';
 import { unitTestDefines, WEB_SSR_TESTS } from './vitest.config';
 
 // Web-build SSR guards: the same SvelteKit compile and client-runtime resolution
@@ -12,6 +13,7 @@ export default defineConfig({
   resolve: { conditions: ['browser'] },
   define: unitTestDefines(false),
   test: {
+    alias: standalonePageEntries(false),
     environment: 'node',
     pool: 'threads',
     include: [WEB_SSR_TESTS],

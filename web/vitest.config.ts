@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
+import { standalonePageEntries } from './standalonePageEntries';
 import { buildDefines } from './defines';
 
 // The per-request SSR guard renders pages the way the Netlify SSR bundle does,
@@ -37,6 +38,7 @@ export default defineConfig({
   // dead-code-eliminate here and need source/build boundary coverage instead.
   define: unitTestDefines(true),
   test: {
+    alias: standalonePageEntries(true),
     environment: 'happy-dom',
     coverage: {
       provider: 'v8',

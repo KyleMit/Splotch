@@ -10,7 +10,7 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<PageShell title="This page wandered off">
+<PageShell title="This page wandered off" collapsibleLede={false}>
   {#snippet lede()}The link may be old. These are still here:{/snippet}
 
   <div class="not-found">

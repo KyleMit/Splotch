@@ -4,7 +4,12 @@ import { drawCommittedStroke, firstOpaquePixel, readDrawingHistory } from './hel
 const ERROR_TITLE = 'Oops! · Splotch';
 const DRAWING_RECOVERY_TIMEOUT_MS = 10_000;
 
-test('an unknown route responds with the friendly page and its own head', async ({ page }) => {
+test('an unknown route responds with the friendly page and its own head without JavaScript', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  const page = await context.newPage();
   const response = await page.goto('/no-such-page');
   expect(response?.status()).toBe(404);
   await expect(
@@ -15,6 +20,7 @@ test('an unknown route responds with the friendly page and its own head', async 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveCount(0);
+  await context.close();
 });
 
 test('a missing privacy path keeps all sibling footer links', async ({ page }) => {
@@ -88,6 +94,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
 test('short screens compact the static decorative mark', async ({ page }) => {
   await page.setViewportSize({ width: 812, height: 375 });
   await page.goto('/no-such-page');
+  await expect(page.locator('.lede')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'About this page' })).toHaveCount(0);
   const mark = page.locator('.not-found-mark');
   await expect(mark).toHaveCSS('width', '56px');
   await expect(mark).toHaveCSS('height', '56px');
@@ -100,4 +108,36 @@ test('a hydration crash caught by the root boundary retitles the tab', async ({ 
   await expect(page.getByRole('heading', { name: 'Oops!' })).toBeVisible();
   await expect(page.locator('head title')).toHaveCount(1);
   await expect(page).toHaveTitle(ERROR_TITLE);
+});
+
+test('standalone page glyphs retain their bounded canonical geometry in both themes and forced colors', async ({
+  browser,
+  baseURL,
+}) => {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    for (const forcedColors of ['none', 'active'] as const) {
+      const context = await browser.newContext({ baseURL, colorScheme, forcedColors });
+      const page = await context.newPage();
+      await page.goto('/privacy');
+      const back = page.locator('.back-icon svg').first();
+      await expect(back).toBeVisible();
+      expect((await back.boundingBox())?.width).toBe(24);
+      expect((await back.boundingBox())?.height).toBe(24);
+      await page.goto('/design');
+      await page.evaluate(() => document.fonts.ready);
+      for (const [selector, size] of [
+        ['.external-demo-prose .external-mark-icon', 9],
+        ['.external-demo-standalone .external-mark-icon', 12],
+      ] as const) {
+        const wrapper = page.locator(selector);
+        await wrapper.scrollIntoViewIfNeeded();
+        await expect(wrapper).toBeVisible();
+        const svg = wrapper.locator('svg');
+        expect((await svg.boundingBox())?.width).toBe(size);
+        expect((await svg.boundingBox())?.height).toBe(size);
+        await expect(svg).not.toHaveCSS('fill', 'none');
+      }
+      await context.close();
+    }
+  }
 });

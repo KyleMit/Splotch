@@ -1,5 +1,6 @@
 // @vitest-environment node
 import ts from 'typescript';
+import { PAGE_ICON_MARKUP } from './page/WebPageIcon.svelte';
 import { describe, it, expect } from 'vitest';
 import { DEFERRED_ICON_NAMES, deferredIcons } from './deferredIcons';
 import { deferredIconMarkup } from './iconRegistry.svelte';
@@ -57,23 +58,69 @@ const scriptBlocks = (path: string, src: string) =>
       )
     : [src];
 
-const importsRegistry = (path: string, src: string) =>
-  scriptBlocks(path, src).some((code) =>
+const runtimeSpecifiers = (path: string, src: string) =>
+  scriptBlocks(path, src).flatMap((code) =>
     ts
       .createSourceFile('script.ts', code, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS)
-      .statements.some(
-        (statement) =>
-          ts.isImportDeclaration(statement) &&
-          !statement.importClause?.isTypeOnly &&
-          ts.isStringLiteral(statement.moduleSpecifier) &&
-          REGISTRY_SPECIFIER_RE.test(statement.moduleSpecifier.text)
+      .statements.flatMap((statement) =>
+        ts.isImportDeclaration(statement) &&
+        !statement.importClause?.isTypeOnly &&
+        ts.isStringLiteral(statement.moduleSpecifier)
+          ? [statement.moduleSpecifier.text]
+          : []
       )
+  );
+const importsRegistry = (path: string, src: string) =>
+  runtimeSpecifiers(path, src).some((specifier) => REGISTRY_SPECIFIER_RE.test(specifier));
+const importsPageIcon = (path: string, src: string) =>
+  runtimeSpecifiers(path, src).includes('$pageIcon');
+const importsRawIcon = (path: string, src: string, name: string) =>
+  runtimeSpecifiers(path, src).some((specifier) =>
+    specifier.endsWith(`/icons/deferred/${name}.svg?raw`)
+  );
+
+const hasMarkupProvider = (path: string, src: string, names: readonly CommonIconName[]) =>
+  importsRegistry(path, src) ||
+  names.every(
+    (name) =>
+      (importsPageIcon(path, src) && Object.hasOwn(PAGE_ICON_MARKUP, name)) ||
+      importsRawIcon(path, src, name)
   );
 
 const namesIn = (src: string) =>
   DEFERRED_ICON_NAMES.filter((name) => new RegExp(`(['"])${name}\\1`).test(src));
 
 describe('deferred icon registry', () => {
+  it('recognizes only runtime page providers and direct SVG imports', () => {
+    expect(importsPageIcon('x.ts', "import Icon from '$pageIcon';")).toBe(true);
+    expect(
+      hasMarkupProvider('x.ts', "import Icon from '$pageIcon';", ['chevron-left', 'external'])
+    ).toBe(true);
+    const unsupported = DEFERRED_ICON_NAMES.find((name) => !Object.hasOwn(PAGE_ICON_MARKUP, name));
+    if (!unsupported)
+      throw new Error('The page provider unexpectedly includes every deferred icon');
+    expect(hasMarkupProvider('x.ts', "import Icon from '$pageIcon';", [unsupported])).toBe(false);
+    expect(importsPageIcon('x.ts', "// import Icon from '$pageIcon';")).toBe(false);
+    expect(importsPageIcon('x.ts', "import type Icon from '$pageIcon';")).toBe(false);
+    expect(
+      importsRawIcon('x.ts', "import icon from '$lib/icons/deferred/external.svg?raw';", 'external')
+    ).toBe(true);
+    expect(
+      importsRawIcon(
+        'x.ts',
+        "// import icon from '$lib/icons/deferred/external.svg?raw';",
+        'external'
+      )
+    ).toBe(false);
+    expect(
+      importsRawIcon(
+        'x.ts',
+        "import icon from '$lib/icons/deferred/external.svg?raw';",
+        'chevron-left'
+      )
+    ).toBe(false);
+  });
+
   // Positive controls for the import matcher: the guard below is only as good
   // as this parse, so the shapes it must accept and reject are pinned here.
   it.each([
@@ -117,7 +164,12 @@ describe('deferred icon registry', () => {
   it('exempts only files that still name a deferred icon', () => {
     for (const path of NON_RENDERING_REFERENCES) {
       expect(sources, `${path} is no longer a source file`).toHaveProperty(path);
-      expect(namesIn(sources[path]), `${path} names no deferred icon`).not.toEqual([]);
+      expect(
+        path.endsWith('/NativePageIcon.svelte')
+          ? Object.keys(PAGE_ICON_MARKUP)
+          : namesIn(sources[path]),
+        `${path} names no deferred icon`
+      ).not.toEqual([]);
     }
   });
 
@@ -133,8 +185,8 @@ describe('deferred icon registry', () => {
 
     it.each(consumers)('%s', (path, names) => {
       expect(
-        importsRegistry(path, sources[path]),
-        `${path} renders ${names.join(', ')} but never imports $lib/components/deferredIcons, so those icons are unregistered when it first renders`
+        hasMarkupProvider(path, sources[path], names),
+        `${path} renders ${names.join(', ')} but never imports $lib/components/deferredIcons, or its page/raw provider, so those icons are unregistered when it first renders`
       ).toBe(true);
     });
   });
@@ -148,8 +200,11 @@ describe('deferred icon registry', () => {
       .map(([path]) => path);
 
     it.each(sideEffectImporters)('%s', (path) => {
+      // The native provider delegates its finite props to Icon; PageIcon.ssr.test.ts pins that contract.
       expect(
-        namesIn(sources[path]),
+        path === './page/NativePageIcon.svelte'
+          ? Object.keys(PAGE_ICON_MARKUP)
+          : namesIn(sources[path]),
         `${path} imports the deferred icon registry but names no deferred icon — drop the import`
       ).not.toEqual([]);
     });

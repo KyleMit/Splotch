@@ -1,7 +1,6 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
-  import Icon from '../Icon.svelte';
-  import '$lib/components/deferredIcons';
+  import Icon from '$pageIcon';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
   import { COLD_VISIT_LABEL, readDrawingVisitedFlag, resolveBackLabel } from './backLabel';
 

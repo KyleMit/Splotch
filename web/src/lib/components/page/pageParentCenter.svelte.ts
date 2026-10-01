@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import { scheduleIdle } from '$lib/idle';
 import { parentalGateLink } from '$lib/actions/parentalGateLink';
 import { waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
 import { createSingleFlight } from '$lib/singleFlight';
@@ -32,6 +33,10 @@ export function createPageParentCenter() {
     void loadParentalGate()
       .then((component) => (gateComponent = component))
       .catch((error) => console.error('Page parental gate failed to load:', error));
+  }
+
+  function warmParentalGate() {
+    return scheduleIdle(mountParentalGate);
   }
 
   function gatedLink(node: HTMLAnchorElement) {
@@ -80,6 +85,7 @@ export function createPageParentCenter() {
       return managingPolicies;
     },
     mountParentalGate,
+    warmParentalGate,
     gatedLink,
     openParentCenter,
   };

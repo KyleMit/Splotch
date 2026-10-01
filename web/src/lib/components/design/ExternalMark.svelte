@@ -1,7 +1,6 @@
 <script lang="ts">
-  import Icon from '../Icon.svelte';
+  import Icon from '$pageIcon';
   import VisuallyHidden from './VisuallyHidden.svelte';
-  import '$lib/components/deferredIcons';
 
   // The "leaves the app" cue, rendered inside the outbound <a> after its label
   // so a grown-up sees the link leaves Splotch before the parental gate asks,

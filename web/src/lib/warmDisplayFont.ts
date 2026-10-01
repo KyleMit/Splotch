@@ -1,10 +1,9 @@
-import { QUICKSAND_FONT_FAMILY } from './fonts';
 import { scheduleIdle } from './idle';
 
-// Native recovery can load the token's font identity without the root layout.
-// Importing that shared value on startup adds a native modulepreload; fonts.test.ts
-// guards this inline copy and check-bundle-budgets.mjs pins the request count.
-const DISPLAY_FONT_FAMILY = __IS_CAPACITOR__ ? 'Quicksand Variable' : QUICKSAND_FONT_FAMILY;
+// Recovery and token consumers share this identity across a bundle boundary.
+// Importing it here adds a startup chunk; fonts.test.ts guards the inline copy
+// and check-bundle-budgets.mjs pins both release modulepreload counts.
+const DISPLAY_FONT_FAMILY = 'Quicksand Variable';
 
 /**
  * Warms the display font so the first text-bearing overlay does not flash the

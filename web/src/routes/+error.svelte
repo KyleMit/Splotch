@@ -6,7 +6,7 @@
   // returned message for unexpected failures.
   import { page } from '$app/state';
   import ErrorScreen from '$lib/components/ErrorScreen.svelte';
-  import NotFoundPage from '$lib/components/page/NotFoundPage.svelte';
+  import NotFoundPage from '$notFoundPage';
 </script>
 
 {#if page.status === 404}

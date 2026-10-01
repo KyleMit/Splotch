@@ -10,7 +10,12 @@ const page = vi.hoisted(() => ({
 }));
 vi.mock('$app/state', () => ({ page }));
 
-export function describeErrorPage() {
+function assertNativePending(document: Window['document']) {
+  expect(document.querySelector('[role="alert"] h1')?.textContent).toBe('Oops!');
+  expect(document.querySelector('.error-restart')?.textContent).toBe('Start over');
+}
+
+export function describeErrorPage(native = false) {
   describe('SvelteKit error page', () => {
     it('renders missing pages as a standalone page with recovery links', () => {
       page.status = 404;
@@ -18,6 +23,10 @@ export function describeErrorPage() {
       const { document } = new Window();
       document.body.innerHTML = body;
       document.head.innerHTML = head;
+      if (native) {
+        assertNativePending(document);
+        return;
+      }
       expect(document.querySelector('h1')?.textContent).toBe('This page wandered off');
       expect(document.querySelector('.lede')?.textContent).toBe(
         'The link may be old. These are still here:'

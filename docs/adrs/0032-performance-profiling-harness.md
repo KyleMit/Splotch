@@ -230,21 +230,28 @@ The native export byte budget cannot catch it either, since it sums the whole ex
 An instrumented native build (`perf:build:cap`) reports a count mismatch without failing. The native
 export byte budget stays enforced there.
 
-### Friendly error pages and the font warmup boundary
+### Friendly error pages and the eager root-error boundary
 
-The root error entry can render without the normal layout. Importing `PageShell` there for a
-friendly 404 splits the native idle scheduler away from the font identity module, raising the native
-startup count from 28 to 29. Lazy shell and idle imports retain that independent dependency and do
-not restore the baseline.
+SvelteKit starts the root error loader on every route, outside the HTML modulepreload list.
+Importing a standalone shell there can fetch its complete icon registry and native dialog owners
+before a drawing has failed. `check-eager-error-bundle.mjs` follows the release manifest's static
+root-error imports and CSS on both targets, rejects those deferred owners, and reports the resources
+outside the HTML links. The web guard counts their union plus inline CSS against the existing
+`MAX_STARTUP_JS_CSS_BYTES` owner, so unlinked imports cannot evade the byte budget. Its fixture
+proves a transitive import fails while a dynamic import remains lazy. The preload pins still cover
+the original linked sets; their counts alone do not establish the complete cold-start request cost.
 
-`fonts.ts` owns only the canonical family name. `warmDisplayFont.ts` owns the startup warmup and
-continues to call the existing idle scheduler with its existing cancellation and Save-Data behavior.
-The web warmup imports the canonical family. Native uses an inline family name, guarded by
-`fonts.test.ts`, so importing the identity through the shared token graph cannot create another
-startup request. Both release budgets remain unchanged.
+`standalonePageEntries.ts` selects entries through the existing `CAPACITOR=true` build boundary. Web
+keeps a synchronous friendly 404 using the actual `PageShell`, with two canonical raw page glyphs
+and an unreachable native-controller entry that has no runtime dialog imports. Native keeps the
+existing icon registry and synchronous native link gate; its friendly page loads only when the
+client encounters a 404. While that local chunk loads, or if it fails, the existing `ErrorScreen`
+remains available. There is no async web SSR or duplicated shell.
 
-This keeps the 404 page synchronously server-rendered on web and shared with the native client
-fallback. A native lazy entry was rejected because it still split the scheduler and added a blank
-loading phase; merging chunks in bundler configuration would impose a wider manual partition policy
-for a small source boundary. The tradeoff is one deliberate native literal with a drift guard,
-matching the existing startup-boundary exception.
+The full shell's idle scheduler and the token's font identity have independent importers. A startup
+import of that identity partitions another linked chunk on both targets. `fonts.ts` owns the
+canonical name; `warmDisplayFont.ts` retains the existing idle, Save-Data and cancellation policy
+with an inline identity guarded by `fonts.test.ts`. Exact-base trials without that boundary still
+produced an extra native request after deferring the error entry. Both existing preload pins remain
+unchanged. The extra eager web 404 composition is a measured cost, not a zero-cost claim; the PR's
+verification package records the exact base comparison.

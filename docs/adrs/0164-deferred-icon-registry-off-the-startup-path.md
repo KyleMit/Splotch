@@ -100,3 +100,13 @@ with.
 * − The remaining large startup slice — CSS of dynamically imported components that SvelteKit
   inlines with the route — stays; addressing it means either a framework change or dropping
   `inlineStyleThreshold: Infinity`, which the drawing page's first-paint styling depends on.
+
+## Amendment: eagerly loaded standalone recovery
+
+SvelteKit's root error node loads on every route. Its web recovery page uses `WebPageIcon` for its
+page-chrome glyphs, imported directly from canonical SVG files. `NativePageIcon` uses the existing
+registry and inherits the same finite props contract; the native 404 entry is deferred. The source
+guard accepts the page provider only for its supported names, accepts a direct SVG only for its
+matching name, and still rejects unrelated deferred names. Provider SSR tests pin the same SVG and
+attributes on both targets; the release root-error closure guard rejects an eager registry
+dependency outside the HTML preload list.

@@ -19,8 +19,8 @@ describe('QUICKSAND_FONT_FAMILY', () => {
     expect(quicksandCss).toContain(`font-family: '${QUICKSAND_FONT_FAMILY}'`);
   });
 
-  it('matches the native startup copy without importing its shared module', () => {
-    expect(/__IS_CAPACITOR__ \? '([^']+)' : QUICKSAND_FONT_FAMILY/.exec(warmSource)?.[1]).toBe(
+  it('matches the startup copy without importing its shared module', () => {
+    expect(/const DISPLAY_FONT_FAMILY = '([^']+)'/.exec(warmSource)?.[1]).toBe(
       QUICKSAND_FONT_FAMILY
     );
   });

@@ -1,0 +1,98 @@
+[
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-desktop-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "0e1843693187cc190dcb4fa1442e2b53ad3eb07b2c031df64e4972fc22641a49"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-desktop-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "d925f225f96538ee433538e6c6c12f3e6e7600495d5a571e7ec7630665e9b883"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-phone-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "aa688a58e05f27d0402763891a8ab38a94a3865ce5a73d85fdbd8e5571547b77"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-phone-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "ed83d8f05883a04b16ce57ebc662d52f0e50a6ba712ecb8ebee97965c5a347e1"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-short-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "9042afaaac4c65a430915084ccbaaefe98722a1fa65db25d2aad65ca22aab75c"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/before-short-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "598d7c55a3cbe7adee0fbe1f00058b0f2d5498c34bdf92de9f479464d5edd54c"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-desktop-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "5119de790fd3a0561136da3d11c2e85dd827107259fd6b6c0800f33f7ba4889a"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-desktop-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "11edaca90e03362adbabccc1310dd12eef2a9f27ec21e442cf4e7825452a3f75"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-phone-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "e2775e26acf91f8685e193b5b32d50366e971a5d7500dd1b2b721b44a7e8008b"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-phone-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "91e30164780d582d54cb30ed41a48f8f90f1470e142910faa738ce23066d695f"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-short-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "5417025c91d364c6985ec5b516371d2988e1826b15d63df42c9918457d907e5d"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/after-short-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "78942ae6fd80ce8f17d89bf716ef6c234b40d6904579ac488f74f255c85f9eca"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-phone-light.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "62a8ba71b47e2969408df0bd68f4308749cc953dc07f9ad007d407daaff85394"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-phone-dark.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "7221689ff4c36ebf7e4683fba2cae5e8d677ca419357419e243a3c1dd959eda3"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-fallback-pending.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "aa688a58e05f27d0402763891a8ab38a94a3865ce5a73d85fdbd8e5571547b77"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/friendly-not-found/native-fallback-failed.png",
+    "status": 200,
+    "content_type": "image/png",
+    "sha256": "aa688a58e05f27d0402763891a8ab38a94a3865ce5a73d85fdbd8e5571547b77"
+  }
+]

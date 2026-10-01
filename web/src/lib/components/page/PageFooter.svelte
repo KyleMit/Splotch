@@ -13,7 +13,7 @@
     { id: 'changelog', label: 'Changelog', color: paletteHex('Blue') },
     { id: 'feedback', label: 'Send feedback', color: paletteHex('Green') },
   ];
-  const currentSection = $derived(page.status === 200 ? page.url.pathname.split('/')[1] : null);
+  const currentSection = $derived(page.error ? null : page.url.pathname.split('/')[1]);
   const releaseHref = $derived(
     `${currentSection === 'changelog' ? '' : '/changelog'}#${latest.id}`
   );
