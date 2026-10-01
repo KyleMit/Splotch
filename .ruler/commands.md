@@ -32,7 +32,8 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
 
 * Select an explicit unused port for every server (`npm --silent run show:free-port` can find one).
   Run targeted Playwright checks as
-  `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
+  `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`. The Node smokes
+  (`test:api:smoke`, `test:browserless`) read `SMOKE_PORT` instead.
 * Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:stop` or
   `kill-port`, and never terminate a listener merely because it occupies a desired port. Stop only a
   PID, process group, or tool handle created and recorded by the current session.
