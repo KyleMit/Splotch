@@ -26,6 +26,7 @@ web/src/lib/components/icon-names.d.ts
 web/src/lib/components/page/ReleaseHistory.svelte
 web/src/lib/components/settings/CurrentReleaseNotes.svelte
 web/src/lib/releases.json
+web/src/lib/releaseHues.ts
 web/src/tokens.css
 tools/store-drawings/generated/store-drawings.mjs
 web/tests/**/*-snapshots/

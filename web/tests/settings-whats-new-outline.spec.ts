@@ -23,6 +23,8 @@ async function expectReleaseNestedUnder(sectionHeading: Locator, card: Locator) 
   await expect(card.getByRole('heading', { level: level + 1, name: RELEASE_DATE })).toBeVisible();
   const releaseSections = card.locator('.release-section-heading');
   await expect(releaseSections).not.toHaveCount(0);
+  await expect(releaseSections.first().locator('.release-section-icon')).toBeVisible();
+  await expect(releaseSections.first()).toHaveCSS('clip-path', 'none');
   await expect(card.getByRole('heading', { level: level + 2 })).toHaveCount(
     await releaseSections.count()
   );

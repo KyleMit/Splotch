@@ -5,6 +5,9 @@ import {
   releaseAnchor,
   renderReleaseComponent,
   renderReleaseHistory,
+  renderReleaseMetadata,
+  renderReleaseHueModule,
+  RELEASE_HUES,
   validateBundledReleaseText,
   validateEmDashSpacing,
   validateStoreText,
@@ -186,11 +189,46 @@ describe('renderReleaseHistory', () => {
     expect(component).toContain(
       "import ReleaseSectionHeading from '$lib/components/ReleaseSectionHeading.svelte';"
     );
-    expect(component).toContain('<article class="release" id="release-2-0-0">');
-    expect(component).toContain('<article class="release" id="release-1-9-0">');
+    expect(component).toContain('<article class="release" id="release-2-0-0" data-hue="Purple">');
+    expect(component).toContain('<article class="release" id="release-1-9-0" data-hue="Blue">');
     expect(component).toContain('<time datetime="2026-08-08">August 8, 2026</time>');
     expect(component).toContain('<ReleaseSectionHeading title="New" level={3} />');
     expect(component).toContain('<code>&#123;fast&#125;</code>');
     expect(component).not.toMatch(/[ \t]+$/m);
   });
+});
+
+it('generates hue metadata, one latest label, empty relative dates and accessible lists', () => {
+  const releases = Array.from({ length: 8 }, (_, index) => ({
+    meta: { version: `1.${index}.0`, date: '2026-09-30' },
+    dateLabel: 'September 30, 2026',
+    body: '## New\n\n* An inline [link](https://splotch.art) stays in prose.',
+  }));
+  const component = renderReleaseHistory(releases);
+  expect(renderReleaseMetadata(releases).map((release) => release.hue)).toEqual([
+    ...RELEASE_HUES,
+    'Purple',
+    'Blue',
+  ]);
+  expect(component.match(/class="release-latest"/g)).toHaveLength(1);
+  expect(
+    component.match(/class="release-ago" data-ago-for="2026-09-30" aria-hidden="true"><\/span>/g)
+  ).toHaveLength(8);
+  expect(component.match(/<ul role="list">/g)).toHaveLength(8);
+  expect(component).toContain('<a href="https://splotch.art">link</a> stays in prose.');
+  expect(component).toContain('<details class="release-older" data-older-count="5">');
+  const split = component.indexOf('<details');
+  expect(component.slice(0, split).match(/<article /g)).toHaveLength(3);
+  expect(component.slice(split).match(/<article /g)).toHaveLength(5);
+  expect(component).toContain('Show 5 older releases');
+  expect(renderReleaseHistory(releases.slice(0, 4))).toContain('Show 1 older release</summary>');
+  expect(renderReleaseHistory(releases.slice(0, 3))).not.toContain('<details');
+});
+
+it('keeps the generated runtime hue vocabulary owned by the generator', () => {
+  const module = readFileSync(
+    new URL('../../../web/src/lib/releaseHues.ts', import.meta.url),
+    'utf8'
+  );
+  expect(module).toBe(renderReleaseHueModule());
 });

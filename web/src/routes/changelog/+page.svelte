@@ -1,4 +1,10 @@
 <script lang="ts">
+  import BackToTopLink from '$lib/components/page/BackToTopLink.svelte';
+  import SquiggleRule from '$lib/components/design/SquiggleRule.svelte';
+  import { paletteHex } from '$lib/palette';
+  import { parseReleaseHue } from '$lib/releaseHues';
+  import { formatReleaseAgo } from '$lib/releaseAgo';
+  import { createReleaseNavigation } from '$lib/releaseNavigation';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
@@ -14,6 +20,7 @@
     id: release.id,
     label: `Version ${release.version}`,
     meta: release.dateLabel,
+    hue: parseReleaseHue(release.hue),
     href: `#${release.id}`,
   }));
 
@@ -39,9 +46,24 @@
   const SPY_BAND_BOTTOM_PERCENT = 70;
   const SPY_ROOT_MARGIN = `0px 0px -${SPY_BAND_BOTTOM_PERCENT}% 0px`;
 
+  let navigation = $state<ReturnType<typeof createReleaseNavigation>>();
+  $effect(() => {
+    if (!historyEl) return;
+    const controller = createReleaseNavigation(historyEl);
+    navigation = controller;
+    const now = new Date();
+    for (const placeholder of historyEl.querySelectorAll<HTMLElement>('[data-ago-for]')) {
+      const date = placeholder.dataset.agoFor;
+      if (!date) throw new Error('Missing relative release date');
+      placeholder.textContent = formatReleaseAgo(date, now);
+    }
+    return () => controller.dispose();
+  });
+
   $effect(() => {
     const host = historyEl;
     if (!host) return;
+    const articles = [...host.querySelectorAll<HTMLElement>('.release')];
     const inBand: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
@@ -62,12 +84,20 @@
         // being scrolled into. An empty band means the reader is between two
         // releases — hold the last reading rather than blanking the rail.
         const current = releases.findLast((release) => inBand[release.id]);
+        const passed = articles.findLast((article) => {
+          const fold = article.closest('details');
+          return (
+            !(fold instanceof HTMLDetailsElement && !fold.open) &&
+            article.getBoundingClientRect().bottom <= 0
+          );
+        });
         if (current) activeRelease = current.id;
+        else if (passed) activeRelease = passed.id;
       },
       { rootMargin: SPY_ROOT_MARGIN }
     );
     observer.observe(host);
-    for (const article of host.querySelectorAll('.release')) observer.observe(article);
+    for (const article of articles) observer.observe(article);
     return () => observer.disconnect();
   });
 </script>
@@ -79,7 +109,17 @@
 
 <SocialCard path="/changelog" title="Splotch Changelog" description={DESCRIPTION} />
 
-<div class="changelog" id="top" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
+<div
+  class="changelog"
+  id="top"
+  style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh"
+  style:--hue-purple={paletteHex('Purple')}
+  style:--hue-blue={paletteHex('Blue')}
+  style:--hue-green={paletteHex('Green')}
+  style:--hue-orange={paletteHex('Orange')}
+  style:--hue-pink={paletteHex('Pink')}
+  style:--hue-red={paletteHex('Red')}
+>
   <PageShell title="Changelog">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that
@@ -104,13 +144,16 @@
         label="Changelog contents"
         noun="releases"
         stickyTop="0px"
+        beforeJump={(href) => navigation?.reveal(href) ?? Promise.resolve()}
+        onJump={(href) => navigation?.arrive(href)}
       />
 
       <div class="releases" bind:this={historyEl}>
         <ReleaseHistory />
         <footer class="history-end">
+          <SquiggleRule />
           <p>That's every release since {oldestRelease.dateLabel}.</p>
-          <a href="#top">Back to top ↑</a>
+          <BackToTopLink />
         </footer>
       </div>
     </div>
@@ -161,15 +204,14 @@
   .changelog :global(.release) {
     scroll-margin-top: var(--release-park, var(--space-6));
     padding: var(--space-8) 0;
-    border-top: var(--border-width) solid var(--page-rule);
+    position: relative;
   }
 
   /* Above the newest release the contents row (narrow) or the hero (wide)
      already rules the column off; a hairline right under it would read as a
      double strike, as /privacy reasons for its first section. */
-  .changelog :global(.release:first-of-type) {
+  .changelog :global(.release-history > .release:first-child) {
     padding-top: 0;
-    border-top: none;
   }
 
   /* No release follows the oldest one, so without a reserve the scroll clamps
@@ -180,7 +222,7 @@
   .history-end {
     min-height: max(0px, calc(var(--spy-reserve) - var(--page-footer-reserve)));
     padding-top: var(--space-6);
-    border-top: var(--border-width) solid var(--page-rule);
+    position: relative;
     text-align: center;
   }
 
@@ -189,21 +231,205 @@
     font-size: var(--font-size-sm);
   }
 
-  .history-end a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    color: var(--page-link);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-  }
-
   .changelog :global(.release-header) {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-3);
     margin-bottom: var(--space-4);
+  }
+
+  .releases {
+    isolation: isolate;
+  }
+  .changelog :global(.release > .squiggle-rule),
+  .history-end :global(.squiggle-rule) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+  .changelog :global(.release > .squiggle-rule) {
+    --squiggle-color: var(--release-hue);
+  }
+  .changelog :global(.release-history > .release:first-child > .squiggle-rule) {
+    display: none;
+  }
+  .changelog :global(.release[data-hue='Purple']) {
+    --release-hue: var(--hue-purple);
+  }
+  .changelog :global(.release[data-hue='Blue']) {
+    --release-hue: var(--hue-blue);
+  }
+  .changelog :global(.release[data-hue='Green']) {
+    --release-hue: var(--hue-green);
+  }
+  .changelog :global(.release[data-hue='Orange']) {
+    --release-hue: var(--hue-orange);
+  }
+  .changelog :global(.release[data-hue='Pink']) {
+    --release-hue: var(--hue-pink);
+  }
+  .changelog :global(.release[data-hue='Red']) {
+    --release-hue: var(--hue-red);
+  }
+  .changelog :global(.release-title) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .changelog :global(.release-date) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .changelog :global(.release-ago) {
+    min-height: 1.62em;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--page-link);
+  }
+  .changelog :global(.release-notes .release-section-heading),
+  .changelog :global(.release-latest) {
+    display: inline-flex;
+    padding: 3px 14px;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    color: var(--tape-ink);
+    background: color-mix(in srgb, var(--section-hue) var(--tape-strength), var(--page-sheet));
+    clip-path: polygon(3% 0, 100% 8%, 97% 100%, 0 90%);
+    transform: rotate(var(--section-tilt));
+  }
+  .changelog :global(.release-latest) {
+    --section-hue: var(--hue-pink);
+    --section-tilt: 3deg;
+    padding: 2px var(--space-3);
+    font-size: var(--font-size-xs);
+  }
+  .changelog :global(.release-section-icon) {
+    display: none;
+  }
+  .changelog :global([data-section='New']),
+  .changelog :global([data-section='New'] + ul) {
+    --section-hue: var(--hue-green);
+    --section-tilt: -1.5deg;
+  }
+  .changelog :global([data-section='Improved']),
+  .changelog :global([data-section='Improved'] + ul) {
+    --section-hue: var(--hue-blue);
+    --section-tilt: 1deg;
+  }
+  .changelog :global([data-section='Fixed']),
+  .changelog :global([data-section='Fixed'] + ul) {
+    --section-hue: var(--hue-orange);
+    --section-tilt: -1deg;
+  }
+  .changelog :global(.release-notes li::before) {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: calc((1.62em - 10px) / 2);
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-blob-1);
+    background: var(--section-hue, var(--release-hue));
+  }
+  .changelog :global(.release-notes li:nth-child(3n + 2)::before) {
+    border-radius: var(--radius-blob-2);
+  }
+  .changelog :global(.release-notes li:nth-child(3n)::before) {
+    border-radius: var(--radius-blob-3);
+  }
+  .changelog :global(.release[data-arrived])::after {
+    content: '';
+    position: absolute;
+    inset: 16px -14px;
+    border-radius: var(--radius-lg);
+    background: var(--arrival-wash);
+    z-index: -1;
+    pointer-events: none;
+    animation: release-arrive 2s ease-out 0.4s forwards;
+  }
+  @keyframes release-arrive {
+    to {
+      opacity: 0;
+    }
+  }
+  :global(:root[data-reduce-motion]) .changelog :global(.release[data-arrived])::after {
+    animation: none;
+  }
+  .changelog :global(.older-blob svg) {
+    fill: var(--on-brand);
+  }
+  .changelog :global(.release-older) {
+    position: relative;
+    padding-top: 18px;
+    text-align: center;
+  }
+  .changelog :global(.release-older > .squiggle-rule) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+  .changelog :global(.release-older[open] > .squiggle-rule) {
+    display: none;
+  }
+  .changelog :global(.release-older[open]) {
+    padding-top: 0;
+  }
+  .changelog :global(.release-older[open] > summary) {
+    display: none;
+  }
+  .changelog :global(.release-older .release) {
+    text-align: left;
+  }
+  .changelog :global(.release-older-toggle) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    background: var(--brand-wash);
+    color: var(--brand-text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    list-style: none;
+  }
+  .changelog :global(.release-older-toggle::-webkit-details-marker) {
+    display: none;
+  }
+  .changelog :global(.older-blob) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--brand-solid);
+    color: var(--on-brand);
+    border-radius: var(--radius-blob-1);
+  }
+  .changelog :global(.older-blob .older-icon) {
+    width: 16px;
+    height: 16px;
+    transform: rotate(-90deg);
+  }
+  @media (forced-colors: active) {
+    .changelog :global(.release-notes .release-section-heading),
+    .changelog :global(.release-latest) {
+      clip-path: none;
+      transform: none;
+      border: 2px solid CanvasText;
+    }
+    .changelog :global(.release-notes li::before),
+    .changelog :global(.older-blob) {
+      border: 1px solid CanvasText;
+    }
   }
 
   .changelog :global(.release-header h2) {
@@ -238,10 +464,12 @@
 
   .changelog :global(.release-notes ul) {
     margin: 0;
-    padding-left: 1.2em;
+    padding-left: 20px;
+    list-style: none;
   }
 
   .changelog :global(.release-notes li) {
+    position: relative;
     margin-bottom: var(--space-2);
   }
 
@@ -288,6 +516,9 @@
   }
 
   @media (max-width: 420px) {
+    .changelog :global(.release-date) {
+      align-items: flex-start;
+    }
     .changelog :global(.release-header) {
       align-items: flex-start;
       flex-direction: column;

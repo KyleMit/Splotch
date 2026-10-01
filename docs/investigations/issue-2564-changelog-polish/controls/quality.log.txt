@@ -1,0 +1,199 @@
+
+> splotch@1.6.0 check:quality
+> node tools/ci-mirror/run-quality-checks.mjs
+
+
+[1m$ npm run format:check[0m
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+from /Users/kylemit/.codex/worktrees/ed28/Splotch/docs/investigations/issue-2564-changelog-polish/README.md:
+36 36| the·observer·selects·the·last·fully·passed·visible·article·instead·of·retaining·its·initial·seed.
+37 37| Closed-details·entries·are·explicitly·excluded·from·that·fallback.
+38 38| 
+   39|-Validation·includes·the·complete·production·browser·suite·(1,071·passed),·all·five·browserless·tiers,
+   40|-41·focused·installed·WebKit·cases,·and·both·release-build·budget·guards.·The·WebKit·checks·include
+   41|-actual·landing·geometry,·keyboard·focus,·open-panel·caps,·all·five·closed/full-history·tail·sizes,
+   42|-AA·tape·and·active·highlighter·text·in·both·themes,·rapid·arrival·changes,·reduced·motion·and
+39   |+Validation·includes·the·complete·production·browser·suite·(1,071·passed),·all·five·browserless
+40   |+tiers,·41·focused·installed·WebKit·cases,·and·both·release-build·budget·guards.·The·WebKit·checks
+41   |+include·actual·landing·geometry,·keyboard·focus,·open-panel·caps,·all·five·closed/full-history·tail
+42   |+sizes,·AA·tape·and·active·highlighter·text·in·both·themes,·rapid·arrival·changes,·reduced·motion·and
+43 43| Settings·headings.·Browserless·coverage·reports·4,365·unit,·41·UI,·277·server,·23·API-unit,·6,645
+44 44| tools·and·42·API-smoke·assertions.
+45 45| 
+...
+49 49| union·of·484,835·of·525,000·allowed·bytes.·Final·web·numbers·are·recorded·in·the·capture/control
+50 50| logs.·These·budgets·are·unchanged.
+51 51| 
+   52|-The·compiled·native·probe·covers·both·shipped·pages·and·themes·with·idle·prewarming·disabled:
+   53|-there·is·no·gate·request·before·clicking,·one·gate·dialog·after·the·trusted·footer·click,·and·no
+   54|-external·page·before·solving.·A·local·fulfilled·navigation·fixture·verifies·replay·without·sending
+   55|-feedback.·Existing·Privacy·links,·a·single·Manage·host,·focus·return,·Never·mode·and·solved-session
+52   |+The·compiled·native·probe·covers·both·shipped·pages·and·themes·with·idle·prewarming·disabled:·there
+53   |+is·no·gate·request·before·clicking,·one·gate·dialog·after·the·trusted·footer·click,·and·no·external
+54   |+page·before·solving.·A·local·fulfilled·navigation·fixture·verifies·replay·without·sending·feedback.
+55   |+Existing·Privacy·links,·a·single·Manage·host,·focus·return,·Never·mode·and·solved-session
+56 56| original-click·navigation·are·preserved.·Native·folded·fragments·and·narrow·picks·assert·actual
+57 57| landed·boxes·and·arrival.·This·evidence·concerns·the·compiled·static·bundle·in·Chromium,·not·a
+58 58| physical·signed·app.
+--
+Found 1 not formatted file. Run dprint fmt to fix.
+
+[1m$ npm run check[0m
+
+> splotch@1.6.0 precheck
+> node tools/mobile/check-app-ids.mjs && node tools/run-web-tool.mjs svelte-kit sync
+
+[check-app-ids] all native app IDs match "art.splotch.app" and names match "Splotch".
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+> splotch@1.6.0 check
+> node tools/run-web-tool.mjs svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && npm run check:netlify
+
+$ svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+Loading svelte-check in workspace: /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+
+
+[1m$ npm run lint[0m
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+[1m$ npm run lint:css[0m
+
+> splotch@1.6.0 lint:css
+> stylelint "**/*.{css,svelte}"
+
+
+[1m$ npm run check:svg-assets[0m
+
+> splotch@1.6.0 check:svg-assets
+> node tools/optimize-svg-assets.mjs --check
+
+[optimize-svg-assets] 303 SVG(s) already optimal — nothing to do.
+
+[1m$ npm run ruler:check[0m
+
+> splotch@1.6.0 ruler:check
+> node tools/ruler/check-generated-files.mjs
+
+$ npm run ruler:apply
+
+> splotch@1.6.0 ruler:apply
+> node tools/ruler/apply-ruler.mjs
+
+$ ruler apply
+[ruler] Nested mode is experimental and may change in future releases.
+[ruler] Skills support is experimental and behavior may change in future releases.
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+Ruler apply completed successfully.
+$ /Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.codex/worktrees/ed28/Splotch/tools/ruler/mirror-skill-notes.mjs
+[skill-notes] mirrored 21 file(s) to .claude/skill-notes and .agents/skill-notes
+$ /Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.codex/worktrees/ed28/Splotch/tools/ruler/apply-skill-forks.mjs
+[skill-forks] applied 0 runner-specific skill(s) and 0 note(s)
+$ dprint fmt
+Formatted 58 files.
+[ruler:check] Generated agent files are in sync with .ruler/.
+
+[1m$ npm run check:ideas-review[0m
+
+> splotch@1.6.0 check:ideas-review
+> node tools/asset-gen/ideas-exploration/build-review.mjs --check
+
+[ideas-review] ideas-review.html is current.
+
+[1m$ npm run gen:tokens:check[0m
+
+> splotch@1.6.0 gen:tokens:check
+> node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-token-css.mjs --check
+
+tokens.css is up to date.
+
+[1m$ npm run lint:tokens[0m
+
+> splotch@1.6.0 lint:tokens
+> node tools/tokens/lint-token-styles.mjs
+
+Token style lint passed (9 allowlisted raw-hex files, 2 allowlisted raw-font-size files, 24 ratcheted unpinned-:global() files, 0 raw z-index, 0 !important).
+
+[1m$ npm run lint:dead[0m
+
+> splotch@1.6.0 lint:dead
+> knip --no-progress --include files,exports,types,duplicates
+
+
+[1m$ npm run lint:deps:prod[0m
+
+> splotch@1.6.0 lint:deps:prod
+> knip --config knip.production.json --production --strict --no-progress
+
+
+[1m$ npm run check:assets:manifest[0m
+
+> splotch@1.6.0 check:assets:manifest
+> node tools/asset-gen/gen-asset-manifest.mjs --check
+
+[asset-manifest] 1014 asset(s) match the manifest.
+
+[1m$ npm run scrapbook:check[0m
+
+> splotch@1.6.0 scrapbook:check
+> node tools/scrapbook/publish-scrapbook.mjs --check
+
+scrapbook: every collection resolves to a reachable entry page; index.html is current.
+
+[1m$ pnpm audit --audit-level=high[0m
+2 vulnerabilities found
+Severity: 1 low | 1 moderate
+
+✗ Quality: 1 of 14 checks failed
+    npm run format:check

@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  import type { ReleaseHue } from '$lib/releaseHues';
   import type { IconName } from '../icon-names';
 
   interface SidebarTocRow<Id extends string> {
@@ -6,6 +7,7 @@
     label: string;
     /** Second line under the label — the changelog's release date. */
     meta?: string;
+    hue?: ReleaseHue;
     /** Leading spot icon — the Settings section rows. */
     icon?: IconName;
     /** Whether this item's content is new to the parent. Defined only by Settings rows. */
@@ -26,6 +28,7 @@
 </script>
 
 <script lang="ts" generics="Id extends string">
+  import { paletteHex } from '$lib/palette';
   import SectionIcon from '../SectionIcon.svelte';
   import VisuallyHidden from '../design/VisuallyHidden.svelte';
 
@@ -89,6 +92,8 @@
             <a
               class="toc-row"
               class:active={current}
+              class:hued={item.hue !== undefined}
+              style:--row-hue={item.hue ? paletteHex(item.hue) : undefined}
               class:tracks-activity={item.unseen !== undefined}
               href={item.href}
               data-section={item.id}
@@ -101,6 +106,8 @@
               type="button"
               class="toc-row"
               class:active={current}
+              class:hued={item.hue !== undefined}
+              style:--row-hue={item.hue ? paletteHex(item.hue) : undefined}
               class:tracks-activity={item.unseen !== undefined}
               data-section={item.id}
               aria-current={current ? 'location' : undefined}
@@ -124,6 +131,7 @@
       {/if}
     </span>
   {/if}
+  {#if item.hue}<span class="toc-hue" aria-hidden="true"></span>{/if}
   <span class="toc-text">
     <span data-toc-label>{item.label}</span>
     {#if item.meta}
@@ -255,6 +263,42 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+
+  .toc-hue {
+    width: 10px;
+    height: 10px;
+    margin: 0 4px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--row-hue);
+  }
+  .hued.active {
+    background: transparent;
+    color: var(--text-strong);
+  }
+  .hued.active .toc-hue {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border-radius: var(--radius-blob-1);
+  }
+  .hued.active [data-toc-label] {
+    position: relative;
+    isolation: isolate;
+    font-weight: var(--font-weight-bold);
+  }
+  .hued.active [data-toc-label]::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -6px;
+    bottom: 1px;
+    height: 10px;
+    border-radius: var(--radius-pill);
+    background: var(--highlighter);
+    transform: rotate(-1.5deg);
+    z-index: -1;
   }
 
   .toc-meta {

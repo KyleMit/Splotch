@@ -4,6 +4,7 @@
   import { paletteHex } from '$lib/palette';
   import releases from '$lib/releases.json';
   import { FEEDBACK_URL } from '$lib/siteUrl';
+  import SquiggleRule from '../design/SquiggleRule.svelte';
   import ExternalMark from '../design/ExternalMark.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
 
@@ -20,7 +21,7 @@
 </script>
 
 <footer class="page-footer" style:--footer-rule-color={paletteHex('Orange')}>
-  <div class="page-footer-rule" aria-hidden="true"></div>
+  <div class="page-footer-rule"><SquiggleRule /></div>
   <div class="footer-row">
     <a class="footer-brand" href={DRAWING_ROUTE}>
       <SplotchyIcon class="footer-mark" aria-hidden="true" />
@@ -62,14 +63,7 @@
   }
 
   .page-footer-rule {
-    height: 8px;
-    background: color-mix(
-      in srgb,
-      var(--footer-rule-color) var(--squiggle-strength),
-      var(--page-sheet)
-    );
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4 Q6 0 12 4 T24 4' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")
-      repeat-x left center / 24px 8px;
+    --squiggle-color: var(--footer-rule-color);
   }
 
   .footer-row {
@@ -174,12 +168,6 @@
   }
 
   @media (forced-colors: active) {
-    .page-footer-rule {
-      border-top: 2px solid CanvasText;
-      height: 0;
-      mask: none;
-    }
-
     .paint-dot {
       border: 1px solid CanvasText;
     }

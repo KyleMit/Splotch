@@ -6,7 +6,7 @@
   const icon = $derived(RELEASE_SECTION_ICONS[title]);
 </script>
 
-<svelte:element this={`h${level}`} class="release-section-heading">
+<svelte:element this={`h${level}`} class="release-section-heading" data-section={title}>
   <Icon name={icon} class="release-section-icon" aria-hidden="true" />
   <span>{title}</span>
 </svelte:element>

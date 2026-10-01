@@ -1,0 +1,141 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test --config ../screenshots/issue-2564.webkit.config.ts changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --workers=1
+
+$ playwright test --config ../screenshots/issue-2564.webkit.config.ts changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --workers=1
+[WebServer] (node:75822) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:75853) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:75853) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:75853) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:75867) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:75904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 41 tests using 1 worker
+
+(node:75906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [webkit-fold] › tests/changelog.spec.ts:17:3 › short touch screens › short screens compress the hero and open on release content (341ms)
+  ✓   2 [webkit-fold] › tests/changelog.spec.ts:34:1 › short desktop viewports disclose the changelog introduction (201ms)
+  ✓   3 [webkit-fold] › tests/changelog.spec.ts:41:1 › the changelog lede keeps its closing phrase together (168ms)
+  ✓   4 [webkit-fold] › tests/changelog.spec.ts:56:1 › the changelog renders every release with its notes (200ms)
+  ✓   5 [webkit-fold] › tests/changelog.spec.ts:71:1 › the changelog table of contents links to every release (171ms)
+  ✓   6 [webkit-fold] › tests/changelog.spec.ts:83:1 › the contents rail marks the release being read (195ms)
+  ✓   7 [webkit-fold] › tests/changelog.spec.ts:106:3 › phone › the contents collapses behind one row so the newest release clears the fold (197ms)
+  ✓   8 [webkit-fold] › tests/changelog.spec.ts:127:3 › phone › the contents row counts the releases at the hero and names the one being read (233ms)
+  ✓   9 [webkit-fold] › tests/changelog.spec.ts:149:3 › phone › picking a release from the contents lands it clear of the pinned row (240ms)
+  ✓  10 [webkit-fold] › tests/changelog.spec.ts:188:3 › phone deep link › parks its release clear of the pinned contents row (140ms)
+  ✓  11 [webkit-fold] › tests/changelog.spec.ts:204:1 › the complete changelog is present in prerendered HTML (11ms)
+  ✓  12 [webkit-fold] › tests/changelog.spec.ts:222:3 › phone landscape › the open contents panel scrolls inside itself, bottom edge on screen (202ms)
+  ✓  13 [webkit-fold] › tests/changelog.spec.ts:232:3 › phone landscape › a panel opened below its pin scrolls the row into it (342ms)
+  ✓  14 [webkit-fold] › tests/changelog.spec.ts:244:3 › an initial folded link opens and lands at 1280px (203ms)
+  ✓  15 [webkit-fold] › tests/changelog.spec.ts:244:3 › an initial folded link opens and lands at 390px (203ms)
+  ✓  16 [webkit-fold] › tests/changelog.spec.ts:264:1 › the older fold opens from keyboard and hands focus into the revealed history (173ms)
+  ✓  17 [webkit-fold] › tests/changelog.spec.ts:279:1 › rail, hash and history navigation reveal and land before highlighting (326ms)
+  ✓  18 [webkit-fold] › tests/changelog.spec.ts:313:1 › hydration fills relative dates while prerendered placeholders stay empty (191ms)
+  ✓  19 [webkit-fold] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in light (182ms)
+  ✓  20 [webkit-fold] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in dark (179ms)
+  ✓  21 [webkit-fold] › tests/changelog.spec.ts:377:1 › rapid fragment changes leave only the latest arrival and reduced motion keeps it still (3.0s)
+  ✓  22 [webkit-fold] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×800 (342ms)
+  ✓  23 [webkit-fold] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 (338ms)
+  ✓  24 [webkit-fold] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 (339ms)
+  ✓  25 [webkit-fold] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 (321ms)
+  ✓  26 [webkit-fold] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 (305ms)
+  ✓  27 [webkit-fold] › tests/page-footer.spec.ts:40:3 › the /privacy footer identifies its section without linking to itself (153ms)
+  ✓  28 [webkit-fold] › tests/page-footer.spec.ts:40:3 › the /changelog footer identifies its section without linking to itself (154ms)
+  ✓  29 [webkit-fold] › tests/page-footer.spec.ts:40:3 › the /feedback footer identifies its section without linking to itself (261ms)
+  ✓  30 [webkit-fold] › tests/page-footer.spec.ts:40:3 › the /beta footer identifies its section without linking to itself (151ms)
+  ✓  31 [webkit-fold] › tests/page-footer.spec.ts:50:1 › the footer release link scrolls to the newest public release (224ms)
+  ✓  32 [webkit-fold] › tests/page-footer.spec.ts:60:3 › the light footer fits a 320px phone with readable links (210ms)
+  ✓  33 [webkit-fold] › tests/page-footer.spec.ts:60:3 › the dark footer fits a 320px phone with readable links (213ms)
+  ✓  34 [webkit-fold] › tests/page-footer.spec.ts:84:1 › forced colors preserve the footer rule and current marker (193ms)
+  ✓  35 [webkit-fold] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×800 (208ms)
+  ✓  36 [webkit-fold] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×600 (208ms)
+  ✓  37 [webkit-fold] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 1280×501 (206ms)
+  ✓  38 [webkit-fold] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 320×568 (212ms)
+  ✓  39 [webkit-fold] › tests/page-footer.spec.ts:103:3 › the final visible release is active while older history stays folded on 812×375 (209ms)
+  ✓  40 [webkit-fold] › tests/settings-whats-new-outline.spec.ts:33:1 › What's New nests its release date under the wide pane's Updates title (919ms)
+  ✓  41 [webkit-fold] › tests/settings-whats-new-outline.spec.ts:45:1 › What's New nests its release date under the phone drill-in's Updates title (770ms)
+
+  41 passed (17.5s)
