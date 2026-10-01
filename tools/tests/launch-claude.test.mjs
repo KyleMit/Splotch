@@ -50,6 +50,11 @@ import {
 } from '../../.agents/skills/run-rival-agent/scripts/splotch-claude-subscription-auth.mjs';
 import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
+import {
+  CLAUDE_RUNTIME,
+  DESKTOP_CLAUDE_PATH,
+  resolveClaudeRuntime,
+} from '../../.agents/skills/run-rival-agent/scripts/claude-runtime.mjs';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
@@ -58,6 +63,7 @@ const canonicalHome = (path) => resolve(EXPECTED_HOME, relative(homedir(), path)
 describe('Claude rival command construction', () => {
   const sandboxPaths = { denyWrite: ['/repo/.git'], denyRead: ['/home/.codex', '/repo/web/.env'] };
   const options = {
+    runtime: resolveClaudeRuntime(false),
     worktree: '/tmp/session/worktree',
     session: '/tmp/session',
     packetDir: '/tmp/session/packet',
@@ -204,7 +210,7 @@ describe('Claude rival command construction', () => {
   });
 
   it('raises the MCP tool timeout to the pending-request budget', () => {
-    expect(claudeEnvironment({ PATH: '/bin' })).toEqual({
+    expect(claudeEnvironment({ PATH: '/bin' }, resolveClaudeRuntime(false))).toEqual({
       PATH: '/bin',
       MCP_TOOL_TIMEOUT: String(PENDING_REQUEST_TIMEOUT_MS),
     });
@@ -219,7 +225,7 @@ describe('Claude rival command construction', () => {
   it('exposes the vendor adapter the shared launcher drives', () => {
     expect(claudeVendor).toMatchObject({
       rival: 'claude',
-      command: '/Users/kylemit/.local/bin/claude',
+      command: CLAUDE_RUNTIME.command,
     });
     expect(claudeVendor.newSessionId()).toMatch(/^[0-9a-f-]{36}$/);
     expect(claudeVendor.buildArgs).toBe(buildClaudeArgs);
@@ -425,7 +431,7 @@ describe('Codex policy', () => {
     const forbidden = [
       ...POLICY_RULES.matchAll(/pattern = \["([^"\]]*claude)"\], decision = "forbidden"/g),
     ].map((match) => match[1]);
-    expect(forbidden).toEqual(['claude', claudeVendor.command]);
+    expect(forbidden).toEqual(['claude', DESKTOP_CLAUDE_PATH]);
   });
 
   it('replaces its managed rules idempotently and keeps unrelated rules', () => {

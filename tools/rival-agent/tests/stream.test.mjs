@@ -13,6 +13,9 @@ import {
 } from '../stream.mjs';
 
 const NOW = new Date('2026-09-02T10:20:30Z');
+const CHILD_EXIT_TIMEOUT_MS = 3000;
+const PROCESS_POLL_MS = 50;
+const LIVE_PROCESS_PROBE_MS = 100;
 let directory;
 
 beforeEach(() => {
@@ -43,16 +46,22 @@ function scriptedRival(lines, { gapMs = 0, exitCode = 0, hang = false } = {}) {
   return { command: process.execPath, args: ['-e', script] };
 }
 
-async function waitForExit(pid, timeoutMs = 6000) {
+async function waitForExit(pid, timeoutMs = CHILD_EXIT_TIMEOUT_MS) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     try {
       process.kill(pid, 0);
-    } catch {
-      return true;
+      // Container PID 1 can leave a terminated descendant visible as a zombie until it is reaped.
+      if (process.platform === 'linux') {
+        const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+        if (stat.slice(stat.lastIndexOf(')') + 2).startsWith('Z ')) return true;
+      }
+    } catch (error) {
+      if (error.code === 'ESRCH' || error.code === 'ENOENT') return true;
+      throw error;
     }
     if (Date.now() > deadline) return false;
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, PROCESS_POLL_MS));
   }
 }
 
@@ -262,6 +271,10 @@ describe('streaming runner', () => {
     ).rejects.toMatchObject({ code: STREAM_FAILURE.stalled });
     expect(grandchild).toBeGreaterThan(0);
     expect(await waitForExit(grandchild)).toBe(true);
+  });
+
+  it('recognizes a process that is still running', async () => {
+    expect(await waitForExit(process.pid, LIVE_PROCESS_PROBE_MS)).toBe(false);
   });
 
   it('fails the run when the log cannot be written rather than reporting success', async () => {

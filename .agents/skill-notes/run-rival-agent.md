@@ -1,5 +1,24 @@
 # Run Rival Agent (Codex side: Codex handles, Claude rivals) — handler-side notes
 
+## Managed Codex Cloud
+
+The cloud adapter uses fixed `/workspace/.cache` CLI, configuration, transcript, ledger, and
+installed-wrapper paths. Setup and maintenance provision a pinned Claude CLI and hashed wrappers
+from the trusted `/workspace/Splotch` checkout. They do not rewrite the platform's Codex approval
+configuration or desktop rules. The desktop installer remains fixed to its canonical Mac checkout.
+
+A nested `bwrap` probe on this worker failed while setting up the UID map with a read-only
+filesystem. Allowing an unsandboxed Bash fallback would remove the desktop trust boundary, so the
+cloud adapter instead removes Bash from both tool lists and keeps restricted file reads plus the
+broker. Its prompt asks for every command through the handler and never asks for a prior shell
+failure. The desktop prompt and sandboxed shell stay independent. Validate this mode with a real
+question round that reads the packet and requests a harmless command; health's local auth status
+alone cannot establish proxy-substituted token validity.
+
+GitHub PR discovery and publication through `gh` are separate from the configured feedback issue
+token. A native handler without a validated CLI login uses app tools to validate the reviewed range
+and publish the marked findings. It must retain the moved-range and sensitive-value checks.
+
 This is the Codex-side package of `run-rival-agent`: Codex is the **native handler**, Claude Code
 the **rival agent**. The design history both packages share — why a handler and a rival, what the
 probes changed, the 2026-09-02 decisions and their rejected alternatives, the accepted exposures,

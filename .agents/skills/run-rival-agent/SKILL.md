@@ -5,6 +5,56 @@ description: Pair this Codex session, as the native handler, with a rival agent 
 
 # Run Rival Agent: Claude from Codex
 
+## Codex Cloud
+
+On a managed Linux cloud machine, follow this section instead of the macOS installation and
+host-execution instructions below. Setup and maintenance install the pinned Claude CLI and trusted
+wrappers under `/workspace/.cache`. They preserve the platform's Codex configuration and approval
+rules. Read [the cloud guide](../../../docs/CLOUD/Codex.md) for the manual environment setup.
+
+Before the first invocation in a task, activate `.codex/cloud/start.md`'s tool/cache environment,
+then run these checks in the normal Codex sandbox:
+
+```sh
+node .agents/skills/run-rival-agent/scripts/install-cloud.mjs --check
+/workspace/.cache/splotch-rival-agent/claude-health.mjs
+```
+
+The health check establishes local authentication configuration. A successful live question round
+establishes remote token/API access. Do not print tokens or start an interactive login; use the
+configured `CLAUDE_CODE_OAUTH_TOKEN` and preserve the inherited proxy and CA trust. Missing or stale
+installed files require refreshing the trusted snapshot through setup/maintenance. Never install
+wrappers from the rival's disposable worktree.
+
+Cloud Claude has `Read,Grep,Glob` and the broker, with no Bash, edit, browser, or web tools. Its
+restricted file tools read only the worktree and packet. This environment cannot create Claude's
+nested Linux shell sandbox, so **every command goes through the native Codex handler**. Keep the
+same request-by-request approval and decline behavior described below.
+
+Use these fixed installed entry points in the normal Codex sandbox:
+
+```sh
+/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main --fresh
+node /workspace/.cache/splotch-rival-agent/broker.mjs next --session <dir> --timeout-seconds 60
+```
+
+The launcher accepts the same scope, question, resume, and model options documented below. Retain
+its yielded process handle, serve the broker until `done` or `failed`, and report the findings. Do
+not invoke raw `claude` or the checkout's launcher.
+
+For the first review of a new piece of work, pass `--fresh`: a cached container can retain a ledger
+entry for the same branch name from another task. Omit it for later rounds reviewing that same work,
+so Claude resumes its earlier findings. Use `--end-session` when that review unit is complete.
+
+For a PR scope, the existing `--pr` launcher and installed `post-review.mjs` also require separately
+validated GitHub CLI authentication with PR-review permissions. The configured feedback issue token
+does not establish that. If it is unavailable, review `--base origin/main` or a pinned commit and
+use the native GitHub app tools to read/validate the PR range and publish the marked findings,
+checking the reviewed head/base immediately before posting. Do not substitute another credential or
+claim a PR review was posted without checking the result.
+
+## Desktop execution
+
 This is the Codex-side package of `run-rival-agent`. You are the **native handler**: the agent
 already running here, with Codex's sandbox, exec policy, and Auto-review as your permission system.
 The **rival agent** is a Claude Code process holding none of that. It reads a disposable worktree

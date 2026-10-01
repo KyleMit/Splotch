@@ -8,6 +8,7 @@ export const RIVAL_PROMPT_PATH = join(PROMPT_DIRECTORY, 'rival-prompt.md');
 // worktree, and `run` is the door for what that sandbox refuses. The vendor's tool boundary is
 // filled into it.
 export const EXECUTION_PARTIAL_PATH = join(PROMPT_DIRECTORY, 'rival-prompt-hybrid.md');
+export const BROKER_EXECUTION_PARTIAL_PATH = join(PROMPT_DIRECTORY, 'rival-prompt-broker.md');
 export const MAX_PROMPT_BYTES = 256 * 1024;
 
 export function readPromptFile(path) {
@@ -56,12 +57,19 @@ function fill(template, values) {
 }
 
 // Who the handler is to the rival, what it may do to the worktree, and how it reproduces a claim.
-const EXECUTION_MODE = Object.freeze({
+const HYBRID_EXECUTION_MODE = Object.freeze({
   HANDLER:
     'A **native handler** — the agent that launched you — holds every permission you lack and runs only what your sandbox refuses.',
   WORKTREE_RULES:
     'Nobody else will ever see it. Your shell may write inside it — test caches, build output, a scratch script — and nowhere else. Do not commit, and do not try to reach outside it yourself.',
   VERIFY_HOW: 'by running it — in your own shell first, through `run` when the sandbox refuses',
+});
+const BROKER_EXECUTION_MODE = Object.freeze({
+  HANDLER:
+    'A **native handler** — the agent that launched you — executes or declines every command under its own permission rules.',
+  WORKTREE_RULES:
+    'Nobody else will ever see it. Read it with your file tools. Only the native handler may run commands or write test caches and build output there. Do not commit or reach outside it.',
+  VERIFY_HOW: 'by requesting a reproduction through the `run` broker',
 });
 
 export function buildRivalPrompt({
@@ -74,15 +82,22 @@ export function buildRivalPrompt({
   landedCommits,
   extraInstructions,
   toolBoundary,
+  executionMode = 'hybrid',
   template = readFileSync(RIVAL_PROMPT_PATH, 'utf8'),
-  executionTemplate = readFileSync(EXECUTION_PARTIAL_PATH, 'utf8'),
+  executionTemplate = readFileSync(
+    executionMode === 'broker' ? BROKER_EXECUTION_PARTIAL_PATH : EXECUTION_PARTIAL_PATH,
+    'utf8'
+  ),
 }) {
+  if (executionMode !== 'hybrid' && executionMode !== 'broker') {
+    throw new Error(`unsupported rival execution mode: ${executionMode}`);
+  }
   return fill(template, {
     TASK: describeTask({ scope, question }),
     WORKTREE: worktree,
     PACKET_DIR: packetDir,
     RANGE: scope.range,
-    ...EXECUTION_MODE,
+    ...(executionMode === 'broker' ? BROKER_EXECUTION_MODE : HYBRID_EXECUTION_MODE),
     EXECUTION: fill(executionTemplate, { TOOL_BOUNDARY: toolBoundary }).trim(),
     ROUND: describeRound({ round, previous, landedCommits }),
     EXTRA: extraInstructions

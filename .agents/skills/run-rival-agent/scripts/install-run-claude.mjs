@@ -1,12 +1,21 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { isMain } from '../../../../tools/lib/proc.mjs';
+import { CLOUD_INSTALL_ROOT, CLOUD_REPOSITORY, isManagedCloud } from './claude-runtime.mjs';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, '../../../..');
@@ -14,7 +23,7 @@ const coreDirectory = join(repositoryRoot, 'tools/rival-agent');
 // Exported so the drift guard can normalize homedir()-based paths on noncanonical hosts.
 export const EXPECTED_HOME = '/Users/kylemit';
 const EXPECTED_REPOSITORY_ROOT = '/Users/kylemit/Code/Splotch';
-export const MANIFEST_VERSION = 6;
+export const MANIFEST_VERSION = 7;
 
 // One directory holds the whole trusted install: the vendor-neutral core copied verbatim and the
 // Codex-side package files with their core imports repointed at their new siblings. The health
@@ -33,6 +42,7 @@ export const CORE_FILES = Object.freeze([
   'prompt.mjs',
   'rival-prompt.md',
   'rival-prompt-hybrid.md',
+  'rival-prompt-broker.md',
   'findings.schema.json',
   'validate-findings.mjs',
   'post-review.mjs',
@@ -42,6 +52,7 @@ export const PACKAGE_FILES = Object.freeze([
   'launch-claude.mjs',
   'claude-health.mjs',
   'splotch-claude-subscription-auth.mjs',
+  'claude-runtime.mjs',
 ]);
 export const EXECUTABLE_FILES = Object.freeze([
   'broker.mjs',
@@ -82,7 +93,7 @@ export function shimSource(target) {
   return `#!/usr/bin/env node\nimport { main } from './splotch-rival-agent/${target}';\n\nmain();\n`;
 }
 
-export function expectedInstalledFiles() {
+export function expectedInstalledFiles(shimPaths = INSTALL_SHIMS) {
   const files = new Map();
   for (const name of CORE_FILES) files.set(name, readFileSync(join(coreDirectory, name)));
   for (const name of PACKAGE_FILES) {
@@ -92,13 +103,15 @@ export function expectedInstalledFiles() {
     );
   }
   const shims = new Map(
-    Object.entries(SHIM_SOURCES).map(([key, target]) => [key, Buffer.from(shimSource(target))])
+    Object.entries(SHIM_SOURCES)
+      .filter(([key]) => key in shimPaths)
+      .map(([key, target]) => [key, Buffer.from(shimSource(target))])
   );
   const manifest = {
     version: MANIFEST_VERSION,
     files: Object.fromEntries([...files].map(([name, content]) => [name, digest(content)])),
     shims: Object.fromEntries(
-      [...shims].map(([key, content]) => [INSTALL_SHIMS[key], digest(content)])
+      [...shims].map(([key, content]) => [shimPaths[key], digest(content)])
     ),
   };
   return { files, shims, manifest: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`) };
@@ -117,20 +130,26 @@ function isCurrent({ root, shims }, expected) {
 // fixed one; a real install still refuses any other machine.
 export function installRunClaude({
   check = false,
-  root = INSTALL_ROOT,
-  shims = INSTALL_SHIMS,
-  stalePaths = STALE_PATHS,
+  cloud = false,
+  root = cloud ? CLOUD_INSTALL_ROOT : INSTALL_ROOT,
+  shims = cloud ? {} : INSTALL_SHIMS,
+  stalePaths = cloud ? [] : STALE_PATHS,
   home = homedir(),
 } = {}) {
-  if (home !== EXPECTED_HOME || (!check && repositoryRoot !== EXPECTED_REPOSITORY_ROOT)) {
+  if (cloud) {
+    if (!isManagedCloud() || realpathSync(repositoryRoot) !== CLOUD_REPOSITORY) {
+      throw new Error(`cloud installation is fixed to the trusted ${CLOUD_REPOSITORY} checkout`);
+    }
+  } else if (home !== EXPECTED_HOME || (!check && repositoryRoot !== EXPECTED_REPOSITORY_ROOT)) {
     throw new Error(`this trusted installer is fixed to ${EXPECTED_REPOSITORY_ROOT}`);
   }
-  const expected = expectedInstalledFiles();
+  const expected = expectedInstalledFiles(shims);
   if (check) {
     if (!isCurrent({ root, shims }, expected)) {
-      throw new Error(
-        'the rival-agent install is missing or stale; run npm run run-claude:install'
-      );
+      const remedy = cloud
+        ? 'rerun setup/maintenance (node .agents/skills/run-rival-agent/scripts/install-cloud.mjs) from /workspace/Splotch'
+        : 'run npm run run-claude:install';
+      throw new Error(`the rival-agent install is missing or stale; ${remedy}`);
     }
     console.log('trusted rival-agent installation is current');
     return;
