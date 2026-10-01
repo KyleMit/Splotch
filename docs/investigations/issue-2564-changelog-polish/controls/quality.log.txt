@@ -18,38 +18,6 @@ All matched files use Prettier code style!
 > splotch@1.6.0 format:md:check
 > dprint check --incremental=false
 
-from /Users/kylemit/.codex/worktrees/ed28/Splotch/docs/investigations/issue-2564-changelog-polish/README.md:
-36 36| the·observer·selects·the·last·fully·passed·visible·article·instead·of·retaining·its·initial·seed.
-37 37| Closed-details·entries·are·explicitly·excluded·from·that·fallback.
-38 38| 
-   39|-Validation·includes·the·complete·production·browser·suite·(1,071·passed),·all·five·browserless·tiers,
-   40|-41·focused·installed·WebKit·cases,·and·both·release-build·budget·guards.·The·WebKit·checks·include
-   41|-actual·landing·geometry,·keyboard·focus,·open-panel·caps,·all·five·closed/full-history·tail·sizes,
-   42|-AA·tape·and·active·highlighter·text·in·both·themes,·rapid·arrival·changes,·reduced·motion·and
-39   |+Validation·includes·the·complete·production·browser·suite·(1,071·passed),·all·five·browserless
-40   |+tiers,·41·focused·installed·WebKit·cases,·and·both·release-build·budget·guards.·The·WebKit·checks
-41   |+include·actual·landing·geometry,·keyboard·focus,·open-panel·caps,·all·five·closed/full-history·tail
-42   |+sizes,·AA·tape·and·active·highlighter·text·in·both·themes,·rapid·arrival·changes,·reduced·motion·and
-43 43| Settings·headings.·Browserless·coverage·reports·4,365·unit,·41·UI,·277·server,·23·API-unit,·6,645
-44 44| tools·and·42·API-smoke·assertions.
-45 45| 
-...
-49 49| union·of·484,835·of·525,000·allowed·bytes.·Final·web·numbers·are·recorded·in·the·capture/control
-50 50| logs.·These·budgets·are·unchanged.
-51 51| 
-   52|-The·compiled·native·probe·covers·both·shipped·pages·and·themes·with·idle·prewarming·disabled:
-   53|-there·is·no·gate·request·before·clicking,·one·gate·dialog·after·the·trusted·footer·click,·and·no
-   54|-external·page·before·solving.·A·local·fulfilled·navigation·fixture·verifies·replay·without·sending
-   55|-feedback.·Existing·Privacy·links,·a·single·Manage·host,·focus·return,·Never·mode·and·solved-session
-52   |+The·compiled·native·probe·covers·both·shipped·pages·and·themes·with·idle·prewarming·disabled:·there
-53   |+is·no·gate·request·before·clicking,·one·gate·dialog·after·the·trusted·footer·click,·and·no·external
-54   |+page·before·solving.·A·local·fulfilled·navigation·fixture·verifies·replay·without·sending·feedback.
-55   |+Existing·Privacy·links,·a·single·Manage·host,·focus·return,·Never·mode·and·solved-session
-56 56| original-click·navigation·are·preserved.·Native·folded·fragments·and·narrow·picks·assert·actual
-57 57| landed·boxes·and·arrival.·This·evidence·concerns·the·compiled·static·bundle·in·Chromium,·not·a
-58 58| physical·signed·app.
---
-Found 1 not formatted file. Run dprint fmt to fix.
 
 [1m$ npm run check[0m
 
@@ -68,8 +36,8 @@ $ svelte-kit sync
   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
-  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
@@ -195,5 +163,4 @@ scrapbook: every collection resolves to a reachable entry page; index.html is cu
 2 vulnerabilities found
 Severity: 1 low | 1 moderate
 
-✗ Quality: 1 of 14 checks failed
-    npm run format:check
+✓ Quality: all 14 checks passed

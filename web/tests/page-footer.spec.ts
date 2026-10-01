@@ -26,6 +26,7 @@ for (const viewport of [
       await expect(
         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
       ).toHaveAttribute('aria-current', 'location');
+      await expect(page.locator(href)).toBeInViewport();
       await expect(page.locator('.page-footer')).toBeInViewport();
     }
   });

@@ -61,3 +61,17 @@ The controls directory retains test/build outputs and measured probe records. Be
 use clean commits, fresh servers in the same installed worktree, hydrated pages and loaded fonts.
 App-only light/dark desktop, phone, open/closed/active contents, older-history and arrival captures,
 plus forced-colors and reduced-motion evidence, are hosted on the public pr-assets branch.
+
+The empty-band guard has a source-removal negative control: deleting only the new fallback from a
+clean committed checkpoint makes the closed-tail assertions fail at desktop 600px and 501px, phone
+320px and short landscape; desktop 800px still passes. Restoring that committed source passes all 41
+focused Chromium cases, including Settings. Full-history tail guards also assert the final section
+is actually in the viewport, independently of its active marker.
+
+A separate reserve control verifies the computed owner value before measuring. The unchanged 160px
+reserve keeps the final section and footer visible in all ten page/size cells. Reducing only that
+reserve to 96px moves the oldest release above the viewport at the same four sizes, while the new
+fallback correctly preserves its active marker. The strengthened viewport assertion rejects all four
+negative cells; its restored production positive control passes all five sizes. The Privacy Contact
+cells remain visible in both reserve controls. This distinguishes actual visibility from the marker
+behavior covered by the historical footer evidence.
