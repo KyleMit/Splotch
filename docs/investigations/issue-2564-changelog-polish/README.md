@@ -132,3 +132,20 @@ real-page timezone guards; restoring the committed local-calendar owner passes t
 The new native build keeps 28 modulepreloads and a 6,209,721-byte export; web keeps 40 and the
 unchanged eager-error union. The original source-bound gallery remains a faithful record of the
 unchanged rendered appearance; only date logic and test assertions changed in this repair.
+
+Claude round two resumed the same conversation and is preserved verbatim in
+`controls/rival-round2.json`: no findings, all first-round dispositions accepted, and 17 date/hue
+units passing in four process timezones. Its browser claim remained explicitly unverified after two
+normal-sandbox attempts could not bind the dev server. The handler's host rerun passed four
+Changelog cases but failed the Privacy/Design tail-active assertions in dev mode; this failure is
+retained rather than reported as a pass.
+
+The exact base's original Privacy/Design tests fail the same tail assertions with the same active
+labels. Identical viewport probes at base and head show later scroll shifts of 103px and 1,044px
+respectively, despite unchanged settled document heights and loaded fonts; a subsequent bottom
+scroll lands correctly. The head differs by only the intended 2px shell border. Those raw base, head
+and selection logs accompany the review. This dev-mode behavior predates the change and was not
+modified. The identical six-case selection passes against a fresh production build, with the raw
+result in `controls/rival-round2-production.log.txt`. That result is handler evidence, not a
+retroactive alteration of Claude's verification limitation. No review findings or product blockers
+remain.
