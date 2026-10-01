@@ -313,4 +313,7 @@ for the user), merge SHA, review rounds, and CI. Then:
 * The final state of `main` CI, and the device rig: released, or left running as the user asked.
 
 Run `git rev-parse --verify --quiet "<sha>^{commit}"` over every SHA in the report before sending
-it. Then run `self-heal` on the campaign's friction.
+it. Then run `self-heal` on the campaign's friction. A PR the campaign opens for those lessons goes
+through the same independent rival review as a unit (the `drive-pr-to-mergeable` loop) before it
+merges. Docs- or skill-only is no exemption: `npm run ruler:check` proves generated output matches
+its source, not that the prose is true, and rivals have caught factual errors in lessons PRs.

@@ -1,5 +1,5 @@
 import { chromium, type FullConfig } from '@playwright/test';
-import { HARNESS_PROBE_CODE } from '../playwright.shared';
+import { chromiumLaunchOptions, HARNESS_PROBE_CODE } from '../playwright.shared';
 
 // `fetch` carries no overall deadline, so a server that accepts the connection
 // and then never answers would hang this hook — and globalSetup is one of the
@@ -91,7 +91,10 @@ export default async function globalSetup(config: FullConfig) {
   await assertHarnessServer(baseURL);
 
   if (!process.env.DEV_SERVER) return;
-  const browser = await chromium.launch();
+  // Only the executable: the warm-up is headless setup, so SLOWMO's per-action
+  // delay would slow its navigations without making any test easier to watch.
+  const { executablePath } = chromiumLaunchOptions();
+  const browser = await chromium.launch({ executablePath });
   const page = await browser.newPage();
 
   // [route, readiness predicate run in the page].
