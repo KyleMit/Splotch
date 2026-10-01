@@ -48,6 +48,28 @@ async function context() {
   await ctx.addInitScript(() => {
     window.requestIdleCallback = () => 1;
     window.cancelIdleCallback = () => {};
+    window.native404TransientErrors = [];
+    const record = (node) => {
+      if (node instanceof Element) {
+        if (
+          node.matches('.error-screen[role="alert"]') ||
+          node.querySelector('.error-screen[role="alert"]')
+        )
+          window.native404TransientErrors.push('crash alert inserted');
+        if (
+          (node.matches('title') && node.textContent.includes('Oops!')) ||
+          [...node.querySelectorAll('title')].some((title) => title.textContent.includes('Oops!'))
+        )
+          window.native404TransientErrors.push('crash title inserted');
+      } else if (node.parentElement?.matches('title') && node.textContent.includes('Oops!'))
+        window.native404TransientErrors.push('crash title text inserted');
+    };
+    new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'characterData') record(mutation.target);
+        for (const node of mutation.addedNodes) record(node);
+      }
+    }).observe(document, { childList: true, subtree: true, characterData: true });
   });
   await ctx.route('https://splotch.art/feedback', (route) =>
     route.fulfill({ contentType: 'text/html', body: '<h1>Native outbound evidence fixture</h1>' })
@@ -59,6 +81,7 @@ async function ready(page, path) {
   await expect(
     page.getByRole('heading', { name: 'This page wandered off', exact: true })
   ).toBeVisible();
+  expect(await page.evaluate(() => window.native404TransientErrors)).toEqual([]);
 }
 async function solve(page) {
   const gate = page.locator('#parentalGate');
@@ -81,6 +104,8 @@ try {
   for (const state of ['pending', 'failed']) {
     const ctx = await context(),
       page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.stack || error.message));
     let release;
     await ctx.route('**/' + notFoundFile, async (route) => {
       if (state === 'pending') {
@@ -89,8 +114,17 @@ try {
       } else await route.abort();
     });
     await page.goto('http://localhost:5301/no-such-page');
-    await expect(page.getByRole('heading', { name: 'Oops!', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Start over' })).toBeVisible();
+    if (state === 'pending') {
+      await expect(
+        page.getByRole('heading', { name: 'Page not found', exact: true })
+      ).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Start drawing', exact: true })).toBeVisible();
+      await expect(page).toHaveTitle('Page not found · Splotch');
+      expect(await page.evaluate(() => window.native404TransientErrors)).toEqual([]);
+    } else {
+      await expect(page.getByRole('heading', { name: 'Oops!', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Start over' })).toBeVisible();
+    }
     await page.setViewportSize({ width: 320, height: 568 });
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({
@@ -98,15 +132,22 @@ try {
       fullPage: true,
     });
     if (state === 'pending') {
+      await page.getByRole('link', { name: 'Start drawing', exact: true }).click();
+      await expect(page.locator('#drawingCanvas')).toBeVisible();
+      expect(await page.evaluate(() => window.native404TransientErrors)).toEqual([]);
       release();
-      await expect(
-        page.getByRole('heading', { name: 'This page wandered off', exact: true })
-      ).toBeVisible();
     } else {
       await page.getByRole('button', { name: 'Start over' }).click();
       await expect(page.locator('#drawingCanvas')).toBeVisible();
     }
-    records.push({ state, existingRecoveryVisible: true, recovered: true });
+    expect(errors).toEqual([]);
+    records.push({
+      state,
+      recoveryVisible: true,
+      recovered: true,
+      errors,
+      ...(state === 'pending' ? { transientErrors: [] } : {}),
+    });
     await ctx.close();
   }
   for (const path of ['privacy/missing', 'no-such-page']) {
@@ -135,6 +176,7 @@ try {
       oneDialog: true,
       originalTarget: true,
       errors,
+      transientErrors: await page.evaluate(() => window.native404TransientErrors),
     });
     await ctx.close();
   }

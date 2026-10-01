@@ -11,8 +11,11 @@ const page = vi.hoisted(() => ({
 vi.mock('$app/state', () => ({ page }));
 
 function assertNativePending(document: Window['document']) {
-  expect(document.querySelector('[role="alert"] h1')?.textContent).toBe('Oops!');
-  expect(document.querySelector('.error-restart')?.textContent).toBe('Start over');
+  expect(document.querySelector('[role="alert"]')).toBeNull();
+  expect(document.querySelector('h1')?.textContent).toBe('Page not found');
+  expect(document.querySelector('a')?.getAttribute('href')).toBe('/');
+  expect(document.querySelector('a')?.textContent).toBe('Start drawing');
+  expect(document.title).toBe('Page not found · Splotch');
 }
 
 export function describeErrorPage(native = false) {
