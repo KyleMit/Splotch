@@ -102,9 +102,10 @@ const STORAGE_SEAM_ONLY = [
 //
 // What this enforces is exactly one thing: no inline literal at a matchMedia call. It does NOT
 // establish that the argument came from an imported constant — a local `const QUERY = '…'`, or
-// an aliased callee, still passes, because a selector cannot resolve a binding. Closing that
-// needs a rule with scope analysis and is drafted as a follow-up; the claim here is deliberately
-// limited to what the selector actually checks.
+// an aliased callee, still passes, because a selector cannot resolve a binding. That limit is
+// accepted: issue #1863 records the decision to keep this syntax-based rule rather than add a
+// scope-analysis rule plugin until a second rule needs binding resolution. The claim here is
+// deliberately limited to what the selector actually checks.
 const MEDIA_QUERY_LITERAL = ['Literal', 'TemplateLiteral'].flatMap((argumentType) =>
   [
     'callee.name="matchMedia"',
