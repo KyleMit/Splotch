@@ -7,8 +7,10 @@ applies to Privacy. Its policy copy, effective date and pinned policy hashes rem
 The release generator owns the hue cycle, finite hue type, strict untyped hue parser, date metadata,
 Latest badge, hydration-only relative-date placeholders, list roles and fold after the first three
 releases. A byte-for-byte generation guard prevents agreement between the generator and its output
-from depending on prose. Relative dates use UTC days and explicit calendar-month boundaries. The
-absolute date remains accessible; the relative date is supplemental and hidden from screen readers.
+from depending on prose. Relative dates compare the reader's local calendar day with the date-only
+release value, normalizing calendar parts through UTC arithmetic to avoid DST elapsed-time errors.
+Month/year boundaries use the same local current calendar. The absolute date remains accessible; the
+relative date is supplemental and hidden from screen readers.
 
 The page uses the existing accessible tape, highlighter, arrival, blob and shadow tokens. Tape and
 section-icon changes are scoped to Changelog; Settings keeps its icon headings. Blob list markers
@@ -100,9 +102,25 @@ The flush is conditional on that discrete repeat pick. Its browser guard waits f
 highlight, picks again and measures opacity returning to full strength without growing history. The
 unflushed source fails that measured restart; the restored controller passes.
 
-The final source checkpoint is 865b214f2dfa930762add1260db4919425010efa. The
+The gallery source checkpoint is 865b214f2dfa930762add1260db4919425010efa. The
 [state gallery](https://github.com/KyleMit/Splotch/blob/pr-assets/issue-2564-changelog-polish/README.md)
 and [visual manifest](visual-manifest.json) bind 12 fresh exact-base captures, 27 final app states,
 two real arrival GIFs and four compiled native glyph captures to source commits and file hashes.
 Baseline phone pages start fresh at the hero to avoid inherited scroll state. All captured app
 images and animation frame sequences were visually inspected before publishing.
+
+The independent Claude round-one review is preserved verbatim in `controls/rival-round1.json`. Its
+real-page west/east timezone reproductions failed before the local-calendar repair. The repair keeps
+the date-only release value immutable; Privacy's policy-date owner is unchanged. Local-component
+unit fixtures include spring/fall DST boundaries, and actual Los Angeles/Tokyo pages pin relative
+and absolute labels across UTC midnight.
+
+The count review is addressed by checking each shared summary's exact accessible name and its
+visible count blob separately, across Changelog, Privacy and Design, at the hero and on returning
+there. The existing CSS chevron remains part of the measured accessible name. A visible-only
+wrong-count control preserves the hidden count and is rejected by the visible-blob assertions.
+
+Hue assignment intentionally follows newest-first display order, with the first hue Purple and a
+repeating palette cycle, as required by the handoff's by-index scheme. These decorative hues
+describe positions rather than permanent release identities; prepending a release therefore rotates
+older hues. The generator tests pin that ordering and agreement between article and rail metadata.

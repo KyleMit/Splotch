@@ -1,0 +1,60 @@
+
+
+  1) [chromium] › tests/zz-rival-scratch.spec.ts:55:3 › relative date for the newest release matches the reader's calendar in America/Los_Angeles 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.release-ago').first()
+    Expected: "today"
+    Received: "yesterday"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.release-ago').first() with timeout 5000ms
+      - waiting for locator('.release-ago').first()
+        14 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09">yesterday</span>
+           - unexpected value "yesterday"
+
+
+      62 |     const local = await page.evaluate(() => new Date().toLocaleDateString('en-US'));
+      63 |     console.log(tz, 'local date', local, 'release 2026-09-09 ->', await ago.textContent());
+    > 64 |     await expect(ago).toHaveText(expected);
+         |                       ^
+      65 |     await context.close();
+      66 |   });
+      67 | }
+        at /private/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/2555ef83-d646-4dd6-b090-92cbb731f7e7/worktree/web/tests/zz-rival-scratch.spec.ts:64:23
+
+    Error Context: ../test-results/zz-rival-scratch-relative--7e480-ndar-in-America-Los-Angeles-chromium/error-context.md
+
+  2) [chromium] › tests/zz-rival-scratch.spec.ts:55:3 › relative date for the newest release matches the reader's calendar in Asia/Tokyo 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.release-ago').first()
+    Expected: "yesterday"
+    Received: "today"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.release-ago').first() with timeout 5000ms
+      - waiting for locator('.release-ago').first()
+        14 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09">today</span>
+           - unexpected value "today"
+
+
+      62 |     const local = await page.evaluate(() => new Date().toLocaleDateString('en-US'));
+      63 |     console.log(tz, 'local date', local, 'release 2026-09-09 ->', await ago.textContent());
+    > 64 |     await expect(ago).toHaveText(expected);
+         |                       ^
+      65 |     await context.close();
+      66 |   });
+      67 | }
+        at /private/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/2555ef83-d646-4dd6-b090-92cbb731f7e7/worktree/web/tests/zz-rival-scratch.spec.ts:64:23
+
+    Error Context: ../test-results/zz-rival-scratch-relative--86442-er-s-calendar-in-Asia-Tokyo-chromium/error-context.md
+
+  2 failed
+    [chromium] › tests/zz-rival-scratch.spec.ts:55:3 › relative date for the newest release matches the reader's calendar in America/Los_Angeles 
+    [chromium] › tests/zz-rival-scratch.spec.ts:55:3 › relative date for the newest release matches the reader's calendar in Asia/Tokyo 
+  3 passed (18.1s)

@@ -110,7 +110,10 @@ test.describe('phone', () => {
 
     const contents = page.locator('.contents-disclosure');
     // The count is derived from the manifest, never written into the copy.
-    await expect(contents.locator('summary')).toContainText(`${releases.length} releases`);
+    await expect(contents.locator('summary')).toHaveAccessibleName(
+      `Contents ${releases.length} releases ›`
+    );
+    await expect(contents.locator('.count-blob')).toHaveText(String(releases.length));
     await expect(
       page.getByRole('heading', { name: `Version ${releases[0].version}` })
     ).toBeInViewport();
@@ -129,7 +132,8 @@ test.describe('phone', () => {
   }) => {
     await page.goto('/changelog');
     const row = page.locator('.contents-disclosure summary');
-    await expect(row).toContainText(`${releases.length} releases`);
+    await expect(row).toHaveAccessibleName(`Contents ${releases.length} releases ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(releases.length));
 
     // The oldest release, at max scroll: nothing follows it, so it is the one a
     // spy keyed on "has it climbed into the band" can only reach if the page
@@ -140,7 +144,8 @@ test.describe('phone', () => {
     await expect(row).toContainText(`Version ${oldest.version}`);
 
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(row).toContainText(`${releases.length} releases`);
+    await expect(row).toHaveAccessibleName(`Contents ${releases.length} releases ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(releases.length));
   });
 
   // The row is in the flow above every release it links to, so the panel's
@@ -489,3 +494,20 @@ test('picking the current rail release repeats arrival without adding a history 
   await expect(article).toHaveAttribute('data-arrived');
   expect(await page.evaluate(() => history.length)).toBe(historyLength);
 });
+
+for (const { timezoneId, now, expected } of [
+  { timezoneId: 'America/Los_Angeles', now: '2026-09-10T01:00:00Z', expected: 'today' },
+  { timezoneId: 'Asia/Tokyo', now: '2026-09-09T23:00:00Z', expected: 'yesterday' },
+]) {
+  test.describe(timezoneId, () => {
+    test.use({ timezoneId });
+    test('relative release dates follow the reader calendar at a UTC boundary', async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(new Date(now));
+      await page.goto('/changelog');
+      await expect(page.locator('.release-ago').first()).toHaveText(expected);
+      await expect(page.locator('.release time').first()).toHaveText(releases[0].dateLabel);
+    });
+  });
+}

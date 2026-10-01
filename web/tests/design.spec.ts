@@ -251,7 +251,8 @@ test.describe('phone contents', () => {
     const row = page.locator('.header-toc summary');
     // Derived from the sections the page actually renders, not a written count.
     const sections = await page.locator('main.styleguide [data-sg-section]').count();
-    await expect(row).toContainText(`${sections} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections));
 
     // The last section, at max scroll: a spy keyed on "the heading has crossed
     // the line" can only ever reach it if the page reserves room under it.
@@ -263,7 +264,8 @@ test.describe('phone contents', () => {
 
     // Symmetric rather than latched: back at the hero it advertises the count.
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(row).toContainText(`${sections} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections));
   });
 
   // A sticky element taller than its scrollport can never be scrolled to its own
