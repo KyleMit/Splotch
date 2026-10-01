@@ -170,8 +170,9 @@ describe('the media-query literal ban closes the typo class', () => {
   });
 
   // Recorded so the rule's reach is written down rather than assumed. A selector cannot resolve a
-  // binding, so a locally declared query still passes; closing that needs scope analysis and is
-  // drafted as a follow-up. Stating the limit beats implying coverage the rule does not have.
+  // binding, so a locally declared query still passes. Issue #1863 records the decision to accept
+  // that limit until a second rule needs binding resolution. Stating the limit beats implying
+  // coverage the rule does not have.
   it('does not reach a locally declared query, which is a known limit', async () => {
     const source = ["const QUERY = '(prefers-reduced-motoin: reduce)';", 'matchMedia(QUERY);'].join(
       '\n'
