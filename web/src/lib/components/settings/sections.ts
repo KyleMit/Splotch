@@ -110,10 +110,11 @@ export function sectionSubtitle(id: SectionId): string {
     }
     case 'saving':
       return settingsState.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
-    case 'coloring':
-      return settingsState.coloringBookEnabled
-        ? `${coloringPacksState.downloadedBookCount} extra books ready`
-        : 'Coloring books off';
+    case 'coloring': {
+      if (!settingsState.coloringBookEnabled) return 'Coloring books off';
+      const books = coloringPacksState.downloadedBookCount;
+      return `${books} extra ${books === 1 ? 'book' : 'books'} ready`;
+    }
     case 'controls': {
       // The section's own switch hides every tool the row would count, so with
       // it off the row names the switch, as Coloring's does; the per-tool flags

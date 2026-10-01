@@ -69,7 +69,8 @@
         {:else if freeRemaining === 0}
           Your {FREE_GENERATION_LIMIT} free pictures are used up.
         {:else if freeRemaining < FREE_GENERATION_LIMIT}
-          You have {freeRemaining} free pictures left — nothing to set up, no card.
+          You have {freeRemaining} free {freeRemaining === 1 ? 'picture' : 'pictures'} left — nothing
+          to set up, no card.
         {:else}
           The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.
         {/if}

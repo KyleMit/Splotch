@@ -161,15 +161,47 @@ describe('selectCustomSwatch', () => {
     expect(colors.activeColor).toBe('#8CC864');
   });
 
-  it('holds the ink it inherited when the theme changes before any color is picked', () => {
+  it.each([
+    ['dark to light', true, BLACK_INK],
+    ['light to dark', false, WHITE_INK],
+  ] as const)(
+    'moves inherited Black ink with a %s switch before any color is picked',
+    (_switch, startDark, inkAfterSwitch) => {
+      let dark: boolean = startDark;
+      colors.followTheme(() => dark);
+      colors.selectPaletteColor(BLACK_INK);
+      colors.selectCustomSwatch();
+
+      dark = !startDark;
+
+      expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
+      expect(colors.customColorSelected).toBe(false);
+      expect(colors.activeColor).toBe(inkAfterSwitch);
+    }
+  );
+
+  it('keeps inheriting from the last palette swatch when re-chosen before any color is picked', () => {
     let dark = true;
     colors.followTheme(() => dark);
+    colors.selectPaletteColor(BLACK_INK);
+    colors.selectCustomSwatch();
+    colors.selectCustomSwatch();
+
+    dark = false;
+
+    expect(colors.activeColor).toBe(BLACK_INK);
+  });
+
+  it('keeps a picked custom color through a theme switch', () => {
+    let dark = true;
+    colors.followTheme(() => dark);
+    colors.selectPaletteColor(BLACK_INK);
+    colors.pickCustomColor(WHITE_INK);
     colors.selectPaletteColor(BLACK_INK);
     colors.selectCustomSwatch();
 
     dark = false;
 
-    expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     expect(colors.activeColor).toBe(WHITE_INK);
   });
 });
