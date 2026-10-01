@@ -90,6 +90,8 @@ test('the install banner parts after five additional strokes', async ({ page }) 
   await expect(banner.locator('.install-parting')).toContainText(
     'No rush — these steps are always in Settings.'
   );
+  await expect(banner.locator('.install-parting [data-icon="splotchy"]')).toBeVisible();
+  await expect(banner.locator('.install-preview')).toHaveCount(0);
   await expect
     .poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed))
     .toBe('true');

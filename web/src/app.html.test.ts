@@ -22,6 +22,7 @@ import {
   SINGLE_BRUSH_ATTRIBUTE,
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
+import { APP_HOME_SCREEN_NAME } from './lib/appIdentity';
 import { DRAWING_VISITED_FLAG, DRAWING_VISITED_SESSION_KEY } from './lib/components/page/backLabel';
 import { PORTRAIT_QUERY } from './lib/breakpoints';
 import { STORAGE_KEYS } from './lib/storage';
@@ -53,6 +54,22 @@ const svelteKitConstantsSource = sourceFile(
 
 const settingsSource = sourceFile('./lib/state/settings.svelte.ts');
 const registryKeys = new Set(Object.values(STORAGE_KEYS));
+
+describe('the installed app uses the preview label', () => {
+  it('keeps the Apple home-screen title aligned with APP_HOME_SCREEN_NAME', () => {
+    const html = sourceFile('./app.html');
+    const title = html.match(/<meta name="apple-mobile-web-app-title" content="([^"]+)"/u);
+    expect(title?.[1]).toBe(APP_HOME_SCREEN_NAME);
+  });
+
+  it.each(['name', 'short_name'] as const)(
+    'keeps the manifest %s aligned with APP_HOME_SCREEN_NAME',
+    (field) => {
+      const manifest = JSON.parse(sourceFile('../static/site.webmanifest'));
+      expect(manifest[field]).toBe(APP_HOME_SCREEN_NAME);
+    }
+  );
+});
 
 it('keeps the pre-hydration Back state key aligned with the web handler', () => {
   const match = webBackHandlerSource.match(/WEB_BACK_PAGE_STATE_KEY\s*=\s*['"]([^'"]+)['"]/u);

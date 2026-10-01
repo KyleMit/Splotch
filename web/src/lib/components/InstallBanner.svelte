@@ -4,6 +4,7 @@
   import { backOut, cubicIn } from 'svelte/easing';
   import { calm } from '$lib/platform/calmTransition';
   import { CALM_FADE_MS } from '$lib/motionDurations';
+  import { APP_HOME_SCREEN_NAME } from '$lib/appIdentity';
   import { prefersReducedMotion } from '$lib/platform/reducedMotion';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
@@ -160,8 +161,9 @@
       </div>
     {:else}
       <div class="install-main">
-        <span class="install-mascot" aria-hidden="true">
-          <SplotchyIcon class="install-mascot-icon" />
+        <span class="install-preview" aria-hidden="true">
+          <img src="/apple-touch-icon.png" alt="" width="52" height="52" decoding="async" />
+          <span class="install-preview-label">{APP_HOME_SCREEN_NAME}</span>
         </span>
         <div class="install-copy">
           <strong>{promptCopy.heading}</strong>
@@ -263,8 +265,42 @@
 
   .install-main {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-3);
+  }
+
+  .install-preview {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    width: 60px;
+  }
+
+  .install-preview img {
+    display: block;
+    border-radius: var(--radius-md);
+    /* This lift previews a home-screen icon, rather than floating app chrome. */
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 18%),
+      0 2px 6px rgb(0 0 0 / 10%);
+  }
+
+  :global(:root[data-theme='dark']) .install-preview img {
+    box-shadow: var(--float-shadow);
+  }
+
+  .install-preview-label {
+    max-width: 60px;
+    color: var(--text-strong);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .install-parting {
@@ -295,6 +331,7 @@
   .install-copy {
     flex: 1;
     min-width: 0;
+    padding-top: var(--space-1);
     display: flex;
     flex-direction: column;
     text-align: left;
