@@ -91,8 +91,8 @@ export default async function globalSetup(config: FullConfig) {
   await assertHarnessServer(baseURL);
 
   if (!process.env.DEV_SERVER) return;
-  // Only the executable: SLOWMO would delay every warm-up poll, pushing the
-  // warm-up toward WARMUP_DEADLINE_MS without making any test easier to watch.
+  // Only the executable: the warm-up is headless setup, so SLOWMO's per-action
+  // delay would slow its navigations without making any test easier to watch.
   const { executablePath } = chromiumLaunchOptions();
   const browser = await chromium.launch({ executablePath });
   const page = await browser.newPage();
