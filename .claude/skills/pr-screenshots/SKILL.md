@@ -65,7 +65,10 @@ end-to-end — see the ADR's Verification table.
      wt="$(mktemp -d)"
      if git fetch origin pr-assets; then base="$(git rev-parse FETCH_HEAD)"
      else base="$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "pr-assets: root")"; fi
-     git worktree add --detach "$wt" "$base" || { rmdir "$wt"; exit 1; }
+     git worktree add --detach "$wt" "$base" || {
+       git worktree remove --force "$wt" 2>/dev/null || rmdir "$wt"
+       exit 1
+     }
      (
        set -e
        cd "$wt"
