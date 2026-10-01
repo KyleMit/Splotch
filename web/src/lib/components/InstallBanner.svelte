@@ -291,6 +291,12 @@
     box-shadow: var(--float-shadow);
   }
 
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .install-preview img {
+      box-shadow: var(--float-shadow);
+    }
+  }
+
   .install-preview-label {
     max-width: 60px;
     color: var(--text-strong);

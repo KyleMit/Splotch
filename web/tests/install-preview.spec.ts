@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { APP_HOME_SCREEN_NAME } from '../src/lib/appIdentity';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { type InstallMode, type InstallPromptStage } from '../src/lib/state/install.svelte';
 import {
   ANDROID_UA,
@@ -23,6 +24,38 @@ const MODES: Record<Exclude<InstallMode, 'none'>, { userAgent: string; cta: stri
   android: { userAgent: ANDROID_UA, cta: 'How?' },
   oneTap: { userAgent: ANDROID_UA, cta: 'Install' },
 };
+
+for (const scenario of [
+  { preference: 'system', colorScheme: 'dark', dark: true },
+  { preference: 'system', colorScheme: 'light', dark: false },
+  { preference: 'light', colorScheme: 'dark', dark: false },
+  { preference: 'dark', colorScheme: 'light', dark: true },
+] as const) {
+  test.describe(`${scenario.preference} preference on ${scenario.colorScheme} OS`, () => {
+    test.use({ userAgent: IPAD_UA, colorScheme: scenario.colorScheme });
+    test('the icon shadow follows the effective appearance preference', async ({ page }) => {
+      await page.addInitScript(({ key, preference }) => localStorage.setItem(key, preference), {
+        key: STORAGE_KEYS.theme,
+        preference: scenario.preference,
+      });
+      await gotoApp(page);
+      await earnInstallBanner(page);
+      const floatShadow = await page.evaluate(() => {
+        const probe = document.createElement('span');
+        probe.style.boxShadow = 'var(--float-shadow)';
+        document.body.append(probe);
+        const shadow = getComputedStyle(probe).boxShadow;
+        probe.remove();
+        return shadow;
+      });
+      const lightShadow = 'rgba(0, 0, 0, 0.18) 0px 1px 2px 0px, rgba(0, 0, 0, 0.1) 0px 2px 6px 0px';
+      await expect(page.locator('.install-preview img')).toHaveCSS(
+        'box-shadow',
+        scenario.dark ? floatShadow : lightShadow
+      );
+    });
+  });
+}
 
 for (const viewport of [
   { width: 375, height: 667 },
