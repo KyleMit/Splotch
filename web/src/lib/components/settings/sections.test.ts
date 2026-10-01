@@ -116,6 +116,7 @@ describe('Coloring section subtitle', () => {
 
   it.each([
     [[], '0 extra books ready'],
+    [['farm', 'dinosaur'], '1 extra book ready'],
     [['farm', 'dinosaur', 'space'], '2 extra books ready'],
   ])('counts the extra books installed beside the starter (%j)', (bookIds, expected) => {
     setInstalledColoringBooks(bookIds);
