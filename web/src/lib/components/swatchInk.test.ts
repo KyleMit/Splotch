@@ -8,6 +8,7 @@ import { appearanceState } from '$lib/state/appearance.svelte';
 import {
   BLACK_INK,
   BLACK_SWATCH_FILL,
+  CUSTOM_SWATCH,
   PALETTE_COLORS,
   WHITE_INK,
   colorsState,
@@ -81,6 +82,14 @@ function expectSelectedBlack(button: HTMLButtonElement, fill: string, theme: Res
   expect(button.getAttribute('aria-label')).toBe(ink === WHITE_INK ? 'White' : 'Black');
   expect(colorsState.activeSwatch).toBe(BLACK_INK);
   expect(colorsState.activeColor).toBe(ink);
+}
+
+function expectInheritedBlack(root: HTMLElement, theme: ResolvedTheme) {
+  const ink = expectedInk(BLACK_INK, theme);
+  expect(colorsState.activeSwatch).toBe(CUSTOM_SWATCH);
+  expect(colorsState.customColorSelected).toBe(false);
+  expect(colorsState.activeColor).toBe(ink);
+  expect(root.querySelector('#colorButton')?.getAttribute('style')).toContain(`color: ${ink};`);
 }
 
 beforeEach(() => {
@@ -191,16 +200,28 @@ describe('ink across a theme switch mid-session', () => {
     }
   });
 
-  // Today's behavior, pinned so a refactor cannot change it silently: the
-  // custom swatch chosen before any color is picked keeps drawing with the ink
-  // it inherited, even after the theme that produced that ink has gone.
-  it('keeps the ink the custom swatch inherited before any color was picked', () => {
-    switchTheme('dark');
-    tap(paletteSwatch(mountInto(ColorPalette), BLACK_INK));
-    selectCustomSwatch();
+  // The custom swatch chosen before any color is picked paints the swatch it
+  // was chosen from, so inherited Black follows the theme exactly as selected
+  // Black does. A snapshot would leave white ink on white paper. The color
+  // button's ink renders from the same store read the canvas brush follows.
+  it.each([
+    ['light', 'dark'],
+    ['dark', 'light'],
+  ] as const)(
+    'custom swatch chosen from Black in %s before any color is picked follows a switch to %s and back',
+    (from, to) => {
+      switchTheme(from);
+      const root = mountInto(ColorControl);
+      tap(menuSwatches(root)[LANDSCAPE_COLORS.findIndex(({ hex }) => hex === BLACK_INK)]);
+      selectCustomSwatch();
+      flushSync();
+      expectInheritedBlack(root, from);
 
-    switchTheme('light');
-    expect(colorsState.customColorSelected).toBe(false);
-    expect(colorsState.activeColor).toBe(WHITE_INK);
-  });
+      switchTheme(to);
+      expectInheritedBlack(root, to);
+
+      switchTheme(from);
+      expectInheritedBlack(root, from);
+    }
+  );
 });
