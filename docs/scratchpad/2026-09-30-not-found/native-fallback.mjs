@@ -64,15 +64,13 @@ try {
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(page.locator('.page-footer [aria-current]')).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
-    const geometry = await page
-      .locator('.not-found-links a')
-      .evaluateAll((links) =>
-        links.map((link) => ({
-          text: link.textContent,
-          href: link.getAttribute('href'),
-          rect: link.getBoundingClientRect().toJSON(),
-        }))
-      );
+    const geometry = await page.locator('.not-found-links a').evaluateAll((links) =>
+      links.map((link) => ({
+        text: link.textContent,
+        href: link.getAttribute('href'),
+        rect: link.getBoundingClientRect().toJSON(),
+      }))
+    );
     expect(geometry[0].rect.top).toBeLessThan(geometry[1].rect.top);
     expect(geometry[1].rect.top).toBe(geometry[2].rect.top);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
