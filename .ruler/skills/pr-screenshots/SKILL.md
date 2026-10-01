@@ -46,34 +46,40 @@ end-to-end — see the ADR's Verification table.
 
    * **A unique worktree path.** Agent worktrees share one parent directory, so a fixed path like
      `../pr-assets-wt` collides between sessions; `mktemp -d` cannot.
-   * **Detached at `origin/pr-assets`, never the local branch.** Local branches are shared by every
-     worktree and `git fetch` moves only `origin/pr-assets`, so a stale local `pr-assets` would take
-     the commit and the push would be rejected.
+   * **Detached at the commit just fetched, never the local branch.** Local branches are shared by
+     every worktree and a fetch never moves them, so a stale local `pr-assets` would take the commit
+     and the push would be rejected. `FETCH_HEAD` is per worktree and is filled whatever the clone's
+     fetch refspec, unlike the shared `origin/pr-assets`.
    * **One rebase-and-retry on rejection.** Each PR adds only its own `<pr-slug>/` folder, so a push
      that lost a race replays cleanly onto the new remote tip. Never force-push `pr-assets`: other
      PR bodies link to its files by raw URL.
    * **The first upload ever** (no remote branch) starts from a parentless empty commit, so the
      branch shares no history with `main`. The push names `refs/heads/pr-assets` in full because a
      detached `HEAD` cannot create a remote branch from a short name.
+   * **Fail closed.** The upload stops at its first error, never runs outside the temporary
+     worktree, always removes it, and the block's exit status is the upload's.
 
    ```sh
-   wt="$(mktemp -d)"
-   if git fetch origin pr-assets; then base=origin/pr-assets
-   else base="$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "pr-assets: root")"; fi
-   git worktree add --detach "$wt" "$base"
    (
-     set -e
-     cd "$wt"
-     mkdir -p <pr-slug>
-     cp /path/to/before.png /path/to/after.png <pr-slug>/
-     git add <pr-slug> && git commit -m "pr-assets: shots for <pr-slug>"
-     git push origin HEAD:refs/heads/pr-assets || {
-       git fetch origin pr-assets && git rebase origin/pr-assets &&
-         git push origin HEAD:refs/heads/pr-assets
-     }
-   ); ok=$?
-   git worktree remove --force "$wt"
-   [ "$ok" -eq 0 ]
+     set +e
+     wt="$(mktemp -d)"
+     if git fetch origin pr-assets; then base="$(git rev-parse FETCH_HEAD)"
+     else base="$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "pr-assets: root")"; fi
+     git worktree add --detach "$wt" "$base" || { rmdir "$wt"; exit 1; }
+     (
+       set -e
+       cd "$wt"
+       mkdir -p <pr-slug>
+       cp /path/to/before.png /path/to/after.png <pr-slug>/
+       git add <pr-slug> && git commit -m "pr-assets: shots for <pr-slug>"
+       git push origin HEAD:refs/heads/pr-assets || {
+         git fetch origin pr-assets && git rebase FETCH_HEAD &&
+           git push origin HEAD:refs/heads/pr-assets
+       }
+     ); ok=$?
+     git worktree remove --force "$wt"
+     exit "$ok"
+   )
    ```
 
    No local git? The GitHub MCP `push_files` tool commits the same files straight to the `pr-assets`
