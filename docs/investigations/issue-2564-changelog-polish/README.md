@@ -45,10 +45,10 @@ sizes, AA tape and active highlighter text in both themes, rapid arrival changes
 Settings headings. Browserless coverage reports 4,365 unit, 41 UI, 277 server, 23 API-unit, 6,645
 tools and 42 API-smoke assertions.
 
-The final static native export keeps exactly 28 drawing modulepreloads and measures 6,209,731 of
+The final static native export keeps exactly 28 drawing modulepreloads and measures 6,209,721 of
 7,000,000 allowed bytes. Its eager-error closure adds six resources and 5,358 bytes with deferred
 owners still lazy. The final web release has exactly 40 drawing modulepreloads and an eager-error
-union of 484,831 of 525,000 allowed bytes. Its linked startup JavaScript/CSS is 456,164 bytes plus
+union of 484,835 of 525,000 allowed bytes. Its linked startup JavaScript/CSS is 456,168 bytes plus
 84,462 inline CSS bytes. These budgets are unchanged.
 
 The compiled native probe covers both shipped pages and themes with idle prewarming disabled: there
@@ -124,3 +124,11 @@ Hue assignment intentionally follows newest-first display order, with the first 
 repeating palette cycle, as required by the handoff's by-index scheme. These decorative hues
 describe positions rather than permanent release identities; prepending a release therefore rotates
 older hues. The generator tests pin that ordering and agreement between article and rail metadata.
+
+After the review repair, the seven focused production cases pass in both Chromium and installed
+WebKit. All twelve relative-date units also pass under explicit Los Angeles and Tokyo process
+timezones. Restoring only the old UTC owner after a clean committed checkpoint fails both permanent
+real-page timezone guards; restoring the committed local-calendar owner passes the same two guards.
+The new native build keeps 28 modulepreloads and a 6,209,721-byte export; web keeps 40 and the
+unchanged eager-error union. The original source-bound gallery remains a faithful record of the
+unchanged rendered appearance; only date logic and test assertions changed in this repair.
