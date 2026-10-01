@@ -251,22 +251,64 @@ test('the hub Night Mode switch themes the app and matches the Appearance picker
   await expect(page.locator('#themeOption-dark')).toHaveAttribute('aria-checked', 'true');
 });
 
-// The track is deliberately 32px tall, under the 44px floor every interactive
-// target holds to. In a ToggleRow the label beside the switch activates it too;
-// on a hub row this button is the whole target on its side of the split, so it
-// takes taps past its own box.
-test('the hub switch answers a tap above its track', async ({ page }) => {
-  await openPhoneHub(page);
+const SWITCH_TARGET_HEIGHT_PX = 48;
+const SWITCH_TRACK_HEIGHT_PX = 32;
+const TARGET_EDGE_INSET_PX = 1;
+const switchTargetPoints = [
+  ['top left', 0, 0],
+  ['top', 0.5, 0],
+  ['top right', 1, 0],
+  ['right', 1, 0.5],
+  ['bottom right', 1, 1],
+  ['bottom', 0.5, 1],
+  ['bottom left', 0, 1],
+  ['left', 0, 0.5],
+] as const;
 
-  const nightSwitch = page.locator('#hubNightToggle');
-  await expect(nightSwitch).toHaveAttribute('aria-checked', 'false');
-  const box = (await nightSwitch.boundingBox())!;
-  expect(box.height).toBeLessThan(44);
+for (const [edge, x, y] of switchTargetPoints) {
+  test(`the hub switch answers its ${edge} target edge without changing Sound`, async ({
+    page,
+  }) => {
+    await openPhoneHub(page);
+    const nightSwitch = page.locator('#hubNightToggle');
+    const soundSwitch = page.locator('#hubSoundToggle');
+    const soundBefore = await soundSwitch.getAttribute('aria-checked');
+    const box = (await nightSwitch.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(SWITCH_TARGET_HEIGHT_PX);
+    expect(box.height).toBe(SWITCH_TARGET_HEIGHT_PX);
+    const trackHeight = await nightSwitch.evaluate((element) => {
+      const track = getComputedStyle(element, '::before');
+      return (
+        element.getBoundingClientRect().height - parseFloat(track.top) - parseFloat(track.bottom)
+      );
+    });
+    expect(trackHeight).toBe(SWITCH_TRACK_HEIGHT_PX);
+    await page.mouse.click(
+      box.x + TARGET_EDGE_INSET_PX + x * (box.width - 2 * TARGET_EDGE_INSET_PX),
+      box.y + TARGET_EDGE_INSET_PX + y * (box.height - 2 * TARGET_EDGE_INSET_PX)
+    );
+    await expect(nightSwitch).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(soundSwitch).toHaveAttribute('aria-checked', soundBefore!);
+    await expect(page.locator('.hub-list')).toBeVisible();
+  });
+}
 
-  // 4px above the visible track — inside the 44px hit box, outside the 32px one.
-  await page.mouse.click(box.x + box.width / 2, box.y - 4);
-  await expect(nightSwitch).toHaveAttribute('aria-checked', 'true');
-});
+for (const side of ['above', 'below'] as const) {
+  test(`a tap ${side} the hub switch target leaves both switches alone`, async ({ page }) => {
+    await openPhoneHub(page);
+    const nightSwitch = page.locator('#hubNightToggle');
+    const soundSwitch = page.locator('#hubSoundToggle');
+    const soundBefore = await soundSwitch.getAttribute('aria-checked');
+    const box = (await nightSwitch.boundingBox())!;
+    const y =
+      side === 'above' ? box.y - TARGET_EDGE_INSET_PX : box.y + box.height + TARGET_EDGE_INSET_PX;
+    await page.mouse.click(box.x + box.width / 2, y);
+    await expect(nightSwitch).toHaveAttribute('aria-checked', 'false');
+    await expect(soundSwitch).toHaveAttribute('aria-checked', soundBefore!);
+    await expect(page.locator('.hub-list')).toBeVisible();
+  });
+}
 
 // The section's switch hides every tool the row would count, so with it off the
 // row names the switch rather than a count of flags the child cannot see.

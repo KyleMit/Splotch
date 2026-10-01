@@ -86,7 +86,8 @@
     text-decoration: none;
     /* The app's touch-target floor lives in the primitive, so no call site
        has to re-add it; `sm` shrinks the type and padding, never the target. */
-    min-height: 44px;
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
     cursor: pointer;
     touch-action: manipulation;
     transition:
@@ -141,8 +142,7 @@
     animation: none;
   }
 
-  /* 14px of vertical padding, not a --space step: it is what carries a 16px
-     label to the app's 44px minimum target. */
+  /* The vertical padding keeps the large label centered in its target. */
   .lg {
     padding: 14px var(--space-4);
     font-size: var(--font-size-md);

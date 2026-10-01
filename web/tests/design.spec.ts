@@ -91,8 +91,8 @@ for (const { device, viewport, pageLabel } of [
       await expect(option.locator('.option-label')).toBeHidden();
       // Square rather than a shrunken pill: the label was what gave it width.
       const box = (await option.boundingBox())!;
-      expect(box.width).toBeGreaterThanOrEqual(44);
-      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(48);
+      expect(box.height).toBeGreaterThanOrEqual(48);
     }
 
     // Which state the label is in is the case's own assertion, not a branch on

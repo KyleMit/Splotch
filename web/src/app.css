@@ -462,7 +462,8 @@ body {
      books.test.ts binds the two. */
   --modal-gutter-min: 16px;
   --modal-gutter: max(var(--modal-gutter-min), var(--safe-area-left), var(--safe-area-right));
-  --modal-close-size: 44px;
+  --touch-target-min: 48px;
+  --modal-close-size: var(--touch-target-min);
   --modal-close-inset: var(--space-3);
   --modal-close-clearance-x: calc(
     var(--modal-close-inset) + var(--modal-close-size) + var(--space-2)
@@ -478,7 +479,7 @@ body {
 
    What the reserve measures is the tap target, not the pill: the target is
    taller than the pill and centered on it, so it overhangs both edges, and
-   reserving only the pill lets a short viewport clip the bottom of a 44px
+   reserving only the pill lets a short viewport clip the bottom of the
    target down to something a parent can't reliably hit. Hence half of each —
    the distance from the card's edge to the far side of the overhang.
 
@@ -492,7 +493,7 @@ body {
 :root {
   --report-strip-height: 26px;
   --report-strip-gap: var(--space-4);
-  --report-strip-tap: 44px;
+  --report-strip-tap: var(--touch-target-min);
   --report-strip-reserve: calc(
     var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
       var(--safe-area-bottom)
@@ -532,8 +533,7 @@ body {
   transform: scale(0.92);
 }
 
-/* The banners' dismiss sits in their flex row rather than a card corner. Same
-   footprint as the 40px disc it replaced; the extra 4px is target. */
+/* The banners' dismiss sits in their flex row rather than a card corner. */
 .banner-dismiss {
   position: static;
   flex-shrink: 0;

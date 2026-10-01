@@ -142,7 +142,7 @@
     border-radius: var(--radius-pill);
   }
 
-  /* A 26px disc on a 44px target: the padding is the hit area, the negative
+  /* A compact disc on the shared target: the padding is the hit area, the negative
      margin keeps the row's layout where the 26px control alone put it, and
      background-clip keeps the disc visibly 26px. */
   .folder-clear {
@@ -150,10 +150,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    margin: -9px;
-    padding: 9px;
+    --folder-disc-size: 26px;
+    --folder-target-padding: calc((var(--touch-target-min) - var(--folder-disc-size)) / 2);
+
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    margin: calc(-1 * var(--folder-target-padding));
+    padding: var(--folder-target-padding);
     background-clip: content-box;
     border: none;
     border-radius: 50%;

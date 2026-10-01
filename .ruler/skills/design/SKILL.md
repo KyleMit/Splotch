@@ -196,7 +196,7 @@ primitives offer no shape: the ledger table and its link-shaped actions.
 
 | Primitive                | Use for                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 44px targets: flat back, outlined close.                                                                                                                                                                                                                                                                                                                                                               |
+| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 48px targets: flat back, outlined close.                                                                                                                                                                                                                                                                                                                                                               |
 |                          | Omit children for a floating close; `closeFeedback` preserves Settings press feedback.                                                                                                                                                                                                                                                                                                                                                          |
 | `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm` / `hero`                                                                                                                                                                                                                                                                                                                                                   |
 |                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather                                                                                                                                                                                                                                                                                                                                                                 |
@@ -355,8 +355,13 @@ Two consequences worth knowing before styling one:
 * **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
   (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
   color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.
-* **Touch targets are chunky.** Nothing interactive goes below 44px; kid-facing controls run
-  deliberately larger. Don't shrink a control to fit a layout — rework the layout.
+* **Touch targets are chunky.** The shared dialog chrome, Button, SegmentedPicker, and Settings
+  switches use `--touch-target-min` (48px) in both axes across web and native. Compact switch tracks
+  can remain smaller inside the full button. Keep targets separate from neighboring controls and
+  verify effective hit regions on Android alongside accessibility bounds; CSS pixels alone are not a
+  dp measurement. Existing bespoke page/admin controls still have their own sizing; changing the
+  shared floor does not certify every app target. Kid-facing controls run deliberately larger. Don't
+  shrink a control to fit a layout — rework the layout.
 
 ## The living styleguide
 

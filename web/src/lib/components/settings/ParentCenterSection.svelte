@@ -196,7 +196,7 @@
 
   .policy-list {
     /* Widths the matrix layout below is built from. The mode column clears the
-       three options at the 44px minimum target plus the segmented track's own
+       three options at the shared minimum target plus the segmented track's own
        4px gaps and padding, with room left over so the radio marks aren't
        packed against each other; the copy column keeps a protection's name to
        two lines with the same breathing room. */
