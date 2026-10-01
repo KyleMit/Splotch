@@ -27,7 +27,7 @@ import {
   commandReportsRefreshRegime,
   DEVICE_CLASSES,
 } from '../lib/campaign-plan.mjs';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
