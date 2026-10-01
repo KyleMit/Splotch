@@ -163,7 +163,8 @@ Three Node smoke entry points guard the server contract:
   bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
   apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
   `browserless` job on every push/PR; run it locally after any endpoint change (see the `api`
-  skill).
+  skill). Its dev server listens on `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree,
+  set `SMOKE_PORT` to an unused port.
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
   both native-origin CORS preflights, safe unauthenticated API failures, and the admin persistence
@@ -236,9 +237,35 @@ async continuation. A unit test that polls through real timers and can later tou
 mocks accepts `{ signal }` and calls `signal.throwIfAborted()` after every `await` before
 continuing. Without that guard, teardown can install the next test's globals while the timed-out
 callback keeps running, producing secondary mock-count failures in a test that did nothing wrong.
-Prefer fake timers when they represent the behavior faithfully. If a cold dynamic import alone
-exceeds the default timeout on a contended shared host, scope a named larger timeout to that one
-test — never raise the whole file's timeout with `vi.setConfig`.
+Prefer fake timers when they represent the behavior faithfully. They do not represent
+`AbortSignal.timeout`: Node runs it on internal timers the fake clock never advances, so a deadline
+test stubs it with a controller that aborts on the faked `setTimeout` (the pattern in
+`web/src/lib/server/github.test.ts`). If a cold dynamic import alone exceeds the default timeout on
+a contended shared host, scope a named larger timeout to that one test — never raise the whole
+file's timeout with `vi.setConfig`.
+
+### Mounting components and actions in happy-dom
+
+A component, route page, or action test mounts into the happy-dom environment above with Svelte's
+own `mount`, settles with `flushSync` (or `await tick()` for effects), and awaits `unmount()`, which
+returns a promise. `web/src/routes/feedback/page.test.ts` is the reference. What it needs that is
+not obvious:
+
+* **`browser` stays `true` in a server render here.** `web/vitest-setup.ts` pins
+  `$app/environment`'s `browser` to `true` for every unit-tier file, `@vitest-environment node` ones
+  included. A `svelte/server` `render` of markup that does not branch on `browser` is fine in this
+  tier (the `*.ssr.test.ts` files); one that must see what the server bundle sees belongs in the
+  web-build SSR tier below.
+* **A route page needs `$app/forms` mocked** for its `use:enhance`, and
+  `$lib/platform/calmTransition` mocked to zero duration: happy-dom cancels a running transition on
+  unmount with an unhandled rejection.
+* **Give a stand-in pointer event `button: 0`** (and `buttons: 1` while pressed). The pointer
+  handlers act on the primary button only, and an event built with `new Event('pointerdown')` has no
+  `button` at all, so the handler ignores it (the `pointerEvent` helper in
+  `web/src/lib/actions/scribbleTap.test.ts`).
+* **Import Svelte state modules statically.** A `vi.resetModules()` harness hands the re-imported
+  modules a second copy of Svelte's runtime, and an effect created under the test's `$effect.root`
+  is then an orphan to the module's effects (`web/src/lib/state/dialogTheme.svelte.test.ts`).
 
 ### Web-build SSR guards
 
@@ -276,7 +303,7 @@ npm run test:asset-gen
 Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
 mocked generator workflows, with no model calls or network access. CI runs them in the browser-free
 `browserless` job, after the app-unit suite and alongside the repo-script suite, in parallel with
-the e2e shards.
+the e2e shards. Like the repo-script suite below, it needs `web/.svelte-kit/` generated first.
 
 ## Store-drawing pipeline unit tests — Vitest
 
@@ -314,6 +341,11 @@ than bytes so small SciPy/BLAS selection drift does not create a platform-fragil
 ```bash
 npm run test:tools
 ```
+
+In a fresh checkout or worktree, run `npm run check` first: its `precheck` runs `svelte-kit sync`,
+which generates the `web/.svelte-kit/tsconfig.json` that `web/tsconfig.json` extends. Neither the
+worktree bootstrap nor `pnpm install` creates it, and without it the suites that load `web/src`
+modules fail with `[TSCONFIG_ERROR] Failed to load tsconfig 'web/.svelte-kit/tsconfig.json'`.
 
 Configured in `tools/vitest.config.mjs` (Node env), tests in `tools/tests/`. Covers repo automation
 helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md` surgery in

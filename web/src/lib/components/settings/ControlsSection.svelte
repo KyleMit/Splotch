@@ -5,6 +5,7 @@
   import RuleLabel from '../design/RuleLabel.svelte';
   import {
     settingsState,
+    actionControlShown,
     setToolDrawerEnabled,
     setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
@@ -132,7 +133,7 @@
     </div>
   {/if}
 
-  {#if settingsState.applePencilSeen && settingsState.eraserEnabled}
+  {#if settingsState.applePencilSeen && actionControlShown('eraserEnabled')}
     <div class="setting pencil-eraser" transition:sectionReveal>
       <ToggleRow
         icon="brush-eraser"

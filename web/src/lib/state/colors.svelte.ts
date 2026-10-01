@@ -44,9 +44,9 @@ export function createColors(): ColorsState {
     activeSwatch: DEFAULT_STROKE_COLOR,
     customColor: DEFAULT_STROKE_COLOR,
     customColorSelected: false,
-    // The custom swatch chosen before any color is picked keeps drawing with the
-    // ink in use at that moment.
-    inheritedInk: DEFAULT_STROKE_COLOR,
+    // The custom swatch chosen before any color is picked paints this palette
+    // swatch's themed ink, read when drawn so it follows a later theme switch.
+    lastPaletteSwatch: DEFAULT_STROKE_COLOR,
   });
   let isDark = () => false;
 
@@ -56,7 +56,7 @@ export function createColors(): ColorsState {
 
   function activeColor() {
     if (s.activeSwatch !== CUSTOM_SWATCH) return themedSwatchColor(s.activeSwatch);
-    return s.customColorSelected ? s.customColor : s.inheritedInk;
+    return s.customColorSelected ? s.customColor : themedSwatchColor(s.lastPaletteSwatch);
   }
 
   return {
@@ -78,9 +78,9 @@ export function createColors(): ColorsState {
     },
     selectPaletteColor(hex) {
       s.activeSwatch = hex;
+      s.lastPaletteSwatch = hex;
     },
     selectCustomSwatch() {
-      if (!s.customColorSelected) s.inheritedInk = activeColor();
       s.activeSwatch = CUSTOM_SWATCH;
     },
     pickCustomColor(hex) {
