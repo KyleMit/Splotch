@@ -85,6 +85,22 @@ describe('report tokens', () => {
   // The v2 context is the server-authenticated provider reason — the whole
   // point of signing it is that a client cannot author it. Swapping the context
   // segment while keeping the signature must fail, not deliver attacker words.
+  // The reason is quoted into a GitHub issue, where half an emoji renders as `?`.
+  it('drops an emoji the refusal-reason cap would split rather than leave half of it', () => {
+    const keptLength = 511;
+    const token = issueReportToken(MANAGED_BINDING, {
+      kind: 'false-positive-refusal',
+      refusalReason: `${'x'.repeat(keptLength)}🖍 tail`,
+    });
+
+    const verdict = verifyReportToken(token, MANAGED_BINDING);
+
+    expect(verdict).toEqual({
+      status: 'valid',
+      context: { kind: 'false-positive-refusal', refusalReason: 'x'.repeat(keptLength) },
+    });
+  });
+
   it('rejects a v2 token whose context segment was rewritten after signing', () => {
     const token = issueReportToken(MANAGED_BINDING, {
       kind: 'false-positive-refusal',

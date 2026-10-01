@@ -11,6 +11,7 @@ import {
   type ReportKind,
   type ReportRequestBody,
 } from '$lib/report';
+import { truncateCodeUnits } from '$lib/truncate';
 
 // Server-only core of the feedback flow, shared by its two front doors: the
 // `/api/report` JSON endpoint the in-app form in Settings posts to, and the
@@ -48,7 +49,7 @@ function titleFor(kind: ReportKind, message: string): string {
   const firstLine = message.split('\n', 1)[0].trim();
   const summary =
     firstLine.length > MAX_ISSUE_TITLE_SUMMARY_LENGTH
-      ? `${firstLine.slice(0, MAX_ISSUE_TITLE_SUMMARY_LENGTH - TITLE_ELLIPSIS.length)}${TITLE_ELLIPSIS}`
+      ? `${truncateCodeUnits(firstLine, MAX_ISSUE_TITLE_SUMMARY_LENGTH - TITLE_ELLIPSIS.length)}${TITLE_ELLIPSIS}`
       : firstLine;
   return `[${ISSUE_BY_KIND[kind].titlePrefix}] ${summary}`;
 }
@@ -142,7 +143,7 @@ export async function submitReport({
   if (!rawMessage) {
     return { ok: false, status: 400, error: 'Please type a short description.' };
   }
-  const text = rawMessage.slice(0, MAX_REPORT_MESSAGE_LENGTH);
+  const text = truncateCodeUnits(rawMessage, MAX_REPORT_MESSAGE_LENGTH);
 
   const sanitized = device && typeof device === 'object' ? sanitizeDeviceInfo(device) : null;
   const snapshot = sanitized && Object.keys(sanitized).length > 0 ? sanitized : null;

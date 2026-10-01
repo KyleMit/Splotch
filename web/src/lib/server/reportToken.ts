@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { constantTimeEqual } from './admin';
 import { config } from './config';
+import { truncateCodeUnits } from '$lib/truncate';
 
 // Proof that this server actually ran the AI attempt being reported. Free
 // picture tokens authorize the report for a locally-mintable installation id;
@@ -59,7 +60,10 @@ function signContext(
 }
 
 function normalizedRefusalContext(refusalReason: string): ReportTokenContext {
-  const normalized = refusalReason.replace(/\s+/g, ' ').trim().slice(0, MAX_REFUSAL_REASON_CHARS);
+  const normalized = truncateCodeUnits(
+    refusalReason.replace(/\s+/g, ' ').trim(),
+    MAX_REFUSAL_REASON_CHARS
+  );
   return {
     kind: 'false-positive-refusal',
     refusalReason: normalized || 'UNKNOWN_SAFETY_REASON',
