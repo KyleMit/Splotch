@@ -1,5 +1,6 @@
 <script lang="ts">
   import DialogHeader from './design/DialogHeader.svelte';
+  import StatusMessage from './design/StatusMessage.svelte';
   import { aiPromptModal } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
@@ -14,6 +15,7 @@
   import { createAiPreviewLoader } from './aiPreview';
 
   let drawingBlob = $state<Blob | null>(null);
+  let previewFailed = $state(false);
 
   // The covers are forked art, not a filtered light asset — each theme has its
   // own AI render (see tools/asset-gen/style-covers/gen-style-covers.mjs).
@@ -23,7 +25,7 @@
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob({ includePaperTexture: false }),
     (blob) => (drawingBlob = blob),
-    aiPromptModal.hide
+    () => (previewFailed = true)
   );
 
   async function loadPreview() {
@@ -34,6 +36,7 @@
   function cleanupPreview() {
     previewLoader.invalidate();
     drawingBlob = null;
+    previewFailed = false;
   }
 
   // The modalDialog action's onClose only invalidates on an explicit close.
@@ -66,6 +69,11 @@
 
     <fieldset class="ai-prompt-styles">
       <legend id="aiPromptStylesLegend">Pick a style</legend>
+      {#if previewFailed}
+        <StatusMessage status="error" class="ai-prompt-failed">
+          We couldn't read the drawing. Close this and try the wand again.
+        </StatusMessage>
+      {/if}
       <div class="ai-style-options">
         {#each STYLE_NAMES as s (s)}
           {@const thumb = styleThumbPath(s, dialogTheme.current)}
@@ -125,6 +133,10 @@
     color: var(--text);
     padding: 0;
     margin-bottom: 12px;
+  }
+
+  .ai-prompt-styles :global(.ai-prompt-failed) {
+    margin-bottom: var(--space-3);
   }
 
   .ai-style-options {

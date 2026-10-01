@@ -1,5 +1,5 @@
 // A preview that never arrives would leave every style button disabled with nothing to say why, so a
-// failed export hands off to `fail`, the way generateAiImage closes its own modal on the same failure.
+// failed export hands off to `fail` for the prompt to explain it.
 export function createAiPreviewLoader(
   exportDrawing: () => Promise<Blob | null>,
   commit: (blob: Blob) => void,
