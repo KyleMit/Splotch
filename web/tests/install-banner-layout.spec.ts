@@ -15,6 +15,7 @@ import {
 import { openDrawer } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { iosShareButtonLocation } from '../src/lib/iosShareButtonLocation';
+import { captureMockInstallPrompt } from './install-preview-harness';
 
 const SAFE_BOTTOM_PX = 34;
 const BANNER_LAYOUT_TIMEOUT_MS = 5000;
@@ -202,18 +203,7 @@ test.describe('Chromium install', () => {
 
   test('the one-tap button invokes the captured install prompt', async ({ page }) => {
     await earnBanner(page);
-    await page.evaluate(() => {
-      const event = new Event('beforeinstallprompt', { cancelable: true });
-      Object.defineProperties(event, {
-        prompt: {
-          value: async () => {
-            document.documentElement.dataset.installPrompted = 'true';
-          },
-        },
-        userChoice: { value: Promise.resolve({ outcome: 'accepted', platform: 'web' }) },
-      });
-      window.dispatchEvent(event);
-    });
+    await captureMockInstallPrompt(page);
     await page
       .locator('.install-banner')
       .getByRole('button', { name: 'Install', exact: true })
