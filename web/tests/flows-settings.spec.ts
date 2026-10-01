@@ -502,8 +502,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
     const buttons = await Promise.all([back.boundingBox(), close.boundingBox()]);
     const card = await modal.boundingBox();
     for (const button of buttons) {
-      expect(button!.width).toBe(44);
-      expect(button!.height).toBe(44);
+      expect(button!.width).toBe(48);
+      expect(button!.height).toBe(48);
       expect(button!.x).toBeGreaterThanOrEqual(card!.x);
       expect(button!.x + button!.width).toBeLessThanOrEqual(card!.x + card!.width);
     }

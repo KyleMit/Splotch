@@ -2,6 +2,7 @@ import { expect, test, type Locator } from '@playwright/test';
 import { gotoApp, openSettingsModal } from './helpers';
 
 const TARGET_MIN_PX = 48;
+const BUSY_PREVIEW_RESET_MS = 10_000;
 const compactViewports = [
   { name: 'portrait', width: 320, height: 740 },
   { name: 'landscape', width: 740, height: 320 },
@@ -113,7 +114,7 @@ test.describe('touch activation', () => {
     const button = card.getByRole('button');
     await card.scrollIntoViewIfNeeded();
     await expect(button).toBeDisabled();
-    await page.clock.fastForward(10_000);
+    await page.clock.fastForward(BUSY_PREVIEW_RESET_MS);
     await expect(button).toBeEnabled();
     const box = (await button.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(TARGET_MIN_PX);
