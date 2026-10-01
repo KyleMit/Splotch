@@ -34,13 +34,17 @@ same request-by-request approval and decline behavior described below.
 Use these fixed installed entry points in the normal Codex sandbox:
 
 ```sh
-/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main
+/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main --fresh
 node /workspace/.cache/splotch-rival-agent/broker.mjs next --session <dir> --timeout-seconds 60
 ```
 
 The launcher accepts the same scope, question, resume, and model options documented below. Retain
 its yielded process handle, serve the broker until `done` or `failed`, and report the findings. Do
 not invoke raw `claude` or the checkout's launcher.
+
+For the first review of a new piece of work, pass `--fresh`: a cached container can retain a ledger
+entry for the same branch name from another task. Omit it for later rounds reviewing that same work,
+so Claude resumes its earlier findings. Use `--end-session` when that review unit is complete.
 
 For a PR scope, the existing `--pr` launcher and installed `post-review.mjs` also require separately
 validated GitHub CLI authentication with PR-review permissions. The configured feedback issue token

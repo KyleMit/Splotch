@@ -146,9 +146,10 @@ export function installRunClaude({
   const expected = expectedInstalledFiles(shims);
   if (check) {
     if (!isCurrent({ root, shims }, expected)) {
-      throw new Error(
-        'the rival-agent install is missing or stale; run npm run run-claude:install'
-      );
+      const remedy = cloud
+        ? 'rerun setup/maintenance (node .agents/skills/run-rival-agent/scripts/install-cloud.mjs) from /workspace/Splotch'
+        : 'run npm run run-claude:install';
+      throw new Error(`the rival-agent install is missing or stale; ${remedy}`);
     }
     console.log('trusted rival-agent installation is current');
     return;

@@ -119,8 +119,8 @@ Copy the complete contents of [`.codex/cloud/setup.sh`](../../.codex/cloud/setup
 `install_script`, [`.codex/cloud/maintenance.sh`](../../.codex/cloud/maintenance.sh) into the
 maintenance field when available, and [`.codex/cloud/start.md`](../../.codex/cloud/start.md) into
 `start_skill`. Select a repository revision containing those files and the cloud rival installer;
-then build a new environment snapshot. Until the PR is merged, select its branch for that build.
-Configuration saves persist instructions; they do not execute them or publish a new snapshot.
+then build a new environment snapshot. Configuration saves persist instructions; they do not execute
+them or publish a new snapshot.
 
 If using local copies at `/workspace/.cache/splotch-install.sh` and
 `/workspace/.cache/splotch-start.md`, refresh them manually alongside the environment settings.
@@ -210,6 +210,10 @@ The CLI's configuration and transcripts live under `/workspace/.cache/claude-cod
 review-round ledger lives under `/workspace/.cache/splotch-rival-state`. Automatic CLI updates and
 nonessential traffic are disabled so the snapshot keeps the validated version.
 
+Start the first review of new work with `--fresh` so a cached ledger entry for a reused branch name
+does not resume another task's reviewer. Omit `--fresh` for later rounds of that same review, and
+use `--end-session` when the review unit is complete.
+
 This managed machine cannot create the nested user namespace required by Claude's Linux Bash sandbox
 (`bwrap` reports a read-only UID map). The cloud adapter therefore gives the rival only restricted
 file reads and the `run` MCP broker, with no Bash, edit, browser, or direct web tools. Every test,
@@ -220,7 +224,7 @@ To validate remote authentication and the broker, create an absolute question fi
 asking Claude to read the review packet and request `node --version` through `run`. Launch:
 
 ```bash
-/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main --question-file /tmp/claude-cloud-question.md
+/workspace/.cache/splotch-rival-agent/launch-claude.mjs --base origin/main --fresh --question-file /tmp/claude-cloud-question.md
 ```
 
 Retain the launcher's process handle. Read its printed session directory and serve

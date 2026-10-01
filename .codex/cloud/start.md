@@ -100,8 +100,10 @@ The platform controls approvals; no desktop Codex policy or Keychain setup is ne
 Missing or stale wrapper bytes need a setup/maintenance refresh from the trusted canonical checkout.
 Never copy wrappers from the rival's reviewed worktree. Review transcripts and the round ledger are
 under `/workspace/.cache`, and may survive container caching; live reviewer processes must be
-restarted for a new task. GitHub CLI access for `--pr` and automatic posting needs separate
-validation. A local branch or commit review can use the native GitHub app for publication.
+restarted for a new task. Pass `--fresh` for the first review of new work so a reused branch name
+does not resume another task's reviewer; omit it for subsequent rounds of the same review. GitHub
+CLI access for `--pr` and automatic posting needs separate validation. A local branch or commit
+review can use the native GitHub app for publication.
 
 The source files for this configuration are `.codex/cloud/setup.sh`, `.codex/cloud/maintenance.sh`,
 and `.codex/cloud/start.md`. Sync their contents to the environment settings and any local copies
