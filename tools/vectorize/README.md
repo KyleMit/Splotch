@@ -38,7 +38,7 @@ credit**, and credits do not come back. Read
 
 ## Credentials
 
-Three env vars, read from the shell (repo tooling never loads dotenv itself):
+The driver reads these variables from the shell, then root `.env` and `web/.env` when unset:
 
 | Variable                   | What it is                                                    |
 | -------------------------- | ------------------------------------------------------------- |
@@ -46,9 +46,9 @@ Three env vars, read from the shell (repo tooling never loads dotenv itself):
 | `VECTORIZER_SECRET`        | API Secret — the HTTP Basic **password**                      |
 | `VECTORIZER_AUTHORIZATION` | Pre-built `Basic <base64>` header; an alternative to the pair |
 
-Either the pair or the pre-built header is enough. If they are in a gitignored `.env`, load it
-before calling `curl` (the driver reads root `.env` and `web/.env` on its own when the vars are
-unset):
+Either the pair or the pre-built header is enough. A nonempty `VECTORIZER_AUTHORIZATION` takes
+precedence over the pair. Direct `curl` calls need the variables exported; if they are in a
+gitignored root `.env`, load it before calling `curl`:
 
 ```bash
 set -a && . ./.env && set +a
