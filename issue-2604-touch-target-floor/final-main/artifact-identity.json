@@ -1,0 +1,40 @@
+{
+  "sourceSHA": "86248cc9e6501d7dfdd66230a2cf9e7e3c0ca91c",
+  "baseSHA": "fcc5fffd59425b107dd0e362c862c0bfd4be93ce",
+  "versionName": "1.6.0",
+  "versionCode": 8,
+  "minSdk": 24,
+  "targetSdk": 36,
+  "debuggable": false,
+  "R8Enabled": true,
+  "resourceShrinkingEnabled": true,
+  "r8MappingSHA256": "db1dcc749a153484d0dc852071101a60f19f3e97353aec3f8bec8e2a6cb36721",
+  "signing": "Disposable evaluation certificate, not store credentials",
+  "certificateSHA256": "af6f609663e826ef2c2fc8285a74cc88b0b039602cb18c49eddfb063b5aab926",
+  "embeddedNativeIndexSHA256": "e342c79edc152c34691dfcd578d5d0047c4bb00fedb04a3d886260754720382b",
+  "artifactVerification": "APK signature verified, AAB jar signature verified, bundletool validation passed; APK/AAB embedded index bytes equal immutable source build.",
+  "releaseLint": {
+    "errors": 0,
+    "warnings": 29,
+    "xmlSHA256": "a5e96bb0675c2309755f460688391dadc240ed677807cbf60dffb8a223f19862"
+  },
+  "artifacts": {
+    "app-release.apk": {
+      "path": "/private/tmp/splotch-2601-20261001/unit2604/final-main/native-release/project/android/app/build/outputs/apk/release/app-release.apk",
+      "bytes": 7947534,
+      "sha256": "0c097988a1a604bdfab6595ee9079f06c41c36599b23d24673bf8efcd7c96aee"
+    },
+    "app-release.aab": {
+      "path": "/private/tmp/splotch-2601-20261001/unit2604/final-main/native-release/project/android/app/build/outputs/bundle/release/app-release.aab",
+      "bytes": 8794675,
+      "sha256": "618ec642d6da652d91f6317e4957eb334893f4248896f8691d3f2586ab3d9b95"
+    }
+  },
+  "buildCommand": "JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home ANDROID_HOME=/Users/kylemit/Library/Android/sdk ./gradlew --no-daemon --max-workers=1 :app:assembleRelease :app:bundleRelease :app:lintRelease",
+  "embeddedAllNativeAssetsVerification": {
+    "files": 249,
+    "bytes": 6125219,
+    "inventorySha256": "ffe927131ef146fe96d52f06c4bc78b5554e2cc01dca917eea54e7d10e7055f5",
+    "method": "Every file from fresh env-cleared native static build equals corresponding APK and AAB embedded bytes, not only index.html"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "sourceSHA": "86248cc9e6501d7dfdd66230a2cf9e7e3c0ca91c",
+  "actualJUnit": "OK(1 test); test-status0; runner-final-code-1; adb0",
+  "junitSeconds": 899.077,
+  "postCaptureVerifierExit": 0,
+  "eligibleFocusNodes": 29,
+  "harnessFileHashesVerified": true,
+  "installedSourceArtifactSignatureVerified": true,
+  "PNGDimensions": {
+    "02-hub.png": [
+      720,
+      1280
+    ],
+    "03-appearance.png": [
+      720,
+      1280
+    ],
+    "05-compact-landscape.png": [
+      1280,
+      720
+    ],
+    "06-auto-portrait.png": [
+      720,
+      1280
+    ]
+  },
+  "actualSensorStimuli": [
+    {
+      "orientation": "landscape",
+      "acceleration": "9.81:0:0",
+      "time": 1790894946.831383,
+      "stdout": "OK\n"
+    },
+    {
+      "orientation": "portrait",
+      "acceleration": "0:9.81:0",
+      "time": 1790894953.0941,
+      "stdout": "OK\n"
+    }
+  ],
+  "baseComparison": "Immutable earlier supported-runtime BEFORE remains sourcea195/scopedbase4c; no fresh final BEFORE run claimed",
+  "soundObserver": {
+    "observations": 634,
+    "accepted": 634,
+    "rejectedDisagreements": [],
+    "retainedFrames": [],
+    "contexts": {
+      "Hub paired thumb cores corroborated by exact current owning row subtitle": 626,
+      "Compact landscape Appearance calibrated paired thumb cores; owning row absent by observed window/radio context": 8
+    },
+    "minimumFourControlContrast": 22.0,
+    "requiredAcceptedContrast": 11.0,
+    "minimumAcceptedContrast": 22.0,
+    "allHubProbesCorroboratedByOwningSubtitle": true,
+    "AppearanceCentralChangeRestoreAndEdgeIsolation": true,
+    "originalFailure": "Unexplained isolated pre-tap reading; no original before frame; diagnostic12repeats found no actual mutation. Original failure preserved."
+  },
+  "verifiedAt": "2026-10-01T22:49:52.636597+00:00"
+}

@@ -1,0 +1,22 @@
+{
+  "sourceSHA": "86248cc9e6501d7dfdd66230a2cf9e7e3c0ca91c",
+  "reviewedHead": "cb332f22872cb6d696e26d990105c2aa309d4b68",
+  "sourceClean": true,
+  "sourceFrozenBeforeBuildAt": "2026-10-01T22:09:22.272450+00:00",
+  "version": "1.6.0",
+  "versionCode": 8,
+  "install": "pnpm install --frozen-lockfile exit0",
+  "nativeStaticCommand": "env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build:cap",
+  "buildScript": "reproduce/build-final.sh",
+  "sourceTrees": {
+    "web": "a29d7d9c1857e7ef5367d7bcdfd0ecbf78e13495",
+    "android": "15a2f81940bae40d316fb9cb03302672a0e490b5",
+    "ios": "633bc1d0fb1a1912691d4d45f5fb7bfd7f47d7e3",
+    "package.json": "26a1fb71d86216a5c0702ef60827fc2da47445ef",
+    "pnpm-lock.yaml": "8c628af6f2572ccf5ee0d3956a382826204dc664"
+  },
+  "bundletool": {
+    "path": "/private/tmp/splotch-local-evaluation-20261001/android/controls/bundletool-all-1.18.3.jar",
+    "sha256": "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
+  }
+}

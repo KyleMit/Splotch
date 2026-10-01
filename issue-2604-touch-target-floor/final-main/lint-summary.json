@@ -1,0 +1,18 @@
+{
+  "sourceSHA": "86248cc9e6501d7dfdd66230a2cf9e7e3c0ca91c",
+  "errors": 0,
+  "warnings": 29,
+  "ids": {
+    "ManifestOrder": 1,
+    "AndroidGradlePluginVersion": 1,
+    "GradleDependency": 3,
+    "DataExtractionRules": 1,
+    "ObsoleteSdkInt": 1,
+    "UnusedResources": 7,
+    "IconDipSize": 2,
+    "IconDuplicatesConfig": 12,
+    "IconLocation": 1
+  },
+  "xmlSha256": "a5e96bb0675c2309755f460688391dadc240ed677807cbf60dffb8a223f19862",
+  "disposition": "Counts and raw warning details retained; root owns final backup/splash and campaign warning dispositions."
+}

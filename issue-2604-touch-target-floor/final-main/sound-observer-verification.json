@@ -1,0 +1,16 @@
+{
+  "observations": 634,
+  "accepted": 634,
+  "rejectedDisagreements": [],
+  "retainedFrames": [],
+  "contexts": {
+    "Hub paired thumb cores corroborated by exact current owning row subtitle": 626,
+    "Compact landscape Appearance calibrated paired thumb cores; owning row absent by observed window/radio context": 8
+  },
+  "minimumFourControlContrast": 22.0,
+  "requiredAcceptedContrast": 11.0,
+  "minimumAcceptedContrast": 22.0,
+  "allHubProbesCorroboratedByOwningSubtitle": true,
+  "AppearanceCentralChangeRestoreAndEdgeIsolation": true,
+  "originalFailure": "Unexplained isolated pre-tap reading; no original before frame; diagnostic12repeats found no actual mutation. Original failure preserved."
+}
