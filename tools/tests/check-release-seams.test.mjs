@@ -67,6 +67,7 @@ it('derives every current window seam and engine measure family', () => {
     'engine.undoInkMotion',
     'engine.undoPatchCapture',
     'engine.undoPatchCrop',
+    'historyRepaints',
     'inputOps',
     'liveRasters',
     'liveSurfaceElements',

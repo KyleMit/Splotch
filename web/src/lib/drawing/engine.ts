@@ -402,9 +402,7 @@ function resizeCanvas(
 // resize listener refreshes the cached rect immediately (so pointer mapping
 // tracks the moving layout) but defers the wipe + rebuild until the size
 // settles. Native rotation also crosses intermediate layout sizes before its
-// orientation signal settles, so it needs the same trailing edge. Exported so
-// the dev harness's resizeTo() can wait out the settle window.
-export { RESIZE_SETTLE_MS } from './engineListeners';
+// orientation signal settles, so it needs the same trailing edge.
 const resizeListener = createResizeListener(refreshCanvasRect, resyncIfStale);
 const preserveLayout = createPaperLayoutMemory();
 

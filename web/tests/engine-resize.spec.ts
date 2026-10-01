@@ -1,5 +1,36 @@
+import type { Page } from '@playwright/test';
 import { count, drawStroke, expect, state, test } from './engine-harness';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
+
+// The harness box is square. Growing it at the same aspect re-adopts inked
+// paper, which resizes the live tiles and replays retained history onto them;
+// a rotated or a slightly shrunk box re-presents the kept paper instead and
+// replays nothing (paperPresentationFor). 400 > the harness's 300 is the grow.
+const REBUILD_BOX_SIDE_PX = 400;
+
+async function historyRepaints(page: Page) {
+  const debug = await page.evaluate(() => window.__engine.getDrawingWorkDebug());
+  if (!debug) throw new Error('the engine harness keeps no drawing work counters');
+  return debug.historyRepaints;
+}
+
+// Resize so the drawing is genuinely rebuilt from retained history, and prove
+// it was: a resize that only re-presents the paper leaves the count unchanged.
+async function resizeWithHistoryRebuild(page: Page) {
+  const before = await historyRepaints(page);
+  await page.evaluate((side) => window.__engine.resizeTo(side, side), REBUILD_BOX_SIDE_PX);
+  expect(await historyRepaints(page)).toBe(before + 1);
+}
+
+test('resizeTo rejects a box it would not rebuild for', async ({ page }) => {
+  // The fidelity specs below were once vacuous: they resized to the harness's
+  // own 300×300 box, nothing rebuilt, and a timer resolved resizeTo anyway.
+  const box = await page.locator('.canvas-wrapper').boundingBox();
+  if (!box) throw new Error('canvas wrapper has no bounding box');
+  await expect(
+    page.evaluate(([w, h]) => window.__engine.resizeTo(w, h), [box.width, box.height])
+  ).rejects.toThrow('nothing would rebuild');
+});
 
 test('a dense zigzag survives a resize, repainted from tiled history', async ({ page }) => {
   // A resize rebuilds the live tiles from retained history, so the drawing
@@ -11,7 +42,7 @@ test('a dense zigzag survives a resize, repainted from tiled history', async ({ 
   await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
   expect(await count(page)).toBeGreaterThan(0);
 
-  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+  await resizeWithHistoryRebuild(page);
 
   // The drawing persists after the resize, repainted from tiled history.
   expect(await count(page)).toBeGreaterThan(0);
@@ -45,8 +76,7 @@ test('a back-and-forth scribble keeps its full extent after a rebuild (tip fidel
   const before = await page.evaluate(() => window.__engine.inkBounds());
   if (!before) throw new Error('nothing drawn');
 
-  // Force a repaint of the visible canvas from the paper raster.
-  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  await resizeWithHistoryRebuild(page);
   const after = await page.evaluate(() => window.__engine.inkBounds());
   if (!after) throw new Error('rebuild produced an empty canvas');
 
@@ -69,7 +99,7 @@ test('a sharp corner stays sharp and in place after a rebuild (corner fidelity)'
 
   const before = await page.evaluate(() => window.__engine.inkBounds());
   if (!before) throw new Error('nothing drawn');
-  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  await resizeWithHistoryRebuild(page);
   const after = await page.evaluate(() => window.__engine.inkBounds());
   if (!after) throw new Error('rebuild produced an empty canvas');
 
@@ -118,7 +148,7 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   await page.mouse.move(box.x + 140, box.y + 160);
 
   // Resize while the finger is still down (the stroke is mid-flight).
-  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+  await resizeWithHistoryRebuild(page);
 
   // Sample the in-flight stroke at its distinct paper position so the earlier
   // committed stroke cannot make this survival check pass on its own.
