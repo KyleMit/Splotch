@@ -3,6 +3,7 @@ import { tick } from 'svelte';
 const ARRIVAL_DURATION_MS = 2400;
 
 export function createReleaseNavigation(host: HTMLElement) {
+  host.style.setProperty('--release-arrival-duration', `${ARRIVAL_DURATION_MS}ms`);
   let arrivalTimer: ReturnType<typeof setTimeout> | undefined;
   let navigationSequence = 0;
   let disposed = false;
@@ -75,6 +76,7 @@ export function createReleaseNavigation(host: HTMLElement) {
     arrive,
     dispose() {
       disposed = true;
+      host.style.removeProperty('--release-arrival-duration');
       host.removeEventListener('toggle', onToggle, true);
       clearTimeout(arrivalTimer);
       page?.removeEventListener('click', onClick, true);

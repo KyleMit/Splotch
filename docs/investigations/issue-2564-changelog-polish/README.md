@@ -37,7 +37,7 @@ the observer selects the last fully passed visible article instead of retaining 
 Closed-details entries are explicitly excluded from that fallback.
 
 Validation includes the complete production browser suite (1,071 passed), all five browserless
-tiers, 41 focused installed WebKit cases, and both release-build budget guards. The WebKit checks
+tiers, 42 focused installed WebKit cases, and both release-build budget guards. The WebKit checks
 include actual landing geometry, keyboard focus, open-panel caps, all five closed/full-history tail
 sizes, AA tape and active highlighter text in both themes, rapid arrival changes, reduced motion and
 Settings headings. Browserless coverage reports 4,365 unit, 41 UI, 277 server, 23 API-unit, 6,645
@@ -75,3 +75,15 @@ fallback correctly preserves its active marker. The strengthened viewport assert
 negative cells; its restored production positive control passes all five sizes. The Privacy Contact
 cells remain visible in both reserve controls. This distinguishes actual visibility from the marker
 behavior covered by the historical footer evidence.
+
+The active hued row keeps its original brand-colored date; textStrong applies only to the label over
+the highlighter. Both-theme computed-style checks pin that separation. Both new chevrons use
+CanvasText in forced colors: explicit SVG fill is necessary because their normal on-brand ink can
+otherwise stay white against the system canvas. The forced-colors guard compares their actual fill
+with the system text color, and final gallery captures verify the visible glyphs.
+
+The navigation controller owns the arrival lifetime and installs its CSS variable before any
+arrival. CSS owns the 400ms hold and derives the remaining fade from that lifetime, retaining the
+same 2,400ms cleanup and 2,000ms fade. The browser guard checks actual computed duration plus delay,
+and changes only the private duration variable to 3,000ms before restoring it to prove that CSS
+follows the owner rather than an independent literal.

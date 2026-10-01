@@ -275,7 +275,6 @@
   }
   .hued.active {
     background: transparent;
-    color: var(--text-strong);
   }
   .hued.active .toc-hue {
     width: 18px;
@@ -284,6 +283,7 @@
     border-radius: var(--radius-blob-1);
   }
   .hued.active [data-toc-label] {
+    color: var(--text-strong);
     position: relative;
     isolation: isolate;
     font-weight: var(--font-weight-bold);

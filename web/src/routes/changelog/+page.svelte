@@ -344,6 +344,7 @@
     border-radius: var(--radius-blob-3);
   }
   .changelog :global(.release[data-arrived])::after {
+    --release-arrival-delay: 400ms;
     content: '';
     position: absolute;
     inset: 16px -14px;
@@ -351,7 +352,8 @@
     background: var(--arrival-wash);
     z-index: -1;
     pointer-events: none;
-    animation: release-arrive 2s ease-out 0.4s forwards;
+    animation: release-arrive calc(var(--release-arrival-duration) - var(--release-arrival-delay))
+      ease-out var(--release-arrival-delay) forwards;
   }
   @keyframes release-arrive {
     to {
@@ -429,6 +431,9 @@
     .changelog :global(.release-notes li::before),
     .changelog :global(.older-blob) {
       border: 1px solid CanvasText;
+    }
+    .changelog :global(.older-blob svg) {
+      fill: CanvasText;
     }
   }
 

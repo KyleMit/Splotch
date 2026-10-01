@@ -365,6 +365,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       });
       return tape;
     });
+    const brandText = await page.locator('.contents-rail').evaluate((rail) => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--brand-text)';
+      rail.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    await expect(page.locator('.contents-rail .active .toc-meta')).toHaveCSS('color', brandText);
     expect(samples).toHaveLength(5);
     for (const sample of samples)
       expect(
@@ -377,8 +386,36 @@ for (const colorScheme of ['light', 'dark'] as const) {
 test('rapid fragment changes leave only the latest arrival and reduced motion keeps it still', async ({
   page,
 }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/changelog');
   await expect(page.locator('.release-ago').first()).not.toHaveText('');
+  await page.evaluate((id) => {
+    window.location.hash = id;
+  }, releases[4].id);
+  const firstArrival = page.locator(`#${releases[4].id}`);
+  await expect(firstArrival).toHaveAttribute('data-arrived');
+  const timing = await firstArrival.evaluate((el) => {
+    const style = getComputedStyle(el, '::after');
+    return {
+      cssLifetimeMs:
+        (parseFloat(style.animationDuration) + parseFloat(style.animationDelay)) * 1000,
+      ownerLifetimeMs: parseFloat(style.getPropertyValue('--release-arrival-duration')),
+    };
+  });
+  expect(timing.cssLifetimeMs).toBe(timing.ownerLifetimeMs);
+  expect(timing.ownerLifetimeMs).toBe(2400);
+  const changedLifetimeMs = await firstArrival.evaluate((el) => {
+    const host = el.closest<HTMLElement>('.releases')!;
+    const original = host.style.getPropertyValue('--release-arrival-duration');
+    host.style.setProperty('--release-arrival-duration', '3000ms');
+    const style = getComputedStyle(el, '::after');
+    const lifetime = Math.round(
+      (parseFloat(style.animationDuration) + parseFloat(style.animationDelay)) * 1000
+    );
+    host.style.setProperty('--release-arrival-duration', original);
+    return lifetime;
+  });
+  expect(changedLifetimeMs).toBe(3000);
   await page.evaluate(
     (ids) => {
       document.documentElement.setAttribute('data-reduce-motion', '');
@@ -391,4 +428,24 @@ test('rapid fragment changes leave only the latest arrival and reduced motion ke
   await expect(page.locator('[data-arrived]')).toHaveCount(1);
   expect(await target.evaluate((el) => getComputedStyle(el, '::after').animationName)).toBe('none');
   await expect(target).not.toHaveAttribute('data-arrived');
+});
+
+test('forced colors keep both changelog chevrons visible against the system canvas', async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await page.goto('/changelog');
+  const canvasText = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'CanvasText';
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  for (const selector of ['.older-icon svg', '.back-to-top .back-icon svg']) {
+    const glyph = page.locator(selector);
+    await expect(glyph).toBeVisible();
+    await expect(glyph).toHaveCSS('fill', canvasText);
+  }
 });

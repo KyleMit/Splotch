@@ -58,5 +58,8 @@
     .back-blob {
       border: 1px solid CanvasText;
     }
+    .back-blob :global(svg) {
+      fill: CanvasText;
+    }
   }
 </style>
