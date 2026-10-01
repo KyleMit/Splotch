@@ -30,7 +30,8 @@ overrides:
   # replace@1.2.2 pins vulnerable minimatch exactly, ajv@8.20.0's compatible
   # range retained vulnerable fast-uri, workbox-build's compatible range
   # retained vulnerable browserslist, and minimatch's compatible ranges
-  # retained vulnerable brace-expansion on its 1.x and 2.x lines. Lift only
+  # retained vulnerable brace-expansion on its 1.x and 2.x lines, and SvelteKit
+  # retained vulnerable devalue. Lift only
   # those resolved versions; the high-severity audit gate verifies their
   # replacements stay clean.
   minimatch@3.0.5: ^3.1.4
@@ -38,6 +39,7 @@ overrides:
   browserslist@4.28.4: ^4.28.7
   brace-expansion@1.1.18: ^1.1.20
   brace-expansion@2.1.4: ^2.1.6
+  devalue@5.9.2: ^5.9.4
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
