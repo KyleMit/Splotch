@@ -96,9 +96,11 @@ Read through `$env/dynamic/private` at request time, so `web/.env` works for all
 
 ### Build and tooling variables — the shell only
 
-These are read from `process.env` while the config module is evaluated, which happens **before Vite
-loads any `.env` file**. An entry in `web/.env` or `web/.env.local` does nothing — set them inline
-on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export them.
+Build flags are read from `process.env` while the config module is evaluated, which happens **before
+Vite loads any `.env` file**. An entry in `web/.env` or `web/.env.local` does nothing for these
+flags — set them inline on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export
+them. Tooling credentials in this table also require an exported variable or explicitly loading the
+file with Node's `--env-file=web/.env` option on the tool's entry point.
 
 | Variable                    | Read by                              | Purpose                                                                                                                          |
 | --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -107,10 +109,25 @@ on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export them.
 | `PERF_MARKS`                | `vite.config.ts`                     | Compiles the engine's `performance.mark` instrumentation in, for `npm run perf:web`                                              |
 | `TUNNEL_HOST`               | `vite.config.ts`                     | Adds the tunnel hostname to `server.allowedHosts` for cloud preview                                                              |
 | `GEMINI_API_KEY`            | `tools/asset-gen/`, `model-eval`     | **Not read by the app.** These read `process.env` directly with no `.env` loading, so a `web/.env` entry needs `node --env-file` |
+| `CLAUDE_CODE_OAUTH_TOKEN`   | Claude CLI                           | Optional plan authentication; the CLI does not load `web/.env`. An existing Claude plan login may already supply authentication  |
 
 `REDTEAM_FIXTURE_KEY` is a third case: the red-team entry points load `web/.env` themselves
 (`REDTEAM_ENV_FILE` in `tools/redteam/lib/fixture-crypto.mjs`), so it and the red-team run's
 `OPENAI_API_KEY` come from the shell or, failing that, `web/.env`. A repo-root `.env` is not read.
+
+Two other tooling CLIs load their own credentials from ignored files:
+
+* `npm run vectorize` reads `VECTORIZER_ID` and `VECTORIZER_SECRET`, or `VECTORIZER_AUTHORIZATION`,
+  from the shell, root `.env`, and `web/.env`. A nonempty authorization header takes precedence over
+  the pair; configure one form. See [the Vectorizer guide](../tools/vectorize/README.md).
+* `npm run gen:sound-effect` reads `ELEVENLABS_API_KEY` from the shell, then root `.env.local`, root
+  `.env`, and `web/.env`. See [the ElevenLabs guide](../tools/elevenlabs/README.md).
+
+`COREPACK_HOME`, `npm_config_cache`, and `PLAYWRIGHT_CHROMIUM` are machine settings read from the
+shell, not application settings loaded from `web/.env`. Local tools normally use their default cache
+locations and Playwright's installed browser without these overrides. The `/workspace/.cache` paths
+and `/usr/bin/chromium` override in [the Codex Cloud guide](CLOUD/Codex.md) are for that cloud
+machine; do not copy them into a local `.env` or shell profile.
 
 `web/playwright.shared.ts` declares the full private set the served app reads, with the
 outbound-write credentials neutralised; it is the list to check against when adding a row here.
