@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { fly } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
   import { calm } from '$lib/platform/calmTransition';
   import Icon from './Icon.svelte';
   import Button from './design/Button.svelte';
+  import VisuallyHidden from './design/VisuallyHidden.svelte';
   import {
     saveFailureState,
     retryUnsavedPictures,
@@ -17,6 +19,11 @@
   import { BANNER_ENTER_MS, BANNER_EXIT_MS, BANNER_FLY_PX } from './bannerMotion';
   import '$lib/components/deferredIcons';
 
+  // A live region is silent when its words do not change, and a retry that fails again leaves them
+  // exactly as they were. The region is emptied and rewritten this long later, across rendering
+  // tasks, as the parental gate repeats a message (ADR-0094).
+  const REANNOUNCE_GAP_MS = 150;
+
   const bannerEnter = calm(fly, { y: -BANNER_FLY_PX, duration: BANNER_ENTER_MS, easing: backOut });
   const bannerExit = calm(fly, { y: -BANNER_FLY_PX, duration: BANNER_EXIT_MS });
 
@@ -29,6 +36,28 @@
   // A minimized generation's waiting polaroid owns the top of the canvas, and is the way back to a
   // picture already paid for (ADR-0116); the banner waits for it.
   const visible = $derived(outcome !== null && !aiGenerationState.minimized);
+
+  // A live region inserted already holding its words is not reliably announced, so the banner's
+  // words go to a status region that is mounted with the component, before any failure, and are
+  // written a frame after each change, as in AiImageResult. The banner's controls stay outside it,
+  // so a retry's "Saving…" does not re-read the banner.
+  const announcement = $derived(visible && copy ? `${copy.heading}. ${copy.detail}` : '');
+  let announcedStatus = $state('');
+  // Intentionally untracked: the retry state the announcement last saw, to tell a retry settling.
+  let retryWasInFlight = false;
+  $effect(() => {
+    const message = announcement;
+    const retrying = saveFailureState.retrying;
+    const retrySettled = retryWasInFlight && !retrying;
+    retryWasInFlight = retrying;
+    if (retrySettled && message !== '' && message === untrack(() => announcedStatus)) {
+      announcedStatus = '';
+      const timer = setTimeout(() => (announcedStatus = message), REANNOUNCE_GAP_MS);
+      return () => clearTimeout(timer);
+    }
+    const frame = requestAnimationFrame(() => (announcedStatus = message));
+    return () => cancelAnimationFrame(frame);
+  });
 
   async function openAppSettings() {
     if (!__IS_CAPACITOR__) return;
@@ -50,8 +79,10 @@
   }
 </script>
 
+<VisuallyHidden as="p" role="status">{announcedStatus}</VisuallyHidden>
+
 {#if visible && copy}
-  <div class="save-failure-banner" role="status" in:bannerEnter out:bannerExit>
+  <div class="save-failure-banner" in:bannerEnter out:bannerExit>
     <div class="save-failure-main">
       <span class="save-failure-mascot" aria-hidden="true">
         <Icon name="dottie-hiccup" class="save-failure-mascot-icon" />
