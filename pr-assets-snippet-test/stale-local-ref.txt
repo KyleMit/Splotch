@@ -1,1 +1,0 @@
-case a v2: stale local ref ignored
