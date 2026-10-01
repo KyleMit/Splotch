@@ -1,6 +1,8 @@
 <script lang="ts" generics="Id extends string">
   import { tick } from 'svelte';
   import { pushState } from '$app/navigation';
+  import { paletteHex } from '$lib/palette';
+  import VisuallyHidden from '../design/VisuallyHidden.svelte';
   import Disclosure from '../design/Disclosure.svelte';
   import SidebarToc, { type SidebarTocItem } from './SidebarToc.svelte';
 
@@ -33,9 +35,21 @@
     stickyTop?: string;
     /** The host's breakpoint switch between this row and its rail. */
     class?: string;
+    beforeJump?: (href: string) => Promise<void>;
+    onJump?: (href: string) => void;
   }
 
-  let { items, active, showCount, label, noun, stickyTop, class: className }: Props = $props();
+  let {
+    items,
+    active,
+    showCount,
+    label,
+    noun,
+    stickyTop,
+    beforeJump,
+    onJump,
+    class: className,
+  }: Props = $props();
 
   let open = $state(false);
   let row = $state<HTMLElement>();
@@ -48,6 +62,7 @@
   // so a pick's `open = false` would change nothing.
   let armed = $state(false);
 
+  const activeItem = $derived(items.find((item) => item.id === active));
   const readout = $derived(
     showCount ? `${items.length} ${noun}` : (items.find((item) => item.id === active)?.label ?? '')
   );
@@ -117,8 +132,10 @@
     // no navigation, leaving this function the only thing touching focus.
     // Guarded so re-picking the current section doesn't stack a Back-trapping
     // duplicate entry; the scroll below still takes the reader there.
+    await beforeJump?.(href);
     if (window.location.hash !== href) pushState(href, {});
     document.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();
+    onJump?.(href);
   }
 </script>
 
@@ -130,7 +147,20 @@
   <Disclosure class="toc-shell" bind:open>
     {#snippet summary()}
       <span class="eyebrow">Contents</span>
-      <span class="readout">{readout}</span>
+      <span class="readout">
+        {#if showCount}
+          <span class="count-blob" aria-hidden="true">{items.length}</span><VisuallyHidden
+            >{items.length}</VisuallyHidden
+          > <span>{noun}</span>
+        {:else}
+          {#if activeItem?.hue}<span
+              class="readout-hue"
+              style:background={paletteHex(activeItem.hue)}
+              aria-hidden="true"
+            ></span>{/if}
+          <span class="readout-label">{readout}</span>
+        {/if}
+      </span>
     {/snippet}
     <div class="panel" bind:this={panel} data-armed={armed && open ? '' : undefined}>
       <SidebarToc {items} {active} {label} />
@@ -146,6 +176,7 @@
        state as a minimum. Fixed, so type growth centres inside it instead of
        growing the row and hanging the panel past the viewport. */
     --toc-row-height: 50px;
+    --toc-shell-border-width: 2px;
     /* Floor for the open panel, however little room the viewport leaves: a
        short internal scroller still beats a sliver. */
     --toc-panel-min: 160px;
@@ -164,13 +195,15 @@
   /* Opaque: pinned, it has the page's content running underneath it. */
   .toc-disclosure :global(.toc-shell) {
     background: var(--surface);
+    border: var(--toc-shell-border-width) solid var(--border-warm);
+    border-radius: var(--radius-md);
   }
 
   .toc-disclosure :global(.toc-shell summary) {
     gap: var(--space-2);
     /* The whole row is the tap target. */
     height: var(--toc-row-height);
-    padding: var(--space-3) var(--space-4);
+    padding: 10px 12px 10px 14px;
   }
 
   /* PageShell renames --brand-text to --page-link inside its sheet; the
@@ -179,6 +212,13 @@
   .toc-disclosure :global(.toc-shell summary::after) {
     color: var(--page-link, var(--brand-text));
     font-weight: var(--font-weight-bold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 30px;
+    height: 30px;
+    border-radius: var(--radius-blob-2);
+    background: var(--surface-2);
   }
 
   .eyebrow {
@@ -193,14 +233,41 @@
   /* Takes the row's free space so the readout and the chevron read as one pair
      against the right edge, and ellipsises rather than wrapping the row open. */
   .readout {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
     margin-left: auto;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    color: var(--page-link, var(--brand-text));
-    font-size: var(--font-size-sm);
+    color: var(--page-ink, var(--text-strong));
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
+  }
+
+  .count-blob {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: var(--radius-blob-1);
+    background: var(--brand-solid);
+    color: var(--on-brand);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+  .readout-hue {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: 50%;
+  }
+  .readout-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .panel {
@@ -220,15 +287,15 @@
     max-height: max(
       var(--toc-panel-min),
       calc(
-        100vh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) - var(--border-width) -
-          var(--toc-row-height) - var(--toc-panel-tail)
+        100vh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) -
+          var(--toc-shell-border-width) - var(--toc-row-height) - var(--toc-panel-tail)
       )
     );
     max-height: max(
       var(--toc-panel-min),
       calc(
-        100dvh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) - var(--border-width) -
-          var(--toc-row-height) - var(--toc-panel-tail)
+        100dvh - var(--toc-sticky-top, 0px) - var(--toc-row-inset, 0px) -
+          var(--toc-shell-border-width) - var(--toc-row-height) - var(--toc-panel-tail)
       )
     );
     overflow-y: auto;

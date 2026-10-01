@@ -212,14 +212,16 @@ test.describe('phone', () => {
 
     const sections = await renderedSections(page);
     const row = page.locator('.contents-disclosure summary');
-    await expect(row).toContainText(`${sections.length} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections.length} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections.length));
 
     const last = sections[sections.length - 1];
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(row).toContainText(last.heading);
 
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(row).toContainText(`${sections.length} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections.length} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections.length));
   });
 
   test('picking a section from the contents lands it clear of the pinned row', async ({ page }) => {

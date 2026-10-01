@@ -1,0 +1,14 @@
+$ vitest run src/lib/releaseAgo.test.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.1 /Users/kylemit/.codex/worktrees/ed28/Splotch/web
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  23:24:45
+   Duration  130ms (environment 77%, transform 13%, import 4%, setup 3%, tests 2%, worker 1%)
+

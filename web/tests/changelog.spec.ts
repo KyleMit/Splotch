@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import releases from '../src/lib/releases.json' with { type: 'json' };
+import { colorContrast } from '../src/lib/design/colorContrast';
 import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 
 import {
@@ -55,6 +56,7 @@ test('the changelog lede keeps its closing phrase together', async ({ page }) =>
 test('the changelog renders every release with its notes', async ({ page }) => {
   await page.goto('/changelog');
 
+  await page.locator('.release-older summary').click();
   const history = page.locator('.release-history');
   await expect(history.locator('.release')).toHaveCount(releases.length);
   for (const release of releases) {
@@ -91,6 +93,7 @@ test('the contents rail marks the release being read', async ({ page }) => {
 
   // The oldest release: nothing below it, so the release the reading line lands
   // in is unambiguous however tall any one release's notes happen to be.
+  await page.locator('.release-older summary').click();
   const oldest = releases[releases.length - 1];
   await page.locator(`#${oldest.id}`).evaluate((article) => article.scrollIntoView());
   await expect(railLink(oldest.version)).toHaveAttribute('aria-current', 'location');
@@ -107,7 +110,10 @@ test.describe('phone', () => {
 
     const contents = page.locator('.contents-disclosure');
     // The count is derived from the manifest, never written into the copy.
-    await expect(contents.locator('summary')).toContainText(`${releases.length} releases`);
+    await expect(contents.locator('summary')).toHaveAccessibleName(
+      `Contents ${releases.length} releases ›`
+    );
+    await expect(contents.locator('.count-blob')).toHaveText(String(releases.length));
     await expect(
       page.getByRole('heading', { name: `Version ${releases[0].version}` })
     ).toBeInViewport();
@@ -126,17 +132,20 @@ test.describe('phone', () => {
   }) => {
     await page.goto('/changelog');
     const row = page.locator('.contents-disclosure summary');
-    await expect(row).toContainText(`${releases.length} releases`);
+    await expect(row).toHaveAccessibleName(`Contents ${releases.length} releases ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(releases.length));
 
     // The oldest release, at max scroll: nothing follows it, so it is the one a
     // spy keyed on "has it climbed into the band" can only reach if the page
     // reserves room under it.
+    await page.locator('.release-older summary').click();
     const oldest = releases[releases.length - 1];
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(row).toContainText(`Version ${oldest.version}`);
 
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(row).toContainText(`${releases.length} releases`);
+    await expect(row).toHaveAccessibleName(`Contents ${releases.length} releases ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(releases.length));
   });
 
   // The row is in the flow above every release it links to, so the panel's
@@ -146,12 +155,14 @@ test.describe('phone', () => {
     await page.goto('/changelog');
     const contents = page.locator('.contents-disclosure');
 
-    const target = releases[2];
+    const target = releases[4];
     const targetLink = contents.getByRole('link', { name: `Version ${target.version}` });
     const targetUrl = new RegExp(`#${target.id}$`);
     await openHydratedContents(contents);
     await targetLink.click();
     await expect(contents.locator('details')).not.toHaveAttribute('open');
+    await expect(page.locator('.release-older')).toHaveAttribute('open');
+    await expect(page.locator(`#${target.id}`)).toHaveAttribute('data-arrived');
 
     // Bounded on both sides: under the row is a heading parked out of sight,
     // and a screenful below it is the undershoot that measuring the row where
@@ -180,7 +191,7 @@ test.describe('phone deep link', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('parks its release clear of the pinned contents row', async ({ page }) => {
-    const target = releases[2];
+    const target = releases[4];
     await page.goto(`/changelog#${target.id}`);
 
     await expect
@@ -230,3 +241,273 @@ test.describe('phone landscape', () => {
     await expectBottomedPanelScrollsRowToPin(page, contents);
   });
 });
+
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+]) {
+  test(`an initial folded link opens and lands at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const target = releases.at(-1)!;
+    await page.goto(`/changelog#${target.id}`);
+    await expect(page.locator('.release-older')).toHaveAttribute('open');
+    await expect(page.locator(`#${target.id}`)).toHaveAttribute('data-arrived');
+    await expect
+      .poll(() =>
+        page
+          .locator(`#${target.id}`)
+          .evaluate((article) => Math.round(article.getBoundingClientRect().top))
+      )
+      .toBeLessThanOrEqual(120);
+    expect(
+      await page.locator(`#${target.id}`).evaluate((article) => article.getBoundingClientRect().top)
+    ).toBeGreaterThanOrEqual(0);
+    await expect(page.locator(`#${target.id} h2`)).toBeInViewport();
+  });
+}
+
+test('the older fold opens from keyboard and hands focus into the revealed history', async ({
+  page,
+  browserName,
+}) => {
+  await page.goto('/changelog');
+  const summary = page.locator('.release-older summary');
+  await summary.focus();
+  await summary.press('Enter');
+  await expect(page.locator('.release-older')).toHaveAttribute('open');
+  await expect(page.locator('.release-older h2').first()).toBeFocused();
+  await expect(summary).toBeHidden();
+  await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+  await expect(page.locator('.back-to-top')).toBeFocused();
+});
+
+test('rail, hash and history navigation reveal and land before highlighting', async ({ page }) => {
+  await page.goto('/changelog');
+  const contents = page.getByRole('navigation', { name: 'Changelog contents' });
+  const target = releases[4];
+  await contents.getByRole('link', { name: `Version ${target.version}` }).click();
+  await expect(page.locator(`#${target.id}`)).toHaveAttribute('data-arrived');
+  await expect
+    .poll(() =>
+      page
+        .locator(`#${target.id}`)
+        .evaluate((article) => Math.round(article.getBoundingClientRect().top))
+    )
+    .toBe(24);
+  const newest = releases[0];
+  await contents.getByRole('link', { name: `Version ${newest.version}` }).click();
+  await expect(page.locator(`#${newest.id}`)).toHaveAttribute('data-arrived');
+  await page.goBack();
+  await expect(page.locator(`#${target.id}`)).toHaveAttribute('data-arrived');
+  await expect
+    .poll(() =>
+      page
+        .locator(`#${target.id}`)
+        .evaluate((article) => Math.round(article.getBoundingClientRect().top))
+    )
+    .toBe(24);
+  await page.goForward();
+  await expect(page.locator(`#${newest.id}`)).toHaveAttribute('data-arrived');
+  await page.evaluate((id) => {
+    window.location.hash = id;
+  }, releases.at(-1)!.id);
+  await expect(page.locator(`#${releases.at(-1)!.id}`)).toHaveAttribute('data-arrived');
+  await expect(page.locator('[data-arrived]')).toHaveCount(1);
+});
+
+test('hydration fills relative dates while prerendered placeholders stay empty', async ({
+  page,
+  request,
+}) => {
+  const html = await (await request.get('/changelog')).text();
+  expect(html).not.toMatch(/class="release-ago"[^>]*>[^<]/);
+  await page.goto('/changelog');
+  await expect(page.locator('.release-latest')).toHaveText('Latest');
+  await expect(page.locator('.release-latest')).toHaveCount(1);
+  await expect(page.locator('.release-ago').first()).not.toHaveText('');
+  await expect(page.locator('.release-ago').first()).toHaveAttribute('aria-hidden', 'true');
+  await expect(
+    page.locator('.release').first().locator('.release-section-icon').first()
+  ).toBeHidden();
+  await expect(
+    page.locator('.release').first().locator('.release-section-heading').first()
+  ).toHaveCSS('clip-path', 'polygon(3% 0px, 100% 8%, 97% 100%, 0px 90%)');
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`the tape and active highlighter text hold AA contrast in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/changelog');
+    await expect(page.locator('.release-ago').first()).not.toHaveText('');
+    const samples = await page.evaluate(() => {
+      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+      const rgb = (fill: string, ground = 'white') => {
+        ctx.fillStyle = ground;
+        ctx.fillRect(0, 0, 1, 1);
+        ctx.fillStyle = fill;
+        ctx.fillRect(0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        return `rgb(${r} ${g} ${b})`;
+      };
+      const tape = [
+        ...document.querySelectorAll(
+          '.release:first-child .release-section-heading, .release-latest'
+        ),
+      ].map((el) => {
+        const style = getComputedStyle(el);
+        return { text: el.textContent!, ink: rgb(style.color), ground: rgb(style.backgroundColor) };
+      });
+      const label = document.querySelector('.contents-rail .active [data-toc-label]')!;
+      tape.push({
+        text: 'active rail highlighter',
+        ink: rgb(getComputedStyle(label).color),
+        ground: rgb(
+          getComputedStyle(label, '::before').backgroundColor,
+          getComputedStyle(label).getPropertyValue('--page-sheet')
+        ),
+      });
+      return tape;
+    });
+    const brandText = await page.locator('.contents-rail').evaluate((rail) => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--brand-text)';
+      rail.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    await expect(page.locator('.contents-rail .active .toc-meta')).toHaveCSS('color', brandText);
+    expect(samples).toHaveLength(5);
+    for (const sample of samples)
+      expect(
+        colorContrast(sample.ink, sample.ground, sample.ground),
+        sample.text
+      ).toBeGreaterThanOrEqual(4.5);
+  });
+}
+
+test('rapid fragment changes leave only the latest arrival and reduced motion keeps it still', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/changelog');
+  await expect(page.locator('.release-ago').first()).not.toHaveText('');
+  await page.evaluate((id) => {
+    window.location.hash = id;
+  }, releases[4].id);
+  const firstArrival = page.locator(`#${releases[4].id}`);
+  await expect(firstArrival).toHaveAttribute('data-arrived');
+  const timing = await firstArrival.evaluate((el) => {
+    const style = getComputedStyle(el, '::after');
+    return {
+      cssLifetimeMs:
+        (parseFloat(style.animationDuration) + parseFloat(style.animationDelay)) * 1000,
+      ownerLifetimeMs: parseFloat(style.getPropertyValue('--release-arrival-duration')),
+    };
+  });
+  expect(timing.cssLifetimeMs).toBe(timing.ownerLifetimeMs);
+  expect(timing.ownerLifetimeMs).toBe(2400);
+  const changedLifetimeMs = await firstArrival.evaluate((el) => {
+    const host = el.closest<HTMLElement>('.releases')!;
+    const original = host.style.getPropertyValue('--release-arrival-duration');
+    host.style.setProperty('--release-arrival-duration', '3000ms');
+    const style = getComputedStyle(el, '::after');
+    const lifetime = Math.round(
+      (parseFloat(style.animationDuration) + parseFloat(style.animationDelay)) * 1000
+    );
+    host.style.setProperty('--release-arrival-duration', original);
+    return lifetime;
+  });
+  expect(changedLifetimeMs).toBe(3000);
+  await page.evaluate(
+    (ids) => {
+      document.documentElement.setAttribute('data-reduce-motion', '');
+      for (const id of ids) window.location.hash = id;
+    },
+    [releases[4].id, releases[6].id, releases[1].id]
+  );
+  const target = page.locator(`#${releases[1].id}`);
+  await expect(target).toHaveAttribute('data-arrived');
+  await expect(page.locator('[data-arrived]')).toHaveCount(1);
+  expect(await target.evaluate((el) => getComputedStyle(el, '::after').animationName)).toBe('none');
+  await expect(target).not.toHaveAttribute('data-arrived');
+});
+
+test('forced colors keep both changelog chevrons visible against the system canvas', async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await page.goto('/changelog');
+  const canvasText = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'CanvasText';
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  for (const selector of ['.older-icon svg', '.back-to-top .back-icon svg']) {
+    const glyph = page.locator(selector);
+    await expect(glyph).toBeVisible();
+    await expect(glyph).toHaveCSS('fill', canvasText);
+  }
+});
+
+test('picking the current rail release repeats arrival without adding a history entry', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const target = releases[3];
+  await page.goto(`/changelog#${target.id}`);
+  const article = page.locator(`#${target.id}`);
+  await expect(article).toHaveAttribute('data-arrived');
+  await expect(article).not.toHaveAttribute('data-arrived');
+  const historyLength = await page.evaluate(() => history.length);
+  await page
+    .getByRole('navigation', { name: 'Changelog contents' })
+    .getByRole('link', { name: `Version ${target.version}` })
+    .click();
+  await expect(article).toHaveAttribute('data-arrived');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+  expect(await article.evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBe(24);
+  await expect
+    .poll(() =>
+      article.evaluate((el) =>
+        el.hasAttribute('data-arrived') ? Number(getComputedStyle(el, '::after').opacity) : 1
+      )
+    )
+    .toBeLessThan(0.9);
+  await expect(article).toHaveAttribute('data-arrived');
+  await page
+    .getByRole('navigation', { name: 'Changelog contents' })
+    .getByRole('link', { name: `Version ${target.version}` })
+    .click();
+  await expect
+    .poll(() =>
+      article.evaluate((el) =>
+        el.hasAttribute('data-arrived') ? Number(getComputedStyle(el, '::after').opacity) : 0
+      )
+    )
+    .toBeGreaterThan(0.9);
+  await expect(article).toHaveAttribute('data-arrived');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+});
+
+for (const { timezoneId, now, expected } of [
+  { timezoneId: 'America/Los_Angeles', now: '2026-09-10T01:00:00Z', expected: 'today' },
+  { timezoneId: 'Asia/Tokyo', now: '2026-09-09T23:00:00Z', expected: 'yesterday' },
+]) {
+  test.describe(timezoneId, () => {
+    test.use({ timezoneId });
+    test('relative release dates follow the reader calendar at a UTC boundary', async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(new Date(now));
+      await page.goto('/changelog');
+      await expect(page.locator('.release-ago').first()).toHaveText(expected);
+      await expect(page.locator('.release time').first()).toHaveText(releases[0].dateLabel);
+    });
+  });
+}

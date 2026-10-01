@@ -19,10 +19,14 @@ for (const viewport of [
       await page.goto(route);
       await expect(page.locator('.lede-toggle')).toBeAttached();
       await page.evaluate(() => document.fonts.ready);
+      await page.locator('.release-older').evaluateAll((folds) => {
+        for (const fold of folds) if (fold instanceof HTMLDetailsElement) fold.open = true;
+      });
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await expect(
         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
       ).toHaveAttribute('aria-current', 'location');
+      await expect(page.locator(href)).toBeInViewport();
       await expect(page.locator('.page-footer')).toBeInViewport();
     }
   });
@@ -83,6 +87,30 @@ test('forced colors preserve the footer rule and current marker', async ({ page 
   await page.goto('/privacy');
   const footer = page.locator('.page-footer');
   await footer.scrollIntoViewIfNeeded();
-  await expect(footer.locator('.page-footer-rule')).toHaveCSS('border-top-style', 'solid');
+  await expect(footer.locator('.page-footer-rule .squiggle-rule')).toHaveCSS(
+    'border-top-style',
+    'solid'
+  );
   await expect(footer.locator('.paint-dot')).toHaveCSS('border-top-style', 'solid');
 });
+
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 1280, height: 600 },
+  { width: 1280, height: 501 },
+  { width: 320, height: 568 },
+  { width: 812, height: 375 },
+]) {
+  test(`the final visible release is active while older history stays folded on ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/changelog');
+    await expect(page.locator('.lede-toggle')).toBeAttached();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.locator('.release-older')).not.toHaveAttribute('open');
+    await expect(
+      page.locator(`nav[aria-label="Changelog contents"] a[href="#${releases[2].id}"]`).first()
+    ).toHaveAttribute('aria-current', 'location');
+  });
+}

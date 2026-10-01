@@ -1,0 +1,82 @@
+[
+  {
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "theme": "light",
+    "forcedColors": "none",
+    "glyphs": [
+      {
+        "width": 16,
+        "height": 16,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(124, 80, 187)",
+        "nonTextContrast": 5.642047932773229
+      },
+      {
+        "width": 22,
+        "height": 22,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(124, 80, 187)",
+        "nonTextContrast": 5.642047932773229
+      }
+    ]
+  },
+  {
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "theme": "light",
+    "forcedColors": "active",
+    "glyphs": [
+      {
+        "width": 16,
+        "height": 16,
+        "fill": "rgb(0, 0, 0)",
+        "blobGround": "rgb(255, 255, 255)"
+      },
+      {
+        "width": 22,
+        "height": 22,
+        "fill": "rgb(0, 0, 0)",
+        "blobGround": "rgb(255, 255, 255)"
+      }
+    ]
+  },
+  {
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "theme": "dark",
+    "forcedColors": "none",
+    "glyphs": [
+      {
+        "width": 16,
+        "height": 16,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(128, 88, 192)",
+        "nonTextContrast": 5.153522829716701
+      },
+      {
+        "width": 22,
+        "height": 22,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(128, 88, 192)",
+        "nonTextContrast": 5.153522829716701
+      }
+    ]
+  },
+  {
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "theme": "dark",
+    "forcedColors": "active",
+    "glyphs": [
+      {
+        "width": 16,
+        "height": 16,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(0, 0, 0)"
+      },
+      {
+        "width": 22,
+        "height": 22,
+        "fill": "rgb(255, 255, 255)",
+        "blobGround": "rgb(0, 0, 0)"
+      }
+    ]
+  }
+]

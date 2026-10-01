@@ -1,0 +1,97 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test changelog.spec.ts --grep relative release dates follow --workers=1
+
+$ playwright test changelog.spec.ts --grep relative release dates follow --workers=1
+[WebServer] (node:12722) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:12753) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 2 tests using 1 worker
+
+(node:12768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › tests/changelog.spec.ts:504:5 › America/Los_Angeles › relative release dates follow the reader calendar at a UTC boundary (5.3s)
+(node:12795) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 [chromium] › tests/changelog.spec.ts:504:5 › Asia/Tokyo › relative release dates follow the reader calendar at a UTC boundary (5.1s)
+
+
+  1) [chromium] › tests/changelog.spec.ts:504:5 › America/Los_Angeles › relative release dates follow the reader calendar at a UTC boundary 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.release-ago').first()
+    Expected: "today"
+    Received: "yesterday"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.release-ago').first() with timeout 5000ms
+      - waiting for locator('.release-ago').first()
+        3 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09"></span>
+          - unexpected value ""
+        11 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09">yesterday</span>
+           - unexpected value "yesterday"
+
+
+      507 |       await page.clock.setFixedTime(new Date(now));
+      508 |       await page.goto('/changelog');
+    > 509 |       await expect(page.locator('.release-ago').first()).toHaveText(expected);
+          |                                                          ^
+      510 |       await expect(page.locator('.release time').first()).toHaveText(releases[0].dateLabel);
+      511 |     });
+      512 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/changelog.spec.ts:509:58
+
+    Error Context: ../test-results/changelog-America-Los-Ange-4f11f--calendar-at-a-UTC-boundary-chromium/error-context.md
+
+  2) [chromium] › tests/changelog.spec.ts:504:5 › Asia/Tokyo › relative release dates follow the reader calendar at a UTC boundary 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.release-ago').first()
+    Expected: "yesterday"
+    Received: "today"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.release-ago').first() with timeout 5000ms
+      - waiting for locator('.release-ago').first()
+        2 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09"></span>
+          - unexpected value ""
+        12 × locator resolved to <span aria-hidden="true" class="release-ago" data-ago-for="2026-09-09">today</span>
+           - unexpected value "today"
+
+
+      507 |       await page.clock.setFixedTime(new Date(now));
+      508 |       await page.goto('/changelog');
+    > 509 |       await expect(page.locator('.release-ago').first()).toHaveText(expected);
+          |                                                          ^
+      510 |       await expect(page.locator('.release time').first()).toHaveText(releases[0].dateLabel);
+      511 |     });
+      512 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/changelog.spec.ts:509:58
+
+    Error Context: ../test-results/changelog-Asia-Tokyo-relat-c9749--calendar-at-a-UTC-boundary-chromium/error-context.md
+
+  2 failed
+    [chromium] › tests/changelog.spec.ts:504:5 › America/Los_Angeles › relative release dates follow the reader calendar at a UTC boundary 
+    [chromium] › tests/changelog.spec.ts:504:5 › Asia/Tokyo › relative release dates follow the reader calendar at a UTC boundary 
