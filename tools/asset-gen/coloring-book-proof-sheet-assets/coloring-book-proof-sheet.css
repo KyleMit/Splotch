@@ -1,11 +1,12 @@
-/* Palette kept in sync by eye with the shared scrapbook chrome
-   (tools/scrapbook/lib/scrapbook-chrome.mjs) — asset-gen can't import across that boundary.
+/* Palette restated from the shared scrapbook chrome (tools/scrapbook/lib/scrapbook-chrome.mjs),
+   which asset-gen can't import across that boundary; tools/tests/proof-sheet-colors.test.mjs
+   fails when a :root token here drifts from the chrome's, bar the sheet-only ones it lists.
    --accent is the site's interactive blue; --gold is the warm "shipped/source" tag. */
 :root {
   --paper: #f5f3ee;
   --card: #fdfbf6;
-  --ink: #24222b;
-  --muted: #6c6875;
+  --ink: #23212a;
+  --muted: #6b6774;
   --hair: #e6e1d8;
   --accent: #2f6fed;
   --gold: #b1780a;

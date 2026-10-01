@@ -15,8 +15,8 @@ together.
 **A clean merge is this skill's starting condition, not its success criterion.** "No conflicts" is
 never the finding — it means step 3 has not run yet.
 
-**Scope:** merge the current branch up to date and make it coherent again. This skill does not
-rebase (see Notes), does not push, and does not open a PR.
+**Scope:** merge the current branch up to date, make it coherent, verify it, and push the result.
+This skill does not rebase (see Notes) or open a PR.
 
 ## Step 1 — Survey before merging
 
@@ -130,7 +130,7 @@ These merge clean every time and are worth checking by name:
 * **Skill registry** — a skill added, renamed, or removed on either side must still be registered
   exactly once in the `skills-guide` skill.
 
-## Step 5 — Verify
+## Step 5 — Verify and push
 
 ```
 npm run check && npm test
@@ -140,6 +140,11 @@ npm run format:check && npm run ruler:check && npm run check:adrs
 `npm test` is the full suite CI runs — unit, asset-pipeline, repo-script, and E2E — and the
 repo-script tier is where most of Step 4 is actually enforced. Run it, don't infer from a green
 type-check.
+
+After the required checks pass, commit any remaining reconciliation changes and push the current
+branch to its upstream. If it has no upstream, publish it with `git push -u origin HEAD`. Use a
+normal push. A request to reconcile includes this push; do not ask for separate permission. Honor an
+explicit request to keep the work local or stop before pushing.
 
 ## Step 6 — Report
 
@@ -151,9 +156,9 @@ reads as "not checked", which is exactly the ambiguity this skill exists to remo
 3. **Semantic conflicts** — each one: the incoming commit, what it broke, and the fix. Include the
    ones found and deliberately left alone, with the reason.
 
-Close with the verification results. If the branch was far enough behind that Step 3 could only be
-sampled rather than covered, say so plainly and say what was sampled — a partial pass reported as a
-full one is worse than not running the skill.
+Close with the verification results and whether the push succeeded. If the branch was far enough
+behind that Step 3 could only be sampled rather than covered, say so plainly and say what was
+sampled — a partial pass reported as a full one is worse than not running the skill.
 
 ## Notes
 
@@ -166,7 +171,6 @@ full one is worse than not running the skill.
   possibly reviewed; rebasing rewrites the history a reviewer has already read and forces every
   other checkout of it to recover. The merge commit is also what makes the incoming set legible
   afterwards.
-* **Never push without being asked.** Reconciling is local work; the user decides when it lands.
 * If the merge is a genuine mess — many commits behind, wide overlap, unclear intent on both sides —
   stop and report that before spending an hour producing a plausible-looking resolution. An honest
   "this needs a decision from you, here is the shape of it" is a valid outcome.

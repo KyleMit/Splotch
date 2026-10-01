@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { scheduleIdle } from '$lib/idle';
+  import { createPageParentCenter } from '$lib/components/page/pageParentCenter.svelte';
   // Parent-facing privacy policy, required by both app stores (see the `mobile`
   // skill's store-release checklist). Plain language, short sections, and the
   // shared contents rail/disclosure pattern so a parent can jump to the part
@@ -11,7 +14,7 @@
   // own copy or a constant it interpolates — fails until the date and that
   // revision list move together.
 
-  import { onMount } from 'svelte';
+  import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
@@ -19,16 +22,23 @@
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
-  import { scheduleIdle } from '$lib/idle';
   import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
   import { SECTIONS, SPY_LINE_PX, watchReadingPosition } from './contents';
   import type { SectionId } from './contents';
-  import { createPrivacyParentCenter } from './parentCenter.svelte';
   import PolicySummary from './PolicySummary.svelte';
+  import SectionHeading from './SectionHeading.svelte';
+  import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
+  import { createSectionLinks } from './sectionLinks.svelte';
 
-  const LAST_UPDATED = 'September 28, 2026';
+  const LAST_UPDATED = '2026-09-28';
+  const updatedLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(LAST_UPDATED));
   const DESCRIPTION =
     "Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics.";
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
@@ -53,10 +63,14 @@
     })
   );
 
-  const parentCenter = createPrivacyParentCenter();
-  const gatedLink = parentCenter.gatedLink;
+  const parentCenter = __IS_CAPACITOR__ ? null : createPageParentCenter();
+  function gatedLink(node: HTMLAnchorElement) {
+    if (!__IS_CAPACITOR__) return parentCenter?.gatedLink(node);
+  }
+  onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
 
-  onMount(() => scheduleIdle(parentCenter.mountParentalGate));
+  const sectionLinks = createSectionLinks();
+  $effect(() => sectionLinks.dispose);
 </script>
 
 <svelte:head>
@@ -66,13 +80,13 @@
 
 <SocialCard path="/privacy" title="Splotch Privacy Policy" description={DESCRIPTION} />
 
-{#snippet feedbackLink()}
+{#snippet feedbackLink(label: string)}
   {#if __IS_CAPACITOR__}
     <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:gatedLink
-      >private feedback form</a
+      >{label}<ExternalMark variant="inline" /></a
     >
   {:else}
-    <a href="/feedback">private feedback form</a>
+    <a href="/feedback">{label}</a>
   {/if}
 {/snippet}
 
@@ -83,7 +97,11 @@
       version is easy to remember.
     {/snippet}
 
-    <PolicySummary updated={LAST_UPDATED} />
+    <p class="policy-updated updated">
+      <span class="updated-dot" aria-hidden="true"></span>
+      <span>Updated <time datetime={LAST_UPDATED}>{updatedLabel}</time></span>
+    </p>
+    <PolicySummary />
 
     <RuleLabel>The details</RuleLabel>
 
@@ -104,9 +122,14 @@
         stickyTop="0px"
       />
 
+      <VisuallyHidden role="status">{sectionLinks.announcement}</VisuallyHidden>
       <div class="sections">
         <section id="on-device">
-          <h3>What stays on your device</h3>
+          <SectionHeading
+            section={SECTIONS[0]}
+            copied={sectionLinks.copied === SECTIONS[0].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Ordinary drawing never leaves your device. Splotch does not build a profile of you or
             your child, does not sell information, and shows no advertising. Three features can send
@@ -131,7 +154,11 @@
         </section>
 
         <section id="ai-pictures">
-          <h3>Making an AI picture</h3>
+          <SectionHeading
+            section={SECTIONS[1]}
+            copied={sectionLinks.copied === SECTIONS[1].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             The AI image button redraws your child's drawing in a chosen art style. It is Splotch's
             one big online feature: when someone taps the button, the current drawing is sent to our
@@ -158,7 +185,7 @@
               rel="noopener noreferrer"
               use:gatedLink
             >
-              OpenAI Services Agreement</a
+              OpenAI Services Agreement<ExternalMark variant="inline" /></a
             >. By default, OpenAI does not use what we send to train its models — only an account
             that opts in shares content that way. OpenAI does keep a copy to check for abuse. That
             copy is normally kept for up to 30 days; OpenAI's
@@ -168,7 +195,7 @@
               rel="noopener noreferrer"
               use:gatedLink
             >
-              published policy</a
+              published policy<ExternalMark variant="inline" /></a
             > lets it keep one longer where the law requires it or where a copy is needed to stop harm.
             If a safety scan flags a picture as possible child sexual abuse material, OpenAI keeps it
             for a person to review, whatever the account settings say. Those copies are OpenAI's, not
@@ -185,7 +212,11 @@
         </section>
 
         <section id="counting">
-          <h3>How the counting works</h3>
+          <SectionHeading
+            section={SECTIONS[2]}
+            copied={sectionLinks.copied === SECTIONS[2].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             To count the {FREE_GENERATION_LIMIT} free pictures fairly, the app has to recognize an install
             without knowing whose it is. So it sends a one-way code — a scrambled value that cannot be
@@ -219,7 +250,11 @@
         </section>
 
         <section id="reports">
-          <h3>Reporting a picture</h3>
+          <SectionHeading
+            section={SECTIONS[3]}
+            copied={sectionLinks.copied === SECTIONS[3].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Every finished AI picture is labeled “AI-generated picture.” If one is wrong or
             inappropriate, a grown-up can choose “Report this picture,” review exactly what will be
@@ -233,7 +268,8 @@
             us where to look; it carries report details, never the images. We investigate and
             respond within {IMAGE_REPORT_REVIEW_HOURS} hours. A daily cleanup deletes the report after
             <strong>{IMAGE_REPORT_RETENTION_DAYS} days</strong>. To ask us to delete one sooner, use
-            the {@render feedbackLink()} and include the reference shown after sending.
+            the {@render feedbackLink('private feedback form')} and include the reference shown after
+            sending.
           </p>
           <p>
             If the AI refuses a harmless drawing, a grown-up can choose “Report this refusal”
@@ -244,7 +280,11 @@
         </section>
 
         <section id="feedback">
-          <h3>Sending feedback</h3>
+          <SectionHeading
+            section={SECTIONS[4]}
+            copied={sectionLinks.copied === SECTIONS[4].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send
             report,” only what you type is sent to our <strong>private</strong> support tracker on GitHub.
@@ -263,7 +303,11 @@
         </section>
 
         <section id="hosting">
-          <h3>Hosting and downloads</h3>
+          <SectionHeading
+            section={SECTIONS[5]}
+            copied={sectionLinks.copied === SECTIONS[5].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Splotch — the website, the API, and the stored reports above — is hosted by Netlify.
             Loading the app there works like loading any website: the request carries normal details
@@ -290,7 +334,11 @@
         </section>
 
         <section id="children">
-          <h3>Children's privacy</h3>
+          <SectionHeading
+            section={SECTIONS[6]}
+            copied={sectionLinks.copied === SECTIONS[6].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             Splotch is made for young children, so the protection is built into the design: no
             accounts, no ads, no analytics or tracking code, no chat, comments, or public sharing,
@@ -314,27 +362,76 @@
         </section>
 
         <section id="contact">
-          <h3>Changes and contact</h3>
+          <SectionHeading
+            section={SECTIONS[7]}
+            copied={sectionLinks.copied === SECTIONS[7].id}
+            oncopy={sectionLinks.copy}
+          />
           <p>
             If this policy changes, the date at the top changes with it. Questions or concerns? Send
-            them through our {@render feedbackLink()} and we'll take a look.
+            them through our {@render feedbackLink('private feedback form')} and we'll take a look.
           </p>
+          <div class="policy-ask" data-policy-chrome>
+            <strong>Questions about privacy?</strong>
+            {@render feedbackLink('Send us a note')}
+          </div>
         </section>
       </div>
     </div>
   </PageShell>
 </div>
 
-{#if parentCenter.gateComponent}
+{#if parentCenter?.gateComponent}
   {@const Gate = parentCenter.gateComponent}
   <Gate manageDestination={parentCenter.openParentCenter} />
 {/if}
-{#if parentCenter.modalComponent && parentCenter.managingPolicies}
+{#if parentCenter?.modalComponent && parentCenter.managingPolicies}
   {@const Modal = parentCenter.modalComponent}
   <Modal />
 {/if}
 
 <style>
+  .policy-updated {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: calc(-1 * var(--space-4)) 0 var(--space-6);
+    color: var(--page-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .updated-dot {
+    flex: 0 0 10px;
+    height: 10px;
+    border-radius: var(--radius-blob-1);
+    background: var(--hue-purple);
+  }
+
+  .policy-ask {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    background: var(--brand-wash);
+    font-size: var(--font-size-md);
+  }
+
+  .policy-ask strong {
+    color: var(--page-ink);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .policy-ask a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: var(--font-weight-semibold);
+  }
+
   /* Everything colored here reads PageShell's --page-* palette or a themed app
      token, so the policy follows the parent's night-mode preference like every
      other page. Theme-invariant tokens (--font-size-*, --font-weight-*,
@@ -388,19 +485,12 @@
      breakpoints): underestimating only adds reserve, and the slack keeps the
      last section's top clear of the line instead of exactly on it. */
   .sections section:last-child {
-    --page-tail: 16px;
+    --page-tail: calc(var(--space-4) + var(--page-footer-reserve));
 
     min-height: calc(100dvh - var(--spy-line) - var(--page-tail));
   }
 
-  h3 {
-    margin: 0 0 6px;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--page-ink);
-  }
-
-  p,
+  .sections p,
   .sections ul {
     max-width: var(--page-measure);
     margin: 0 0 12px;

@@ -60,7 +60,12 @@ vi.mock('$app/forms', () => ({
   deserialize: vi.fn(),
   enhance: () => ({ destroy() {} }),
 }));
-vi.mock('$app/navigation', () => ({ invalidateAll: vi.fn(), goto: vi.fn() }));
+vi.mock('$app/state', () => ({ page: { url: new URL('https://splotch.art/feedback') } }));
+vi.mock('$app/navigation', () => ({
+  invalidateAll: vi.fn(),
+  goto: vi.fn(),
+  afterNavigate: vi.fn(),
+}));
 
 // Reads every enumerable getter the way a component would, skipping mutators.
 // Nested objects recurse; a Blob is kept by identity, which is what

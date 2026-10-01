@@ -20,9 +20,6 @@
   // palette Blue only reaches 2.67:1, so the second splat borrows the
   // picker's mid-blue (3.12:1) instead.
   const OPERAND_FILLS = [paletteHex('Purple'), colorFamilyShade('blues', 4)];
-  // Organic blob shapes; plain geometry, one per operand so the pair reads as
-  // two hand-made daubs rather than stamped circles.
-  const OPERAND_RADII = ['58% 42% 55% 45% / 45% 58% 42% 55%', '45% 55% 48% 52% / 55% 45% 58% 42%'];
 
   // One dab per answer digit, filled left-to-right as the adult types.
   const dabs = $derived(
@@ -46,14 +43,14 @@
       class="gate-operand"
       aria-hidden="true"
       style:background={OPERAND_FILLS[0]}
-      style:border-radius={OPERAND_RADII[0]}>{parentalGateState.x}</span
+      style:border-radius="var(--radius-blob-1)">{parentalGateState.x}</span
     >
     <span class="gate-operator" aria-hidden="true">×</span>
     <span
       class="gate-operand"
       aria-hidden="true"
       style:background={OPERAND_FILLS[1]}
-      style:border-radius={OPERAND_RADII[1]}>{parentalGateState.y}</span
+      style:border-radius="var(--radius-blob-2)">{parentalGateState.y}</span
     >
     <span class="gate-operator" aria-hidden="true">=</span>
     {#each dabs as digit, i (i)}
@@ -100,7 +97,7 @@
     width: 48px;
     height: 54px;
     flex-shrink: 0;
-    border-radius: 52% 48% 55% 45% / 45% 55%;
+    border-radius: var(--radius-blob-3);
     /* An empty dab is drawn by this edge alone, and it is the only hint of
        how many digits the answer has, so it needs the 3:1 non-text floor
        the warm border (1.9:1) misses. */

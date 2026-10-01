@@ -1,0 +1,157 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test page-footer.spec.ts -g final sections remain --project=chromium --workers=1
+
+$ playwright test page-footer.spec.ts -g final sections remain --project=chromium --workers=1
+[WebServer] (node:82752) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:82783) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 5 tests using 1 worker
+
+(node:82802) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×800 (800ms)
+  ✘  2 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 (5.2s)
+(node:82823) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 (5.2s)
+(node:82834) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  4 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 (5.2s)
+(node:83016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  5 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 (5.2s)
+
+
+  1) [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 
+
+    Error: expect(locator).toBeInViewport() failed
+
+    Locator:  locator('#release-1-0-0')
+    Expected: in viewport
+    Received: viewport ratio 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeInViewport" locator('#release-1-0-0') with timeout 5000ms
+      - waiting for locator('#release-1-0-0')
+        14 × locator resolved to <article class="release" data-hue="Blue" id="release-1-0-0">…</article>
+           - unexpected value "viewport ratio 0"
+
+
+      27 |         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
+      28 |       ).toHaveAttribute('aria-current', 'location');
+    > 29 |       await expect(page.locator(href)).toBeInViewport();
+         |                                        ^
+      30 |       await expect(page.locator('.page-footer')).toBeInViewport();
+      31 |     }
+      32 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:29:40
+
+    Error Context: ../test-results/page-footer-final-sections-0a265--maximum-scroll-on-1280×600-chromium/error-context.md
+
+  2) [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 
+
+    Error: expect(locator).toBeInViewport() failed
+
+    Locator:  locator('#release-1-0-0')
+    Expected: in viewport
+    Received: viewport ratio 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeInViewport" locator('#release-1-0-0') with timeout 5000ms
+      - waiting for locator('#release-1-0-0')
+        14 × locator resolved to <article class="release" data-hue="Blue" id="release-1-0-0">…</article>
+           - unexpected value "viewport ratio 0"
+
+
+      27 |         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
+      28 |       ).toHaveAttribute('aria-current', 'location');
+    > 29 |       await expect(page.locator(href)).toBeInViewport();
+         |                                        ^
+      30 |       await expect(page.locator('.page-footer')).toBeInViewport();
+      31 |     }
+      32 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:29:40
+
+    Error Context: ../test-results/page-footer-final-sections-c6dd9--maximum-scroll-on-1280×501-chromium/error-context.md
+
+  3) [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 
+
+    Error: expect(locator).toBeInViewport() failed
+
+    Locator:  locator('#release-1-0-0')
+    Expected: in viewport
+    Received: viewport ratio 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeInViewport" locator('#release-1-0-0') with timeout 5000ms
+      - waiting for locator('#release-1-0-0')
+        14 × locator resolved to <article class="release" data-hue="Blue" id="release-1-0-0">…</article>
+           - unexpected value "viewport ratio 0"
+
+
+      27 |         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
+      28 |       ).toHaveAttribute('aria-current', 'location');
+    > 29 |       await expect(page.locator(href)).toBeInViewport();
+         |                                        ^
+      30 |       await expect(page.locator('.page-footer')).toBeInViewport();
+      31 |     }
+      32 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:29:40
+
+    Error Context: ../test-results/page-footer-final-sections-3d36e-t-maximum-scroll-on-320×568-chromium/error-context.md
+
+  4) [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 
+
+    Error: expect(locator).toBeInViewport() failed
+
+    Locator:  locator('#release-1-0-0')
+    Expected: in viewport
+    Received: viewport ratio 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeInViewport" locator('#release-1-0-0') with timeout 5000ms
+      - waiting for locator('#release-1-0-0')
+        14 × locator resolved to <article class="release" data-hue="Blue" id="release-1-0-0">…</article>
+           - unexpected value "viewport ratio 0"
+
+
+      27 |         page.locator(`nav[aria-label="${label}"] a[href="${href}"]`).first()
+      28 |       ).toHaveAttribute('aria-current', 'location');
+    > 29 |       await expect(page.locator(href)).toBeInViewport();
+         |                                        ^
+      30 |       await expect(page.locator('.page-footer')).toBeInViewport();
+      31 |     }
+      32 |   });
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/page-footer.spec.ts:29:40
+
+    Error Context: ../test-results/page-footer-final-sections-c527d-t-maximum-scroll-on-812×375-chromium/error-context.md
+
+  4 failed
+    [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 
+    [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 
+    [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 
+    [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 
+  1 passed (27.9s)

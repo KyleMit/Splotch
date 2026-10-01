@@ -29,6 +29,9 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   radiusLg:
     'Everything bigger than a control: cards, grouped panels, modal cards, banners, page sheets.',
   radiusPill: 'Fully-round pills and toggle tracks.',
+  radiusBlob1: 'First paint daub: gate operands, numbered steps and back links.',
+  radiusBlob2: 'Second paint daub: gate operands, numbered steps and section links.',
+  radiusBlob3: 'Third paint daub: gate answer dabs, numbered steps and external marks.',
 
   borderWidth: 'The one hairline width; color comes from a themed border token.',
   focusRingWidth:
@@ -111,6 +114,15 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
 export const themeUsage: Record<keyof ThemeTokens, string> = {
   stepWashStrength:
     'Crayon contribution to a numbered-step disc: subtle on light sheets, lifted on dark grounds.',
+  tapeStrength:
+    'Crayon contribution to tape fills on --surface. Use green, blue, orange or pink. Purple is dark-only; yellow does not hold AA at night.',
+  tapeInk: 'Text on tape fills mixed from --tape-strength and --surface.',
+  squiggleStrength: 'Crayon contribution to decorative squiggles on --surface.',
+  linkCrayon: 'Wavy link underlines; the link text keeps --page-link.',
+  highlighter:
+    'Yellow behind highlighted words on --surface. Pair with --text-strong; link and body inks need a different wash.',
+  arrivalWash: 'Yellow arrival glow behind a linked release.',
+  blobShadow: 'The lift under a filled blob button; omitted on dark sheets.',
   stepInkStrength:
     'Crayon contribution to a numbered-step digit: tinted in light mode, full --text-strong at night.',
   appBg: 'The ground behind parent-page content (never the drawing paper).',
@@ -158,6 +170,10 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   ruleSecondaryOpacity: 'Strength of the second printed margin pass.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
+  selectionHighlight:
+    "Selected text on a standalone page: the highlighter yellow PageShell's ::selection paints, under --text-strong (links keep --brand-text).",
+  externalMarkWash:
+    'The blob behind the arrow on a standalone outbound link (ExternalMark). An inline link inside prose takes --brand-wash instead.',
   holeStroke: 'The dashed outline of the size-eraser hole previews.',
   lineartFilter: 'Coloring-page line art inversion — dark mode turns lines to chalk.',
   lineartBlend: 'The blend mode pairing --lineart-filter.',

@@ -1,10 +1,12 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
   import Icon from '../Icon.svelte';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
+  import PageFooter from './PageFooter.svelte';
+  import { createPageParentCenter } from '$nativePageParentCenter';
 
   // The chrome a standalone page wears: a ground, a centered sheet, a masthead
   // (back link + crayon strip + wordmark) and a hero, so a URL handed out in a
@@ -23,18 +25,50 @@
     /** Forwarded to BrandMark: the word after "Splotch" in the mark. */
     wordmarkSuffix?: string;
     lede?: Snippet;
+    collapsibleLede?: boolean;
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
+    footer?: boolean;
     children: Snippet;
   }
 
-  let { title, wordmarkSuffix, lede, actions, children }: Props = $props();
+  let {
+    title,
+    wordmarkSuffix,
+    lede,
+    collapsibleLede = true,
+    actions,
+    footer = true,
+    children,
+  }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
   const hydration = createHydratedFlag();
+  const parentCenter = __IS_CAPACITOR__ ? createPageParentCenter() : null;
+  onMount(() => parentCenter?.warmParentalGate());
+
+  const nativeLinks: {
+    node: HTMLAnchorElement;
+    action: ReturnType<NonNullable<typeof parentCenter>['gatedLink']>;
+  }[] = [];
+  $effect(() => {
+    return () => {
+      for (const { action } of nativeLinks) action.destroy();
+    };
+  });
+
+  function mountOutboundGate(event: MouseEvent) {
+    // Capture installs the existing action before the same click reaches its anchor,
+    // preserving trusted activation and the action's approved-replay latch.
+    if (!__IS_CAPACITOR__ || !parentCenter || !(event.target instanceof Element)) return;
+    const anchor = event.target.closest<HTMLAnchorElement>('a[target="_blank"]');
+    if (anchor && !nativeLinks.some(({ node }) => node === anchor)) {
+      nativeLinks.push({ node: anchor, action: parentCenter.gatedLink(anchor) });
+    }
+  }
 </script>
 
-<main class="page">
+<main class="page" onclickcapture={mountOutboundGate}>
   <div class="sheet">
     <div class="topbar">
       <BackLink />
@@ -49,7 +83,7 @@
       <div class="hero-text">
         <h1>{title}</h1>
         {#if lede}
-          {#if hydration.hydrated}
+          {#if collapsibleLede && hydration.hydrated}
             <button
               type="button"
               class="lede-toggle"
@@ -65,7 +99,11 @@
               </span>
             </button>
           {/if}
-          <p class="lede" id={ledeId} class:collapsed={hydration.hydrated && !ledeOpen}>
+          <p
+            class="lede"
+            id={ledeId}
+            class:collapsed={collapsibleLede && hydration.hydrated && !ledeOpen}
+          >
             {@render lede()}
           </p>
         {/if}
@@ -76,13 +114,27 @@
     </div>
 
     {@render children()}
+    {#if footer}
+      <PageFooter />
+    {/if}
   </div>
 </main>
+
+{#if parentCenter?.gateComponent}
+  {@const Gate = parentCenter?.gateComponent}
+  <Gate manageDestination={parentCenter.openParentCenter} />
+{/if}
+{#if parentCenter?.modalComponent && parentCenter.managingPolicies}
+  {@const Modal = parentCenter.modalComponent}
+  <Modal />
+{/if}
 
 <style>
   /* The drawing route's app-surface locks (app.css) don't reach these routes, so
      the page scrolls, selects, and zooms as a normal document with no opt-out. */
   .page {
+    /* Count part of the footer and page-end footprint in the final scrollspy reserve. */
+    --page-footer-reserve: 160px;
     --page-ground: var(--app-bg);
     --page-sheet: var(--surface);
     --page-ink: var(--text-strong);
@@ -130,6 +182,22 @@
     font-size: var(--font-size-md);
     line-height: 1.62;
     text-wrap: pretty;
+  }
+
+  /* Selected text wears a crayon highlighter instead of the system blue. Scoped
+     to the page, so a dialog opening over it (the parental gate, /privacy's
+     Parent Center) keeps the system selection. The selection sets its own ink
+     rather than keeping each element's: a filled control's --on-brand label is
+     white, and white on the light highlight is unreadable. Links keep theirs so
+     a selected link still reads as one; tokens.test.ts holds both inks at AA on
+     --selection-highlight. */
+  .page :global(::selection) {
+    color: var(--page-ink);
+    background-color: var(--selection-highlight);
+  }
+
+  .page :global(a::selection) {
+    color: var(--page-link);
   }
 
   .sheet {
@@ -295,6 +363,15 @@
 
     .lede {
       font-size: var(--font-size-md);
+    }
+  }
+
+  /* NARROW_PHONE_MIN_WIDTH_PX, less BREAKPOINT_EPSILON_PX; phoneStep.test.ts
+     guards the CSS boundary. The strip is aria-hidden, so the link home keeps
+     its whole accessible name. */
+  @media (max-width: 389.98px) {
+    .brand :global(.crayons) {
+      display: none;
     }
   }
 

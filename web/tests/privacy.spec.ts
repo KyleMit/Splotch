@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SECTIONS } from '../src/routes/privacy/contents';
+import { SITE_ORIGIN } from '../src/lib/siteUrl';
 
 import {
   expectBottomedPanelScrollsRowToPin,
@@ -26,8 +28,7 @@ function renderedSections(page: Page) {
 test('the contents rail links every section by its own heading', async ({ page }) => {
   await page.goto('/privacy');
 
-  // Derived from the sections the page actually renders, not a written list —
-  // this is the drift guard for the id/label list the component keeps twice.
+  // Rendered section ids must agree with the heading and contents metadata.
   const sections = await renderedSections(page);
   expect(sections.length).toBeGreaterThan(0);
 
@@ -38,7 +39,139 @@ test('the contents rail links every section by its own heading', async ({ page }
       'href',
       `#${section.id}`
     );
+    await expect(page.locator(`#${section.id} .section-anchor`)).toHaveAttribute(
+      'href',
+      `#${section.id}`
+    );
+    await expect(page.locator(`#${section.id} .section-anchor`)).toHaveAccessibleName(
+      `Copy link to “${section.heading}”`
+    );
   }
+});
+
+test('copying a section link preserves the reading position and navigation history', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/feedback');
+  await page.getByRole('link', { name: 'privacy policy', exact: true }).click();
+  const section = SECTIONS[0];
+  const anchor = page.locator(`#${section.id} .section-anchor`);
+  await anchor.scrollIntoViewIfNeeded();
+  await anchor.hover();
+  const before = await page.evaluate(() => ({
+    scroll: scrollY,
+    historyLength: history.length,
+    state: history.state,
+  }));
+  await expect(async () => {
+    await anchor.click();
+    await expect(page.getByRole('status')).toHaveText(`Link to “${section.label}” copied.`);
+  }).toPass();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    `${SITE_ORIGIN}/privacy#${section.id}`
+  );
+  expect(
+    await page.evaluate(() => ({
+      scroll: scrollY,
+      historyLength: history.length,
+      state: history.state,
+    }))
+  ).toEqual(before);
+  await expect(page).toHaveURL(new RegExp(`#${section.id}$`));
+  await expect(anchor.locator('[data-icon="check"]')).toBeVisible();
+  await expect(anchor).not.toHaveClass(/copied/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/feedback$/);
+});
+
+for (const clipboard of ['missing', 'rejected'] as const) {
+  test(`section links fall back to fragment navigation when the clipboard is ${clipboard}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((mode) => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value:
+          mode === 'missing' ? undefined : { writeText: () => Promise.reject(new Error('Denied')) },
+      });
+    }, clipboard);
+    await page.goto('/privacy');
+    const section = SECTIONS[2];
+    const anchor = page.locator(`#${section.id} .section-anchor`);
+    await anchor.hover();
+    await anchor.click();
+    await expect(page).toHaveURL(new RegExp(`#${section.id}$`));
+    await expect(page.getByRole('status')).toBeEmpty();
+    await expect(anchor).not.toHaveClass(/copied/);
+  });
+}
+
+test('a rejected recopy navigates to a section already named in the URL', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await page.goto('/privacy#counting');
+  const section = SECTIONS[2];
+  const anchor = page.locator(`#${section.id} .section-anchor`);
+  await expect(async () => {
+    await anchor.click();
+    await expect(page.getByRole('status')).toHaveText(`Link to “${section.label}” copied.`);
+  }).toPass();
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new Error('Denied'));
+    scrollTo(0, 0);
+  });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await anchor.dispatchEvent('click', { button: 0 });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+});
+
+test('the desktop section-link hit area stays outside the contents rail', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/privacy');
+  const rail = await page.locator('.contents-rail').boundingBox();
+  const anchor = await page.locator('.section-anchor').first().boundingBox();
+  expect(rail).not.toBeNull();
+  expect(anchor).not.toBeNull();
+  expect(anchor!.x).toBeGreaterThanOrEqual(rail!.x + rail!.width);
+});
+
+test('section links reveal on keyboard focus with a full size focus ring', async ({ page }) => {
+  await page.goto('/privacy');
+  const anchor = page.locator('.section-anchor').first();
+  await page.mouse.move(0, 0);
+  await expect(anchor).toHaveCSS('opacity', '0');
+  await anchor.focus();
+  await expect(anchor).toHaveCSS('opacity', '1');
+  await expect(anchor).toHaveCSS('outline-style', 'solid');
+  const box = await anchor.boundingBox();
+  expect(box?.width).toBe(44);
+  expect(box?.height).toBe(44);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(anchor).toHaveCSS('transition-duration', '0s');
+});
+
+test.describe('touch section links', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  test('section links remain visible after headings without overflowing', async ({ page }) => {
+    await page.goto('/privacy');
+    const anchor = page.locator('.section-anchor').first();
+    await expect(anchor).toHaveCSS('opacity', '1');
+    const boxes = await page
+      .locator('.section-head')
+      .first()
+      .evaluate((head) => ({
+        heading: head.querySelector('h3')!.getBoundingClientRect().right,
+        anchor: head.querySelector('a')!.getBoundingClientRect().left,
+      }));
+    expect(boxes.anchor).toBeGreaterThan(boxes.heading);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
 });
 
 test('the contents rail marks the section being read', async ({ page }) => {
@@ -79,14 +212,16 @@ test.describe('phone', () => {
 
     const sections = await renderedSections(page);
     const row = page.locator('.contents-disclosure summary');
-    await expect(row).toContainText(`${sections.length} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections.length} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections.length));
 
     const last = sections[sections.length - 1];
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(row).toContainText(last.heading);
 
     await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(row).toContainText(`${sections.length} sections`);
+    await expect(row).toHaveAccessibleName(`Contents ${sections.length} sections ›`);
+    await expect(row.locator('.count-blob')).toHaveText(String(sections.length));
   });
 
   test('picking a section from the contents lands it clear of the pinned row', async ({ page }) => {
@@ -158,4 +293,117 @@ test.describe('phone landscape', () => {
     await openHydratedContents(contents);
     await expectBottomedPanelScrollsRowToPin(page, contents);
   });
+});
+
+// Paragraph widths to sweep: from a narrow phone column to past the policy's own
+// measure, fine enough that each link's last word lands at a line end somewhere.
+const WRAP_SWEEP_MIN_PX = 160;
+const WRAP_SWEEP_MAX_PX = 520;
+const WRAP_SWEEP_STEP_PX = 2;
+
+test('an outbound link never strands its external mark on a line of its own', async ({ page }) => {
+  // The mark's word joiner is all that binds the blob to the label's last word;
+  // without it Chromium breaks between them at about one width in fifteen.
+  await page.goto('/privacy');
+  const marks = page.locator('.sections a[target] [data-external-mark]');
+  await expect(marks.first()).toBeAttached();
+
+  const stranded = await marks.evaluateAll(
+    (nodes, sweep) =>
+      nodes.flatMap((node) => {
+        const label = node.previousSibling;
+        const paragraph = node.closest('p');
+        const blob = node.querySelector('[data-icon="external"]');
+        if (!label || !paragraph || !blob) return [`unmeasurable mark: ${node.outerHTML}`];
+        const lastChar = (label.textContent ?? '').trimEnd().length - 1;
+        const range = document.createRange();
+        range.setStart(label, lastChar);
+        range.setEnd(label, lastChar + 1);
+        const failures: string[] = [];
+        for (let width = sweep.min; width <= sweep.max; width += sweep.step) {
+          paragraph.style.width = `${width}px`;
+          const word = [...range.getClientRects()].at(-1);
+          const mark = blob.getBoundingClientRect();
+          if (!word || mark.top >= word.bottom || mark.bottom <= word.top) {
+            failures.push(`${label.textContent?.trim()} at ${width}px`);
+          }
+        }
+        paragraph.style.width = '';
+        return failures;
+      }),
+    { min: WRAP_SWEEP_MIN_PX, max: WRAP_SWEEP_MAX_PX, step: WRAP_SWEEP_STEP_PX }
+  );
+  expect(stranded).toEqual([]);
+});
+
+test('copying a sentence leaves out the external mark but its link still announces it', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+  const link = page.getByRole('link', {
+    name: 'OpenAI Services Agreement (opens outside Splotch)',
+    exact: true,
+  });
+  await expect(link).toBeVisible();
+
+  const copied = await link.evaluate((anchor) => {
+    const range = document.createRange();
+    range.selectNodeContents(anchor.closest('p') ?? anchor);
+    getSelection()?.removeAllRanges();
+    getSelection()?.addRange(range);
+    return getSelection()?.toString() ?? '';
+  });
+  expect(copied).toContain('OpenAI Services Agreement');
+  expect(copied).not.toContain('opens outside Splotch');
+});
+
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 375, height: 667 },
+]) {
+  test(`the policy revision date is beside the title above the fold at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/privacy');
+    const updated = page.locator('.policy-updated');
+    await expect(updated).toHaveText('Updated September 28, 2026');
+    await expect(updated).toBeInViewport({ ratio: 1 });
+    await expect(updated.locator('time')).toHaveAttribute('datetime', '2026-09-28');
+    const bounds = await updated.boundingBox();
+    const summary = await page.getByRole('heading', { name: 'The short version' }).boundingBox();
+    expect(bounds!.y + bounds!.height).toBeLessThan(summary!.y);
+  });
+}
+
+test('the contact section offers a full size feedback link after its policy paragraph', async ({
+  page,
+}) => {
+  await page.goto('/privacy#contact');
+  const prompt = page.locator('#contact > .policy-ask');
+  await expect(prompt).toContainText('Questions about privacy?');
+  const link = prompt.getByRole('link', { name: 'Send us a note', exact: true });
+  await expect(link).toHaveAttribute('href', '/feedback');
+  const paragraph = await page.locator('#contact > p').boundingBox();
+  const box = await link.boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(box!.y).toBeGreaterThan(paragraph!.y + paragraph!.height);
+  await link.focus();
+  await expect(link).toHaveCSS('outline-style', 'solid');
+  await link.click();
+  await expect(page).toHaveURL(/\/feedback$/);
+});
+
+test('the wide rail stays pinned while all eight sections become active', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/privacy');
+  const rail = page.locator('.contents-rail');
+  for (const section of SECTIONS) {
+    await page.locator(`#${section.id}`).evaluate((node) => node.scrollIntoView());
+    await expect(rail.getByRole('link', { name: section.label })).toHaveAttribute(
+      'aria-current',
+      'location'
+    );
+    await expect.poll(async () => Math.round((await rail.boundingBox())!.y)).toBe(24);
+  }
 });

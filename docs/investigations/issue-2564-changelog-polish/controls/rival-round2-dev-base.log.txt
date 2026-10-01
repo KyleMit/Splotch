@@ -1,0 +1,460 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test tests/privacy.spec.ts tests/design.spec.ts tests/issue-2564-dev-probe.spec.ts --project=chromium --workers=1 -g counts the|/privacy|/design
+
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+$ playwright test tests/privacy.spec.ts tests/design.spec.ts tests/issue-2564-dev-probe.spec.ts --project=chromium --workers=1 -g counts the|/privacy|/design
+[WebServer] (node:18800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:18820) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 4 tests using 1 worker
+
+(node:18855) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:00 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+  ✘  1 [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read (5.4s)
+(node:18897) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+BEFORE /privacy {
+  y: 0,
+  body: 8035,
+  root: 8035,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'on-device', top: 892.921875, height: 849.28125 },
+    { id: 'ai-pictures', top: 1742.203125, height: 1404.40625 },
+    { id: 'counting', top: 3146.609375, height: 1145.34375 },
+    { id: 'reports', top: 4291.953125, height: 770.65625 },
+    { id: 'feedback', top: 5062.609375, height: 603.21875 },
+    { id: 'hosting', top: 5665.828125, height: 764.75 },
+    { id: 'children', top: 6430.578125, height: 796.5625 },
+    { id: 'contact', top: 7227.140625, height: 540 }
+  ],
+  footer: {
+    x: 20,
+    y: 7807.140625,
+    width: 350,
+    height: 188,
+    top: 7807.140625,
+    right: 370,
+    bottom: 7995.140625,
+    left: 20
+  }
+}
+IMMEDIATE /privacy {
+  y: 7191,
+  body: 8035,
+  root: 8035,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'on-device', top: -6298.078125, height: 849.28125 },
+    { id: 'ai-pictures', top: -5448.796875, height: 1404.40625 },
+    { id: 'counting', top: -4044.390625, height: 1145.34375 },
+    { id: 'reports', top: -2899.046875, height: 770.65625 },
+    { id: 'feedback', top: -2128.390625, height: 603.21875 },
+    { id: 'hosting', top: -1525.171875, height: 764.75 },
+    { id: 'children', top: -760.421875, height: 796.5625 },
+    { id: 'contact', top: 36.140625, height: 540 }
+  ],
+  footer: {
+    x: 20,
+    y: 616.140625,
+    width: 350,
+    height: 188,
+    top: 616.140625,
+    right: 370,
+    bottom: 804.140625,
+    left: 20
+  }
+}
+SETTLED /privacy {
+  y: 7088,
+  body: 8035,
+  root: 8035,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'on-device', top: -6195.078125, height: 849.28125 },
+    { id: 'ai-pictures', top: -5345.796875, height: 1404.40625 },
+    { id: 'counting', top: -3941.390625, height: 1145.34375 },
+    { id: 'reports', top: -2796.046875, height: 770.65625 },
+    { id: 'feedback', top: -2025.390625, height: 603.21875 },
+    { id: 'hosting', top: -1422.171875, height: 764.75 },
+    { id: 'children', top: -657.421875, height: 796.5625 },
+    { id: 'contact', top: 139.140625, height: 540 }
+  ],
+  footer: {
+    x: 20,
+    y: 719.140625,
+    width: 350,
+    height: 188,
+    top: 719.140625,
+    right: 370,
+    bottom: 907.140625,
+    left: 20
+  }
+}
+SECOND /privacy {
+  y: 7191,
+  body: 8035,
+  root: 8035,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'on-device', top: -6298.078125, height: 849.28125 },
+    { id: 'ai-pictures', top: -5448.796875, height: 1404.40625 },
+    { id: 'counting', top: -4044.390625, height: 1145.34375 },
+    { id: 'reports', top: -2899.046875, height: 770.65625 },
+    { id: 'feedback', top: -2128.390625, height: 603.21875 },
+    { id: 'hosting', top: -1525.171875, height: 764.75 },
+    { id: 'children', top: -760.421875, height: 796.5625 },
+    { id: 'contact', top: 36.140625, height: 540 }
+  ],
+  footer: {
+    x: 20,
+    y: 616.140625,
+    width: 350,
+    height: 188,
+    top: 616.140625,
+    right: 370,
+    bottom: 804.140625,
+    left: 20
+  }
+}
+  ✓  2 [chromium] › tests/issue-2564-dev-probe.spec.ts:4:3 › /privacy (1.3s)
+BEFORE /design {
+  y: 0,
+  body: 30778,
+  root: 30778,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'color', top: 1107.34375, height: 4227.296875 },
+    { id: 'palette', top: 5382.640625, height: 566.234375 },
+    { id: 'paper', top: 5996.875, height: 371.390625 },
+    { id: 'type', top: 6416.265625, height: 1133.890625 },
+    { id: 'space', top: 7598.15625, height: 796.46875 },
+    { id: 'elevation', top: 8442.625, height: 862.140625 },
+    { id: 'motion', top: 9352.765625, height: 740.9375 },
+    { id: 'stacking', top: 10141.703125, height: 1458.390625 },
+    { id: 'icons', top: 11648.09375, height: 2994.25 },
+    { id: 'recipes', top: 14690.34375, height: 2258.5625 },
+    { id: 'furniture', top: 23273.65625, height: 508.140625 },
+    { id: 'chrome', top: 23829.796875, height: 1049.40625 },
+    { id: 'named', top: 24927.203125, height: 2847.40625 },
+    { id: 'voice', top: 28010.484375, height: 574.34375 },
+    { id: 'mascot', top: 28632.828125, height: 412.171875 },
+    { id: 'dottie', top: 29093, height: 1448.984375 }
+  ],
+  footer: {
+    x: 16,
+    y: 30605.984375,
+    width: 358,
+    height: 92.3125,
+    top: 30605.984375,
+    right: 374,
+    bottom: 30698.296875,
+    left: 16
+  }
+}
+IMMEDIATE /design {
+  y: 29934,
+  body: 30778,
+  root: 30778,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'color', top: -28826.65625, height: 4227.296875 },
+    { id: 'palette', top: -24551.359375, height: 566.234375 },
+    { id: 'paper', top: -23937.125, height: 371.390625 },
+    { id: 'type', top: -23517.734375, height: 1133.890625 },
+    { id: 'space', top: -22335.84375, height: 796.46875 },
+    { id: 'elevation', top: -21491.375, height: 862.140625 },
+    { id: 'motion', top: -20581.234375, height: 740.9375 },
+    { id: 'stacking', top: -19792.296875, height: 1458.390625 },
+    { id: 'icons', top: -18285.90625, height: 2994.25 },
+    { id: 'recipes', top: -15243.65625, height: 2258.5625 },
+    { id: 'furniture', top: -6660.34375, height: 508.140625 },
+    { id: 'chrome', top: -6104.203125, height: 1049.40625 },
+    { id: 'named', top: -5006.796875, height: 2847.40625 },
+    { id: 'voice', top: -1923.515625, height: 574.34375 },
+    { id: 'mascot', top: -1301.171875, height: 412.171875 },
+    { id: 'dottie', top: -841, height: 1448.984375 }
+  ],
+  footer: {
+    x: 16,
+    y: 671.984375,
+    width: 358,
+    height: 92.3125,
+    top: 671.984375,
+    right: 374,
+    bottom: 764.296875,
+    left: 16
+  }
+}
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:37:07 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+SETTLED /design {
+  y: 28890,
+  body: 30778,
+  root: 30778,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'color', top: -27782.65625, height: 4227.296875 },
+    { id: 'palette', top: -23507.359375, height: 566.234375 },
+    { id: 'paper', top: -22893.125, height: 371.390625 },
+    { id: 'type', top: -22473.734375, height: 1133.890625 },
+    { id: 'space', top: -21291.84375, height: 796.46875 },
+    { id: 'elevation', top: -20447.375, height: 862.140625 },
+    { id: 'motion', top: -19537.234375, height: 740.9375 },
+    { id: 'stacking', top: -18748.296875, height: 1458.390625 },
+    { id: 'icons', top: -17241.90625, height: 2994.25 },
+    { id: 'recipes', top: -14199.65625, height: 2258.5625 },
+    { id: 'furniture', top: -5616.34375, height: 508.140625 },
+    { id: 'chrome', top: -5060.203125, height: 1049.40625 },
+    { id: 'named', top: -3962.796875, height: 2847.40625 },
+    { id: 'voice', top: -879.515625, height: 574.34375 },
+    { id: 'mascot', top: -257.171875, height: 412.171875 },
+    { id: 'dottie', top: 203, height: 1448.984375 }
+  ],
+  footer: {
+    x: 16,
+    y: 1715.984375,
+    width: 358,
+    height: 92.3125,
+    top: 1715.984375,
+    right: 374,
+    bottom: 1808.296875,
+    left: 16
+  }
+}
+SECOND /design {
+  y: 29934,
+  body: 30778,
+  root: 30778,
+  height: 844,
+  fonts: 'loaded',
+  sections: [
+    { id: 'color', top: -28826.65625, height: 4227.296875 },
+    { id: 'palette', top: -24551.359375, height: 566.234375 },
+    { id: 'paper', top: -23937.125, height: 371.390625 },
+    { id: 'type', top: -23517.734375, height: 1133.890625 },
+    { id: 'space', top: -22335.84375, height: 796.46875 },
+    { id: 'elevation', top: -21491.375, height: 862.140625 },
+    { id: 'motion', top: -20581.234375, height: 740.9375 },
+    { id: 'stacking', top: -19792.296875, height: 1458.390625 },
+    { id: 'icons', top: -18285.90625, height: 2994.25 },
+    { id: 'recipes', top: -15243.65625, height: 2258.5625 },
+    { id: 'furniture', top: -6660.34375, height: 508.140625 },
+    { id: 'chrome', top: -6104.203125, height: 1049.40625 },
+    { id: 'named', top: -5006.796875, height: 2847.40625 },
+    { id: 'voice', top: -1923.515625, height: 574.34375 },
+    { id: 'mascot', top: -1301.171875, height: 412.171875 },
+    { id: 'dottie', top: -841, height: 1448.984375 }
+  ],
+  footer: {
+    x: 16,
+    y: 671.984375,
+    width: 358,
+    height: 92.3125,
+    top: 671.984375,
+    right: 374,
+    bottom: 764.296875,
+    left: 16
+  }
+}
+  ✓  3 [chromium] › tests/issue-2564-dev-probe.spec.ts:4:3 › /design (1.8s)
+  ✘  4 [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read (5.1s)
+
+
+  1) [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.header-toc summary')
+    Expected substring: "Dottie"
+    Received string:    "Contents Mascot & wordmark"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.header-toc summary') with timeout 5000ms
+      - waiting for locator('.header-toc summary')
+        3 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+          - unexpected value "Contents 26 sections"
+        11 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+           - unexpected value "Contents Mascot & wordmark"
+
+
+      260 |     const lastLabel = await page.locator('.header-toc a').last().textContent();
+      261 |     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    > 262 |     await expect(row).toContainText(lastLabel!.trim());
+          |                       ^
+      263 |
+      264 |     // Symmetric rather than latched: back at the hero it advertises the count.
+      265 |     await page.evaluate(() => window.scrollTo(0, 0));
+        at /private/tmp/2564-dev-base/web/tests/design.spec.ts:262:23
+
+    Error Context: ../test-results/design-phone-contents-the--c1236-nd-names-the-one-being-read-chromium/error-context.md
+
+  2) [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.contents-disclosure summary')
+    Expected substring: "Changes and contact"
+    Received string:    "Contents Children's privacy"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.contents-disclosure summary') with timeout 5000ms
+      - waiting for locator('.contents-disclosure summary')
+        2 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+          - unexpected value "Contents 8 sections"
+        12 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+           - unexpected value "Contents Children's privacy"
+
+
+      217 |     const last = sections[sections.length - 1];
+      218 |     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    > 219 |     await expect(row).toContainText(last.heading);
+          |                       ^
+      220 |
+      221 |     await page.evaluate(() => window.scrollTo(0, 0));
+      222 |     await expect(row).toContainText(`${sections.length} sections`);
+        at /private/tmp/2564-dev-base/web/tests/privacy.spec.ts:219:23
+
+    Error Context: ../test-results/privacy-phone-the-contents-f72b5-nd-names-the-one-being-read-chromium/error-context.md
+
+  2 failed
+    [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read 
+    [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read 
+  2 passed (19.4s)

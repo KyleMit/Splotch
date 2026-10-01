@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { PALETTE_COLORS } from '../palette';
 import { colorContrast } from './colorContrast';
 import { iconTokenEntries } from './iconTokens';
 import {
   brand,
+  hues,
   isColorToken,
   scale,
   themes,
@@ -43,6 +45,7 @@ describe('isColorToken', () => {
       (key) => !isColorToken[key as keyof typeof isColorToken]
     );
     expect(nonColors.sort()).toEqual([
+      'blobShadow',
       'floatShadow',
       'glassTintRgb',
       'lineartBlend',
@@ -50,9 +53,11 @@ describe('isColorToken', () => {
       'ruleBlend',
       'ruleOpacity',
       'ruleSecondaryOpacity',
+      'squiggleStrength',
       'stepInkStrength',
       'stepWashStrength',
       'surfaceRgb',
+      'tapeStrength',
     ]);
   });
 });
@@ -90,6 +95,43 @@ describe('wash hovers', () => {
       const tokens = themes[theme];
       expect(colorContrast(tokens[label], tokens[hover], tokens.surface)).toBeGreaterThanOrEqual(
         AA_MIN_CONTRAST
+      );
+    });
+  });
+});
+
+describe('selectionHighlight', () => {
+  const AA_MIN_CONTRAST = 4.5;
+  // The inks PageShell's ::selection rules paint: --page-ink everywhere, and
+  // --page-link on links.
+  const SELECTED_INKS = [
+    'textStrong',
+    'brandText',
+  ] as const satisfies readonly (keyof ThemeTokens)[];
+
+  describe.each(SELECTED_INKS)('%s', (ink) => {
+    it.each(THEME_NAMES)('%s stays at AA while selected', (theme) => {
+      const tokens = themes[theme];
+      expect(
+        colorContrast(tokens[ink], tokens.selectionHighlight, tokens.surface)
+      ).toBeGreaterThanOrEqual(AA_MIN_CONTRAST);
+    });
+  });
+});
+
+describe('external mark washes', () => {
+  const NON_TEXT_MIN_CONTRAST = 3;
+  const MARK_INKS = [
+    ['externalMarkWash', 'iconMuted'],
+    ['externalMarkWash', 'iconInk'],
+    ['brandWash', 'brandText'],
+  ] as const satisfies readonly (readonly [keyof ThemeTokens, keyof ThemeTokens])[];
+
+  describe.each(MARK_INKS)('%s under %s', (wash, ink) => {
+    it.each(THEME_NAMES)('%s holds the non-text minimum', (theme) => {
+      const tokens = themes[theme];
+      expect(colorContrast(tokens[ink], tokens[wash], tokens.surface)).toBeGreaterThanOrEqual(
+        NON_TEXT_MIN_CONTRAST
       );
     });
   });
@@ -155,5 +197,16 @@ describe('colour notation', () => {
 
   it.each(values)('%s uses the modern rgb() form', (_key, value) => {
     expect(legacyColorCalls(value)).toEqual([]);
+  });
+});
+
+describe('crayon hues', () => {
+  it('maps every non-Black palette hue to its CSS name without changing its color', () => {
+    expect(Object.entries(hues).map(([key, hex]) => [toCssVarName(key), hex])).toEqual(
+      PALETTE_COLORS.filter(({ label }) => label !== 'Black').map(({ label, hex }) => [
+        `--hue-${label.toLowerCase()}`,
+        hex,
+      ])
+    );
   });
 });

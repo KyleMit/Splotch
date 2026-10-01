@@ -182,7 +182,7 @@
   }
 </script>
 
-<PageShell title="Admin" wordmarkSuffix="Admin">
+<PageShell title="Admin" wordmarkSuffix="Admin" footer={false}>
   {#snippet lede()}
     Manage AI access codes
   {/snippet}

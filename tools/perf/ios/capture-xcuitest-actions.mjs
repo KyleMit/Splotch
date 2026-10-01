@@ -2596,7 +2596,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     argv
   );
   const nativeApp = has('native-app');
-  const requestedTheme = parseCampaignTheme(flag('theme'));
+  const requestedTheme = parseOrFail(() => parseCampaignTheme(flag('theme')));
   const requestedOrientation = parseOrFail(() => parseCampaignOrientation(flag('orientation')));
   const repeats = numberFlag('repeats', 4, POSITIVE_INTEGER);
   if (repeats < WARMUP_REPEATS + MIN_GATED_SAMPLES) {

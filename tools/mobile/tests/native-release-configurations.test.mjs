@@ -3,13 +3,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { jobBlocks } from '../../ci-mirror/tests/workflow-job-steps.mjs';
+import { jobBlock, jobBlocks, stepBlock } from '../../ci-mirror/tests/workflow-job-steps.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const packageJson = JSON.parse(read('package.json'));
 const androidWorkflow = read('.github/workflows/android-deploy.yml');
 const iosWorkflow = read('.github/workflows/ios-deploy.yml');
+const iosSmokeJob = jobBlock(iosWorkflow, 'smoke');
 const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
 const nativeCompileWorkflow = read('.github/workflows/native-compile.yml');
 
@@ -125,9 +126,7 @@ describe('native release configuration gates', () => {
   });
 
   it('budgets hosted XCTest startup independently of the app paint assertion', () => {
-    const smokeStep = iosWorkflow
-      .split('- name: Run iOS simulator smoke test')[1]
-      .split('- name:')[0];
+    const smokeStep = stepBlock(iosSmokeJob, 'Run iOS simulator smoke test');
     expect(smokeStep).toContain('MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000');
     expect(smokeStep).toContain('timeout-minutes: 20');
     expect(read('.maestro/smoke.yaml')).toContain('timeout: 30000');
@@ -210,7 +209,7 @@ describe('native release configuration gates', () => {
   });
 
   it('retains XCTest startup diagnostics alongside Maestro flow evidence', () => {
-    const reportStep = iosWorkflow.split('- name: Upload Maestro report')[1].split('- name:')[0];
+    const reportStep = stepBlock(iosSmokeJob, 'Upload Maestro report');
     expect(reportStep).toContain('~/.maestro/tests/');
     expect(reportStep).toContain('~/Library/Logs/maestro/xctest_runner_logs/');
     const reportAction = read('.github/actions/upload-maestro-report/action.yml');

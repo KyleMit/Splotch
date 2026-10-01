@@ -12,9 +12,16 @@ const quicksandCssPath = fileURLToPath(
   import.meta.resolve('@fontsource-variable/quicksand/index.css')
 );
 const quicksandCss = readFileSync(quicksandCssPath, 'utf8');
+const warmSource = readFileSync(new URL('./warmDisplayFont.ts', import.meta.url), 'utf8');
 
 describe('QUICKSAND_FONT_FAMILY', () => {
   it('matches the family registered by @fontsource-variable/quicksand', () => {
     expect(quicksandCss).toContain(`font-family: '${QUICKSAND_FONT_FAMILY}'`);
+  });
+
+  it('matches the startup copy without importing its shared module', () => {
+    expect(/const DISPLAY_FONT_FAMILY = '([^']+)'/.exec(warmSource)?.[1]).toBe(
+      QUICKSAND_FONT_FAMILY
+    );
   });
 });

@@ -12,7 +12,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { shouldWriteBlobsProbe } from '../api-smoke/lib/deployed-admin-target.mjs';
-import { jobBlocks } from '../ci-mirror/tests/workflow-job-steps.mjs';
+import {
+  jobBlock,
+  jobBlocks,
+  runScriptIn,
+  stepBlock,
+} from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // Line-oriented on purpose: no YAML parser ships in this repo's dependency
 // tree, and these invariants (top-level keys, job-level keys, uses: refs) sit
@@ -83,19 +88,9 @@ function runInstallMaestro(versionOutput) {
   return { githubPath, home, result };
 }
 
-function stepScript(lines, stepName) {
-  const start = lines.findIndex((line) => line.trim() === `- name: ${stepName}`);
-  if (start < 0) return undefined;
-  const runIndex = lines.findIndex((line, index) => index > start && /^\s+run: \|\s*$/.test(line));
-  if (runIndex < 0) return undefined;
-
-  const scriptIndent = lines[runIndex].search(/\S/) + 2;
-  const script = [];
-  for (const line of lines.slice(runIndex + 1)) {
-    if (line.trim() !== '' && line.search(/\S/) < scriptIndent) break;
-    script.push(line.slice(scriptIndent));
-  }
-  return script.join('\n');
+function filingScript({ workflow, job }) {
+  const text = workflows.find(({ name }) => name === workflow).lines.join('\n');
+  return runScriptIn(stepBlock(jobBlock(text, job), 'File the failure'));
 }
 
 // The stub resolves --body-file the way gh does and captures the bytes from
@@ -452,6 +447,7 @@ describe('workflow hygiene', () => {
       label: 'area:ci-testing',
       title: 'WebKit commit gate failed on main',
       workflow: 'test.yml',
+      job: 'webkit-commit-gate-fast-report',
     },
     {
       body: ['maestro-report-api-<API>', 'launch-smoke matrix leg'],
@@ -465,6 +461,7 @@ describe('workflow hygiene', () => {
       label: 'area:native',
       title: 'Android native deploy gate failed',
       workflow: 'android-deploy.yml',
+      job: 'report-failure',
     },
     {
       body: [
@@ -483,21 +480,17 @@ describe('workflow hygiene', () => {
       label: 'area:native',
       title: 'iOS native deploy gate failed',
       workflow: 'ios-deploy.yml',
+      job: 'report-failure',
     },
   ];
 
   describe.each(filingSteps)('$workflow files its gate failure', (step) => {
-    const script = stepScript(
-      workflows.find(({ name }) => name === step.workflow).lines,
-      'File the failure'
-    );
-
     it('has a File the failure step carrying a shell script', () => {
-      expect(script).toBeTruthy();
+      expect(filingScript(step)).toContain('gh issue');
     });
 
     it('opens one issue when none is already tracking the gate', () => {
-      const { body, ghCalls, result } = runFilingStep(script, step.env, '');
+      const { body, ghCalls, result } = runFilingStep(filingScript(step), step.env, '');
 
       expect(result.stderr).toBe('');
       expect(result.status).toBe(0);
@@ -509,7 +502,7 @@ describe('workflow hygiene', () => {
     });
 
     it('comments on the open issue instead of opening a second one', () => {
-      const { body, ghCalls, result } = runFilingStep(script, step.env, '41');
+      const { body, ghCalls, result } = runFilingStep(filingScript(step), step.env, '41');
 
       expect(result.stderr).toBe('');
       expect(result.status).toBe(0);
@@ -526,12 +519,8 @@ describe('workflow hygiene', () => {
     { smoke: 'success', report: 'failure', excerpt: 'No maestro-ios-report artifact was produced' },
   ])('reports iOS smoke=$smoke and report=$report without inferring an app failure', (scenario) => {
     const step = filingSteps.find(({ workflow }) => workflow === 'ios-deploy.yml');
-    const script = stepScript(
-      workflows.find(({ name }) => name === step.workflow).lines,
-      'File the failure'
-    );
     const { body, result } = runFilingStep(
-      script,
+      filingScript(step),
       { ...step.env, SMOKE_OUTCOME: scenario.smoke, REPORT_OUTCOME: scenario.report },
       ''
     );
@@ -547,12 +536,8 @@ describe('workflow hygiene', () => {
   // what happened, or the reader takes an unverified failure for a confirmed
   // regression.
   it('says so when it files because the comparison could not be run', () => {
-    const script = stepScript(
-      workflows.find(({ name }) => name === 'test.yml').lines,
-      'File the failure'
-    );
     const { body, result } = runFilingStep(
-      script,
+      filingScript(filingSteps.find(({ workflow }) => workflow === 'test.yml')),
       {
         COMPARE_OUTCOME: 'failure',
         GITHUB_SHA: 'e4cb7451e0aa0dcd5e0f2c9e0b3b5c8ea1f2d3c4',

@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PHONE_MAX_WIDTH_PX } from './breakpoints';
+import {
+  BREAKPOINT_EPSILON_PX,
+  NARROW_PHONE_MIN_WIDTH_PX,
+  PHONE_MAX_WIDTH_PX,
+} from './breakpoints';
 
 // Page chrome and underline pickers take the phone-width step together.
 // CSS cannot import the breakpoint, so this guards their repeated values.
@@ -37,5 +41,15 @@ describe('the standalone-page phone step', () => {
       ),
       `${label} declares a second step inside the phone band`
     ).toEqual([]);
+  });
+});
+
+describe('the narrow-phone masthead step', () => {
+  it('PageShell drops the crayon strip just below the shared width', () => {
+    const steps = [
+      ...PHONE_STEP_SITES['page/PageShell.svelte'].matchAll(/@media \(max-width: ([\d.]+)px\)/g),
+    ].map((match) => Number(match[1]));
+
+    expect(steps).toContain(NARROW_PHONE_MIN_WIDTH_PX - BREAKPOINT_EPSILON_PX);
   });
 });

@@ -11,7 +11,14 @@ import {
 import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
 import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { NARROW_PHONE_MIN_WIDTH_PX } from '../src/lib/breakpoints';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
+import {
+  PAGE_SHARE_CARDS,
+  SHARE_CARD_SIZE,
+  shareImageFor,
+  isPageShareCardPath,
+} from '../src/lib/components/page/socialCard';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
 test('home page renders the drawing canvas', async ({ page }) => {
@@ -97,6 +104,94 @@ test('client-side nav off the drawing route drops the app-surface locks (effect 
   expect(after.touchAction).toBe('auto');
   expect(after.userSelect).not.toBe('none');
 });
+
+// The standalone pages' back link names the way to the canvas by how the
+// visitor arrived (lib/components/page/backLabel.ts): a cold visit is invited
+// to start drawing, a parent who came from the canvas goes back to it.
+const backLink = (page: Page) => page.locator('.topbar').getByRole('link').first();
+
+test('a cold visit keeps the start label across client navigation between pages', async ({
+  page,
+}) => {
+  // PageShell renders its lede toggle only once hydrated, and only on a short
+  // viewport: the sentinel that the label below is the resolved one, not SSR's.
+  await page.setViewportSize({ width: 812, height: 375 });
+  await page.goto('/privacy');
+  await expect(page.getByRole('button', { name: 'About this page' })).toBeVisible();
+  await expect(backLink(page)).toHaveText('Start drawing');
+
+  await spaNavigate(page, '/changelog');
+  await expect(page.getByRole('heading', { level: 1, name: 'Changelog' })).toBeVisible();
+  await expectNoReload(page);
+  await expect(backLink(page)).toHaveText('Start drawing');
+  await expect(backLink(page)).toHaveAttribute('href', '/');
+});
+
+test('a visit from the canvas offers the way back, through a reload', async ({ page }) => {
+  await gotoApp(page);
+
+  await spaNavigate(page, '/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoReload(page);
+  await expect(backLink(page)).toHaveText('Back to drawing');
+
+  await page.reload();
+  await expect(backLink(page)).toHaveText('Back to drawing');
+});
+
+// The masthead holds the back link and the brand mark on one row, inside the
+// sheet's content box, with either label — below NARROW_PHONE_MIN_WIDTH_PX by
+// dropping the crayon strip. The longer label is the one that overflowed.
+for (const width of [320, 360, 375, NARROW_PHONE_MIN_WIDTH_PX]) {
+  for (const cameFromDrawing of [false, true]) {
+    const label = cameFromDrawing ? 'Back to drawing' : 'Start drawing';
+    test(`the masthead fits one row at ${width}px reading "${label}"`, async ({ page }) => {
+      if (cameFromDrawing) {
+        await page.addInitScript(() => sessionStorage.setItem('splotch-drawing-visited', '1'));
+      }
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto('/privacy');
+      await expect(backLink(page)).toHaveText(label);
+      await page.evaluate(() => document.fonts.ready);
+
+      const layout = await page.evaluate(() => {
+        const rect = (selector: string) =>
+          document.querySelector(selector)!.getBoundingClientRect();
+        return {
+          scrollWidth: document.documentElement.scrollWidth,
+          topbarRight: rect('.topbar').right,
+          backRight: rect('.topbar .back').right,
+          brandLeft: rect('.topbar .brand').left,
+          brandRight: rect('.topbar .brand').right,
+          strip: getComputedStyle(document.querySelector('.topbar .crayons')!).display,
+        };
+      });
+      expect(layout.scrollWidth).toBe(width);
+      expect(layout.brandRight).toBeLessThanOrEqual(layout.topbarRight);
+      expect(layout.backRight).toBeLessThan(layout.brandLeft);
+      expect(layout.strip === 'none').toBe(width < NARROW_PHONE_MIN_WIDTH_PX);
+    });
+  }
+}
+
+for (const path of Object.keys(PAGE_SHARE_CARDS)) {
+  test(`${path} previews its own committed page image`, async ({ page, request }) => {
+    if (!isPageShareCardPath(path)) throw new Error('Invalid card fixture');
+    await page.goto(path);
+    const image = shareImageFor(path);
+    expect(await metaContent(page, 'og:image')).toBe(image.url);
+    expect(await metaContent(page, 'og:image:width')).toBe(String(SHARE_CARD_SIZE.width));
+    expect(await metaContent(page, 'og:image:height')).toBe(String(SHARE_CARD_SIZE.height));
+    expect(await metaContent(page, 'og:image:alt')).toBe(image.alt);
+    expect(await metaContent(page, 'twitter:image', 'name')).toBe(image.url);
+    expect(await metaContent(page, 'twitter:image:alt', 'name')).toBe(image.alt);
+    const res = await request.get(new URL(image.url).pathname);
+    expect(res.ok()).toBe(true);
+    const png = await res.body();
+    expect(png.readUInt32BE(16)).toBe(SHARE_CARD_SIZE.width);
+    expect(png.readUInt32BE(20)).toBe(SHARE_CARD_SIZE.height);
+  });
+}
 
 // <meta name="theme-color"> is the browser address bar and the PWA status bar.
 // The drawing route is the one page that overrides it — NotchBand tints it with

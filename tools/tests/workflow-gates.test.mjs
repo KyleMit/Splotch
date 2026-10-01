@@ -12,7 +12,14 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { jobBlock, jobBlocks, testWorkflow } from '../ci-mirror/tests/workflow-job-steps.mjs';
+import {
+  jobBlock,
+  jobBlocks,
+  runScriptIn,
+  stepBlock,
+  stepBlocks,
+  testWorkflow,
+} from '../ci-mirror/tests/workflow-job-steps.mjs';
 
 // Line-oriented for the reason workflow-hygiene.test.mjs gives: no YAML parser
 // ships in this repo's dependency tree, and job keys, steps, and job-level
@@ -57,8 +64,6 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-const steps = (job) => job.split(/^(?= {6}- )/m).slice(1);
-
 const isBlankOrComment = (line) => /^\s*(?:#.*)?$/.test(line);
 
 // Every `permissions` key that is not a block of `scope: level` lines, or the
@@ -86,13 +91,6 @@ function unreadablePermissions(workflow) {
     const readable = line === `${indent}permissions:${value}` && (grantsNothing || grantsByScope);
     return readable ? [] : [`line ${index + 1}: ${line.trim()}`];
   });
-}
-
-function runScript(job, stepName) {
-  const step = steps(job).find((candidate) => candidate.startsWith(`      - name: ${stepName}\n`));
-  const script = step?.match(/^ {8}run: \|\n((?: {10}.*\n|\n)+)/m)?.[1];
-  if (!script) throw new Error(`No "${stepName}" step carrying a shell script`);
-  return script.replace(/^ {10}/gm, '');
 }
 
 function writeExecutable(path, body) {
@@ -183,8 +181,20 @@ describe('workflow gates', () => {
     });
 
     it('finds the jobs holding a job-level issues: write', () => {
-      expect(holders.map(({ job }) => job)).toContain('test.yml webkit-commit-gate-fast-retry');
+      expect(holders.map(({ job }) => job)).toContain('test.yml webkit-commit-gate-fast-report');
     });
+
+    const executableSource = /uses: actions\/checkout|uses: \.\/\.github\/actions\/setup-/;
+    it.each(holders)('$job isolates issue writes from checked-out executable code', ({ text }) => {
+      expect(text).not.toMatch(executableSource);
+    });
+
+    it.each(['uses: actions/checkout@pinned', 'uses: ./.github/actions/setup-pnpm'])(
+      'detects executable source in an issue-writing job: %s',
+      (fixture) => {
+        expect(fixture).toMatch(executableSource);
+      }
+    );
 
     it.each(holders)('$job files an issue with the scope it holds', ({ text }) => {
       const filingCalls = text.match(/^ +gh issue (?:create|comment) .*$/gm) ?? [];
@@ -193,19 +203,17 @@ describe('workflow gates', () => {
     });
   });
 
-  // "One open issue" holds only while one filing job runs at a time: the
-  // filing step is a check-then-create. The group has to be constant, since a
-  // per-commit group serializes nothing, and `queue: max` keeps a third
-  // commit from cancelling the run still waiting.
+  // The check-then-create requires a constant lock. queue:max permits up to
+  // 100 pending jobs; queue:single replaces an existing pending reporter.
   describe('WebKit fast gate filing', () => {
-    it('serializes the job that files without dropping a queued run', () => {
-      const retryJob = jobBlock(testWorkflow, 'webkit-commit-gate-fast-retry');
-      const concurrency = retryJob.match(/^ {4}concurrency:\n((?: {6}.*\n)+)/m)?.[1];
+    it('serializes filing and retains the bounded maximum pending queue', () => {
+      const reportJob = jobBlock(testWorkflow, 'webkit-commit-gate-fast-report');
+      const concurrency = reportJob.match(/^ {4}concurrency:\n((?: {6}.*\n)+)/m)?.[1];
 
-      expect(retryJob).toContain('      - name: File the failure\n');
+      expect(reportJob).toContain('      - name: File the failure\n');
       expect(concurrency).toBe(
         [
-          '      group: webkit-commit-gate-fast',
+          '      group: webkit-commit-gate-fast-report',
           '      cancel-in-progress: false',
           '      queue: max',
           '',
@@ -215,9 +223,8 @@ describe('workflow gates', () => {
   });
 
   describe('WebKit full gate history', () => {
-    const restoreScript = runScript(
-      jobBlock(testWorkflow, 'webkit-commit-gate-full'),
-      'Restore fast-set history'
+    const restoreScript = runScriptIn(
+      stepBlock(jobBlock(testWorkflow, 'webkit-commit-gate-full'), 'Restore fast-set history')
     );
 
     it.each([
@@ -283,7 +290,8 @@ describe('workflow gates', () => {
     it('uploads the history artifact from release tags only', () => {
       const uploads = workflows
         .flatMap(({ text }) => jobBlocks(text))
-        .flatMap((job) => steps(job.text))
+        .flatMap((job) => stepBlocks(job.text))
+        .map(({ text }) => text)
         .filter((step) => step.includes(`\n          name: ${HISTORY_ARTIFACT}\n`));
 
       expect(uploads).toHaveLength(1);

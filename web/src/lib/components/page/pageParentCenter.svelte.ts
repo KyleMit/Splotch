@@ -1,16 +1,15 @@
 import type { Component } from 'svelte';
-import { waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
+import { scheduleIdle } from '$lib/idle';
 import { parentalGateLink } from '$lib/actions/parentalGateLink';
+import { waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
 import { createSingleFlight } from '$lib/singleFlight';
 import type { Origin } from '$lib/state/modal.svelte';
 import { openParentCenterSettings, SETTINGS_MODAL_ID, settingsModal } from '$lib/state/ui.svelte';
 
-// The privacy page's grown-up-gate wiring, as a factory so the page owns the
-// instance (and tests could own fresh ones): the gate component mounts lazily
-// — on idle, or on the first tap of a gated link — and its Manage destination
-// opens Parent Center by loading the full Settings modal and persisted state
-// on demand. Must be called during component init: it registers $effects.
-export function createPrivacyParentCenter() {
+// One host per standalone shell avoids duplicate dialogs when its body and footer
+// request the shared gate. Parent Center hydrates its persisted state on demand.
+// Must be called during component init: it registers $effects.
+export function createPageParentCenter() {
   let managingPolicies = $state(false);
   let gateComponent = $state<Component | null>(null);
   let modalComponent = $state<Component | null>(null);
@@ -33,7 +32,11 @@ export function createPrivacyParentCenter() {
   function mountParentalGate() {
     void loadParentalGate()
       .then((component) => (gateComponent = component))
-      .catch((error) => console.error('Privacy parental gate failed to load:', error));
+      .catch((error) => console.error('Page parental gate failed to load:', error));
+  }
+
+  function warmParentalGate() {
+    return scheduleIdle(mountParentalGate);
   }
 
   function gatedLink(node: HTMLAnchorElement) {
@@ -55,7 +58,7 @@ export function createPrivacyParentCenter() {
       .catch((error) => {
         settingsModal.hide();
         managingPolicies = false;
-        console.error('Privacy Parent Center failed to load:', error);
+        console.error('Page Parent Center failed to load:', error);
       });
   }
 
@@ -82,6 +85,7 @@ export function createPrivacyParentCenter() {
       return managingPolicies;
     },
     mountParentalGate,
+    warmParentalGate,
     gatedLink,
     openParentCenter,
   };

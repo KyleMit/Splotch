@@ -5,15 +5,24 @@ import {
   SETTINGS_MODAL_ID,
   settingsModal,
 } from '$lib/state/ui.svelte';
-import { createPrivacyParentCenter } from './parentCenter.svelte';
+import { createPageParentCenter } from './pageParentCenter.svelte';
+
+const idle = vi.hoisted(() => ({ queued: [] as Array<() => void>, cancel: vi.fn() }));
+vi.mock('$lib/idle', () => ({
+  scheduleIdle: (callback: () => void) => {
+    idle.queued.push(callback);
+    return idle.cancel;
+  },
+}));
+vi.mock('$lib/components/ParentalGate.svelte', () => ({ default: vi.fn() }));
 
 vi.mock('$lib/components/SettingsModal.svelte', () => ({ default: vi.fn() }));
 vi.mock('$lib/boot/persistedState', () => ({ hydratePersistedState: vi.fn() }));
 
 function createParentCenterUnderEffects() {
-  let parentCenter!: ReturnType<typeof createPrivacyParentCenter>;
+  let parentCenter!: ReturnType<typeof createPageParentCenter>;
   const destroy = $effect.root(() => {
-    parentCenter = createPrivacyParentCenter();
+    parentCenter = createPageParentCenter();
   });
   return { parentCenter, destroy };
 }
@@ -30,12 +39,30 @@ function openSettingsDialog() {
 }
 
 afterEach(() => {
+  idle.queued.length = 0;
+  idle.cancel.mockClear();
   settingsModal.hide();
   clearRequestedSettingsSection();
   document.getElementById(SETTINGS_MODAL_ID)?.remove();
 });
 
-describe('privacy Parent Center', () => {
+describe('standalone page Parent Center', () => {
+  it('warms the gate through the existing idle owner and returns its cancellation', async () => {
+    const { parentCenter, destroy } = createParentCenterUnderEffects();
+    try {
+      expect(parentCenter.gateComponent).toBeNull();
+      const cancel = parentCenter.warmParentalGate();
+      expect(idle.queued).toHaveLength(1);
+      expect(parentCenter.gateComponent).toBeNull();
+      idle.queued[0]();
+      await vi.waitFor(() => expect(parentCenter.gateComponent).not.toBeNull());
+      cancel();
+      expect(idle.cancel).toHaveBeenCalledOnce();
+    } finally {
+      destroy();
+    }
+  });
+
   it('keeps its modal mounted when Settings reopens during retirement', async () => {
     const dialog = openSettingsDialog();
     const { parentCenter, destroy } = createParentCenterUnderEffects();

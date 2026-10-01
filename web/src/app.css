@@ -88,20 +88,21 @@ body {
   scrollbar-color: var(--icon-muted) transparent;
 }
 
-/* The OS safe-area insets, seeded once here so every consumer in the app reads
-   a custom property instead of calling env() directly. env() itself is only
+/* Capacitor supplies CSS insets only for space not already padded natively;
+   its explicit 0px must win over env() to avoid reserving the same space twice.
+   Web and iOS fall back to env(). Every consumer reads this seam. env() is only
    overridable through CDP (Emulation.setSafeAreaInsetsOverride), which reaches
    Playwright and nothing else; one level of indirection lets the /dev/notch
    harness re-declare these four on a subtree and render the real HUD as any
    device sees it. The 0px fallbacks keep a declaration valid on an engine with
    no env() support, where an unresolved var() would otherwise fall all the way
    back to the property's initial value. safeArea.ts declares the same four
-   names for its JS-side probe; safeArea.test.ts fails if the two sets drift. */
+   names for its JS-side probe; safeAreaProperties.test.ts guards the seam. */
 :root {
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
 }
 
 /* The paper grain every paper surface paints: the drawing route's paper sheet
@@ -500,11 +501,11 @@ body {
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
    across all icon-style modal close buttons and, in its static-position
-   variant below, the banners' dismiss disc. An outlined white disc sized to
+   variant below, the banners' dismiss blob. An outlined surface sized to
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
-   the padding below keeps the glyph itself visibly smaller than the disc, so
+   the padding below keeps the glyph itself visibly smaller than the blob, so
    the extra box reads as hit area and the ring that makes it pop. Outlined,
-   not raised: beside the flat back disc a shadow made the header's pair read
+   not raised: beside the flat back blob a shadow made the header's pair read
    heavier than the section's own controls. */
 :is(.modal-close-btn, .dialog-header-control, .banner-dismiss) {
   position: absolute;
@@ -514,7 +515,7 @@ body {
   height: var(--modal-close-size);
   background: var(--surface);
   border: 2px solid var(--border-warm);
-  border-radius: 50%;
+  border-radius: var(--radius-blob-2);
   cursor: pointer;
   padding: 10px;
   display: flex;
@@ -1244,6 +1245,18 @@ html[data-ai-free-count]
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+.step-number--blob {
+  border-radius: var(--radius-blob-1);
+}
+
+:nth-child(3n + 2) > .step-number--blob {
+  border-radius: var(--radius-blob-2);
+}
+
+:nth-child(3n) > .step-number--blob {
+  border-radius: var(--radius-blob-3);
 }
 
 @keyframes flyout-shell {

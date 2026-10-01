@@ -1,10 +1,12 @@
 // @vitest-environment node
 import { render } from 'svelte/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
 
 import PrivacyPage from './+page.svelte';
 import { describePolicyRevisions } from './policyRevisionsTestHarness';
+
+vi.mock('$app/state', () => ({ page: { url: new URL('https://splotch.art/privacy') } }));
 
 // Text is compared as rendered, never whitespace-normalized: a formatter
 // wrapping template copy leaves a newline run inside the text node, which a

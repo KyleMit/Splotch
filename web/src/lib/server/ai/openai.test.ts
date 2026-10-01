@@ -68,7 +68,7 @@ describe('openAiProvider.generateImage', () => {
     });
   });
 
-  describe('with a decline beside the delivered image', () => {
+  describe('with a decline beside a completed image', () => {
     let warn: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
@@ -79,7 +79,7 @@ describe('openAiProvider.generateImage', () => {
       warn.mockRestore();
     });
 
-    it('logs each dropped decline by name only and still returns the image', async () => {
+    it('refuses the drawing and logs, by name only, what discarded the image', async () => {
       create.mockResolvedValue({
         ...imageResponse,
         status: 'incomplete',
@@ -91,15 +91,14 @@ describe('openAiProvider.generateImage', () => {
         incomplete_details: { reason: 'content_filter' },
       });
       await expect(openAiProvider.generateImage(request)).resolves.toEqual({
-        kind: 'image',
-        data: 'BBBB',
-        mimeType: 'image/webp',
+        kind: 'refusal',
+        reason: 'The drawing shows something blocked.',
       });
       // An exact match, so neither the refusal prose nor the policy message can
       // reach the log: either one can describe the child's drawing.
       expect(warn.mock.calls).toEqual([
         [
-          '[openai-safety] delivered an image despite error.code=bio_policy, ' +
+          '[openai-safety] discarded a completed image for error.code=bio_policy, ' +
             'incomplete_details.reason=content_filter, refusal part',
         ],
       ]);
@@ -117,7 +116,14 @@ describe('openAiProvider.generateImage', () => {
           ],
         },
       },
-    ])('logs nothing for $label, which drops no decline', async ({ response }) => {
+      {
+        label: 'a prose refusal with no tool call',
+        response: {
+          status: 'completed',
+          output: [{ type: 'message', content: [{ type: 'output_text', text: 'Not that one.' }] }],
+        },
+      },
+    ])('logs nothing for $label, which discards no image', async ({ response }) => {
       create.mockResolvedValue(response);
       await openAiProvider.generateImage(request);
       expect(warn).not.toHaveBeenCalled();

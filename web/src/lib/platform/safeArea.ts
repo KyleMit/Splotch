@@ -1,4 +1,4 @@
-// Read the OS safe-area insets (the CSS env(safe-area-inset-*) values) as
+// Read the shared safe-area insets (Capacitor CSS values or OS env() values) as
 // numbers. A hidden probe element positioned by the inset custom properties is
 // the only reliable way to resolve a safe-area inset to a pixel number across
 // engines — we need the number (not just the CSS value) to reason about where
@@ -18,11 +18,11 @@ export type SafeAreaEdge = keyof SafeAreaInsets;
 export const SAFE_AREA_EDGES: readonly SafeAreaEdge[] = ['top', 'right', 'bottom', 'left'];
 
 // Every inset consumer — CSS and JS alike — reads these custom properties rather
-// than calling env() directly. app.css seeds them from env() on :root, so the
-// production values are unchanged; the indirection is what lets a harness
-// override the insets on a subtree (routes/dev/notch) without CDP, which is the
-// only inset-emulation seam Chromium offers and one Playwright alone can reach.
-// app.css is the other side of this agreement — safeArea.test.ts fails if the
+// than calling env() directly. app.css seeds them from Capacitor or env() on
+// :root; the indirection also lets a harness override the insets on a subtree
+// (routes/dev/notch) without CDP, which is the only inset-emulation seam Chromium
+// offers and one Playwright alone can reach.
+// app.css is the other side of this agreement — safeAreaProperties.test.ts fails if the
 // stylesheet stops declaring one of these on :root.
 export const SAFE_AREA_PROPERTIES = {
   top: '--safe-area-top',

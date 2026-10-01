@@ -15,6 +15,7 @@
     "tools/check-pwa-precache.mjs!",
     "tools/mobile/check-static-bundle.mjs!",
     "tools/check-bundle-budgets.mjs!",
+    "tools/check-eager-error-bundle.mjs!",
     "tools/stage-netlify-functions.mjs!"
   ],
   "paths": {

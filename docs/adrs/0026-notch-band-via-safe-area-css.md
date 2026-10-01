@@ -13,8 +13,8 @@ There is no single API that colors that strip everywhere:
 * **`<meta name="theme-color">`** tints the Android web status bar (Chrome tab; see Consequences for
   why not the installed PWA) but is ignored by an iOS standalone PWA (which runs
   `black-translucent`) and by the native WebViews.
-* **`@capacitor/status-bar` `setBackgroundColor`** is Android-only and a no-op on iOS, where the
-  status bar is a translucent overlay whose background can't be set to an arbitrary color.
+* **Native status-bar background coloring** is Android-only and a no-op on iOS, where the status bar
+  is a translucent overlay whose background can't be set to an arbitrary color.
 
 The unifying observation: wherever web content draws *under* the status bar, a plain CSS element
 sized to `env(safe-area-inset-top)` paints the strip. That holds on iOS native, the iOS standalone
@@ -34,11 +34,12 @@ only where it's the one that reaches the strip:
   `background-color` transition gives the animate-in for free.
 * **`<meta name="theme-color">`** — kept in sync because it is the *only* thing that tints the
   Android web status bar; a harmless no-op elsewhere.
-* **`@capacitor/status-bar` `setStyle`** (native only, lazy-loaded via an `__IS_CAPACITOR__`-gated
-  `import()` so the plugin stays out of the web bundle) — flips the system clock/battery icons light
-  or dark for contrast against the band, by luminance (`isLightColor`, shared with `getRingColor` in
-  `colorRing.ts`). We use `setStyle` **only** — never `setBackgroundColor` — so the CSS band remains
-  the single source of the color.
+* **`@capacitor/core` `SystemBars.setStyle`** (native only, lazy-loaded via an
+  `__IS_CAPACITOR__`-gated `import()` so the plugin stays out of the web bundle) — flips the system
+  clock/battery icons light or dark for contrast against the band, by luminance (`isLightColor`,
+  shared with `getRingColor` in `colorRing.ts`). Every call targets `SystemBarType.StatusBar`,
+  preserving the Activity's independent navigation-bar visibility and icon policy. The CSS band
+  remains the single source of the color.
 
 Enabling this required `viewport-fit=cover` (`app.html`), which is global: it makes content on every
 route reach under the cutout. So the flow container and the edge-anchored buttons (`app.css`
@@ -54,20 +55,19 @@ knob.
 
 **Orientation.** The hole-punch lives at the device's *physical* top, which rotates to a side in
 landscape, so the band follows it. `NotchBand.svelte` measures `env(safe-area-inset-top/left/right)`
-and reads the orientation; `cutoutEdge` picks the top inset in portrait and the deeper of the two
-side insets in landscape, and the band renders along that edge (`.notch-band--top /left/right`). The
-long top edge in landscape is never banded.
+and reads the orientation; `bandEdges` picks the top inset in portrait and uses the rotation angle
+when landscape side insets differ (both sides when equal), and the band renders along those edges
+(`.notch-band--top /left/right`). The long top edge in landscape is never banded.
 
 For the side cutout to produce a side inset (rather than the system letterboxing the WebView away
-from it), the Android window opts into the cutout on its short edges —
-`LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`, set in `MainActivity.java`. That same opt-in also lets
-the canvas reclaim the strip as drawing surface.
+from it), `WindowCompat.enableEdgeToEdge` owns the Android cutout policy: short edges on Android
+9–10, all edges on Android 11 and later. No app-owned cutout parameter overrides that helper.
 
 **Landscape status bar (Android native).** In landscape the long top edge is precious canvas, so we
 hide the system status bar there and show it again in portrait (`statusBarHiddenFor` →
-`@capacitor/status-bar` `hide`/`show`). This is Android-native only; iOS and the web targets keep
-their default status bar. When the app is pinned the OS already hides the status bar in either
-orientation, and we don't fight that.
+`SystemBars.hide`/`show` with `bar: SystemBarType.StatusBar`). This is Android-native only; iOS and
+the web targets keep their default status bar. When the app is pinned the OS already hides the
+status bar in either orientation, and we don't fight that.
 
 The platform-independent decisions (band color, cutout test, cutout edge, status-bar style and
 visibility, the full fan-out) are pure functions in `notchBand.ts`, unit-tested across the four
@@ -83,9 +83,9 @@ targets, both orientations, the color/eraser states, and the no-cutout case, wit
 * **+** Landscape gains the long top edge as canvas (status bar hidden), and the existing
   `.app-container` side padding already keeps UI clear of the now-active side cutout while the band
   paints it — no extra layout work.
-* **−** The landscape side band depends on Android `SHORT_EDGES` cutout mode and on the device
-  reporting a side inset; a phone that letterboxes the cutout regardless would show no side band
-  (still correct, just unpainted).
+* **−** The landscape side band depends on AndroidX's cutout policy and on the device reporting a
+  side inset; a phone that letterboxes the cutout regardless would show no side band (still correct,
+  just unpainted).
 * **−** `viewport-fit=cover` is global and shifts every route's relationship to the safe area; the
   inset padding restoring current spacing is a standing tax on any new edge-anchored UI (it must add
   the matching `env(safe-area-inset-*)`).
@@ -101,3 +101,39 @@ targets, both orientations, the color/eraser states, and the no-cutout case, wit
   bar with `viewport-fit=cover`, which needs on-device verification (revisit `capacitor.config.json`
   `ios.contentInset` if the band doesn't extend under the notch). A non-installed iOS Safari tab
   reports ~0 top inset in portrait, so it shows no band — acceptable (kids use the PWA/native app).
+
+## Amendment — 2026-09: explicit Android edge-to-edge and Capacitor insets
+
+`MainActivity` calls `WindowCompat.enableEdgeToEdge(getWindow())` after bridge creation, so the
+window also draws edge-to-edge on supported Android releases before system enforcement. Navigation
+stays immersive, the SystemBars caller controls portrait/landscape visibility, and the CSS Notch
+Band still owns the cutout color.
+
+AndroidX disables navigation-bar contrast enforcement, so the Activity explicitly restores the
+system scrim for transient three-button navigation on Android 10 and later. Icons remain legible
+over arbitrary drawings. AndroidX owns the cutout policy; the Activity does not override it.
+
+The shared `--safe-area-*` properties prefer Capacitor's `--safe-area-inset-*` values with `env()`
+fallbacks. Capacitor SystemBars owns native padding and injects only the remaining CSS insets:
+explicit zero wins when native padding already reserves the space. CSS handling and the initial
+`cover` hint are explicit in the native configuration. The fallback behavior and WebView version
+boundaries are recorded in [the safe-area guide](../SAFE-AREA.md).
+
+## Amendment — 2026-09: built-in SystemBars and dependency compatibility
+
+The native-only dynamic import uses `@capacitor/core`'s built-in SystemBars. The legacy
+`@capacitor/status-bar` package and its Android/iOS registrations are removed. Styling, landscape
+hide, portrait show, and foreground re-entry all explicitly target `SystemBarType.StatusBar`, so
+these calls cannot reveal the independently immersive navigation bar or change its icon style.
+
+`MainActivity` no longer calls `Window.setNavigationBarColor` or sets `SHORT_EDGES` itself. The
+installed AndroidX Core 1.17.0 helper still calls `Window.setStatusBarColor` and
+`Window.setNavigationBarColor` for transparent bars, and selects `SHORT_EDGES` on API 28–29 or
+`ALWAYS` on API 30+. Its SDK guards preserve the app's API 24 minimum; the color APIs exist from
+API 21. SystemBars uses AndroidX's inset controller for visibility and icon contrast. These are
+supported compatibility dependencies, not app-owned replacements disguised from a scanner.
+
+The expanded release-8 Play warning's visible obfuscated `b2.a.a/b/c` origins map to the removed
+legacy StatusBar implementation. AndroidX compatibility references remain in the native build; this
+migration does not establish a warning-free Play scan. Only analysis of a newly uploaded bundle can
+establish the final warning origins.

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Disclosure from '../design/Disclosure.svelte';
+  import ExternalMark from '../design/ExternalMark.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
 </script>
 
@@ -12,7 +13,7 @@
           href="https://platform.openai.com/api-keys"
           target="_blank"
           rel="noopener noreferrer"
-          use:parentalGateLink>the OpenAI API keys page</a
+          use:parentalGateLink>the OpenAI API keys page<ExternalMark variant="inline" /></a
         >.
       </li>
       <li>Sign in, or create an OpenAI account.</li>

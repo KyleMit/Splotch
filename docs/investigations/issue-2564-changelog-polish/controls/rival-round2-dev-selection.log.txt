@@ -1,0 +1,145 @@
+[WebServer] (node:17310) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:17342) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 6 tests using 1 worker
+
+(node:17459) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/changelog.spec.ts:106:3 › phone › the contents collapses behind one row so the newest release clears the fold (1.5s)
+  ✓  2 [chromium] › tests/changelog.spec.ts:130:3 › phone › the contents row counts the releases at the hero and names the one being read (237ms)
+  ✓  3 [chromium] › tests/changelog.spec.ts:504:5 › America/Los_Angeles › relative release dates follow the reader calendar at a UTC boundary (168ms)
+  ✓  4 [chromium] › tests/changelog.spec.ts:504:5 › Asia/Tokyo › relative release dates follow the reader calendar at a UTC boundary (162ms)
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:162:56) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+[WebServer] 11:35:26 PM [vite] (client) [console.warn] [svelte] binding_property_non_reactive
+[WebServer] `bind:this={optionEls[index]}` (src/lib/components/design/SegmentedPicker.svelte:188:8) is binding to a non-reactive property
+[WebServer] https://svelte.dev/e/binding_property_non_reactive
+  ✘  5 [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read (5.3s)
+(node:17644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  6 [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read (5.2s)
+
+
+  1) [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.header-toc summary')
+    Expected substring: "Dottie"
+    Received string:    "Contents  Mascot & wordmark"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.header-toc summary') with timeout 5000ms
+      - waiting for locator('.header-toc summary')
+        3 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+          - unexpected value "Contents 2626 sections"
+        11 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+           - unexpected value "Contents  Mascot & wordmark"
+
+
+      261 |     const lastLabel = await page.locator('.header-toc a').last().textContent();
+      262 |     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    > 263 |     await expect(row).toContainText(lastLabel!.trim());
+          |                       ^
+      264 |
+      265 |     // Symmetric rather than latched: back at the hero it advertises the count.
+      266 |     await page.evaluate(() => window.scrollTo(0, 0));
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/design.spec.ts:263:23
+
+    Error Context: ../test-results/design-phone-contents-the--c1236-nd-names-the-one-being-read-chromium/error-context.md
+
+  2) [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.contents-disclosure summary')
+    Expected substring: "Changes and contact"
+    Received string:    "Contents  Children's privacy"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.contents-disclosure summary') with timeout 5000ms
+      - waiting for locator('.contents-disclosure summary')
+        2 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+          - unexpected value "Contents 88 sections"
+        12 × locator resolved to <summary class="svelte-1i88dxy">…</summary>
+           - unexpected value "Contents  Children's privacy"
+
+
+      218 |     const last = sections[sections.length - 1];
+      219 |     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    > 220 |     await expect(row).toContainText(last.heading);
+          |                       ^
+      221 |
+      222 |     await page.evaluate(() => window.scrollTo(0, 0));
+      223 |     await expect(row).toHaveAccessibleName(`Contents ${sections.length} sections ›`);
+        at /Users/kylemit/.codex/worktrees/ed28/Splotch/web/tests/privacy.spec.ts:220:23
+
+    Error Context: ../test-results/privacy-phone-the-contents-f72b5-nd-names-the-one-being-read-chromium/error-context.md
+
+  2 failed
+    [chromium] › tests/design.spec.ts:249:3 › phone contents › the row counts the sections at the hero and names the one being read 
+    [chromium] › tests/privacy.spec.ts:208:3 › phone › the contents row counts the sections at the top and names the one being read 
+  4 passed (18.3s)

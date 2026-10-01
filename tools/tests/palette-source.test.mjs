@@ -21,9 +21,9 @@ const hexRegex = new RegExp(`#(?:${paletteHexes.join('|')})(?:[0-9a-fA-F]{2})?\\
 const ALLOWED = new Map(
   Object.entries({
     // The --brand custom-property definition, and the light theme's
-    // --black-swatch-ink, which tokens.ts imports from the palette; CSS can't
-    // import TS.
-    'web/src/tokens.css': 2,
+    // --black-swatch-ink, --link-crayon and crayon hue properties imported by tokens.ts;
+    // CSS cannot import TS.
+    'web/src/tokens.css': 17,
     // BRAND_HEX seeds the design-token derivations beside the palette.
     'web/src/lib/design/tokens.ts': 1,
     // Static SVG icon depicting the palette swatches themselves; SVG fills

@@ -15,8 +15,12 @@ import type {
 // on this repo's red-team corpus it returned a finished image for a drawn gun.
 
 export type SafetyClassification =
-  | { kind: 'image'; data: string; mimeType: string; droppedDeclines: string[] }
-  | { kind: 'safety'; reason: string }
+  | { kind: 'image'; data: string; mimeType: string }
+  /**
+   * `imageDiscardedBy` names the machine-readable declines that outranked a
+   * completed image in the same response; it is empty when there was no image.
+   */
+  | { kind: 'safety'; reason: string; imageDiscardedBy: string[] }
   | { kind: 'empty'; reason: string };
 
 // Every format the image tool can be asked to emit. The adapter never asks for
@@ -80,31 +84,21 @@ const messageParts = (response: OpenAiResponse) =>
     .flatMap((item) => item.content ?? []);
 
 /**
- * The SDK's typed decline. It is machine-readable in exactly the way the codes
- * above are, so when the image tool produced no bytes it outranks any reasoning
- * about what the tool did: a failed tool call beside a `refusal` part is a
- * decline, not a retry. A completed image still wins over it (ADR-0023).
+ * The SDK's typed decline, from every non-blank `refusal` part. It is
+ * machine-readable in exactly the way the codes above are, so it outranks any
+ * reasoning about what the image tool did, a finished picture included. It is
+ * read before any image is, so a malformed part is skipped rather than thrown on:
+ * a stray `null` must not keep a picture from the child when nothing declined it.
  */
-function typedRefusal(response: OpenAiResponse): string {
-  return messageParts(response)
-    .map((part) => ('refusal' in part ? (part.refusal ?? '') : ''))
-    .join(' ')
-    .trim();
-}
-
-/**
- * Whether any message part is a non-blank typed refusal. Unlike `typedRefusal`
- * it tolerates a malformed part, because it runs beside an image that must still
- * be delivered.
- */
-function hasTypedRefusal(response: OpenAiResponse): boolean {
-  return messageParts(response).some(
-    (part: unknown) =>
-      typeof part === 'object' &&
-      part !== null &&
-      'refusal' in part &&
-      typeof part.refusal === 'string' &&
-      part.refusal.trim() !== ''
+function typedRefusals(response: OpenAiResponse): string[] {
+  return messageParts(response).flatMap((part: unknown) =>
+    typeof part === 'object' &&
+    part !== null &&
+    'refusal' in part &&
+    typeof part.refusal === 'string' &&
+    part.refusal.trim() !== ''
+      ? [part.refusal.trim()]
+      : []
   );
 }
 
@@ -119,7 +113,7 @@ function declineSignalNames(response: OpenAiResponse): string[] {
   return [
     ...(code ? [`error.code=${code}`] : []),
     ...(reason ? [`incomplete_details.reason=${reason}`] : []),
-    ...(hasTypedRefusal(response) ? ['refusal part'] : []),
+    ...(typedRefusals(response).length > 0 ? ['refusal part'] : []),
   ];
 }
 
@@ -136,24 +130,28 @@ function messageText(response: OpenAiResponse): string {
  * upstream failure, not a policy decision — the model's policy decision is to
  * not call the tool at all.
  *
- * Precedence, first match wins: a completed image (ADR-0023), a machine-readable
- * decline, a tool call without bytes, then the model's prose.
+ * Precedence, first match wins: a machine-readable decline, a completed image, a
+ * tool call without bytes, then the model's prose. The decline outranks a
+ * finished picture because nothing in the response says which item it concerns,
+ * and a picture a safety signal said no to is not shown to a toddler (ADR-0023,
+ * 2026-09 amendment).
  */
 export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassification {
   const output = response?.output ?? [];
-
   const call = output.find((item) => item.type === 'image_generation_call');
-  if (call?.result) {
+
+  const decline = policySignal(response) || typedRefusals(response).join(' ');
+  if (decline) {
     return {
-      kind: 'image',
-      data: call.result,
-      mimeType: `image/${outputFormatOf(call)}`,
-      droppedDeclines: declineSignalNames(response),
+      kind: 'safety',
+      reason: decline,
+      imageDiscardedBy: call?.result ? declineSignalNames(response) : [],
     };
   }
 
-  const policy = policySignal(response) || typedRefusal(response);
-  if (policy) return { kind: 'safety', reason: policy };
+  if (call?.result) {
+    return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
+  }
 
   // The tool was called and did not produce bytes. Whatever the model said
   // alongside that, the drawing was not declined — something broke mid-render,
@@ -173,7 +171,7 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
   // "reply with one short sentence" — either way, guide the child to a different
   // drawing rather than a "try again" that can never succeed.
   const message = messageText(response);
-  if (message) return { kind: 'safety', reason: message };
+  if (message) return { kind: 'safety', reason: message, imageDiscardedBy: [] };
 
   // Nothing usable at all — a genuine empty/upstream failure (retryable).
   return { kind: 'empty', reason: describeFailure() };

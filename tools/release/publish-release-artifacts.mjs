@@ -3,7 +3,7 @@
 //   node tools/release/publish-release-artifacts.mjs                 publish package.json's version
 //   node tools/release/publish-release-artifacts.mjs 1.4.0           publish a specific version
 //   node tools/release/publish-release-artifacts.mjs --only=android  just the .aab (or ios for just the .ipa)
-//   node tools/release/publish-release-artifacts.mjs --dry-run       verify versions, upload nothing
+//   node tools/release/publish-release-artifacts.mjs --dry-run       verify artifacts, upload nothing
 //
 // This is deliberately a third step rather than part of cut-release.mjs. A release
 // has to bump the version and tag it *before* an artifact carrying that version
@@ -12,8 +12,8 @@
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by
-// reading the version out of the binary itself — a stale build is refused, not
-// uploaded.
+// reading the version out of the binary itself and checking Android's embedded
+// R8 mapping — stale or unmapped builds are refused, not uploaded.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,6 +24,7 @@ import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
+import { readAabR8Metadata } from './lib/aab-r8-mapping.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 
@@ -143,6 +144,13 @@ export function inspectArtifacts(expected, platforms) {
       continue;
     }
     const problems = compareArtifactVersion(expected, actual);
+    if (platform === 'android') {
+      try {
+        readAabR8Metadata(artifact.path);
+      } catch (error) {
+        problems.push(`R8 mapping: ${error.message}`);
+      }
+    }
     if (problems.length) stale.push({ platform, ...artifact, actual, problems });
     else matched.push({ platform, ...artifact, actual });
   }
@@ -176,13 +184,13 @@ export function main(args = process.argv.slice(2)) {
 
   if (stale.length) {
     fail(
-      '\nRefusing to upload — these artifacts do not match the release:\n' +
+      '\nRefusing to upload — these artifacts failed release verification:\n' +
         stale
           .map(
             (a) => `  ✗ ${a.label} (${a.path})\n${a.problems.map((p) => `      ${p}`).join('\n')}`
           )
           .join('\n') +
-        '\n\nThey are leftovers from an earlier version. Rebuild them for this release\n' +
+        '\n\nRebuild these artifacts for this release\n' +
         stale.map((a) => `  ${a.rebuild}`).join('\n') +
         '\nor delete the stale file, then re-run. Nothing was uploaded.'
     );
@@ -196,7 +204,7 @@ export function main(args = process.argv.slice(2)) {
   }
 
   if (dryRun) {
-    console.log('\n--dry-run: versions verified, nothing uploaded.');
+    console.log('\n--dry-run: release artifacts verified, nothing uploaded.');
     return;
   }
 

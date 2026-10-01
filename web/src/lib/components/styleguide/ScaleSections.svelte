@@ -24,6 +24,9 @@
     radiusMd: 'controls',
     radiusLg: 'cards & sheets',
     radiusPill: 'pills & toggle tracks',
+    radiusBlob1: 'first paint daub',
+    radiusBlob2: 'second paint daub',
+    radiusBlob3: 'third paint daub',
   };
   const durationShorts: Record<Extract<ScaleKey, `duration${string}`>, string> = {
     durationFast: 'presses & hovers',
@@ -59,6 +62,7 @@
         <div
           class="radius-box"
           class:pill={key === 'radiusPill'}
+          class:blob={key.startsWith('radiusBlob')}
           style:border-radius={cssVar(key)}
         ></div>
         <code>{toCssVarName(key)}</code>
@@ -233,6 +237,12 @@
 
   .radius-box.pill {
     height: 24px;
+  }
+
+  /* The blob's percentages read as an ellipse on a wide tile; the square it is
+     worn on shows the shape. */
+  .radius-box.blob {
+    width: 40px;
   }
 
   .border-box {

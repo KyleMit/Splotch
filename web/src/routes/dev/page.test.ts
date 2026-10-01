@@ -15,7 +15,7 @@ describe('DEV_HARNESSES matches routes/dev/*', () => {
   it('lists exactly the harness subdirectories that exist', () => {
     expect(harnessDirNames.length).toBeGreaterThan(0);
 
-    const listedHrefs = new Set(DEV_HARNESSES.map((h) => h.href));
+    const listedHrefs = new Set(DEV_HARNESSES.map((h) => h.href.split('?')[0]));
     const expectedHrefs = new Set(harnessDirNames.map((name) => `/dev/${name}`));
 
     expect(listedHrefs).toEqual(expectedHrefs);
