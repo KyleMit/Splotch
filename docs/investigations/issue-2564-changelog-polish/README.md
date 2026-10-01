@@ -43,7 +43,7 @@ sizes, AA tape and active highlighter text in both themes, rapid arrival changes
 Settings headings. Browserless coverage reports 4,365 unit, 41 UI, 277 server, 23 API-unit, 6,645
 tools and 42 API-smoke assertions.
 
-The final static native export keeps exactly 28 drawing modulepreloads and measures 6,209,046 of
+The final static native export keeps exactly 28 drawing modulepreloads and measures 6,209,731 of
 7,000,000 allowed bytes. Its eager-error closure adds six resources and 5,358 bytes with deferred
 owners still lazy. The final web release has exactly 40 drawing modulepreloads and an eager-error
 union of 484,831 of 525,000 allowed bytes. Its linked startup JavaScript/CSS is 456,164 bytes plus
@@ -99,3 +99,10 @@ arrival marker. Otherwise the browser coalesces those changes and continues the 
 The flush is conditional on that discrete repeat pick. Its browser guard waits for a partially faded
 highlight, picks again and measures opacity returning to full strength without growing history. The
 unflushed source fails that measured restart; the restored controller passes.
+
+The final source checkpoint is 865b214f2dfa930762add1260db4919425010efa. The
+[state gallery](https://github.com/KyleMit/Splotch/blob/pr-assets/issue-2564-changelog-polish/README.md)
+and [visual manifest](visual-manifest.json) bind 12 fresh exact-base captures, 27 final app states,
+two real arrival GIFs and four compiled native glyph captures to source commits and file hashes.
+Baseline phone pages start fresh at the hero to avoid inherited scroll state. All captured app
+images and animation frame sequences were visually inspected before publishing.

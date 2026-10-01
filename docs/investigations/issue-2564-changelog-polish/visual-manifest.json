@@ -1,0 +1,362 @@
+[
+  {
+    "path": "screenshots/issue-2564-before-desktop-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "1163df7c5afda2653816e51638f5176ebbd6add333de07df3d6da0660753a7ce",
+    "file": "issue-2564-before-desktop-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-fold-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "d4ac0daf89be6701c4c39b2b121d21ec9d49dd25a61a94641d51469a9c0e07e1",
+    "file": "issue-2564-before-fold-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-count-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "b58cc2cea414fe881575fca66baa9bdaaa3a5a6758247b30677006f159cd79a9",
+    "file": "issue-2564-before-phone-count-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-open-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "731e7849a077015d365718e71e79f58fb1c96f4021f0a664a6bf24fccdd2b681",
+    "file": "issue-2564-before-phone-open-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-active-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog#release-1-2-0",
+    "sha256": "2cc83b7e389ae1c71dbe03ce26400655a20b81fa20c73c51575921bbfaa404cf",
+    "file": "issue-2564-before-phone-active-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-privacy-count-light.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/privacy",
+    "sha256": "9e79155cd4df66592547ac168e67cdfa07ae253d97e0802331e1858e55c80155",
+    "file": "issue-2564-before-privacy-count-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-desktop-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "be9ec670648f983045f2bcbb720d5a67bcbc41b13b094048b9bc6380df91a794",
+    "file": "issue-2564-before-desktop-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-fold-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "05a2e43626617b2568f9e645592bc0e532dbe12bdb5f76f2f97ee25eb6d3a7c4",
+    "file": "issue-2564-before-fold-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-count-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "4da8defff3b74d69589a639f8eaf7bdc5bcf2ef0b28eb634e5c6c35614904a68",
+    "file": "issue-2564-before-phone-count-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-open-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "85ff0cd9b5aaf2db760a47349e1af3b9805659394a77db4a197ae3d09d3667ad",
+    "file": "issue-2564-before-phone-open-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-phone-active-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/changelog#release-1-2-0",
+    "sha256": "05095ca4d5a6c8807e5713a5acffad5ab6fd62549f63894294007d81ff822199",
+    "file": "issue-2564-before-phone-active-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-before-privacy-count-dark.png",
+    "source": "ba72dea2b9742017c8b7903e040f007774022fca",
+    "state": "before",
+    "url": "http://localhost:5300/privacy",
+    "sha256": "661a1eb95758a7920859435c472c289167a933a5fa82a781629eca82cadec2e6",
+    "file": "issue-2564-before-privacy-count-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-desktop-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "bf359c9b7f98bb3aacda2bebd265ec0470c5ab3ec55f3a29f709ce99f964b7c8",
+    "file": "issue-2564-after-desktop-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-fold-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "b3024d4203160b3bce4b64a35211036d31b47f276e1253ae48c2f9d1d4e7c0d9",
+    "file": "issue-2564-after-fold-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-older-arrival-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "e17a321835c8296b5c335e9bcf1bf045cdcd36a9d450229332907dc8e9f69ddd",
+    "file": "issue-2564-after-older-arrival-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-older-rest-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "756c137998e4178d6b89de18d8fd79bb08360ec19028fdb321dbb9c048f7f66f",
+    "file": "issue-2564-after-older-rest-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-rest-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "19cc0aadf2c3334aa9a5de8c1aeefd60e2468b6030050226a75fdd7d34a523a8",
+    "file": "issue-2564-after-back-rest-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-hover-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "440be917a571d37ec75bcdc3091e755034a193dff55c93a00e5d92f7d1168bd9",
+    "file": "issue-2564-after-back-hover-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-press-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "525a6ac78bf1249c0e2cbd02b22ddceabf845d82a67eb5a0343276d3f4945eac",
+    "file": "issue-2564-after-back-press-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-count-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "ac2b09eaa08d7a421e24000c51f126c5cf0abac3a2f26c023918c833eb02fd45",
+    "file": "issue-2564-after-phone-count-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-open-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "2f1f9f5243090d4f3e0e8d9126ca867434967bb8103cbc4740cf3de799f7341e",
+    "file": "issue-2564-after-phone-open-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-active-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-2-0",
+    "sha256": "34785d78f0cc251c2ae6a1a3933c1684aacd8fb1427e1c58910e36b50f16da0f",
+    "file": "issue-2564-after-phone-active-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-privacy-count-light.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/privacy",
+    "sha256": "4d6a577d4d0469fda68f57875d4a0678a3d0d80c5796e195b237355352533e36",
+    "file": "issue-2564-after-privacy-count-light.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-desktop-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "ab56c1f7de04a92ae73786d65b9cd6db1db69705bdc8052aaecf6ce9ff82020c",
+    "file": "issue-2564-after-desktop-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-fold-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "4cfbb920456eef7a6365a663d22e91e810fd75afbf41e91ec2936d5a8eae2763",
+    "file": "issue-2564-after-fold-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-older-arrival-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "c7b6ab3c673e37fd4838f1d3a32e38a55cc43f4a0752c5455e0f2940c29cbaa9",
+    "file": "issue-2564-after-older-arrival-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-older-rest-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "fee4306eb0d9c3528a5b3dcc2146af3dc1568d5e93b22d867f6be7f26a8c609a",
+    "file": "issue-2564-after-older-rest-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-rest-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "d111b5ca96d0d357d24563f1e782d91b12036f1802d91b0cb4696e3bd78edc18",
+    "file": "issue-2564-after-back-rest-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-hover-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "252578ae8ac3a6dc4cdf06dcda44f9ea5c436d5779a377b1f6baa3c33e15f879",
+    "file": "issue-2564-after-back-hover-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-back-press-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "ff815bf13fa29853dab49af37ce6d38e8cdc0d73476f7afb4d3149a311d303d1",
+    "file": "issue-2564-after-back-press-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-count-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "43d95d83077e72739659316bea6fd4d042b76c7accc9b3228d7b67e5bf6e728a",
+    "file": "issue-2564-after-phone-count-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-open-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "8be05c3bb1e749a8a0f65cdd76e872769d67ea587ce893b65c3951391fc37fe4",
+    "file": "issue-2564-after-phone-open-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-phone-active-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-2-0",
+    "sha256": "b5706b91a5c0ac4ba6ef00fa635404c72b5f5ac12fe72fcc0aa1abfc9616c51a",
+    "file": "issue-2564-after-phone-active-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-privacy-count-dark.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/privacy",
+    "sha256": "76451a6faa26637df48a90bbf506ca0cff5f95791ce0222f6d880f5af55fad23",
+    "file": "issue-2564-after-privacy-count-dark.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-forced-colors.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "d115730d46c241d2904cdbe3b9f216c5cbac9fc7355e655dda79a9b09837976d",
+    "file": "issue-2564-after-forced-colors.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-forced-colors-back.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "a691d980a2224c086998c57097dd193eeefafb8505faba1f4193407ca6afc28d",
+    "file": "issue-2564-after-forced-colors-back.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-forced-colors-fold.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "44b89b02484bd169277c1555a7ed6cf9cb9c2fb1005f44df1429036ae7ffabc5",
+    "file": "issue-2564-after-forced-colors-fold.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-reduced-motion.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "b6c128de92f71b5a5b02f04d9ace3edadb3ffc5036c1573ffa3ff1380d3abc87",
+    "file": "issue-2564-after-reduced-motion.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-reduced-motion-back.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "45aa236ed32760203815364e9092bc70a546335078dee21764816fbed05addf2",
+    "file": "issue-2564-after-reduced-motion-back.png"
+  },
+  {
+    "path": "screenshots/issue-2564-after-arrival-light.gif",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "54250c0270822f4a1c17fc986c8d346fa1ffae545597681f773ad0b32f369b62",
+    "file": "issue-2564-after-arrival-light.gif"
+  },
+  {
+    "path": "screenshots/issue-2564-after-arrival-dark.gif",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "after",
+    "url": "http://localhost:5300/changelog#release-1-3-0",
+    "sha256": "b882e6b883a99eb0f5369056afcce128772a4aa0f8bb6ba17a8c72de6b7dab1c",
+    "file": "issue-2564-after-arrival-dark.gif"
+  },
+  {
+    "path": "screenshots/issue-2564/native-glyph-light-none.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "compiled-native",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "8987404b7ae9aab956879dd1404284a543926a7e1ee28aece268d34d47fe4566",
+    "file": "native-glyph-light-none.png"
+  },
+  {
+    "path": "screenshots/issue-2564/native-glyph-light-active.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "compiled-native",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "44b89b02484bd169277c1555a7ed6cf9cb9c2fb1005f44df1429036ae7ffabc5",
+    "file": "native-glyph-light-active.png"
+  },
+  {
+    "path": "screenshots/issue-2564/native-glyph-dark-none.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "compiled-native",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "6343755498781ac2cc17a80268ae0d57bcc2cbc640b6f9fb94b8fc94d14f0352",
+    "file": "native-glyph-dark-none.png"
+  },
+  {
+    "path": "screenshots/issue-2564/native-glyph-dark-active.png",
+    "source": "865b214f2dfa930762add1260db4919425010efa",
+    "state": "compiled-native",
+    "url": "http://localhost:5300/changelog",
+    "sha256": "0202ff0e61100c81cdaad0ccead256a22f472c503a59f7aa277775025be1c053",
+    "file": "native-glyph-dark-active.png"
+  }
+]
