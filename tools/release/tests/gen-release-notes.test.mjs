@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   parseReleaseSource,
@@ -8,6 +9,20 @@ import {
   validateEmDashSpacing,
   validateStoreText,
 } from '../gen-release-notes.mjs';
+
+it('generates every release datetime from its validated source date', () => {
+  const metadata = JSON.parse(
+    readFileSync(new URL('../../../web/src/lib/releases.json', import.meta.url), 'utf8')
+  );
+  expect(metadata.length).toBeGreaterThan(0);
+  for (const release of metadata) {
+    const filename = `${release.version}.md`;
+    const source = readFileSync(new URL(`../../../releases/${filename}`, import.meta.url), 'utf8');
+    const parsed = parseReleaseSource(filename, source);
+    expect(release.datetime).toBe(parsed.meta.date);
+    expect(release.dateLabel).toBe(parsed.dateLabel);
+  }
+});
 
 describe('parseReleaseSource', () => {
   it('formats a validated release date for the generated app data', () => {

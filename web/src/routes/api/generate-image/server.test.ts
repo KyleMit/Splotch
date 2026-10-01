@@ -65,7 +65,7 @@ vi.mock('$lib/server/reportToken', () => ({
 
 import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import { GENERATION_ACCEPTED_STATUS, SAFETY_REFUSAL_STATUS } from '$lib/ai/generationResult';
-import { FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
+import { FREE_GRANT_EXHAUSTED_CODE } from '$lib/ai/generationResult';
 import { POST } from './+server';
 
 function handle(request: Request) {

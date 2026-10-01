@@ -1,0 +1,111 @@
+
+> splotch@1.6.0 test:e2e
+> node tools/run-web-tool.mjs playwright test page-footer.spec.ts --workers=1
+
+$ playwright test page-footer.spec.ts --workers=1
+[WebServer] (node:17283) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:17314) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:17314) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:17314) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:17327) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:17362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
+
+Running 11 tests using 1 worker
+
+(node:17364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/page-footer.spec.ts:9:3 › final sections remain active at maximum scroll on 1280×800 (188ms)
+  ✓   2 [chromium] › tests/page-footer.spec.ts:9:3 › final sections remain active at maximum scroll on 320×568 (186ms)
+  ✓   3 [chromium] › tests/page-footer.spec.ts:9:3 › final sections remain active at maximum scroll on 812×375 (186ms)
+  ✓   4 [chromium] › tests/page-footer.spec.ts:35:3 › the /privacy footer identifies its section without linking to itself (82ms)
+  ✓   5 [chromium] › tests/page-footer.spec.ts:35:3 › the /changelog footer identifies its section without linking to itself (70ms)
+  ✓   6 [chromium] › tests/page-footer.spec.ts:35:3 › the /feedback footer identifies its section without linking to itself (102ms)
+  ✓   7 [chromium] › tests/page-footer.spec.ts:35:3 › the /beta footer identifies its section without linking to itself (71ms)
+  ✓   8 [chromium] › tests/page-footer.spec.ts:45:1 › the footer release link scrolls to the newest public release (163ms)
+  ✓   9 [chromium] › tests/page-footer.spec.ts:55:3 › the light footer fits a 320px phone with readable links (118ms)
+  ✓  10 [chromium] › tests/page-footer.spec.ts:55:3 › the dark footer fits a 320px phone with readable links (118ms)
+  ✓  11 [chromium] › tests/page-footer.spec.ts:79:1 › forced colors preserve the footer rule and current marker (99ms)
+
+  11 passed (5.6s)

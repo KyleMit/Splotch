@@ -1,0 +1,69 @@
+// Rival round-2 probe. Serves the compiled bundles through page.route (no port, no network).
+// Run from the worktree root: node web/rival-probe-run.mjs  (copied into web/ so @playwright/test resolves)
+import assert from 'node:assert/strict';
+import { chromium } from '/Users/kylemit/.codex/worktrees/ed28/Splotch/node_modules/@playwright/test/index.mjs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
+import { join, extname } from 'node:path';
+
+const ROOT = '/private/tmp/splotch-polish-campaign/2566/expanded-probe';
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.webmanifest': 'application/manifest+json' };
+
+async function context(browser, bundle, options) {
+  const ctx = await browser.newContext(options);
+  const dir = join(ROOT, bundle);
+  await ctx.route('http://splotch.local/**', (route) => {
+    const p = decodeURIComponent(new URL(route.request().url()).pathname);
+    let f = join(dir, p);
+    if (p.endsWith('/')) f = join(f, 'index.html');
+    if (!existsSync(f) || statSync(f).isDirectory()) f = existsSync(f + '.html') ? f + '.html' : join(dir, bundle === 'native' ? '200.html' : 'index.html');
+    route.fulfill({ status: 200, body: readFileSync(f), contentType: types[extname(f)] ?? 'application/octet-stream' });
+  });
+  await ctx.route(/^(?!http:\/\/splotch\.local)/, (r) => r.abort());
+  return ctx;
+}
+
+async function settle(page) {
+  await page.locator('.lede-toggle').waitFor({ state: 'attached' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(300);
+}
+
+const browser = await chromium.launch();
+const results = { tail: [], narrow: [] };
+
+// 1. Changelog/privacy final-section activation at max scroll, web bundle (same check as page-footer.spec).
+const viewports = [
+  [1280, 800], [1280, 700], [1280, 640], [1280, 614], [1280, 609], [1366, 600], [1280, 560], [1280, 520], [1280, 501], [1280, 500],
+  [932, 430], [812, 375], [320, 568], [390, 844], [768, 1024], [1024, 600],
+];
+for (const [width, height] of viewports) {
+  const ctx = await context(browser, 'web', { viewport: { width, height } });
+  const page = await ctx.newPage();
+  for (const { route, label, href } of [
+    { route: '/changelog', label: 'Changelog contents', href: '#release-1-0-0' },
+    { route: '/privacy', label: 'Privacy policy contents', href: '#contact' },
+  ]) {
+    await page.goto('http://splotch.local' + route);
+    await settle(page);
+    if(process.argv[2] === 'legacy') await page.locator('main.page').evaluate(page => page.style.setProperty('--page-footer-reserve','96px'));
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(600);
+    const r = await page.evaluate(({ label, href }) => {
+      const link = document.querySelector(`nav[aria-label="${label}"] a[href="${href}"]`);
+      const target = document.querySelector(href);
+      const reserve = getComputedStyle(document.querySelector('main.page')).getPropertyValue('--page-footer-reserve');
+      const footer = document.querySelector('.page-footer')?.getBoundingClientRect();
+      return {
+        scrollY: Math.round(scrollY), max: document.documentElement.scrollHeight - innerHeight,
+        finalActive: link?.getAttribute('aria-current') === 'location',
+        footerInView: Boolean(footer && footer.top >= 0 && footer.bottom <= innerHeight),
+        active: document.querySelector(`nav[aria-label="${label}"] a[aria-current="location"]`)?.getAttribute('href') ?? null,
+        finalTop: target?.getBoundingClientRect().top, finalBottom: target?.getBoundingClientRect().bottom, reserve,
+      };
+    }, { label, href });
+    results.tail.push({ viewport: `${width}x${height}`, route, ...r });
+  }
+  await ctx.close();
+}
+
+await browser.close(); console.log(JSON.stringify(results,null,2)); assert(results.tail.every(row=>row.finalActive && row.footerInView), "Every final section must be active and its footer visible at maximum scroll");

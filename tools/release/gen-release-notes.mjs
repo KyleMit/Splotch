@@ -247,6 +247,7 @@ function main() {
   const appData = releases.map((r) => ({
     version: r.meta.version,
     id: releaseAnchor(r.meta.version),
+    datetime: r.meta.date,
     dateLabel: r.dateLabel,
   }));
   write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');

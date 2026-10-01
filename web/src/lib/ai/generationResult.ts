@@ -31,6 +31,9 @@ export type GenerationStartedBody = { ok: true } & StartedGeneration;
 /** The job could not be read *right now*. Says nothing about the job. */
 export const GENERATION_UNAVAILABLE_CODE = 'GENERATION_UNAVAILABLE';
 
+export const FREE_GRANT_EXHAUSTED_CODE = 'FREE_GRANT_EXHAUSTED';
+export const FREE_DAILY_LIMIT_EXHAUSTED_CODE = 'FREE_DAILY_LIMIT_EXHAUSTED';
+
 export interface GenerationUnavailable {
   ok: false;
   code: typeof GENERATION_UNAVAILABLE_CODE;

@@ -252,3 +252,22 @@ Alternatives considered:
   mental arithmetic.
 * **One wrong answer re-locks after the first lockout.** Rejected for now: it roughly halves the
   remaining odds, but a parent arriving after a child's tapping would get a single try per wait.
+
+## Amendment (2026-09): standalone footer link-outs
+
+The shared standalone-page footer keeps Privacy and Changelog as internal navigation. In native
+builds, Send feedback opens the hosted form through `parentalGateLink`. `PageShell` owns one lazy
+gate and Parent Center host, supplied by `components/page/pageParentCenter.svelte.ts`, so footer and
+body links request the same dialog. Capture installs the existing operation action before the
+original click reaches its anchor. The action requests the host on every click, including after a
+rejected load; an idle preload warms it without blocking the page. The web shell does not
+instantiate or render that host, and web privacy retains its existing route host for gated policy
+links. Settings and persisted state load only when Manage opens Parent Center. This changes dialog
+ownership, preserving each operation's gate policy.
+
+The static factory import shares gate policy code with web privacy, so other web shell routes
+include it in their generated JavaScript dependency closure. The independent footer review measured
+21.5–23.0 KB of raw generated JavaScript on Beta, Changelog, Dev and Admin; these are not compressed
+network-transfer sizes. Its removal control raised the drawing route from 40 to 41 modulepreloads.
+The footer retains that secondary-page cost to preserve the measured startup budgets of 40 web and
+28 native modulepreloads, rather than expanding this change into a startup chunk redesign.

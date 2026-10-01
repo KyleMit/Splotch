@@ -98,10 +98,9 @@ test('the Android tab links to the group, the opt-in page, the listing, and /fee
     'href',
     PLAY_STORE_LISTING_URL
   );
-  await expect(page.getByRole('link', { name: 'Send feedback' })).toHaveAttribute(
-    'href',
-    '/feedback'
-  );
+  await expect(
+    page.locator('#beta-android').getByRole('link', { name: 'Send feedback' })
+  ).toHaveAttribute('href', '/feedback');
 });
 
 test('the iOS tab swaps in the TestFlight steps and records itself in the URL', async ({
@@ -298,7 +297,7 @@ test('the feedback address is shown in full and reaches the form', async ({ page
   // /beta is prerendered and /feedback is not (it has a form action), so this
   // one link between them is the pairing a build-time crawl or a stale adapter
   // config could turn into a 404 with nothing else noticing.
-  await page.getByRole('link', { name: 'Send feedback' }).click();
+  await page.locator('#beta-android').getByRole('link', { name: 'Send feedback' }).click();
   await expect(page).toHaveURL('/feedback');
   await expect(page.getByRole('heading', { name: 'Send us feedback' })).toBeVisible();
 });

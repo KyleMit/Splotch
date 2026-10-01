@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { scheduleIdle } from '$lib/idle';
+  import { createPageParentCenter } from '$lib/components/page/pageParentCenter.svelte';
   // Parent-facing privacy policy, required by both app stores (see the `mobile`
   // skill's store-release checklist). Plain language, short sections, and the
   // shared contents rail/disclosure pattern so a parent can jump to the part
@@ -11,7 +14,6 @@
   // own copy or a constant it interpolates — fails until the date and that
   // revision list move together.
 
-  import { onMount } from 'svelte';
   import ExternalMark from '$lib/components/design/ExternalMark.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import SocialCard from '$lib/components/page/SocialCard.svelte';
@@ -20,13 +22,11 @@
   import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
-  import { scheduleIdle } from '$lib/idle';
   import { IMAGE_REPORT_RETENTION_DAYS, IMAGE_REPORT_REVIEW_HOURS } from '$lib/imageReport';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
   import { SECTIONS, SPY_LINE_PX, watchReadingPosition } from './contents';
   import type { SectionId } from './contents';
-  import { createPrivacyParentCenter } from './parentCenter.svelte';
   import PolicySummary from './PolicySummary.svelte';
   import SectionHeading from './SectionHeading.svelte';
   import VisuallyHidden from '$lib/components/design/VisuallyHidden.svelte';
@@ -63,13 +63,14 @@
     })
   );
 
+  const parentCenter = __IS_CAPACITOR__ ? null : createPageParentCenter();
+  function gatedLink(node: HTMLAnchorElement) {
+    if (!__IS_CAPACITOR__) return parentCenter?.gatedLink(node);
+  }
+  onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
+
   const sectionLinks = createSectionLinks();
   $effect(() => sectionLinks.dispose);
-
-  const parentCenter = createPrivacyParentCenter();
-  const gatedLink = parentCenter.gatedLink;
-
-  onMount(() => scheduleIdle(parentCenter.mountParentalGate));
 </script>
 
 <svelte:head>
@@ -380,11 +381,11 @@
   </PageShell>
 </div>
 
-{#if parentCenter.gateComponent}
+{#if parentCenter?.gateComponent}
   {@const Gate = parentCenter.gateComponent}
   <Gate manageDestination={parentCenter.openParentCenter} />
 {/if}
-{#if parentCenter.modalComponent && parentCenter.managingPolicies}
+{#if parentCenter?.modalComponent && parentCenter.managingPolicies}
   {@const Modal = parentCenter.modalComponent}
   <Modal />
 {/if}
@@ -484,7 +485,7 @@
      breakpoints): underestimating only adds reserve, and the slack keeps the
      last section's top clear of the line instead of exactly on it. */
   .sections section:last-child {
-    --page-tail: 16px;
+    --page-tail: calc(var(--space-4) + var(--page-footer-reserve));
 
     min-height: calc(100dvh - var(--spy-line) - var(--page-tail));
   }

@@ -41,6 +41,10 @@ describe.each([
     expect(submits).not.toHaveLength(0);
   });
 
+  it('opts out of the public page footer', () => {
+    expect(body).not.toContain('Splotch pages');
+  });
+
   it('ships every submit disabled', () => {
     for (const submit of submits) expect(submit).toContain('disabled');
   });
