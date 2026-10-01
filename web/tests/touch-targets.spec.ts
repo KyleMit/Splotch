@@ -100,3 +100,26 @@ test('portrait Appearance choices keep both target axes', async ({ page }) => {
   await expect(page.locator('#themeOption-dark')).toBeVisible();
   await expectTargetsMeetFloor(modal.locator('.picker .option'));
 });
+
+test.describe('touch activation', () => {
+  test.use({ hasTouch: true });
+
+  test('the shared Button accepts its lower target edge and ignores a touch below it', async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await page.goto('/design');
+    const card = page.getByRole('group', { name: 'Busy button', exact: true });
+    const button = card.getByRole('button');
+    await card.scrollIntoViewIfNeeded();
+    await expect(button).toBeDisabled();
+    await page.clock.fastForward(10_000);
+    await expect(button).toBeEnabled();
+    const box = (await button.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(TARGET_MIN_PX);
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height + TARGET_MIN_PX);
+    await expect(button).toBeEnabled();
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height - 1);
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+});
