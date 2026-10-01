@@ -25,9 +25,10 @@ Codex Cloud settings manually.
   browser; setup also installs its Linux libraries, while maintenance reuses them.
 * Allow `registry.npmjs.org`, `cdn.playwright.dev`, and `playwright.download.prss.microsoft.com`.
   Add another domain only after recording a concrete blocked request.
-* GitHub pull-request operations also need access to `api.github.com`. The platform's HTTPS Git
-  proxy can provide repository access while the API remains blocked; verify API access separately
-  before relying on the GitHub CLI.
+* GitHub CLI pull-request operations use `api.github.com`. Test the intended repository operation
+  with the platform's injected authentication: generic API probes or `gh auth status` can fail while
+  scoped pull-request calls work. Add the hostname only when the intended operation is network
+  blocked; a successful Git request alone does not establish API access.
 * Add credentials only for the live services a task needs; local development and automated tests
   need none. Enter values securely in environment settings and keep secret values out of scripts and
   Git.
