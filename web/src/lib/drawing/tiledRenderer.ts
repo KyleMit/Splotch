@@ -318,6 +318,7 @@ export function repaintTiledRenderer(
   preserveUndoThrough: StrokeGroupCommand | null = null
 ) {
   clearCapture.cancel();
+  workCounters?.historyRepainted();
   const undoableStart = history.length - undoableCommands;
   const preserveUndoThroughIndex = preserveUndoThrough ? history.indexOf(preserveUndoThrough) : -1;
   const rebuildUndo = rebuildUndoPatches && (undoableCommands > 0 || activeCommand !== null);

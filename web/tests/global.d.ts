@@ -47,6 +47,7 @@ declare global {
       pixelAt(x: number, y: number): number[];
       pixelsIn(x: number, y: number, width: number, height: number): number[];
       resizeTo(w: number, h: number): Promise<void>;
+      getDrawingWorkDebug: typeof import('../src/lib/drawing/engine').getDrawingWorkDebug;
       resumeTo(w: number, h: number): void;
       layoutTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;

@@ -28,6 +28,7 @@ export const RELEASE_SEAM_SOURCE_FILES = [
 const RELEASE_ONLY_DEBUG_PROPERTIES = [
   'backingMigrationPending',
   'baseRasterBytes',
+  'historyRepaints',
   'inputOps',
   'liveSurfaceElements',
   'liveRasters',
