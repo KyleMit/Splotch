@@ -43,19 +43,16 @@ const FIRST_SERVER_ERROR_STATUS = 500;
 
 // Export the composited drawing and pick the upload encoding. Returns the
 // pristine PNG (for the preview + gallery auto-save) alongside the on-the-wire
-// upload blob, or null when the run went stale mid-export or the export failed —
-// the failed-export case closes the result modal itself, so the caller can bail
-// on null without distinguishing the two.
+// upload blob, or null when the run went stale mid-export. An export that
+// produced nothing throws, so it reaches the error card exactly as a rejected
+// export does and the parent is told the picture did not start.
 async function exportUploadImage(
   drawing: Blob | null,
   runId: number
 ): Promise<{ preview: Blob; upload: Blob } | null> {
   const imageBlob = drawing ?? (await exportCanvasBlob({ includePaperTexture: false }));
   if (!isAiGenerationActive(runId)) return null;
-  if (!imageBlob) {
-    closeAiResult();
-    return null;
-  }
+  if (!imageBlob) throw new Error('The drawing export produced no image.');
   setAiDrawing(runId, imageBlob);
   if (!drawing) setAiPreview(runId, URL.createObjectURL(imageBlob));
 
