@@ -2,12 +2,11 @@
   import { onMount, type Snippet } from 'svelte';
   import { createHydratedFlag } from '$lib/hydration.svelte';
   import { DRAWING_ROUTE } from '$lib/boot/appSurfaceRoute';
-  import { scheduleIdle } from '$lib/idle';
   import Icon from '../Icon.svelte';
   import BackLink from './BackLink.svelte';
   import BrandMark from './BrandMark.svelte';
   import PageFooter from './PageFooter.svelte';
-  import { createPageParentCenter } from './pageParentCenter.svelte';
+  import { createPageParentCenter } from '$nativePageParentCenter';
 
   // The chrome a standalone page wears: a ground, a centered sheet, a masthead
   // (back link + crayon strip + wordmark) and a hero, so a URL handed out in a
@@ -26,18 +25,27 @@
     /** Forwarded to BrandMark: the word after "Splotch" in the mark. */
     wordmarkSuffix?: string;
     lede?: Snippet;
+    collapsibleLede?: boolean;
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
     footer?: boolean;
     children: Snippet;
   }
 
-  let { title, wordmarkSuffix, lede, actions, footer = true, children }: Props = $props();
+  let {
+    title,
+    wordmarkSuffix,
+    lede,
+    collapsibleLede = true,
+    actions,
+    footer = true,
+    children,
+  }: Props = $props();
   const ledeId = $props.id();
   let ledeOpen = $state(false);
   const hydration = createHydratedFlag();
   const parentCenter = __IS_CAPACITOR__ ? createPageParentCenter() : null;
-  onMount(() => parentCenter && scheduleIdle(parentCenter.mountParentalGate));
+  onMount(() => parentCenter?.warmParentalGate());
 
   const nativeLinks: {
     node: HTMLAnchorElement;
@@ -75,7 +83,7 @@
       <div class="hero-text">
         <h1>{title}</h1>
         {#if lede}
-          {#if hydration.hydrated}
+          {#if collapsibleLede && hydration.hydrated}
             <button
               type="button"
               class="lede-toggle"
@@ -91,7 +99,11 @@
               </span>
             </button>
           {/if}
-          <p class="lede" id={ledeId} class:collapsed={hydration.hydrated && !ledeOpen}>
+          <p
+            class="lede"
+            id={ledeId}
+            class:collapsed={collapsibleLede && hydration.hydrated && !ledeOpen}
+          >
             {@render lede()}
           </p>
         {/if}

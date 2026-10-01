@@ -69,3 +69,11 @@ TypeScript declarations for these globals live in `src/app.d.ts`.
 * **-** The `__APP_VERSION__` in a live native APK reflects the version at build time, not the
   current server version — version skew between the app and the hosted API must be managed through
   backward compatibility.
+
+## Amendment: standalone error entries
+
+`standalonePageEntries.ts`, called by SvelteKit's configuration with the same `CAPACITOR=true`
+signal, selects the root-error recovery, page glyphs and native PageShell controller. This explicit
+entry boundary removes side-effectful native imports that a false caller branch alone cannot erase.
+Web error rendering stays synchronous; native keeps its original gate owner and defers its friendly
+404 component. Vitest's target aliases use the same entry owner.

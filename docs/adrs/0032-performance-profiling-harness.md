@@ -229,3 +229,38 @@ The native export byte budget cannot catch it either, since it sums the whole ex
 
 An instrumented native build (`perf:build:cap`) reports a count mismatch without failing. The native
 export byte budget stays enforced there.
+
+### Friendly error pages and the eager root-error boundary
+
+SvelteKit starts the root error loader on every route, outside the HTML modulepreload list.
+Importing a standalone shell there can fetch its complete icon registry and native dialog owners
+before a drawing has failed. `check-eager-error-bundle.mjs` follows the release manifest's static
+root-error imports and CSS on both targets, rejects those deferred owners, and reports the resources
+outside the HTML links. The web guard counts their union plus inline CSS against the existing
+`MAX_STARTUP_JS_CSS_BYTES` owner, so unlinked imports cannot evade the byte budget. Its fixture
+proves a transitive import fails while a dynamic import remains lazy. The preload pins still cover
+the original linked sets; their counts alone do not establish the complete cold-start request cost.
+
+`standalonePageEntries.ts` selects entries through the existing `CAPACITOR=true` build boundary. Web
+keeps a synchronous friendly 404 using the actual `PageShell`, with two canonical raw page glyphs
+and an unreachable native-controller entry that has no runtime dialog imports. Native keeps the
+existing icon registry and synchronous native link gate; its friendly page loads only when the
+client encounters a 404. While that local chunk loads, a neutral missing-page message offers drawing
+recovery without an alert. A failed import retains the existing `ErrorScreen` recovery. There is no
+async web SSR or duplicated shell.
+
+The full shell's idle scheduler and the token's font identity have independent importers. A startup
+import of that identity partitions another linked chunk on both targets. `fonts.ts` owns the
+canonical name; `warmDisplayFont.ts` retains the existing idle, Save-Data and cancellation policy
+with an inline identity guarded by `fonts.test.ts`. Exact-base trials without that boundary still
+produced an extra native request after deferring the error entry. Both existing preload pins remain
+unchanged. The extra eager web 404 composition is a measured cost, not a zero-cost claim; the PR's
+verification package records the exact base comparison.
+
+The synchronous web composition accepts a measured cold drawing delta of 13 requests, 25,173 raw
+bytes and 10,074 individually gzipped bytes against the exact base under identical idle-disabled
+capture conditions. A catch-all route could avoid this cost for unmatched URLs, but would leave
+`error(404)` from route loads on the crash screen and introduce route-status hooks and prerender
+semantics. The root error branch covers every 404 through the same shared shell and retains real
+no-JavaScript HTTP 404 rendering. The guarded byte union remains below the existing limit; this is
+an explicit tradeoff for uniform recovery, rather than evidence that startup is unchanged.

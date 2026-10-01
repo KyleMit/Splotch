@@ -1,0 +1,2 @@
+[eager-error] linked and error startup union 484479/525000 bytes
+[eager-error] web root error adds 20 resources / 28311 bytes outside the index.html links; deferred owners remain lazy

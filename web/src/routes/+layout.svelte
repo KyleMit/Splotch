@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import { ERROR_LOG_PREFIX } from '$lib/errorLog';
-  import { warmDisplayFont } from '$lib/fonts';
+  import { warmDisplayFont } from '$lib/warmDisplayFont';
   // Import the package's CSS entry explicitly: the bare specifier resolves to
   // index.css via the package's exports map, but only a path ending in `.css`
   // matches Vite's ambient `*.css` module type (so svelte-check stays happy).
