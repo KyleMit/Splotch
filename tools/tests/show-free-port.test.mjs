@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
+import { lanAddresses } from '../lib/net.mjs';
 import { findFreePort, probePort, showFreePort } from '../show-free-port.mjs';
 
 const CLI = fileURLToPath(new URL('../show-free-port.mjs', import.meta.url));
@@ -10,6 +11,7 @@ const CLI = fileURLToPath(new URL('../show-free-port.mjs', import.meta.url));
 // test's so a hung CLI fails the test instead of the CI job.
 const CLI_TIMEOUT_MS = 15_000;
 const CLI_TEST_TIMEOUT_MS = 20_000;
+const [LAN_ADDRESS] = lanAddresses();
 
 const servers = [];
 
@@ -52,6 +54,26 @@ describe('show-free-port', () => {
 
   it('recognizes a port held on IPv6 localhost', async () => {
     const port = await occupyPort('::1');
+    expect(await probePort(port)).toBe(false);
+    expect(servers[0].listening).toBe(true);
+  });
+
+  // macOS lets Node's SO_REUSEADDR sockets bind a loopback address beside a wildcard listener, so
+  // only a wildcard probe sees these holders there; Linux refuses the loopback bind outright.
+  it.each(['::', '0.0.0.0'])('recognizes a port held on the wildcard address %s', async (host) => {
+    const port = await occupyPort(host);
+    expect(await probePort(port)).toBe(false);
+    expect(servers[0].listening).toBe(true);
+  });
+
+  it('recognizes a wildcard holder when probing one named host', async () => {
+    const port = await occupyPort('0.0.0.0');
+    expect(await probePort(port, '127.0.0.1')).toBe(false);
+    expect(servers[0].listening).toBe(true);
+  });
+
+  it.skipIf(!LAN_ADDRESS)('recognizes a port held only on a LAN address', async () => {
+    const port = await occupyPort(LAN_ADDRESS);
     expect(await probePort(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
