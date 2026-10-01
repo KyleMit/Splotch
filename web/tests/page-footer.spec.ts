@@ -3,6 +3,8 @@ import releases from '../src/lib/releases.json' with { type: 'json' };
 
 for (const viewport of [
   { width: 1280, height: 800 },
+  { width: 1280, height: 600 },
+  { width: 1280, height: 501 },
   { width: 320, height: 568 },
   { width: 812, height: 375 },
 ]) {

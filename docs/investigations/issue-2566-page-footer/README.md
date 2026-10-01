@@ -37,12 +37,23 @@ control.
 Hydrated manual maximum scrolling activates the oldest entry on desktop. At 320×568 and 812×375, the
 initial footer reserve instead moves the oldest entry wholly above the viewport (bottom −20.75px and
 −3.56px); the identical exact-base production probe keeps it in the observer band (130.25px and
-52.44px). Compact layouts count 160px of the footer and page-end footprint toward the reserve, while
-desktop retains 96px. Corrected oldest-entry bottoms are 43.25px and 60.44px, with the oldest
-active. A browser-only control reverting just that reserve to 96px reproduces the failure. The new
-maximum-scroll guard covers Changelog and Privacy at all three sizes; existing anchor, contents cap
-and scroll-chaining assertions remain unchanged. Captures wait for hydration, font readiness and
-final-section activation before saving.
+52.44px). The compact repair gives oldest-entry bottoms of 43.25px and 60.44px, with the oldest
+active. A browser-only control reverting just that reserve to 96px reproduces the failure.
+
+The second independent review extends the matrix and finds the same footer regression at desktop
+heights 501–614px, outside the compact breakpoint. Its retained browser probe measures oldest-entry
+bottoms from −34.14px to −0.14px and an unchanged newest marker. The identical web probe on the
+exact-base release passes all 32 route/size combinations. The rival's browser-only override of just
+the reserve to 160px passes all 22 route/size combinations, including both final-section activation
+and footer visibility. The final implementation therefore counts 160px of the footer and page-end
+footprint at every size, removing the breakpoint gap without changing either observer. Guards cover
+Changelog and Privacy at desktop 800px, 600px and 501px heights, the 320px phone and short
+landscape. Existing anchor, contents cap and scroll-chaining assertions remain unchanged. Captures
+wait for hydration, font readiness, final-section activation and transition settlement before
+saving. The final release probe passes all 32 route/size combinations with the final section active
+and the footer fully visible. Reverting only the reserve to 96px in that same compiled build fails
+the assertion: nine Changelog sizes lose the oldest marker, including both the desktop gap and
+compact cases. The retained script and positive/negative JSON preserve that comparison.
 
 The initial native build added a preload: the shared limit module became a runtime dependency of
 both privacy and lazy AI response handling. Moving the unchanged exhausted-grant wire codes into the
