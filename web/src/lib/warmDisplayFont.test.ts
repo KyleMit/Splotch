@@ -11,7 +11,8 @@ vi.mock('./idle', () => ({
   },
 }));
 
-import { QUICKSAND_FONT_FAMILY, warmDisplayFont } from './fonts';
+import { QUICKSAND_FONT_FAMILY } from './fonts';
+import { warmDisplayFont } from './warmDisplayFont';
 
 function runIdle() {
   for (const fn of idle.queued.splice(0)) fn();

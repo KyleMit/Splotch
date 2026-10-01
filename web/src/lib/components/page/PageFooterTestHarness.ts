@@ -4,11 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import releases from '$lib/releases.json';
 import PageFooter from './PageFooter.svelte';
 
-const route = vi.hoisted(() => ({ pathname: '/privacy' }));
-vi.mock('$app/state', () => ({ page: { url: route } }));
+const page = vi.hoisted(() => ({ url: { pathname: '/privacy' }, status: 200 }));
+vi.mock('$app/state', () => ({ page }));
 
-function renderedFooter(pathname: string) {
-  route.pathname = pathname;
+function renderedFooter(pathname: string, status = 200) {
+  page.url.pathname = pathname;
+  page.status = status;
   const { document } = new Window();
   document.body.innerHTML = render(PageFooter).body;
   return document;
@@ -54,6 +55,19 @@ export function describePageFooter(native: boolean) {
         `#${releases[0].id}`
       );
     });
+
+    it.each(['/privacy/missing', '/changelog/missing', '/feedback/missing'])(
+      'keeps sibling links available on a missing page at %s',
+      (pathname) => {
+        const document = renderedFooter(pathname, 404);
+        expect(document.querySelectorAll('nav [aria-current]')).toHaveLength(0);
+        expect(document.querySelector('nav a[href="/privacy"]')).not.toBeNull();
+        expect(document.querySelector('nav a[href="/changelog"]')).not.toBeNull();
+        expect(document.querySelector('.version a')?.getAttribute('href')).toBe(
+          `/changelog#${releases[0].id}`
+        );
+      }
+    );
 
     it('keeps native feedback external and marks feedback current only on web', () => {
       const document = renderedFooter('/feedback');

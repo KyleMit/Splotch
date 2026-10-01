@@ -229,3 +229,22 @@ The native export byte budget cannot catch it either, since it sums the whole ex
 
 An instrumented native build (`perf:build:cap`) reports a count mismatch without failing. The native
 export byte budget stays enforced there.
+
+### Friendly error pages and the font warmup boundary
+
+The root error entry can render without the normal layout. Importing `PageShell` there for a
+friendly 404 splits the native idle scheduler away from the font identity module, raising the native
+startup count from 28 to 29. Lazy shell and idle imports retain that independent dependency and do
+not restore the baseline.
+
+`fonts.ts` owns only the canonical family name. `warmDisplayFont.ts` owns the startup warmup and
+continues to call the existing idle scheduler with its existing cancellation and Save-Data behavior.
+The web warmup imports the canonical family. Native uses an inline family name, guarded by
+`fonts.test.ts`, so importing the identity through the shared token graph cannot create another
+startup request. Both release budgets remain unchanged.
+
+This keeps the 404 page synchronously server-rendered on web and shared with the native client
+fallback. A native lazy entry was rejected because it still split the scheduler and added a blank
+loading phase; merging chunks in bundler configuration would impose a wider manual partition policy
+for a small source boundary. The tradeoff is one deliberate native literal with a drift guard,
+matching the existing startup-boundary exception.
