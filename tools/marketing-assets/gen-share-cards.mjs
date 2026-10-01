@@ -12,13 +12,16 @@ import { QUICKSAND_FONT_FAMILY } from '../../web/src/lib/fonts.ts';
 import { ensureDevServer, openAppPage } from '../app-driver/lib/app-driver.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { ROOT } from '../lib/proc.mjs';
+import { shareCardInputHash } from './lib/share-card-inputs.mjs';
 
 const PORT = 5300;
 const MAX_CARD_BYTES = 300_000;
 const HASH_LENGTH = 8;
 const OUTPUT_DIR = join(ROOT, 'web/static/share');
 const HASH_FILE = join(ROOT, 'web/src/lib/components/page/shareCards.json');
+const INPUT_HASH_FILE = join(ROOT, 'web/src/lib/components/page/shareCardInputs.json');
 const DEVICE = { ...SHARE_CARD_SIZE, deviceScaleFactor: 1 };
+const inputSha256 = shareCardInputHash();
 
 async function waitForCardAssets(page) {
   await page.evaluate(async (family) => {
@@ -64,6 +67,7 @@ try {
   mkdirSync(OUTPUT_DIR, { recursive: true });
   for (const { file, png } of captures) writeFileSync(join(OUTPUT_DIR, file), png);
   writeFileSync(HASH_FILE, `${JSON.stringify(hashes, null, 2)}\n`);
+  writeFileSync(INPUT_HASH_FILE, `${JSON.stringify({ inputSha256 }, null, 2)}\n`);
   await ctx.close();
 } finally {
   await browser?.close();

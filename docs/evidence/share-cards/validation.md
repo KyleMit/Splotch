@@ -41,3 +41,12 @@ four new SSR cases failed, and the component was restored. The unchanged compone
 cases. Full Browserless results: 4385 app tests, 45 web SSR tests, 277 asset tests, 23 store-drawing
 tests, and 42 API smoke checks passed. After correcting nested-path fixtures, all 6647
 repository-tool tests passed. Quality passed all 14 checks.
+
+Independent Claude review found no blocking defects and identified a stale-render guard gap. The
+generator now records a separate input-provenance digest only after all four captures succeed; the
+eight-character PNG URL hash map is unchanged. The digest covers the current visual inputs,
+including names, size, recipe, components, mark, texture, global styles, tokens, palette and fonts.
+It detects changed inputs since generation, rather than proving universal pixel equivalence. Actual
+name and title-size source edits each made the provenance guard fail, and the restored files passed.
+Regeneration preserved all four PNGs byte-for-byte. The two touched oversized fixture file caps were
+lowered to their measured sizes, 1391 and 837 lines.
