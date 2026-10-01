@@ -26,6 +26,8 @@ import { dismissSaveFailure, reportSaveFailure } from '$lib/state/saveFailure.sv
 
 const ONE_PICTURE_ANNOUNCEMENT =
   "Your picture wasn't saved. Something went wrong while saving. Try again in a moment.";
+// Generous beside the component's gap between emptying the region and rewriting it.
+const REANNOUNCE_WAIT_MS = 2000;
 
 let mounted: ReturnType<typeof mount> | null = null;
 
@@ -71,6 +73,31 @@ async function reportFailedPicture() {
     baseName: 'splotch',
   });
   flushSync();
+}
+
+// Each distinct text the region shows, in order, as a screen reader's live-region observer would
+// see it at each microtask checkpoint. Text written and replaced within one task appears once.
+function recordTexts(region: Element) {
+  const texts: string[] = [];
+  const observer = new MutationObserver(() => texts.push(region.textContent ?? ''));
+  observer.observe(region, { childList: true, characterData: true, subtree: true });
+  return texts;
+}
+
+// The retry's save stays pending until the test settles it.
+function holdRetry() {
+  let finishRetry: (result: SaveResult) => void = () => {};
+  retryImageSave.mockImplementation(
+    () => new Promise<SaveResult>((resolve) => (finishRetry = resolve))
+  );
+  return (result: SaveResult) => finishRetry(result);
+}
+
+async function startRetry(target: HTMLElement) {
+  button(target, 'Try again').click();
+  await vi.waitFor(() => expect(retryImageSave).toHaveBeenCalledOnce());
+  flushSync();
+  await nextFrame();
 }
 
 beforeEach(() => {
@@ -136,26 +163,42 @@ describe('SaveFailureBanner announcement', () => {
   });
 
   it('leaves the announcement unchanged while a retry is saving', async () => {
-    let finishRetry: (result: SaveResult) => void = () => {};
-    retryImageSave.mockImplementation(
-      () => new Promise<SaveResult>((resolve) => (finishRetry = resolve))
-    );
+    const finishRetry = holdRetry();
     const target = mountBanner();
     await reportFailedPicture();
     await nextFrame();
     const region = statusRegion(target);
+    const texts = recordTexts(region);
 
-    button(target, 'Try again').click();
-    await vi.waitFor(() => expect(retryImageSave).toHaveBeenCalledOnce());
-    flushSync();
-    await nextFrame();
+    await startRetry(target);
 
     expect(button(target, 'Saving…').getAttribute('aria-busy')).toBe('true');
     expect(region.textContent).toBe(ONE_PICTURE_ANNOUNCEMENT);
+    expect(texts).toEqual([]);
 
-    finishRetry({ status: 'failed' });
-    await vi.waitFor(() => expect(button(target, 'Try again')).toBeDefined());
+    finishRetry({ status: 'downloads' });
+    await vi.waitFor(() => expect(banner(target)).toBeNull());
     await nextFrame();
-    expect(region.textContent).toBe(ONE_PICTURE_ANNOUNCEMENT);
+    expect(region.textContent).toBe('');
+  });
+
+  // A live region speaks only for a change it sees, and a retry that fails again leaves the
+  // banner's words exactly as they were.
+  it('announces a retry that fails again by emptying the region before rewriting the same words', async () => {
+    const finishRetry = holdRetry();
+    const target = mountBanner();
+    await reportFailedPicture();
+    await nextFrame();
+    const region = statusRegion(target);
+    const texts = recordTexts(region);
+
+    await startRetry(target);
+    finishRetry({ status: 'failed' });
+
+    await vi.waitFor(() => expect(texts).toEqual(['', ONE_PICTURE_ANNOUNCEMENT]), {
+      timeout: REANNOUNCE_WAIT_MS,
+    });
+    expect(button(target, 'Try again')).toBeDefined();
+    expect(statusRegion(target)).toBe(region);
   });
 });
