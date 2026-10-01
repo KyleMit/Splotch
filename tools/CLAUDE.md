@@ -72,13 +72,15 @@ organization, and are unchanged by a file move.
 `tools/lib/` is the **dependency foundation** — it must never import from a capability folder. A
 module belongs there only when independent capabilities consume it and no narrower domain owns it:
 `proc.mjs` (the common process/CLI helpers — `run`/`capture`/`fail`, `sh()` for a rejecting
-shell-based command runner, env and arg handling, the OS opener), `net.mjs` (`waitForUrl()` polls a
-URL until ready), `playwright.mjs` (resolves the Chromium binary), `vite-server.mjs` (spawns a
-throwaway vite dev/preview server in a detached process group so `stop()` can't orphan the vite
-grandchild, while `release()` hands that group to the OS instead — which is why it takes only the
-`RELEASABLE_STDIO` sinks it exports and throws on anything this process would take with it),
-`html.mjs` (escaping/render primitives for the report producers), `smoke.mjs` (the
-`check()`/`fatal()`/`summarize()` pass-fail reporter), and `coloring-book-assets.mjs`.
+shell-based command runner, env and arg handling, the OS opener; the ADR integrity workflow runs it
+on the GitHub runner's default Node, not the repo's pinned one, so it keeps to APIs that older Node
+has — `tools/lib/README.md`), `net.mjs` (`waitForUrl()` polls a URL until ready), `playwright.mjs`
+(resolves the Chromium binary), `vite-server.mjs` (spawns a throwaway vite dev/preview server in a
+detached process group so `stop()` can't orphan the vite grandchild, while `release()` hands that
+group to the OS instead — which is why it takes only the `RELEASABLE_STDIO` sinks it exports and
+throws on anything this process would take with it), `html.mjs` (escaping/render primitives for the
+report producers), `smoke.mjs` (the `check()`/`fatal()`/`summarize()` pass-fail reporter), and
+`coloring-book-assets.mjs`.
 
 Everything else lives in the `lib/` of the capability that owns it, and another tool may import it
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
@@ -185,12 +187,12 @@ entry script.
 * `tools/check-doc-references.mjs` (`npm run check:doc-refs`, and
   `tools/tests/doc-references.test.mjs` in the CI tools tier) fails when a living doc, skill, or
   rule names a repo path or npm script that does not resolve. It resolves against `git ls-files`
-  rather than the working tree, lets the repo's ignore rules pass build outputs and local-only
-  files, and skips history records, skill notes, and Ruler-generated copies. Classes of false
-  positive are rules in the module; a single deliberately unresolvable reference is an
-  `ALLOWED_REFERENCES` entry with its reason, and an entry that stops matching fails the check.
-  Identifiers print under `--identifiers` and never fail it — the `reconcile-docs-with-code` skill
-  judges them.
+  rather than the working tree — so a doc naming a file you just created fails until that file is
+  `git add`-ed — lets the repo's ignore rules pass build outputs and local-only files, and skips
+  history records, skill notes, and Ruler-generated copies. Classes of false positive are rules in
+  the module; a single deliberately unresolvable reference is an `ALLOWED_REFERENCES` entry with its
+  reason, and an entry that stops matching fails the check. Identifiers print under `--identifiers`
+  and never fail it — the `reconcile-docs-with-code` skill judges them.
 * The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
   `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
   evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,

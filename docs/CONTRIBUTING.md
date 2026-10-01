@@ -206,6 +206,10 @@ harness — it ships as the public `/design` route (see the `design` skill).
 
 ## Code conventions
 
+The coding standards live in `docs/CODING-STANDARDS.md`: each rule with the incident that earned it
+and what enforces it. Read it before adding, relaxing, or re-proposing a rule. The conventions below
+are the day-to-day ones.
+
 **Svelte 5 runes only.** Use `$state`, `$derived`, `$effect`, `$props`. No legacy stores
 (`writable`, `readable`).
 
