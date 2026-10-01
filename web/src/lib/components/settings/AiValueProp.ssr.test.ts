@@ -40,7 +40,7 @@ describe('AiValueProp free-allowance claim', () => {
     [null, 'The first 10 pictures are free — nothing to set up, no card.'],
     [10, 'The first 10 pictures are free — nothing to set up, no card.'],
     [7, 'You have 7 free pictures left — nothing to set up, no card.'],
-    [1, 'You have 1 free pictures left — nothing to set up, no card.'],
+    [1, 'You have 1 free picture left — nothing to set up, no card.'],
     [0, 'Your 10 free pictures are used up.'],
   ])('with a last answered count of %s reads "%s"', (lastGrantRemaining, claim) => {
     expect(allowanceClaim(lastGrantRemaining)).toBe(claim);

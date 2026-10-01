@@ -92,7 +92,9 @@ test('disabling the active optional brush in Settings returns to Pen', async ({ 
   await expect(page.locator('.actions-panel')).not.toHaveAttribute('data-brush');
 });
 
-test('disabling Eraser hides its Apple Pencil gesture setting', async ({ page }) => {
+test('hiding Eraser or the Tool Drawer hides its Apple Pencil gesture setting', async ({
+  page,
+}) => {
   await page.addInitScript(
     ({ applePencilSeen }) => {
       localStorage.setItem(applePencilSeen, 'true');
@@ -105,6 +107,13 @@ test('disabling Eraser hides its Apple Pencil gesture setting', async ({ page })
   await expect(page.locator('#pencilEraserToggle')).toBeVisible();
   await page.locator('#eraserToggle').click();
   await expect(page.locator('#pencilEraserToggle')).toHaveCount(0);
+
+  await page.locator('#eraserToggle').click();
+  await expect(page.locator('#pencilEraserToggle')).toBeVisible();
+  await page.locator('#toolDrawerToggle').click();
+  await expect(page.locator('#pencilEraserToggle')).toHaveCount(0);
+  await page.locator('#toolDrawerToggle').click();
+  await expect(page.locator('#pencilEraserToggle')).toBeVisible();
 });
 
 // Settings can take the menu's brushes away while the menu is open, and a
