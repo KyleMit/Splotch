@@ -1,28 +1,11 @@
 
 > splotch@1.6.0 test:e2e
-> node tools/run-web-tool.mjs playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --project=chromium --workers=1
+> node tools/run-web-tool.mjs playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --workers=1
 
-$ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --project=chromium --workers=1
-[WebServer] (node:91461) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+$ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outline.spec.ts --workers=1
+[WebServer] (node:96817) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (node:91492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
-[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
-[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
-[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
-[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
-[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
-[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
-[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
-[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
-[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
-[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
-[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
-[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
-[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
-[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
-[WebServer] (node:91492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:96848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
 [WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
@@ -39,6 +22,8 @@ $ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outli
 [WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
 [WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
 [WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:96848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
 [WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
 [WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
@@ -54,8 +39,6 @@ $ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outli
 [WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
 [WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
 [WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
-[WebServer] (node:91492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
 [WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
 [WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
@@ -71,9 +54,26 @@ $ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outli
 [WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
 [WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
 [WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
-[WebServer] (node:91503) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:96848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (node:91538) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+[WebServer]   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+[WebServer]   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+[WebServer]   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+[WebServer]   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+[WebServer]   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+[WebServer]   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+[WebServer]   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+[WebServer]   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+[WebServer]   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+[WebServer]   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+[WebServer]   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+[WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[WebServer] (node:96860) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:96891) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
 [WebServer]   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
@@ -92,51 +92,52 @@ $ playwright test changelog.spec.ts page-footer.spec.ts settings-whats-new-outli
 [WebServer] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 [WebServer] [tokens] Netlify Blobs unavailable, using in-memory reads: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
 
-Running 42 tests using 1 worker
+Running 43 tests using 1 worker
 
-(node:91542) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:96934) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  ✓   1 [chromium] › tests/changelog.spec.ts:17:3 › short touch screens › short screens compress the hero and open on release content (173ms)
-  ✓   2 [chromium] › tests/changelog.spec.ts:34:1 › short desktop viewports disclose the changelog introduction (104ms)
-  ✓   3 [chromium] › tests/changelog.spec.ts:41:1 › the changelog lede keeps its closing phrase together (80ms)
+  ✓   1 [chromium] › tests/changelog.spec.ts:17:3 › short touch screens › short screens compress the hero and open on release content (148ms)
+  ✓   2 [chromium] › tests/changelog.spec.ts:34:1 › short desktop viewports disclose the changelog introduction (110ms)
+  ✓   3 [chromium] › tests/changelog.spec.ts:41:1 › the changelog lede keeps its closing phrase together (79ms)
   ✓   4 [chromium] › tests/changelog.spec.ts:56:1 › the changelog renders every release with its notes (132ms)
-  ✓   5 [chromium] › tests/changelog.spec.ts:71:1 › the changelog table of contents links to every release (80ms)
-  ✓   6 [chromium] › tests/changelog.spec.ts:83:1 › the contents rail marks the release being read (131ms)
-  ✓   7 [chromium] › tests/changelog.spec.ts:106:3 › phone › the contents collapses behind one row so the newest release clears the fold (150ms)
-  ✓   8 [chromium] › tests/changelog.spec.ts:127:3 › phone › the contents row counts the releases at the hero and names the one being read (158ms)
+  ✓   5 [chromium] › tests/changelog.spec.ts:71:1 › the changelog table of contents links to every release (85ms)
+  ✓   6 [chromium] › tests/changelog.spec.ts:83:1 › the contents rail marks the release being read (130ms)
+  ✓   7 [chromium] › tests/changelog.spec.ts:106:3 › phone › the contents collapses behind one row so the newest release clears the fold (148ms)
+  ✓   8 [chromium] › tests/changelog.spec.ts:127:3 › phone › the contents row counts the releases at the hero and names the one being read (156ms)
   ✓   9 [chromium] › tests/changelog.spec.ts:149:3 › phone › picking a release from the contents lands it clear of the pinned row (195ms)
   ✓  10 [chromium] › tests/changelog.spec.ts:188:3 › phone deep link › parks its release clear of the pinned contents row (56ms)
   ✓  11 [chromium] › tests/changelog.spec.ts:204:1 › the complete changelog is present in prerendered HTML (11ms)
-  ✓  12 [chromium] › tests/changelog.spec.ts:222:3 › phone landscape › the open contents panel scrolls inside itself, bottom edge on screen (155ms)
-  ✓  13 [chromium] › tests/changelog.spec.ts:232:3 › phone landscape › a panel opened below its pin scrolls the row into it (1.1s)
-  ✓  14 [chromium] › tests/changelog.spec.ts:244:3 › an initial folded link opens and lands at 1280px (104ms)
+  ✓  12 [chromium] › tests/changelog.spec.ts:222:3 › phone landscape › the open contents panel scrolls inside itself, bottom edge on screen (132ms)
+  ✓  13 [chromium] › tests/changelog.spec.ts:232:3 › phone landscape › a panel opened below its pin scrolls the row into it (2.1s)
+  ✓  14 [chromium] › tests/changelog.spec.ts:244:3 › an initial folded link opens and lands at 1280px (100ms)
   ✓  15 [chromium] › tests/changelog.spec.ts:244:3 › an initial folded link opens and lands at 390px (96ms)
-  ✓  16 [chromium] › tests/changelog.spec.ts:264:1 › the older fold opens from keyboard and hands focus into the revealed history (103ms)
-  ✓  17 [chromium] › tests/changelog.spec.ts:279:1 › rail, hash and history navigation reveal and land before highlighting (267ms)
+  ✓  16 [chromium] › tests/changelog.spec.ts:264:1 › the older fold opens from keyboard and hands focus into the revealed history (81ms)
+  ✓  17 [chromium] › tests/changelog.spec.ts:279:1 › rail, hash and history navigation reveal and land before highlighting (266ms)
   ✓  18 [chromium] › tests/changelog.spec.ts:313:1 › hydration fills relative dates while prerendered placeholders stay empty (84ms)
-  ✓  19 [chromium] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in light (83ms)
-  ✓  20 [chromium] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in dark (97ms)
+  ✓  19 [chromium] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in light (81ms)
+  ✓  20 [chromium] › tests/changelog.spec.ts:333:3 › the tape and active highlighter text hold AA contrast in dark (79ms)
   ✓  21 [chromium] › tests/changelog.spec.ts:386:1 › rapid fragment changes leave only the latest arrival and reduced motion keeps it still (3.0s)
-  ✓  22 [chromium] › tests/changelog.spec.ts:420:1 › forced colors keep both changelog chevrons visible against the system canvas (94ms)
-  ✓  23 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×800 (235ms)
-  ✓  24 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 (238ms)
-  ✓  25 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 (255ms)
-  ✓  26 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 (188ms)
-  ✓  27 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 (205ms)
-  ✓  28 [chromium] › tests/page-footer.spec.ts:41:3 › the /privacy footer identifies its section without linking to itself (80ms)
-  ✓  29 [chromium] › tests/page-footer.spec.ts:41:3 › the /changelog footer identifies its section without linking to itself (75ms)
-  ✓  30 [chromium] › tests/page-footer.spec.ts:41:3 › the /feedback footer identifies its section without linking to itself (100ms)
-  ✓  31 [chromium] › tests/page-footer.spec.ts:41:3 › the /beta footer identifies its section without linking to itself (70ms)
-  ✓  32 [chromium] › tests/page-footer.spec.ts:51:1 › the footer release link scrolls to the newest public release (166ms)
-  ✓  33 [chromium] › tests/page-footer.spec.ts:61:3 › the light footer fits a 320px phone with readable links (136ms)
-  ✓  34 [chromium] › tests/page-footer.spec.ts:61:3 › the dark footer fits a 320px phone with readable links (135ms)
-  ✓  35 [chromium] › tests/page-footer.spec.ts:85:1 › forced colors preserve the footer rule and current marker (116ms)
-  ✓  36 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×800 (126ms)
-  ✓  37 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×600 (99ms)
-  ✓  38 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×501 (98ms)
-  ✓  39 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 320×568 (100ms)
-  ✓  40 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 812×375 (102ms)
-  ✓  41 [chromium] › tests/settings-whats-new-outline.spec.ts:33:1 › What's New nests its release date under the wide pane's Updates title (831ms)
-  ✓  42 [chromium] › tests/settings-whats-new-outline.spec.ts:45:1 › What's New nests its release date under the phone drill-in's Updates title (636ms)
+  ✓  22 [chromium] › tests/changelog.spec.ts:433:1 › forced colors keep both changelog chevrons visible against the system canvas (99ms)
+  ✓  23 [chromium] › tests/changelog.spec.ts:453:1 › picking the current rail release repeats arrival without adding a history entry (4.0s)
+  ✓  24 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×800 (235ms)
+  ✓  25 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×600 (224ms)
+  ✓  26 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 1280×501 (257ms)
+  ✓  27 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 320×568 (238ms)
+  ✓  28 [chromium] › tests/page-footer.spec.ts:11:3 › final sections remain active at maximum scroll on 812×375 (223ms)
+  ✓  29 [chromium] › tests/page-footer.spec.ts:41:3 › the /privacy footer identifies its section without linking to itself (78ms)
+  ✓  30 [chromium] › tests/page-footer.spec.ts:41:3 › the /changelog footer identifies its section without linking to itself (73ms)
+  ✓  31 [chromium] › tests/page-footer.spec.ts:41:3 › the /feedback footer identifies its section without linking to itself (95ms)
+  ✓  32 [chromium] › tests/page-footer.spec.ts:41:3 › the /beta footer identifies its section without linking to itself (68ms)
+  ✓  33 [chromium] › tests/page-footer.spec.ts:51:1 › the footer release link scrolls to the newest public release (164ms)
+  ✓  34 [chromium] › tests/page-footer.spec.ts:61:3 › the light footer fits a 320px phone with readable links (135ms)
+  ✓  35 [chromium] › tests/page-footer.spec.ts:61:3 › the dark footer fits a 320px phone with readable links (135ms)
+  ✓  36 [chromium] › tests/page-footer.spec.ts:85:1 › forced colors preserve the footer rule and current marker (117ms)
+  ✓  37 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×800 (98ms)
+  ✓  38 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×600 (125ms)
+  ✓  39 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 1280×501 (127ms)
+  ✓  40 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 320×568 (103ms)
+  ✓  41 [chromium] › tests/page-footer.spec.ts:104:3 › the final visible release is active while older history stays folded on 812×375 (102ms)
+  ✓  42 [chromium] › tests/settings-whats-new-outline.spec.ts:33:1 › What's New nests its release date under the wide pane's Updates title (814ms)
+  ✓  43 [chromium] › tests/settings-whats-new-outline.spec.ts:45:1 › What's New nests its release date under the phone drill-in's Updates title (653ms)
 
-  42 passed (14.8s)
+  43 passed (19.7s)

@@ -449,3 +449,43 @@ test('forced colors keep both changelog chevrons visible against the system canv
     await expect(glyph).toHaveCSS('fill', canvasText);
   }
 });
+
+test('picking the current rail release repeats arrival without adding a history entry', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const target = releases[3];
+  await page.goto(`/changelog#${target.id}`);
+  const article = page.locator(`#${target.id}`);
+  await expect(article).toHaveAttribute('data-arrived');
+  await expect(article).not.toHaveAttribute('data-arrived');
+  const historyLength = await page.evaluate(() => history.length);
+  await page
+    .getByRole('navigation', { name: 'Changelog contents' })
+    .getByRole('link', { name: `Version ${target.version}` })
+    .click();
+  await expect(article).toHaveAttribute('data-arrived');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+  expect(await article.evaluate((el) => Math.round(el.getBoundingClientRect().top))).toBe(24);
+  await expect
+    .poll(() =>
+      article.evaluate((el) =>
+        el.hasAttribute('data-arrived') ? Number(getComputedStyle(el, '::after').opacity) : 1
+      )
+    )
+    .toBeLessThan(0.9);
+  await expect(article).toHaveAttribute('data-arrived');
+  await page
+    .getByRole('navigation', { name: 'Changelog contents' })
+    .getByRole('link', { name: `Version ${target.version}` })
+    .click();
+  await expect
+    .poll(() =>
+      article.evaluate((el) =>
+        el.hasAttribute('data-arrived') ? Number(getComputedStyle(el, '::after').opacity) : 0
+      )
+    )
+    .toBeGreaterThan(0.9);
+  await expect(article).toHaveAttribute('data-arrived');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+});

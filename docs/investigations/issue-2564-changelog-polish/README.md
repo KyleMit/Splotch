@@ -37,7 +37,7 @@ the observer selects the last fully passed visible article instead of retaining 
 Closed-details entries are explicitly excluded from that fallback.
 
 Validation includes the complete production browser suite (1,071 passed), all five browserless
-tiers, 42 focused installed WebKit cases, and both release-build budget guards. The WebKit checks
+tiers, 43 focused installed WebKit cases, and both release-build budget guards. The WebKit checks
 include actual landing geometry, keyboard focus, open-panel caps, all five closed/full-history tail
 sizes, AA tape and active highlighter text in both themes, rapid arrival changes, reduced motion and
 Settings headings. Browserless coverage reports 4,365 unit, 41 UI, 277 server, 23 API-unit, 6,645
@@ -87,3 +87,15 @@ arrival. CSS owns the 400ms hold and derives the remaining fade from that lifeti
 same 2,400ms cleanup and 2,000ms fade. The browser guard checks actual computed duration plus delay,
 and changes only the private duration variable to 3,000ms before restoring it to prove that CSS
 follows the owner rather than an independent literal.
+
+The prior independent CSS timing is a negative control: restoring only its literal makes the 3,000ms
+owner-change assertion report 2,400ms and fail. The restored shared-owner positive passes. An actual
+current-anchor replay also reproduced a missing arrival after expiry. Current rail picks use the
+same measured navigation controller without adding a history entry; the guard pins both the repeated
+highlight and actual landing.
+
+Picking the same article during its fade also needs a style flush between removing and restoring the
+arrival marker. Otherwise the browser coalesces those changes and continues the previous animation.
+The flush is conditional on that discrete repeat pick. Its browser guard waits for a partially faded
+highlight, picks again and measures opacity returning to full strength without growing history. The
+unflushed source fails that measured restart; the restored controller passes.

@@ -26,9 +26,12 @@ export function createReleaseNavigation(host: HTMLElement) {
 
   function arrive(href: string) {
     clearTimeout(arrivalTimer);
-    host.querySelector('[data-arrived]')?.removeAttribute('data-arrived');
+    const previous = host.querySelector('[data-arrived]');
+    previous?.removeAttribute('data-arrived');
     const article = target(href);
     if (!article || disposed) return;
+    // A style flush restarts the fade when its active article is picked again.
+    if (previous === article) article.getBoundingClientRect();
     article.setAttribute('data-arrived', '');
     arrivalTimer = setTimeout(() => article.removeAttribute('data-arrived'), ARRIVAL_DURATION_MS);
   }
@@ -49,7 +52,11 @@ export function createReleaseNavigation(host: HTMLElement) {
       return;
     if (!(event.target instanceof Element)) return;
     const href = event.target.closest('a[href^="#release-"]')?.getAttribute('href');
-    if (href) void reveal(href);
+    if (!href) return;
+    if (window.location.hash === href && event.target.closest('.contents-rail')) {
+      event.preventDefault();
+      void navigate();
+    } else void reveal(href);
   }
 
   function onToggle(event: Event) {
