@@ -99,6 +99,7 @@ it('rejects assets that are served but never fetched', () => {
       precacheUrls: [
         appShellUrl,
         'large-image.png',
+        'share/privacy.png',
         'web-app-manifest-192x192.png',
         'web-app-manifest-512x512.png',
         'web-app-manifest-maskable-512x512.png',
@@ -109,7 +110,7 @@ it('rejects assets that are served but never fetched', () => {
       coloringManifest,
     })
   ).toEqual([
-    'Assets served but never fetched by the application remain in the PWA precache: large-image.png, web-app-manifest-192x192.png, web-app-manifest-512x512.png',
+    'Assets served but never fetched by the application remain in the PWA precache: large-image.png, share/privacy.png, web-app-manifest-192x192.png, web-app-manifest-512x512.png',
   ]);
 });
 

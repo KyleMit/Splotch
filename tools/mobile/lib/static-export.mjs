@@ -11,6 +11,10 @@
 // the leading slash) so the strip and the tag rewrite agree by construction.
 export const WEB_ONLY_STATIC_FILES = [
   'large-image.png',
+  'share/privacy.png',
+  'share/changelog.png',
+  'share/feedback.png',
+  'share/beta.png',
   'favicon.ico',
   'favicon-96x96.png',
   'apple-touch-icon.png',

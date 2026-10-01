@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nativeUnusedCoverLineArt } from '../../lib/coloring-book-assets.mjs';
@@ -8,6 +8,13 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const appHtml = readFileSync(join(repoRoot, 'web/src/app.html'), 'utf8');
 
 describe('WEB_ONLY_STATIC_FILES', () => {
+  it('strips every page share card without removing its source', () => {
+    const files = readdirSync(join(repoRoot, 'web/static/share'));
+    expect(files.length).toBe(4);
+    expect(WEB_ONLY_STATIC_FILES.filter((file) => file.startsWith('share/')).sort()).toEqual(
+      files.map((file) => `share/${file}`).sort()
+    );
+  });
   it('lists only files that exist in the static tree', () => {
     for (const file of WEB_ONLY_STATIC_FILES) {
       expect(() => readFileSync(join(repoRoot, 'web/static', file)), file).not.toThrow();

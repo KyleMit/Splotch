@@ -13,6 +13,12 @@ import { CACHE_BUST_VERSION_PARAM } from '../src/lib/pwa/versionEndpoint';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { NARROW_PHONE_MIN_WIDTH_PX } from '../src/lib/breakpoints';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
+import {
+  PAGE_SHARE_CARDS,
+  SHARE_CARD_SIZE,
+  shareImageFor,
+  isPageShareCardPath,
+} from '../src/lib/components/page/socialCard';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
 test('home page renders the drawing canvas', async ({ page }) => {
@@ -166,6 +172,25 @@ for (const width of [320, 360, 375, NARROW_PHONE_MIN_WIDTH_PX]) {
       expect(layout.strip === 'none').toBe(width < NARROW_PHONE_MIN_WIDTH_PX);
     });
   }
+}
+
+for (const path of Object.keys(PAGE_SHARE_CARDS)) {
+  test(`${path} previews its own committed page image`, async ({ page, request }) => {
+    if (!isPageShareCardPath(path)) throw new Error('Invalid card fixture');
+    await page.goto(path);
+    const image = shareImageFor(path);
+    expect(await metaContent(page, 'og:image')).toBe(image.url);
+    expect(await metaContent(page, 'og:image:width')).toBe(String(SHARE_CARD_SIZE.width));
+    expect(await metaContent(page, 'og:image:height')).toBe(String(SHARE_CARD_SIZE.height));
+    expect(await metaContent(page, 'og:image:alt')).toBe(image.alt);
+    expect(await metaContent(page, 'twitter:image', 'name')).toBe(image.url);
+    expect(await metaContent(page, 'twitter:image:alt', 'name')).toBe(image.alt);
+    const res = await request.get(new URL(image.url).pathname);
+    expect(res.ok()).toBe(true);
+    const png = await res.body();
+    expect(png.readUInt32BE(16)).toBe(SHARE_CARD_SIZE.width);
+    expect(png.readUInt32BE(20)).toBe(SHARE_CARD_SIZE.height);
+  });
 }
 
 // <meta name="theme-color"> is the browser address bar and the PWA status bar.

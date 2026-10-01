@@ -86,7 +86,9 @@ export function pwaPrecacheProblems({
       `${responsivePrecacheUrls.length} responsive coloring derivatives remain in the PWA precache`
     );
   }
-  const servedOnlyPrecacheUrls = precacheUrls.filter((url) => SERVED_ONLY_ASSET_URLS.has(url));
+  const servedOnlyPrecacheUrls = precacheUrls.filter(
+    (url) => SERVED_ONLY_ASSET_URLS.has(url) || url.startsWith('share/')
+  );
   if (servedOnlyPrecacheUrls.length) {
     problems.push(
       `Assets served but never fetched by the application remain in the PWA precache: ${servedOnlyPrecacheUrls.join(', ')}`
