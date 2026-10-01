@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { writeEmptyFiles } from './buildFixtures.mjs';
 import {
   destinationBlocked,
   evidenceFileName,
@@ -834,11 +835,7 @@ describe('keep-capture-evidence', () => {
 });
 
 describe('buildDirHoldsNativeExport', () => {
-  const buildDir = (files) => {
-    const dir = tempDir('splotch-build-');
-    for (const file of files) writeFileSync(join(dir, file), '');
-    return dir;
-  };
+  const buildDir = (files) => writeEmptyFiles(tempDir('splotch-build-'), files);
 
   // `build:cap` writes the native export into the same web/build the web build
   // uses, so a native build silently replaces what the preview server serves —
@@ -894,7 +891,7 @@ describe('the served build is re-checked per capture', () => {
     const dir = tempDir('splotch-poststart-');
     writeFileSync(join(dir, 'index.html'), '');
     writeFileSync(join(dir, 'start.abc.js'), '');
-    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
+    writeEmptyFiles(dir, WEB_ONLY_STATIC_FILES);
 
     expect(buildDirHoldsNativeExport(dir)).toBe(false);
 

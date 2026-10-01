@@ -9,11 +9,12 @@ against a hot-reloading page and this tooling only captures and screenshots.
 
 ## Entry points
 
-| Entry point                 | Public command                           | Output                              |
-| --------------------------- | ---------------------------------------- | ----------------------------------- |
-| `gen-promotional-image.mjs` | `npm run gen:promotional-image`          | `web/static/large-image.png`        |
-| `gen-store-assets.mjs`      | `npm run gen:store-assets` (+ `:frames`) | `store-assets/` screenshots/graphic |
-| `gen-readme-hero.mjs`       | `npm run gen:readme-hero`                | `docs/assets/readme-hero.webp`      |
+| Entry point                 | Public command                           | Output                                       |
+| --------------------------- | ---------------------------------------- | -------------------------------------------- |
+| `gen-share-cards.mjs`       | `npm run gen:share-cards`                | `web/static/share/*.png` + `shareCards.json` |
+| `gen-promotional-image.mjs` | `npm run gen:promotional-image`          | `web/static/large-image.png`                 |
+| `gen-store-assets.mjs`      | `npm run gen:store-assets` (+ `:frames`) | `store-assets/` screenshots/graphic          |
+| `gen-readme-hero.mjs`       | `npm run gen:readme-hero`                | `docs/assets/readme-hero.webp`               |
 
 The output filename `large-image.png` remains unchanged because it is the social/link-preview image
 served from `web/static/` for Open Graph and Twitter cards. The generator replays
@@ -114,3 +115,9 @@ npm run test:driver:smoke
 npm run gen:promotional-image
 npm run gen:store-assets
 ```
+
+Regenerate page share cards after changes to `web/src/routes/dev/share-cards/lib/ShareCard.svelte`,
+the crayon palette, handmade-paper texture, or card names. The generator waits for Quicksand and
+decodes the real paper texture, then captures 1200×630 PNGs at device scale 1. It compresses each
+PNG below 300 KB and records its first eight SHA-256 hex digits for scraper cache busting. The home
+promotional image is independent and remains unchanged.

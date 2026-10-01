@@ -31,6 +31,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
+import { createWebBuildFixture } from './buildFixtures.mjs';
 import {
   entryModulePath,
   servedBuildBinding,
@@ -1328,20 +1329,7 @@ describe('the campaign probe-host protocol gate', () => {
 describe('servedBuildFingerprintProblem', () => {
   // A synthetic build rather than the real web/build: CI's browserless job runs no build,
   // and a test that reads the real one passes only where a build happens to exist.
-  const fakeBuild = () => {
-    const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
-    onTestFinished(() => rmSync(dir, { recursive: true, force: true }));
-    const entry = join(dir, '_app', 'immutable', 'entry');
-    mkdirSync(entry, { recursive: true });
-    writeFileSync(
-      join(dir, 'index.html'),
-      '<script>import("/_app/immutable/entry/start.Aaa.js")</script>'
-    );
-    writeFileSync(join(entry, 'start.Aaa.js'), 'import "/_app/immutable/entry/app.Bbb.js";');
-    writeFileSync(join(entry, 'app.Bbb.js'), 'export const app = 1;');
-    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
-    return dir;
-  };
+  const fakeBuild = createWebBuildFixture;
   const serveFrom =
     (dir, mutate = (path, body) => body) =>
     async (url) => {
