@@ -157,6 +157,17 @@ describe('submitReport and the device opt-in', () => {
     expect(issueBody()).not.toContain(overflow);
     expect(issueBody()).toContain('x'.repeat(MAX_REPORT_MESSAGE_LENGTH));
   });
+
+  it('drops an emoji the message cap would split rather than leave half of it', async () => {
+    await submitReport({
+      ...base,
+      message: `${'x'.repeat(MAX_REPORT_MESSAGE_LENGTH - 1)}🖍 tail`,
+      device: null,
+    });
+
+    expect(issueBody().isWellFormed()).toBe(true);
+    expect(issueBody()).toContain(`${'x'.repeat(MAX_REPORT_MESSAGE_LENGTH - 1)}\n`);
+  });
 });
 
 // The issue title is the only part of a report a triager sees in a list view,
@@ -229,6 +240,21 @@ describe('the issue title', () => {
     });
 
     expect(issueTitle()).toBe(`[Bug] ${expectedSummary}`);
+  });
+
+  // An emoji is two UTF-16 code units; a cut between them leaves a lone
+  // surrogate that GitHub renders as `?` in the title.
+  it('drops an emoji the cut would split, staying within the cap', async () => {
+    const keptLength = EXPECTED_SUMMARY_LENGTH - 2;
+
+    await submitReport({
+      ...base,
+      kind: 'bug',
+      message: `${'y'.repeat(keptLength)}🖍 and more`,
+    });
+
+    expect(issueTitle().isWellFormed()).toBe(true);
+    expect(issueTitle()).toBe(`[Bug] ${'y'.repeat(keptLength)}…`);
   });
 });
 

@@ -31,6 +31,17 @@ describe('failureReportRows', () => {
     expect(rows[0].value).toBe('No response · /api/generation-result');
     expect(rows.at(-1)?.value).toBe('Default');
   });
+
+  // The rows become the message of a GitHub issue, where half an emoji renders as `?`.
+  it('drops an emoji the message cap would split rather than leave half of it', () => {
+    const rows = failureReportRows(
+      { status: 500, endpoint: '/api/generate-image', message: `${'x'.repeat(999)}🖍 tail` },
+      1,
+      null
+    );
+    expect(rows[1]).toEqual({ label: 'Message', value: 'x'.repeat(999) });
+    expect(rows[1].value.isWellFormed()).toBe(true);
+  });
   it('normalizes multiline upstream errors into one previewed report row', () => {
     const rows = failureReportRows(
       {

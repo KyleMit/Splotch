@@ -4,6 +4,8 @@
 // use it — the field order and labels live here once so the parent-facing
 // preview and the Markdown written into the GitHub issue can never drift.
 
+import { truncateCodeUnits } from '$lib/truncate';
+
 // Every field a report can carry, with its human label, in row order. The table
 // is the DeviceInfo type, so a collector can't fill a field that has no label.
 const DEVICE_INFO_LABELS = {
@@ -57,10 +59,12 @@ export function sanitizeDeviceInfo(raw: unknown): DeviceInfo {
   for (const key of DEVICE_INFO_FIELDS) {
     const value = source[key];
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      const cleaned = String(value)
-        .replace(/[\r\n`]+/g, ' ')
-        .trim()
-        .slice(0, MAX_FIELD_LENGTH);
+      const cleaned = truncateCodeUnits(
+        String(value)
+          .replace(/[\r\n`]+/g, ' ')
+          .trim(),
+        MAX_FIELD_LENGTH
+      );
       if (cleaned) info[key] = cleaned;
     }
   }

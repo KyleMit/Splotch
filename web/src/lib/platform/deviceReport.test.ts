@@ -68,6 +68,12 @@ describe('sanitizeDeviceInfo', () => {
     expect(clean.browser?.length).toBe(200);
   });
 
+  it('drops an emoji the cap would split rather than leave half of it', () => {
+    const clean = sanitizeDeviceInfo({ device: `${'x'.repeat(199)}🖍` });
+    expect(clean.device).toBe('x'.repeat(199));
+    expect(clean.device?.isWellFormed()).toBe(true);
+  });
+
   it('returns an empty object for non-object input', () => {
     expect(sanitizeDeviceInfo(null)).toEqual({});
     expect(sanitizeDeviceInfo('nope')).toEqual({});
