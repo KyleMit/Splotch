@@ -19,8 +19,8 @@ importers:
   .:
     dependencies:
       '@aparajita/capacitor-secure-storage':
-        specifier: ^8.0.0
-        version: 8.0.0
+        specifier: ^8.0.1
+        version: 8.0.1
       '@capacitor-community/media':
         specifier: ^9.1.0
         version: 9.1.0(@capacitor/core@8.5.2)
@@ -193,8 +193,8 @@ importers:
 
 packages:
 
-  '@aparajita/capacitor-secure-storage@8.0.0':
-    resolution: {integrity: sha512-oYnwSjdIh23aRNgz8982+TmFvQH/2yZkEdw1iIg+H2ziFJoOVELPTc7u6Ez2HwOuDIW5AGqBX75GvrzQ+D70Qg==}
+  '@aparajita/capacitor-secure-storage@8.0.1':
+    resolution: {integrity: sha512-NSYIQtH6TyBgL3myumQGcCE3iecq2PtGNFlGxl1fJKEU37Dv5DudzDlwg42cgbVxCm1ay72g4X7rTSAvKULsVg==}
     engines: {node: '>=20.0.0'}
 
   '@apideck/better-ajv-errors@0.3.7':
@@ -729,8 +729,8 @@ packages:
     peerDependencies:
       '@capacitor/core': ^8.5.0
 
-  '@capacitor/app@8.1.0':
-    resolution: {integrity: sha512-MlmttTOWHDedr/G4SrhNRxsXMqY+R75S4MM4eIgzsgCzOYhb/MpCkA5Q3nuOCfL1oHm26xjUzqZ5aupbOwdfYg==}
+  '@capacitor/app@8.1.1':
+    resolution: {integrity: sha512-xM2ZTX5jK60tFtmjsmJv+Cdj1Qsb6NcavkqmdEnCPQBeya9oKhamZJxYOnQNj1ZvcJM7sWfG6BEtSLx42pisbA==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -5762,10 +5762,10 @@ packages:
 
 snapshots:
 
-  '@aparajita/capacitor-secure-storage@8.0.0':
+  '@aparajita/capacitor-secure-storage@8.0.1':
     dependencies:
       '@capacitor/android': 8.5.2(@capacitor/core@8.5.2)
-      '@capacitor/app': 8.1.0(@capacitor/core@8.5.2)
+      '@capacitor/app': 8.1.1(@capacitor/core@8.5.2)
       '@capacitor/core': 8.5.2
       '@capacitor/ios': 8.5.2(@capacitor/core@8.5.2)
       '@capacitor/keyboard': 8.0.5(@capacitor/core@8.5.2)
@@ -6466,7 +6466,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.2
 
-  '@capacitor/app@8.1.0(@capacitor/core@8.5.2)':
+  '@capacitor/app@8.1.1(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
 
