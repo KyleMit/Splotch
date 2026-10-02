@@ -129,6 +129,9 @@
     z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
+    /* Selection shadows repaint throughout their transition; request a separate
+       palette backing for that repeated paint. */
+    will-change: transform;
     /* Visible sideways so the selection bloom can overshoot the edges; clipped
        (not hidden: no scroll container) vertically because the ladder trims by
        viewport height, so a status-bar iPad's inset-shortened column overruns
