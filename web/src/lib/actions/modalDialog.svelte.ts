@@ -42,6 +42,8 @@ import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launch
 import type { Origin } from '$lib/state/modal.svelte';
 import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
+type ClosedContentConcealment = 'visibility' | 'opacity';
+
 interface ModalOptions {
   open: boolean;
   onRequestClose: () => void;
@@ -50,6 +52,8 @@ interface ModalOptions {
   onClose?: () => void;
   allowDismiss?: () => boolean;
   blockBackdropAt?: (x: number, y: number) => boolean;
+  // Opacity avoids inherited visibility changes on box-generating content roots.
+  closedContentConcealment?: ClosedContentConcealment;
 }
 
 // Absent gate means dismissal is allowed.
@@ -193,6 +197,7 @@ function exitFinished(node: HTMLDialogElement): { done: Promise<void>; cancel: (
 }
 
 function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+  const concealment = getOptions().closedContentConcealment ?? 'visibility';
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
@@ -210,7 +215,9 @@ function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions)
   void exit.done.then(() => {
     if (abandoned || getOptions().open || !node.open) return;
     node.close();
-    for (const root of contentRoots) root.style.visibility = 'hidden';
+    for (const root of contentRoots) {
+      root.style.setProperty(concealment, concealment === 'opacity' ? '0' : 'hidden');
+    }
   });
   return () => {
     abandoned = true;
@@ -221,7 +228,7 @@ function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions)
     for (const root of contentRoots) {
       if (!initiallyInert.get(root)) root.inert = false;
       root.style.removeProperty('pointer-events');
-      root.style.removeProperty('visibility');
+      root.style.removeProperty(concealment);
     }
   };
 }
