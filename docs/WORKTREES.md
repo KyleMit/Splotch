@@ -231,9 +231,14 @@ gets `.worktreeinclude`'s files, but the bootstrap's steps have to be run by han
 
 ## Retiring a worktree
 
-Nothing above runs in reverse on its own: a finished session leaves its worktree, its branch, and
-its gitignored output behind. Two scripts in `tools/git-housekeeping/` retire agent worktrees, and
-the `prune-git-workspace` skill runs them in order with the branch cleanup that follows:
+The bootstrap does not remove worktrees. Retiring a managed chat has a separate lifecycle: do not
+assume its checkout, ignored output or tool-owned processes will survive archiving. A live capture
+rig needs the
+[transfer checks](PROFILING-CAMPAIGNS.md#transfer-the-live-rig-before-archiving-its-chat) before its
+owning chat is retired.
+
+Two scripts in `tools/git-housekeeping/` retire agent worktrees, and the `prune-git-workspace` skill
+runs them in order with the branch cleanup that follows:
 
 1. `npm run worktrees:salvage` moves gitignored evidence worth keeping — `perf-profiles/` captures
    and red-team `decrypted/` and `output/` — to `~/Code/splotch-worktree-evidence/<worktree id>/`.

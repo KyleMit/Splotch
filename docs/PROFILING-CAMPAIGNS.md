@@ -1390,6 +1390,21 @@ and the promotion **refuses** a cell whose every candidate failed a number-inval
 This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
 a hurry — which is every campaign.
 
+## Transfer the live rig before archiving its chat
+
+A saved handoff does not keep its checkout or processes alive. During a capture handoff, the source
+chat's managed checkout and its preview, TLS and Appium processes disappeared after the chat was
+archived; borrowed WebDriverAgent and root tunnels survived. Treat chat retirement as a possible
+loss of the owning checkout and services, even when the handoff records live PIDs.
+
+Finish any capture in flight, then preserve ignored raw captures, externally stored traces,
+settings, source identity and service commands outside disposable worktrees. Verify the copies.
+Before retiring the source chat, give the successor a separately retained Git checkout and verified
+build, and transfer service ownership under the exclusive host slot. Preserve borrowed services. If
+a rebuild or service restart is needed, record the fresh build provenance and served digest, retain
+the approved origin, and run a fresh path control before product measurements. Preserving the
+evidence and preserving an immediately usable rig are separate checks.
+
 ## Do not tear the devices down when a campaign ends
 
 Leave stay-awake set, leave the tunnel up, leave the Appium server and WebDriverAgent running, and
