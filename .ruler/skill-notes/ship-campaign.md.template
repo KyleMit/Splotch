@@ -175,8 +175,12 @@ were recorded from that new human instruction.
 
 The consent preflight now runs before external ledger publication and review. It reuses existing
 human quotes, bundles only missing destinations, payloads, merge authority, and duration into one
-question, and validates each through its first real authorized operation. This avoids discovering
-a distinct external-transfer boundary after the user leaves. A successful installation policy check
+question, and validates each through its first real authorized operation. A planned, useful queue
+consultation can validate the reviewer transfer while the user is present; otherwise its verdict
+remains explicitly pending until a real review is available. A classifier refusal then stops new
+dispatches rather than being retried or treated as a reviewer outage. Both rival-provider directions
+are named, and `burn-down-code-smells` carries the bundled consent question through its constrained
+preflight questionnaire. A successful installation policy check
 cannot establish that consent, and a broad workflow invocation cannot bypass a classifier denial.
 The earlier merge-only quote remains useful but is insufficient evidence for an additional external
 destination. The user explicitly requested this correction; no prose-matching test was added.

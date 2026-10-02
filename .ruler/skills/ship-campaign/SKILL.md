@@ -74,12 +74,14 @@ round trip the campaign exists to spare them, at the moment they are least likel
 (2026-09-22, unit 12 of the 2161–2170 campaign: a declined `broker.mjs next`, whose rival had
 already finished and written its findings to disk, was read as the merge authority lapsing; the
 queue stopped with a green, reviewed PR unmerged.) The exception is a guardrail denial that forbids
-the outcome rather than the call, such as the auto-mode classifier refusing a merge: respect it, and
-never reach that outcome by another route. A refused merge **pauses** the queue; it does not
-downgrade it. Start no new unit, let in-flight units finish to shippable, and tell the user at once
-that merging is blocked, by what, and what would unblock it. Then wait for their decision. Units
-that keep shipping unmerged all branch from one base, so none can build on another, and the
-guarantee this skill's shape exists for is silently gone.
+the outcome rather than the call, such as the auto-mode classifier refusing a merge or an external
+transfer: respect it, and never reach that outcome by another route. Either refusal **pauses** the
+queue; it does not downgrade it or count as a reviewer outage. Do not retry the forbidden transfer
+or substitute a reviewer to bypass it. Start no new unit, let already authorized in-flight work
+finish to shippable, and tell the user at once which outcome is blocked, the classifier's stated
+reason, and what consent or other change would unblock it. Then wait for their decision. Units that
+keep shipping unmerged all branch from one base, so none can build on another, and the guarantee
+this skill's shape exists for is silently gone.
 
 **Report an interruption from live state, never from assumption.** What step 5 requires of
 **status** binds harder on an unplanned stop, because that report is what the user decides on:
@@ -97,19 +99,24 @@ fix done before declaring the campaign started.
 * **Consent before external work.** First inspect the existing human messages. Reuse explicit
   approvals already given; ask once, in one bundled question, only for missing scope. Name the
   repository and hosting destination for code, PRs, reviews, device context, and measurements that
-  will be published; name Anthropic Claude when Codex's `run-rival-agent` will send repository
-  code/diffs, device context, or measurements there for consultation and PR reviews. Ask for
-  explicit approval to merge reviewed, passing PRs and record the unattended stop time and timezone
-  or the user's explicit completion condition for a continuous goal. An overnight grant does not
-  authorize removing its deadline or continuing indefinitely without a new user instruction. Quote
-  the user's actual words, preserving which destinations and payloads each quote covers, in the
-  local ledger and every unit's authorization block. Publish the ledger only after its destination
-  is approved. Policy and health checks establish installation and authentication, not
-  external-transfer approval. Validate the approvals through the first real authorized publishing
-  operation and rival launch; record each as pending until its tool accepts it. Do not create a
-  dummy PR, push, or merge to probe approval. The first real merge remains gated by review and CI.
-  If automatic approval review rejects an outcome, report its stated reason and request only the
-  missing consent while the user is present; never retry through another route to evade it.
+  will be published; name the rival's provider: Anthropic Claude when Codex runs `run-rival-agent`,
+  or OpenAI when Claude runs the Codex rival. Specify repository code/diffs, device context, and
+  measurements sent there for consultation and PR reviews. Ask for explicit approval to merge
+  reviewed, passing PRs and record the unattended stop time and timezone or the user's explicit
+  completion condition for a continuous goal. An overnight grant does not authorize removing its
+  deadline or continuing indefinitely without a new user instruction. Quote the user's actual words,
+  preserving which destinations and payloads each quote covers, in the local ledger and every unit's
+  authorization block. Publish the ledger only after its destination is approved. Policy and health
+  checks establish installation and authentication, not external-transfer approval. Publish the real
+  campaign ledger during preflight to validate its destination. If a useful rival consultation on
+  the resolved queue is already planned, run it while the user is present; do not invent a
+  consultation solely to probe approval. Otherwise record the reviewer transfer as pending until the
+  first real review launch, and explicitly report that unattended launch acceptance has not yet been
+  tested. A pending verdict is not a passed preflight check. Record each actual operation's
+  acceptance. Do not create a dummy PR, push, or merge to probe approval. The first real merge
+  remains gated by review and CI. If automatic approval review rejects an outcome, follow the denial
+  rule above, report its stated reason and request only the missing consent; never retry through
+  another route to evade it.
 * **Clean start.** Stop if the tree is dirty — never carry the user's work into a campaign. Fetch
   `origin/main` and work from a fresh worktree at that commit, never an older campaign branch. A new
   worktree needs its own `pnpm install --frozen-lockfile`.
