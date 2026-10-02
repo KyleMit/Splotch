@@ -182,10 +182,12 @@ consultation can validate the reviewer transfer while the user is present; other
 remains explicitly pending until a real review is available. A classifier refusal then stops new
 dispatches rather than being retried or treated as a reviewer outage. Both rival-provider directions
 are named, and `burn-down-code-smells` carries the bundled consent question through its constrained
-preflight questionnaire. A successful installation policy check cannot establish that consent, and a
-broad workflow invocation cannot bypass a classifier denial. The earlier merge-only quote remains
-useful but is insufficient evidence for an additional external destination. The user explicitly
-requested this correction; no prose-matching test was added.
+preflight questionnaire. A campaign with only a local ledger also keeps repository publishing
+pending until its first real push or PR; it does not invent a tracking issue to test the boundary. A
+successful installation policy check cannot establish that consent, and a broad workflow invocation
+cannot bypass a classifier denial. The earlier merge-only quote remains useful but is insufficient
+evidence for an additional external destination. The user explicitly requested this correction; no
+prose-matching test was added.
 
 ## 2026-09-29 evening: integration trials, one catch-up, usage thresholds
 

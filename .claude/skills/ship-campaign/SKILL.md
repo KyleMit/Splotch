@@ -107,16 +107,18 @@ fix done before declaring the campaign started.
   deadline or continuing indefinitely without a new user instruction. Quote the user's actual words,
   preserving which destinations and payloads each quote covers, in the local ledger and every unit's
   authorization block. Publish the ledger only after its destination is approved. Policy and health
-  checks establish installation and authentication, not external-transfer approval. Publish the real
-  campaign ledger during preflight to validate its destination. If a useful rival consultation on
-  the resolved queue is already planned, run it while the user is present; do not invent a
-  consultation solely to probe approval. Otherwise record the reviewer transfer as pending until the
-  first real review launch, and explicitly report that unattended launch acceptance has not yet been
-  tested. A pending verdict is not a passed preflight check. Record each actual operation's
-  acceptance. Do not create a dummy PR, push, or merge to probe approval. The first real merge
-  remains gated by review and CI. If automatic approval review rejects an outcome, follow the denial
-  rule above, report its stated reason and request only the missing consent; never retry through
-  another route to evade it.
+  checks establish installation and authentication, not external-transfer approval. When the ledger
+  has an authorized GitHub home, publish it during preflight to validate that destination. Otherwise
+  keep it local, record repository publishing as pending until the first real push or PR, and report
+  it as untested. Do not open an issue merely to probe approval or hold the ledger. If a useful
+  rival consultation on the resolved queue is already planned, run it while the user is present; do
+  not invent a consultation solely to probe approval. Otherwise record the reviewer transfer as
+  pending until the first real review launch, and explicitly report that unattended launch
+  acceptance has not yet been tested. A pending verdict is not a passed preflight check. Record each
+  actual operation's acceptance. Do not create a dummy PR, push, or merge to probe approval. The
+  first real merge remains gated by review and CI. If automatic approval review rejects an outcome,
+  follow the denial rule above, report its stated reason and request only the missing consent; never
+  retry through another route to evade it.
 * **Clean start.** Stop if the tree is dirty — never carry the user's work into a campaign. Fetch
   `origin/main` and work from a fresh worktree at that commit, never an older campaign branch. A new
   worktree needs its own `pnpm install --frozen-lockfile`.
