@@ -53,9 +53,14 @@ campaign (step 4), and a gate-repair PR for a check proven broken on its own bas
 **not** authorize bypassing branch protection, weakening a test or gate to get green, force-pushing
 a shared branch, closing an issue except through `Fixes` on merge, filing new issues, or touching
 work outside the queue and those two exceptions. Carry this block verbatim, followed by the user's
-quoted merge approval when one was given, into every unit's instructions: an unattended unit must
-never have to infer its authority, and a runner that sees "never merge" anywhere in its instructions
-will refuse the merge.
+quoted approvals from step 1, into every unit's instructions: an unattended unit must never have to
+infer its authority, and a runner that sees "never merge" anywhere in its instructions will refuse
+the merge.
+
+This workflow scope does not replace explicit consent for sending private material to an external
+destination, and no approval quote guarantees a future classifier verdict. Step 1 records the
+destinations, payloads, merge authority, and duration before their first use; each operation remains
+subject to the runner's approval review.
 
 **A denied tool call is not a withdrawn authorization.** A single rejected command — a permission
 prompt declined, a hook refusing an edit, a call interrupted mid-turn — says nothing about the grant
@@ -89,6 +94,22 @@ A blocker found at 3 a.m. costs the whole night; the same blocker found now cost
 all of this while the user is present, report the result as one checklist, and get every human-only
 fix done before declaring the campaign started.
 
+* **Consent before external work.** First inspect the existing human messages. Reuse explicit
+  approvals already given; ask once, in one bundled question, only for missing scope. Name the
+  repository and hosting destination for code, PRs, reviews, device context, and measurements that
+  will be published; name Anthropic Claude when Codex's `run-rival-agent` will send repository
+  code/diffs, device context, or measurements there for consultation and PR reviews. Ask for
+  explicit approval to merge reviewed, passing PRs and record the unattended stop time and timezone
+  or the user's explicit completion condition for a continuous goal. An overnight grant does not
+  authorize removing its deadline or continuing indefinitely without a new user instruction. Quote
+  the user's actual words, preserving which destinations and payloads each quote covers, in the
+  local ledger and every unit's authorization block. Publish the ledger only after its destination
+  is approved. Policy and health checks establish installation and authentication, not
+  external-transfer approval. Validate the approvals through the first real authorized publishing
+  operation and rival launch; record each as pending until its tool accepts it. Do not create a
+  dummy PR, push, or merge to probe approval. The first real merge remains gated by review and CI.
+  If automatic approval review rejects an outcome, report its stated reason and request only the
+  missing consent while the user is present; never retry through another route to evade it.
 * **Clean start.** Stop if the tree is dirty — never carry the user's work into a campaign. Fetch
   `origin/main` and work from a fresh worktree at that commit, never an older campaign branch. A new
   worktree needs its own `pnpm install --frozen-lockfile`.
@@ -110,11 +131,9 @@ fix done before declaring the campaign started.
   An unattended run whose rival bridge is missing reviews nothing and merges nothing.
 * **Prove the merge path.** `gh auth status`, and `gh --version` at or above the release
   `ship-issue` step 5 requires. The latest `main` commit's CI is green; a red trunk fails every
-  unit's gate. Invoking the campaign approves its merges; put that on record now, before the user
-  leaves: ask them to say explicitly, in their own words, that merges are approved for this
-  campaign, and quote them in the ledger and in the authorization block every unit carries. If they
-  say instead that PRs should stay open, run every unit as step 3's reviewer-outage downgrade does:
-  `ship-issue`'s default mode, verified as an open, mergeable PR rather than a merge.
+  unit's gate. Carry the consent quotes above into the ledger and each unit. If the user says that
+  PRs should stay open, run every unit as step 3's reviewer-outage downgrade does: `ship-issue`'s
+  default mode, verified as an open, mergeable PR rather than a merge.
 * **Usage windows.** Every agent the campaign runs draws on one account usage limit, and reaching it
   ends them all at once. Read the plan's usage windows (through the host's usage tool when it has
   one), agree two thresholds with the user — one where no new unit or agent launches, one where the

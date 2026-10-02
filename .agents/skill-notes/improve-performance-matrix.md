@@ -91,3 +91,17 @@ against a trunk that contains the earlier fix. The live ledger moved from the st
 which had to be copied forward at every layer, to one edited comment on the tracking issue.
 Unattended runs go through `ship-campaign profile=performance`, whose design note records the
 cross-campaign evidence for the switch.
+
+## Destination consent before the first capture
+
+The 2026-10-01 iPhone campaign's merge/publication approval unblocked its GitHub ledger but did not
+unblock sending private code, device context, and measurements to Anthropic Claude. A separate
+explicit destination-and-payload quote did unblock the installed reviewer launcher. The campaign
+also retained its 8 AM Eastern stop after automatic approval review rejected indefinite
+continuation. The user requested a self-heal so these boundaries surface while they are still
+present.
+
+The improvement skill now routes startup through `ship-campaign`'s consent preflight before ledger
+publication, external consultation, or unattended capture. Existing human approval is reused instead
+of requested again; the first real publishing operation and reviewer launch verify their own tool
+acceptance. This changes startup consent, not the product acceptance, review, CI, or merge gates.

@@ -26,9 +26,17 @@ quarantine rules, and the morning report around the cluster loop this skill defi
 An explicit user request to run this improvement campaign authorizes its normal in-repository
 branches, commits, pushes, PRs, rival reviews, `start-capture-session` device reservation, and
 merging each cluster's PR through `ship-issue`'s autonomous merge gate. Merely loading the skill for
-planning or reference authorizes none of it. At the start, ask the user to say explicitly, in their
-own words, that merges are approved for this campaign, and quote them in the campaign ledger, as
-`ship-campaign` step 1 does.
+planning or reference authorizes none of it. Before publishing the ledger, launching an external
+reviewer, or starting unattended captures, complete `ship-campaign` step 1's consent preflight.
+Reuse the user's existing explicit approvals and ask one bundled question for missing scope:
+publishing code, device context, and measurements to the named repository host; sending repository
+code/diffs, device context, and measurements to Anthropic Claude for consultation and PR reviews;
+merging reviewed, passing PRs; and the unattended stop time and timezone or explicit continuous-goal
+completion condition. Quote the user's actual words in the ledger and each cluster's authorization
+block. Verify publishing and reviewer approval through their first real authorized operations,
+recording acceptance or the classifier's stated rejection; installation health alone does not verify
+that consent. No quote pre-approves every future operation, and no overnight grant authorizes
+extending the recorded stop time indefinitely.
 
 ## The campaign advances one merged PR at a time
 
