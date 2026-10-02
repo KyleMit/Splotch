@@ -156,6 +156,39 @@ invoking the campaign is the approval and the statement only puts it on record, 
 campaigns merge instead of silently piling up conflicting PRs (#2467). Whether an explicit quote
 actually changes a guardrail's merge verdict is unverified.
 
+## 2026-10-01 destination and payload consent before unattended work
+
+The iPhone performance campaign first received approval to "merge and publish performance details".
+Its GitHub ledger update then passed automatic approval review, but the installed Claude launcher
+was rejected: the classifier said that grant did not cover sending private repository code, device
+context, and measurements to Anthropic Claude. The user separately approved "code, device context,
+and measurements all to be sent to anthropic claude", and the same installed launcher passed and
+started a live Claude consultation. These are observed operation-level results, not a blanket
+promise that any future merge will pass. No merge was attempted merely to test consent.
+
+Another rejected update removed the scheduled 8 AM Eastern stop. Its classifier reason was that
+overnight approval did not authorize indefinite publishing and merging. The existing bounded
+heartbeat was preserved.
+
+The user's later instruction to turn the campaign into a continuous goal explicitly replaced that
+deadline. A continuous completion condition is therefore also accepted in preflight; the earlier
+overnight grant alone still cannot be stretched into one. The goal and its per-cell quarantine rule
+were recorded from that new human instruction.
+
+The consent preflight now runs before external ledger publication and review. It reuses existing
+human quotes, bundles only missing destinations, payloads, merge authority, and duration into one
+question, and validates each through its first real authorized operation. A planned, useful queue
+consultation can validate the reviewer transfer while the user is present; otherwise its verdict
+remains explicitly pending until a real review is available. A classifier refusal then stops new
+dispatches rather than being retried or treated as a reviewer outage. Both rival-provider directions
+are named, and `burn-down-code-smells` carries the bundled consent question through its constrained
+preflight questionnaire. A campaign with only a local ledger also keeps repository publishing
+pending until its first real push or PR; it does not invent a tracking issue to test the boundary. A
+successful installation policy check cannot establish that consent, and a broad workflow invocation
+cannot bypass a classifier denial. The earlier merge-only quote remains useful but is insufficient
+evidence for an additional external destination. The user explicitly requested this correction; no
+prose-matching test was added.
+
 ## 2026-09-29 evening: integration trials, one catch-up, usage thresholds
 
 The #2500 parallel campaign merged about 20 PRs in under three hours. Four changes came from it:

@@ -116,6 +116,8 @@ describe('action probe frame stamps (ADR-0163)', () => {
 
   it('records the scheduled stamp and the actual callback time for every frame, at one clock read each', () => {
     const clock = installVsyncClock();
+    const timeOriginUnixMs = 1_700_000_000_000;
+    vi.spyOn(performance, 'timeOrigin', 'get').mockReturnValue(timeOriginUnixMs);
     Function(ACTION_PROBE)();
     clock.tick();
     clock.tick();
@@ -135,6 +137,10 @@ describe('action probe frame stamps (ADR-0163)', () => {
     clock.at(150);
     const sample = window.__actionProbe.finish();
     expect(sample.frameStampEpoch).toBe(DUAL_FRAME_STAMP_EPOCH);
+    const recorded = JSON.parse(JSON.stringify(sample));
+    expect(
+      recorded.timeOriginUnixMs + recorded.actionAt + recorded.firstActionFrame.endFromActionMs
+    ).toBeCloseTo(timeOriginUnixMs + 50.1, 2);
     // The first frame after the click (scheduled 50.1) is the first-frame
     // reading, and stays a scheduled-clock figure; it straddles the action, so
     // the post-action frames are the three that start after it.

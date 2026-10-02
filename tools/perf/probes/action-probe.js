@@ -403,6 +403,7 @@
     return {
       label: action.label,
       traceName: action.traceName,
+      timeOriginUnixMs: performance.timeOrigin,
       armedEvents: action.armedEvents ?? [],
       armedAt: action.armedAt,
       actionAt,

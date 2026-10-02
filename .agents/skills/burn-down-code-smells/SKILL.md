@@ -48,9 +48,10 @@ readability or maintainability — for humans, and especially for agents.** In p
 
 ## 1. Preflight — with the user present
 
-Run `ship-campaign` step 1: clean start, `rival:health`, `gh` auth and version, green `main`, the
-usage windows and their launch thresholds, baseline `check` and `lint`, and the deadline and reserve
-(`hours=<n>` or `until=<time>`). Then ask the user these questions, all at once, and no others:
+Run `ship-campaign` step 1: consent before external work, clean start, `rival:health`, `gh` auth and
+version, green `main`, the usage windows and their launch thresholds, baseline `check` and `lint`,
+and the deadline and reserve (`hours=<n>` or `until=<time>`). Then ask the user these questions, all
+at once, and no others:
 
 1. **Tracking.** One tracking issue holding the ledger, with every fix a free-form PR saying
    `Refs #<n>` (recommended), or an issue per finding.
@@ -59,8 +60,12 @@ usage windows and their launch thresholds, baseline `check` and `lint`, and the 
    out.
 3. **Standards doc.** The final update to `docs/CODING-STANDARDS.md` ships as an open PR for the
    user to approve (recommended) or merges like any other unit.
-4. **Merge approval.** The campaign merges as it goes; say explicitly that merges are approved for
-   it, for the record (`ship-campaign` step 1), or that every unit's PR stays open instead.
+4. **External work and merge consent.** Reuse existing explicit human quotes and ask only for
+   missing scope, bundled as `ship-campaign` step 1 requires: the named repository host and rival
+   provider, the code/diffs, reviews, device context and measurements sent to each, merge authority,
+   and the stop time and timezone or explicit continuous-goal completion condition. Record whether
+   reviewed, passing PRs merge as the campaign goes or stay open. Follow that preflight's actual
+   operation validation and outcome-denial rules before declaring it passed.
 
 Open the tracking issue. Keep the ledger as one comment on it, edited in place. Also keep a private
 queue file under `${TMPDIR:-/tmp}` holding pending clusters, rejected findings, parked questions,

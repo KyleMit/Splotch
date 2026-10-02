@@ -125,6 +125,11 @@ amendment lack both keys. The scorer never reads the actual channel; the committ
 a byte-identical re-derivation across the change. Why the scheduled channel keeps the gate, and what
 would justify moving it, is ADR-0163's.
 
+Each action sample also carries `timeOriginUnixMs`, the page's `performance.timeOrigin`.
+`timeOriginUnixMs + actionAt + <row>.endFromActionMs` gives the row's Unix-millisecond timestamp for
+comparison with an Instruments trace. Older action captures may lack this clock anchor; the screen
+probe instead records its origin under `report.meta.timeOriginUnixMs`.
+
 ## Ruled-out drivers, and why
 
 Each of these was tried or evaluated and rejected on evidence. They are recorded because the
