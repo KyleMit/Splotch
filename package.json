@@ -567,7 +567,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
     "vitest": "^5.0.1",
-    "web-features": "3.39.0"
+    "web-features": "3.40.0"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",
