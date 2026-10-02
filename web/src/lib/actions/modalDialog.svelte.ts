@@ -29,6 +29,8 @@
 //                   still swallowed; Esc is preventDefault'd).
 //   blockBackdropAt (x, y) => boolean positional veto for backdrop dismissal only:
 //                   return true to swallow a tap in that region without dismissing.
+//   retiredContentMask  how closed content stays concealed until reopen; opacity
+//                   requires box-generating roots without an inline opacity owner.
 //
 // On each open the action also arms a short-lived launch dead zone around
 // `origin` (see launchGuard) that swallows every tap and click at the
@@ -42,6 +44,8 @@ import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launch
 import type { Origin } from '$lib/state/modal.svelte';
 import { stampMotionAtStart } from '$lib/platform/reducedMotion';
 
+type RetiredContentMask = 'visibility' | 'opacity';
+
 interface ModalOptions {
   open: boolean;
   onRequestClose: () => void;
@@ -50,6 +54,7 @@ interface ModalOptions {
   onClose?: () => void;
   allowDismiss?: () => boolean;
   blockBackdropAt?: (x: number, y: number) => boolean;
+  retiredContentMask?: RetiredContentMask;
 }
 
 // Absent gate means dismissal is allowed.
@@ -197,6 +202,8 @@ function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions)
     (child): child is HTMLElement => child instanceof HTMLElement
   );
   const initiallyInert = new Map(contentRoots.map((root) => [root, root.hasAttribute('inert')]));
+  const mask = getOptions().retiredContentMask ?? 'visibility';
+  const hiddenValue = mask === 'opacity' ? '0' : 'hidden';
   // The card stays on screen while it leaves, so it must stop taking input the
   // moment it starts to.
   for (const root of contentRoots) {
@@ -210,7 +217,7 @@ function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions)
   void exit.done.then(() => {
     if (abandoned || getOptions().open || !node.open) return;
     node.close();
-    for (const root of contentRoots) root.style.visibility = 'hidden';
+    for (const root of contentRoots) root.style.setProperty(mask, hiddenValue);
   });
   return () => {
     abandoned = true;
@@ -221,7 +228,7 @@ function closeAfterExit(node: HTMLDialogElement, getOptions: () => ModalOptions)
     for (const root of contentRoots) {
       if (!initiallyInert.get(root)) root.inert = false;
       root.style.removeProperty('pointer-events');
-      root.style.removeProperty('visibility');
+      root.style.removeProperty(mask);
     }
   };
 }

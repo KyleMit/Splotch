@@ -194,6 +194,7 @@
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
     onOpen: showInitialView,
+    retiredContentMask: 'opacity',
   })}
 >
   <div class="coloring-book-content" use:armHoverOnMouseMove>
