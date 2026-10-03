@@ -75,7 +75,11 @@ import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
 import type { ExportOptions } from './exportDrawing';
-import { getActiveOverlayExportSource, type ExportOverlaySource } from './overlay';
+import {
+  captureCanonicalOverlaySource,
+  getActiveOverlayExportSource,
+  type ExportOverlaySource,
+} from './overlay';
 import { currentExportScale } from './exportScale';
 import {
   captureLiveTileSnapshot,
@@ -250,17 +254,20 @@ function currentExportAppearance(): CanvasExportAppearance {
   const overlay = getActiveOverlayExportSource();
   return {
     theme: resolvedTheme(),
-    overlaySource: overlay
-      ? { canonicalUrl: overlay.canonicalUrl, decodedCanonicalImage: null }
-      : null,
+    overlaySource: overlay ? captureCanonicalOverlaySource(overlay.canonicalUrl) : null,
   };
 }
 
 function capturedExportAppearance(): CanvasExportAppearance {
   if (!themedOverlayUrl(resolvedTheme())) return currentExportAppearance();
-  return (
-    magicExportAppearances.capture(contributingTiledMagicSheets()) ?? currentExportAppearance()
-  );
+  const appearance =
+    magicExportAppearances.capture(contributingTiledMagicSheets()) ?? currentExportAppearance();
+  return {
+    theme: appearance.theme,
+    overlaySource: appearance.overlaySource
+      ? captureCanonicalOverlaySource(appearance.overlaySource.canonicalUrl)
+      : null,
+  };
 }
 
 let canUndo = false;
