@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { isPhoneLandscape } from '../src/lib/breakpoints';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { overrideSafeAreaInsets } from './cdp';
 import { DEVICE_PROFILES } from '../src/routes/dev/notch/lib/devices';
 import { supportedOrientations } from '../src/routes/dev/notch/lib/deviceProfile';
@@ -249,3 +250,67 @@ test.describe('safe-area matrix', () => {
     });
   }
 });
+
+async function tabletPaletteGeometry(page: Page) {
+  return page.locator('.color-palette').evaluate((palette) => {
+    const style = getComputedStyle(palette);
+    const box = palette.getBoundingClientRect();
+    const swatches = [...palette.querySelectorAll('.color-swatch')]
+      .filter((swatch) => getComputedStyle(swatch).display !== 'none')
+      .map((swatch) => {
+        const rect = swatch.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      });
+    return {
+      paddingBottom: Number.parseFloat(style.paddingBottom),
+      palette: { x: box.x, y: box.y, width: box.width, height: box.height },
+      swatches,
+    };
+  });
+}
+
+const TABLET_FIRST_PAINT_CASES = [
+  { name: 'tablet scaled buttons', width: 1024, height: 768, scale: 130, bottomInset: 0 },
+  { name: 'tablet bottom inset', width: 1024, height: 768, scale: 100, bottomInset: 20 },
+  { name: 'large tablet default buttons', width: 1366, height: 1024, scale: 100, bottomInset: 0 },
+] as const;
+
+for (const scenario of TABLET_FIRST_PAINT_CASES) {
+  test(`${scenario.name} palette first paint matches hydration`, async ({ page }) => {
+    test.skip(!!process.env.DEV_SERVER, 'requires the production prerendered palette');
+    await page.setViewportSize({ width: scenario.width, height: scenario.height });
+    await overrideSafeAreaInsets(page, { top: 0, right: 0, bottom: scenario.bottomInset, left: 0 });
+    await page.addInitScript(({ key, scale }) => localStorage.setItem(key, String(scale)), {
+      key: STORAGE_KEYS.actionButtonScale,
+      scale: scenario.scale,
+    });
+    const startup = Promise.withResolvers<void>();
+    await page.route('**/_app/immutable/**/*.js', async (route) => {
+      await startup.promise;
+      await route.continue();
+    });
+    try {
+      await page.goto('/', { waitUntil: 'commit' });
+      await expect(page.locator('.color-palette')).toBeVisible();
+      await expect(page.locator('.actions-panel')).not.toHaveAttribute(
+        'data-action-panel-live',
+        ''
+      );
+      await page.waitForFunction(
+        () => performance.getEntriesByName('first-contentful-paint').length > 0
+      );
+      const firstPaint = await tabletPaletteGeometry(page);
+      startup.resolve();
+      await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
+      const hydrated = await tabletPaletteGeometry(page);
+      await test.info().attach('tablet-palette-first-paint-geometry', {
+        body: JSON.stringify({ scenario, firstPaint, hydrated }),
+        contentType: 'application/json',
+      });
+
+      expect(hydrated).toEqual(firstPaint);
+    } finally {
+      startup.resolve();
+    }
+  });
+}
