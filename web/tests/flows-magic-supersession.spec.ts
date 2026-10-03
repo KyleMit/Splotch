@@ -167,11 +167,9 @@ test('superseding a pending Magic page preserves both page Undo pixel owners', a
   } finally {
     releasePendingOverlay();
     releasePendingFill();
-    await test
-      .info()
-      .attach('magic-page-supersession-live-owners', {
-        body: JSON.stringify(evidence),
-        contentType: 'application/json',
-      });
+    await test.info().attach('magic-page-supersession-live-owners', {
+      body: JSON.stringify(evidence),
+      contentType: 'application/json',
+    });
   }
 });
