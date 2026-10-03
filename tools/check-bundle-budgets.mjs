@@ -19,8 +19,8 @@ const RUNTIME_ENV_MODULE_URL = '_app/env.js';
 
 // The reviewed 2026-09-11 startup baseline is 473,352 bytes, after ADR-0164 moved the deferred icons off the path; 51,648 bytes of headroom permits ordinary app growth while catching another large eager dependency. Consuming it is the cue to find the next lever before raising the number (ADR-0032's headroom amendment).
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
-// The reviewed 2026-09-28 release startup set is 40 modulepreloads. A new chunk can sit far below the byte budget and still cost a request before hydration, so the count is pinned exactly: growth must be deliberate, and a drop is locked in rather than left as slack for the next regression (ADR-0032's modulepreload-count amendment).
-export const STARTUP_MODULEPRELOAD_COUNT = 40;
+// Modulepreloads cost requests before hydration even below the byte budget. The exact pin requires deliberate growth and locks in measured drops (ADR-0032's modulepreload-count amendment).
+export const STARTUP_MODULEPRELOAD_COUNT = 38;
 // The reviewed 2026-09-28 native export boots its WebView from an index.html that modulepreloads 28 chunks. It has its own pin because a runtime import used only inside an `__IS_CAPACITOR__` branch can add a native startup chunk while the web count stays put (ADR-0032's native modulepreload-count amendment).
 export const NATIVE_STARTUP_MODULEPRELOAD_COUNT = 28;
 // The reviewed 2026-08-19 largest bundle-wide lazy chunk is the public /design route at 65,418 bytes; 9,582 bytes of headroom permits modest growth while catching a larger deployed lazy route.

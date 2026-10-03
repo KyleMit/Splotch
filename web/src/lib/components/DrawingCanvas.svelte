@@ -9,7 +9,7 @@
     type EngineViewState,
   } from '$lib/drawing/engine';
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
-  import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
+  import { COLORING_OVERLAY_ID, rememberDecodedCanonicalOverlay } from '$lib/drawing/overlay';
   import { paperCssLength, viewTransformCss } from '$lib/drawing/paperView';
   import { layoutState } from '$lib/state/layout.svelte';
   import { colorsState } from '$lib/state/colors.svelte';
@@ -220,6 +220,7 @@
     // state a direct src assignment would have.
     const show = () => {
       if (!stale) {
+        rememberDecodedCanonicalOverlay(img);
         if (!untrack(() => displayedOverlayUrl)) {
           overlayMotionStartedReduced = prefersReducedMotion();
         }

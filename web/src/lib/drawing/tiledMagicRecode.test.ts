@@ -10,6 +10,7 @@ import {
   beginTiledCommand,
   beginTiledMagicRecode,
   commitTiledCommand,
+  contributingTiledMagicSheets,
   hasRetainedTiledMagicOps,
   recordTiledOp,
   recodeTiledMagicOps,
@@ -62,6 +63,31 @@ describe('tiled magic recoding', () => {
     expect(grown[1].ctx.drawImage).not.toHaveBeenCalled();
   });
 
+  it('reports every revealed sheet after the last clear without invisible pending ink', () => {
+    adoptRenderer();
+    const beforeClear = sheet('/coloring/farm/cat-wide.light.webp');
+    const first = sheet('/coloring/farm/cow-wide.light.webp');
+    const second = sheet('/coloring/farm/cow-wide.night.webp');
+    beginTiledCommand(true);
+    recordTiledOp(magicDot(beforeClear));
+    commitTiledCommand();
+    beginTiledCommand(false);
+    recordTiledOp({ kind: 'clear' });
+    commitTiledCommand();
+    beginTiledCommand(true);
+    recordTiledOp(magicDot(first));
+    recordTiledOp({ ...magicDot(first), magicSheet: undefined });
+    recordTiledOp(magicDot(second));
+    expect(contributingTiledMagicSheets()).toEqual([first, second]);
+    commitTiledCommand();
+    expect(contributingTiledMagicSheets()).toEqual([first, second]);
+    undoTiledCommand(1);
+    expect(contributingTiledMagicSheets()).toEqual([]);
+    undoTiledCommand(1);
+    expect(contributingTiledMagicSheets()).toEqual([beforeClear]);
+    undoTiledCommand(1);
+  });
+
   it('restores the previous sheet with the page undo', () => {
     adoptRenderer();
     const firstSheet = sheet('/coloring/farm/cat-wide.light.webp');
@@ -77,10 +103,12 @@ describe('tiled magic recoding', () => {
     expect(beginTiledMagicRecode('/coloring/farm/cow-wide', restoreAppearance)).toBe(true);
     expect(recodeTiledMagicOps(secondSheet, '/coloring/farm/cow-wide')).toBe(true);
     expect(magic.magicSheet).toBe(secondSheet);
+    expect(contributingTiledMagicSheets()).toEqual([secondSheet]);
 
     const state = undoTiledCommand(1);
     state.restoreAppearance?.();
     expect(magic.magicSheet).toBe(firstSheet);
+    expect(contributingTiledMagicSheets()).toEqual([firstSheet]);
     expect(restoreAppearance).toHaveBeenCalledOnce();
     undoTiledCommand(1);
   });
@@ -127,6 +155,7 @@ describe('tiled magic recoding', () => {
 
     expect(recodeTiledMagicOps(secondSheet, '/coloring/farm/cow-wide')).toBe(true);
     expect(magic.magicSheet).toBe(secondSheet);
+    expect(contributingTiledMagicSheets()).toEqual([secondSheet]);
     expect(tiledHistoryDebug().baseRasters).toBe(LIVE_TILE_COUNT * 2);
   });
 });

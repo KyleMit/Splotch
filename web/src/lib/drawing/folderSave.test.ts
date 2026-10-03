@@ -287,6 +287,108 @@ describe('saveBlobToFolder', () => {
     expect(writable.write).toHaveBeenCalledWith(blob);
   });
 
+  it.each([
+    ['prompt-capable and background', true],
+    ['two background', false],
+  ])('keeps complete pictures from overlapping %s saves', async (_caller, allowPrompt) => {
+    const pictures = [new Blob(['first complete picture']), new Blob(['second complete picture'])];
+    const files = new Map<string, Blob>();
+    const createdNames: string[] = [];
+    const handle = {
+      name: 'Pictures',
+      queryPermission: vi.fn(async () => 'granted'),
+      getFileHandle: vi.fn(async (name: string, options?: { create?: boolean }) => {
+        if (!options?.create && !files.has(name)) {
+          throw new DOMException('missing', 'NotFoundError');
+        }
+        if (options?.create) createdNames.push(name);
+        files.set(name, files.get(name) ?? new Blob());
+        return {
+          createWritable: vi.fn(async () => {
+            let payload = new Blob();
+            return {
+              write: vi.fn(async (picture: Blob) => {
+                payload = picture;
+              }),
+              close: vi.fn(async () => {
+                files.set(name, payload);
+              }),
+            };
+          }),
+        };
+      }),
+    };
+    seedFolder(handle);
+    setPicker(vi.fn());
+
+    const results = await Promise.all([
+      folderSave.saveBlobToFolder(pictures[0], 'splotch-same-second.png', { allowPrompt }),
+      folderSave.saveBlobToFolder(pictures[1], 'splotch-same-second.png', { allowPrompt: false }),
+    ]);
+
+    expect({
+      results,
+      createdNames,
+      payloads: await Promise.all([...files.values()].map((picture) => picture.text())),
+    }).toEqual({
+      results: ['Pictures', 'Pictures'],
+      createdNames: ['splotch-same-second.png', 'splotch-same-second (1).png'],
+      payloads: ['first complete picture', 'second complete picture'],
+    });
+  });
+
+  it('owns a filename until its pending creation settles', async () => {
+    const creation = Promise.withResolvers<void>();
+    const files = new Map<string, Blob>();
+    const createdNames: string[] = [];
+    const handle = {
+      name: 'Pictures',
+      queryPermission: vi.fn(async () => 'granted'),
+      getFileHandle: vi.fn(async (name: string, options?: { create?: boolean }) => {
+        if (!options?.create && !files.has(name))
+          throw new DOMException('missing', 'NotFoundError');
+        if (options?.create) {
+          createdNames.push(name);
+          if (createdNames.length === 1) await creation.promise;
+          files.set(name, new Blob());
+        }
+        return {
+          createWritable: async () => {
+            let payload = new Blob();
+            return {
+              write: async (picture: Blob) => {
+                payload = picture;
+              },
+              close: async () => {
+                files.set(name, payload);
+              },
+            };
+          },
+        };
+      }),
+    };
+    seedFolder(handle);
+    setPicker(vi.fn());
+    const first = folderSave.saveBlobToFolder(new Blob(['first']), 'drawing.png');
+    await vi.waitFor(() => expect(createdNames).toHaveLength(1));
+    const second = folderSave.saveBlobToFolder(new Blob(['second']), 'drawing.png');
+    await vi.waitFor(() => expect(createdNames).toHaveLength(2));
+    creation.resolve();
+    const results = await Promise.all([first, second]);
+
+    expect({
+      results,
+      createdNames,
+      payloads: Object.fromEntries(
+        await Promise.all([...files].map(async ([name, picture]) => [name, await picture.text()]))
+      ),
+    }).toEqual({
+      results: ['Pictures', 'Pictures'],
+      createdNames: ['drawing.png', 'drawing (1).png'],
+      payloads: { 'drawing.png': 'first', 'drawing (1).png': 'second' },
+    });
+  });
+
   it('re-confirms a lapsed permission on a user-initiated save', async () => {
     const { handle } = makeHandle('granted');
     handle.queryPermission = vi.fn(async () => 'prompt' as PermissionState);

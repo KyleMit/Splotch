@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { COLORING_OVERLAY_ID, getActiveOverlayExportSource } from './overlay';
 
 afterEach(() => {
@@ -71,5 +71,42 @@ describe('getActiveOverlayExportSource', () => {
     overlay.src = '/coloring/farm/cat-tall.selector.webp';
 
     expect(getActiveOverlayExportSource()).toBeNull();
+  });
+});
+
+describe('captured canonical overlay decode', () => {
+  it('retains the original detached decode after a later canonical image is published', async () => {
+    vi.resetModules();
+    const { captureCanonicalOverlaySource, rememberDecodedCanonicalOverlay } =
+      await import('./overlay');
+    const first = document.createElement('img');
+    first.src = '/coloring/farm/cat-tall.overlay.svg';
+    Object.defineProperty(first, 'naturalWidth', { value: 100 });
+    rememberDecodedCanonicalOverlay(first);
+    const captured = captureCanonicalOverlaySource('/coloring/farm/cat-tall.overlay.svg');
+    const second = document.createElement('img');
+    second.src = '/coloring/farm/cat-tall.dark.overlay.svg';
+    Object.defineProperty(second, 'naturalWidth', { value: 100 });
+    rememberDecodedCanonicalOverlay(second);
+
+    expect(captured).toEqual({ canonicalUrl: first.src, decodedCanonicalImage: first });
+    expect(captureCanonicalOverlaySource(second.src).decodedCanonicalImage).toBe(second);
+    expect(captureCanonicalOverlaySource(first.src).decodedCanonicalImage).toBeNull();
+  });
+
+  it('leaves the successful decode available when another image fails to decode', async () => {
+    vi.resetModules();
+    const { captureCanonicalOverlaySource, rememberDecodedCanonicalOverlay } =
+      await import('./overlay');
+    const loaded = document.createElement('img');
+    loaded.src = '/coloring/farm/cat-tall.overlay.svg';
+    Object.defineProperty(loaded, 'naturalWidth', { value: 100 });
+    rememberDecodedCanonicalOverlay(loaded);
+    const failed = document.createElement('img');
+    failed.src = '/coloring/farm/cow-tall.overlay.svg';
+    rememberDecodedCanonicalOverlay(failed);
+
+    expect(captureCanonicalOverlaySource(loaded.src).decodedCanonicalImage).toBe(loaded);
+    expect(captureCanonicalOverlaySource(failed.src).decodedCanonicalImage).toBeNull();
   });
 });
