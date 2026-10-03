@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TiledExportSnapshot } from './exportDrawing';
 
 const appearanceMock = vi.hoisted(() => ({
   resolvedTheme: vi.fn<() => 'light' | 'dark'>(),
@@ -136,6 +137,33 @@ describe('warmPaperTexture', () => {
   });
 });
 
+function overlayTileSnapshot(tiles: TiledExportSnapshot['source']['tiles']): TiledExportSnapshot {
+  return { source: { width: 400, height: 300, tiles }, sourceScale: 2 };
+}
+
+function stubOverlayRaster(contextAvailable: boolean) {
+  const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+  const drawImage = vi.fn();
+  const transfer = vi.fn(() => bitmap);
+  const dimensions: Array<{ width: number; height: number }> = [];
+  class OverlayCanvas {
+    constructor(
+      public width: number,
+      public height: number
+    ) {
+      dimensions.push(this);
+    }
+    getContext() {
+      return contextAvailable ? { drawImage } : null;
+    }
+    transferToImageBitmap() {
+      return transfer();
+    }
+  }
+  vi.stubGlobal('OffscreenCanvas', OverlayCanvas);
+  return { bitmap, drawImage, transfer, dimensions };
+}
+
 describe('composeExportPng overlay', () => {
   it('sends settled live tiles directly to the worker compositor', async () => {
     const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
@@ -255,21 +283,12 @@ describe('composeExportPng overlay', () => {
 
   it('loads the canonical overlay on demand for a responsive tiled export', async () => {
     const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    const overlayBitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    const createBitmap = vi.fn(async () => overlayBitmap);
-    vi.stubGlobal('createImageBitmap', createBitmap);
+    const raster = stubOverlayRaster(true);
     pngMock.encodeTiledCanvasPng.mockResolvedValue(new Blob(['tiles'], { type: 'image/png' }));
     const { composeExportPng } = await import('./exportDrawing');
 
     const exported = composeExportPng(
-      {
-        source: {
-          width: 400,
-          height: 300,
-          tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
-        },
-        sourceScale: 2,
-      },
+      overlayTileSnapshot([{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }]),
       2,
       createOverlaySource(null),
       { includePaperTexture: false }
@@ -280,11 +299,57 @@ describe('composeExportPng overlay', () => {
     requested[0].onload!();
     await exported;
 
-    expect(createBitmap).toHaveBeenCalledWith(requested[0]);
+    expect(raster.dimensions).toEqual([{ width: 100, height: 50 }]);
+    expect(raster.drawImage).toHaveBeenCalledWith(requested[0], 0, 0, 100, 50);
+    expect(raster.transfer).toHaveBeenCalledOnce();
     expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
-      expect.objectContaining({ overlay: overlayBitmap }),
+      expect.objectContaining({ overlay: raster.bitmap }),
       undefined
     );
+  });
+
+  it('rasterizes a retained canonical decode and closes its bitmap when a tile fails', async () => {
+    const raster = stubOverlayRaster(true);
+    const retainedImage = createOverlayImage();
+    const fulfilled = { close: vi.fn() } as unknown as ImageBitmap;
+    const failure = new Error('tile capture failed');
+    const { composeExportPng } = await import('./exportDrawing');
+    await expect(
+      composeExportPng(
+        overlayTileSnapshot([
+          { bitmap: Promise.resolve(fulfilled), x: 0, y: 0 },
+          { bitmap: Promise.reject(failure), x: 200, y: 0 },
+        ]),
+        2,
+        createOverlaySource(retainedImage),
+        { includePaperTexture: false }
+      )
+    ).rejects.toBe(failure);
+
+    expect(requested).toHaveLength(0);
+    expect(raster.drawImage).toHaveBeenCalledWith(retainedImage, 0, 0, 100, 50);
+    expect(raster.transfer).toHaveBeenCalledOnce();
+    expect(raster.bitmap.close).toHaveBeenCalledOnce();
+    expect(fulfilled.close).toHaveBeenCalledOnce();
+    expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unavailable canonical raster context and closes settled tiles', async () => {
+    const raster = stubOverlayRaster(false);
+    const fulfilled = { close: vi.fn() } as unknown as ImageBitmap;
+    const { composeExportPng } = await import('./exportDrawing');
+    await expect(
+      composeExportPng(
+        overlayTileSnapshot([{ bitmap: Promise.resolve(fulfilled), x: 0, y: 0 }]),
+        2,
+        createOverlaySource(createOverlayImage()),
+        { includePaperTexture: false }
+      )
+    ).rejects.toThrow('Canonical overlay 2D canvas context unavailable');
+
+    expect(fulfilled.close).toHaveBeenCalledOnce();
+    expect(raster.transfer).not.toHaveBeenCalled();
+    expect(pngMock.encodeTiledCanvasPng).not.toHaveBeenCalled();
   });
 
   it('rejects a failed canonical overlay load and closes settled tiled bitmaps', async () => {
@@ -292,14 +357,7 @@ describe('composeExportPng overlay', () => {
     const { composeExportPng } = await import('./exportDrawing');
 
     const exported = composeExportPng(
-      {
-        source: {
-          width: 400,
-          height: 300,
-          tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
-        },
-        sourceScale: 2,
-      },
+      overlayTileSnapshot([{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }]),
       2,
       createOverlaySource(null),
       { includePaperTexture: false }
