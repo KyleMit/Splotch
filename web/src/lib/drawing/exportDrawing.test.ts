@@ -173,6 +173,32 @@ describe('composeExportPng overlay', () => {
     );
   });
 
+  it('uses the theme captured with the engine snapshot rather than a later appearance', async () => {
+    appearanceMock.resolvedTheme.mockReturnValue('dark');
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    pngMock.encodeTiledCanvasPng.mockResolvedValue(new Blob(['tiles'], { type: 'image/png' }));
+    const { composeExportPng } = await import('./exportDrawing');
+    await composeExportPng(
+      {
+        source: {
+          width: 400,
+          height: 300,
+          tiles: [{ bitmap: Promise.resolve(bitmap), x: 0, y: 0 }],
+        },
+        sourceScale: 2,
+      },
+      2,
+      null,
+      { includePaperTexture: false },
+      'light'
+    );
+    expect(pngMock.encodeTiledCanvasPng).toHaveBeenCalledWith(
+      expect.objectContaining({ paperColor: '#fcfbf8' }),
+      undefined
+    );
+    expect(appearanceMock.resolvedTheme).not.toHaveBeenCalled();
+  });
+
   it('forwards a low-resolution preview request to the tiled worker encoder', async () => {
     const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
     const onReady = vi.fn();

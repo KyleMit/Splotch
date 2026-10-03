@@ -15,6 +15,9 @@
 import { dev } from '$app/environment';
 import { pageCompositionKey } from '$lib/state/books';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
+import { resolvedTheme } from '$lib/state/appearance.svelte';
+import { themedOverlayUrl } from '$lib/state/coloringBook.svelte';
+import type { ResolvedTheme } from '$lib/theme';
 import type { BrushType } from '$lib/state/tool.svelte';
 import {
   DEFAULT_SIZE,
@@ -51,6 +54,7 @@ import {
   captureMagicSheet,
   deferColorSheet,
   setColorSheet,
+  type MagicSheetSnapshot,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { createCrayonPassBoundaries } from './crayonPassBoundaries';
@@ -71,7 +75,7 @@ import { createPenStreamAdopter } from './penStreamQuirks';
 import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
 import type { ExportOptions } from './exportDrawing';
-import { getActiveOverlayExportSource } from './overlay';
+import { getActiveOverlayExportSource, type ExportOverlaySource } from './overlay';
 import { currentExportScale } from './exportScale';
 import {
   captureLiveTileSnapshot,
@@ -93,6 +97,7 @@ import {
   commitTiledCommand,
   detachTiledRenderer,
   hasRetainedTiledMagicOps,
+  contributingTiledMagicSheets,
   hasUnrevealedTiledMagicOps,
   peekTiledUndoPaper,
   recordTiledOp,
@@ -177,6 +182,85 @@ let renderScale = 1;
 
 function backingSizeOf(rect: DOMRect): { w: number; h: number } {
   return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };
+}
+
+interface CanvasExportAppearance {
+  theme: ResolvedTheme;
+  overlaySource: ExportOverlaySource | null;
+}
+
+function createMagicExportAppearances() {
+  const appearances = new WeakMap<MagicSheetSnapshot, CanvasExportAppearance>();
+  let requested: { sourceUrl: string | null; appearance: CanvasExportAppearance } | null = null;
+
+  function commit(snapshot: MagicSheetSnapshot) {
+    if (!snapshot.sourceUrl) return;
+    if (!requested || requested.sourceUrl !== snapshot.sourceUrl) {
+      throw new Error('Magic sheet publication does not match its requested export appearance');
+    }
+    appearances.set(snapshot, requested.appearance);
+  }
+
+  return {
+    request(sourceUrl: string | null, appearance: CanvasExportAppearance) {
+      requested = { sourceUrl, appearance };
+    },
+    register(snapshot: MagicSheetSnapshot | null) {
+      if (snapshot && !appearances.has(snapshot)) commit(snapshot);
+    },
+    commit,
+    capture(sheets: MagicSheetSnapshot[]): CanvasExportAppearance | null {
+      const coloringSheets = sheets.filter((sheet) => sheet.sourceUrl !== null);
+      if (coloringSheets.length === 0) return null;
+      const captured = coloringSheets.map((sheet) => appearances.get(sheet));
+      const appearance = captured[0];
+      if (
+        !appearance ||
+        captured.some(
+          (candidate) =>
+            !candidate ||
+            candidate.theme !== appearance.theme ||
+            candidate.overlaySource?.canonicalUrl !== appearance.overlaySource?.canonicalUrl
+        )
+      ) {
+        throw new Error('Retained Magic ink has no coherent export appearance');
+      }
+      return appearance;
+    },
+  };
+}
+
+const magicExportAppearances = createMagicExportAppearances();
+
+function requestMagicExportAppearance(sourceUrl: string | null) {
+  const theme = resolvedTheme();
+  const canonicalUrl = themedOverlayUrl(theme);
+  magicExportAppearances.request(sourceUrl, {
+    theme,
+    overlaySource: canonicalUrl ? { canonicalUrl, decodedCanonicalImage: null } : null,
+  });
+}
+
+function ensureCurrentMagicSheet() {
+  ensureMagicSheet();
+  magicExportAppearances.register(captureMagicSheet());
+}
+
+function currentExportAppearance(): CanvasExportAppearance {
+  const overlay = getActiveOverlayExportSource();
+  return {
+    theme: resolvedTheme(),
+    overlaySource: overlay
+      ? { canonicalUrl: overlay.canonicalUrl, decodedCanonicalImage: null }
+      : null,
+  };
+}
+
+function capturedExportAppearance(): CanvasExportAppearance {
+  if (!themedOverlayUrl(resolvedTheme())) return currentExportAppearance();
+  return (
+    magicExportAppearances.capture(contributingTiledMagicSheets()) ?? currentExportAppearance()
+  );
 }
 
 let canUndo = false;
@@ -381,6 +465,7 @@ function resizeCanvas(
   if (preservedView) paperView = preservedView;
 
   resizeMagicSheet(brush === 'magic');
+  magicExportAppearances.register(captureMagicSheet());
   if (
     (tiledRendererResized || repaintRecoveredPixels) &&
     !canvasEmpty &&
@@ -1079,9 +1164,12 @@ export function undo(towards?: HTMLElement | null): Promise<void> {
 // Components reach magicBrush.setColorSheet only through here: removing the
 // page's fill must also recode the retained magic ink onto the replacement sheet.
 export function applyColoringFill(fillUrl: string | null) {
+  requestMagicExportAppearance(fillUrl);
   setColorSheet(fillUrl);
+  const readySheet = captureMagicSheet();
+  if (readySheet) magicExportAppearances.commit(readySheet);
   if (!fillUrl && hasRetainedTiledMagicOps()) {
-    ensureMagicSheet();
+    ensureCurrentMagicSheet();
     recodeMagicOpsToCurrentSheet();
   }
 }
@@ -1089,6 +1177,7 @@ export function applyColoringFill(fillUrl: string | null) {
 export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
   const targetSourceKey = targetUrl ? pageCompositionKey(targetUrl) : null;
   const prepared = beginTiledMagicRecode(targetSourceKey, restoreAppearance);
+  requestMagicExportAppearance(targetUrl);
   deferColorSheet(targetUrl);
   if (prepared) setCanUndo(true);
   return prepared;
@@ -1107,7 +1196,7 @@ export function clearCanvas({ animateInto }: { animateInto?: ClientPoint } = {})
   if (!canvasEmpty || isStrokeActive()) clearRecordedInk(animateInto);
   crayonPasses.reset();
   clearMagicGradient();
-  if (brush === 'magic') ensureMagicSheet();
+  if (brush === 'magic') ensureCurrentMagicSheet();
 }
 
 function clearRecordedInk(animateInto: ClientPoint | undefined) {
@@ -1224,6 +1313,7 @@ function recodeMagicOpsToCurrentSheet() {
   if (!ctx) return;
   const snapshot = captureMagicSheet();
   if (!snapshot) return;
+  magicExportAppearances.register(snapshot);
   recodeTiledMagicOps(snapshot, snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null);
   if (emptyScanAwaitsMagicReveal) idleEmptyScan.schedule();
 }
@@ -1326,7 +1416,7 @@ export function setBrush(next: BrushType) {
   brush = next;
   if (next === 'crayon') warmCrayonTiles(currentColor);
   else cancelCrayonWarmup();
-  if (next === 'magic') ensureMagicSheet();
+  if (next === 'magic') ensureCurrentMagicSheet();
 }
 
 // The brush the engine has COMMITTED — the one a stroke started right now
@@ -1384,7 +1474,7 @@ function snapshotStrokes(snapshotScale: number, capturePreview: boolean): Stroke
 
 export function prepareCanvasExport(capturePreview = true): CanvasExportPreparation | null {
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-  const overlaySource = getActiveOverlayExportSource();
+  const { theme, overlaySource } = capturedExportAppearance();
   const scale = currentExportScale();
   // This snapshot must precede the compositor import: save-on-delete fire-and-forgets an export
   // and clears the live engine synchronously. web/tests/engine-export.spec.ts pins the race.
@@ -1406,7 +1496,7 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
           ? { ...options, preview: { ...options.preview, snapshot: snapshots.preview } }
           : options;
       if (exportOptions === options) closeTiledExportSnapshot(snapshots.preview);
-      return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
+      return composeExportPng(snapshots.export, scale, overlaySource, exportOptions, theme);
     },
     cancel() {
       if (!available) return;

@@ -50,6 +50,22 @@ export function createTiledMagicRecode<TBase>(host: TiledMagicRecodeHost<TBase>)
       .some((command) => magicOps(command).some((op) => !op.magicSheet));
   }
 
+  function contributingSheets(): MagicSheetSnapshot[] {
+    const commands = retainedCommands();
+    const lastClear = commands.findLastIndex((command) =>
+      command.ops.some((op) => op.kind === 'clear')
+    );
+    return [
+      ...new Set(
+        commands
+          .slice(lastClear + 1)
+          .flatMap((command) =>
+            magicOps(command).flatMap((op) => (op.magicSheet ? [op.magicSheet] : []))
+          )
+      ),
+    ];
+  }
+
   function rebuildBase() {
     if (baseline.length > 0) host.rebuildBase(baseline, foldedTail);
   }
@@ -121,6 +137,7 @@ export function createTiledMagicRecode<TBase>(host: TiledMagicRecodeHost<TBase>)
     baseTiles: () => baseline,
     beforeFold,
     beginUndo,
+    contributingSheets,
     hasRetainedOps,
     hasUnrevealedOps,
     recode,
