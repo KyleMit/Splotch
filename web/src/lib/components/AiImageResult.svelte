@@ -45,6 +45,14 @@
   const waiting = $derived(loading && generating);
   const shown = $derived(open && !aiGenerationState.minimized);
 
+  // Native retirement owns the pause: the visible exit still paints progress,
+  // and an interrupted exit never suspends the card.
+  let presented = $state(false);
+  let presentationProgress = $state(0);
+  $effect.pre(() => {
+    if (presented) presentationProgress = aiProgressState.value;
+  });
+
   // The dial and the reveal are silent to a screen reader, so a status carries
   // each state in words. It is written a frame after every change: the status
   // becomes visible in the same flush that shows the dialog, and text that lands
@@ -160,7 +168,13 @@
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
     blockBackdropAt: () => exiting,
-    onClose: returnFocusToLauncher,
+    onOpen: () => {
+      presented = true;
+    },
+    onClose: () => {
+      presented = false;
+      returnFocusToLauncher();
+    },
   })}
   onanimationend={handleAnimationEnd}
 >
@@ -179,7 +193,11 @@
         onRequestReport={requestReport}
       />
     {:else}
-      <AiResultStage {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
+      <AiResultStage
+        {exiting}
+        progress={presentationProgress}
+        onaspect={(aspect) => (imgAspect = aspect)}
+      />
 
       {#if loading}
         <div class="ai-loading-caption">

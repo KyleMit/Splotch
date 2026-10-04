@@ -8,11 +8,12 @@
   interface Props {
     // The card's send-off animation, which the pinch has to stand down for.
     exiting: boolean;
+    progress: number;
     // The picture's own ratio, which the card sizes itself from.
     onaspect: (aspect: number) => void;
   }
 
-  let { exiting, onaspect }: Props = $props();
+  let { exiting, progress, onaspect }: Props = $props();
 
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
   // A URL exists before its image has intrinsic dimensions. Keep the fallback
@@ -52,7 +53,7 @@
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
   const previewBlur = $derived(
-    `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgressState.value)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
+    `${Math.round((MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)) / BLUR_STEP_PX) * BLUR_STEP_PX}px`
   );
 </script>
 
@@ -110,7 +111,7 @@
 
   {#if !revealed}
     <AiConfetti />
-    <AiDial />
+    <AiDial {progress} />
   {/if}
 </div>
 

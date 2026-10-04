@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "status": "REJECTED_PHYSICAL_TRIAL",
+  "purpose": "Closed, unmerged evidence PR; historical experiment only; not shipping code.",
+  "baseCommit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "originalLocalCommit": "d5b3d95b1ff421fcfc4695fd9947be505ddbbeee",
+  "originalLocalBranch": "codex/iphone-ai-progress-presentation",
+  "target": "iPhone Safari",
+  "mode": "portrait/light",
+  "minimalDiffSummary": "Pause progress presentation after the AI dialog retires and pass the last presented value into the dial and preview blur.",
+  "touchedProductionPaths": [
+    "web/src/lib/components/AiDial.svelte",
+    "web/src/lib/components/AiImageResult.svelte",
+    "web/src/lib/components/AiResultStage.svelte"
+  ],
+  "sourceFiles": [
+    {
+      "path": "web/src/lib/components/AiDial.svelte",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "61efc67c047d2d0552b9655e259f087ccfab5576e78350f0bded5cbe7e8d2222",
+      "treatmentSha256": "07edd92311ac1d2e86e74f5fce87f9fe035952b86848df351ff6ccd0e19325f7",
+      "baselineGitBlob": "5c6deaa083c6f7b2577ad859a1792c1813227cd0",
+      "treatmentGitBlob": "c7121db49a7eadfc287984919cace54fb7b26084"
+    },
+    {
+      "path": "web/src/lib/components/AiImageResult.svelte",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "b9a69503cce0f0fe404774258a025315ef1eeb8abecc883f5c824ce728e387e4",
+      "treatmentSha256": "bb1644dab7c7f3c85f9541031e5eb714f81fb4b0a636f743b0549bd4778a2bc3",
+      "baselineGitBlob": "2532775f5011248a332d5e58fa1a5ddf04e718f0",
+      "treatmentGitBlob": "c5fc87080b105890ae8c07bfdef46e69d50f24ae"
+    },
+    {
+      "path": "web/src/lib/components/AiResultStage.svelte",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "effc5af71102c24e93615192d58744bd5549210e5309fcb301011391a46ad388",
+      "treatmentSha256": "be282c063401d745b79ce857710e91f913b21924a34af1e37bc324bb9368095d",
+      "baselineGitBlob": "fb47e90ec86c3a4db32a3f149cb6b6e80313469a",
+      "treatmentGitBlob": "8c21ca28a66badab42e33416e8edf000602741dc"
+    },
+    {
+      "path": "web/tests/ai-minimize.spec.ts",
+      "role": "regression-test",
+      "baselineExists": true,
+      "baselineSha256": "ece244ef9f9abaa2a4a90e2182a39041be9e97336febe58456a780d208961743",
+      "treatmentSha256": "57e174c9ef3c6cea3bb3c0285a8e1a2e57fe7230179662060ad2452c21718008",
+      "baselineGitBlob": "ab1e75d580cefd800107ab4a8a7f2744afdf9378",
+      "treatmentGitBlob": "96014f28ba03522c0147cf50dc5effe732c0c4a7"
+    }
+  ],
+  "localSourcePatch": {
+    "sha256": "a58d6bcbf66a0b0a690215ddb9758efa678902baf0e8bb48133e421ab2f51ec6",
+    "definition": "git diff --binary --full-index <baseCommit> <originalLocalCommit>; complete original source and regression-test diff, exact Git output bytes"
+  },
+  "historicalMeasuredResult": {
+    "canonicalShowMs": {
+      "baseline": {
+        "p95": 25,
+        "max": 75
+      },
+      "treatment": {
+        "p95": 29,
+        "max": 58
+      }
+    },
+    "fixedLaterRawMs": {
+      "baseline": {
+        "p95": 23,
+        "max": 29
+      },
+      "treatment": {
+        "p95": 25,
+        "max": 57
+      }
+    },
+    "familyReadinessMs": {
+      "baseline": [35, 94],
+      "treatment": [31, 34]
+    },
+    "scoredAndRawFrames": {
+      "baseline": [201, 201],
+      "treatment": [199, 199]
+    }
+  },
+  "reasonRejected": "The primary pacing result remained red, and the fixed later window did not show a supported benefit. Faster readiness and a lower isolated maximum did not establish acceptance.",
+  "unchangedGates": [
+    "Production scorer and acceptance thresholds unchanged.",
+    "Input path, cadence, readiness predicate and activity-window rules unchanged.",
+    "First valid failing result retained; no candidate retry for this archived trial."
+  ],
+  "historicalChecksReported": [
+    "24 lifecycle tests passed; the original negative guard recorded 118 hidden dial writes.",
+    "12 visible WebKit frames were pixel-identical."
+  ],
+  "evidenceProvenance": {
+    "kind": "Local operator campaign summary only",
+    "record": "Private campaign experiment-history.md",
+    "lines": [277, 281],
+    "recordSha256": "d07e719500961ee20d39655d17c725984523370f57bd5a1da78abc92250018de",
+    "rawPrivateArtifactsPublished": false
+  },
+  "publicationVerification": {
+    "sourceCommitAndBranchVerified": true,
+    "baseAncestorVerified": true,
+    "productionFilesCopiedFromExactGitObjects": true,
+    "newTestsRun": false,
+    "newPerformanceRun": false,
+    "historicalPhysicalResultRevalidated": false,
+    "allOriginalChangedFilesCopiedFromExactGitObjects": true
+  },
+  "limitations": [
+    "Historical results are summarized from the local operator record; no new tests or performance runs were performed for this publication.",
+    "Raw logs, phone traces, screenshots, packets, device identifiers and local endpoints remain private and are omitted.",
+    "No causal bottleneck, browser/system floor, cross-runtime benefit or shipping acceptance is established."
+  ],
+  "touchedTestPaths": ["web/tests/ai-minimize.spec.ts"],
+  "allChangedPaths": [
+    "web/src/lib/components/AiDial.svelte",
+    "web/src/lib/components/AiImageResult.svelte",
+    "web/src/lib/components/AiResultStage.svelte",
+    "web/tests/ai-minimize.spec.ts"
+  ],
+  "regressionTestDiffReview": {
+    "status": "PASS_NO_RELAXATION",
+    "summary": "Two added correctness cases observe progress while visible, stop hidden writes, verify restored progress before the first paint, and cover interrupted retirement. The 10-second animation override and MutationObserver are confined to the added lifecycle fixture; no canonical performance runner, scorer, readiness predicate, activity window or acceptance gate changes.",
+    "testsCopiedByteForByte": true,
+    "testExecutionForPublication": false
+  }
+}

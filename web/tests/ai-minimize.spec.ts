@@ -14,6 +14,12 @@ import { openDrawer } from './flows-harness';
 //   npm run test:e2e:headed -- ai-minimize
 
 const PHONE_VIEWPORT = { width: 320, height: 568 };
+// A slow worker still gets progress frames inside the visible retirement.
+const PROGRESS_EXIT_OBSERVATION_MS = 10_000;
+// The restored blur must advance as well as the unquantized dial.
+const HIDDEN_PROGRESS_ADVANCE_PERCENT = 3;
+// The corner rounds to whole percent while the dial retains its fraction.
+const CORNER_PROGRESS_ROUNDING_PERCENT = 1;
 
 const modal = 'dialog.ai-result-modal';
 const polaroid = '.ai-waiting-polaroid';
@@ -122,6 +128,163 @@ test.describe('a generation minimized to the corner', () => {
     // the run's progress from zero — telling a child who had already waited that
     // their picture was only just beginning.
     await expect.poll(() => dialAngle(page)).toBeLessThan(beforeMinimize);
+  });
+
+  test('pauses progress painting only after retirement and resumes before the first restored paint', async ({
+    page,
+  }) => {
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await expect(page.locator(modal)).toBeVisible();
+    await expect(page.locator('.stage-img.preview')).toBeVisible();
+    await endpoint.waitForFirstRequest();
+    await page.addStyleTag({
+      content: `${modal}.closing { animation-duration: ${PROGRESS_EXIT_OBSERVATION_MS}ms; }`,
+    });
+
+    const probe = await page.evaluateHandle(() => {
+      const dialog = document.querySelector('dialog.ai-result-modal');
+      const dial = document.querySelector('.dial');
+      const preview = document.querySelector('.stage-img.preview');
+      if (
+        !(dialog instanceof HTMLDialogElement) ||
+        !(dial instanceof HTMLElement) ||
+        !(preview instanceof HTMLImageElement)
+      ) {
+        throw new Error('The generating dialog has no progress presentation');
+      }
+      let closed = false;
+      const writes = { retiringDial: 0, retiringPreview: 0, hiddenDial: 0, hiddenPreview: 0 };
+      const recordWrites = (records: MutationRecord[]) => {
+        for (const record of records) {
+          if (closed && !dialog.open) {
+            if (record.target === dial) writes.hiddenDial += 1;
+            if (record.target === preview) writes.hiddenPreview += 1;
+          } else if (dialog.open && dialog.classList.contains('closing')) {
+            if (record.target === dial) writes.retiringDial += 1;
+            if (record.target === preview) writes.retiringPreview += 1;
+          }
+        }
+      };
+      const observer = new MutationObserver(recordWrites);
+      observer.observe(dial, { attributes: true, attributeFilter: ['style'] });
+      observer.observe(preview, { attributes: true, attributeFilter: ['style'] });
+      dialog.addEventListener(
+        'close',
+        () => {
+          recordWrites(observer.takeRecords());
+          closed = true;
+        },
+        { once: true }
+      );
+      function cornerProgressPercent() {
+        const fill = document.querySelector('.ai-waiting-polaroid .progress-fill');
+        if (!(fill instanceof HTMLElement)) throw new Error('The waiting print has no progress');
+        return Number.parseFloat(fill.style.width);
+      }
+      const presentation = () => {
+        return {
+          progressPercent:
+            (1 - Number.parseFloat(dial.style.getPropertyValue('--angle')) / 360) * 100,
+          blurPx: Number.parseFloat(preview.style.filter.replace('blur(', '')),
+        };
+      };
+      let restoredFrame: Promise<
+        ReturnType<typeof presentation> & { cornerPercent: number; open: boolean }
+      > | null = null;
+      return {
+        snapshot() {
+          recordWrites(observer.takeRecords());
+          return {
+            ...writes,
+            ...presentation(),
+            closed,
+            open: dialog.open,
+            cornerPercent: cornerProgressPercent(),
+          };
+        },
+        finishExit() {
+          for (const animation of dialog.getAnimations()) animation.finish();
+        },
+        observeRestore() {
+          const print = document.querySelector('.ai-waiting-polaroid');
+          if (!(print instanceof HTMLButtonElement))
+            throw new Error('The waiting print is missing');
+          restoredFrame = new Promise((resolve) => {
+            print.addEventListener(
+              'click',
+              () => {
+                const cornerPercent = cornerProgressPercent();
+                requestAnimationFrame(() =>
+                  resolve({ ...presentation(), cornerPercent, open: dialog.open })
+                );
+              },
+              { once: true, capture: true }
+            );
+          });
+        },
+        restored() {
+          if (!restoredFrame) throw new Error('No restore observation is armed');
+          return restoredFrame;
+        },
+        stop() {
+          observer.disconnect();
+        },
+      };
+    });
+
+    await page.getByRole('button', { name: 'Keep drawing while you wait' }).click();
+    await expect
+      .poll(() => probe.evaluate((probe) => probe.snapshot().retiringDial))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() => probe.evaluate((probe) => probe.snapshot().retiringPreview))
+      .toBeGreaterThan(0);
+    expect(await probe.evaluate((probe) => probe.snapshot().open)).toBe(true);
+
+    await probe.evaluate((probe) => probe.finishExit());
+    await expect.poll(() => probe.evaluate((probe) => probe.snapshot().closed)).toBe(true);
+    const held = await probe.evaluate((probe) => probe.snapshot());
+    await expect
+      .poll(() => probe.evaluate((probe) => probe.snapshot().cornerPercent))
+      .toBeGreaterThan(held.cornerPercent + HIDDEN_PROGRESS_ADVANCE_PERCENT);
+    const hidden = await probe.evaluate((probe) => probe.snapshot());
+    expect(hidden.hiddenDial).toBe(0);
+    expect(hidden.hiddenPreview).toBe(0);
+    expect(hidden.progressPercent).toBe(held.progressPercent);
+    expect(hidden.blurPx).toBe(held.blurPx);
+
+    await probe.evaluate((probe) => probe.observeRestore());
+    await page.locator(polaroid).click();
+    const restored = await probe.evaluate((probe) => probe.restored());
+    expect(restored.open).toBe(true);
+    expect(restored.progressPercent).toBeGreaterThanOrEqual(
+      restored.cornerPercent - CORNER_PROGRESS_ROUNDING_PERCENT
+    );
+    expect(restored.blurPx).toBeLessThan(held.blurPx);
+    await probe.evaluate((probe) => probe.stop());
+    await probe.dispose();
+    await endpoint.fail();
+  });
+
+  test('keeps progress painting live when a retirement is interrupted', async ({ page }) => {
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await expect(page.locator(modal)).toBeVisible();
+    await endpoint.waitForFirstRequest();
+    await page.addStyleTag({
+      content: `${modal}.closing { animation-duration: ${PROGRESS_EXIT_OBSERVATION_MS}ms; }`,
+    });
+    await page.getByRole('button', { name: 'Keep drawing while you wait' }).click();
+    await expect(page.locator(modal)).toHaveClass(/closing/);
+    await expect(page.locator(modal)).toHaveAttribute('open', '');
+    const beforeRestore = await dialAngle(page);
+
+    await invokeAiGeneration(page);
+    await expect(page.locator(modal)).not.toHaveClass(/closing/);
+    await expect(page.locator(modal)).toHaveAttribute('open', '');
+    await expect.poll(() => dialAngle(page)).toBeLessThan(beforeRestore);
+    await endpoint.fail();
   });
 
   test('stops calling the picture unfinished once it is finished', async ({ page }) => {
