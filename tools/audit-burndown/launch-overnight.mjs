@@ -10,8 +10,8 @@
 // There is no sleep assertion and no tmux here. This runs in a cloud container
 // that does not sleep, and what actually ends a run early is the container being
 // reclaimed for inactivity, which no local wakelock addresses. What protects the
-// work is pushing every finding (PUSH_EVERY in run-burndown.mjs), not keeping this
-// process alive.
+// work is pushing every finding (PUSH_EVERY in lib/burndown-config.mjs), not keeping
+// this process alive.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { openSync, rmSync } from 'node:fs';
@@ -67,7 +67,8 @@ rmSync(join(WORK, 'STOP'), { force: true });
 // Forward the burndown's env knobs into the job command itself, not just this
 // process's env: the job goes through a shell, and baking the assignments in
 // keeps an override working regardless of how the child's environment is set up.
-// The list lives in burndown-core.mjs because run-burndown.mjs needs the same one.
+// The list lives in burndown-core.mjs because launchCommand, which records the
+// driver's relaunch command, needs the same one.
 const forwarded = LAUNCH_KNOBS.filter((knob) => process.env[knob] != null).map(
   (knob) => `${knob}=${shellQuote(process.env[knob])}`
 );
