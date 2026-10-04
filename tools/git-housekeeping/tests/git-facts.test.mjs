@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   branchLandedVerbatim,
   deleteRefAtCommit,
@@ -178,6 +178,7 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     fixture.cleanup();
   });
 
@@ -274,24 +275,38 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
     expect(squashMatches('origin/main', 'latin1', landed, repo)).toBe(false);
   });
 
-  // A textconv driver renders a file for reading, and two different files can
-  // render alike, so a diff hashed through one matches a change that never landed.
-  it('content proof: a textconv driver that renders two changes alike proves nothing', () => {
+  // Patch-ids ignore line numbers, so only the context around an edit tells one
+  // copy of a line from another, and each setting drops it or renders it away.
+  it.each([
+    ['diff.context=0', ({ sh }) => sh(['config', 'diff.context', '0'])],
+    ['GIT_DIFF_OPTS=--unified=0', () => vi.stubEnv('GIT_DIFF_OPTS', '--unified=0')],
+    [
+      'a textconv driver that sorts the file',
+      ({ sh, repo }) => {
+        writeFileSync(join(repo, '.git', 'info', 'attributes'), 'flags.txt diff=sorted\n');
+        sh(['config', 'diff.sorted.textconv', 'sort']);
+      },
+    ],
+  ])('content proof: the same edit to another copy is NOT on the base under %s', (_, configure) => {
     const { sh, commit, repo, pushMain } = fixture;
-    writeFileSync(join(repo, '.git', 'info', 'attributes'), 'menu.txt diff=lossy\n');
-    sh(['config', 'diff.lossy.textconv', 'cut -c1-4']);
-    sh(['checkout', '-q', '-b', 'menu']);
-    commit('menu.txt', 'soup today\n', 'add menu');
+    const flags = (on) =>
+      ['a', 'b', 'c', 'flag', 'd', 'e', 'f', 'g', 'h', 'flag', 'i', 'j', 'k']
+        .map((line, index) => `${index === on ? 'flag on' : line}\n`)
+        .join('');
+    commit('flags.txt', flags(-1), 'add flags');
+    sh(['checkout', '-q', '-b', 'second']);
+    commit('flags.txt', flags(9), 'turn the flag on');
     sh(['checkout', '-q', 'main']);
-    const landed = commit('menu.txt', 'soup tomorrow\n', 'add menu');
+    const landed = commit('flags.txt', flags(3), 'turn the flag on');
     pushMain();
+    configure(fixture);
 
-    expect(branchLandedVerbatim('origin/main', 'menu', repo)).toBe(false);
-    expect(squashMatches('origin/main', 'menu', landed, repo)).toBe(false);
+    expect(branchLandedVerbatim('origin/main', 'second', repo)).toBe(false);
+    expect(squashMatches('origin/main', 'second', landed, repo)).toBe(false);
   });
 
   // The library's git calls read the repository's config, and either setting
-  // rewrites `git diff` into output `patch-id` cannot read.
+  // turns porcelain `git diff` into output `patch-id` cannot read.
   it.each([
     ['color.diff', 'always'],
     ['diff.external', 'echo'],

@@ -230,19 +230,20 @@ export function isPatchEquivalent(base, tip, cwd) {
   return !cherry.split('\n').some((line) => line.startsWith('+'));
 }
 
-// `--verbatim` hashes exactly the bytes it reads, so it is fed git's built-in
-// diff, as bytes. A trim would drop the trailing whitespace of the last line, a
-// UTF-8 decode would fold every invalid byte into one replacement character, and
-// a host's textconv driver can render two different files alike: each lets a
-// change that never landed hash the same as one that did. A host's
-// `diff.external` or `color.diff=always` leaves nothing `patch-id` can read, so a
-// landed change would read as unproven.
+// `--verbatim` hashes exactly the bytes it reads, so nothing may render a change
+// that never landed like one that did. The diff is read as bytes: a trim would
+// drop the last line's trailing whitespace, and a UTF-8 decode would fold every
+// invalid byte into one replacement character. It comes from plumbing
+// `diff-tree -p`, which ignores the host's porcelain diff settings:
+// `diff.context=0` leaves no context to tell edits to two copies of a line
+// apart, a textconv driver can render two different files alike, and
+// `diff.external` or `color.diff=always` leave nothing `patch-id` can read.
+// `GIT_DIFF_OPTS` sets the context even for plumbing, so it is dropped.
 function verbatimPatchId(from, to, cwd) {
-  const diff = spawnSync(
-    'git',
-    ['diff', '--no-ext-diff', '--no-textconv', '--no-color', from, to],
-    { cwd }
-  );
+  const diff = spawnSync('git', ['diff-tree', '-p', from, to], {
+    cwd,
+    env: { ...process.env, GIT_DIFF_OPTS: undefined },
+  });
   if (diff.error || diff.status !== 0 || diff.stdout.length === 0) return null;
   const out = git(['patch-id', '--verbatim'], { cwd, input: diff.stdout });
   return out ? out.split(' ')[0] : null;
