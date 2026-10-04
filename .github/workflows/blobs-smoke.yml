@@ -25,6 +25,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 # Every deploy shares one site-wide Blobs store, so serialize all workflow runs. An in-flight run
 # is not cancelled and can clean up; GitHub may replace an older pending run when another queues.
 concurrency:

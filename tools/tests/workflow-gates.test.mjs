@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  BASH_STEP_ARGS,
   jobBlock,
   jobBlocks,
   runScriptIn,
@@ -93,6 +94,73 @@ function unreadablePermissions(workflow) {
   });
 }
 
+const BASH_DEFAULTS_BLOCK = ['defaults:', '  run:', '    shell: bash'];
+const NO_BASH_DEFAULTS =
+  'run: steps and no top-level defaults block: GitHub runs them as bash -e {0}, without pipefail';
+const SEQUENCE_MARKERS = /^((?:-(?:\s+|$))*)(.*)$/;
+const PLAIN_KEY = /^([\w-]+):(?:\s+(.*))?$/;
+const BLOCK_SCALAR_HEADER = /^[|>][-+1-9]*(?:\s+#.*)?$/;
+const QUOTED_STRING = /'(?:[^']|'')*'|"(?:[^"\\]|\\.)*"/g;
+// A flow mapping opened behind any anchor or tag, or a flow sequence holding one.
+const FLOW_MAPPING = /^(?:[&!]\S*\s+)*(?:\{(?!\})|\[.*\{)/;
+// An explicit, anchored, tagged, or merge key, or text before a `: ` that is not a plain key:
+// quoted, escaped, or with a space before the colon.
+const UNREADABLE_KEY = /^[?&!<]|:(?:\s|$)/;
+
+// The lines YAML reads as structure: not blank, not a comment, and not inside a block scalar
+// (a `run: |` script, an action's `script: |` input), each with the plain key it opens. A key
+// spelled any other way, or a flow mapping that could hold one, marks its line unreadable, so a
+// key this reader cannot name fails the rule instead of passing it.
+function structuralLines(text) {
+  const structural = [];
+  let scalarKeyColumn = -1;
+  text.split('\n').forEach((line, index) => {
+    const indent = line.search(/\S/);
+    if (scalarKeyColumn >= 0 && (indent < 0 || indent > scalarKeyColumn)) return;
+    scalarKeyColumn = -1;
+    if (isBlankOrComment(line)) return;
+    const [, markers, body] = line.slice(indent).match(SEQUENCE_MARKERS);
+    const [, key, value = ''] = body.match(PLAIN_KEY) ?? [];
+    if (key !== undefined && BLOCK_SCALAR_HEADER.test(value)) {
+      scalarKeyColumn = indent + markers.length;
+    }
+    // Quoted text is a scalar's content, so a brace or `: ` inside it opens nothing.
+    const outsideQuotes = (key === undefined ? body : value).replace(QUOTED_STRING, '""');
+    const unreadable =
+      FLOW_MAPPING.test(outsideQuotes) || (key === undefined && UNREADABLE_KEY.test(outsideQuotes));
+    structural.push({ index, line, key, unreadable });
+  });
+  return structural;
+}
+
+// The exact block starts at `index` and ends where the next line YAML reads returns to column 0,
+// so no key sits under it.
+function isBashDefaultsBlock(lines, index) {
+  const exact = BASH_DEFAULTS_BLOCK.every((line, offset) => lines[index + offset] === line);
+  const next = lines
+    .slice(index + BASH_DEFAULTS_BLOCK.length)
+    .find((line) => !isBlankOrComment(line));
+  return exact && (next === undefined || /^\S/.test(next));
+}
+
+// Every way a run: step could get a shell other than BASH_STEP_ARGS: a run step in a workflow
+// without the one top-level block, a `defaults` or `shell` key outside it, or a key this reader
+// cannot name.
+function shellProblems(workflow) {
+  const lines = workflow.split('\n');
+  const block = lines.findIndex((_, index) => isBashDefaultsBlock(lines, index));
+  const accepted = block < 0 ? [] : [block, block + BASH_DEFAULTS_BLOCK.length - 1];
+  const stray = structuralLines(workflow).flatMap(({ index, line, key, unreadable }) =>
+    (unreadable || key === 'defaults' || key === 'shell') && !accepted.includes(index)
+      ? [`line ${index + 1}: ${line.trim()}`]
+      : []
+  );
+  const runsScripts = jobBlocks(workflow).some((job) =>
+    stepBlocks(job.text).some((step) => structuralLines(step.text).some(({ key }) => key === 'run'))
+  );
+  return runsScripts && block < 0 ? [...stray, NO_BASH_DEFAULTS] : stray;
+}
+
 function writeExecutable(path, body) {
   writeFileSync(path, `#!/bin/bash\n${body}\n`);
   chmodSync(path, 0o755);
@@ -113,25 +181,44 @@ function runRestoreStep(script, { artifactId, download, unzip }) {
   writeExecutable(join(stubBin, 'gh'), GH_STUB);
   writeExecutable(join(stubBin, 'unzip'), UNZIP_STUB);
 
-  const result = spawnSync(
-    '/bin/bash',
-    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
-    {
-      cwd: workspace,
-      encoding: 'utf8',
-      env: {
-        GH_ARTIFACT_ID: artifactId,
-        GH_DOWNLOAD: download,
-        GITHUB_REPOSITORY: 'KyleMit/Splotch',
-        PATH: `${stubBin}:/usr/bin:/bin`,
-        RESTORED_HISTORY,
-        RUNNER_TEMP: runnerTemp,
-        UNZIP_RESULT: unzip,
-      },
-    }
-  );
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', script], {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: {
+      GH_ARTIFACT_ID: artifactId,
+      GH_DOWNLOAD: download,
+      GITHUB_REPOSITORY: 'KyleMit/Splotch',
+      PATH: `${stubBin}:/usr/bin:/bin`,
+      RESTORED_HISTORY,
+      RUNNER_TEMP: runnerTemp,
+      UNZIP_RESULT: unzip,
+    },
+  });
 
   return { history: readFileSync(join(workspace, HISTORY_PATH), 'utf8'), result };
+}
+
+// `node` on PATH stands in for tools/perf/report-undo-gate-failures.mjs, so $2 is the
+// `--first=` flag on the call that compares the two runners.
+function runCompareStep(script, reporterStub) {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-gate-compare-'));
+  tempRoots.push(root);
+  const stubBin = join(root, 'bin');
+  const githubOutput = join(root, 'github-output');
+  mkdirSync(stubBin);
+  writeFileSync(githubOutput, '');
+  writeExecutable(join(stubBin, 'node'), reporterStub);
+
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', script], {
+    encoding: 'utf8',
+    env: {
+      FIRST_FAILURES: 'multi-finger:breach',
+      GITHUB_OUTPUT: githubOutput,
+      PATH: `${stubBin}:/usr/bin:/bin`,
+    },
+  });
+
+  return { output: readFileSync(githubOutput, 'utf8'), result };
 }
 
 describe('workflow gates', () => {
@@ -203,6 +290,161 @@ describe('workflow gates', () => {
     });
   });
 
+  // GitHub runs a run: script with no declared shell as `bash -e {0}`, without pipefail, so the
+  // WebKit retry's `node … | tr` comparison would read a crashed comparator as "not reproduced"
+  // and file nothing. One top-level block declares bash for every step and no other key may
+  // change it, so a step a test executes under BASH_STEP_ARGS runs that way in CI too.
+  describe('run: step shell', () => {
+    const buildJob = [
+      'jobs:',
+      '  build:',
+      '    runs-on: ubuntu-latest',
+      '    steps:',
+      '      - name: Build',
+      '        run: npm run build',
+    ];
+    const runnerListJob = (runner) => [
+      ...buildJob.slice(0, 2),
+      `    runs-on: [self-hosted, ${runner}]`,
+      ...buildJob.slice(3),
+    ];
+
+    it.each(workflows)('$name runs any run: step under the declared bash shell', ({ text }) => {
+      expect(shellProblems(text)).toEqual([]);
+    });
+
+    it.each([
+      {
+        spelling: 'the block before a comment',
+        yaml: [...BASH_DEFAULTS_BLOCK, '', '# Introduces the jobs.', ...buildJob],
+      },
+      {
+        spelling: 'no block where no step runs a script',
+        yaml: ['jobs:', '  build:', '    steps:', '      - uses: actions/checkout@sha'],
+      },
+      {
+        spelling: 'a shell mapping inside a script',
+        yaml: [
+          ...BASH_DEFAULTS_BLOCK,
+          ...buildJob.slice(0, 4),
+          '      - run: |',
+          "          node -e 'console.log({ shell: process.env.SHELL })'",
+        ],
+      },
+      {
+        spelling: 'a runner list holding a quoted expression',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...runnerListJob('"${{ matrix.runner }}"')],
+      },
+      {
+        spelling: "a run mapping inside an action's script input, with no block",
+        yaml: [
+          ...buildJob.slice(0, 4),
+          '      - uses: actions/github-script@sha',
+          '        with:',
+          '          script: |',
+          '            console.log({run: "diagnostic"})',
+        ],
+      },
+    ])('accepts $spelling', ({ yaml }) => {
+      expect(shellProblems(yaml.join('\n'))).toEqual([]);
+    });
+
+    it.each([
+      { spelling: 'no block', yaml: buildJob, problems: [NO_BASH_DEFAULTS] },
+      {
+        spelling: 'the block commented out',
+        yaml: ['# defaults:', '#   run:', '#     shell: bash', ...buildJob],
+        problems: [NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'the block nested under a job',
+        yaml: [
+          'jobs:',
+          '  build:',
+          '    defaults:',
+          '      run:',
+          '        shell: bash',
+          '    steps:',
+          '      - run: npm run build',
+        ],
+        problems: ['line 3: defaults:', 'line 5: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a step-level shell',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        shell: sh'],
+        problems: ['line 10: shell: sh'],
+      },
+      {
+        spelling: 'a shell inside a flow-style step',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '      - { run: npm test, shell: sh }'],
+        problems: ['line 10: - { run: npm test, shell: sh }'],
+      },
+      {
+        spelling: 'a flow-style block',
+        yaml: ['defaults: { run: { shell: bash } }', ...buildJob],
+        problems: ['line 1: defaults: { run: { shell: bash } }', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a quoted key',
+        yaml: ['"defaults":', '  run:', '    shell: bash', ...buildJob],
+        problems: ['line 1: "defaults":', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a space before the colon',
+        yaml: ['defaults :', '  run:', '    shell: bash', ...buildJob],
+        problems: ['line 1: defaults :', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a key added under the block',
+        yaml: [...BASH_DEFAULTS_BLOCK, '', '    working-directory: web', ...buildJob],
+        problems: ['line 1: defaults:', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a step shell after its script',
+        yaml: [
+          ...BASH_DEFAULTS_BLOCK,
+          ...buildJob.slice(0, 4),
+          '      - run: |',
+          '          npm run build',
+          '        shell: sh',
+        ],
+        problems: ['line 10: shell: sh'],
+      },
+      {
+        spelling: 'an escaped shell key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        "shel\\u006c": sh'],
+        problems: ['line 10: "shel\\u006c": sh'],
+      },
+      {
+        spelling: 'an escaped run key',
+        yaml: [...buildJob.slice(0, 4), '      - "r\\u0075n": npm run build'],
+        problems: ['line 5: - "r\\u0075n": npm run build'],
+      },
+      {
+        spelling: 'a tagged key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        !!str shell: sh'],
+        problems: ['line 10: !!str shell: sh'],
+      },
+      {
+        spelling: 'an explicit key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        ? shell', '        : sh'],
+        problems: ['line 10: ? shell', 'line 11: : sh'],
+      },
+      {
+        spelling: 'a merge key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        <<: *shell'],
+        problems: ['line 10: <<: *shell'],
+      },
+      {
+        spelling: 'a flow mapping inside a runner list',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...runnerListJob('{ shell: sh }')],
+        problems: ['line 6: runs-on: [self-hosted, { shell: sh }]'],
+      },
+    ])('refuses $spelling', ({ yaml, problems }) => {
+      expect(shellProblems(yaml.join('\n'))).toEqual(problems);
+    });
+  });
+
   // The check-then-create requires a constant lock. queue:max permits up to
   // 100 pending jobs; queue:single replaces an existing pending reporter.
   describe('WebKit fast gate filing', () => {
@@ -219,6 +461,50 @@ describe('workflow gates', () => {
           '',
         ].join('\n')
       );
+    });
+  });
+
+  // A crashed reporter exits 1 with nothing on stdout (issue 1296), and a comparison step that
+  // succeeds with an empty `reproduced` is what the retry records as host noise, filing nothing.
+  // So a crash has to fail the step, while a comparison that ran and found no overlap succeeds.
+  describe('WebKit fast gate retry comparison', () => {
+    const compareScript = runScriptIn(
+      stepBlock(
+        jobBlock(testWorkflow, 'webkit-commit-gate-fast-retry'),
+        "Compare this runner's failure with the first runner's"
+      )
+    );
+
+    it.each([
+      { label: 'the reporter crashes', reporter: 'exit 1' },
+      {
+        label: 'only the comparison crashes',
+        reporter: 'case "$2" in --first=*) exit 1 ;; *) echo multi-finger:breach ;; esac',
+      },
+    ])('fails the step when $label', ({ reporter }) => {
+      const { result } = runCompareStep(compareScript, reporter);
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(1);
+    });
+
+    it.each([
+      {
+        label: 'a reproduced failure',
+        reporter: 'echo multi-finger:breach',
+        output: 'mine=multi-finger:breach\nreproduced=multi-finger:breach\n',
+      },
+      {
+        label: 'a failure that did not reproduce',
+        reporter: 'case "$2" in --first=*) echo ;; *) echo crayon-scribbles:breach ;; esac',
+        output: 'mine=crayon-scribbles:breach\nreproduced=\n',
+      },
+    ])('records $label from a comparison that ran', ({ reporter, output }) => {
+      const compared = runCompareStep(compareScript, reporter);
+
+      expect(compared.result.stderr).toBe('');
+      expect(compared.result.status).toBe(0);
+      expect(compared.output).toBe(output);
     });
   });
 
