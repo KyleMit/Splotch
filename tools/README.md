@@ -57,7 +57,7 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
 | `stage-netlify-functions.mjs`      | Netlify production build                  | Copy the adapter's SSR function tree to the repository root   |
 | `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
-| `stop-dev-servers.mjs`             | `dev:stop`                                | Stop listeners on the repository-owned development ports      |
+| `stop-dev-servers.mjs`             | `dev:stop`                                | Stop this checkout's dev servers; refuse any other listener   |
 
 The check and optimization commands are deterministic and local except
 `check:github-actions -- --check-latest`, which queries GitHub and reports unknown release data when

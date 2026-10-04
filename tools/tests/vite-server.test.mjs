@@ -1,13 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../lib/proc.mjs';
-import { freePort, portListenerOwners, spawnViteServer } from '../lib/vite-server.mjs';
+import {
+  ForeignListenerError,
+  freePort,
+  portListenerOwners,
+  portListenerPids,
+  spawnViteServer,
+} from '../lib/vite-server.mjs';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, spawn: vi.fn(), spawnSync: vi.fn() };
 });
+
+// What spawnSync reports when lsof is not on PATH.
+function lsofNotFound() {
+  const error = new Error('spawnSync lsof ENOENT');
+  error.code = 'ENOENT';
+  return { error, stdout: undefined };
+}
 
 beforeEach(() => {
   spawn.mockReset();
@@ -18,15 +32,14 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('freePort', () => {
-  it('reports that automatic cleanup could not be checked when lsof is unavailable', () => {
-    const error = new Error('spawnSync lsof ENOENT');
-    error.code = 'ENOENT';
-    spawnSync.mockReturnValue({ error, stdout: undefined });
+  it('reports that automatic cleanup could not be checked when lsof is unavailable', async () => {
+    spawnSync.mockReturnValue(lsofNotFound());
 
-    freePort(4173);
+    await freePort(4173);
 
     expect(console.warn).toHaveBeenCalledExactlyOnceWith(
       'Unable to check or clear port 4173 automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.'
@@ -34,41 +47,103 @@ describe('freePort', () => {
     expect(process.kill).not.toHaveBeenCalled();
   });
 
-  it('stays silent when lsof finds no listener', () => {
+  // Only an lsof that never ran is tolerated: one that ran and failed would
+  // otherwise read as "nothing to clear".
+  it('fails when lsof reports an operational error', async () => {
+    spawnSync.mockReturnValue({ status: 1, stdout: '', stderr: 'lsof: unsupported TCP state' });
+
+    await expect(freePort(4173)).rejects.toThrow(
+      'lsof failed while checking port 4173: lsof: unsupported TCP state'
+    );
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it('stays silent when lsof finds no listener', async () => {
     spawnSync.mockReturnValue({ status: 1, stdout: '' });
 
-    freePort(4173);
+    await freePort(4173);
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(process.kill).not.toHaveBeenCalled();
   });
 
-  it('stops a listener this checkout owns', () => {
+  it('stops a listener this checkout owns', async () => {
     spawnSync
       .mockReturnValueOnce({ status: 0, stdout: '4242\n' })
-      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${join(ROOT, 'web')}\n` });
+      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${join(ROOT, 'web')}\n` })
+      .mockReturnValueOnce({ status: 1, stdout: '' });
 
-    freePort(4173);
+    await freePort(4173);
 
     expect(process.kill).toHaveBeenCalledExactlyOnceWith(4242, 'SIGTERM');
   });
 
   // One foreign listener is enough to refuse the whole port: stopping only the
   // owned one would leave strictPort failing against the other anyway.
-  it('signals nothing when any listener belongs to another checkout', () => {
+  it('signals nothing when any listener belongs to another checkout', async () => {
     spawnSync
       .mockReturnValueOnce({ status: 0, stdout: '4242\n4343\n' })
       .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${ROOT}\n` })
       .mockReturnValueOnce({ status: 0, stdout: 'p4343\nfcwd\nn/elsewhere\n' });
 
-    expect(() => freePort(4173)).toThrow(
+    const refusal = freePort(4173);
+
+    await expect(refusal).rejects.toBeInstanceOf(ForeignListenerError);
+    await expect(refusal).rejects.toThrow(
       'port 4173 is held by a listener outside this checkout (pid 4343)'
     );
     expect(process.kill).not.toHaveBeenCalled();
   });
+
+  // The perf operator session reads ForeignListenerError as "the port changed
+  // owners after preflight", so a port that never clears must not be one.
+  it('rejects with the holding pid, not an ownership refusal, when the port is not released', async () => {
+    vi.useFakeTimers();
+    spawnSync.mockImplementation((_command, args) =>
+      args.includes('-sTCP:LISTEN')
+        ? { status: 0, stdout: '4242\n' }
+        : { status: 0, stdout: `p4242\nfcwd\nn${ROOT}\n` }
+    );
+
+    const outcome = freePort(4173).catch((error) => error);
+    await vi.runAllTimersAsync();
+    const error = await outcome;
+
+    expect(error).not.toBeInstanceOf(ForeignListenerError);
+    expect(error.message).toBe('port 4173 is still held by pid 4242 after 5000ms');
+  });
+});
+
+describe('portListenerPids', () => {
+  it('throws when lsof cannot be launched rather than reporting no listener', () => {
+    spawnSync.mockReturnValue(lsofNotFound());
+
+    expect(() => portListenerPids(4173)).toThrow(
+      'lsof could not be launched to check port 4173: spawnSync lsof ENOENT'
+    );
+  });
 });
 
 describe('portListenerOwners', () => {
+  it('throws when lsof cannot be launched rather than reporting no listener', () => {
+    spawnSync.mockReturnValue(lsofNotFound());
+
+    expect(() => portListenerOwners(4173, '/repo')).toThrow(
+      'lsof could not be launched to check port 4173: spawnSync lsof ENOENT'
+    );
+  });
+
+  // A pruned worktree's server can outlive its directory and still report its path.
+  it('treats a listener cwd that no longer exists as foreign', () => {
+    const gone = join(realpathSync(ROOT), 'pruned-worktree-that-does-not-exist', 'web');
+    expect(existsSync(gone)).toBe(false);
+    spawnSync
+      .mockReturnValueOnce({ status: 0, stdout: '4242\n' })
+      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${gone}\n` });
+
+    expect(portListenerOwners(4173, ROOT)).toEqual([{ pid: 4242, cwd: gone, owned: false }]);
+  });
+
   it('treats an unreadable listener cwd as foreign', () => {
     spawnSync
       .mockReturnValueOnce({ status: 0, stdout: '4242\n' })

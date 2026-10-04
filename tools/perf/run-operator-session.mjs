@@ -42,7 +42,7 @@ import {
   runMain,
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
-import { freePort, portListenerOwners, waitForPortRelease } from '../lib/vite-server.mjs';
+import { ForeignListenerError, freePort, portListenerOwners } from '../lib/vite-server.mjs';
 import {
   classifyLaunchProbe,
   explicitProbePortDecision,
@@ -220,13 +220,13 @@ function spawnDetached(command, args, logName, env = {}) {
 async function ensurePreview(port, action) {
   if (action === 'restart') {
     try {
-      freePort(port);
+      await freePort(port);
     } catch (err) {
+      if (!(err instanceof ForeignListenerError)) throw err;
       fail(
         `${err.message} The preview port changed owners after preflight — run perf:preflight again.`
       );
     }
-    await waitForPortRelease(port);
   } else if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
     fail(`preview port ${port} became occupied after preflight — run perf:preflight again`);
   }
