@@ -16,7 +16,16 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  argFlag,
+  fail,
+  isMain,
+  parseOrFail,
+  readSwitch,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { CAPTURED_UNTRACKED, PRESERVED } from './lib/matrix-vocabulary.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { CAMPAIGN_MODES, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
@@ -472,7 +481,7 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   const outputRoot = flag('output-root');
   const productCommit = flag('product-commit');
   const manifestPath = flag('manifest');
-  const preserveActions = argv.includes('--preserve-actions');
+  const preserveActions = parseOrFail(() => readSwitch(argv, 'preserve-actions'));
   if (!targetId || !outputRoot || !productCommit) {
     fail('--target, --output-root, and --product-commit are all required');
   }
@@ -535,4 +544,16 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   return entries;
 }
 
-if (isMain(import.meta.url)) runMain(runCampaignSources);
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags([
+    'target',
+    'output-root',
+    'product-commit',
+    'manifest',
+    'preserve-actions',
+    'actions-unavailable',
+    'modes',
+    'sections',
+  ]);
+  runMain(runCampaignSources);
+}
