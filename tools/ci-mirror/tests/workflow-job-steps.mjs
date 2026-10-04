@@ -110,6 +110,12 @@ export function stepBlock(job, name) {
   return matches[0].text;
 }
 
+// The argv GitHub runs a `run:` script under when its shell is declared `bash`, so a test
+// executing a step runs it as CI does. A workflow that leaves the shell undeclared gets
+// `bash -e {0}` instead, without pipefail, and a pipeline there takes its last command's status;
+// tools/tests/workflow-gates.test.mjs requires the declaration of every workflow with a run step.
+export const BASH_STEP_ARGS = ['--noprofile', '--norc', '-e', '-o', 'pipefail'];
+
 // A step's `run: |` block as the runner hands it to bash: dedented, ending in one newline.
 export function runScriptIn(step) {
   const lines = step.split('\n');

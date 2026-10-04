@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   smoke:
     name: Maestro launch smoke test (iOS simulator)

@@ -35,6 +35,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   sweep:
     name: ${{ matrix.workers }} workers

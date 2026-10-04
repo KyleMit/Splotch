@@ -27,6 +27,10 @@ permissions:
   actions: read
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   # Pull requests collapse per ref, so a new push cancels the run it supersedes.
   # Pushes get a per-commit group instead: the WebKit commit gate runs

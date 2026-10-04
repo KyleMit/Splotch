@@ -28,6 +28,7 @@ import {
   eventAt,
   exitCodeOf,
   FIRST_TITLE,
+  FREE_PORT,
   implemented,
   invalidVerdict,
   LAUNCH_COMMAND_PATH,
@@ -341,8 +342,8 @@ describe('close-out', () => {
 
     await run.execute();
 
-    expect(shellCommands.filter((command) => command.startsWith('npm run test:e2e'))).toEqual([
-      `npm run test:e2e -- --retries=1 ${validSpec}`,
+    expect(shellCommands.filter((command) => command.includes('npm run test:e2e'))).toEqual([
+      `SPLOTCH_E2E_PORT=${FREE_PORT} npm run test:e2e -- --retries=1 ${validSpec}`,
     ]);
     for (const spec of rejectedSpecs)
       expect(events).toContain(`  rejected E2E spec: ${JSON.stringify(spec)}`);
