@@ -30,17 +30,18 @@ comments live under the gitignored `.audit-work/` directory unless a run deliber
 durable `COMMENT_STORE`.
 
 `prompts/` owns the runner-neutral role contracts. `lib/agent-runner.mjs` owns Claude Code and Codex
-invocation, authentication probes, session resume, and output normalization; `lib/burndown-core.mjs`
-owns the shared state and backlog operations; and `lib/comment-sync.mjs` owns GitHub-bound comment
-rendering. These support modules are not standalone commands.
+invocation, authentication probes, session resume, and output normalization;
+`lib/burndown-config.mjs` resolves and validates the environment knobs and owns their defaults;
+`lib/burndown-core.mjs` owns the shared state and backlog operations; and `lib/comment-sync.mjs`
+owns GitHub-bound comment rendering. These support modules are not standalone commands.
 
 ## Prerequisites and failure behavior
 
 A run needs a clean Git worktree, reachable `origin`, installed project dependencies, a valid audit
-backlog, and an authenticated supported agent runner. `check-preflight.mjs` verifies those
-conditions and exits nonzero on a blocking failure. The driver rolls an unsuccessful finding back,
-preserves accepted work in commits, and stops after repeated systemic failures; the skill defines
-the exact pause, resume, monitoring, comment-drain, and closeout procedures.
+backlog, well-formed knob values, and an authenticated supported agent runner. `check-preflight.mjs`
+verifies those conditions and exits nonzero on a blocking failure. The driver rolls an unsuccessful
+finding back, preserves accepted work in commits, and stops after repeated systemic failures; the
+skill defines the exact pause, resume, monitoring, comment-drain, and closeout procedures.
 
 Never edit tracked files while a burndown is running: its rollback paths may discard concurrent
 work. Never bypass `pop-finding.mjs` for backlog surgery at burndown scale, and keep the Claude and

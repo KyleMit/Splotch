@@ -3,14 +3,10 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { hasCommand } from '../lib/proc.mjs';
+import { hasCommand, parseOrFail } from '../lib/proc.mjs';
+import { agentAuthCommand } from './lib/agent-runner.mjs';
+import { readConfig } from './lib/burndown-config.mjs';
 import {
-  agentAuthCommand,
-  agentRunnerDefaults,
-  normalizeAgentRunner,
-} from './lib/agent-runner.mjs';
-import {
-  auditFile,
   chdirRoot,
   countEntries,
   getEntry,
@@ -18,15 +14,13 @@ import {
   gitOut,
   PROMPTS,
   runCmd,
-  WORK,
 } from './lib/burndown-core.mjs';
 
-chdirRoot();
+// The driver's own knob parser: a value the run would refuse stops the launch here.
+const { AGENT_RUNNER, AUDIT_FILE, BRANCH, CHECK_CMD, COMMENT_STORE, RESUME, RUNNER_DEFAULTS } =
+  parseOrFail(() => readConfig());
 
-const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
-const BRANCH = process.env.BRANCH ?? 'audit/burndown';
-const AGENT_RUNNER = normalizeAgentRunner(process.env.AGENT_RUNNER);
-const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
+chdirRoot();
 
 let failed = false;
 const ok = (msg) => console.log(`  \x1b[32m✓\x1b[0m ${msg}`);
@@ -60,8 +54,8 @@ else if (RESUME) warn('working tree is dirty — RESUME=1 will reset it to HEAD'
 else bad('working tree is dirty');
 ok(`runner: ${AGENT_RUNNER}`);
 ok(`branch: ${gitOut('rev-parse', '--abbrev-ref', 'HEAD')}`);
-if (existsSync(auditFile())) ok(`${auditFile()} present`);
-else bad(`${auditFile()} missing — nothing staged to burn down`);
+if (existsSync(AUDIT_FILE)) ok(`${AUDIT_FILE} present`);
+else bad(`${AUDIT_FILE} missing — nothing staged to burn down`);
 if (/^\.audit-work/m.test(readFileSync('.gitignore', 'utf8'))) ok('.audit-work is gitignored');
 else warn('.audit-work not in .gitignore');
 
@@ -86,10 +80,10 @@ if (
   bad('origin is unreachable — commits could not be pushed');
 else ok('origin reachable');
 
-const store = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
-if (existsSync(store)) {
-  const lines = readFileSync(store, 'utf8').split('\n').filter(Boolean).length;
-  if (lines) warn(`${lines} unposted PR comment(s) in ${store} — post them before they age out`);
+if (existsSync(COMMENT_STORE)) {
+  const lines = readFileSync(COMMENT_STORE, 'utf8').split('\n').filter(Boolean).length;
+  if (lines)
+    warn(`${lines} unposted PR comment(s) in ${COMMENT_STORE} — post them before they age out`);
 }
 
 console.log('prompts');
@@ -99,19 +93,18 @@ for (const prompt of ['verifier', 'implementer', 'reviewer']) {
 }
 
 console.log('backlog');
-const count = countEntries();
+const count = countEntries(AUDIT_FILE);
 if (count === null) {
-  bad(`could not parse ${auditFile()}`);
+  bad(`could not parse ${AUDIT_FILE}`);
 } else {
   ok(`${count} findings parsed`);
   if (count === 0) warn('backlog is empty');
-  else console.log(`    first entry: ${getEntry().split('\n', 1)[0]}`);
+  else console.log(`    first entry: ${getEntry(1, AUDIT_FILE).split('\n', 1)[0]}`);
 }
 
 console.log('build');
-const checkCmd = process.env.CHECK_CMD ?? 'npm run check';
-if (runCmd(checkCmd, [], { shell: true, stdio: 'ignore' }).status === 0) ok(`${checkCmd} passes`);
-else bad(`${checkCmd} fails — fix before starting`);
+if (runCmd(CHECK_CMD, [], { shell: true, stdio: 'ignore' }).status === 0) ok(`${CHECK_CMD} passes`);
+else bad(`${CHECK_CMD} fails — fix before starting`);
 
 console.log();
 if (failed) {
