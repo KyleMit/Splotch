@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "status": "REJECTED_PHYSICAL_TRIAL",
+  "purpose": "Closed, unmerged evidence PR; historical experiment only; not shipping code.",
+  "baseCommit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "originalLocalCommit": "bb2249ef072d494fbef4359109abf27710b970ed",
+  "originalLocalBranch": "codex/iphone-coloring-selection-performance",
+  "target": "iPhone Safari",
+  "mode": "portrait/light",
+  "minimalDiffSummary": "Add a modal content-concealment option and opt ColoringBook into root opacity after the same native close, restoring the selected property during cleanup.",
+  "touchedProductionPaths": [
+    "web/src/lib/actions/modalDialog.svelte.ts",
+    "web/src/lib/components/ColoringBook.svelte"
+  ],
+  "sourceFiles": [
+    {
+      "path": "web/src/lib/actions/modalDialog.retiredContent.svelte.test.ts",
+      "role": "regression-test",
+      "baselineExists": false,
+      "baselineSha256": null,
+      "treatmentSha256": "2998eb420f46c9f5099f9431ef9d367707a7e68125d5b0fae29a82e6ac489393",
+      "baselineGitBlob": null,
+      "treatmentGitBlob": "1d0a605cd0d5f8883634ca34022d4df4dc18e6ab"
+    },
+    {
+      "path": "web/src/lib/actions/modalDialog.svelte.ts",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "7cf3e59d9c6da3adad182f5a9320b3da26d2441bcbee0ebc8421e4aa1ea15799",
+      "treatmentSha256": "b74776a7428c9329f311fdb08dbe947a9015076dd765ca8b3bd28715fddd13ae",
+      "baselineGitBlob": "fe6cf99fb3165d208d8f8f0c382c213e30111c8c",
+      "treatmentGitBlob": "bbc55929fa6118c265d504542db89d8f8521d7ac"
+    },
+    {
+      "path": "web/src/lib/components/ColoringBook.svelte",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "d72b20b15d214b20a1025af7f17c55deacab5e261ccc3711cd9f606886bd9be6",
+      "treatmentSha256": "46b3e1546398a4b4a433a93e3690139dab3aabb3c62976fa8c870701c5305c5d",
+      "baselineGitBlob": "c513402c66b5fba816f5da6ef5359fd519474365",
+      "treatmentGitBlob": "04e10d8a3b8ca61ceb9380a9375835005671ea0d"
+    }
+  ],
+  "localSourcePatch": {
+    "sha256": "64eb580d2cba8fac2797e7753c6526f77fd7724a1673c3d589c4bbbb0fa84a00",
+    "definition": "git diff --binary --full-index <baseCommit> <originalLocalCommit>; complete original source and regression-test diff, exact Git output bytes"
+  },
+  "historicalMeasuredResult": {
+    "selectColoringPageMs": {
+      "baseline": {
+        "p95": 20,
+        "max": 38
+      },
+      "treatment": {
+        "p95": 17,
+        "max": 39
+      }
+    },
+    "treatmentMaxBreachRepetitions": 3,
+    "treatmentHiddenOverruns": 0,
+    "treatmentReadinessMs": [332, 336],
+    "treatmentReopenMs": {
+      "p95": 25,
+      "max": 30
+    },
+    "treatmentClearMs": {
+      "p95": 37,
+      "max": 41
+    },
+    "scoredAndRawFrames": {
+      "baseline": [136, 275],
+      "treatment": [123, 264]
+    },
+    "validActivations": 4,
+    "repeats": 4
+  },
+  "reasonRejected": "The first valid physical selection result still failed production scoring. A lower P95 alone did not establish acceptance, and the related family actions also remained red.",
+  "unchangedGates": [
+    "Production scorer and acceptance thresholds unchanged.",
+    "Input path, cadence, readiness predicate and activity-window rules unchanged.",
+    "First valid failing result retained; no candidate retry for this archived trial."
+  ],
+  "historicalChecksReported": [
+    "Format, type and lint checks, 4,420 core and 45 SSR tests passed; four intended negative controls failed and all 23 restored modal tests passed.",
+    "All 60 stable paired WebKit frames matched exactly."
+  ],
+  "evidenceProvenance": {
+    "kind": "Local operator campaign summary only",
+    "record": "Private campaign experiment-history.md",
+    "lines": [310, 314],
+    "recordSha256": "d07e719500961ee20d39655d17c725984523370f57bd5a1da78abc92250018de",
+    "rawPrivateArtifactsPublished": false
+  },
+  "publicationVerification": {
+    "sourceCommitAndBranchVerified": true,
+    "baseAncestorVerified": true,
+    "productionFilesCopiedFromExactGitObjects": true,
+    "newTestsRun": false,
+    "newPerformanceRun": false,
+    "historicalPhysicalResultRevalidated": false,
+    "allOriginalChangedFilesCopiedFromExactGitObjects": true
+  },
+  "limitations": [
+    "Historical results are summarized from the local operator record; no new tests or performance runs were performed for this publication.",
+    "Raw logs, phone traces, screenshots, packets, device identifiers and local endpoints remain private and are omitted.",
+    "No causal bottleneck, browser/system floor, cross-runtime benefit or shipping acceptance is established."
+  ],
+  "touchedTestPaths": [
+    "web/src/lib/actions/modalDialog.retiredContent.svelte.test.ts"
+  ],
+  "allChangedPaths": [
+    "web/src/lib/actions/modalDialog.retiredContent.svelte.test.ts",
+    "web/src/lib/actions/modalDialog.svelte.ts",
+    "web/src/lib/components/ColoringBook.svelte"
+  ],
+  "regressionTestDiffReview": {
+    "status": "PASS_NO_RELAXATION",
+    "summary": "New modal lifecycle tests assert retirement, opacity/input cleanup, reopening, preserved prior inert state, abandoned exits and destruction. Their fake timers and animation-frame controls are test-local; no performance harness or acceptance changes.",
+    "testsCopiedByteForByte": true,
+    "testExecutionForPublication": false
+  }
+}
