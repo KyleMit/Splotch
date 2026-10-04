@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
+import { AUTOMATION_MODE_TIMEOUT_PATTERN } from './capture-readiness.mjs';
 
 // The longitudinal dataset issue 1299 wants: one row per WDA launch attempt,
 // whoever made it. The operator harness was the only producer, which left the
@@ -61,7 +62,8 @@ export function recordGrantAttempt(udid, outcome, detail, { logPath = GRANT_LOG 
   );
 }
 
-function readGrantLog({ logPath = GRANT_LOG } = {}) {
+// Exported so the committed-log test reads rows the way the summary does.
+export function readGrantLog({ logPath = GRANT_LOG } = {}) {
   if (!existsSync(logPath)) return [];
   return readFileSync(logPath, 'utf8')
     .split('\n')
@@ -74,12 +76,17 @@ function readGrantLog({ logPath = GRANT_LOG } = {}) {
 }
 
 // The log's outcome vocabulary is classifyLaunchProbe's ('ok' / 'blocked'
-// plus a detail); a blocked row is a GRANT denial only when its detail names
-// the UI-automation prompt — a locked device or a failed WDA build says
-// nothing about the grant.
+// plus a detail). A non-ok row is a GRANT denial only when its detail names
+// the automation grant: XCTest's own timeout line, which hand-recorded rows
+// carry, or the cause classifyAppiumLog wrote for it. That cause is matched by
+// a phrase rather than its whole text, because the log keeps rows from every
+// wording it has had. A locked device, a failed WDA build, or stale device
+// discovery says nothing about the grant.
 export function isGrantDenial(entry) {
+  const detail = String(entry.detail ?? '');
   return (
-    entry.outcome !== 'ok' && /UI automation|Enter iPad Passcode/i.test(String(entry.detail ?? ''))
+    entry.outcome !== 'ok' &&
+    (AUTOMATION_MODE_TIMEOUT_PATTERN.test(detail) || /UI automation/i.test(detail))
   );
 }
 

@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { AUTOMATION_MODE_TIMEOUT_PATTERN, classifyAppiumLog } from '../lib/capture-readiness.mjs';
 import {
   describeGrantHistory,
   GRANT_LOG,
@@ -9,6 +10,7 @@ import {
   grantLogDevice,
   grantLogSummary,
   isGrantDenial,
+  readGrantLog,
   recordGrantAttempt,
   REDACTED_UDID,
 } from '../lib/grant-log.mjs';
@@ -18,17 +20,49 @@ const HOUR_MS = 3_600_000;
 
 const DEVICE = grantLogDevice(UDID);
 const row = (timestamp, outcome, detail = '') => ({ timestamp, device: DEVICE, outcome, detail });
-const DENIAL_DETAIL =
+const AUTOMATION_TIMEOUT = 'Timed out while enabling automation mode';
+// What the preflight records for an expired grant: the cause it classifies out
+// of the Appium server log.
+const DENIAL_DETAIL = classifyAppiumLog(`[XCUITest] Error: ${AUTOMATION_TIMEOUT}`);
+// The same cause in the wording the log's earliest denial rows carry.
+const LEGACY_DENIAL_DETAIL =
   'the iPad is asking to enable UI automation. Look at the device: XCTest has put an ' +
   '"Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen.';
+// XCTest's own line, as a hand-recorded row carries it.
+const RAW_DENIAL_DETAIL =
+  `XCTest: ${AUTOMATION_TIMEOUT} (direct xcodebuild WebDriverAgent launch outside the ` +
+  'preflight; Appium real-device discovery was stale)';
 
 describe('isGrantDenial', () => {
-  it('recognises the automation-grant denial and nothing else', () => {
-    expect(isGrantDenial(row('t', 'blocked', DENIAL_DETAIL))).toBe(true);
-    // A locked device or a failed WDA build says nothing about the grant.
+  it('counts the automation-grant denial in every wording the log holds', () => {
+    expect(DENIAL_DETAIL).not.toBeNull();
+    for (const detail of [
+      DENIAL_DETAIL,
+      LEGACY_DENIAL_DETAIL,
+      RAW_DENIAL_DETAIL,
+      AUTOMATION_TIMEOUT,
+    ]) {
+      expect(isGrantDenial(row('t', 'blocked', detail)), detail).toBe(true);
+    }
+  });
+
+  it('counts nothing that says nothing about the grant', () => {
     expect(isGrantDenial(row('t', 'blocked', 'the iPad is locked. Unlock it.'))).toBe(false);
     expect(isGrantDenial(row('t', 'blocked', 'xcodebuild failed with code 65'))).toBe(false);
-    expect(isGrantDenial(row('t', 'ok', 'started and closed cleanly'))).toBe(false);
+    const staleDiscovery = `Unknown device or simulator UDID: '${REDACTED_UDID}'`;
+    expect(isGrantDenial(row('t', 'blocked', staleDiscovery))).toBe(false);
+    // An ok launch proved the grant, whatever its detail recounts.
+    expect(isGrantDenial(row('t', 'ok', RAW_DENIAL_DETAIL))).toBe(false);
+  });
+
+  it('counts every automation-mode timeout in the committed log', () => {
+    const timeouts = readGrantLog().filter(
+      (entry) => entry.outcome !== 'ok' && AUTOMATION_MODE_TIMEOUT_PATTERN.test(entry.detail)
+    );
+    const uncounted = timeouts.filter((entry) => !isGrantDenial(entry));
+
+    expect(timeouts.length).toBeGreaterThan(0);
+    expect(uncounted.map((entry) => entry.timestamp)).toEqual([]);
   });
 });
 
