@@ -1,0 +1,40 @@
+import { fileURLToPath } from 'node:url';
+import { defineConfig, devices } from '@playwright/test';
+import {
+  commonWebServer,
+  chromiumLaunchOptions,
+  playwrightBaseURL,
+  playwrightPort,
+} from './playwright.shared';
+
+export default defineConfig({
+  testDir: './tests',
+  testMatch: /(^|\/)offline-resource-lifetime\.spec\.ts$/,
+  tsconfig: './tsconfig.json',
+  globalSetup: './tests/global-setup.ts',
+  globalTimeout: 720_000,
+  workers: 1,
+  retries: 0,
+  fullyParallel: false,
+  reporter: [['list']],
+  outputDir: './test-results-offline-resource-evidence',
+  use: { baseURL: playwrightBaseURL, trace: 'retain-on-failure' },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], launchOptions: chromiumLaunchOptions() },
+    },
+  ],
+  webServer: {
+    ...commonWebServer,
+    cwd: fileURLToPath(new URL('.', import.meta.url)),
+    command: `npx vite build && npx vite preview --port ${playwrightPort} --strictPort`,
+    env: {
+      ...commonWebServer.env,
+      PUBLIC_ENABLE_DEV_HARNESS: 'false',
+      PERF_MARKS: 'false',
+      CAPACITOR: 'false',
+    },
+    reuseExistingServer: false,
+  },
+});

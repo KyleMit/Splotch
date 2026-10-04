@@ -1,0 +1,421 @@
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { test, expect, type Page, type Locator, type Download } from '@playwright/test';
+import sharp from 'sharp';
+import { draw, renderedCanvasHandle } from './helpers';
+import { openDrawer, openColoringDialog, settleTapGuard, openBrushMenu } from './flows-harness';
+import { SCREENSHOT_COOLDOWN_MS } from '../src/lib/drawing/screenshotTiming';
+
+const EXPERIMENT_TIMEOUT_MS = 480_000;
+const INSTALL_TIMEOUT_MS = 180_000;
+const OUTCOME_TIMEOUT_MS = 20_000;
+const KEYBOARD_FOCUS_STEPS = 160;
+const ENGAGEMENT_STROKE_COUNT = 3;
+const EXTRA_BOOK_ID = 'dinosaur';
+const POINTS = [
+  { x: 100, y: 120 },
+  { x: 240, y: 260 },
+  { x: 400, y: 120 },
+  { x: 560, y: 280 },
+];
+
+test.use({ deviceScaleFactor: 2, serviceWorkers: 'allow' });
+
+async function gotoApp(page: Page) {
+  await page.goto('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await expect
+    .poll(
+      async () => {
+        const canvas = await renderedCanvasHandle(page);
+        try {
+          return await canvas.evaluate((surface) => surface.width > 0 && surface.height > 0);
+        } finally {
+          await canvas.dispose();
+        }
+      },
+      { timeout: 20_000 }
+    )
+    .toBe(true);
+  expect(
+    await page.evaluate(() => '__committedBrushMode' in window || '__drawingDebug' in window)
+  ).toBe(false);
+}
+
+async function pickBrush(page: Page, id: '#penBrushButton' | '#magicBrushButton') {
+  await openBrushMenu(page);
+  await page.locator(id).click();
+  await expect(page.locator('.actions-panel[data-action-panel-live]').first()).toHaveAttribute(
+    'data-brush',
+    id === '#penBrushButton' ? 'pen' : 'magic'
+  );
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+}
+
+async function keyboardActivate(page: Page, target: Locator) {
+  await expect(target).toBeVisible();
+  for (let step = 0; step < KEYBOARD_FOCUS_STEPS; step++) {
+    if (await target.evaluate((element) => element === document.activeElement)) {
+      await page.keyboard.press('Enter');
+      return;
+    }
+    await page.keyboard.press('Tab');
+  }
+  throw new Error('Prerequisite: real keyboard navigation did not reach requested control');
+}
+
+async function readDownload(download: Download, label: string) {
+  const path = await download.path();
+  if (!path) throw new Error('Missing actual downloaded PNG');
+  const png = await readFile(path);
+  await test.info().attach(label, { body: png, contentType: 'image/png' });
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return {
+    width: info.width,
+    height: info.height,
+    rgbaSHA256: createHash('sha256').update(data).digest('hex'),
+    pngSHA256: createHash('sha256').update(png).digest('hex'),
+  };
+}
+
+async function cameraControl(page: Page, label: string) {
+  const downloaded = page.waitForEvent('download', { timeout: OUTCOME_TIMEOUT_MS });
+  await page.locator('#screenshotButton').click();
+  return readDownload(await downloaded, label);
+}
+
+async function installedBookProof(page: Page) {
+  return page.evaluate(async (bookId) => {
+    const names = (await caches.keys()).filter((name) => name.startsWith('coloring-packs-'));
+    for (const name of names) {
+      const cache = await caches.open(name);
+      const marker = await cache.match(`/coloring/.installed/${bookId}`);
+      if (!marker) continue;
+      const value = (await marker.json()) as {
+        id: string;
+        bytes: number;
+        files: Array<{ path: string; bytes: number; sha256: string }>;
+      };
+      if (value.id !== bookId || !value.files?.length) throw new Error('Invalid production marker');
+      const files = [];
+      for (const file of value.files) {
+        const response = await cache.match(file.path);
+        if (!response?.ok) throw new Error(`Installed asset missing: ${file.path}`);
+        const bytes = await response.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const sha256 = Array.from(new Uint8Array(digest), (byte) =>
+          byte.toString(16).padStart(2, '0')
+        ).join('');
+        if (bytes.byteLength !== file.bytes || sha256 !== file.sha256)
+          throw new Error(`Installed asset digest mismatch: ${file.path}`);
+        files.push({ path: file.path, bytes: bytes.byteLength, sha256 });
+      }
+      return { cacheName: name, totalBytes: value.bytes, files };
+    }
+    return null;
+  }, EXTRA_BOOK_ID);
+}
+
+test('actual offline installed-book removal during a valid prepared camera press', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(EXPERIMENT_TIMEOUT_MS);
+  const evidence: Record<string, unknown> = { stages: [] };
+  const requests: Array<Record<string, unknown>> = [];
+  const installRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/coloring/dinosaur/'))
+      installRequests.push(request.url());
+  });
+  let canonicalUrl: string | null = null;
+  let held = false;
+  page.on('request', (request) => {
+    if (canonicalUrl && request.url() === canonicalUrl)
+      requests.push({ kind: 'request', url: request.url() });
+  });
+  page.on('requestfailed', (request) => {
+    if (canonicalUrl && request.url() === canonicalUrl)
+      requests.push({ kind: 'failed', url: request.url(), failure: request.failure() });
+  });
+  page.on('response', (response) => {
+    if (canonicalUrl && response.url() === canonicalUrl)
+      requests.push({
+        kind: 'response',
+        status: response.status(),
+        fromServiceWorker: response.fromServiceWorker(),
+      });
+  });
+  page.on('console', (message) => {
+    if (message.type() === 'error') requests.push({ kind: 'console-error', text: message.text() });
+  });
+  try {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await gotoApp(page);
+    evidence.initialPackCaches = await page.evaluate(async () =>
+      (await caches.keys()).filter((name) => name.startsWith('coloring-packs-'))
+    );
+    expect(evidence.initialPackCaches).toEqual([]);
+    await openDrawer(page);
+    await pickBrush(page, '#penBrushButton');
+    for (let index = 0; index < ENGAGEMENT_STROKE_COUNT; index++) await draw(page, POINTS);
+    await openColoringDialog(page);
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? null), {
+        timeout: INSTALL_TIMEOUT_MS,
+      })
+      .not.toBeNull();
+    evidence.controller = await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async (bookId) => {
+            for (const name of await caches.keys()) {
+              if (!name.startsWith('coloring-packs-')) continue;
+              if (await (await caches.open(name)).match(`/coloring/.installed/${bookId}`))
+                return true;
+            }
+            return false;
+          }, EXTRA_BOOK_ID),
+        { timeout: INSTALL_TIMEOUT_MS }
+      )
+      .toBe(true);
+    const installed = await installedBookProof(page);
+    if (!installed) throw new Error('Production full pack installation unavailable');
+    evidence.installed = installed;
+    await keyboardActivate(
+      page,
+      page
+        .locator('#coloring-book-dialog')
+        .getByRole('button', { name: 'Close', exact: true })
+        .first()
+    );
+    await expect(page.locator('#coloring-book-dialog')).toBeHidden();
+    await openDrawer(page);
+    await page.locator('#clearButton').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#screenshotButton')).toBeDisabled();
+    await openColoringDialog(page);
+    await expect(
+      page
+        .locator('#coloring-book-dialog')
+        .getByRole('button', { name: 'Dinosaurs coloring book', exact: true })
+    ).toBeVisible();
+    await page
+      .locator('#coloring-book-dialog')
+      .getByRole('button', { name: 'Dinosaurs coloring book', exact: true })
+      .click();
+    await settleTapGuard(page);
+    await page
+      .locator('#coloring-book-dialog')
+      .getByRole('button', { name: / coloring page$/i })
+      .first()
+      .click();
+    await expect(page.locator('#coloring-book-dialog')).toBeHidden();
+    const overlay = page.locator('#coloringOverlay');
+    await expect(overlay).toHaveAttribute('src', /\/coloring\/dinosaur\/.+\.overlay\.svg$/);
+    const canonicalPath = await overlay.getAttribute('data-canonical-url');
+    if (!canonicalPath || !canonicalPath.includes('/coloring/dinosaur/'))
+      throw new Error('Not an installed nonstarter page');
+    canonicalUrl = new URL(canonicalPath, page.url()).href;
+    evidence.canonicalUrl = canonicalUrl;
+    expect(
+      installed.files.some(({ path }) => new URL(path, page.url()).href === canonicalUrl)
+    ).toBe(true);
+    evidence.otherCanonicalCaches = await page.evaluate(async (url) => {
+      const owners = [];
+      for (const name of await caches.keys())
+        if (await (await caches.open(name)).match(url)) owners.push(name);
+      return owners;
+    }, canonicalUrl);
+    expect(evidence.otherCanonicalCaches).toEqual([installed.cacheName]);
+    await pickBrush(page, '#magicBrushButton');
+    await draw(page, POINTS);
+    await expect
+      .poll(
+        async () => {
+          const live = await renderedCanvasHandle(page);
+          try {
+            return await live.evaluate((surface) => {
+              const context = surface.getContext('2d');
+              if (!context) throw new Error('Missing actual retained Magic pixels');
+              const pixels = context.getImageData(0, 0, surface.width, surface.height).data;
+              let opaque = 0;
+              for (let index = 3; index < pixels.length; index += 4)
+                if (pixels[index] > 0) opaque++;
+              return opaque;
+            });
+          } finally {
+            await live.dispose();
+          }
+        },
+        { timeout: OUTCOME_TIMEOUT_MS }
+      )
+      .toBeGreaterThan(0);
+    const magicCanvas = await renderedCanvasHandle(page);
+    try {
+      expect(
+        await magicCanvas.evaluate((surface) => {
+          const pixels = surface
+            .getContext('2d')!
+            .getImageData(0, 0, surface.width, surface.height).data;
+          const colors = new Set<string>();
+          for (let i = 0; i < pixels.length; i += 4)
+            if (pixels[i + 3] > 240)
+              colors.add(`${pixels[i] >> 5},${pixels[i + 1] >> 5},${pixels[i + 2] >> 5}`);
+          return colors.size;
+        })
+      ).toBeGreaterThan(1);
+    } finally {
+      await magicCanvas.dispose();
+    }
+    await keyboardActivate(page, page.locator('#settingsButton'));
+    const warmedSettings = page.locator('#settingsModal');
+    await expect(warmedSettings).toBeVisible();
+    await keyboardActivate(
+      page,
+      warmedSettings.locator('.settings-nav').getByRole('button', { name: 'Coloring', exact: true })
+    );
+    await expect(
+      warmedSettings.getByRole('button', { name: 'Remove downloaded pictures', exact: true })
+    ).toBeEnabled();
+    await keyboardActivate(
+      page,
+      warmedSettings.getByRole('button', { name: 'Close', exact: true }).first()
+    );
+    await expect(warmedSettings).toBeHidden();
+    const online = await cameraControl(page, 'online-installed-page-control.png');
+    evidence.online = online;
+    await page.waitForTimeout(SCREENSHOT_COOLDOWN_MS);
+    await context.setOffline(true);
+    const offline = await cameraControl(page, 'offline-no-removal-control.png');
+    evidence.offline = offline;
+    expect({
+      width: offline.width,
+      height: offline.height,
+      rgbaSHA256: offline.rgbaSHA256,
+    }).toEqual({ width: online.width, height: online.height, rgbaSHA256: online.rgbaSHA256 });
+    await page.waitForTimeout(SCREENSHOT_COOLDOWN_MS);
+    await page.evaluate(() => {
+      const original = window.createImageBitmap.bind(window);
+      window.createImageBitmap = ((...args: Parameters<typeof createImageBitmap>) => {
+        const button = document.getElementById('screenshotButton');
+        if (
+          button &&
+          args[0] instanceof HTMLCanvasElement &&
+          args[0].hasAttribute('data-live-tile')
+        )
+          button.dataset.resourcePreparation = String(
+            Number(button.dataset.resourcePreparation ?? 0) + 1
+          );
+        return original(...args);
+      }) as typeof createImageBitmap;
+      const button = document.getElementById('screenshotButton');
+      let owner: number | undefined;
+      button?.addEventListener('pointerdown', (event) => {
+        owner = event.pointerId;
+      });
+      window.addEventListener(
+        'pointercancel',
+        (event) => {
+          if (event.pointerId === owner && button) button.dataset.resourceCanceled = 'true';
+        },
+        true
+      );
+      window.addEventListener(
+        'pointerup',
+        (event) => {
+          if (event.pointerId === owner && button) button.dataset.resourceReleased = 'true';
+        },
+        true
+      );
+    });
+    const camera = page.locator('#screenshotButton');
+    const cameraBounds = await camera.boundingBox();
+    if (!cameraBounds) throw new Error('Prerequisite: camera has no initial hit bounds');
+    const heldPoint = {
+      x: cameraBounds.x + cameraBounds.width / 2,
+      y: cameraBounds.y + cameraBounds.height / 2,
+    };
+    evidence.heldPoint = heldPoint;
+    evidence.initialCameraBounds = cameraBounds;
+    await page.mouse.move(heldPoint.x, heldPoint.y);
+    await page.mouse.down();
+    held = true;
+    await expect.poll(() => camera.getAttribute('data-resource-preparation')).not.toBeNull();
+    evidence.preparation = await camera.getAttribute('data-resource-preparation');
+    await keyboardActivate(page, page.locator('#settingsButton'));
+    const settings = page.locator('#settingsModal');
+    await expect(settings).toBeVisible();
+    await keyboardActivate(
+      page,
+      settings.locator('.settings-nav').getByRole('button', { name: 'Coloring', exact: true })
+    );
+    const remove = settings.getByRole('button', {
+      name: 'Remove downloaded pictures',
+      exact: true,
+    });
+    await keyboardActivate(page, remove);
+    await expect(settings.getByText('Removing…', { exact: true })).toBeHidden({
+      timeout: OUTCOME_TIMEOUT_MS,
+    });
+    await expect(remove).toBeDisabled();
+    const remainingCaches = await page.evaluate(async () =>
+      (await caches.keys()).filter((name) => name.startsWith('coloring-packs-'))
+    );
+    evidence.remainingCaches = remainingCaches;
+    expect(remainingCaches).toEqual([]);
+    await keyboardActivate(
+      page,
+      settings.getByRole('button', { name: 'Close', exact: true }).first()
+    );
+    await expect(settings).toBeHidden();
+    await expect(camera).toBeEnabled();
+    evidence.canceledBeforeRelease = await camera.getAttribute('data-resource-canceled');
+    expect(evidence.canceledBeforeRelease).toBeNull();
+    evidence.finalCameraBounds = await camera.boundingBox();
+    const hit = await camera.evaluate(
+      (element, point) => element.contains(document.elementFromPoint(point.x, point.y)),
+      heldPoint
+    );
+    evidence.originalPointHitsCamera = hit;
+    if (!hit) throw new Error('Invalid overlap: original held pointer no longer hits camera');
+    const downloading = page
+      .waitForEvent('download', { timeout: OUTCOME_TIMEOUT_MS })
+      .then((download) => ({ kind: 'download' as const, download }));
+    const failure = page
+      .locator('.save-failure-banner')
+      .waitFor({ state: 'visible', timeout: OUTCOME_TIMEOUT_MS })
+      .then(() => ({ kind: 'save-failure' as const }));
+    await page.mouse.up();
+    held = false;
+    const outcome = await Promise.race([downloading, failure]);
+    evidence.outcome = outcome.kind;
+    evidence.released = await camera.getAttribute('data-resource-released');
+    if (outcome.kind === 'save-failure')
+      throw new Error('Valid prepared camera failed after actual installed-cache removal');
+    const removed = await readDownload(outcome.download, 'offline-removal-prepared-camera.png');
+    evidence.removed = removed;
+    expect({
+      width: removed.width,
+      height: removed.height,
+      rgbaSHA256: removed.rgbaSHA256,
+    }).toEqual({ width: offline.width, height: offline.height, rgbaSHA256: offline.rgbaSHA256 });
+  } finally {
+    if (held) await page.mouse.up().catch(() => undefined);
+    await context.setOffline(false).catch(() => undefined);
+    evidence.requests = requests;
+    evidence.installRequests = installRequests;
+    await test
+      .info()
+      .attach('offline-resource-lifetime-actual-owners', {
+        body: JSON.stringify(evidence),
+        contentType: 'application/json',
+      });
+  }
+});
