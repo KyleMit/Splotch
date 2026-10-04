@@ -653,6 +653,7 @@ body {
    mirrors actionButtonLayout.ts and is drift-guarded by its fallback test, and
    actionButtonLayout.cssFormula.test.ts evaluates the formula against the Button Size
    slider's ceiling. The phone-landscape block below replaces it. */
+.color-palette,
 .actions-panel {
   --action-btn-gap-total: calc((var(--action-btn-count) - 1) * 12px);
   --action-btn-size: min(

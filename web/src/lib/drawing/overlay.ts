@@ -5,6 +5,25 @@ export interface ExportOverlaySource {
   decodedCanonicalImage: HTMLImageElement | null;
 }
 
+// Detached canonical decode images keep their source for the lifetime of an export.
+// Only the latest decode is memoized; prepared exports retain their own references.
+let decodedCanonicalOverlay: { canonicalUrl: string; image: HTMLImageElement } | null = null;
+
+export function rememberDecodedCanonicalOverlay(image: HTMLImageElement): void {
+  if (!image.naturalWidth) return;
+  decodedCanonicalOverlay = { canonicalUrl: image.src, image };
+}
+
+export function captureCanonicalOverlaySource(canonicalUrl: string): ExportOverlaySource {
+  const absoluteUrl =
+    typeof document === 'undefined' ? canonicalUrl : new URL(canonicalUrl, document.baseURI).href;
+  return {
+    canonicalUrl: absoluteUrl,
+    decodedCanonicalImage:
+      decodedCanonicalOverlay?.canonicalUrl === absoluteUrl ? decodedCanonicalOverlay.image : null,
+  };
+}
+
 export function getActiveOverlayExportSource(): ExportOverlaySource | null {
   if (typeof document === 'undefined') return null;
   const el = document.getElementById(COLORING_OVERLAY_ID);

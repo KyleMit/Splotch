@@ -31,7 +31,7 @@
             PALETTE_COLUMN_GEOMETRY.swatchPx / 2 +
             layoutState.safeArea.bottom
         )
-      : PANEL_INSET
+      : undefined
   );
 
   // The selection ring hides while erasing (no ink is being laid down) and
@@ -80,7 +80,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
-  style:--palette-bottom={`${paletteBottom}px`}
+  style:--palette-bottom={paletteBottom === undefined ? undefined : `${paletteBottom}px`}
   style:--selection-ring-width={`${SELECTION_RING_WIDTH_PX}px`}
   style:--selection-ring-gap-width={`${SELECTION_RING_GAP_PX}px`}
   use:scribbleGuard
@@ -114,6 +114,10 @@
 
 <style>
   .color-palette {
+    --palette-bottom: max(
+      0px,
+      calc(8px + var(--action-btn-size) / 2 - 30px + var(--safe-area-bottom))
+    );
     display: grid;
     grid-template-columns: 1fr;
     justify-items: center;

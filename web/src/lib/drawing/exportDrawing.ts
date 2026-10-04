@@ -10,7 +10,7 @@
 // stroke snapshot is taken synchronously by engine.exportCanvasBlob BEFORE
 // the module load's await, so a clear racing the export can't blank it.
 
-import { PAPER_COLORS } from '../theme';
+import { PAPER_COLORS, type ResolvedTheme } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 import {
   drawExportOverlay,
@@ -189,6 +189,16 @@ function closeTiledPreviewSnapshot(preview: ExportOptions['preview']) {
   }
 }
 
+// Rasterize at the canonical extent because WebKit's shared SVG image can retain
+// its displayed container size when createImageBitmap receives the image directly.
+function createExportOverlayBitmap(image: HTMLImageElement): ImageBitmap {
+  const canvas = new OffscreenCanvas(image.naturalWidth, image.naturalHeight);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canonical overlay 2D canvas context unavailable');
+  context.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+  return canvas.transferToImageBitmap();
+}
+
 async function settleTiledExportBitmaps(
   snapshot: TiledExportSnapshot,
   texture: HTMLImageElement | null,
@@ -205,7 +215,7 @@ async function settleTiledExportBitmaps(
       (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
     ),
     loadExportOverlay(overlaySource)
-      .then((image) => (image ? createImageBitmap(image) : null))
+      .then((image) => (image ? createExportOverlayBitmap(image) : null))
       .then((bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)),
   ];
   const settledBitmaps = await Promise.allSettled(bitmapRequests);
@@ -240,16 +250,10 @@ export async function composeExportPng(
   snapshot: ExportSnapshot,
   renderScale: number,
   overlaySource: ExportOverlaySource | null = null,
-  options: ExportOptions = {}
+  options: ExportOptions = {},
+  theme: ResolvedTheme = resolvedTheme()
 ): Promise<Blob | null> {
   const { includePaperTexture = true, preview } = options;
-
-  // Resolve once up front so an OS theme switch mid-export can't mismatch the
-  // paper fill and the overlay treatment. Coloring pages follow the resolved
-  // theme just like free-draw (ADR-0052 direction B): a dark-mode save is the
-  // night version — dark paper, the generated transparent white chalk overlay,
-  // and the night-fill reveals already baked into the replayed strokes.
-  const theme = resolvedTheme();
 
   if ('source' in snapshot) {
     const texture = includePaperTexture ? await loadPaperTexture() : null;

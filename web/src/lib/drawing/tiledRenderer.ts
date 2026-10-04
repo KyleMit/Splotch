@@ -161,6 +161,7 @@ const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
 
 export const hasRetainedTiledMagicOps = magicRecode.hasRetainedOps;
 export const hasUnrevealedTiledMagicOps = magicRecode.hasUnrevealedOps;
+export const contributingTiledMagicSheets = magicRecode.contributingSheets;
 
 export function applyTiledView(paperView: PaperView) {
   applyLiveTileView(liveTiles, paperView);

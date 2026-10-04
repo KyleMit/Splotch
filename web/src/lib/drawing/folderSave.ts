@@ -25,6 +25,9 @@ const DB_NAME = 'splotch-fs';
 const STORE = 'handles';
 const HANDLE_KEY = 'saveDir';
 
+// The missing-file probe and creation are separate awaits; pending names need an owner.
+const reservedFilenames = new WeakMap<FileSystemDirectoryHandle, Set<string>>();
+
 interface FolderSaveDb extends DBSchema {
   handles: {
     key: string;
@@ -130,18 +133,26 @@ async function createUniqueFile(
   dir: FileSystemDirectoryHandle,
   filename: string
 ): Promise<FileSystemFileHandle> {
+  const reserved = reservedFilenames.get(dir) ?? new Set<string>();
+  reservedFilenames.set(dir, reserved);
   const dot = filename.lastIndexOf('.');
   const stem = dot === -1 ? filename : filename.slice(0, dot);
   const ext = dot === -1 ? '' : filename.slice(dot);
   for (let i = 0; ; i++) {
     const candidate = i === 0 ? filename : `${stem} (${i})${ext}`;
+    if (reserved.has(candidate)) continue;
+    reserved.add(candidate);
     try {
-      await dir.getFileHandle(candidate);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'NotFoundError') {
-        return dir.getFileHandle(candidate, { create: true });
+      try {
+        await dir.getFileHandle(candidate);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'NotFoundError') {
+          return await dir.getFileHandle(candidate, { create: true });
+        }
+        throw err;
       }
-      throw err;
+    } finally {
+      reserved.delete(candidate);
     }
   }
 }
