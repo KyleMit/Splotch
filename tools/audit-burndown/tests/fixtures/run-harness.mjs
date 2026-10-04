@@ -56,6 +56,9 @@ export const implemented = (api, summary = 'made the change') => ({
 });
 export const approved = { ok: true, structured: { status: 'APPROVED', findings: [] } };
 
+// What the port probe hands an E2E gate when a test injects no finder of its own.
+export const FREE_PORT = 5300;
+
 // Gives one test a fresh backlog: a temp directory holding docs/AUDIT.md and .audit-work/, made
 // the working directory because the driver addresses both by relative path. Pass it straight to
 // beforeEach; the function it returns is Vitest's teardown, which puts everything back.
@@ -67,6 +70,9 @@ export function enterTempBacklog() {
   writeFileSync(join(root, AUDIT_PATH), FIXTURE);
   process.chdir(root);
   vi.stubEnv('AUDIT_FILE', AUDIT_PATH);
+  // A suite run as `SPLOTCH_E2E_PORT=<port> npm test`, the shared-host convention, would otherwise
+  // hand every run an operator-pinned E2E port.
+  vi.stubEnv('SPLOTCH_E2E_PORT', undefined);
   return () => {
     vi.unstubAllEnvs();
     process.chdir(originalCwd);
@@ -78,10 +84,10 @@ export function enterTempBacklog() {
 // `shellResult` for the deterministic gates, `shellOk` for the tree-is-green checks, `gitOk` for
 // the git commands whose exit status the driver branches on (the push above all), `git` and
 // `runCmd` for the commands whose full result it reads (an override returning nothing keeps the
-// default success), and `hasCommand` for preflight's runner-binary probe. Every observable the
-// driver emits in order — its log lines and its pushes — lands in one `events` array, because
-// what distinguishes a push at the cadence from the exit flush is *when* it happens, not what it
-// looks like.
+// default success), `hasCommand` for preflight's runner-binary probe, and `findFreePort` for the
+// E2E gate's port probe. Every observable the driver emits in order — its log lines and its
+// pushes — lands in one `events` array, because what distinguishes a push at the cadence from the
+// exit flush is *when* it happens, not what it looks like.
 export function createRun({
   env = {},
   respond,
@@ -91,6 +97,7 @@ export function createRun({
   git,
   runCmd,
   hasCommand,
+  findFreePort = async () => FREE_PORT,
 } = {}) {
   const config = readConfig({ BUNDLE_SPEC: '', ...env });
   const events = [];
@@ -154,6 +161,7 @@ export function createRun({
       probedBinaries.push(binary);
       return hasCommand?.(binary) ?? true;
     },
+    findFreePort,
     shellOk: (command) => {
       shellCommands.push(command);
       return shellOk?.(command) ?? true;

@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test:
     name: Locked tracer contract

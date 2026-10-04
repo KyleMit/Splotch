@@ -25,7 +25,16 @@ import { createServer } from 'node:net';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  argFlag,
+  argSwitch,
+  isMain,
+  parseOrFail,
+  readSwitch,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { portListenerOwners } from '../lib/vite-server.mjs';
 import {
   ANDROID_PORT_ROLES,
@@ -933,7 +942,8 @@ export async function prepareCapture(
   argv = process.argv.slice(2),
   { android: withAndroid = true } = {}
 ) {
-  const fix = argv.includes('--wake-android');
+  const fix = parseOrFail(() => readSwitch(argv, 'wake-android'));
+  const json = parseOrFail(() => readSwitch(argv, 'json'));
   const android = withAndroid
     ? androidChecks({ fix, explicit: argFlag('android-serial', null) })
     : { checks: [], serial: null, devices: [] };
@@ -966,7 +976,7 @@ export async function prepareCapture(
     }),
   };
 
-  if (argv.includes('--json')) {
+  if (json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
     for (const check of report.checks) {
@@ -981,17 +991,38 @@ export async function prepareCapture(
   return report;
 }
 
+// prepareCapture reads the first four itself: the switches from the argv it is
+// handed, the serial and the UDID from this process's.
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags([
+    'wake-android',
+    'json',
+    'android-serial',
+    'ios-udid',
+    'ios-only',
+    'verify-android-input',
+    'verify-ios-launch',
+    'hold-android-awake',
+    'appium-url',
+  ]);
   runMain(async () => {
-    const argv = process.argv.slice(2);
-    const report = await prepareCapture(argv, { android: !argv.includes('--ios-only') });
+    const iosOnly = argSwitch('ios-only');
+    const verifyInput = argSwitch('verify-android-input');
+    const verifyLaunch = argSwitch('verify-ios-launch');
+    const holdAwake = argSwitch('hold-android-awake');
+    const appiumUrl = argFlag('appium-url', null);
+    // Judged here because prepareCapture reads them only on reaching each device,
+    // the UDID after --wake-android has already written to the phone.
+    argFlag('android-serial', null);
+    argFlag('ios-udid', null);
+    const report = await prepareCapture(process.argv.slice(2), { android: !iosOnly });
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
     const androidBlockers = report.androidVerificationBlockers;
-    if (argv.includes('--verify-android-input') && report.androidSerial && androidBlockers.length) {
+    if (verifyInput && report.androidSerial && androidBlockers.length) {
       console.log(`✗ ${'android input'.padEnd(22)} not attempted — ${androidBlockers.join('; ')}`);
       process.exitCode = 1;
-    } else if (argv.includes('--verify-android-input') && report.androidSerial) {
+    } else if (verifyInput && report.androidSerial) {
       console.log('\nverifying Android input against the floor control…');
       const input = await verifyAndroidInput({
         serial: report.androidSerial,
@@ -1017,10 +1048,10 @@ if (isMain(import.meta.url)) {
       if (!rotation.ok) process.exitCode = 1;
     }
     const launchBlocker = iosLaunchBlocker(report);
-    if (argv.includes('--verify-ios-launch') && report.iosUdid && launchBlocker) {
+    if (verifyLaunch && report.iosUdid && launchBlocker) {
       console.log(`✗ ${'ios launch'.padEnd(22)} not attempted — ${launchBlocker}`);
       process.exitCode = 1;
-    } else if (argv.includes('--verify-ios-launch') && report.iosUdid) {
+    } else if (verifyLaunch && report.iosUdid) {
       console.log(
         '\nprobing a real WebDriverAgent launch and a rotation ' +
           '(this builds WDA and takes a minute)…'
@@ -1035,7 +1066,7 @@ if (isMain(import.meta.url)) {
       console.log(`  ${describeGrantHistory(report.iosUdid)}`);
       const launch = await probeIosLaunch({
         udid: report.iosUdid,
-        appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
+        appiumUrl: appiumUrl ?? `http://127.0.0.1:${report.ports.appium}`,
         wdaPort: report.ports.wda,
         verifyRotation: true,
         recoverStaleDiscovery: true,
@@ -1050,7 +1081,7 @@ if (isMain(import.meta.url)) {
       console.log(`${mark} ${'ios launch'.padEnd(22)} ${probe.detail}`);
       if (probe.status === 'blocked') process.exitCode = 1;
     }
-    if (argv.includes('--hold-android-awake') && report.androidSerial) {
+    if (holdAwake && report.androidSerial) {
       process.exitCode = 0;
       await watchAndroid(report.androidSerial, { iosUdid: report.iosUdid });
     }
