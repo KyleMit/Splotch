@@ -21,8 +21,8 @@ const git = (...args) =>
 
 const recordPath = (file) => join(repo, ADR_DIR, file);
 
-function writeRecord(file) {
-  writeFileSync(recordPath(file), `# ADR-${file.slice(0, 4)}: ${file}\n`);
+function writeRecord(file, title = file) {
+  writeFileSync(recordPath(file), `# ADR-${file.slice(0, 4)}: ${title}\n`);
 }
 
 // One canonical row per record, so an index problem cannot stand in for the
@@ -40,6 +40,10 @@ function commitAll(message) {
 function addMine() {
   writeRecord('0002-mine.md');
   writeIndex('0001-one.md', '0002-mine.md');
+}
+
+function moveRecord(from, to) {
+  renameSync(recordPath(from), recordPath(to));
 }
 
 const check = (baseRef = 'main') => checkAdrIntegrity({ baseRef, root: repo });
@@ -82,41 +86,80 @@ afterEach(() => {
   rmSync(scratch, { recursive: true, force: true });
 });
 
+// Each edit is judged left untracked, then staged with `git add -A`, then
+// committed: the verdict depends on the working tree alone, so all three agree.
+const EDITS = [
+  [
+    'adds a record at the number the base took',
+    addMine,
+    { collisions: [MINE_TAKES_THEIRS], problems: [MINE_TAKES_THEIRS_PROBLEM] },
+  ],
+  [
+    'adds a record at a free number',
+    () => {
+      writeRecord('0003-mine.md');
+      writeIndex('0001-one.md', '0003-mine.md');
+    },
+    CLEAN,
+  ],
+  [
+    'retitles a record',
+    () => {
+      moveRecord('0001-one.md', '0001-uno.md');
+      writeIndex('0001-uno.md');
+    },
+    CLEAN,
+  ],
+  [
+    'retitles a record a commit already retitled',
+    () => {
+      git('mv', `${ADR_DIR}/0001-one.md`, `${ADR_DIR}/0001-uno.md`);
+      writeIndex('0001-uno.md');
+      commitAll('first retitle');
+      moveRecord('0001-uno.md', '0001-eins.md');
+      writeIndex('0001-eins.md');
+    },
+    CLEAN,
+  ],
+  [
+    'replaces a base record with an unrelated one at its number',
+    () => {
+      rmSync(recordPath('0001-one.md'));
+      writeRecord('0001-new.md', 'An unrelated decision');
+      writeIndex('0001-new.md');
+    },
+    {
+      collisions: [{ number: '0001', baseFile: '0001-one.md', headFile: '0001-new.md' }],
+      problems: [
+        'ADR number 0001 is already taken on main by 0001-one.md; this branch adds 0001-new.md',
+      ],
+    },
+  ],
+  [
+    'retitles a record that already took the number the base took',
+    () => {
+      addMine();
+      commitAll('mine');
+      moveRecord('0002-mine.md', '0002-ours.md');
+      writeIndex('0001-one.md', '0002-ours.md');
+    },
+    { collisions: [{ ...MINE_TAKES_THEIRS, headFile: '0002-ours.md' }] },
+  ],
+];
+
 describe('checkAdrIntegrity against a base that took a number', () => {
-  it('fails an uncommitted record that takes it', () => {
-    addMine();
+  it.each(EDITS)('judges a branch that %s the same in every git state', (_, edit, verdict) => {
+    edit();
+    const untracked = check();
+    git('add', '-A');
+    const staged = check();
+    commitAll('edit');
 
-    expect(check()).toMatchObject({
-      collisions: [MINE_TAKES_THEIRS],
-      problems: [MINE_TAKES_THEIRS_PROBLEM],
+    expect({ untracked, staged, committed: check() }).toMatchObject({
+      untracked: verdict,
+      staged: verdict,
+      committed: verdict,
     });
-  });
-
-  it('fails a staged record that takes it', () => {
-    addMine();
-    git('add', ADR_DIR);
-
-    expect(check()).toMatchObject({
-      collisions: [MINE_TAKES_THEIRS],
-      problems: [MINE_TAKES_THEIRS_PROBLEM],
-    });
-  });
-
-  it('fails a committed record that takes it', () => {
-    addMine();
-    commitAll('mine');
-
-    expect(check()).toMatchObject({
-      collisions: [MINE_TAKES_THEIRS],
-      problems: [MINE_TAKES_THEIRS_PROBLEM],
-    });
-  });
-
-  it('passes an uncommitted record at a free number', () => {
-    writeRecord('0003-mine.md');
-    writeIndex('0001-one.md', '0003-mine.md');
-
-    expect(check()).toMatchObject(CLEAN);
   });
 
   it('passes a record retitled with git mv', () => {
@@ -126,37 +169,21 @@ describe('checkAdrIntegrity against a base that took a number', () => {
     expect(check()).toMatchObject(CLEAN);
   });
 
-  it('passes a record retitled with a plain mv', () => {
-    renameSync(recordPath('0001-one.md'), recordPath('0001-uno.md'));
-    writeIndex('0001-uno.md');
-
-    expect(check()).toMatchObject(CLEAN);
-  });
-
   it('passes a record retitled by git rm and an untracked file', () => {
     git('rm', '-q', `${ADR_DIR}/0001-one.md`);
-    writeRecord('0001-uno.md');
+    writeRecord('0001-uno.md', '0001-one.md');
     writeIndex('0001-uno.md');
 
     expect(check()).toMatchObject(CLEAN);
   });
 
-  it('fails a record moved by plain mv onto the number the base took', () => {
-    renameSync(recordPath('0001-one.md'), recordPath('0002-one.md'));
-    writeIndex('0002-one.md');
-
-    expect(check().collisions).toEqual([{ ...MINE_TAKES_THEIRS, headFile: '0002-one.md' }]);
-  });
-
-  // The deleted record never reached the base, so the move retitles this
-  // branch's own collision rather than a base record.
-  it('fails a committed collision retitled with a plain mv', () => {
+  it("leaves the repository's own index and object store as it found them", () => {
     addMine();
-    commitAll('mine');
-    renameSync(recordPath('0002-mine.md'), recordPath('0002-ours.md'));
-    writeIndex('0001-one.md', '0002-ours.md');
+    const before = [git('status', '--porcelain'), git('count-objects')];
 
-    expect(check().collisions).toEqual([{ ...MINE_TAKES_THEIRS, headFile: '0002-ours.md' }]);
+    check();
+
+    expect([git('status', '--porcelain'), git('count-objects')]).toEqual(before);
   });
 
   it('warns that it skipped the base when the base cannot be resolved', () => {

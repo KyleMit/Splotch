@@ -23,10 +23,12 @@ checkout lists `tools/lib` beside `tools/adrs`.
 
 The checker reads record filenames and first headings from `docs/adrs/`, parses canonical entries
 and local links from `docs/adrs/README.md`, and asks Git which records are new relative to the base.
-A record counts as an addition whether it is committed, staged, or untracked, so a local run rejects
-a colliding number before the record is committed. It writes only diagnostics. In GitHub Actions it
-also emits workflow-command annotations for the offending paths and lines; locally it prints the
-same failures as plain text.
+Git compares the base with the working tree itself, through a scratch index and object directory in
+the system temp folder, so a record counts the same whether it is committed, staged, or untracked: a
+local run rejects a colliding number before the record is committed, and nothing is added to the
+repository's own index or object store. Apart from that scratch folder, removed before it exits, the
+checker writes only diagnostics. In GitHub Actions it also emits workflow-command annotations for
+the offending paths and lines; locally it prints the same failures as plain text.
 
 `lib/adr-integrity.mjs` owns the dependency-free parsing, comparison, and diagnostic formatting.
 `tests/adr-integrity.test.mjs` covers those pure rules; `tests/check-adr-integrity.test.mjs` runs

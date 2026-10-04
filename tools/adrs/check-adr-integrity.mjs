@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { ROOT, argFlag, isMain, rejectUnknownFlags, runMain } from '../lib/proc.mjs';
 import {
   ADR_DIR,
@@ -17,9 +18,10 @@ import {
 
 const DEFAULT_BASE_REF = 'origin/main';
 
-function git(root, args) {
+function git(root, args, env = process.env) {
   return execFileSync('git', args, {
     cwd: root,
+    env,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -35,32 +37,32 @@ function baseEntries(root, baseRef) {
   }
 }
 
-function listAdrEntries(root, args) {
-  return git(root, [...args, '--', ADR_DIR]).map((path) => path.slice(`${ADR_DIR}/`.length));
-}
-
-// Additions count whether committed, staged, or untracked, so a collision fails
-// before the commit that would carry it. The diff runs from the base tree to the
-// working tree: -M reports a retitle as a rename rather than an addition, and it
-// is two-dot because the workflow's --depth=1 base fetch leaves no merge base for
-// a three-dot range. Diff never lists an untracked file, so ls-files supplies
-// those, less any taking the number of a base record that HEAD holds and the
-// working tree deleted: a retitle by plain mv, which diff cannot see as one.
-function addedRecords(root, baseRef, base) {
+// Judged on the working tree alone, so a record counts the same committed,
+// staged, or untracked. A scratch index of HEAD, with the working tree's new
+// files under ADR_DIR added as intent-to-add entries, lets diff-index compare
+// the base tree with the working tree itself, and -M pairs a retitle by content
+// however it was made. The base is compared directly, not through a merge base,
+// which the workflow's --depth=1 base fetch lacks. The scratch object directory
+// borrows the repository's store as an alternate, so the check adds nothing to
+// the repository's index or object store.
+function addedRecords(root, baseRef) {
+  const scratch = mkdtempSync(join(tmpdir(), 'adr-integrity-'));
   try {
-    const tracked = listAdrEntries(root, ['diff', '-M', '--diff-filter=A', '--name-only', baseRef]);
-    const untracked = listAdrEntries(root, ['ls-files', '--others', '--exclude-standard']);
-    const deleted = listAdrEntries(root, [
-      'diff',
-      '--no-renames',
-      '--diff-filter=D',
-      '--name-only',
-      'HEAD',
-    ]);
-    const retitledNumbers = new Set(deleted.filter((file) => base.includes(file)).map(adrNumber));
-    return [...tracked, ...untracked.filter((file) => !retitledNumbers.has(adrNumber(file)))];
+    const [objects] = git(root, ['rev-parse', '--git-path', 'objects']);
+    const env = {
+      ...process.env,
+      GIT_INDEX_FILE: join(scratch, 'index'),
+      GIT_OBJECT_DIRECTORY: scratch,
+      GIT_ALTERNATE_OBJECT_DIRECTORIES: resolve(root, objects),
+    };
+    git(root, ['read-tree', 'HEAD'], env);
+    git(root, ['add', '--intent-to-add', '--', ADR_DIR], env);
+    const diffArgs = ['diff-index', '-M', '--diff-filter=A', '--name-only', baseRef, '--', ADR_DIR];
+    return git(root, diffArgs, env).map((path) => path.slice(`${ADR_DIR}/`.length));
   } catch {
     return null;
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 }
 
@@ -92,7 +94,7 @@ function warn(message) {
 export function checkAdrIntegrity({ baseRef, root }) {
   const head = readdirSync(join(root, ADR_DIR));
   const base = baseEntries(root, baseRef);
-  const added = base === null ? null : addedRecords(root, baseRef, base);
+  const added = base === null ? null : addedRecords(root, baseRef);
   const warnings = [];
 
   if (base === null || added === null) {
