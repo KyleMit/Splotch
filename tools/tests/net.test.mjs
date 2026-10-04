@@ -11,14 +11,23 @@ vi.mock('node:os', async (importOriginal) => {
 
 const { lanAddresses, waitForUrl } = await import('../lib/net.mjs');
 
-// Shorter than waitForUrl's pause between attempts, so each call makes exactly one attempt.
-const ONE_ATTEMPT_TIMEOUT_MS = 100;
+// Shorter than waitForUrl's pause between attempts, so each call makes exactly one attempt, and
+// long enough for a refused or answered attempt to settle before the deadline aborts it.
+const ONE_ATTEMPT_TIMEOUT_MS = 300;
+// A deadline-bounded wait on a hung server settles about one pause after its deadline; an attempt
+// the deadline fails to abort waits out fetch's far longer headers timeout and fails this budget.
+const HUNG_SERVER_TEST_TIMEOUT_MS = 3_000;
 
 const servers = [];
 
 afterEach(async () => {
   os.networkInterfaces.mockReset();
-  await Promise.all(servers.splice(0).map((server) => new Promise((done) => server.close(done))));
+  await Promise.all(
+    servers.splice(0).map((server) => {
+      server.closeAllConnections();
+      return new Promise((done) => server.close(done));
+    })
+  );
 });
 
 const ipv4 = (address, internal = false) => ({ address, family: 'IPv4', internal });
@@ -105,4 +114,19 @@ describe('waitForUrl', () => {
 
     expect(timeout.cause.message).toBe('answered HTTP 503');
   });
+
+  it(
+    'aborts an attempt the server accepts and never answers at the deadline',
+    async () => {
+      const url = await listen(() => {});
+
+      const timeout = await timeoutOf(url);
+
+      expect(timeout.message).toBe(
+        `${url} did not become ready within ${ONE_ATTEMPT_TIMEOUT_MS}ms`
+      );
+      expect(timeout.cause.name).toBe('TimeoutError');
+    },
+    HUNG_SERVER_TEST_TIMEOUT_MS
+  );
 });

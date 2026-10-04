@@ -2,8 +2,8 @@ import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { lanAddresses } from '../lib/net.mjs';
-import { findFreePort, probePort, showFreePort } from '../show-free-port.mjs';
+import { findFreePort, lanAddresses, portIsFree } from '../lib/net.mjs';
+import { showFreePort } from '../show-free-port.mjs';
 
 const CLI = fileURLToPath(new URL('../show-free-port.mjs', import.meta.url));
 // A Node start under a loaded host can exceed Vitest's 5 s default. spawnSync blocks the event
@@ -48,13 +48,13 @@ function runCli(args) {
 describe('show-free-port', () => {
   it('recognizes a held local port and leaves its listener running', async () => {
     const port = await occupyPort();
-    expect(await probePort(port)).toBe(false);
+    expect(await portIsFree(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
 
   it('recognizes a port held on IPv6 localhost', async () => {
     const port = await occupyPort('::1');
-    expect(await probePort(port)).toBe(false);
+    expect(await portIsFree(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
 
@@ -62,19 +62,19 @@ describe('show-free-port', () => {
   // only a wildcard probe sees these holders there; Linux refuses the loopback bind outright.
   it.each(['::', '0.0.0.0'])('recognizes a port held on the wildcard address %s', async (host) => {
     const port = await occupyPort(host);
-    expect(await probePort(port)).toBe(false);
+    expect(await portIsFree(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
 
   it('recognizes a wildcard holder when probing one named host', async () => {
     const port = await occupyPort('0.0.0.0');
-    expect(await probePort(port, '127.0.0.1')).toBe(false);
+    expect(await portIsFree(port, '127.0.0.1')).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
 
   it.skipIf(!LAN_ADDRESS)('recognizes a port held only on a LAN address', async () => {
     const port = await occupyPort(LAN_ADDRESS);
-    expect(await probePort(port)).toBe(false);
+    expect(await portIsFree(port)).toBe(false);
     expect(servers[0].listening).toBe(true);
   });
 
@@ -90,7 +90,9 @@ describe('show-free-port', () => {
   });
 
   it('rejects a reversed range', async () => {
-    await expect(findFreePort({ from: 5400, to: 5300 })).rejects.toThrow('--from');
+    await expect(findFreePort({ from: 5400, to: 5300 })).rejects.toThrow(
+      new Error('Reversed port range: from 5400 is greater than to 5300')
+    );
   });
 
   it.each(['0', '65536', '-1', '5300junk', '1e3', '0x14b4', '53.5', '', '080', '05399'])(
