@@ -88,10 +88,12 @@ if (pid) {
       process.env.AGENT_RUNNER === 'codex' || /AGENT_RUNNER='codex'/.test(launch)
         ? 'codex exec'
         : 'claude -p';
-    const cpid = (runCmd('pgrep', ['-f', runner]).stdout ?? '').split('\n').filter(Boolean).pop();
+    // Both criteria: the driver's gate shells are its children too, and the runner pattern alone
+    // matches every session's calls on the host, such as a rival review's `codex exec`.
+    const cpid = (runCmd('pgrep', ['-P', pid, '-f', runner]).stdout ?? '').split('\n', 1)[0];
     if (cpid) {
-      const etime = (runCmd('ps', ['-o', 'etime=', '-p', cpid.trim()]).stdout ?? '').trim();
-      if (etime) console.log(`           current ${runner} call ${etime} (pid ${cpid.trim()})`);
+      const etime = (runCmd('ps', ['-o', 'etime=', '-p', cpid]).stdout ?? '').trim();
+      if (etime) console.log(`           current ${runner} call ${etime} (pid ${cpid})`);
     }
   }
 }
