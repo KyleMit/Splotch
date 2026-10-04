@@ -48,8 +48,6 @@ function round(value, places = 2) {
 
 function row(scored) {
   const phase = scored.summaries.phases[0];
-  const contact = phase.starvation?.inContact;
-  const lost = contact?.lostFrameTimeShare ?? phase.pacing?.lostFrameTimeShare;
   return {
     capture: scored.name,
     // Present only on deliberately re-admitted rows, so a marked capture can
@@ -70,18 +68,24 @@ function row(scored) {
     regime: scored.regime.scoreable ? scored.regime.observed : `${scored.regime.observed}?`,
     'paint p95': round(phase.paintLatencyMs?.p95, 1),
     'paint max': round(phase.paintLatencyMs?.max, 1),
-    'lost %': round(lost * 100, 2),
+    // The share the gate judged, so a phase priced by the gate's legacy step
+    // (lost time over contact seconds) prints the number its verdict came from.
+    'lost %': round(scored.drawing.phases[0].lostFrameTimeShare * 100, 2),
     'gate %': scored.gateShare === null ? '?' : round(scored.gateShare * 100, 2),
     // A capture that fails fidelity must not be scored at all, however plausible
     // its number looks, so the verdict is printed beside the number and not
     // behind a flag. The FAILING CHECKS are named rather than a bare FAIL,
-    // because which one failed decides whether the number means anything: the
-    // pressure and contactGeometry thresholds have no calibrated expectation on
-    // Android or desktop, so every capture from those runtimes is reported
-    // `(uncalibrated)` on them and the matrix classes those targets advisory.
-    // `cadence` is the one that invalidates a number outright, and a bare FAIL
-    // hides which of the two you are looking at.
-    fidelity: scored.fidelity.passed ? 'pass' : describeFidelityFailures(scored.fidelity),
+    // because which one failed decides whether the number means anything: a
+    // check suffixed `(uncalibrated)` has no measured expectation for the
+    // capture's runtime, so failing it says the instrument is silent, while
+    // `cadence` invalidates a number outright — and a bare FAIL hides which of
+    // the two you are looking at. A capture that recorded no verdict is held to
+    // none (`drawingVerdicts`), so it reads n/a rather than failed.
+    fidelity: !scored.fidelity
+      ? 'n/a'
+      : scored.fidelity.passed
+        ? 'pass'
+        : describeFidelityFailures(scored.fidelity),
     gate: scored.gateShare === null ? 'UNSCORED' : scored.drawing.passed ? 'PASS' : 'FAIL',
   };
 }
@@ -149,7 +153,7 @@ export async function rescoreCaptures({
   }
 
   console.table(scored.map(row));
-  const unscoreable = scored.filter((entry) => !entry.fidelity.passed);
+  const unscoreable = scored.filter((entry) => entry.fidelity?.passed === false);
   const unknownTarget = scored.filter((entry) => entry.gateShare === null);
   const readmitted = scored.filter((entry) => entry.cellAttributable === false);
   console.log(
