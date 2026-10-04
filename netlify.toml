@@ -175,9 +175,9 @@
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
-# The manifest's name carries the app version (coloringPackManifestPath). This rule
-# follows /coloring/* because a later matching rule's Cache-Control replaces an
-# earlier one's.
+# The manifest's name carries the app version (coloringPackManifestPath). Keep this
+# rule after /coloring/*, which also matches it: Netlify's docs leave unspecified
+# which matching rule's Cache-Control wins, and this order serves it immutable.
 [[headers]]
   for = "/coloring/manifest-*.json"
   [headers.values]

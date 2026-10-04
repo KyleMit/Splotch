@@ -27,10 +27,15 @@ const CACHE_CONTROL_LINE = /^Cache-Control = "([^"]+)"$/;
 const FOR_KEY = /^["']?for["']?\s*=/;
 const CACHE_TERM = /cache-control|immutable|\bexpires\b/i;
 const MULTILINE_DELIMITER = /"""|'''/g;
+// A TOML escape (`\u0043ache-Control`, `max\u002dage`) spells a header name or a
+// directive without its letters. A backslash ending a line only continues a
+// multi-line string, as the CSP does.
+const ESCAPE_SEQUENCE = /\\./;
 
-// Reads every [[headers]] rule that sets Cache-Control, in file order. A line in
-// any other spelling that mentions a cache term or a `for` key throws, so a rule
-// written another valid TOML way fails the guard instead of slipping past it.
+// Reads every [[headers]] rule that sets Cache-Control, in file order. A line
+// that holds an escape, or that mentions a cache term or a `for` key in any
+// other spelling, throws, so a rule written another valid TOML way fails the
+// guard instead of slipping past it.
 function cacheControlRules(toml) {
   const rules = [];
   let table = 'other';
@@ -42,11 +47,12 @@ function cacheControlRules(toml) {
       new Error(`line ${index + 1} is a spelling this guard cannot read: ${line}`);
     const togglesString = (line.match(MULTILINE_DELIMITER) ?? []).length % 2 === 1;
     if (inMultilineString || (togglesString && !line.startsWith('#'))) {
-      if (CACHE_TERM.test(line)) throw unreadable();
+      if (CACHE_TERM.test(line) || ESCAPE_SEQUENCE.test(line)) throw unreadable();
       if (togglesString) inMultilineString = !inMultilineString;
       continue;
     }
     if (line === '' || line.startsWith('#')) continue;
+    if (ESCAPE_SEQUENCE.test(line)) throw unreadable();
     if (line.startsWith('[')) {
       if (line === '[[headers]]') {
         rule = {};
@@ -77,12 +83,17 @@ function cacheControlRules(toml) {
 
 function outlivesStableName(cacheControl) {
   const directives = cacheControl.split(',').map((directive) => directive.trim().toLowerCase());
-  const maxAge = directives.find((directive) => directive.startsWith('max-age='));
-  if (maxAge !== undefined && !/^max-age=\d+$/.test(maxAge)) {
-    throw new Error(`Cache-Control "${cacheControl}" has an unreadable max-age`);
-  }
-  const maxAgeSeconds = Number(maxAge?.slice('max-age='.length) ?? 0);
-  return directives.includes('immutable') || maxAgeSeconds > STABLE_NAME_MAX_AGE_SECONDS;
+  const maxAgesSeconds = directives
+    .filter((directive) => directive.startsWith('max-age='))
+    .map((directive) => {
+      if (!/^max-age=\d+$/.test(directive)) {
+        throw new Error(`Cache-Control "${cacheControl}" has an unreadable max-age`);
+      }
+      return Number(directive.slice('max-age='.length));
+    });
+  return (
+    directives.includes('immutable') || Math.max(0, ...maxAgesSeconds) > STABLE_NAME_MAX_AGE_SECONDS
+  );
 }
 
 function longLivedGlobs(rules) {
@@ -141,12 +152,13 @@ describe('the Cache-Control rule reader', () => {
     expect(rulesMatching(rules, '/sw.js').map(({ path }) => path)).toEqual(['/*.js', '/sw.js']);
   });
 
-  it('treats a max-age past a week as long-lived without immutable', () => {
+  it('treats any max-age past a week as long-lived without immutable', () => {
     const rules = cacheControlRules(
       headerRule('/sounds/*', 'public, max-age=604800') +
-        headerRule('/*.css', 'public, max-age=604801')
+        headerRule('/*.css', 'public, max-age=604801') +
+        headerRule('/*.mjs', 'public, max-age=0, max-age=31536000')
     );
-    expect(longLivedGlobs(rules)).toEqual(['/*.css']);
+    expect(longLivedGlobs(rules)).toEqual(['/*.css', '/*.mjs']);
   });
 
   it('skips a commented-out rule, as Netlify does', () => {
@@ -172,6 +184,18 @@ describe('the Cache-Control rule reader', () => {
     [
       'an Expires header',
       broadScriptRule.replace(/Cache-Control = .*/, 'Expires = "Fri, 01 Jan 2100"'),
+    ],
+    [
+      'an escaped header name',
+      broadScriptRule.replace('Cache-Control', '"\\u0043ache-\\u0043ontrol"'),
+    ],
+    [
+      'escaped directives',
+      broadScriptRule.replace(IMMUTABLE, 'public, max\\u002dage=31536000, \\u0069mmutable'),
+    ],
+    [
+      'an escaped header name opening a multi-line value',
+      broadScriptRule.replace(/Cache-Control = .*/, '"\\u0043ache-Control" = """\npublic"""'),
     ],
   ])('refuses %s', (_spelling, toml) => {
     expect(() => cacheControlRules(toml)).toThrow(/cannot read/);
