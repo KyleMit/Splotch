@@ -288,11 +288,11 @@ serially and records both `engine.undo` and the first action-local animation fra
 can finish. `--rotate-before-undo` changes orientation, waits for the new viewport and two visual
 frames, measures undo in the settled layout, and restores the original orientation.
 
-The base gesture (`trustedGestureActions` in `tools/perf/ios/capture-xcuitest-screen.mjs`) draws a
-long interpolated stroke per `LONG_STROKE_SEEDS` entry, then a short stroke per
-`SHORT_STROKE_ORIGINS` entry, `STROKES_PER_GESTURE_REPEAT` commands in all. WebDriverAgent emits
-native touch samples along each interpolation; splitting the same gesture into hundreds of 8 ms
-WebDriver actions took 211 seconds and is deliberately not how the committed driver works.
+The base gesture (`trustedGestureActions` in `tools/perf/lib/trusted-gesture-plan.mjs`) draws a long
+interpolated stroke per `LONG_STROKE_SEEDS` entry, then a short stroke per `SHORT_STROKE_ORIGINS`
+entry, `STROKES_PER_GESTURE_REPEAT` commands in all. WebDriverAgent emits native touch samples along
+each interpolation; splitting the same gesture into hundreds of 8 ms WebDriver actions took 211
+seconds and is deliberately not how the committed driver works.
 
 Before measurement the driver dismisses the install banner through its owned storage key,
 unregisters service workers and clears CacheStorage on both sides of a cache-busted reload, then

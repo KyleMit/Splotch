@@ -29,11 +29,11 @@ exception. Issue #1715 asked whether the reds come from the product or from the 
 through WebDriverAgent. The matrix drives them through Appium (`transport: 'appium'` for both rows
 in `tools/perf/lib/campaign-plan.mjs`). The ADR-0135 split transport sends W3C actions to
 WebDriverAgent directly. The driver already builds each stroke as one W3C action sequence with a
-duration on each move (`trustedGestureActions` in `tools/perf/ios/capture-xcuitest-screen.mjs`).
-This is the batched shape that the Android path had to adopt, so the driver has no cadence mistake
-left to fix. No other software transport reaches a physical iPad. `safaridriver` drives only macOS
-Safari and the iOS Simulator. Appium `mobile:` gestures go through the same XCUITest synthesis. The
-WebKit remote-inspector path does not inject input on a physical device. Only a finger or a hardware
+duration on each move (`trustedGestureActions` in `tools/perf/lib/trusted-gesture-plan.mjs`). This
+is the batched shape that the Android path had to adopt, so the driver has no cadence mistake left
+to fix. No other software transport reaches a physical iPad. `safaridriver` drives only macOS Safari
+and the iOS Simulator. Appium `mobile:` gestures go through the same XCUITest synthesis. The WebKit
+remote-inspector path does not inject input on a physical device. Only a finger or a hardware
 actuator can supply finger cadence.
 
 **The real-finger captures.** On 2026-09-07, three `perf:device:hand` captures were taken on the

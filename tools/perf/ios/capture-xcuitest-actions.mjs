@@ -49,10 +49,10 @@ import {
   clearDeviceWebCache,
   createWebDriverClient,
   executePagePromise,
-  nativeCanvasBounds,
   selectWebContext,
   switchToWebContext,
 } from './capture-xcuitest-screen.mjs';
+import { nativeCanvasBounds } from '../lib/trusted-gesture-plan.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import {
   entryModulePath,

@@ -13,17 +13,20 @@ import { INSTRUMENT_FILES_BY_COMMAND } from '../lib/instrument-fingerprint.mjs';
 // tools/perf module it reaches to be listed or declared outside the instrument
 // here. A declared module is not walked: its own imports are its concern.
 
-const SCREEN_PROBE_CONFIG = 'tools/perf/ios/capture-webkit-frames.mjs';
 // The Appium screen module's drawing capture, which the action sweep imports
 // the module for none of.
 const SCREEN_DRAWING_ONLY = [
-  SCREEN_PROBE_CONFIG,
   'tools/perf/lib/brush-buttons.mjs',
   'tools/perf/lib/eraser-fill.mjs',
+  'tools/perf/lib/probe-config.mjs',
   'tools/perf/lib/undo-driver.mjs',
 ];
 // Native Android rotation pinning runs only in the Appium action runner's own session.
 const NATIVE_ANDROID_ROTATION = 'tools/perf/lib/android-user-rotation.mjs';
+const IOS_DRAWING_ENTRIES = [
+  'tools/perf/ios/capture-webkit-frames.mjs',
+  'tools/perf/ios/capture-xcuitest-screen.mjs',
+];
 
 const OUTSIDE_EVERY_INSTRUMENT = {
   'scorers, verdicts and fidelity tables: they re-derive at fold time, so an edit re-scores banked cells rather than invalidating them':
@@ -65,20 +68,18 @@ const OUTSIDE_EVERY_INSTRUMENT = {
     'tools/perf/lib/capture-readiness.mjs',
     'tools/perf/lib/profile-warnings.mjs',
   ],
-  'reporting and diagnostics no scored cell comes from: the printed tables, the validated report pull, --trace, the WebKit timeline counter, and the floor control':
+  'reporting and diagnostics no scored cell comes from: the printed tables, the validated report pull, --trace, and the floor control':
     [
       'tools/perf/analyze-frame-capture.mjs',
       'tools/perf/ios/bundled-report-channel.mjs',
       'tools/perf/lib/chrome-trace-capture.mjs',
-      'tools/perf/lib/timeline-records.mjs',
       'tools/perf/split-capture/serve-floor-control.mjs',
     ],
 };
 
 // Imported by a listed module for code this command never runs.
 const NOT_RUN_BY_COMMAND = {
-  // The split runner configures its probe through the probe host, not probeConfigScript.
-  'perf:device:frames': [SCREEN_PROBE_CONFIG],
+  'perf:device:frames': [],
   'perf:ios:xcuitest:screen': [],
   'perf:ios:xcuitest:actions': SCREEN_DRAWING_ONLY,
   'perf:android:browser:actions': [...SCREEN_DRAWING_ONLY, NATIVE_ANDROID_ROTATION],
@@ -198,4 +199,19 @@ describe('the instrument lists against the import graph', () => {
 
     expect(stale).toEqual([]);
   });
+
+  // The gesture plan and the probe config live in tools/perf/lib/, so an edit to
+  // either iOS drawing entry script leaves the instrument of these captures,
+  // which run neither entry, unchanged.
+  it.each(['perf:device:frames', 'perf:web:frames'])(
+    '%s: reaches neither iOS drawing entry script',
+    (command) => {
+      const reached = reachedModules(command);
+
+      expect(
+        IOS_DRAWING_ENTRIES.filter((file) => reached.has(file)),
+        command
+      ).toEqual([]);
+    }
+  );
 });

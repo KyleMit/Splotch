@@ -23,5 +23,7 @@ pass enforced gates exit non-zero.
 iOS attachment and trusted-touch orchestration stay here. WebKit protocol plumbing, statistics,
 thresholds, and artifact schemas belong in `../lib/`; injected browser payloads belong in
 `../probes/`. The behavior-preserving issue #975 manifest also keeps the cross-platform action plan
-in `capture-xcuitest-actions.mjs` and the reusable probe configuration in
-`capture-webkit-frames.mjs`; web and Android runners import those deliberate owners.
+in `capture-xcuitest-actions.mjs`, which web and Android runners import deliberately. The trusted
+gesture plan with its canvas projection (`../lib/trusted-gesture-plan.mjs`) and the probe
+configuration (`../lib/probe-config.mjs`) are shared with the other transports, so they live in
+`../lib/` rather than in an entry script here.

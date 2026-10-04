@@ -24,7 +24,7 @@ import {
   sleep,
   tryCapture,
 } from '../../lib/proc.mjs';
-import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { trustedGestureActions } from '../lib/trusted-gesture-plan.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import {

@@ -50,7 +50,7 @@ import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { spawnPerfServe } from '../lib/perf-serve.mjs';
 import { printRun } from '../analyze-frame-capture.mjs';
-import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
+import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
   ensureCampaignTheme,
   parseCampaignTheme,

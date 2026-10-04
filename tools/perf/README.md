@@ -120,10 +120,13 @@ magnitude when `engine.draw` marking changed granularity, against a unit test wh
 fixture could not notice (ADR-0140). Regenerate it from a fresh run's `undo-scenarios.json` rather
 than editing it by hand.
 
-The exact issue #975 manifest preserves two established cross-platform owners instead of extracting
-new modules during this behavior-preserving move: `ios/capture-xcuitest-actions.mjs` owns the action
-plan consumed by the web and Android runners, and `ios/capture-webkit-frames.mjs` owns the probe
-configuration reused by local web capture.
+`ios/capture-xcuitest-actions.mjs` owns the action plan consumed by the web and Android runners, an
+established cross-platform owner that the behavior-preserving issue #975 move kept in place rather
+than extracting a new module. The drawing inputs the transports share live in `lib/`:
+`lib/trusted-gesture-plan.mjs` holds the gesture plan and the canvas projection that aims it, and
+`lib/probe-config.mjs` holds the probe configuration. No split, Android, or desktop drawing capture
+imports an iOS drawing entry script, so an edit to one leaves their instrument fingerprints
+unchanged; `tests/instrument-import-graph.test.mjs` holds that for the fingerprinted commands.
 
 Each action sweep records its requested groups, applicable label plan, observed exclusions with
 reasons, and product-surface context separately from the measured summaries. Only the complete

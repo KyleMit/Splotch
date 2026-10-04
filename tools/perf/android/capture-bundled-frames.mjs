@@ -43,9 +43,9 @@ import {
   readAndroidRotationSettings,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
-import { STROKES_PER_GESTURE_REPEAT, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { STROKES_PER_GESTURE_REPEAT, trustedGestureActions } from '../lib/trusted-gesture-plan.mjs';
 import { BRUSH_BUTTON_BY_MODE } from '../lib/brush-buttons.mjs';
-import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
+import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
   captureRuntime,
   describeFidelityFailures,

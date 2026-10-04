@@ -24,10 +24,11 @@ import { ROOT } from '../../lib/proc.mjs';
 
 const SHARED_SCREEN_PROBE = 'tools/perf/probes/real-screen-probe.js';
 const SHARED_ACTION_PROBE = 'tools/perf/probes/action-probe.js';
-// The Appium screen module also owns the gesture plan (trustedGestureActions)
-// and native canvas geometry, which is why it appears in the split command's
-// list too — the split drivers import both.
 const APPIUM_SCREEN_CAPTURE = 'tools/perf/ios/capture-xcuitest-screen.mjs';
+// The drawing gesture a trusted-input capture replays (trustedGestureActions),
+// and the canvas projection (nativeCanvasBounds) that aims its strokes and
+// every action tap.
+const TRUSTED_GESTURE_PLAN = 'tools/perf/lib/trusted-gesture-plan.mjs';
 // The action sweep (runActionSweep) lives in the Appium actions module and is
 // imported by the CDP and desktop action runners alike.
 const APPIUM_ACTIONS_CAPTURE = 'tools/perf/ios/capture-xcuitest-actions.mjs';
@@ -51,13 +52,15 @@ const CAMPAIGN_STATE = 'tools/perf/lib/campaign-state.mjs';
 // How an action sweep installs and loads the books its coloring actions open.
 const COLORING_BOOKS_READY = 'tools/perf/lib/coloring-books-ready.mjs';
 // probeConfigScript: the phases, contact time and drive the screen probe runs with.
-const SCREEN_PROBE_CONFIG = 'tools/perf/ios/capture-webkit-frames.mjs';
-// Every action transport runs the one sweep, projects its taps through the
-// Appium screen module's canvas geometry, and resolves each tap point through
-// the occlusion check (the centre, off native Android).
+const SCREEN_PROBE_CONFIG = 'tools/perf/lib/probe-config.mjs';
+// Every action transport runs the one sweep, projects its taps through
+// nativeCanvasBounds, and resolves each tap point through the occlusion check
+// (the centre, off native Android). The actions module imports its WebDriver
+// session helpers from the Appium screen module.
 const ACTION_SWEEP_DISPATCH = [
   APPIUM_ACTIONS_CAPTURE,
   APPIUM_SCREEN_CAPTURE,
+  TRUSTED_GESTURE_PLAN,
   ANDROID_TOUCH_OCCLUSION,
   'tools/perf/lib/native-tap-point.mjs',
   'tools/perf/lib/unavailable-undo-cue.mjs',
@@ -86,7 +89,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     'tools/perf/split-capture/lib/chrome-tabs.mjs',
     ANDROID_LOCALHOST_ROUTE,
     SERVICE_WORKER_GUARD,
-    APPIUM_SCREEN_CAPTURE,
+    TRUSTED_GESTURE_PLAN,
     BRUSH_BUTTONS,
     CAMPAIGN_STATE,
     // The Reduce Motion storage key the page bootstrap seeds.
@@ -97,6 +100,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
   ],
   'perf:ios:xcuitest:screen': [
     APPIUM_SCREEN_CAPTURE,
+    TRUSTED_GESTURE_PLAN,
     BRUSH_BUTTONS,
     CAMPAIGN_STATE,
     SCREEN_PROBE_CONFIG,
