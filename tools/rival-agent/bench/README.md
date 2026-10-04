@@ -30,9 +30,11 @@ under `<out>/results/`. Cells run sequentially, repetition-major, so an interrup
 complete first pass. Re-running the same command with the same `--out` skips recorded cells. Ctrl-C
 stops the bench: the rival is terminated, the interrupted cell is cleaned up but not recorded, and
 the run exits nonzero naming the `--out` to resume with, so the resume reruns that cell. A bench
-killed outright leaves its cell's worktree behind, and the resumed run removes it before recreating
-the cell. The Markdown report lands at `--report` (default `<out>/report.md`); `<out>` defaults to a
-directory under the system temp root.
+killed outright, or a cleanup that failed, leaves the cell's worktree behind. The resumed run
+removes it before recreating the cell, but only once git shows it is a worktree of this repository;
+anything else at a cell's path is left alone, and that cell is recorded as a setup failure. The
+Markdown report lands at `--report` (default `<out>/report.md`); `<out>` defaults to a directory
+under the system temp root.
 
 ## A seed
 

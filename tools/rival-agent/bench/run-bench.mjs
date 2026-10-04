@@ -13,8 +13,7 @@ import { serveSession } from './lib/handler.mjs';
 import { renderReport } from './lib/report.mjs';
 import { countLocalCommands, normalizeUsage, scoreCell, summarize } from './lib/score.mjs';
 import {
-  applySeed,
-  createBenchWorktree,
+  createSeededWorktree,
   loadSeeds,
   removeBenchWorktree,
   SEEDS_DIRECTORY,
@@ -122,12 +121,10 @@ async function runCell({
     startedAt: new Date(startedAt).toISOString(),
   };
   try {
-    createBenchWorktree(repoRoot, base, directory);
-    applySeed(directory, seed);
+    createSeededWorktree(repoRoot, base, seed, directory);
   } catch (error) {
     // A worktree git refuses, or a seed that no longer applies to the base, fails only this cell;
     // the prefix keeps the report from reading that failure as the rival's.
-    removeBenchWorktree(repoRoot, directory);
     result.failed = `setup: ${firstLine(error)}`;
     return result;
   }
@@ -202,7 +199,13 @@ async function runCell({
     } catch (error) {
       log(`[${id}] end-session: ${firstLine(error)}`);
     }
-    removeBenchWorktree(repoRoot, directory);
+    // Logged, not thrown: a failed cleanup must not replace the cell's own outcome, least of all a
+    // cancellation.
+    try {
+      removeBenchWorktree(repoRoot, directory);
+    } catch (error) {
+      log(`[${id}] cleanup failed, ${directory} may be left behind: ${firstLine(error)}`);
+    }
   }
 }
 

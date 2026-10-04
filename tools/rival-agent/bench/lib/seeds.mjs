@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { git, removeDisposableWorktree } from '../../worktree.mjs';
 
@@ -60,11 +60,37 @@ export function loadSeeds(directory = SEEDS_DIRECTORY, names) {
   });
 }
 
-// A bench killed mid-cell leaves that cell's worktree registered, or its directory behind, and
-// `git worktree add` refuses either; clearing the path first lets a resumed run recreate the cell.
-export function createBenchWorktree(repoRoot, base, directory) {
-  removeBenchWorktree(repoRoot, directory);
-  git(repoRoot, ['worktree', 'add', '--detach', directory, base]);
+// git marks a linked worktree with a `.git` file naming its admin entry under the repository's
+// `worktrees/` directory. The file outlives a `git worktree remove` that fails partway, which still
+// unregisters the worktree while leaving its files.
+function isLinkedWorktreeOf(repoRoot, directory) {
+  const marker = join(directory, '.git');
+  if (!statSync(marker, { throwIfNoEntry: false })?.isFile()) return false;
+  const gitdir = /^gitdir: (.+)$/m.exec(readFileSync(marker, 'utf8'))?.[1];
+  if (!gitdir) return false;
+  const commonDir = git(repoRoot, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  return (
+    dirname(resolve(realpathSync(directory), gitdir)) === join(realpathSync(commonDir), 'worktrees')
+  );
+}
+
+// A bench killed mid-cell leaves that cell's worktree registered, and a cleanup that failed leaves
+// its directory behind unregistered; `git worktree add` refuses both. Each is cleared only once git
+// shows it is a worktree of this repository, so anything else at the path stays for `add` to refuse.
+function clearLeftoverWorktree(repoRoot, directory) {
+  // Forced twice, `remove` also takes a worktree a killed `git worktree add` left locked; for a
+  // registered path whose directory is gone, it drops only the registration.
+  git(repoRoot, ['worktree', 'remove', '--force', '--force', directory], { allowFailure: true });
+  if (existsSync(directory) && isLinkedWorktreeOf(repoRoot, directory)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function createBenchWorktree(repoRoot, base, directory) {
+  clearLeftoverWorktree(repoRoot, directory);
+  // Quiet so a refusal's first line is git's reason, which is all a setup failure records, rather
+  // than the "Preparing worktree" line git prints ahead of it.
+  git(repoRoot, ['worktree', 'add', '--quiet', '--detach', directory, base]);
   return directory;
 }
 
@@ -72,8 +98,21 @@ export function removeBenchWorktree(repoRoot, directory) {
   removeDisposableWorktree(repoRoot, directory);
 }
 
-export function applySeed(worktree, seed) {
+function applySeed(worktree, seed) {
   git(worktree, ['apply', '--whitespace=nowarn', seed.patchPath]);
+}
+
+// A cell's worktree at the base with its seed applied. A seed that no longer applies takes the
+// fresh worktree with it, and a path `createBenchWorktree` refused stays exactly as it was found.
+export function createSeededWorktree(repoRoot, base, seed, directory) {
+  createBenchWorktree(repoRoot, base, directory);
+  try {
+    applySeed(directory, seed);
+  } catch (error) {
+    removeBenchWorktree(repoRoot, directory);
+    throw error;
+  }
+  return directory;
 }
 
 // The repro runs with the seeded tree as its working directory and imports the modules under test

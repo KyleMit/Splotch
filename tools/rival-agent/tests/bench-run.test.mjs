@@ -1,6 +1,8 @@
 import { describe, expect, it, onTestFinished } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import {
+  chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -10,7 +12,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { parseBenchArgs, runBench } from '../bench/run-bench.mjs';
 import { loadSeeds, validateSeed } from '../bench/lib/seeds.mjs';
 import { SESSION_FILES } from '../spool.mjs';
@@ -26,6 +28,12 @@ const REPRO = [
   '',
 ].join('\n');
 const STAND_IN_VENDOR = Object.freeze({ rival: 'codex', resolveModel: () => 'stand-in' });
+const READ_ONLY_DIRECTORY_MODE = 0o500;
+const OWNER_DIRECTORY_MODE = 0o700;
+const cancellation = () =>
+  Object.assign(new Error('cancelled by SIGINT; the rival was terminated.'), {
+    code: STREAM_FAILURE.cancelled,
+  });
 
 // A throwaway repository whose one module answers 42, the patch that seeds an off-by-one into it,
 // and a seed corpus beside it, so no test creates a worktree in the real checkout.
@@ -89,8 +97,9 @@ function createFixture() {
 
 // Stands in for launch() in the order the launcher settles: the session is announced first, then
 // either failed.json and a rejection with `error`, or an empty findings document and done.json.
-// Records the source each cell's rival would have reviewed and every end-session call.
-function standInRival(root, { error } = {}) {
+// Records the source each cell's rival would have reviewed and every end-session call; `onLaunch`
+// runs against the cell's worktree while its rival would be running.
+function standInRival(root, { error, onLaunch } = {}) {
   const reviewed = [];
   const ended = [];
   const launchRival = async (options, vendor, { onProgress } = {}) => {
@@ -100,6 +109,7 @@ function standInRival(root, { error } = {}) {
       return { endedSession: null };
     }
     reviewed.push({ cell, source: readFileSync(join(options.cwd, 'x.mjs'), 'utf8') });
+    onLaunch?.(options.cwd);
     const session = mkdtempSync(join(root, 'session-'));
     onProgress(`session: ${session}`);
     if (error) {
@@ -150,11 +160,7 @@ describe('the bench in a throwaway repository', () => {
     fixture.writeSeed('b');
     const out = join(fixture.root, 'out');
     const options = parseBenchArgs(['--reps', '1', '--out', out]);
-    const stopped = standInRival(fixture.root, {
-      error: Object.assign(new Error('cancelled by SIGINT; the rival was terminated.'), {
-        code: STREAM_FAILURE.cancelled,
-      }),
-    });
+    const stopped = standInRival(fixture.root, { error: cancellation() });
 
     await expect(runBench(options, fixture.seams(stopped))).rejects.toMatchObject({
       code: STREAM_FAILURE.cancelled,
@@ -179,7 +185,7 @@ describe('the bench in a throwaway repository', () => {
     expect(readResult(out, 'b__r1')).toMatchObject({ failed: 'codex exited 2 after "none".' });
   });
 
-  it('recreates a cell whose worktree a killed run left registered or behind', async () => {
+  it('clears a worktree a killed run left at a cell path and leaves anything else there', async () => {
     const fixture = createFixture();
     fixture.writeSeed('a');
     fixture.writeSeed('b');
@@ -187,20 +193,58 @@ describe('the bench in a throwaway repository', () => {
     const worktreesDir = join(out, 'worktrees');
     mkdirSync(worktreesDir, { recursive: true });
     fixture.git(['worktree', 'add', '--detach', join(worktreesDir, 'a__r1'), 'main']);
-    mkdirSync(join(worktreesDir, 'b__r1'));
-    writeFileSync(join(worktreesDir, 'b__r1', 'x.mjs'), 'left behind\n');
+    const unrelated = join(worktreesDir, 'b__r1', 'user-work.txt');
+    mkdirSync(dirname(unrelated));
+    writeFileSync(unrelated, 'not the bench\n');
     const rival = standInRival(fixture.root);
 
     await runBench(parseBenchArgs(['--reps', '1', '--out', out]), fixture.seams(rival));
-    expect(rival.reviewed).toEqual([
-      { cell: 'a__r1', source: SEEDED_SOURCE },
-      { cell: 'b__r1', source: SEEDED_SOURCE },
-    ]);
-    for (const id of ['a__r1', 'b__r1']) {
-      const result = readResult(out, id);
-      expect(result.failed).toBeUndefined();
-      expect(result).toMatchObject({ findingsCount: 0, score: { detected: false } });
+    expect(rival.reviewed).toEqual([{ cell: 'a__r1', source: SEEDED_SOURCE }]);
+    const recreated = readResult(out, 'a__r1');
+    expect(recreated.failed).toBeUndefined();
+    expect(recreated).toMatchObject({ findingsCount: 0, score: { detected: false } });
+    expect(readResult(out, 'b__r1').failed).toMatch(
+      /^setup: git worktree add .+ exited 128: fatal: '.+\/b__r1' already exists$/
+    );
+    expect(readFileSync(unrelated, 'utf8')).toBe('not the bench\n');
+    expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+  });
+
+  // A failed `git worktree remove` unregisters the worktree and leaves its directory, `.git` file
+  // included; that file is what lets the resume prove the directory is the bench's to clear.
+  it('keeps a cancellation through a failed cleanup, and a resume clears what it left', async () => {
+    const fixture = createFixture();
+    fixture.writeSeed('a');
+    const out = join(fixture.root, 'out');
+    const options = parseBenchArgs(['--reps', '1', '--out', out]);
+    const cell = join(out, 'worktrees', 'a__r1');
+    const logged = [];
+    const stopped = standInRival(fixture.root, {
+      error: cancellation(),
+      onLaunch: (worktree) => chmodSync(worktree, READ_ONLY_DIRECTORY_MODE),
+    });
+
+    try {
+      await expect(
+        runBench(options, { ...fixture.seams(stopped), log: (line) => logged.push(line) })
+      ).rejects.toMatchObject({
+        code: STREAM_FAILURE.cancelled,
+        message: expect.stringContaining(`re-run the same command with --out ${out} to resume`),
+      });
+    } finally {
+      if (existsSync(cell)) chmodSync(cell, OWNER_DIRECTORY_MODE);
     }
+    expect(logged).toContainEqual(
+      expect.stringMatching(/^\[a__r1\] cleanup failed, .+a__r1 may be left behind: /)
+    );
+    expect(readdirSync(join(out, 'results'))).toEqual([]);
+    expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+    expect(readdirSync(cell)).toContain('.git');
+
+    const resumed = standInRival(fixture.root);
+    await runBench(options, fixture.seams(resumed));
+    expect(reviewedCells(resumed)).toEqual(['a__r1']);
+    expect(readResult(out, 'a__r1').failed).toBeUndefined();
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
   });
 
