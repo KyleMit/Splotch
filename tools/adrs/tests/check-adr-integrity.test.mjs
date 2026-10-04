@@ -1,5 +1,14 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +21,10 @@ const MINE_TAKES_THEIRS = { number: '0002', baseFile: '0002-theirs.md', headFile
 const MINE_TAKES_THEIRS_PROBLEM =
   'ADR number 0002 is already taken on main by 0002-theirs.md; this branch adds 0002-mine.md';
 const CLEAN = { warnings: [], collisions: [], problems: [] };
+
+// Older than splitIndex.sharedIndexExpire's two-week default, so a shared-index
+// write in this repository would expire it.
+const AGED_SHARED_INDEX_MS = 30 * 24 * 60 * 60 * 1000;
 
 let scratch;
 let repo;
@@ -177,6 +190,14 @@ describe('checkAdrIntegrity against a base that took a number', () => {
     expect(check()).toMatchObject(CLEAN);
   });
 
+  it('fails a force-staged ignored record that takes it', () => {
+    writeFileSync(join(repo, '.gitignore'), '0002-mine.md\n');
+    addMine();
+    git('add', '--force', `${ADR_DIR}/0002-mine.md`);
+
+    expect(check().collisions).toEqual([MINE_TAKES_THEIRS]);
+  });
+
   it("leaves the repository's own index and object store as it found them", () => {
     addMine();
     const before = [git('status', '--porcelain'), git('count-objects')];
@@ -184,6 +205,24 @@ describe('checkAdrIntegrity against a base that took a number', () => {
     check();
 
     expect([git('status', '--porcelain'), git('count-objects')]).toEqual(before);
+  });
+
+  it('keeps the aged shared index a split real index still reads', () => {
+    git('config', 'core.splitIndex', 'true');
+    git('update-index', '--split-index');
+    const gitDir = join(repo, '.git');
+    const sharedIndexes = () =>
+      readdirSync(gitDir).filter((name) => name.startsWith('sharedindex.'));
+    const aged = new Date(Date.now() - AGED_SHARED_INDEX_MS);
+    for (const name of sharedIndexes()) utimesSync(join(gitDir, name), aged, aged);
+    const before = sharedIndexes();
+    addMine();
+
+    check();
+
+    expect(before).toHaveLength(1);
+    expect(sharedIndexes()).toEqual(before);
+    expect(git('status', '--porcelain').split('\n')).toContain('?? docs/adrs/0002-mine.md');
   });
 
   it('warns that it skipped the base when the base cannot be resolved', () => {

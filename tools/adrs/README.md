@@ -23,12 +23,13 @@ checkout lists `tools/lib` beside `tools/adrs`.
 
 The checker reads record filenames and first headings from `docs/adrs/`, parses canonical entries
 and local links from `docs/adrs/README.md`, and asks Git which records are new relative to the base.
-Git compares the base with the working tree itself, through a scratch index and object directory in
-the system temp folder, so a record counts the same whether it is committed, staged, or untracked: a
-local run rejects a colliding number before the record is committed, and nothing is added to the
-repository's own index or object store. Apart from that scratch folder, removed before it exits, the
-checker writes only diagnostics. In GitHub Actions it also emits workflow-command annotations for
-the offending paths and lines; locally it prints the same failures as plain text.
+Git compares the base with the working tree itself, through a scratch copy of the index and a
+scratch object directory in the system temp folder, so a record counts the same whether it is
+committed, staged, or untracked: a local run rejects a colliding number before the record is
+committed, and nothing is added to the repository's own index or object store. Apart from that
+scratch folder, removed before it exits, the checker writes only diagnostics. In GitHub Actions it
+also emits workflow-command annotations for the offending paths and lines; locally it prints the
+same failures as plain text.
 
 `lib/adr-integrity.mjs` owns the dependency-free parsing, comparison, and diagnostic formatting.
 `tests/adr-integrity.test.mjs` covers those pure rules; `tests/check-adr-integrity.test.mjs` runs
@@ -52,7 +53,10 @@ that ADR number. Do not hand-edit only the reported link or suppress the base co
 The index parser intentionally recognizes the two canonical shapes documented in ADR-0095 rather
 than implementing general Markdown parsing. Update the parser and its focused cases together if the
 index presentation changes. Preserve rename-aware Git comparison so retitling an existing record,
-whether with `git mv` or a plain `mv`, does not look like a newly added collision.
+whether with `git mv` or a plain `mv`, does not look like a newly added collision. Keep split index
+off for the scratch-index commands: `GIT_INDEX_FILE` does not isolate split-index storage, so
+writing one would add shared-index files to the real Git directory and expire ones its index still
+reads.
 
 Run the focused verification with:
 

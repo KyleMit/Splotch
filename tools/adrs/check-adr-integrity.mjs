@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -37,28 +37,31 @@ function baseEntries(root, baseRef) {
   }
 }
 
-// Judged on the working tree alone, so a record counts the same committed,
-// staged, or untracked. A scratch index of HEAD, with the working tree's new
-// files under ADR_DIR added as intent-to-add entries, lets diff-index compare
-// the base tree with the working tree itself, and -M pairs a retitle by content
-// however it was made. The base is compared directly, not through a merge base,
-// which the workflow's --depth=1 base fetch lacks. The scratch object directory
-// borrows the repository's store as an alternate, so the check adds nothing to
-// the repository's index or object store.
+// Judged as the working tree would be committed, so a record counts the same
+// committed, staged, or untracked: diff-index compares the base tree with the
+// working tree through a scratch copy of the index that marks new files under
+// ADR_DIR intent-to-add, and -M pairs a retitle by content however it was made.
+// The base is compared directly, not through a merge base, which the workflow's
+// --depth=1 base fetch lacks. The repository gains nothing: the scratch object
+// directory borrows its store as an alternate, and split index stays off, since
+// writing one would add shared-index files beside the real index and expire the
+// ones it still needs.
 function addedRecords(root, baseRef) {
   const scratch = mkdtempSync(join(tmpdir(), 'adr-integrity-'));
   try {
-    const [objects] = git(root, ['rev-parse', '--git-path', 'objects']);
+    const gitPaths = ['rev-parse', '--git-path', 'index', '--git-path', 'objects'];
+    const [index, objects] = git(root, gitPaths);
     const env = {
       ...process.env,
       GIT_INDEX_FILE: join(scratch, 'index'),
       GIT_OBJECT_DIRECTORY: scratch,
       GIT_ALTERNATE_OBJECT_DIRECTORIES: resolve(root, objects),
     };
-    git(root, ['read-tree', 'HEAD'], env);
-    git(root, ['add', '--intent-to-add', '--', ADR_DIR], env);
+    copyFileSync(resolve(root, index), env.GIT_INDEX_FILE);
+    const scratchGit = (args) => git(root, ['-c', 'core.splitIndex=false', ...args], env);
+    scratchGit(['add', '--intent-to-add', '--', ADR_DIR]);
     const diffArgs = ['diff-index', '-M', '--diff-filter=A', '--name-only', baseRef, '--', ADR_DIR];
-    return git(root, diffArgs, env).map((path) => path.slice(`${ADR_DIR}/`.length));
+    return scratchGit(diffArgs).map((path) => path.slice(`${ADR_DIR}/`.length));
   } catch {
     return null;
   } finally {
