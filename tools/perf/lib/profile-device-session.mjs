@@ -86,19 +86,25 @@ export async function ensurePreviewServer(url, port, allowSpawn, { allowForeignB
 }
 
 // Starts the relay and picks a device off it; the caller owns stopProxy() for
-// the length of the run.
+// the length of the run. A relay that cannot serve is refused with its own
+// account rather than read through: whatever answers on its port is then
+// another process, and the run would be hostage to it.
 export async function connectDevice(deviceId) {
-  const { stop: stopProxy } = startInspectorProxy();
-  const device = await waitForDevice(deviceId);
+  const relay = startInspectorProxy();
+  const { device, problem } = await waitForDevice(relay, deviceId);
+  if (problem) {
+    relay.stop();
+    fail(`The inspector relay cannot serve this run:\n${problem}`);
+  }
   if (!device) {
-    stopProxy();
+    relay.stop();
     fail(
       'No iOS device on the inspector relay. Connect the iPad by USB, unlock it, tap ' +
         'Trust This Computer, and turn on Settings → Apps → Safari → Advanced → Web Inspector.'
     );
   }
   console.log(`Device: ${device.deviceName} (iOS ${device.deviceOSVersion})`);
-  return { device, stopProxy };
+  return { device, stopProxy: relay.stop };
 }
 
 // iOS suspends a backgrounded Safari tab: it still lists, and still announces an
