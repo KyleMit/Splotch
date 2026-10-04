@@ -79,8 +79,8 @@ function row(scored) {
     // check suffixed `(uncalibrated)` has no measured expectation for the
     // capture's runtime, so failing it says the instrument is silent, while
     // `cadence` invalidates a number outright — and a bare FAIL hides which of
-    // the two you are looking at. A capture that recorded no verdict is held to
-    // none (`drawingVerdicts`), so it reads n/a rather than failed.
+    // the two you are looking at. A desktop capture that recorded no verdict is
+    // held to none (`drawingVerdicts`), so it reads n/a rather than failed.
     fidelity: !scored.fidelity
       ? 'n/a'
       : scored.fidelity.passed

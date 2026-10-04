@@ -56,13 +56,15 @@ complete flag and output descriptions.
   summaries, input-fidelity verdict, and refresh-regime verdict come from `drawingVerdicts`
   (`lib/capture-verdicts.mjs`), the helper the matrix judges its drawing cells with, so its fidelity
   and regime answers are the matrix's: the target's declared runtime judges the input (the capture's
-  recorded one only when no target is known), and a capture that recorded no fidelity verdict reads
-  `n/a` rather than failed. The lost-frame share and the PASS/FAIL come from the shipped gate
-  (`lib/drawing-gates.mjs`), so the answer is what the gate says rather than what a private copy
-  says. Trialling a *new* charge is the same operation: change the shipped charge on a branch and
-  re-run. Captures whose corpus index marks `cellAttributable: false` (issue 1315) are refused by
-  default; `--include-unattributable` re-admits them deliberately, visibly marked, for questions
-  about the instrument rather than the cell.
+  recorded one only when no target is known). Every capture is judged whether or not it stored a
+  verdict, except a desktop capture that stored none, which reads `n/a` rather than failed: the
+  desktop transport writes none, and its synthetic touch can never pass `trustedTouch`. The
+  lost-frame share and the PASS/FAIL come from the shipped gate (`lib/drawing-gates.mjs`), so the
+  answer is what the gate says rather than what a private copy says. Trialling a *new* charge is the
+  same operation: change the shipped charge on a branch and re-run. Captures whose corpus index
+  marks `cellAttributable: false` (issue 1315) are refused by default; `--include-unattributable`
+  re-admits them deliberately, visibly marked, for questions about the instrument rather than the
+  cell.
 * `perf:campaign` drives one deployment-target capture campaign to completion and is resumable:
   rerunning the same command skips cells whose artifacts already parse, retries failed ones, and
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells

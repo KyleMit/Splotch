@@ -5,7 +5,6 @@
 // run-person-session.mjs owns the processes.
 import { rescoreCapture } from './capture-rescore.mjs';
 import { numberInvalidatingFailure, onlyUncalibratedChecksFailed } from './input-fidelity.mjs';
-import { EVENT_TYPE, POINTER_DOWN } from './real-screen-stats.mjs';
 import { strokeDeliveryProblem, trustedPointerdowns } from './stroke-delivery.mjs';
 
 // #2229's A/B, fixed by the issue: the last all-160 portrait capture's commit
@@ -369,8 +368,12 @@ export function overlaySteadilyClear(verdicts, reads = OVERLAY_STEADY_READS) {
   return verdicts.length >= reads && verdicts.slice(-reads).every((verdict) => verdict.pass);
 }
 
+// Columns of a probe event row (tools/perf/probes/real-screen-probe.js).
+const EVENT_TYPE = 2;
+const POINTERDOWN = 0;
+
 function firstPointerdownAt(report) {
-  const row = (report?.events ?? []).find((event) => event[EVENT_TYPE] === POINTER_DOWN);
+  const row = (report?.events ?? []).find((event) => event[EVENT_TYPE] === POINTERDOWN);
   return row ? row[1] : null;
 }
 
@@ -432,12 +435,10 @@ export function captureVerdict(artifact, expect) {
     regime: scored.regime.verdict,
     contactSeconds: phase.contactSeconds ?? null,
     movesPerSecond: phase.input?.movesPerSecond ?? null,
-    fidelity: !scored.fidelity ? 'unrecorded' : scored.fidelity.passed ? 'pass' : 'fail',
+    fidelity: !scored.fidelity ? 'n/a' : scored.fidelity.passed ? 'pass' : 'fail',
   };
 
-  // A capture that recorded no verdict cannot show its touches were trusted.
-  if (!scored.fidelity) reasons.push('the capture recorded no input-fidelity verdict — recapture');
-  else if (numberInvalidatingFailure(scored.fidelity)) {
+  if (numberInvalidatingFailure(scored.fidelity)) {
     const failed = Object.entries(scored.fidelity.checks)
       .filter(([, passed]) => passed === false)
       .map(([name]) => name);

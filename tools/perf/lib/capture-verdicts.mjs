@@ -5,18 +5,24 @@ import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './input-fidelity.mjs';
 import { summarizeRun } from './real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './refresh-regime.mjs';
 
+// The desktop transport synthesizes its touch through Playwright, so its input
+// can never pass `trustedTouch`, and it writes no fidelity verdict of its own.
+const DESKTOP_CAPTURE_RUNTIME = 'desktop-playwright';
+
 // The summaries and the fidelity verdict a capture recorded are the ones its
 // runner computed on the day, from whatever estimator and expectations that
 // checkout held, so a correction to either would reach published cells only
 // through device time. Both are re-derived from the raw frame table (`report`)
 // when the caller has one; without it the stored summaries are all there is.
 //
-// Fidelity is judged only when the capture carried a verdict at all. A runner
-// that writes none (the desktop transport) is not held to one: deriving one for
-// it would mark every desktop cell unscoreable on a trusted-touch check that
-// Playwright cannot satisfy by construction. The target's declared runtime
-// judges the input; the runtime the capture recorded stands in only when the
-// caller knows no target, and the default only when neither exists.
+// The target's declared runtime judges the input; the runtime the capture
+// recorded stands in only when the caller knows no target, and the default only
+// when neither exists. Every capture is judged, whether or not it stored a
+// verdict, except a desktop capture that stored none: holding it to one would
+// mark every desktop cell unscoreable on a check it cannot pass by
+// construction. Absence alone is not that exemption — an uploaded probe report
+// or a pre-verdict artifact from a touch runtime stores no verdict either, and
+// it must not pass unexamined.
 //
 // A PRESERVED matrix cell keeps the verdict it was published with, because
 // re-deriving one needs the raw input samples and a preserved cell has only
@@ -28,15 +34,11 @@ import { refreshRegimeVerdict } from './refresh-regime.mjs';
 // mode is recaptured — not a second verdict for the same measurement.
 export function drawingVerdicts(artifact, { report, captureRuntime, refreshRegime }) {
   const summaries = report ? summarizeRun(report) : artifact?.summaries;
-  const fidelity = artifact?.fidelity
-    ? inputFidelity(
-        summaries?.phases?.[0]?.input ?? {},
-        captureRuntime ?? artifact.fidelity.runtime ?? DEFAULT_CAPTURE_RUNTIME
-      )
-    : null;
+  const runtime = captureRuntime ?? artifact?.fidelity?.runtime ?? DEFAULT_CAPTURE_RUNTIME;
+  const exempt = !artifact?.fidelity && runtime === DESKTOP_CAPTURE_RUNTIME;
   return {
     summaries,
-    fidelity,
+    fidelity: exempt ? null : inputFidelity(summaries?.phases?.[0]?.input ?? {}, runtime),
     regime: refreshRegimeVerdict(summaries?.intervalMs, refreshRegime, summaries?.regimeMixture),
   };
 }
