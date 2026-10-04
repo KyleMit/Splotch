@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, onTestFinished } from 'vitest';
@@ -97,6 +97,36 @@ describe('foreignPortListeners', () => {
     expect(portListenerOwners(foreign.port, ROOT)).toContainEqual({
       pid: foreign.child.pid,
       cwd: realpathSync(foreignRoot),
+      owned: false,
+    });
+  });
+});
+
+describe('portListenerOwners', () => {
+  // Claude Code cuts its worktrees inside the main checkout, so a dev:stop or
+  // freePort run from main once judged an agent worktree's server its own.
+  it('does not claim a listener in another checkout nested inside this one', async () => {
+    const main = mkdtempSync(join(tmpdir(), 'splotch-main-'));
+    onTestFinished(() => rmSync(main, { recursive: true, force: true }));
+    const nested = join(main, '.claude', 'worktrees', 'session');
+    mkdirSync(join(main, '.git'));
+    mkdirSync(join(main, 'web'));
+    mkdirSync(join(nested, 'web'), { recursive: true });
+    writeFileSync(join(nested, '.git'), 'gitdir: ../../../.git/worktrees/session\n');
+
+    const [own, other] = await Promise.all([
+      listenFrom(join(main, 'web')),
+      listenFrom(join(nested, 'web')),
+    ]);
+
+    expect(portListenerOwners(own.port, main)).toContainEqual({
+      pid: own.child.pid,
+      cwd: realpathSync(join(main, 'web')),
+      owned: true,
+    });
+    expect(portListenerOwners(other.port, main)).toContainEqual({
+      pid: other.child.pid,
+      cwd: realpathSync(join(nested, 'web')),
       owned: false,
     });
   });

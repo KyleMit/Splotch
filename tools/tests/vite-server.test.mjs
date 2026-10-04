@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../lib/proc.mjs';
 import {
@@ -130,6 +131,17 @@ describe('portListenerOwners', () => {
     expect(() => portListenerOwners(4173, '/repo')).toThrow(
       'lsof could not be launched to check port 4173: spawnSync lsof ENOENT'
     );
+  });
+
+  // A pruned worktree's server can outlive its directory and still report its path.
+  it('treats a listener cwd that no longer exists as foreign', () => {
+    const gone = join(realpathSync(ROOT), 'pruned-worktree-that-does-not-exist', 'web');
+    expect(existsSync(gone)).toBe(false);
+    spawnSync
+      .mockReturnValueOnce({ status: 0, stdout: '4242\n' })
+      .mockReturnValueOnce({ status: 0, stdout: `p4242\nfcwd\nn${gone}\n` });
+
+    expect(portListenerOwners(4173, ROOT)).toEqual([{ pid: 4242, cwd: gone, owned: false }]);
   });
 
   it('treats an unreadable listener cwd as foreign', () => {

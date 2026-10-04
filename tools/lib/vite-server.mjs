@@ -7,8 +7,8 @@
 // stop() kills the whole group.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, realpathSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { ROOT } from './proc.mjs';
 
 const PORT_RELEASE_TIMEOUT_MS = 5_000;
@@ -66,11 +66,21 @@ function listenerOwners(pids, root) {
     return {
       pid,
       cwd: resolvedCwd,
-      owned:
-        resolvedCwd !== null &&
-        (resolvedCwd === resolvedRoot || resolvedCwd.startsWith(`${resolvedRoot}/`)),
+      owned: resolvedCwd !== null && inCheckout(resolvedCwd, resolvedRoot),
     };
   });
+}
+
+// Being under the root is not enough: Claude Code nests its worktrees inside
+// the main checkout, so a directory belongs to the nearest checkout holding a
+// `.git` entry, which is how git itself finds a worktree's top level. A cwd
+// that no longer exists, such as a pruned worktree's, cannot be placed.
+function inCheckout(cwd, root) {
+  if (!existsSync(cwd) || (cwd !== root && !cwd.startsWith(`${root}/`))) return false;
+  for (let dir = cwd; dir !== root; dir = dirname(dir)) {
+    if (existsSync(join(dir, '.git'))) return false;
+  }
+  return true;
 }
 
 const foreignPids = (owners) =>
