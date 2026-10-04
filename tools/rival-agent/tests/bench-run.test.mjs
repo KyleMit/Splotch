@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, join } from 'node:path';
 import { parseBenchArgs, runBench } from '../bench/run-bench.mjs';
 import { loadSeeds, validateSeed } from '../bench/lib/seeds.mjs';
 import { SESSION_FILES } from '../spool.mjs';
@@ -152,6 +152,7 @@ describe('the bench in a throwaway repository', () => {
       })
     ).toMatchObject({ ok: false });
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+    expect(readdirSync(fixture.root).sort()).toEqual(['repo', 'seeds']);
   });
 
   it('stops at a cancelled launch without recording the cell, and a resume reruns it', async () => {
@@ -171,6 +172,7 @@ describe('the bench in a throwaway repository', () => {
     expect(reviewedCells(stopped)).toEqual(['a__r1']);
     expect(stopped.ended).toEqual(['a__r1']);
     expect(readdirSync(join(out, 'results'))).toEqual([]);
+    expect(readdirSync(join(out, 'worktrees'))).toEqual([]);
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
 
     // A rival that fails on its own is recorded and does not stop the run.
@@ -185,17 +187,24 @@ describe('the bench in a throwaway repository', () => {
     expect(readResult(out, 'b__r1')).toMatchObject({ failed: 'codex exited 2 after "none".' });
   });
 
+  // A killed run leaves the claim beside its worktree (a). The other paths hold work the bench must
+  // not clear: an unclaimed worktree of the same repository (b), an unclaimed plain directory (c),
+  // and a worktree someone locked at a claimed path (d).
   it('clears a worktree a killed run left at a cell path and leaves anything else there', async () => {
     const fixture = createFixture();
-    fixture.writeSeed('a');
-    fixture.writeSeed('b');
+    for (const name of ['a', 'b', 'c', 'd']) fixture.writeSeed(name);
     const out = join(fixture.root, 'out');
     const worktreesDir = join(out, 'worktrees');
+    const cell = (id) => join(worktreesDir, id);
     mkdirSync(worktreesDir, { recursive: true });
-    fixture.git(['worktree', 'add', '--detach', join(worktreesDir, 'a__r1'), 'main']);
-    const unrelated = join(worktreesDir, 'b__r1', 'user-work.txt');
-    mkdirSync(dirname(unrelated));
-    writeFileSync(unrelated, 'not the bench\n');
+    for (const id of ['a__r1', 'd__r1']) writeFileSync(`${cell(id)}.bench-claim`, '');
+    fixture.git(['worktree', 'add', '--detach', cell('a__r1'), 'main']);
+    fixture.git(['worktree', 'add', '-b', 'human', cell('b__r1'), 'main']);
+    mkdirSync(cell('c__r1'));
+    fixture.git(['worktree', 'add', '--detach', cell('d__r1'), 'main']);
+    fixture.git(['worktree', 'lock', '--reason', 'active human work', cell('d__r1')]);
+    const userWork = ['b__r1', 'c__r1', 'd__r1'].map((id) => join(cell(id), 'user-work.txt'));
+    for (const path of userWork) writeFileSync(path, 'not the bench\n');
     const rival = standInRival(fixture.root);
 
     await runBench(parseBenchArgs(['--reps', '1', '--out', out]), fixture.seams(rival));
@@ -203,11 +212,16 @@ describe('the bench in a throwaway repository', () => {
     const recreated = readResult(out, 'a__r1');
     expect(recreated.failed).toBeUndefined();
     expect(recreated).toMatchObject({ findingsCount: 0, score: { detected: false } });
-    expect(readResult(out, 'b__r1').failed).toMatch(
-      /^setup: git worktree add .+ exited 128: fatal: '.+\/b__r1' already exists$/
+    for (const id of ['b__r1', 'c__r1', 'd__r1']) {
+      expect(readResult(out, id).failed).toMatch(
+        new RegExp(`^setup: git worktree add .+ exited 128: fatal: '.+/${id}' already exists$`)
+      );
+    }
+    for (const path of userWork) expect(readFileSync(path, 'utf8')).toBe('not the bench\n');
+    expect(fixture.worktrees().sort()).toEqual(
+      [fixture.repo, cell('b__r1'), cell('d__r1')].map((path) => realpathSync(path)).sort()
     );
-    expect(readFileSync(unrelated, 'utf8')).toBe('not the bench\n');
-    expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+    expect(readdirSync(worktreesDir).sort()).toEqual(['b__r1', 'c__r1', 'd__r1']);
   });
 
   // A failed `git worktree remove` unregisters the worktree and leaves its directory, `.git` file
@@ -240,12 +254,14 @@ describe('the bench in a throwaway repository', () => {
     expect(readdirSync(join(out, 'results'))).toEqual([]);
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
     expect(readdirSync(cell)).toContain('.git');
+    expect(readdirSync(join(out, 'worktrees')).sort()).toEqual(['a__r1', 'a__r1.bench-claim']);
 
     const resumed = standInRival(fixture.root);
     await runBench(options, fixture.seams(resumed));
     expect(reviewedCells(resumed)).toEqual(['a__r1']);
     expect(readResult(out, 'a__r1').failed).toBeUndefined();
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+    expect(readdirSync(join(out, 'worktrees'))).toEqual([]);
   });
 
   it('records a seed that no longer applies as a setup failure and runs the next cell', async () => {
@@ -268,5 +284,6 @@ describe('the bench in a throwaway repository', () => {
     expect(summary).toMatchObject([{ rival: 'codex', cells: 2, failedCells: 1, seededCells: 1 }]);
     expect(readFileSync(reportPath, 'utf8')).toContain('| a | 1 | failed: setup: git apply ');
     expect(fixture.worktrees()).toEqual([realpathSync(fixture.repo)]);
+    expect(readdirSync(join(out, 'worktrees'))).toEqual([]);
   });
 });

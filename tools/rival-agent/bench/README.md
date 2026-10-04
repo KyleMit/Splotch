@@ -29,12 +29,13 @@ findings against the key, removes the ledger record and the worktree, and writes
 under `<out>/results/`. Cells run sequentially, repetition-major, so an interrupted run leaves a
 complete first pass. Re-running the same command with the same `--out` skips recorded cells. Ctrl-C
 stops the bench: the rival is terminated, the interrupted cell is cleaned up but not recorded, and
-the run exits nonzero naming the `--out` to resume with, so the resume reruns that cell. A bench
-killed outright, or a cleanup that failed, leaves the cell's worktree behind. The resumed run
-removes it before recreating the cell, but only once git shows it is a worktree of this repository;
-anything else at a cell's path is left alone, and that cell is recorded as a setup failure. The
-Markdown report lands at `--report` (default `<out>/report.md`); `<out>` defaults to a directory
-under the system temp root.
+the run exits nonzero naming the `--out` to resume with, so the resume reruns that cell. Each cell's
+path is claimed by a `<cell>.bench-claim` file beside it, released once the worktree is gone. A
+bench killed outright, or a cleanup that failed, leaves the worktree and its claim behind, and the
+resumed run clears a claimed leftover before recreating the cell. A locked worktree, or anything at
+an unclaimed path, is left alone, and that cell is recorded as a setup failure. The Markdown report
+lands at `--report` (default `<out>/report.md`); `<out>` defaults to a directory under the system
+temp root.
 
 ## A seed
 
