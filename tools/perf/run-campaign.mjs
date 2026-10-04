@@ -38,12 +38,13 @@ import {
   argNumber,
   fail,
   isMain,
+  parseOrFail,
+  readSwitch,
+  rejectUnknownFlags,
   runMain,
   sleep,
 } from '../lib/proc.mjs';
 import {
-  ALL_ITEMS,
-  CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   MAX_ATTEMPTS,
   SPLIT_SCREEN_COMMAND,
@@ -418,10 +419,13 @@ function androidAppiumHostProblem(cells, host) {
   return null;
 }
 
+// Reads every flag up front, once, so a malformed one is refused before the
+// campaign plans, probes a host, or writes its ledger.
 export async function runCampaign(argv = process.argv.slice(2)) {
   const captureSession = randomUUID();
   const flag = (name, fallback) => argFlag(name, fallback, argv);
-  const has = (name) => argv.includes(`--${name}`);
+  const dryRun = parseOrFail(() => readSwitch(argv, 'dry-run'));
+  const acceptInstrumentChange = parseOrFail(() => readSwitch(argv, 'accept-instrument-change'));
 
   const targetId = flag('target');
   if (!targetId) {
@@ -432,6 +436,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // targets can share one campaign directory without colliding.
   const outputRoot = flag('output-root', 'perf-profiles/campaign');
   const maxAttempts = argNumber('max-attempts', MAX_ATTEMPTS, POSITIVE_INTEGER, argv);
+  const modes = list(flag('modes'));
+  const items = list(flag('items'));
+  const label = flag('label');
+  const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
+  const rebootUdid = flag('reboot-simulator');
 
   const host = {
     appiumUrl: flag('appium-url'),
@@ -442,18 +451,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     probeHost: flag('probe-host'),
     wdaUrl: flag('wda-url'),
   };
-  const plan = planCampaign(targetId, {
-    modes: list(flag('modes')),
-    items: list(flag('items')),
-    outputRoot,
-    label: flag('label'),
-    host,
-  });
+  const plan = planCampaign(targetId, { modes, items, outputRoot, label, host });
   const references = planCampaignReferences(targetId, {
     modeId: plan[0].mode.id,
     outputRoot,
     host,
-    label: flag('label'),
+    label,
     productCommands: plan.map((cell) => cell.command),
   });
   const queue = campaignQueue(plan, references);
@@ -496,30 +499,27 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // Asserted rather than started: the probe host outlives any one target's queue,
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
-  if (!has('dry-run') && queue.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
-    const identityProblem = splitTransportIdentityProblem(campaignTarget(targetId), {
-      deviceId: flag('device-id'),
-      wdaUrl: flag('wda-url'),
-    });
+  if (!dryRun && queue.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
+    const identityProblem = splitTransportIdentityProblem(campaignTarget(targetId), host);
     if (identityProblem) fail(identityProblem);
-    const problem = await resolvedProbeHostProblem(flag('probe-host'));
+    const problem = await resolvedProbeHostProblem(host.probeHost);
     if (problem) fail(problem);
-    const availabilityProblem = await probeHostAvailabilityProblem(flag('probe-host'));
+    const availabilityProblem = await probeHostAvailabilityProblem(host.probeHost);
     if (availabilityProblem) {
       fail(
-        `the probe host at ${flag('probe-host')} is incompatible: ${availabilityProblem}. ` +
+        `the probe host at ${host.probeHost} is incompatible: ${availabilityProblem}. ` +
           "Start or restart it with `npm run perf:device:serve` and pass this host's LAN address"
       );
     }
   }
 
   const androidActionCells = androidAppiumCells(queue);
-  if (!has('dry-run') && androidActionCells.length) {
+  if (!dryRun && androidActionCells.length) {
     const problem = androidAppiumHostProblem(androidActionCells, host);
     if (problem) fail(problem);
   }
 
-  if (has('dry-run')) {
+  if (dryRun) {
     const referenceSuffix = references.length ? ` + ${references.length} drift references` : '';
     console.log(`${targetId}: ${plan.length} cells${referenceSuffix}`);
     for (const cell of queue) {
@@ -533,7 +533,6 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     return { plan, references, ran: [], referenceRuns: [] };
   }
 
-  const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
   mkdirSync(dirname(ledgerPath), { recursive: true });
   if (!existsSync(ledgerPath)) writeFileSync(ledgerPath, `${LEDGER_HEADER.join('\t')}\n`);
 
@@ -580,7 +579,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     productInstrumentOverlap?.current ?? currentInstrument,
     bankedElsewhere
   );
-  if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
+  if (instrumentProblem && !acceptInstrumentChange) fail(instrumentProblem);
   if (instrumentProblem) {
     console.log(
       'WARN  resuming across an instrument change — cells banked before this run were ' +
@@ -625,7 +624,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         referenceInstrumentOverlap.current
       )
     : null;
-  if (referenceInstrumentProblem && !has('accept-instrument-change')) {
+  if (referenceInstrumentProblem && !acceptInstrumentChange) {
     fail(`the reference control instrument changed:\n${referenceInstrumentProblem}`);
   }
   if (referenceInstrumentProblem) {
@@ -634,9 +633,8 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         '(accepted with --accept-instrument-change)'
     );
   }
-  let referenceReport = null;
-  if (references.length) {
-    referenceReport = writeReferenceReport(
+  const writeReferences = () =>
+    writeReferenceReport(
       referenceReportPath,
       references,
       inspection,
@@ -644,32 +642,18 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       capturedReferenceArtifacts,
       currentReferenceInstrument
     );
-  }
+  let referenceReport = references.length ? writeReferences() : null;
 
-  const rebootUdid = flag('reboot-simulator');
   const results = [];
   const referenceResults = [];
   const recordResult = (cell, result) => {
     (cell.referencePosition ? referenceResults : results).push(result);
-    if (cell.referencePosition) {
-      referenceReport = writeReferenceReport(
-        referenceReportPath,
-        references,
-        inspection,
-        captureSession,
-        capturedReferenceArtifacts,
-        currentReferenceInstrument
-      );
-    }
+    if (cell.referencePosition) referenceReport = writeReferences();
   };
 
   for (const cell of queue) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: cellInspection(cell, {
-        runtime,
-        refreshRegime,
-        captureRuntime: targetCaptureRuntime,
-      }).ok,
+      artifactValid: cellInspection(cell, inspection).ok,
       maxAttempts,
       runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
@@ -716,11 +700,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      const inspected = cellInspection(cell, {
-        runtime,
-        refreshRegime,
-        captureRuntime: targetCaptureRuntime,
-      });
+      const inspected = cellInspection(cell, inspection);
       landed = inspected.ok;
       if (landed && cell.referencePosition) capturedReferenceArtifacts.add(cell.artifact);
       appendLedger(ledgerPath, {
@@ -794,6 +774,25 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   return { plan, references, ran: results, referenceRuns: referenceResults };
 }
 
-if (isMain(import.meta.url)) runMain(runCampaign);
-
-export { ALL_ITEMS, CAMPAIGN_MODES };
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags([
+    'dry-run',
+    'accept-instrument-change',
+    'target',
+    'output-root',
+    'max-attempts',
+    'modes',
+    'items',
+    'label',
+    'ledger',
+    'reboot-simulator',
+    'appium-url',
+    'capabilities-file',
+    'device-id',
+    'cdp-port',
+    'url',
+    'probe-host',
+    'wda-url',
+  ]);
+  runMain(runCampaign);
+}

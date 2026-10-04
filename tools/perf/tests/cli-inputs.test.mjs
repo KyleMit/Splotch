@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -23,6 +23,7 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
 });
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
+const perfEntryPath = (entry) => join(repoRoot, 'tools', 'perf', entry);
 const analyzePath = join(repoRoot, 'tools', 'perf', 'analyze-chrome-trace.mjs');
 const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-web-inspector.mjs');
 const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recording.mjs');
@@ -402,8 +403,135 @@ describe('performance CLI input failures', () => {
   });
 });
 
+// Each entry's whole flag set, beside the arguments that keep it harmless should
+// its refusal go missing: a dry run inventories instead of releasing the rig, a
+// bare serial or a zero port stops before a device or a server, and the rest
+// stop at a missing target or path. Empty stdout proves the refusal came first.
+const FLAG_REFUSING_ENTRIES = [
+  [
+    'run-campaign.mjs',
+    [],
+    [
+      'dry-run',
+      'accept-instrument-change',
+      'target',
+      'output-root',
+      'max-attempts',
+      'modes',
+      'items',
+      'label',
+      'ledger',
+      'reboot-simulator',
+      'appium-url',
+      'capabilities-file',
+      'device-id',
+      'cdp-port',
+      'url',
+      'probe-host',
+      'wda-url',
+    ],
+  ],
+  [
+    'release-capture.mjs',
+    ['--dry-run'],
+    ['dry-run', 'host-only', 'stop-campaigns', 'json', 'android-serial'],
+  ],
+  [
+    'prepare-capture.mjs',
+    ['--android-serial'],
+    [
+      'wake-android',
+      'json',
+      'android-serial',
+      'ios-udid',
+      'ios-only',
+      'verify-android-input',
+      'verify-ios-launch',
+      'hold-android-awake',
+      'appium-url',
+    ],
+  ],
+  [
+    'campaign-sources.mjs',
+    [],
+    [
+      'target',
+      'output-root',
+      'product-commit',
+      'manifest',
+      'preserve-actions',
+      'actions-unavailable',
+      'modes',
+      'sections',
+    ],
+  ],
+  ['serve-profile-build.mjs', ['--port=0'], ['port', 'strict-port']],
+  ['analyze-frame-capture.mjs', [], ['include-unattributable', 'no-forensics']],
+  ['report-undo-gate-failures.mjs', [], ['first']],
+  ['analyze-web-inspector.mjs', [], []],
+];
+
+describe('perf entry flag refusals', () => {
+  it.each(FLAG_REFUSING_ENTRIES)(
+    '%s refuses an unknown flag before it acts',
+    (entry, guard, known) => {
+      expectCliFailure(
+        perfEntryPath(entry),
+        [...guard, '--definitely-not-a-flag'],
+        `Unknown flag --definitely-not-a-flag — known flags: ${known.toSorted().join(', ')}`
+      );
+    }
+  );
+
+  // Read as absent, `--dry-run=true` started the campaign queue and released the
+  // rig. Release's bare --dry-run keeps a regressed read in its inventory mode.
+  it.each([
+    ['run-campaign.mjs', ['--dry-run=true']],
+    ['release-capture.mjs', ['--dry-run', '--dry-run=true']],
+  ])('%s refuses a --dry-run written with a value', (entry, args) => {
+    expectCliFailure(
+      perfEntryPath(entry),
+      args,
+      '--dry-run is a switch: write --dry-run with no value'
+    );
+  });
+
+  // Empty stdout cannot prove these came first: the exported functions read the
+  // serial and the UDID only after writing to the phone or stopping the rig, and
+  // print nothing before that. So the PATH holds only shims that log each call.
+  it.each([
+    ['prepare-capture.mjs', 'ios-udid', ['--wake-android', '--ios-udid']],
+    ['release-capture.mjs', 'android-serial', ['--dry-run', '--android-serial']],
+  ])('%s refuses a bare --%s before running any command', (entry, flag, args) => {
+    const bin = join(fixtureDir, 'bin');
+    const log = join(fixtureDir, 'commands.log');
+    mkdirSync(bin);
+    for (const command of ['adb', 'git', 'idevice_id', 'lsof', 'pgrep', 'ps', 'sh', 'xcrun']) {
+      const shim = `#!/bin/sh\necho "${command} $*" >> '${log}'\nexit 1\n`;
+      writeFileSync(join(bin, command), shim, { mode: 0o755 });
+    }
+
+    const result = spawnSync(process.execPath, [perfEntryPath(entry), ...args], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      env: { PATH: bin },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe(`--${flag} takes a value: write --${flag}=<value>\n`);
+    expect(existsSync(log)).toBe(false);
+  });
+});
+
 describe('Web Inspector analysis', () => {
   const undoRecord = { startTime: 0.09, endTime: 0.11, type: 'script' };
+
+  it('imports without reading an export', async () => {
+    const { analyzeWebInspector } = await import('../analyze-web-inspector.mjs');
+
+    expect(analyzeWebInspector).toBeTypeOf('function');
+  });
 
   it('uses the enclosing record for current synchronous tiled undo', () => {
     const output = analyzeWebInspector({
