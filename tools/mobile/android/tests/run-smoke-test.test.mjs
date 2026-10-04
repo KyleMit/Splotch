@@ -42,7 +42,18 @@ const NOTHING_LISTED = 'List of devices attached\n\n';
 const answer = (stdout) => ({ stdout, stderr: '' });
 
 function fakeEmulator() {
-  return Object.assign(new EventEmitter(), { kill: vi.fn(), unref: vi.fn() });
+  return Object.assign(new EventEmitter(), {
+    exitCode: null,
+    signalCode: null,
+    kill: vi.fn(),
+    unref: vi.fn(),
+  });
+}
+
+// As Node reports a child's exit: the code or signal is set before 'exit' fires.
+function exitEmulator(emulator, [code, signal]) {
+  Object.assign(emulator, { exitCode: code, signalCode: signal });
+  emulator.emit('exit', code, signal);
 }
 
 // What the emulator binary and adb answer while the new emulator boots normally.
@@ -59,7 +70,7 @@ function exitingDesk(emulator, exit) {
     if (!args.includes('wait-for-device')) return bootingDesk(file, args);
     const { signal } = options;
     waits.push(signal);
-    setImmediate(() => emulator.emit('exit', ...exit));
+    setImmediate(() => exitEmulator(emulator, exit));
     return new Promise((_, reject) => {
       signal.addEventListener('abort', () => reject(signal.reason));
     });
@@ -138,6 +149,7 @@ describe('pickConsolePort', () => {
 describe('runAndroidSmokeTest', () => {
   beforeEach(() => {
     desk.busyPorts = new Set(OPEN_EMULATOR_PORTS);
+    sh.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -184,10 +196,63 @@ describe('runAndroidSmokeTest', () => {
     );
     expect(waits.map((signal) => signal.aborted)).toEqual([true]);
     expect(adbCalls()).toEqual([['devices'], ['-s', NEW_SERIAL, 'wait-for-device']]);
-    expect(emulator.kill).toHaveBeenCalledOnce();
+    expect(emulator.kill).not.toHaveBeenCalled();
     expect(sh).not.toHaveBeenCalled();
     expect(runMaestroSmoke).not.toHaveBeenCalled();
   });
+
+  it('kills only the process it spawned when the boot wait fails while that process runs', async () => {
+    const emulator = fakeEmulator();
+    spawn.mockReturnValue(emulator);
+    const adbFailure = new Error('adb server went away');
+    desk.execFileAsync.mockImplementation(async (file, args) => {
+      if (args.includes('wait-for-device')) throw adbFailure;
+      return bootingDesk(file, args);
+    });
+
+    await expect(runAndroidSmokeTest()).rejects.toBe(adbFailure);
+    expect(emulator.kill).toHaveBeenCalledOnce();
+    expect(adbCalls()).toEqual([['devices'], ['-s', NEW_SERIAL, 'wait-for-device']]);
+    expect(sh).not.toHaveBeenCalled();
+  });
+
+  // Another emulator takes the console port between the probe and the spawn and
+  // answers on the serial; this run's emulator, refused that port, exits later.
+  it.each([
+    ['while the app syncs', 'npm run cap:sync', [['npm run cap:sync']]],
+    [
+      'while the app installs',
+      ':app:installDebug',
+      [
+        ['npm run cap:sync'],
+        [`ANDROID_SERIAL=${NEW_SERIAL} "${GRADLEW}" :app:installDebug`, ANDROID_DIR],
+      ],
+    ],
+  ])(
+    'touches the serial no further once its own emulator exits %s',
+    async (_case, exitingStep, shCalls) => {
+      const emulator = fakeEmulator();
+      spawn.mockReturnValue(emulator);
+      desk.execFileAsync.mockImplementation(bootingDesk);
+      sh.mockImplementation(async (command) => {
+        if (command.includes(exitingStep)) exitEmulator(emulator, [1, null]);
+      });
+
+      await expect(runAndroidSmokeTest()).rejects.toThrow(
+        new Error(
+          `The emulator this run started has exited, so ${NEW_SERIAL} may belong to another emulator; the run stopped without touching it further.`
+        )
+      );
+      expect(sh.mock.calls).toEqual(shCalls);
+      expect(runMaestroSmoke).not.toHaveBeenCalled();
+      expect(adbCalls()).toEqual([
+        ['devices'],
+        ['-s', NEW_SERIAL, 'wait-for-device'],
+        ['-s', NEW_SERIAL, 'shell', 'getprop', 'sys.boot_completed'],
+      ]);
+      expect(emulator.kill).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe('run-smoke-test.mjs', () => {

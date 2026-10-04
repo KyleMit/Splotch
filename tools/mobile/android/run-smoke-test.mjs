@@ -136,16 +136,35 @@ async function waitForBoot(serial, emulator) {
   }
 }
 
-async function installAndRunSmoke(serial) {
+// Node sets one of these once the process has exited.
+const isRunning = (emulator) => emulator.exitCode === null && emulator.signalCode === null;
+
+// A booted serial alone does not prove the device is this run's: another emulator
+// can take the console port between the probe and the spawn, and answer adb while
+// this run's emulator is still starting. That emulator then fails to start, since
+// `emulator -port` refuses a taken port, so only while it is still running is the
+// device at `serial` this run's.
+function requireRunningEmulator(serial, emulator) {
+  if (isRunning(emulator)) return;
+  throw new Error(
+    `The emulator this run started has exited, so ${serial} may belong to another emulator; the run stopped without touching it further.`
+  );
+}
+
+async function installAndRunSmoke(serial, emulator) {
   await sh('npm run cap:sync');
+  requireRunningEmulator(serial, emulator);
   // AGP's install tasks read ANDROID_SERIAL; without it, installDebug installs on every device.
   await sh(`ANDROID_SERIAL=${serial} "${GRADLEW}" :app:installDebug`, ANDROID_DIR);
+  requireRunningEmulator(serial, emulator);
   await runMaestroSmoke({ device: serial });
 }
 
 // Stops only what this run started: by serial once it booted, otherwise the
-// process it spawned.
+// process it spawned. Once that process has exited there is nothing of this
+// run's left to stop, and the serial may belong to another emulator.
 async function shutDownEmulator({ serial, emulator, booted }) {
+  if (!isRunning(emulator)) return;
   if (!booted) {
     emulator.kill();
     return;
@@ -169,7 +188,7 @@ export async function runAndroidSmokeTest() {
     booted = true;
     emulator.unref(); // safe to detach now that we know it's alive
     console.log(`Emulator booted: ${serial}`);
-    await installAndRunSmoke(serial);
+    await installAndRunSmoke(serial, emulator);
   } finally {
     await shutDownEmulator({ serial, emulator, booted });
   }
