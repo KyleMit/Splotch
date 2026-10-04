@@ -17,6 +17,14 @@ runs:
       shell: bash
       run: node tools/print-playwright-version.mjs >> "$GITHUB_OUTPUT"
 
+    - name: Resolve runner image OS
+      id: runner-image
+      shell: bash
+      # ImageOS names the OS release (ubuntu24) and changes only when GitHub moves the
+      # runner label to a new release, unlike ImageVersion, which changes with every image
+      # rebuild. A step has to read it: the env context holds only workflow-set variables.
+      run: echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+
     - name: Cache Playwright browsers
       id: playwright-cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -25,8 +33,11 @@ runs:
         # The browser set is part of the key, so jobs installing different
         # browsers can't restore each other's half-populated cache — a cache
         # missing WebKit would silently drop the WebKit project
-        # (playwright.config.ts omits it when the binary is absent).
-        key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
+        # (playwright.config.ts omits it when the binary is absent). The OS
+        # release and architecture are part of it because Playwright downloads
+        # a separate build for each, yet builds sharing a revision unpack into
+        # the same <browser>-<revision> directory, which then counts as installed.
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.runner-image.outputs.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
 
     - name: Resolve apt package cache layout
       id: apt-layout
