@@ -361,19 +361,37 @@ describe('hosted deploy contract smoke', () => {
     expect(missingStaticSecurityHeaders(configuredResponse, 'splotch.art')).toEqual([]);
   });
 
-  it('allows default production to trail an intentionally skipped commit', async () => {
+  it('lets the false override accept a preview that trails the checked-out commit', async () => {
     const base = await startDeploy({ version: '1.5.1' });
     const exact = await runSmoke(base);
-    const scheduled = await runSmoke(base, { DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: 'false' });
+    const overridden = await runSmoke(base, { DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: 'false' });
 
     expect(exact.code).toBe(1);
     expect(exact.stderr).toContain('version.json → 200 current checked-out web version');
-    expect(scheduled.code, scheduled.stderr).toBe(0);
-    expect(scheduled.stdout).toContain('version.json → 200 valid deployed web version');
+    expect(overridden.code, overridden.stderr).toBe(0);
+    expect(overridden.stdout).toContain('version.json → 200 valid deployed web version');
+  });
+
+  it('rejects a version override other than true or false as invalid config', async () => {
+    const result = await runSmoke(await startDeploy(), {
+      DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: 'yes',
+    });
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(
+      'DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION, when set, must be true or false.'
+    );
   });
 
   it('limits the HTTP test escape hatch to explicitly allowed loopback hosts', async () => {
     const result = await runSmoke('http://0.0.0.0:1');
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('Missing or invalid config');
+  });
+
+  it('reports a missing URL as invalid config before deriving any target rule', async () => {
+    const result = await runSmoke('');
 
     expect(result.code).toBe(2);
     expect(result.stderr).toContain('Missing or invalid config');

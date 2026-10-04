@@ -3,7 +3,11 @@ import { once } from 'node:events';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { parseAdminSecretTarget } from '../lib/deployed-admin-target.mjs';
+import {
+  isPreviewTarget,
+  parseAdminSecretTarget,
+  requiresCurrentVersion,
+} from '../lib/deployed-admin-target.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const HTTP_TEST_FLAG = 'DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS';
@@ -115,4 +119,37 @@ describe('deployed admin-secret target rule', () => {
       expect(receiver.requests).not.toContain('POST /api/admin/login');
     }
   );
+});
+
+// One classification drives both axes: a preview takes the Blobs probe write and must serve the
+// checked-out version exactly; every other target is read-only and needs only a valid version.
+describe('deployed preview-target rule', () => {
+  it.each([
+    ['canonical production', 'https://splotch.art', false],
+    ['production with a path', 'https://splotch.art/admin', false],
+    ['production www alias', 'https://www.splotch.art', false],
+    ['production Netlify alias', 'https://splotchy.netlify.app', false],
+    ['unknown remote host', 'https://example.com', false],
+    ['insecure remote preview', 'http://feature--splotchy.netlify.app', false],
+    ['deploy preview', 'https://deploy-preview-1104--splotchy.netlify.app', true],
+    ['branch preview', 'https://feature--splotchy.netlify.app', true],
+    ['IPv4 loopback fixture', 'http://127.0.0.1:4173', true],
+    ['IPv6 loopback fixture', 'http://[::1]:4173', true],
+    ['localhost fixture', 'http://localhost:4173', true],
+  ])('classifies the %s target (%s) as preview: %s', (_label, target, preview) => {
+    expect(isPreviewTarget(target)).toBe(preview);
+    expect(requiresCurrentVersion(target, undefined)).toBe(preview);
+    expect(requiresCurrentVersion(target, '')).toBe(preview);
+  });
+
+  it.each([
+    ['true', 'https://www.splotch.art', true],
+    ['false', 'https://deploy-preview-1104--splotchy.netlify.app', false],
+  ])('lets an explicit %s override decide the version rule for %s', (override, target, exact) => {
+    expect(requiresCurrentVersion(target, override)).toBe(exact);
+  });
+
+  it.each(['yes', 'TRUE', ' true', '1'])('rejects the version override %j', (override) => {
+    expect(requiresCurrentVersion('https://splotch.art', override)).toBeNull();
+  });
 });
