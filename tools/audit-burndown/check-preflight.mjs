@@ -31,19 +31,20 @@ function indentedFailureOutput(result) {
 
 // A run's only durable output is what reaches origin: the container holding its unpushed commits
 // can be reclaimed at any time. So every preflight asks origin itself. `ls-remote` proves origin
-// answers, and a dry-run push to the run's branch proves origin opens its push service to this
+// answers. A dry-run push to the run's branch proves origin opens its push service to this
 // checkout, whose push URL and credentials can differ from its fetch side's. A dry run sends no
-// ref update, so it creates nothing, and it cannot see a rule origin applies to the update itself,
-// such as branch protection. The push source is origin's own tip of the branch when there is one:
-// an up-to-date no-op, which git accepts even before this checkout has fetched that tip. HEAD as
-// the source would be refused as a non-fast-forward whenever origin's branch is ahead of it, the
-// usual state of a branch an earlier run pushed.
+// ref update, so it creates nothing, and so it cannot see a rule origin applies to an update, such
+// as branch protection. The run fetches and fast-forwards before it pushes, so git's client-side
+// fast-forward check would only compare tips this probe does not ask about: the push side can hold
+// another tip than the listing showed, or the branch can move in between. `--force` skips that
+// check. The source is origin's own tip of the branch when it has one, which keeps the usual case
+// a no-op even if `--dry-run` were ever dropped; otherwise it is HEAD.
 function probeOriginPush(git, branch) {
-  const listing = git('ls-remote', '--exit-code', 'origin');
+  const listing = git('ls-remote', 'origin');
   if (listing.status !== 0) {
     return {
       passed: false,
-      message: `origin unreachable — git ls-remote --exit-code origin exited ${listing.status}\n${indentedFailureOutput(listing)}`,
+      message: `origin unreachable — git ls-remote origin exited ${listing.status}\n${indentedFailureOutput(listing)}`,
     };
   }
   const ref = `refs/heads/${branch}`;
@@ -52,11 +53,11 @@ function probeOriginPush(git, branch) {
     .find((line) => line.endsWith(`\t${ref}`))
     ?.split('\t', 1)[0];
   const refspec = `${tip ?? 'HEAD'}:${ref}`;
-  const push = git('push', '--dry-run', 'origin', refspec);
+  const push = git('push', '--dry-run', '--force', 'origin', refspec);
   if (push.status !== 0) {
     return {
       passed: false,
-      message: `origin refuses a push to ${branch} — git push --dry-run origin ${refspec} exited ${push.status}\n${indentedFailureOutput(push)}`,
+      message: `origin refuses a push to ${branch} — git push --dry-run --force origin ${refspec} exited ${push.status}\n${indentedFailureOutput(push)}`,
     };
   }
   return { passed: true, message: `origin accepts a dry-run push to ${branch}` };
