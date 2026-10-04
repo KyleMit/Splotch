@@ -46,6 +46,13 @@ instruction a real system instruction and lets the model **decline in prose**, w
 instead of paying for a whole image. `tool_choice` therefore stays on `auto`: forcing the image tool
 would take the model's ability to decline away.
 
+Each OpenAI response is counted by production's own classifier, `classifyOpenAiResponse` in
+`web/src/lib/server/ai/openaiSafety.ts`. Its `safety` is the report's refusal and its `empty` the
+report's error, so a cell is refused exactly when the app would refuse the drawing, and is an error
+exactly when the app would offer a retry. The app discards a finished picture that arrives beside a
+machine-readable decline; such a cell counts as refused, and its reason opens with
+`(image discarded: …)` naming the declines.
+
 Cost on the OpenAI variants is the sum of both legs — the image tool's tokens
 (`tool_usage.image_gen`) plus the orchestrator's own text tokens (`usage`) — so the reported figure
 is the whole bill.
@@ -306,17 +313,21 @@ A narrower `VARIANTS` selection only limits new calls. Saved metadata and rebuil
 every candidate already recorded in the run; newly selected candidates are added once. A changed
 definition behind an existing variant key is rejected.
 
-The production request contract is mirrored here, not imported: `lib/model-eval.mjs` copies
+The production request contract is mirrored and asserted, not imported: `lib/model-eval.mjs` copies
 `DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider
 adapter, and `assertProductionConfig()` re-reads both files at startup so drift fails the run. Keep
 that check passing when either file changes; a `candidates` entry lists more than one path only
-while an adapter is being replaced, so the check keeps working across a provider migration. The only
-real app imports are `web/src/lib/design/tokens.ts`, `web/src/lib/palette.ts`, and
-`web/src/lib/ai/limits.ts`.
+while an adapter is being replaced, so the check keeps working across a provider migration. The
+response half is imported rather than mirrored, so it cannot drift: `lib/image-providers.mjs`
+classifies every OpenAI response with production's `web/src/lib/server/ai/openaiSafety.ts`. The app
+modules the harness imports are `web/src/lib/design/tokens.ts` and `web/src/lib/palette.ts` (from
+`lib/model-eval.mjs`), `web/src/lib/ai/limits.ts` (`lib/model-eval-report.mjs`),
+`web/src/lib/server/ai/imageSize.ts` and `web/src/lib/server/ai/openaiSafety.ts`
+(`lib/image-providers.mjs`), and `web/src/lib/ai/prompt.ts` (`run-prompt-adherence.mjs`).
 
 Run focused verification with:
 
 ```sh
-npm run test:tools -- tools/model-eval/tests/model-eval.test.mjs
+npm run test:tools -- tools/model-eval/tests
 npm run test:tools -- tools/tests/manual-harness-corpora.test.mjs
 ```

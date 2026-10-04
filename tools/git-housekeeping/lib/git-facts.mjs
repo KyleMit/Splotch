@@ -230,9 +230,22 @@ export function isPatchEquivalent(base, tip, cwd) {
   return !cherry.split('\n').some((line) => line.startsWith('+'));
 }
 
-function patchIdOf(diff, cwd) {
-  if (!diff) return null;
-  const out = git(['patch-id', '--verbatim'], { cwd, input: diff });
+// `--verbatim` hashes exactly the bytes it reads, so nothing may render a change
+// that never landed like one that did. The diff is read as bytes: a trim would
+// drop the last line's trailing whitespace, and a UTF-8 decode would fold every
+// invalid byte into one replacement character. It comes from plumbing
+// `diff-tree -p`, which ignores the host's porcelain diff settings:
+// `diff.context=0` leaves no context to tell edits to two copies of a line
+// apart, a textconv driver can render two different files alike, and
+// `diff.external` or `color.diff=always` leave nothing `patch-id` can read.
+// `GIT_DIFF_OPTS` sets the context even for plumbing, so it is dropped.
+function verbatimPatchId(from, to, cwd) {
+  const diff = spawnSync('git', ['diff-tree', '-p', from, to], {
+    cwd,
+    env: { ...process.env, GIT_DIFF_OPTS: undefined },
+  });
+  if (diff.error || diff.status !== 0 || diff.stdout.length === 0) return null;
+  const out = git(['patch-id', '--verbatim'], { cwd, input: diff.stdout });
   return out ? out.split(' ')[0] : null;
 }
 
@@ -296,25 +309,21 @@ function pathsChangedBy(commit, cwd) {
 }
 
 function commitPatchId(commit, cwd) {
-  const diff = tryGit(['diff', `${commit}^`, commit], { cwd });
-  if (!diff.ok) return null;
-  return patchIdOf(diff.stdout, cwd);
+  return verbatimPatchId(`${commit}^`, commit, cwd);
 }
 
 // A squash merge leaves no commit of the branch on the base, but the squash
 // commit's diff against its parent is the branch's whole diff against the merge
 // base, so a faithful squash produces the same verbatim patch-id and conflict
-// resolution or a later commit produces a different one. Like every patch-id
-// test here this is a hypothesis; `branchLandedVerbatim` is the proof.
+// resolution or a later commit produces a different one. With no per-commit
+// counterpart for `branchLandedVerbatim` to find, this comparison is the proof
+// for a squash-merged branch.
 export function squashMatches(base, tip, mergeCommit, cwd) {
   if (!mergeCommit) return false;
   const mergeBase = tryGit(['merge-base', base, tip], { cwd });
   if (!mergeBase.ok) return false;
-  const branchDiff = tryGit(['diff', mergeBase.stdout, tip], { cwd });
-  const landedDiff = tryGit(['diff', `${mergeCommit}^`, mergeCommit], { cwd });
-  if (!branchDiff.ok || !landedDiff.ok) return false;
-  const branchId = patchIdOf(branchDiff.stdout, cwd);
-  return branchId !== null && branchId === patchIdOf(landedDiff.stdout, cwd);
+  const branchId = verbatimPatchId(mergeBase.stdout, tip, cwd);
+  return branchId !== null && branchId === commitPatchId(mergeCommit, cwd);
 }
 
 // The worktree currently holding a branch, read fresh from git, or null.

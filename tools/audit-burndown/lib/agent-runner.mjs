@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const BACKOFF_BASE_SECONDS = 30;
+
 const CLAUDE_TOOLS = {
   verify: {
     available: 'Read,Grep,Glob,Write,Bash',
@@ -323,8 +325,12 @@ export async function runAgentStep({
       logLine(`  ${tag} hit a cap (${subtype}) — not retrying`);
       return last;
     }
+    if (attempt >= maxAttempts) {
+      logLine(`  ${tag} attempt ${attempt}/${maxAttempts} failed (${subtype}) — giving up`);
+      return last;
+    }
 
-    const waitSeconds = attempt * attempt * 30;
+    const waitSeconds = attempt * attempt * BACKOFF_BASE_SECONDS;
     logLine(
       `  ${tag} attempt ${attempt}/${maxAttempts} failed (${subtype}) — backing off ${waitSeconds}s`
     );
