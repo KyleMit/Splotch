@@ -355,10 +355,14 @@ export function safariWindowProblem(orientation, windowWidth, screenWidth, scree
 // while the actual cause was an on-device XCTest prompt. So this classifies the
 // Appium SERVER LOG, which is the only place the cause appears.
 //
+// XCTest's innermost line when the automation grant has expired and the device
+// is waiting at its Enable UI Automation prompt.
+export const AUTOMATION_MODE_TIMEOUT_PATTERN = /Timed out while enabling automation mode/i;
+
 // Each entry is a line a real failure produced, not a guess at wording.
 const LAUNCH_LOG_CAUSES = [
   {
-    pattern: /Timed out while enabling automation mode/i,
+    pattern: AUTOMATION_MODE_TIMEOUT_PATTERN,
     detail:
       'the iOS device is asking to enable UI automation. Look at the device for an XCTest ' +
       'passcode / Enable UI Automation prompt. Enter the ' +
