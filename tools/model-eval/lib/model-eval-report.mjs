@@ -88,11 +88,6 @@ async function makeThumber(browser, assetsDir, max = 380) {
   };
 }
 
-function median(arr) {
-  if (!arr.length) return null;
-  const s = [...arr].sort((a, b) => a - b);
-  return s[Math.floor(s.length / 2)];
-}
 function mean(arr) {
   return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 }
@@ -108,6 +103,7 @@ function percentile(arr, p) {
   const high = Math.ceil(rank);
   return low === high ? s[low] : Math.round(s[low] + (rank - low) * (s[high] - s[low]));
 }
+const median = (arr) => percentile(arr, 0.5);
 
 export function statsFor(results, variantKey) {
   const rows = results.filter((r) => r.variant === variantKey);

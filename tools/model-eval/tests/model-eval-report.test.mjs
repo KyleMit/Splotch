@@ -57,13 +57,30 @@ function render(extra = {}) {
   });
 }
 
+describe('statsFor', () => {
+  function latencyStats(latencies) {
+    const rows = latencies.map((ms) => row('line__cat__square', gemini, { ms }));
+    return statsFor(rows, gemini.key);
+  }
+
+  it.each([
+    { latencies: [8_000, 20_000], median: 14_000 },
+    { latencies: [1_000, 2_000, 3_000, 10_000], median: 2_500 },
+    { latencies: [1_000, 2_000, 9_000], median: 2_000 },
+  ])('takes the median of $latencies as $median, never above the p90', ({ latencies, median }) => {
+    const { medianMs, p90Ms } = latencyStats(latencies);
+    expect(medianMs).toBeLessThanOrEqual(p90Ms);
+    expect(medianMs).toBe(median);
+  });
+});
+
 describe('renderReportHtml', () => {
   it('prints cost in cents and time in seconds, rounded to what was measured', () => {
     const html = render();
     expect(html).toContain('3.9¢<small>per image</small>');
     expect(html).toContain('2.0¢<small>per image</small>');
     expect(html).toContain('27 s<small>median</small>');
-    expect(html).toContain('8.1 s<small>median</small>');
+    expect(html).toContain('7.8 s<small>median</small>');
     expect(html).toContain('$39 per 1,000');
   });
 
