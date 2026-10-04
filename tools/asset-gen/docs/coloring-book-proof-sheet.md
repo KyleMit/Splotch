@@ -44,21 +44,31 @@ tile: **Outline → Color → Combined**, defaulting to **Combined**. Tapping a 
 its own, in the same order. Each tile embeds the layers to reproduce what a child actually sees, not
 just the raw generated fill:
 
-* **outline** — the canonical page SVG rendered as the canvas renders it: transparent black PEN on
-  light paper and transparent white CHALK on dark paper. The generator also rasterizes these SVGs
-  deterministically for scoring and self-contained embedding.
+* **outline** — the line art alone over the paper, drawn as the canvas draws it: the PEN's black ink
+  on light paper and the CHALK's white ink on dark paper. A night tile whose page has no chalk shows
+  the pen in white ink instead (tagged `no chalk (inverted pen)`). The sheet embeds the canonical
+  SVGs themselves as `image/svg+xml` data URIs; the generator rasterizes them only to score the
+  outline-keep badge.
 * **color** — the generated colored fill alone (`.light.webp` in the light half, night fill in the
   dark half).
 * **combined** — the real canvas composite: the fills-only fill under the themed line-art layer,
   over the paper. Shipped fills draw **as-is** — they are already fills-only (opaque, outline pixels
   inpainted with bled fill color; `lib/punch-fill.mjs`, `docs/inpainted-fill-punch.md`) and
   re-cutting them with a binary mask at render resolution is exactly what used to stitch a dotted
-  dark ring around every line in dark mode. Only `--source samples` runs the in-browser punch
-  (themed mask: pen light half, chalk night half), because fresh takes still carry their own
-  outlines. **This is the view to trust when judging a fill** — a bug like blown-out eyes only shows
-  once the layers are merged.
+  dark ring around every line in dark mode. Only a lined fill runs the in-browser punch — a
+  `--source samples` night take, or a git-mode raw-fill fallback — because it still carries its own
+  outline. The mask is the tile's own line art (pen light half, chalk night half): SVG alpha above
+  `LINE_ART_ALPHA_THRESHOLD` (`lib/line-art.mjs`, the shipped punch's threshold), or luma below
+  `OUTLINE_LUMA_THRESHOLD` for a raster-era master. **This is the view to trust when judging a
+  fill** — a bug like blown-out eyes only shows once the layers are merged.
 
-The compositing mirrors `DrawingCanvas.svelte` + `magicBrush.ts` (ADR-0043/0052).
+The line art composites the way the app presents it (ADR-0129): plain source-over, with no filter or
+blend, because each SVG bakes its ink colour. A `git:<ref>` era that predates a layer's SVG supplies
+that layer's opaque ink-on-white raster master (`.outline.webp`, `.chalk.webp`) instead, which keeps
+the raster model: multiply on light paper, `invert(1)` then screen on dark. The generator marks each
+cell's `lineArtKind` and `chalkKind` as `vector` or `raster` so the client picks the model per
+layer; an era between the pen and chalk vectorizations mixes the two. The raster night model needs
+canvas `filter`, which WebKit does not implement, so review a raster-era sheet in Chromium.
 
 ## The outline % badge
 

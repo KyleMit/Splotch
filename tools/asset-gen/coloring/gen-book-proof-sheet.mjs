@@ -11,7 +11,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname, relative } from 'node:path';
 import { outlineMatch } from '../lib/outline-match.mjs';
-import { bytesToDataUri, fileToDataUri } from '../lib/data-uri.mjs';
+import { bytesToDataUri, fileToDataUri, mimeTypeForPath } from '../lib/data-uri.mjs';
 import {
   ASSET_GEN_DIR,
   COLORING_DIR,
@@ -22,7 +22,7 @@ import {
 } from '../lib/asset-paths.mjs';
 import { fail } from '../lib/asset-cli.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
-import { rasterizeLineArt } from '../lib/line-art.mjs';
+import { LINE_ART_ALPHA_THRESHOLD, rasterizeLineArt } from '../lib/line-art.mjs';
 import { BOOKS } from '../../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
@@ -81,7 +81,7 @@ function nightPath(id, orient) {
     : join(COLORING_DIR, catId, `${id}-${orient}.night.webp`);
 }
 // Canonical SVG line art and the light colored fill always come from web/static.
-// Legacy raster paths are read only for historical git:<ref> proof cells.
+// Legacy raster masters survive only in git:<ref> eras that predate the SVGs.
 const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.overlay.svg`);
 const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.dark.overlay.svg`);
 const legacyLineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
@@ -106,16 +106,27 @@ function resolvesToCommit(ref) {
 // Read an asset's bytes at a git ref as a data URI (git mode). An asset missing at
 // that (already resolved) ref -> null, same as an absent file on disk.
 function gitDataUri(ref, absPath) {
+  const mime = mimeTypeForPath(absPath);
+  let buf;
   try {
-    const buf = execFileSync('git', ['show', `${ref}:${relative(REPO_ROOT, absPath)}`], {
+    buf = execFileSync('git', ['show', `${ref}:${relative(REPO_ROOT, absPath)}`], {
       cwd: REPO_ROOT,
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return buf.length ? bytesToDataUri(buf) : null;
   } catch {
     return null;
   }
+  return buf.length ? bytesToDataUri(buf, mime) : null;
+}
+
+// One line-art layer: its canonical SVG, or the opaque ink-on-white raster master
+// of a git era that predates that SVG. The kind picks the client's composite.
+function readLineArt(read, svgPath, rasterPath) {
+  const svg = read(svgPath);
+  if (svg) return { uri: svg, kind: 'vector' };
+  const raster = read(rasterPath);
+  return { uri: raster, kind: raster ? 'raster' : null };
 }
 
 // One cell's layers, sourced either from the working tree (era = null) or from a
@@ -146,6 +157,8 @@ async function makeCell(p, orient, era) {
       }
     }
   }
+  const lineArt = readLineArt(read, lineArtPath(p.id, orient), legacyLineArtPath(p.id, orient));
+  const chalk = readLineArt(read, chalkPath(p.id, orient), legacyChalkPath(p.id, orient));
   return {
     id: p.id,
     name: p.name,
@@ -154,8 +167,10 @@ async function makeCell(p, orient, era) {
     nightRaw,
     lightRaw,
     night,
-    lineArt: read(lineArtPath(p.id, orient)) ?? read(legacyLineArtPath(p.id, orient)),
-    chalk: read(chalkPath(p.id, orient)) ?? read(legacyChalkPath(p.id, orient)),
+    lineArt: lineArt.uri,
+    lineArtKind: lineArt.kind,
+    chalk: chalk.uri,
+    chalkKind: chalk.kind,
     light,
     // The keep badge scores the lined raw at HEAD; skip it for a git-era cell.
     keep: era ? null : await lightKeep(p.id, orient),
@@ -202,7 +217,13 @@ const css = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.css'), 'utf8
 const clientJs = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.client.js'), 'utf8');
 
 const sourceLabel = gitRef ? `git:${gitRef} → current` : source;
-const bootData = JSON.stringify({ cells, source, gitRef, outlineLuma: OUTLINE_LUMA_THRESHOLD });
+const bootData = JSON.stringify({
+  cells,
+  source,
+  gitRef,
+  outlineLuma: OUTLINE_LUMA_THRESHOLD,
+  lineArtAlpha: LINE_ART_ALPHA_THRESHOLD,
+});
 
 // The ref is user-supplied and lands in the HTML shell, so escape it — the cell
 // data goes in as a JSON global (already safe), but these header interpolations don't.
