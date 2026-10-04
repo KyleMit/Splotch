@@ -78,7 +78,7 @@ the emulator is genuinely working. It is specifically Chromium that will not sur
 signing, installing, `adb` inspection, manifest and permission checks, and native-shell behaviour
 that does not depend on WebView paint are all in reach. Seeing the drawing canvas is not; use a
 physical device or the
-[phone preview tunnel](../../docs/CLOUD/Claude.md#previewing-the-dev-server-on-a-phone), which
+[phone preview tunnel](../../docs/CLOUD/Claude-Code.md#previewing-the-dev-server-on-a-phone), which
 serves the real app to a real browser and costs none of this.
 
 ### Expect "isn't responding" dialogs
@@ -109,8 +109,8 @@ environments run the same committed setup script; a single env var separates the
 
 Set `SPLOTCH_CLOUD_PROFILE=android` in the android environment's dialog and add `dl.google.com` to
 its allowed domains. Leave the var unset everywhere else — every piece above is inert without it,
-which is what keeps the default box lean. `docs/CLOUD/Claude.md`,
-["Committing the environment config"](../../docs/CLOUD/Claude.md#committing-the-environment-config),
+which is what keeps the default box lean. `docs/CLOUD/Claude-Code.md`,
+["Committing the environment config"](../../docs/CLOUD/Claude-Code.md#committing-the-environment-config),
 covers why these files are the reviewable copy of a cloud object that has no as-code provisioning.
 
 Three choices here are worth stating, because each had a plausible alternative:
@@ -167,8 +167,8 @@ returns if the emulator died before registering with adb, and the `sys.boot_comp
 exits if it registered but never finished booting — each returns 124 under `timeout` rather than
 ever completing. The 540 s deadline sits under the environment's 600 s foreground Bash limit on
 purpose: past that limit Claude *detaches* a command rather than killing it, which would leave
-exactly the unbounded background task the deadline exists to prevent (`docs/CLOUD/Claude.md`,
-["Bounding long-running work"](../../docs/CLOUD/Claude.md#bounding-long-running-work)).
+exactly the unbounded background task the deadline exists to prevent (`docs/CLOUD/Claude-Code.md`,
+["Bounding long-running work"](../../docs/CLOUD/Claude-Code.md#bounding-long-running-work)).
 
 **Expiry is the normal case, not a failure.** At ~21 minutes of boot against a 540 s bound, a wait
 started early needs **two or three rounds**; that is the price of never leaving an unbounded command

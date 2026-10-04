@@ -108,7 +108,7 @@
   `npm run format:check` before you commit — CI's `dprint check` fails on unwrapped Markdown, and
   that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
   `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
-  `docs/CLOUD/Claude.md` for details.
+  `docs/CLOUD/Claude-Code.md` for details.
 * ESLint's `max-lines` counts CSS comment lines inside a Svelte `<style>` block, even with
   `skipComments: true`. After editing a large style block, run `npm run lint` and shorten or extract
   code when it crosses its configured cap.

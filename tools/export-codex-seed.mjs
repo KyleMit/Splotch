@@ -51,7 +51,7 @@ export function describeSeedLifetime(auth) {
     expiryMs === undefined
       ? 'its access token carries no readable expiry, so Codex refreshes on its own age fallback'
       : `its access token expires at ${new Date(expiryMs).toISOString()}`;
-  return `The seed lasts until the first cloud review after ${horizon}: that review refreshes and rotates the refresh token, retiring the seed for every later session. Run this again then (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`;
+  return `The seed lasts until the first cloud review after ${horizon}: that review refreshes and rotates the refresh token, retiring the seed for every later session. Run this again then (docs/CLOUD/Claude-Code.md, "Codex reviews on the ChatGPT plan").`;
 }
 
 function commandExists(command) {

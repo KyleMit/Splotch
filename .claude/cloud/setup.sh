@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Claude Code on the web — environment Setup script (committed; see docs/CLOUD/Claude.md, ADR-0021).
+# Claude Code on the web — environment Setup script
+# (committed; see docs/CLOUD/Claude-Code.md, ADR-0021).
 #
 # The env-config "Setup script" field can't be version-controlled, so keep it a one-liner
 # that execs this file, and edit the real logic here under review:
@@ -29,7 +30,7 @@ warn() {
 # Put pnpm on PATH at the exact version package.json's packageManager pins, and
 # download it now so it lands in the environment snapshot instead of costing every
 # session its first-run fetch. `corepack install` with no argument reads that field,
-# so the version lives in one place (docs/CLOUD/Claude.md, "package manager note").
+# so the version lives in one place (docs/CLOUD/Claude-Code.md, "package manager note").
 corepack enable pnpm && corepack install \
   || warn "pnpm setup skipped — the SessionStart hook's install will fail until corepack can provision pnpm"
 
@@ -50,7 +51,8 @@ else
 fi
 
 # Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
-# path so later sessions skip the download. Pinned to the version docs/CLOUD/Claude.md references.
+# path so later sessions skip the download. Pinned to the version
+# docs/CLOUD/Claude-Code.md references.
 CHISEL_VERSION=1.10.1
 if ! command -v chisel >/dev/null 2>&1; then
   curl -sSL "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_amd64.gz" \
@@ -63,7 +65,7 @@ fi
 # dependency, so the install reaches only registry.npmjs.org. The install is all this script does
 # for Codex: the login is seeded per session by tools/seed-codex-auth.mjs from the
 # CODEX_AUTH_JSON environment variable, because the snapshot must never hold a credential
-# (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").
+# (docs/CLOUD/Claude-Code.md, "Codex reviews on the ChatGPT plan").
 # `command -v` alone would accept the npm wrapper with its optional platform binary missing, or an
 # older CLI, and skip the repair on every rebuild; the pin is what counts, before and after. The
 # executable must exit 0 and report exactly the pin: a substring match would take 0.155.10 for

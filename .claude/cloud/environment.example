@@ -1,4 +1,5 @@
-# Claude Code on the web — environment configuration (reference; see docs/CLOUD/Claude.md, ADR-0021).
+# Claude Code on the web — environment configuration
+# (reference; see docs/CLOUD/Claude-Code.md, ADR-0021).
 #
 # There is NO official as-code / CLI provisioning for these environments — allowed domains,
 # env vars, and the setup script are stateful cloud objects edited only in the web dialog
@@ -23,7 +24,7 @@ ALLOWED_TOKENS_LIST=                             # seed access codes
 USAGE_GRANT_ID_SECRET=                           # HMAC key for opaque managed-code usage ids
 # Codex ChatGPT-plan login for run-rival-agent: the value `npm run rival:seed` copies to the
 # clipboard (base64 of an auth.json from a DEDICATED login under ~/.codex-cloud, never your working
-# ~/.codex one) — see docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan", for the
+# ~/.codex one) — see docs/CLOUD/Claude-Code.md, "Codex reviews on the ChatGPT plan", for the
 # refresh-rotation shelf life. Re-paste after the first cloud review past the token expiry the
 # script prints; a changed value replaces the file the previous seed wrote.
 CODEX_AUTH_JSON=
@@ -35,7 +36,7 @@ CODEX_MODEL=
 # allowedHosts). `npm run dev:tunnel` injects this itself, so it's optional if you only
 # ever preview via that script.
 TUNNEL_HOST=splotch-tunnel-kyle.fly.dev
-# Non-secret — how long-running work is bounded; docs/CLOUD/Claude.md, "Bounding long-running
+# Non-secret — how long-running work is bounded; docs/CLOUD/Claude-Code.md, "Bounding long-running
 # work", has the mechanisms. There is deliberately no keep-alive setting here: session idle is
 # measured on the conversation, not on container activity, so nothing set in this dialog can hold
 # a session open while work runs.

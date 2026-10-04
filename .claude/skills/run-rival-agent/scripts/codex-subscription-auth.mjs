@@ -7,7 +7,7 @@ export const AUTH_PATH = join(CODEX_HOME, 'auth.json');
 export const CONFIG_PATH = join(CODEX_HOME, 'config.toml');
 
 // A Claude Code on the web session has no login and no config of its own: tools/seed-codex-auth.mjs
-// writes both at SessionStart from these environment variables (docs/CLOUD/Claude.md, "Codex
+// writes both at SessionStart from these environment variables (docs/CLOUD/Claude-Code.md, "Codex
 // reviews on the ChatGPT plan").
 export const SEED_ENVIRONMENT_KEY = 'CODEX_AUTH_JSON';
 export const MODEL_ENVIRONMENT_KEY = 'CODEX_MODEL';

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Cloud (Claude Code on the web) only — local sessions manage their own deps.
-# See docs/CLOUD/Claude.md.
+# See docs/CLOUD/Claude-Code.md.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
@@ -40,7 +40,7 @@ if git diff --quiet -- pnpm-lock.yaml 2>/dev/null; then lock_was_clean=true; fi
 # around (old sharp fetching libvips from GitHub releases, which 403s through the
 # session's egress proxy) can no longer happen.
 if ! "${pnpm_cmd[@]}" install; then
-  echo "session-start.sh: pnpm install failed — this session has no dependencies (docs/CLOUD/Claude.md 'Getting dependencies ready')" >&2
+  echo "session-start.sh: pnpm install failed — this session has no dependencies (docs/CLOUD/Claude-Code.md 'Getting dependencies ready')" >&2
 fi
 
 if [ "$lock_was_clean" = true ] && ! git diff --quiet -- pnpm-lock.yaml; then

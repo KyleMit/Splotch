@@ -86,7 +86,7 @@ export function isCodexLoginFailure(error) {
 export function describeCodexLoginFailure(error, env = process.env) {
   const remedy =
     env.CLAUDE_CODE_REMOTE === 'true'
-      ? `This is a Claude Code on the web session, where the usual cause is a seed that another VM has since refreshed and rotated. Re-seed it: run \`npm run rival:seed\` on your machine and paste the value as ${SEED_ENVIRONMENT_KEY} in the cloud environment; the SessionStart hook replaces the stale file at the next session start (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").`
+      ? `This is a Claude Code on the web session, where the usual cause is a seed that another VM has since refreshed and rotated. Re-seed it: run \`npm run rival:seed\` on your machine and paste the value as ${SEED_ENVIRONMENT_KEY} in the cloud environment; the SessionStart hook replaces the stale file at the next session start (docs/CLOUD/Claude-Code.md, "Codex reviews on the ChatGPT plan").`
       : 'Run `codex login` to sign in again.';
   return `Codex can no longer use its stored ChatGPT login (its refresh token has expired, been reused, been revoked, or the account signed out elsewhere). ${remedy}\n${error.message}`;
 }

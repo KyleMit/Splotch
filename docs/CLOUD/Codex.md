@@ -250,10 +250,10 @@ publication checks; do not silently switch credentials.
 ## Relationship to Claude Code Cloud
 
 Codex Cloud and Claude Code Cloud are separate environments with separate setup mechanisms. For
-Claude's proxy, preview, branching, and tunnel workflow, see [Claude Code Cloud](Claude.md). Its
-setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments use
-Corepack to provision the `packageManager`-pinned pnpm version. Codex uses the writable cache paths
-and startup instructions described above; Claude's preview and tunnel setup stays in its own
+Claude's proxy, preview, branching, and tunnel workflow, see [Claude Code Cloud](Claude-Code.md).
+Its setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments
+use Corepack to provision the `packageManager`-pinned pnpm version. Codex uses the writable cache
+paths and startup instructions described above; Claude's preview and tunnel setup stays in its own
 environment.
 
 ## Related files
