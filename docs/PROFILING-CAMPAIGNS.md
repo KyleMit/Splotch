@@ -29,6 +29,11 @@ them, and three separately were each enough to fail all 32 physical-web drawing 
 So: a capture that ran clean is not evidence the setup was right. Check the fidelity verdict, check
 the input cadence, and compare against the previous run of the same cell before believing a change.
 
+Before timing a capability-dependent candidate, prove its branch is active on the physical target.
+For a Canvas 2D probe, record context creation separately from method availability, then the
+correctly bound result and any exception. Missing or unhealthy capability can make a candidate
+inactive rather than performance-rejected; desktop WebKit support does not establish phone support.
+
 ## Device identity
 
 **An iPad answers to two different identifiers and they are not interchangeable.**
@@ -329,6 +334,10 @@ Appium's environment and refuses a server started without `ANDROID_HOME`, which 
 from the server rather than the client; it warns when it cannot read the server.
 
 ## A build that is not the build you think
+
+Different commit labels can name identical measured product source. Compare that source and build
+configuration before refreshing evidence solely for a new label; equality does not replace served
+and loaded byte, runtime or preparation checks.
 
 **`pkill -f serve-profile-build` does not stop the preview server.** It kills the wrapper; the vite
 child keeps the port and keeps serving the SvelteKit manifest it loaded at startup. The next capture
@@ -1365,6 +1374,15 @@ Two habits avoid it, and the second also fixes the target:
 
 ## Keep the evidence before the scratch is gone
 
+Before scheduling a flagged revisit, reconcile the exact cell ID and original clock with later
+source/evidence reassessments and raw diagnostic outcomes. A completed reassessment may yield no
+supported experiment; an executed diagnostic may leave the red unresolved. Do not infer an
+executable recapture from the flag alone or reset the original timer.
+
+The [abandoned iPhone trial archive](scratchpad/perf/2026-10-02-iphone-abandoned-trials.md)
+preserves original source diffs in closed PRs and distinguishes timed rejections from an untimed
+predecessor.
+
 **Promote the campaign's representative captures into the tracked corpus** as a closing step:
 
 ```sh
@@ -1389,6 +1407,26 @@ and the promotion **refuses** a cell whose every candidate failed a number-inval
 
 This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
 a hurry — which is every campaign.
+
+## Transfer the live rig before archiving its chat
+
+A saved handoff does not keep its checkout or processes alive. During a capture handoff, the source
+chat's managed checkout and its preview, TLS and Appium processes disappeared after the chat was
+archived; borrowed WebDriverAgent and root tunnels survived. Treat chat retirement as a possible
+loss of the owning checkout and services, even when the handoff records live PIDs.
+
+Finish any capture in flight, then preserve ignored raw captures, externally stored traces,
+settings, source identity and service commands outside disposable worktrees. Verify the copies.
+Before retiring the source chat, give the successor a separately retained Git checkout and verified
+build, and transfer service ownership under the exclusive host slot. Preserve borrowed services. If
+a rebuild or service restart is needed, record the fresh build provenance and served digest, retain
+the approved origin, and run a fresh path control before product measurements. Preserving the
+evidence and preserving an immediately usable rig are separate checks.
+
+Preserve runnable packets as a hash-manifested dependency closure with their relative import layout,
+rather than copying a fixture's entire checkout. Snapshot exact diagnostic source bytes before
+restoring them, and bind later analysis to that saved source. Keep these packets outside the
+retiring worktree alongside the raw evidence.
 
 ## Do not tear the devices down when a campaign ends
 
