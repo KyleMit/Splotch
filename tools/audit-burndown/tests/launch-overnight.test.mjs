@@ -45,11 +45,12 @@ describe('a valid finding count', () => {
 describe('preflight', () => {
   // readConfig refuses RETRIES=0 after it parses MAX_ISSUES, so this run stops inside preflight
   // before any probe; an unsupported runner is refused first and would hide which MAX_ISSUES
-  // preflight read.
+  // preflight read. The env holds only these two knobs, so no knob inherited from the test runner
+  // can be refused first either.
   it('validates the positional count in place of an inherited MAX_ISSUES', () => {
     const result = spawnSync(process.execPath, [SCRIPT, '5'], {
       encoding: 'utf8',
-      env: { ...process.env, AGENT_RUNNER: 'claude', MAX_ISSUES: '', RETRIES: '0' },
+      env: { MAX_ISSUES: '', RETRIES: '0' },
     });
 
     expect(result.status).toBe(1);
