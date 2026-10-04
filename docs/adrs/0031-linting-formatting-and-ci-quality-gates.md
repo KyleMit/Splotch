@@ -282,9 +282,10 @@ choices:
   same change by a record under **Active dependency-audit status and exceptions** in
   `docs/DEPENDENCIES.md`. The record names the locked dependency paths, upstream proof that no
   patched resolution exists, repository-specific reachability evidence, approver and approval date,
-  a review-by date no more than 90 days later, and the removal trigger. The tool policy test rejects
-  every audit ignore today; a future exception must extend it to require exact agreement between the
-  configured GHSA set and unexpired evidence records. Lowering the threshold, ignoring a CVE family,
+  a review-by date no more than 90 days later, and the removal trigger. The tool policy test
+  (`tools/ci-mirror/tests/run-quality-checks.test.mjs`) requires exact agreement between the
+  configured GHSA set and the unexpired evidence records, and rejects an incomplete record or one
+  whose review-by date exceeds the 90-day window. Lowering the threshold, ignoring a CVE family,
   `--ignore-unfixable`, and `--ignore-registry-errors` are not exception mechanisms.
 * **`precheck` runs `svelte-kit sync`** so `npm run check` generates `.svelte-kit/tsconfig.json` and
   works standalone in CI (mirrors `predev`).
