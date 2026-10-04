@@ -15,7 +15,11 @@ import { check, exitWhenFlushed, fatal, json, summarize } from '../lib/smoke.mjs
 import { recordApiCaching } from './lib/api-caching.mjs';
 import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
-import { isLoopbackHostname, parseAdminSecretTarget } from './lib/deployed-admin-target.mjs';
+import {
+  isLoopbackHostname,
+  parseAdminSecretTarget,
+  requiresCurrentVersion,
+} from './lib/deployed-admin-target.mjs';
 
 const mainModule = isMain(import.meta.url);
 const { values: options } = parseArgs({
@@ -43,7 +47,6 @@ const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
 const EXPECTED_VERSION = buildMetadata({ isCapacitor: false, packageVersion }).appVersion;
-const REQUIRE_CURRENT_VERSION = process.env.DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION !== 'false';
 
 function missingHeaders(response, expected) {
   return Object.entries(expected)
@@ -221,14 +224,14 @@ async function checkStaticRoutes(hostname) {
   }
 }
 
-async function checkVersion() {
+async function checkVersion(requireCurrentVersion) {
   const response = await fetch(`${BASE}/version.json?deploy-smoke=${randomUUID()}`, {
     cache: 'no-store',
   });
   const body = await json(response);
-  const versionIsCurrent = !REQUIRE_CURRENT_VERSION || body?.version === EXPECTED_VERSION;
+  const versionIsCurrent = !requireCurrentVersion || body?.version === EXPECTED_VERSION;
   check(
-    `version.json → 200 ${REQUIRE_CURRENT_VERSION ? 'current checked-out' : 'valid deployed'} web version`,
+    `version.json → 200 ${requireCurrentVersion ? 'current checked-out' : 'valid deployed'} web version`,
     response.status === 200 &&
       typeof body?.version === 'string' &&
       /^\d+\.\d+\.\d+(?:\+[0-9a-f]+)?$/.test(body.version) &&
@@ -331,10 +334,10 @@ async function runStage(name, stage) {
   }
 }
 
-async function run(target) {
+async function run(target, requireCurrentVersion) {
   const checkApiCaching = recordApiCaching();
   await runStage('static routes', () => checkStaticRoutes(target.hostname));
-  await runStage('version', checkVersion);
+  await runStage('version', () => checkVersion(requireCurrentVersion));
   await runStage('CORS preflight', checkCors);
   await runStage('unauthenticated API', checkUnauthenticatedApi);
   await runStage('admin persistence', () => checkDeployedAdminContract(BASE, ADMIN_SECRET));
@@ -343,11 +346,14 @@ async function run(target) {
 
 export async function checkDeployedContract() {
   const target = parseAdminSecretTarget(BASE);
-  if (!target || !ADMIN_SECRET) {
+  const requireCurrentVersion =
+    target && requiresCurrentVersion(target, process.env.DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION);
+  if (!target || !ADMIN_SECRET || requireCurrentVersion === null) {
     console.error(
       [
         '[deploy-smoke] Missing or invalid config.',
         '  Set an HTTPS deploy URL (DEPLOY_SMOKE_URL or --url) and ADMIN_ACCESS_TOKEN.',
+        '  DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION, when set, must be true or false.',
         '  e.g. DEPLOY_SMOKE_URL=https://deploy-preview-123--splotchy.netlify.app \\',
         '       ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke',
       ].join('\n')
@@ -358,7 +364,7 @@ export async function checkDeployedContract() {
   console.log(`[deploy-smoke] target: ${BASE}`);
   console.log(`[deploy-smoke] expected version: ${EXPECTED_VERSION}\n`);
   try {
-    await run(target);
+    await run(target, requireCurrentVersion);
   } catch (err) {
     fatal(err);
   }

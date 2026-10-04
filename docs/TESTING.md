@@ -166,21 +166,23 @@ Three Node smoke entry points guard the server contract:
   skill). Its dev server listens on `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`; in a concurrent worktree,
   set `SMOKE_PORT` to an unused port.
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
-  SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
-  both native-origin CORS preflights, safe unauthenticated API failures, and the admin persistence
-  contract. Production and unrecognized targets use only the read-only `persistent:true` assertion;
-  Netlify previews add the token write/read/delete round-trip. It never makes a model call. Run it
-  from the ref that produced the target deploy:
+  SSR-rendered `/admin`, security and cache headers, `version.json` (exactly the checked-out
+  commit's on a preview or loopback target), both native-origin CORS preflights, safe
+  unauthenticated API failures, and the admin persistence contract. Production and unrecognized
+  targets use only the read-only `persistent:true` assertion; Netlify previews add the token
+  write/read/delete round-trip. It never makes a model call. Run it from the ref that produced the
+  target deploy:
   ```bash
   DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
   ```
   The Hosted Deploy Smoke workflow probes production daily and accepts an optional preview or
   production URL on manual dispatch. It does not use the unrelated GitHub Pages `deployment_status`
-  event. Runs with an explicit preview URL require the deploy's version to match the selected ref
-  exactly. Production runs require a valid, non-cacheable version but allow production to trail
-  docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds, including when
-  its canonical URL is entered explicitly.
+  event. The checker derives version strictness from the target, in the workflow and on the command
+  line alike: a preview must serve the selected ref's version exactly, while production, its
+  aliases, and any unrecognized remote host need only a valid, non-cacheable version, so production
+  can trail docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds.
+  `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=true` or `false` overrides that choice.
 * **`test:blobs:smoke`** is the narrower diagnostic that proves Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:
@@ -866,13 +868,13 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                           | What it runs                                                                                                                                                                    |
-| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
-| `.github/workflows/native-compile.yml` | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                                      |
-| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
+| Workflow                                    | Trigger                                           | What it runs                                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`                | every push to `main`, every PR, **`v*` tag push** | quality, browserless, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
+| `.github/workflows/android-deploy.yml`      | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                                    |
+| `.github/workflows/ios-deploy.yml`          | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                                   |
+| `.github/workflows/native-compile.yml`      | PRs and `main` pushes touching native inputs      | Android Release Java compile (no web build) and iOS Release simulator compile, in parallel with `test.yml`; no emulator or simulator boots                                      |
+| `.github/workflows/hosted-deploy-smoke.yml` | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip               |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
