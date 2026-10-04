@@ -11,6 +11,8 @@ import { ROOT } from '../../lib/proc.mjs';
 export const WORK = '.audit-work';
 export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'tools/audit-burndown/prompts';
+export const DEFERRED_FILE = 'docs/AUDIT-DEFERRED.md';
+export const DRAFT_DIR = 'docs/audit-deferred';
 
 // What separates a dropped finding from a real fix in .audit-work/completed.log.
 // run-burndown.mjs writes it and show-status.mjs splits on it, so the two cannot drift:
@@ -107,10 +109,7 @@ export function incompleteAuditCommitPlan({ headSha, auditBody, commitAt }) {
 
 export function protectedImplementationPaths(paths, auditPath = auditFile()) {
   return paths.filter(
-    (path) =>
-      path === auditPath ||
-      path === 'docs/AUDIT-DEFERRED.md' ||
-      path.startsWith('docs/audit-deferred/')
+    (path) => path === auditPath || path === DEFERRED_FILE || path.startsWith(`${DRAFT_DIR}/`)
   );
 }
 
@@ -224,7 +223,7 @@ export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`
 // driver-process-pattern.test.mjs holds the hooks and both burn-down-audits skills to this string.
 export const DRIVER_PROCESS_PATTERN = '^node tools/audit-burndown/run-burndown.mjs';
 
-// The canary default, shared with run-burndown.mjs so the recorded relaunch command
+// The canary default, shared with readConfig so the recorded relaunch command
 // can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
 // means a five-accepted-fix ceiling, and a command reading `-- 600` would relaunch
 // a run 120× longer under a heading promising "this exact run". Codex canaries add
@@ -232,8 +231,7 @@ export const DRIVER_PROCESS_PATTERN = '^node tools/audit-burndown/run-burndown.m
 export const DEFAULT_MAX_ISSUES = 5;
 
 export function reachedHandledLimit({ fixed = 0, dropped = 0, deferred = 0, maxHandled = 0 } = {}) {
-  const limit = Number(maxHandled);
-  return Number.isFinite(limit) && limit > 0 && fixed + dropped + deferred >= limit;
+  return maxHandled > 0 && fixed + dropped + deferred >= maxHandled;
 }
 
 // The command that relaunches this exact run, reconstructed from the driver's own
@@ -283,8 +281,6 @@ export function briefIsStale(issueWrittenAtMs, briefMtimeMs) {
   if (typeof briefMtimeMs !== 'number') return true;
   return briefMtimeMs <= issueWrittenAtMs;
 }
-
-export const DRAFT_DIR = 'docs/audit-deferred';
 
 export function draftPatchPath(title, dir = DRAFT_DIR) {
   const slug = String(title ?? '')

@@ -718,9 +718,9 @@ describe('reachedHandledLimit', () => {
     expect(reachedHandledLimit({ fixed: 4, dropped: 0, deferred: 0, maxHandled: 5 })).toBe(false);
   });
 
-  it('keeps zero, invalid, and omitted limits unbounded', () => {
+  // An invalid MAX_HANDLED never gets here: readConfig refuses it at the boundary.
+  it('keeps zero and omitted limits unbounded', () => {
     expect(reachedHandledLimit({ fixed: 20, maxHandled: 0 })).toBe(false);
-    expect(reachedHandledLimit({ fixed: 20, maxHandled: 'nope' })).toBe(false);
     expect(reachedHandledLimit({ fixed: 20 })).toBe(false);
   });
 });

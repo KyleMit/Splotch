@@ -276,13 +276,13 @@ const VACUOUS_TEST_RULES = {
 // override block.
 const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/api-smoke/run-local-contract.mjs': 548,
-  'tools/audit-burndown/run-burndown.mjs': 792,
-  'tools/audit-burndown/tests/burndown-core.test.mjs': 656,
+  'tools/audit-burndown/run-burndown.mjs': 755,
+  'tools/audit-burndown/tests/burndown-core.test.mjs': 655,
   'tools/audit-burndown/tests/run-burndown.test.mjs': 549,
   'tools/e2e-tuning/gen-tuning-report.mjs': 860,
   'tools/model-eval/gen-model-inputs.mjs': 510,
   'tools/model-eval/lib/composition-score.mjs': 627,
-  'tools/model-eval/lib/model-eval-report.mjs': 763,
+  'tools/model-eval/lib/model-eval-report.mjs': 759,
   'tools/page-inventory/capture-page-inventory.mjs': 1023,
   'tools/page-inventory/lib/page-inventory-report.mjs': 557,
   'tools/page-inventory/tests/page-inventory.test.mjs': 928,
