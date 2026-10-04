@@ -4,7 +4,16 @@
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
-import { ROOT, TCP_PORT, argNumber, fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  ROOT,
+  TCP_PORT,
+  argNumber,
+  argSwitch,
+  fail,
+  isMain,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { PREVIEW_PORT } from './lib/perf-serve.mjs';
@@ -81,10 +90,11 @@ export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
 // before the server existed; a human running `npm run perf:serve` keeps the
 // fall-forward and reads the port off the printed Network line.
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['port', 'strict-port']);
   runMain(() =>
     runPerfServe({
       port: argNumber('port', PREVIEW_PORT, TCP_PORT),
-      strictPort: process.argv.includes('--strict-port'),
+      strictPort: argSwitch('strict-port'),
     })
   );
 }
