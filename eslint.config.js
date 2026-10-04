@@ -280,7 +280,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/audit-burndown/tests/burndown-core.test.mjs': 656,
   'tools/audit-burndown/tests/run-burndown.test.mjs': 549,
   'tools/e2e-tuning/gen-tuning-report.mjs': 860,
-  'tools/model-eval/gen-model-inputs.mjs': 512,
+  'tools/model-eval/gen-model-inputs.mjs': 510,
   'tools/model-eval/lib/composition-score.mjs': 627,
   'tools/model-eval/lib/model-eval-report.mjs': 763,
   'tools/page-inventory/capture-page-inventory.mjs': 1023,
