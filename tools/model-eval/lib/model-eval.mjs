@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { themes } from '../../../web/src/lib/design/tokens.ts';
 import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
-import { ROOT } from '../../lib/proc.mjs';
+import { parseNumberFlag, ROOT } from '../../lib/proc.mjs';
 
 export { ROOT };
 
@@ -169,6 +169,41 @@ export function selectModelVariants(filter) {
   const unknown = keys.filter((key) => !VARIANTS.some((variant) => variant.key === key));
   if (unknown.length) throw new Error(`Unknown variant keys: ${unknown.join(', ')}`);
   return VARIANTS.filter((variant) => keys.includes(variant.key));
+}
+
+// A count read from the environment. Unset or empty keeps `fallback`; anything else must be plain
+// digits no smaller than `min`. Number() would hand a runner NaN for `2x` or `abc`, which skips a
+// cap and runs a loop zero times, and a thousand for `1e3`: a paid run that is wrong or empty and
+// still exits 0. `env` is a test seam; the entries read process.env.
+export function countFromEnv(name, { fallback, min }, env = process.env) {
+  const raw = env[name];
+  if (raw === undefined || raw === '') return fallback;
+  try {
+    return parseNumberFlag(name, raw, { integer: true, min });
+  } catch {
+    // parseNumberFlag words its rejection for a `--flag`, not an environment variable.
+    throw new Error(`${name} must be an integer >= ${min}, got "${raw}"`);
+  }
+}
+
+// These tools read process.env and never load web/.env, and Node refuses --env-file inside
+// NODE_OPTIONS, so `npm run` cannot pass the file either. The hint names the two routes
+// web/.env.example documents.
+const PROVIDER_KEY_ENV = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY' };
+const PROVIDER_KEY_HINT =
+  'export it, or invoke this entry point with node --env-file=web/.env from the repo root';
+
+// The `apiKeys` callVariant reads: one key for each provider the variants call, throwing on the
+// first one missing. `env` is a test seam; the entries read process.env.
+export function apiKeysFor(variants, env = process.env) {
+  const providers = new Set(variants.map((variant) => variant.provider));
+  return Object.fromEntries(
+    Array.from(providers, (provider) => {
+      const name = PROVIDER_KEY_ENV[provider];
+      if (!env[name]) throw new Error(`Missing ${name} — ${PROVIDER_KEY_HINT}`);
+      return [provider, env[name]];
+    })
+  );
 }
 
 export function evaluationMetadata(concurrency, previous) {

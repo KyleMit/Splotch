@@ -28,10 +28,10 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, PALETTE, PAPER, imageFormat } from './lib/model-eval.mjs';
+import { ROOT, PALETTE, PAPER, apiKeysFor, imageFormat } from './lib/model-eval.mjs';
 import { callVariant } from './lib/image-providers.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { requireEnv } from '../lib/proc.mjs';
+import { parseOrFail } from '../lib/proc.mjs';
 
 const OUT = join(ROOT, 'tools/model-eval/inputs');
 const ONLY = (process.env.ONLY || '')
@@ -59,7 +59,6 @@ const AUTHORS = {
     role: 'input author',
   },
 };
-const PROVIDER_KEY_ENV = { openai: 'OPENAI_API_KEY', gemini: 'GEMINI_API_KEY' };
 
 const hexesFor = (labels) =>
   labels.map((label) => PALETTE.find((color) => color.label === label).hex).join(' ');
@@ -456,9 +455,9 @@ const PROMPTS = [
   },
 ];
 
-function authorImage(author, prompt, apiKey, blank) {
+function authorImage(author, prompt, apiKeys, blank) {
   return callVariant(author, {
-    apiKeys: { [author.provider]: apiKey },
+    apiKeys,
     // Authoring is text-to-image, but both adapters take a drawing to transform.
     // A blank sheet of the app's own paper is the honest empty canvas, and it
     // also pins the output's aspect ratio to the one we asked for.
@@ -533,8 +532,7 @@ async function main() {
     );
     process.exit(1);
   }
-  requireEnv(PROVIDER_KEY_ENV[author.provider], 'set it in web/.env or export it');
-  const apiKey = process.env[PROVIDER_KEY_ENV[author.provider]];
+  const apiKeys = parseOrFail(() => apiKeysFor([author]));
 
   const selected = PROMPTS.filter(
     (prompt) => !ONLY.length || ONLY.some((part) => prompt.id.includes(part))
@@ -553,7 +551,7 @@ async function main() {
   for (const prompt of selected) {
     process.stdout.write(`  ${prompt.id} … `);
     const blank = await blankPaper(page, prompt.dim);
-    const result = await authorImage(author, prompt, apiKey, blank);
+    const result = await authorImage(author, prompt, apiKeys, blank);
     if (result.kind !== 'image') {
       console.log(`${result.kind}: ${(result.reason || '').slice(0, 120)}`);
       failures.push(prompt.id);
