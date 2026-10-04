@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "status": "REJECTED_PHYSICAL_TRIAL",
+  "purpose": "Closed, unmerged evidence PR; historical experiment only; not shipping code.",
+  "baseCommit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "originalLocalCommit": "f6da9fc2359a359fb6078ad482f650db03f7584c",
+  "originalLocalBranch": "codex/iphone-ink-color-performance",
+  "target": "iPhone Safari",
+  "mode": "portrait/light",
+  "minimalDiffSummary": "Add will-change: transform to the palette container to request separate backing during selection repaint.",
+  "touchedProductionPaths": ["web/src/lib/components/ColorPalette.svelte"],
+  "sourceFiles": [
+    {
+      "path": "web/src/lib/components/ColorPalette.svelte",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "db130aaeb37731b61f309593a26d813b2e0f9a88d9bbed411757ebabb81d210a",
+      "treatmentSha256": "2d0216096c26a6768e721d9fc9e3b7dd3ca9d31170af6a396f937dd5cbe20aae",
+      "baselineGitBlob": "b71bc4d3e5a76ebc08ce79f0a8f9dc897d878ae0",
+      "treatmentGitBlob": "66e2e546a23272966362518789c71caa526c45d1"
+    }
+  ],
+  "localSourcePatch": {
+    "sha256": "28986c2ccfcc798376dd5774bc3029264c9e2c1431dcec650a9e81995f692344",
+    "definition": "git diff --binary --full-index <baseCommit> <originalLocalCommit>; complete original source and regression-test diff, exact Git output bytes"
+  },
+  "historicalMeasuredResult": {
+    "changeInkColorPostMs": {
+      "baseline": {
+        "p95": 33,
+        "max": 38
+      },
+      "treatment": {
+        "p95": 33,
+        "max": 38
+      }
+    },
+    "readinessMs": {
+      "baseline": [226, 231],
+      "treatment": [218, 220]
+    }
+  },
+  "reasonRejected": "Primary pacing was unchanged and remained red. A faster readiness poll did not establish a supported product benefit.",
+  "unchangedGates": [
+    "Production scorer and acceptance thresholds unchanged.",
+    "Input path, cadence, readiness predicate and activity-window rules unchanged.",
+    "First valid failing result retained; no candidate retry for this archived trial."
+  ],
+  "historicalChecksReported": [
+    "Format, type and lint checks passed.",
+    "28 stable local WebKit frames across phone and tablet layouts and both themes had zero changed RGBA channels."
+  ],
+  "evidenceProvenance": {
+    "kind": "Local operator campaign summary only",
+    "record": "Private campaign experiment-history.md",
+    "lines": [283, 283],
+    "recordSha256": "d07e719500961ee20d39655d17c725984523370f57bd5a1da78abc92250018de",
+    "rawPrivateArtifactsPublished": false
+  },
+  "publicationVerification": {
+    "sourceCommitAndBranchVerified": true,
+    "baseAncestorVerified": true,
+    "productionFilesCopiedFromExactGitObjects": true,
+    "newTestsRun": false,
+    "newPerformanceRun": false,
+    "historicalPhysicalResultRevalidated": false,
+    "allOriginalChangedFilesCopiedFromExactGitObjects": true
+  },
+  "limitations": [
+    "Historical results are summarized from the local operator record; no new tests or performance runs were performed for this publication.",
+    "Raw logs, phone traces, screenshots, packets, device identifiers and local endpoints remain private and are omitted.",
+    "No causal bottleneck, browser/system floor, cross-runtime benefit or shipping acceptance is established."
+  ],
+  "touchedTestPaths": [],
+  "allChangedPaths": ["web/src/lib/components/ColorPalette.svelte"],
+  "regressionTestDiffReview": {
+    "status": "PASS_NO_RELAXATION",
+    "summary": "No changed regression test files in the original branch.",
+    "testsCopiedByteForByte": true,
+    "testExecutionForPublication": false
+  }
+}
