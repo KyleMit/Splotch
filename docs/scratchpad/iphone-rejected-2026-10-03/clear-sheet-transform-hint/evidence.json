@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "status": "REJECTED_PHYSICAL_TRIAL",
+  "purpose": "Closed, unmerged evidence PR; historical experiment only; not shipping code.",
+  "baseCommit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "originalLocalCommit": "4df389cfb2858db8c6d801d9f180d0b4afd5c483",
+  "originalLocalBranch": "codex/iphone-clear-drawing-performance",
+  "target": "iPhone Safari",
+  "mode": "portrait/light",
+  "minimalDiffSummary": "Add will-change: transform to the existing 560 ms departing clear-sheet canvas animation.",
+  "touchedProductionPaths": ["web/src/app.css"],
+  "sourceFiles": [
+    {
+      "path": "web/src/app.css",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "3faf177ed4d2194481435180ed4ebcf535439003cf73a913f095bae2468aa5e0",
+      "treatmentSha256": "e96a068ed4d70b2cc620a51e72f1d62fb238e2a32c3e2c93e8786f9a6efa79a4",
+      "baselineGitBlob": "73cc6e1f3addf564da9d04e93bd3bf32d25c6170",
+      "treatmentGitBlob": "3d1cf59a8e9e01cf015307a0b75d2f2e4597914c"
+    }
+  ],
+  "localSourcePatch": {
+    "sha256": "322a6938a61d880cb64cedbbe1d6cfedd32877174876ceed54a51cb8bb2713e3",
+    "definition": "git diff --binary --full-index <baseCommit> <originalLocalCommit>; complete original source and regression-test diff, exact Git output bytes"
+  },
+  "historicalMeasuredResult": {
+    "plainClearMs": {
+      "baseline": {
+        "p95": 18,
+        "max": 41
+      },
+      "treatment": {
+        "p95": 21,
+        "max": 37
+      }
+    },
+    "coloringClearMs": {
+      "baseline": {
+        "p95": 20,
+        "max": 38
+      },
+      "treatment": {
+        "p95": 21,
+        "max": 37
+      }
+    },
+    "plainReadinessMs": {
+      "baseline": [1052, 1060],
+      "treatment": [1049, 1051]
+    },
+    "coloringReadinessMs": {
+      "baseline": [1051, 1062],
+      "treatment": [1052, 1058]
+    },
+    "plainTreatmentMaxUnconfirmed": true,
+    "plainTreatmentHiddenOverruns": 1,
+    "coloringTreatmentMaxBreachRepetitions": 3,
+    "validActivationsPerArm": 4,
+    "repeats": 4
+  },
+  "reasonRejected": "Both clear variants remained red. Small readiness differences and lower isolated maxima did not establish a supported benefit.",
+  "unchangedGates": [
+    "Production scorer and acceptance thresholds unchanged.",
+    "Input path, cadence, readiness predicate and activity-window rules unchanged.",
+    "First valid failing result retained; no candidate retry for this archived trial."
+  ],
+  "historicalChecksReported": [
+    "Format, type, ESLint and CSS lint checks and 40 focused tests passed.",
+    "Both 72-frame WebKit arms were stable with zero changed RGBA channels; actual animation-end bitmap disposal was verified."
+  ],
+  "evidenceProvenance": {
+    "kind": "Local operator campaign summary only",
+    "record": "Private campaign experiment-history.md",
+    "lines": [296, 302],
+    "recordSha256": "d07e719500961ee20d39655d17c725984523370f57bd5a1da78abc92250018de",
+    "rawPrivateArtifactsPublished": false
+  },
+  "publicationVerification": {
+    "sourceCommitAndBranchVerified": true,
+    "baseAncestorVerified": true,
+    "productionFilesCopiedFromExactGitObjects": true,
+    "newTestsRun": false,
+    "newPerformanceRun": false,
+    "historicalPhysicalResultRevalidated": false,
+    "allOriginalChangedFilesCopiedFromExactGitObjects": true
+  },
+  "limitations": [
+    "Historical results are summarized from the local operator record; no new tests or performance runs were performed for this publication.",
+    "Raw logs, phone traces, screenshots, packets, device identifiers and local endpoints remain private and are omitted.",
+    "No causal bottleneck, browser/system floor, cross-runtime benefit or shipping acceptance is established."
+  ],
+  "touchedTestPaths": [],
+  "allChangedPaths": ["web/src/app.css"],
+  "regressionTestDiffReview": {
+    "status": "PASS_NO_RELAXATION",
+    "summary": "No changed regression test files in the original branch.",
+    "testsCopiedByteForByte": true,
+    "testExecutionForPublication": false
+  }
+}
