@@ -286,7 +286,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/page-inventory/lib/page-inventory-report.mjs': 557,
   'tools/page-inventory/tests/page-inventory.test.mjs': 928,
   'tools/perf/android/capture-bundled-frames.mjs': 761,
-  'tools/perf/gen-performance-matrix.mjs': 2878,
+  'tools/perf/gen-performance-matrix.mjs': 2874,
   'tools/perf/ios/capture-xcuitest-actions.mjs': 2624,
   'tools/perf/ios/capture-xcuitest-screen.mjs': 1268,
   'tools/perf/lib/campaign-plan.mjs': 742,

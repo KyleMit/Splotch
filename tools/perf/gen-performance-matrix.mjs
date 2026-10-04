@@ -15,13 +15,12 @@ import {
   summarizeActions,
   MAX_BREACH_CONFIRMING_SAMPLES,
 } from './lib/action-stats.mjs';
-import { summarizeRun } from './lib/real-screen-stats.mjs';
-import { IN_REGIME, UNESTABLISHED_REGIME, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { drawingVerdicts } from './lib/capture-verdicts.mjs';
+import { IN_REGIME, UNESTABLISHED_REGIME } from './lib/refresh-regime.mjs';
 import { describeHostQuiet, hostQuietTrustState } from './lib/host-quiet.mjs';
 import {
   DEFAULT_CAPTURE_RUNTIME,
   describeFidelityFailures,
-  inputFidelity,
   onlyUncalibratedChecksFailed,
 } from './lib/input-fidelity.mjs';
 import {
@@ -311,31 +310,6 @@ function refuseLostStrokes(profile, source) {
   }
 }
 
-// The verdict a capture recorded is the one its runner computed on the day, from
-// whatever expectations that checkout held. The matrix already re-scores every
-// drawing table with the current gates for exactly that reason, and leaving the
-// fidelity verdict frozen means a correction to the expectations reaches published
-// cells only through device time. So it is re-derived here too, from the input the
-// capture recorded and the runtime the target declares.
-//
-// Only when the capture carried a verdict at all. A runner that writes none — the
-// desktop transport — is not held to one, the same carve-out `artifactPassedFidelity`
-// makes; deriving one for it would mark every desktop cell unscoreable on a
-// trusted-touch check that Playwright cannot satisfy by construction.
-//
-// A PRESERVED cell keeps the verdict it was published with, because re-deriving one
-// needs the raw input samples and a preserved cell has only normalized results — the
-// same reason it keeps its published scores rather than being re-scored. So a target
-// captured on both sides of a recapture can show a fresh mode judged by the current
-// expectations beside a preserved mode judged by the ones in force when it was taken.
-// That is the standing cost of preserved evidence (ADR-0138), marked as such in the
-// matrix, and it resolves when the mode is recaptured — not a second verdict for the
-// same measurement.
-function rederiveFidelity(profile, phases, captureRuntime) {
-  if (!profile.fidelity) return null;
-  return inputFidelity(phases?.[0]?.input ?? {}, captureRuntime);
-}
-
 // The per-run trust ledger issue 1304 asked for: one composed list answering
 // "can I trust this number?", built from the fields the instrument-fix stacks
 // accreted one by one — because a run fine on five RECORDED dimensions looked
@@ -496,15 +470,16 @@ function normalizeDrawingRun(
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
   refuseLostStrokes(profile, source);
-  const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
-  const phases = summaries?.phases;
-  const scored = scoreDrawingRun(phases ?? [], gateShare);
-  const refreshRegime = refreshRegimeVerdict(
-    summaries?.intervalMs,
-    expectedRefreshRegime,
-    summaries?.regimeMixture
-  );
-  const fidelity = rederiveFidelity(profile, phases, captureRuntime);
+  const {
+    summaries,
+    fidelity,
+    regime: refreshRegime,
+  } = drawingVerdicts(profile, {
+    report: profile.report,
+    captureRuntime,
+    refreshRegime: expectedRefreshRegime,
+  });
+  const scored = scoreDrawingRun(summaries?.phases ?? [], gateShare);
   const failedFidelityChecks = Object.entries(fidelity?.checks ?? {})
     .filter(([, passed]) => passed !== true)
     .map(([check]) => check);
