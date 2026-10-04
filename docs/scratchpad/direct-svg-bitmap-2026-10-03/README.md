@@ -16,8 +16,7 @@ finished with seven passing tests and one failure, exit 1, without retries or a 
 existing `engine-export.spec.ts` test “a deferred page fill fallback captures the incoming page
 appearance before its overlay settles” compares a held-camera fallback export with the subsequently
 settled export of the same drawing. Live ink and output dimensions agreed; the PNGs differed by
-468,888 pixels. The settled SVG occupied approximately 70.3% of its expected extent. The observed
-SVG intrinsic extent was 1536×1024 while its responsive container was 1080×720.
+468,888 pixels. The settled overlay shrank relative to the fallback export.
 
 This result rejects this conversion route in the tested WebKit environment. It is not evidence that
 all Safari versions or all `createImageBitmap` inputs behave this way.
@@ -53,8 +52,18 @@ SPLOTCH_E2E_PORT=<unused-port> node tools/run-web-tool.mjs playwright test   -c 
 ```
 
 That scratch config performs a production build. A prebuilt flag does not skip its configured build
-command. Reserve the host for the run and preserve the first result. This command is a reproduction
-recipe, not a claim of a new execution on this archive branch.
+command. Reserve the host for the run and preserve the first result. This command is the
+reproduction recipe for the unchanged pixel oracle.
 
-The cited run results are historical, not new tests. Raw PNGs, traces, private campaign packets, and
-absolute host paths remain local. Only source code and this result summary are published.
+The two eight-test run results above are historical. A separate archive-branch negative control is
+recorded below. Raw PNGs, traces, private campaign packets, and absolute host paths remain local.
+Only source code and this result summary are published.
+
+## Archive-branch negative control
+
+On 2026-10-04T01:24:43.138890+00:00 through 2026-10-04T01:25:03.518341+00:00, the unchanged single
+deferred-fill WebKit oracle was rerun on 815d09fcdb6ec77e1a66f00965c0e01969435166 with one worker,
+zero retries, a fresh production build, and unused port 5300. The command exited 1. The pixel
+assertion failed again with 468,888 differing pixels while the live-ink equality assertion passed.
+This is an isolated fix-removal control: only the production conversion route differs from PR #2631;
+its browser oracle is byte-identical. Raw visual artifacts remain local.
