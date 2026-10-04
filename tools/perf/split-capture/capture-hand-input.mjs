@@ -26,6 +26,7 @@ import {
   parseOrFail,
   runMain,
   sleep,
+  tryCapture,
 } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
@@ -46,6 +47,7 @@ import {
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
+import { armAndroidRotationHandBack } from './lib/android-rotation-handback.mjs';
 import { speak } from './lib/spoken-cues.mjs';
 import {
   APP_BUNDLE_ID,
@@ -100,12 +102,9 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 // the human is already standing there to give.
 function buzz(serial, times) {
   if (!serial) return;
+  const vibrate = ['shell', 'cmd', 'vibrator_manager', 'synced', 'oneshot', String(BUZZ_MS)];
   for (let index = 0; index < times; index += 1) {
-    try {
-      adb(serial, ['shell', 'cmd', 'vibrator_manager', 'synced', 'oneshot', String(BUZZ_MS)]);
-    } catch {
-      return;
-    }
+    if (!tryCapture('adb', ['-s', serial, ...vibrate]).ok) return;
   }
 }
 
@@ -407,135 +406,141 @@ export async function captureHandInput({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
-  if (opener === 'adb') {
-    // Chrome loads the probe host at localhost, and the reverse stays up while the
-    // human draws; a native WebView loads its own `server.url`.
-    const adbPageUrl = nativeApp
-      ? pageUrl
-      : (await reverseToLocalhost(pageUrl, adbRunner(serial))).url;
-    await openWithAdb({ serial, pageUrl: adbPageUrl, orientation, nativeApp });
-  } else if (opener === 'devicectl') {
-    openWithDevicectl({ udid });
-    console.log(`  Launched the installed app; waiting for it to load ${host} …`);
-    // The reset in the control call above zeroed the counter, so any request
-    // now is this launch (or a leftover — either way, a reachable page).
-    const contacted = await pollFor(
-      async () => ((await probeState(host)).planRequests > 0 ? true : null),
-      FIRST_CONTACT_TIMEOUT_MS
+  // Only the adb open turns the phone, so only it has rotation to hand back.
+  const rotation = opener === 'adb' ? armAndroidRotationHandBack(serial) : null;
+  try {
+    if (opener === 'adb') {
+      // Chrome loads the probe host at localhost, and the reverse stays up while the
+      // human draws; a native WebView loads its own `server.url`.
+      const adbPageUrl = nativeApp
+        ? pageUrl
+        : (await reverseToLocalhost(pageUrl, adbRunner(serial))).url;
+      await openWithAdb({ serial, pageUrl: adbPageUrl, orientation, nativeApp });
+    } else if (opener === 'devicectl') {
+      openWithDevicectl({ udid });
+      console.log(`  Launched the installed app; waiting for it to load ${host} …`);
+      // The reset in the control call above zeroed the counter, so any request
+      // now is this launch (or a leftover — either way, a reachable page).
+      const contacted = await pollFor(
+        async () => ((await probeState(host)).planRequests > 0 ? true : null),
+        FIRST_CONTACT_TIMEOUT_MS
+      );
+      if (!contacted) fail(firstContactFailure(host));
+      console.log('  The app reached the probe host; waiting for the page to report ready …');
+      await sleep(PAGE_SETTLE_MS);
+    } else if (opener === 'safari') {
+      openSafariWithDevicectl({ udid, pageUrl });
+      console.log(`  Opened iPad Safari at ${pageUrl}`);
+      console.log(`  Hold the iPad in ${orientation}; the page sets its own brush and theme.`);
+    } else announceManualOpen({ pageUrl, orientation, theme });
+
+    const ready = await pollFor(async () => {
+      const state = await probeState(host);
+      if (opener === 'manual' && state.stalePage) fail(stalePageFailure(pageUrl));
+      return state.ready;
+    }, PROBE_READY_TIMEOUT_MS);
+    if (!ready) fail('the page never reported the probe ready');
+    if (ready.committed && ready.committed !== brush) {
+      fail(`the engine is on ${ready.committed}, not ${brush}`);
+    }
+    // Theme used to be recorded from the REQUEST, so a light-labelled artifact
+    // could be written while the page stayed dark. It is now set through the
+    // product's Settings controls and read back before anything is measured.
+    const themeProblem = readinessThemeProblem(ready, theme);
+    if (themeProblem) fail(themeProblem);
+    const workerProblem = staleServiceWorkerProblem(ready);
+    if (workerProblem) fail(workerProblem);
+    if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
+      fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
+    }
+
+    console.log(`\n  READY — ${runtime}, ${brush}, ${orientation}.`);
+    console.log(`  DRAW ON THE PAPER WITH ONE FINGER for ${seconds}s: long, continuous strokes,`);
+    console.log(
+      '  the way a toddler scribbles. Keep the finger down; lift only to start a new one.\n'
     );
-    if (!contacted) fail(firstContactFailure(host));
-    console.log('  The app reached the probe host; waiting for the page to report ready …');
-    await sleep(PAGE_SETTLE_MS);
-  } else if (opener === 'safari') {
-    openSafariWithDevicectl({ udid, pageUrl });
-    console.log(`  Opened iPad Safari at ${pageUrl}`);
-    console.log(`  Hold the iPad in ${orientation}; the page sets its own brush and theme.`);
-  } else announceManualOpen({ pageUrl, orientation, theme });
+    buzz(serial, 1);
+    if (spokenCues) speak('Draw now');
+    await countDown(seconds, { spoken: spokenCues });
+    buzz(serial, 2);
+    if (spokenCues) speak('Stop. Lift your finger.');
+    await sleep(DRAW_TAIL_MS);
+    await control(host, { finish: true });
 
-  const ready = await pollFor(async () => {
-    const state = await probeState(host);
-    if (opener === 'manual' && state.stalePage) fail(stalePageFailure(pageUrl));
-    return state.ready;
-  }, PROBE_READY_TIMEOUT_MS);
-  if (!ready) fail('the page never reported the probe ready');
-  if (ready.committed && ready.committed !== brush) {
-    fail(`the engine is on ${ready.committed}, not ${brush}`);
-  }
-  // Theme used to be recorded from the REQUEST, so a light-labelled artifact
-  // could be written while the page stayed dark. It is now set through the
-  // product's Settings controls and read back before anything is measured.
-  const themeProblem = readinessThemeProblem(ready, theme);
-  if (themeProblem) fail(themeProblem);
-  const workerProblem = staleServiceWorkerProblem(ready);
-  if (workerProblem) fail(workerProblem);
-  if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
-    fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
-  }
-
-  console.log(`\n  READY — ${runtime}, ${brush}, ${orientation}.`);
-  console.log(`  DRAW ON THE PAPER WITH ONE FINGER for ${seconds}s: long, continuous strokes,`);
-  console.log(
-    '  the way a toddler scribbles. Keep the finger down; lift only to start a new one.\n'
-  );
-  buzz(serial, 1);
-  if (spokenCues) speak('Draw now');
-  await countDown(seconds, { spoken: spokenCues });
-  buzz(serial, 2);
-  if (spokenCues) speak('Stop. Lift your finger.');
-  await sleep(DRAW_TAIL_MS);
-  await control(host, { finish: true });
-
-  const uploaded = await pollFor(
-    async () => ((await probeState(host)).hasReport ? true : null),
-    REPORT_TIMEOUT_MS
-  );
-  if (!uploaded) fail('no report was uploaded');
-
-  const payload = await fetchAcceptedProbeReport(host);
-  if (payload.error) fail(payload.error);
-  if ((payload.report?.events ?? []).length === 0) {
-    fail('the capture recorded no pointer events — the finger never reached the canvas');
-  }
-  // Defence in depth, mirrored from the driven runner: the report names the URL
-  // that produced it, and that URL carries the nonce this run announced.
-  const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
-    'probe'
-  );
-  if (requirePageIdentity && capturedAt !== nonce) {
-    fail(
-      `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
-        'open the exact printed URL, query string included'
+    const uploaded = await pollFor(
+      async () => ((await probeState(host)).hasReport ? true : null),
+      REPORT_TIMEOUT_MS
     );
+    if (!uploaded) fail('no report was uploaded');
+
+    const payload = await fetchAcceptedProbeReport(host);
+    if (payload.error) fail(payload.error);
+    if ((payload.report?.events ?? []).length === 0) {
+      fail('the capture recorded no pointer events — the finger never reached the canvas');
+    }
+    // Defence in depth, mirrored from the driven runner: the report names the URL
+    // that produced it, and that URL carries the nonce this run announced.
+    const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
+      'probe'
+    );
+    if (requirePageIdentity && capturedAt !== nonce) {
+      fail(
+        `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
+          'open the exact printed URL, query string included'
+      );
+    }
+    // The runtime is observed, never trusted: a hand capture labelled for the
+    // WKWebView was once recorded in Safari because Safari was foregrounded, and
+    // every downstream reader would have believed it (PR 1314's review).
+    const uaProblem = runtimeUaProblem(runtime, payload.report?.meta?.ua);
+    if (uaProblem) fail(uaProblem);
+
+    const summaries = summarizeRun(payload.report);
+    const input = summaries.phases?.[0]?.input ?? {};
+    const reading = calibrationReading(input);
+    const fidelity = inputFidelity(input, runtime);
+
+    console.log(
+      `\n${runLabel} — observed frame beat: ` +
+        `${describeRefreshRegime(refreshRegimeVerdict(summaries.intervalMs))}`
+    );
+    console.table(pacingRows(summaries.phases));
+    console.table(inputRows(summaries.phases));
+    console.log('\nWhat a real finger reports in this runtime:');
+    console.table([reading]);
+    console.log(
+      `\nAgainst today's table: ${fidelity.passed ? 'PASS' : 'not passing'} — ` +
+        `${describeFidelityFailures(fidelity) || 'every check'} (${fidelity.runtime})`
+    );
+
+    const artifact = handCaptureArtifact({
+      hostQuiet: hostQuietRecord(hostLoadStart, sampleHostLoad()),
+      runLabel,
+      runtime,
+      platform,
+      nativeApp,
+      requirePageIdentity,
+      brush,
+      orientation,
+      theme,
+      ready,
+      device: serial ?? udid ?? null,
+      seconds,
+      reading,
+      page,
+      servedBuild,
+      fidelity,
+      summaries,
+      payload,
+    });
+
+    if (output) {
+      console.log(`\nWrote ${writeArtifactFile(output, artifact)}`);
+    }
+    return artifact;
+  } finally {
+    rotation?.release();
   }
-  // The runtime is observed, never trusted: a hand capture labelled for the
-  // WKWebView was once recorded in Safari because Safari was foregrounded, and
-  // every downstream reader would have believed it (PR 1314's review).
-  const uaProblem = runtimeUaProblem(runtime, payload.report?.meta?.ua);
-  if (uaProblem) fail(uaProblem);
-
-  const summaries = summarizeRun(payload.report);
-  const input = summaries.phases?.[0]?.input ?? {};
-  const reading = calibrationReading(input);
-  const fidelity = inputFidelity(input, runtime);
-
-  console.log(
-    `\n${runLabel} — observed frame beat: ` +
-      `${describeRefreshRegime(refreshRegimeVerdict(summaries.intervalMs))}`
-  );
-  console.table(pacingRows(summaries.phases));
-  console.table(inputRows(summaries.phases));
-  console.log('\nWhat a real finger reports in this runtime:');
-  console.table([reading]);
-  console.log(
-    `\nAgainst today's table: ${fidelity.passed ? 'PASS' : 'not passing'} — ` +
-      `${describeFidelityFailures(fidelity) || 'every check'} (${fidelity.runtime})`
-  );
-
-  const artifact = handCaptureArtifact({
-    hostQuiet: hostQuietRecord(hostLoadStart, sampleHostLoad()),
-    runLabel,
-    runtime,
-    platform,
-    nativeApp,
-    requirePageIdentity,
-    brush,
-    orientation,
-    theme,
-    ready,
-    device: serial ?? udid ?? null,
-    seconds,
-    reading,
-    page,
-    servedBuild,
-    fidelity,
-    summaries,
-    payload,
-  });
-
-  if (output) {
-    console.log(`\nWrote ${writeArtifactFile(output, artifact)}`);
-  }
-  return artifact;
 }
 
 if (isMain(import.meta.url)) {

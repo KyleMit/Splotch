@@ -38,12 +38,8 @@ import {
   runMain,
   sleep,
 } from '../../lib/proc.mjs';
-import {
-  androidPageLaunchSteps,
-  androidRotationRestoreCommands,
-  androidRotationVerdict,
-  readAndroidRotationSettings,
-} from './lib/android-input.mjs';
+import { androidPageLaunchSteps, androidRotationVerdict } from './lib/android-input.mjs';
+import { armAndroidRotationHandBack } from './lib/android-rotation-handback.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { adbRunner, reverseToLocalhost } from '../lib/android-localhost-route.mjs';
 import { pollFor } from './lib/poll.mjs';
@@ -86,10 +82,11 @@ export async function verifyAndroidRotation({ serial, port = DEFAULT_PORT } = {}
 
   const { server, state } = createFloorControlHost({ log: () => {} });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
-  // Read before the first write, restore in the finally: this is the only check
-  // besides --wake-android that changes device state, and a preflight that leaves a
-  // phone rotated is a preflight that corrupts the next session's portrait cells.
-  const previous = readAndroidRotationSettings((args) => adb(serial, args));
+  // Read before the first write, restore in the finally and on exit: this is the
+  // only check besides --wake-android that changes device state, and a preflight
+  // that leaves a phone rotated is a preflight that corrupts the next session's
+  // portrait cells. A failed launch step exits through capture(), past the finally.
+  const rotation = armAndroidRotationHandBack(serial);
   const route = await reverseToLocalhost(`http://127.0.0.1:${port}/`, adbRunner(serial));
 
   try {
@@ -97,9 +94,9 @@ export async function verifyAndroidRotation({ serial, port = DEFAULT_PORT } = {}
     for (const orientation of ORIENTATIONS) {
       observations.push(await observeOrientation(serial, state, route.url, orientation));
     }
-    return { ...androidRotationVerdict(observations), observations, previous };
+    return { ...androidRotationVerdict(observations), observations, previous: rotation.previous };
   } finally {
-    for (const args of androidRotationRestoreCommands(previous)) adb(serial, args);
+    rotation.release();
     route.release();
     await closeFloorControlHost(server);
   }

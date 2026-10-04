@@ -95,7 +95,6 @@ const AUDITED_SWALLOWS = {
     'benign-catch@25459d000b15',
     'benign-catch@6e6589e824da',
   ],
-  'split-capture/capture-hand-input.mjs': ['bare-catch@31986c96fa97'],
   'split-capture/lib/chrome-tabs.mjs': ['bare-catch@ecd020e49256', 'bare-catch@f34a0355df5f'],
   'split-capture/lib/probe-host.mjs': ['benign-catch@32f2b1e97fd2'],
   'split-capture/measure-probe-overhead.mjs': ['benign-catch@89634d1274b4'],

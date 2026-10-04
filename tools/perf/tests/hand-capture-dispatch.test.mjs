@@ -6,23 +6,52 @@
 // and asserts the flag reaches the launch steps, the identity contract, and
 // the artifact.
 import { createServer } from 'node:http';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const captureCalls = [];
+const tryCaptureCalls = [];
+// The phone's system settings: `settings get` answers `null` for one never
+// written, as a device does, and `put` and `delete` change what it answers.
+const phoneSettings = new Map();
+// Substrings of the adb calls a test makes fail.
+const failingCalls = [];
+// fail() exits the process. Each one is recorded before it throws, so a catch
+// that swallows the throw cannot hide that the run would have exited.
+const exits = [];
+
+function phoneAnswer(call) {
+  const setting = call.match(/ shell settings (get|put|delete) system (\w+)(?: (\S+))?$/);
+  if (!setting) return '';
+  const [, verb, key, value] = setting;
+  if (verb === 'get') return `${phoneSettings.get(key) ?? 'null'}\n`;
+  if (verb === 'put') phoneSettings.set(key, value);
+  else phoneSettings.delete(key);
+  return '';
+}
 
 vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   const real = await importOriginal();
+  const fail = (message) => {
+    exits.push(message);
+    throw new Error(message);
+  };
+  const failing = (call) => failingCalls.some((part) => call.includes(part));
   return {
     ...real,
     sleep: async () => {},
     capture: (cmd, args) => {
-      captureCalls.push([cmd, ...args].join(' '));
-      return '';
+      const call = [cmd, ...args].join(' ');
+      captureCalls.push(call);
+      if (failing(call)) fail(`${cmd} failed (exit 1)`);
+      return phoneAnswer(call);
     },
-    // fail() exits the process; a test needs the message, not the exit.
-    fail: (message) => {
-      throw new Error(message);
+    tryCapture: (cmd, args) => {
+      const call = [cmd, ...args].join(' ');
+      tryCaptureCalls.push(call);
+      if (failing(call)) return { ok: false, stdout: '', stderr: 'device offline' };
+      return { ok: true, stdout: phoneAnswer(call), stderr: '' };
     },
+    fail,
   };
 });
 
@@ -84,7 +113,8 @@ function probeReport({ url, ua }) {
 // A real HTTP probe host, minimal: answers the control PUT, reports a ready
 // state, and exposes the accepted report the moment the run announces its
 // label — with the page identity this test case wants the report to carry.
-function startProbeHost({ ua, reportProbeParam }) {
+// Without `acceptReport`, the report endpoint answers 404 for the whole run.
+function startProbeHost({ ua, reportProbeParam, acceptReport = true }) {
   const controls = [];
   let reportPayload = null;
   const server = createServer((request, response) => {
@@ -95,7 +125,7 @@ function startProbeHost({ ua, reportProbeParam }) {
       if (request.method === 'PUT' && request.url === '/__probe/control') {
         const control = JSON.parse(body);
         controls.push(control);
-        if (control.label) {
+        if (control.label && acceptReport) {
           const base = `http://device-page.test/`;
           const url =
             reportProbeParam === 'nonce'
@@ -139,6 +169,13 @@ function startProbeHost({ ua, reportProbeParam }) {
 const servers = [];
 const floorServers = [];
 const argvBaseline = [...process.argv];
+// Auto-rotate on and user_rotation never written, so `settings get` answers 1
+// and null: one setting to put back, one to delete.
+const PHONE_AS_FOUND = { accelerometer_rotation: '1' };
+
+beforeEach(() => {
+  for (const [key, value] of Object.entries(PHONE_AS_FOUND)) phoneSettings.set(key, value);
+});
 
 afterEach(async () => {
   for (const { server } of servers.splice(0)) {
@@ -147,11 +184,15 @@ afterEach(async () => {
   for (const server of floorServers.splice(0)) await closeFloorControlHost(server);
   process.argv = [...argvBaseline];
   captureCalls.length = 0;
+  tryCaptureCalls.length = 0;
+  failingCalls.length = 0;
+  exits.length = 0;
+  phoneSettings.clear();
   buildGuard.mockClear();
 });
 
-async function runCapture({ nativeApp, ua, reportProbeParam }) {
-  const probe = await startProbeHost({ ua, reportProbeParam });
+async function runCapture({ nativeApp, ua, reportProbeParam, acceptReport }) {
+  const probe = await startProbeHost({ ua, reportProbeParam, acceptReport });
   servers.push(probe);
   if (nativeApp) process.argv = [...argvBaseline, '--native-app'];
   const artifact = await captureHandInput({
@@ -329,5 +370,75 @@ describe('a hand capture against the floor control', () => {
     });
 
     expect(buildGuard).toHaveBeenCalledWith(expect.any(String), { allowForeignBuild: false });
+  });
+});
+
+// Every guided Android hand capture opens over adb (run-operator-session), and
+// every adb open turns auto-rotate off and pins user_rotation. A phone left that
+// way hands the next reader that assumes portrait the wrong geometry, which is
+// what issue 2272 fixed for the driven capture. The fail() exit path, which no
+// in-process test can take, is android-rotation-handback.test.mjs's child run.
+describe('captureHandInput hands the phone back as it found it', () => {
+  const NATIVE_RUN = {
+    nativeApp: true,
+    ua: 'Mozilla/5.0 (Linux; Android 14; wv) AppleWebKit/537.36 Version/4.0 Chrome/126 Mobile',
+    reportProbeParam: 'none',
+  };
+  const settingsCalls = (calls) => calls.filter((call) => call.includes(' shell settings '));
+
+  it('reads both settings before the open writes either', async () => {
+    await runCapture(NATIVE_RUN);
+
+    const firstWrite = captureCalls.findIndex((call) => call.includes(' settings put '));
+    expect(captureCalls.slice(0, firstWrite)).toEqual([
+      'adb -s FAKESERIAL shell settings get system accelerometer_rotation',
+      'adb -s FAKESERIAL shell settings get system user_rotation',
+      'adb -s FAKESERIAL shell am force-stop art.splotch.app',
+    ]);
+  });
+
+  it('puts both back after a clean capture, keeping no exit listener', async () => {
+    const exitListeners = process.listenerCount('exit');
+
+    await runCapture(NATIVE_RUN);
+
+    expect(settingsCalls(tryCaptureCalls)).toEqual([
+      'adb -s FAKESERIAL shell settings put system accelerometer_rotation 1',
+      'adb -s FAKESERIAL shell settings delete system user_rotation',
+    ]);
+    expect(Object.fromEntries(phoneSettings)).toEqual(PHONE_AS_FOUND);
+    expect(process.listenerCount('exit')).toBe(exitListeners);
+  });
+
+  it('puts both back when the capture throws after the drawing', async () => {
+    await expect(runCapture({ ...NATIVE_RUN, acceptReport: false })).rejects.toThrow(
+      'did not answer successfully (404)'
+    );
+
+    expect(exits).toEqual([]);
+    expect(settingsCalls(captureCalls)).toContain(
+      'adb -s FAKESERIAL shell settings put system accelerometer_rotation 0'
+    );
+    expect(Object.fromEntries(phoneSettings)).toEqual(PHONE_AS_FOUND);
+  });
+
+  it('reads and writes no rotation for an opener that turns no phone', async () => {
+    const { host } = await startFloorHost();
+
+    await Promise.all([captureHandInput(floorHandRequest(host)), drawOnFloorPage(host)]);
+
+    expect(settingsCalls([...captureCalls, ...tryCaptureCalls])).toEqual([]);
+  });
+
+  // The cue is best effort: a phone that will not buzz must not cost the
+  // capture a person is standing there to give.
+  it('carries on past a phone that will not buzz, trying once per cue', async () => {
+    failingCalls.push('vibrator_manager');
+
+    const { artifact } = await runCapture(NATIVE_RUN);
+
+    expect(exits).toEqual([]);
+    expect(artifact.handCapture).toBe(true);
+    expect(tryCaptureCalls.filter((call) => call.includes('vibrator_manager'))).toHaveLength(2);
   });
 });
