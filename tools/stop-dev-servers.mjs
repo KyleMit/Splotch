@@ -1,6 +1,6 @@
-import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { isMain, parseOrFail, runMain, sleep } from './lib/proc.mjs';
+import { ROOT, isMain, parseOrFail, runMain, sleep } from './lib/proc.mjs';
+import { portListenerOwners, portListenerPids } from './lib/vite-server.mjs';
 
 // The vite dev port and the netlify dev port — the drift guard
 // (tools/tests/dev-ports.test.mjs) holds these to web/vite.config.ts and
@@ -10,24 +10,20 @@ const PORT_TERM_GRACE_MS = 1_000;
 const PORT_KILL_GRACE_MS = 1_000;
 const PORT_RECHECK_INTERVAL_MS = 50;
 
-function listenerPids(port) {
-  const result = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
-  if (result.error) throw result.error;
-  if (result.signal) {
-    throw new Error(`lsof was terminated by ${result.signal} while checking port ${port}.`);
+// The listeners to signal, judged on the same listing that gets signalled. A
+// listener outside this checkout (another worktree's server, an unrelated
+// program, or one whose cwd cannot be read) refuses the run instead.
+function ownedListenerPids(port) {
+  const listeners = portListenerOwners(port, ROOT);
+  const foreign = listeners.filter((listener) => !listener.owned);
+  if (foreign.length) {
+    const holders = foreign.map(({ pid, cwd }) => `pid ${pid} (cwd ${cwd ?? 'unreadable'})`);
+    throw new Error(
+      `Port ${port} is held by ${holders.join(', ')}, outside this checkout. ` +
+        "dev:stop stops only this checkout's dev servers."
+    );
   }
-  const pids = (result.stdout || '')
-    .split('\n')
-    .map((pid) => pid.trim())
-    .filter(Boolean)
-    .map(Number);
-  // lsof exits 1 both when no process matches and when it fails outright;
-  // stderr output is what distinguishes an operational failure from the
-  // normal empty result.
-  if (result.status !== 0 && !pids.length && result.stderr?.trim()) {
-    throw new Error(`lsof failed while checking port ${port}: ${result.stderr.trim()}`);
-  }
-  return pids;
+  return listeners.map((listener) => listener.pid);
 }
 
 function signalEach(pids, signal) {
@@ -43,7 +39,7 @@ function signalEach(pids, signal) {
 async function waitForPortToClear(port, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const pids = listenerPids(port);
+    const pids = portListenerPids(port);
     if (!pids.length || Date.now() >= deadline) return pids;
     await sleep(PORT_RECHECK_INTERVAL_MS);
   }
@@ -51,12 +47,12 @@ async function waitForPortToClear(port, timeoutMs) {
 
 // The `ports` parameter is a test seam — production always runs the DEV_PORTS default.
 export async function killDevPorts(ports = DEV_PORTS) {
-  for (const port of ports) signalEach(listenerPids(port), 'SIGTERM');
+  // Every port is judged before any is signalled, so a refusal leaves all of them untouched.
+  for (const pids of ports.map(ownedListenerPids)) signalEach(pids, 'SIGTERM');
   for (const port of ports) {
-    let pids = await waitForPortToClear(port, PORT_TERM_GRACE_MS);
-    if (!pids.length) continue;
-    signalEach(pids, 'SIGKILL');
-    pids = await waitForPortToClear(port, PORT_KILL_GRACE_MS);
+    if (!(await waitForPortToClear(port, PORT_TERM_GRACE_MS)).length) continue;
+    signalEach(ownedListenerPids(port), 'SIGKILL');
+    const pids = await waitForPortToClear(port, PORT_KILL_GRACE_MS);
     if (pids.length) {
       throw new Error(`Port ${port} is still in use after SIGKILL (pids ${pids.join(', ')}).`);
     }

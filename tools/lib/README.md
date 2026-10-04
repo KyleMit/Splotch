@@ -9,11 +9,11 @@ be imported by root tools and capability packages, but it never imports from a c
 | `coloring-book-assets.mjs`  | Shared web/native coloring catalog partitions                           |
 | `filesystem.mjs`            | Recursive directory traversal for repository artifacts                  |
 | `html.mjs`                  | HTML escaping and report-rendering primitives                           |
-| `net.mjs`                   | Local port allocation and network helpers                               |
+| `net.mjs`                   | URL readiness polling, LAN addresses, and free-port probing             |
 | `playwright.mjs`            | Browser launch and executable-resolution helpers                        |
 | `proc.mjs`                  | Repository root, subprocesses, main-entry detection, and failure output |
 | `smoke.mjs`                 | Pass/fail reporting for smoke-test workflows                            |
-| `vite-server.mjs`           | Owned Vite server lifecycle for isolated checks                         |
+| `vite-server.mjs`           | Owned Vite server lifecycle, port-listener ownership, and `freePort`    |
 
 These modules have no public command of their own. Add a helper here only when unrelated
 capabilities share it and no narrower domain owns the concern. Preserve the existing exported
