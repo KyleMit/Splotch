@@ -278,7 +278,6 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/api-smoke/run-local-contract.mjs': 548,
   'tools/audit-burndown/run-burndown.mjs': 755,
   'tools/audit-burndown/tests/burndown-core.test.mjs': 655,
-  'tools/audit-burndown/tests/run-burndown.test.mjs': 549,
   'tools/e2e-tuning/gen-tuning-report.mjs': 860,
   'tools/model-eval/gen-model-inputs.mjs': 510,
   'tools/model-eval/lib/composition-score.mjs': 627,
