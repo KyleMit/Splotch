@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "modelIdentifier": "UNKNOWN",
+  "base": {
+    "commit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+    "checkout": "detached",
+    "initiallyClean": true
+  },
+  "scope": {
+    "owner": [
+      "web/src/lib/drawing/crayonPassBuffer.ts",
+      "web/src/lib/drawing/crayonPassBoundaries.ts",
+      "web/src/lib/drawing/tiledRenderer.ts"
+    ],
+    "operation": "drawing-hot-path-redundant-work-review",
+    "treatment": "NONE",
+    "fingerprint": "sha256:9ad155a4aacc004ae2d4bba2c56504d3bf9c6a882a8d8f2620f12477e55b25cb"
+  },
+  "verdict": {
+    "result": "NONE",
+    "falsifierTriggered": "No demonstrably redundant active operation was found whose removal preserves pixels, alpha, pass seeds, history, and every deposition mode.",
+    "sourceChanged": false,
+    "reasoning": [
+      "Restamp's per-op clear, under restore, and glaze stamp recompute the current pass from the enlarged buffer only inside the new op rectangle; removing any step changes overlap pixels or alpha.",
+      "Restamp flush does no closing stamp, but clearing pass state and invalidating plus scheduling the under-shadow refresh are required before the next pass.",
+      "Plane flush is the operation that commits the preview buffer to the normal tile, and its mirror copy is already the byte-identical replacement for duplicate pattern painting.",
+      "Glaze-direct flush has no per-target pixel work, but the shared flush command remains required in retained history to preserve pass boundaries and seed replay. The renderer already rejects every clean tile before backing, undo, visibility, render, or work-counter activity; bypassing the remaining mode check would require a new cross-module mode contract for an unmeasured WeakMap-check saving.",
+      "Tiled culling, undo capture, visibility changes, clear scheduling, history folding, and shadow scheduling each own distinct state transitions; none was proven to duplicate a result already produced by another active operation."
+    ]
+  },
+  "evidence": {
+    "adrsRead": [85, 146, 147, 148, 153],
+    "campaignSummariesRead": [
+      "docs/scratchpad/perf/crayon-elimination-campaign-2026-08-26.md",
+      "docs/scratchpad/perf/crayon-native-campaign-2026-08-26.md"
+    ],
+    "focusedTests": [
+      {
+        "command": "node tools/run-web-tool.mjs vitest run src/lib/drawing/crayonPassBuffer.test.ts src/lib/drawing/crayonPassBoundaries.test.ts src/lib/drawing/tiledRenderer.test.ts src/lib/drawing/tiledRendererContract.test.ts",
+        "exit": 0,
+        "result": "25 tests passed in 4 files"
+      },
+      {
+        "command": "SPLOTCH_E2E_PORT=5300 npm run test:e2e -- web/tests/engine-crayon.spec.ts web/tests/flows-tile-history.spec.ts --workers=1",
+        "exit": 130,
+        "result": "Stopped at the first meaningful environment failure: Playwright Chromium executable chromium_headless_shell-1243 was absent. The runner had already retried failed launches before interruption; no browser behavior executed."
+      }
+    ],
+    "setupCommands": [
+      {
+        "command": "npm run info",
+        "exit": 127,
+        "result": "Initial dependency-free attempt failed because scripts-info was not installed."
+      },
+      {
+        "command": "pnpm install --frozen-lockfile",
+        "exit": 0,
+        "result": "Installed the lockfile-pinned dependency tree."
+      },
+      {
+        "command": "npm run info",
+        "exit": 0,
+        "result": "Printed the repository script catalog."
+      }
+    ],
+    "builds": {
+      "web": "NOT RUN",
+      "nativeStatic": "NOT RUN",
+      "reason": "The instruction to stop at the first meaningful failure prevented further execution after the browser-backed behavior test could not launch."
+    }
+  },
+  "limitations": [
+    "No source treatment was prepared because the falsifier selected NONE.",
+    "The available unit tests validate orchestration contracts with canvas test contexts; they do not substitute for the blocked real-browser pixel, undo, and remount tests.",
+    "No physical device was used. Cloud results cannot establish iPhone performance or shipping acceptance.",
+    "No synchronous-span inference was made about deferred rendering, and no GPU, copy-on-write, or allocation cause was assigned."
+  ],
+  "futureFirstPairPhysicalControl": {
+    "status": "NOT APPLICABLE WITHOUT A CANDIDATE",
+    "recipe": [
+      "If a later byte-equality-proven deletion exists, build baseline and treatment from this exact base with no scorer, readiness, input, window, configuration, or acceptance changes.",
+      "On the same physical iPhone/Safari setup, interleave one strict six-object Crayon baseline capture and one treatment capture using the production scorer and identical trusted input.",
+      "Require zero collector drops and invalid rows, then compare correctness first: committed pixels, alpha, undo/remount output, pass seeds, and history must match before considering timing.",
+      "A red physical result or no supported benefit rejects the candidate; the cloud run alone cannot accept it."
+    ]
+  }
+}

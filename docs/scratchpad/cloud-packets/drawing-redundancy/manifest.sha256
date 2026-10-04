@@ -1,0 +1,9 @@
+fd48ef2b296b14b7e49f2e9ec44b8868d439db9c38d12b1bf55092494dc61582  docs/scratchpad/cloud-packets/drawing-redundancy/report.json
+7b3c54d2cdad01ea60f25aa0d8894334b938e355669d17b0d922ccbb7be64e55  web/src/lib/drawing/crayonPassBuffer.ts
+6eaff19f97f97f21a93b6e1634fdd62bf72a7ba844ee8bc6e6c533236a1305b9  web/src/lib/drawing/crayonPassBoundaries.ts
+9cf96f0115617936f269c128badd4e86eee1473dc9241acc093be0ece31b2432  web/src/lib/drawing/tiledRenderer.ts
+85f153a6acc9bb792e6cf355e920ad88df2caa70041ebc29cdd42959683be904  docs/adrs/0085-tiled-live-canvas-for-ipad-webkit.md
+1ad2dce64cb49648934cf2f2105a101e9562096dde4ed976a42852a7003712ba  docs/adrs/0146-crayon-op-granularity-per-runtime.md
+11b2a34a35a9f3e4c16db43afa028098900a597afa27cd820ba8ff580ecf62e8  docs/adrs/0147-crayon-restamp-renderer-no-preview-planes.md
+ab13cc2127006094c8cb6cf623820fab766bb56fdba5dd187be27de0515e3596  docs/adrs/0148-crayon-per-op-glaze-on-native.md
+0409c9cd1cc8e70661d37b68c9fa1356bfb630006712e9975316ed5652de05af  docs/adrs/0153-reject-webgl-crayon-renderer.md
