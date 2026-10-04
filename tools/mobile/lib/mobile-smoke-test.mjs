@@ -1,6 +1,7 @@
 // The Maestro half of the native smoke tests, shared by the Android emulator
 // and iOS simulator runners: both build + install the app their own way, then
-// run this one flow. Only the simulator runner needs to name a device.
+// run this one flow. Each names the device it installed the app on, so the
+// flow never runs on another attached device.
 
 import { sh } from '../../lib/proc.mjs';
 import { maestroPath } from './maestro.mjs';
