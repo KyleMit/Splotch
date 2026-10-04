@@ -97,10 +97,41 @@ function unreadablePermissions(workflow) {
 const BASH_DEFAULTS_BLOCK = ['defaults:', '  run:', '    shell: bash'];
 const NO_BASH_DEFAULTS =
   'run: steps and no top-level defaults block: GitHub runs them as bash -e {0}, without pipefail';
-// Each matches its key however it is spelled: at any indent, as a list item's first key, after a
-// flow mapping's `{` or `,`, quoted, or with a space before the colon.
-const SHELL_SETTING_KEY = /(?:^\s*(?:-\s+)?|[{,]\s*)(["']?)(?:defaults|shell)\1\s*:/;
-const RUN_KEY = /(?:^\s*(?:-\s+)?|[{,]\s*)(["']?)run\1\s*:/;
+const SEQUENCE_MARKERS = /^((?:-(?:\s+|$))*)(.*)$/;
+const PLAIN_KEY = /^([\w-]+):(?:\s+(.*))?$/;
+const BLOCK_SCALAR_HEADER = /^[|>][-+1-9]*(?:\s+#.*)?$/;
+const QUOTED_SCALAR = /^(?:'(?:[^']|'')*'|"(?:[^"\\]|\\.)*")(?:\s+#.*)?$/;
+// A flow mapping opened behind any anchor or tag, or a flow sequence holding one.
+const FLOW_MAPPING = /^(?:[&!]\S*\s+)*(?:\{(?!\})|\[.*\{)/;
+// An explicit, anchored, tagged, or merge key, or text before a `: ` that is not a plain key:
+// quoted, escaped, or with a space before the colon.
+const UNREADABLE_KEY = /^[?&!<]|:(?:\s|$)/;
+
+// The lines YAML reads as structure: not blank, not a comment, and not inside a block scalar
+// (a `run: |` script, an action's `script: |` input), each with the plain key it opens. A key
+// spelled any other way, or a flow mapping that could hold one, marks its line unreadable, so a
+// key this reader cannot name fails the rule instead of passing it.
+function structuralLines(text) {
+  const structural = [];
+  let scalarKeyColumn = -1;
+  text.split('\n').forEach((line, index) => {
+    const indent = line.search(/\S/);
+    if (scalarKeyColumn >= 0 && (indent < 0 || indent > scalarKeyColumn)) return;
+    scalarKeyColumn = -1;
+    if (isBlankOrComment(line)) return;
+    const [, markers, body] = line.slice(indent).match(SEQUENCE_MARKERS);
+    const [, key, value = ''] = body.match(PLAIN_KEY) ?? [];
+    if (key !== undefined && BLOCK_SCALAR_HEADER.test(value)) {
+      scalarKeyColumn = indent + markers.length;
+    }
+    const unreadable =
+      key === undefined
+        ? !QUOTED_SCALAR.test(body) && (UNREADABLE_KEY.test(body) || FLOW_MAPPING.test(body))
+        : FLOW_MAPPING.test(value);
+    structural.push({ index, line, key, unreadable });
+  });
+  return structural;
+}
 
 // The exact block starts at `index` and ends where the next line YAML reads returns to column 0,
 // so no key sits under it.
@@ -113,18 +144,19 @@ function isBashDefaultsBlock(lines, index) {
 }
 
 // Every way a run: step could get a shell other than BASH_STEP_ARGS: a run step in a workflow
-// without the one top-level block, or a `defaults` or `shell` key anywhere outside it.
+// without the one top-level block, a `defaults` or `shell` key outside it, or a key this reader
+// cannot name.
 function shellProblems(workflow) {
   const lines = workflow.split('\n');
   const block = lines.findIndex((_, index) => isBashDefaultsBlock(lines, index));
   const accepted = block < 0 ? [] : [block, block + BASH_DEFAULTS_BLOCK.length - 1];
-  const stray = lines.flatMap((line, index) =>
-    !isBlankOrComment(line) && SHELL_SETTING_KEY.test(line) && !accepted.includes(index)
+  const stray = structuralLines(workflow).flatMap(({ index, line, key, unreadable }) =>
+    (unreadable || key === 'defaults' || key === 'shell') && !accepted.includes(index)
       ? [`line ${index + 1}: ${line.trim()}`]
       : []
   );
   const runsScripts = jobBlocks(workflow).some((job) =>
-    stepBlocks(job.text).some((step) => step.text.split('\n').some((line) => RUN_KEY.test(line)))
+    stepBlocks(job.text).some((step) => structuralLines(step.text).some(({ key }) => key === 'run'))
   );
   return runsScripts && block < 0 ? [...stray, NO_BASH_DEFAULTS] : stray;
 }
@@ -285,6 +317,25 @@ describe('workflow gates', () => {
         spelling: 'no block where no step runs a script',
         yaml: ['jobs:', '  build:', '    steps:', '      - uses: actions/checkout@sha'],
       },
+      {
+        spelling: 'a shell mapping inside a script',
+        yaml: [
+          ...BASH_DEFAULTS_BLOCK,
+          ...buildJob.slice(0, 4),
+          '      - run: |',
+          "          node -e 'console.log({ shell: process.env.SHELL })'",
+        ],
+      },
+      {
+        spelling: "a run mapping inside an action's script input, with no block",
+        yaml: [
+          ...buildJob.slice(0, 4),
+          '      - uses: actions/github-script@sha',
+          '        with:',
+          '          script: |',
+          '            console.log({run: "diagnostic"})',
+        ],
+      },
     ])('accepts $spelling', ({ yaml }) => {
       expect(shellProblems(yaml.join('\n'))).toEqual([]);
     });
@@ -338,6 +389,42 @@ describe('workflow gates', () => {
         spelling: 'a key added under the block',
         yaml: [...BASH_DEFAULTS_BLOCK, '', '    working-directory: web', ...buildJob],
         problems: ['line 1: defaults:', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a step shell after its script',
+        yaml: [
+          ...BASH_DEFAULTS_BLOCK,
+          ...buildJob.slice(0, 4),
+          '      - run: |',
+          '          npm run build',
+          '        shell: sh',
+        ],
+        problems: ['line 10: shell: sh'],
+      },
+      {
+        spelling: 'an escaped shell key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        "shel\\u006c": sh'],
+        problems: ['line 10: "shel\\u006c": sh'],
+      },
+      {
+        spelling: 'an escaped run key',
+        yaml: [...buildJob.slice(0, 4), '      - "r\\u0075n": npm run build'],
+        problems: ['line 5: - "r\\u0075n": npm run build'],
+      },
+      {
+        spelling: 'a tagged key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        !!str shell: sh'],
+        problems: ['line 10: !!str shell: sh'],
+      },
+      {
+        spelling: 'an explicit key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        ? shell', '        : sh'],
+        problems: ['line 10: ? shell', 'line 11: : sh'],
+      },
+      {
+        spelling: 'a merge key',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        <<: *shell'],
+        problems: ['line 10: <<: *shell'],
       },
     ])('refuses $spelling', ({ yaml, problems }) => {
       expect(shellProblems(yaml.join('\n'))).toEqual(problems);
