@@ -100,7 +100,7 @@ const NO_BASH_DEFAULTS =
 const SEQUENCE_MARKERS = /^((?:-(?:\s+|$))*)(.*)$/;
 const PLAIN_KEY = /^([\w-]+):(?:\s+(.*))?$/;
 const BLOCK_SCALAR_HEADER = /^[|>][-+1-9]*(?:\s+#.*)?$/;
-const QUOTED_SCALAR = /^(?:'(?:[^']|'')*'|"(?:[^"\\]|\\.)*")(?:\s+#.*)?$/;
+const QUOTED_STRING = /'(?:[^']|'')*'|"(?:[^"\\]|\\.)*"/g;
 // A flow mapping opened behind any anchor or tag, or a flow sequence holding one.
 const FLOW_MAPPING = /^(?:[&!]\S*\s+)*(?:\{(?!\})|\[.*\{)/;
 // An explicit, anchored, tagged, or merge key, or text before a `: ` that is not a plain key:
@@ -124,10 +124,10 @@ function structuralLines(text) {
     if (key !== undefined && BLOCK_SCALAR_HEADER.test(value)) {
       scalarKeyColumn = indent + markers.length;
     }
+    // Quoted text is a scalar's content, so a brace or `: ` inside it opens nothing.
+    const outsideQuotes = (key === undefined ? body : value).replace(QUOTED_STRING, '""');
     const unreadable =
-      key === undefined
-        ? !QUOTED_SCALAR.test(body) && (UNREADABLE_KEY.test(body) || FLOW_MAPPING.test(body))
-        : FLOW_MAPPING.test(value);
+      FLOW_MAPPING.test(outsideQuotes) || (key === undefined && UNREADABLE_KEY.test(outsideQuotes));
     structural.push({ index, line, key, unreadable });
   });
   return structural;
@@ -303,6 +303,11 @@ describe('workflow gates', () => {
       '      - name: Build',
       '        run: npm run build',
     ];
+    const runnerListJob = (runner) => [
+      ...buildJob.slice(0, 2),
+      `    runs-on: [self-hosted, ${runner}]`,
+      ...buildJob.slice(3),
+    ];
 
     it.each(workflows)('$name runs any run: step under the declared bash shell', ({ text }) => {
       expect(shellProblems(text)).toEqual([]);
@@ -325,6 +330,10 @@ describe('workflow gates', () => {
           '      - run: |',
           "          node -e 'console.log({ shell: process.env.SHELL })'",
         ],
+      },
+      {
+        spelling: 'a runner list holding a quoted expression',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...runnerListJob('"${{ matrix.runner }}"')],
       },
       {
         spelling: "a run mapping inside an action's script input, with no block",
@@ -425,6 +434,11 @@ describe('workflow gates', () => {
         spelling: 'a merge key',
         yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        <<: *shell'],
         problems: ['line 10: <<: *shell'],
+      },
+      {
+        spelling: 'a flow mapping inside a runner list',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...runnerListJob('{ shell: sh }')],
+        problems: ['line 6: runs-on: [self-hosted, { shell: sh }]'],
       },
     ])('refuses $spelling', ({ yaml, problems }) => {
       expect(shellProblems(yaml.join('\n'))).toEqual(problems);
