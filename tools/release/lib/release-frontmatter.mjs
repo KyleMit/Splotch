@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { basename, dirname } from 'node:path';
 
 // Split a "---\nkey: value\n---\nbody" document. Returns null if the document
 // has no frontmatter block. `frontmatter` is the raw text between the fences;
@@ -27,6 +27,24 @@ export function writeFileDeep(path, contents) {
 // and gen-release-notes only reads plain x.y.z release files, so a `1.4.0-beta.1`
 // cut would tag and ship the previous release's notes.
 export const SEMVER = /^\d+\.\d+\.\d+$/;
+
+// The frontmatter version is what the generator sorts by and renders (anchors,
+// headings, the footer's current version), while cut-release picks the file by its
+// name. A file copied forward with the previous release's version left inside would
+// tie with that release and could ship its notes as the newest.
+export function assertVersionMatchesFilename(filename, version) {
+  if (!SEMVER.test(version ?? '')) {
+    throw new Error(
+      `${filename}: frontmatter version must look like 1.2.0, got "${version ?? ''}"`
+    );
+  }
+  const fileVersion = basename(filename, '.md');
+  if (version !== fileVersion) {
+    throw new Error(
+      `${filename}: frontmatter version ${version} does not match the filename version ${fileVersion}`
+    );
+  }
+}
 
 export function compareSemverDesc(a, b) {
   const pa = a.split('.').map(Number);

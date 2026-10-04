@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readReleases } from '../gen-release-notes.mjs';
 import {
   ANDROID_GRADLE_PATH,
   bumpAndroidGradle,
   bumpIosPbxproj,
   IOS_PBXPROJ_PATH,
+  readAndroidVersion,
 } from '../lib/native-version.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -15,12 +17,71 @@ const { version: packageVersion } = JSON.parse(
 const realGradle = readFileSync(join(repoRoot, ANDROID_GRADLE_PATH), 'utf8');
 const realPbxproj = readFileSync(join(repoRoot, IOS_PBXPROJ_PATH), 'utf8');
 
-it('keeps the committed package and native versions in agreement', () => {
-  const [, androidVersionCode] = realGradle.match(/^\s*versionCode\s+(\d+)\s*$/m);
-  expect(bumpAndroidGradle(realGradle, packageVersion, Number(androidVersionCode))).toBe(
-    realGradle
-  );
-  expect(bumpIosPbxproj(realPbxproj, packageVersion, Number(androidVersionCode))).toBe(realPbxproj);
+// The newest release document is what the generator ships as the current notes,
+// so a committed draft of the next release would ship its What's New and store
+// notes while every version file still names the previous release.
+it('keeps the committed package, native, and newest release versions in agreement', () => {
+  const android = readAndroidVersion(realGradle);
+  const [newest] = readReleases();
+
+  expect(android.versionName).toBe(packageVersion);
+  expect(bumpAndroidGradle(realGradle, packageVersion, android.versionCode)).toBe(realGradle);
+  expect(bumpIosPbxproj(realPbxproj, packageVersion, android.versionCode)).toBe(realPbxproj);
+  expect(newest.meta.version).toBe(packageVersion);
+  expect(Number(newest.meta.androidVersionCode)).toBe(android.versionCode);
+});
+
+// The shapes the bump refuses to rewrite. The reader refuses the same ones, so a cut
+// never chooses its versionCode from a line the bump would then reject or miss.
+const REFUSED_GRADLE_SHAPES = [
+  [
+    'a versionNameSuffix line',
+    realGradle.replace(/^(\s*)versionName "[^"]*"$/m, '$&\n$1versionNameSuffix ".debug"'),
+    /Unrecognized line mentioning "versionName" .*versionNameSuffix/,
+  ],
+  [
+    'an inline comment on the version assignment line',
+    realGradle.replace(/^(\s*versionName "[^"]*")$/m, '$1 // keep in sync with package.json'),
+    /Unrecognized line mentioning "versionName"/,
+  ],
+  [
+    'a comment mentioning versionCode',
+    `${realGradle}\n// bump versionCode before release\n`,
+    /Unrecognized line mentioning "versionCode"/,
+  ],
+  [
+    'a duplicate versionName assignment',
+    `${realGradle}\nversionName "2.0.0"\n`,
+    /Expected exactly one "versionName" in android\/app\/build\.gradle, found 2/,
+  ],
+  [
+    'a missing versionName',
+    realGradle.replace(/^\s*versionName "[^"]*"\n/m, ''),
+    /Could not find "versionName"/,
+  ],
+  [
+    'a missing versionCode',
+    realGradle.replace(/^\s*versionCode \d+\n/m, ''),
+    /Could not find "versionCode"/,
+  ],
+];
+
+describe.each([
+  ['bumpAndroidGradle', (source) => bumpAndroidGradle(source, '1.0.0', 1)],
+  ['readAndroidVersion', readAndroidVersion],
+])('%s fails closed', (_name, apply) => {
+  it.each(REFUSED_GRADLE_SHAPES)('on %s', (_shape, source, error) => {
+    expect(() => apply(source)).toThrow(error);
+  });
+});
+
+describe('readAndroidVersion', () => {
+  it('reads back exactly what bumpAndroidGradle writes', () => {
+    expect(readAndroidVersion(bumpAndroidGradle(realGradle, '9.8.7', 42))).toEqual({
+      versionName: '9.8.7',
+      versionCode: 42,
+    });
+  });
 });
 
 describe('bumpAndroidGradle', () => {
@@ -37,40 +98,8 @@ describe('bumpAndroidGradle', () => {
   });
 
   it('is byte-identical when re-applying the committed version', () => {
-    const [, currentCode] = realGradle.match(/versionCode (\d+)/);
-    const [, currentName] = realGradle.match(/versionName "([^"]*)"/);
-    expect(bumpAndroidGradle(realGradle, currentName, Number(currentCode))).toBe(realGradle);
-  });
-
-  it('throws on a versionNameSuffix line instead of rewriting it', () => {
-    const source = realGradle.replace(
-      /^(\s*)versionName "[^"]*"$/m,
-      '$&\n$1versionNameSuffix ".debug"'
-    );
-    expect(() => bumpAndroidGradle(source, '1.0.0', 1)).toThrow(/versionNameSuffix/);
-  });
-
-  it('throws on an inline comment on the version assignment line', () => {
-    const source = realGradle.replace(
-      /^(\s*versionName "[^"]*")$/m,
-      '$1 // keep in sync with package.json'
-    );
-    expect(() => bumpAndroidGradle(source, '1.0.0', 1)).toThrow(/Unrecognized line.*versionName/);
-  });
-
-  it('throws on a comment mentioning versionCode', () => {
-    const source = `${realGradle}\n// bump versionCode before release\n`;
-    expect(() => bumpAndroidGradle(source, '1.0.0', 1)).toThrow(/Unrecognized line/);
-  });
-
-  it('throws on a duplicate versionName assignment', () => {
-    const source = `${realGradle}\nversionName "2.0.0"\n`;
-    expect(() => bumpAndroidGradle(source, '1.0.0', 1)).toThrow(/exactly one "versionName"/);
-  });
-
-  it('throws when a key is missing', () => {
-    const source = realGradle.replace(/^\s*versionName "[^"]*"\n/m, '');
-    expect(() => bumpAndroidGradle(source, '1.0.0', 1)).toThrow(/Could not find "versionName"/);
+    const { versionName, versionCode } = readAndroidVersion(realGradle);
+    expect(bumpAndroidGradle(realGradle, versionName, versionCode)).toBe(realGradle);
   });
 });
 

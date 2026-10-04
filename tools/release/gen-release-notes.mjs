@@ -1,18 +1,21 @@
-// Generates every artifact derived from releases/*.md (the source of truth):
-//   - web/src/lib/releases.json                               (in-app release metadata)
-//   - web/src/lib/components/settings/CurrentReleaseNotes.svelte (compiled in-app notes)
-//   - web/src/lib/components/page/ReleaseHistory.svelte       (compiled full changelog)
-//   - fastlane/metadata/android/en-US/changelogs/<code>.txt    (Google Play)
-//   - fastlane/metadata/en-US/release_notes.txt                (App Store, latest)
+// Generates every file derived from releases/*.md (the source of truth): the in-app
+// release data and notes, the full changelog, and the store changelogs.
+// releaseNoteOutputs() lists each file a run writes, and releaseNoteOutputPaths()
+// hands cut-release.mjs the same paths.
 //
 // Run directly (`node tools/release/gen-release-notes.mjs`) or via the pre* npm hooks.
 // It never touches version numbers — that is cut-release.mjs's job.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { esc } from '../lib/html.mjs';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
-import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/release-frontmatter.mjs';
+import {
+  assertVersionMatchesFilename,
+  parseFrontmatter,
+  compareSemverDesc,
+  writeFileDeep,
+} from './lib/release-frontmatter.mjs';
 import { renderReleaseMarkdown } from './lib/release-markdown.mjs';
 
 export const RELEASE_HUES = ['Purple', 'Blue', 'Green', 'Orange', 'Pink', 'Red'];
@@ -50,6 +53,7 @@ function parseRelease(filename) {
 export function parseReleaseSource(filename, source) {
   const parsed = parseFrontmatter(source);
   if (!parsed) throw new Error(`${filename}: missing or malformed frontmatter`);
+  assertVersionMatchesFilename(filename, parsed.meta.version);
   validateBundledReleaseText(parsed.body, filename);
   validateEmDashSpacing(parsed.body, filename);
   const isoDate = parsed.meta.date;
@@ -260,70 +264,99 @@ export function renderReleaseHistory(releases) {
   );
 }
 
-function write(path, contents) {
-  writeFileDeep(path, contents);
-  console.log(`  wrote ${relative(ROOT, path)}`);
-}
-
-function main() {
-  if (!existsSync(RELEASES_DIR)) fail(`No releases/ directory at ${RELEASES_DIR}`);
-
+// Every release document, newest first.
+export function readReleases() {
+  if (!existsSync(RELEASES_DIR)) throw new Error(`No releases/ directory at ${RELEASES_DIR}`);
   const releases = readdirSync(RELEASES_DIR)
     .filter((f) => /^\d+\.\d+\.\d+\.md$/.test(f))
     .map(parseRelease)
     .sort((a, b) => compareSemverDesc(a.meta.version, b.meta.version));
-
-  if (releases.length === 0) fail('No release files found in releases/ (expected e.g. 1.0.0.md)');
-
-  console.log(`Generating release artifacts from ${releases.length} release file(s)…`);
-
-  // 1. In-app What's New data. Svelte compiles the current release's first-party
-  //    Markdown into ordinary DOM creation instead of parsing HTML on the response frame.
-  write(join(ROOT, 'web', 'src', 'lib', 'releaseHues.ts'), renderReleaseHueModule());
-  const appData = renderReleaseMetadata(releases);
-  write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
-  write(
-    join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'CurrentReleaseNotes.svelte'),
-    renderReleaseComponent(releases[0].body, releases[0].filename)
-  );
-  write(
-    join(ROOT, 'web', 'src', 'lib', 'components', 'page', 'ReleaseHistory.svelte'),
-    renderReleaseHistory(releases)
-  );
-
-  const androidChangelogs = releases
-    .filter((r) => r.meta.androidVersionCode)
-    .map((release) => ({ release, text: toPlainText(release.body) }));
-  const appStoreText = toPlainText(releases[0].body);
-  for (const { text } of androidChangelogs) validateStoreText(text);
-  validateStoreText(appStoreText);
-
-  // 2. Google Play changelogs — one file per versionCode (supply layout).
-  for (const { release, text } of androidChangelogs) {
-    write(
-      join(
-        ROOT,
-        'fastlane',
-        'metadata',
-        'android',
-        'en-US',
-        'changelogs',
-        `${release.meta.androidVersionCode}.txt`
-      ),
-      text + '\n'
-    );
-    if (release === releases[0] && text.length > ANDROID_CHANGELOG_LIMIT) {
-      console.warn(
-        `  ⚠ ${release.filename}: Android changelog is ${text.length} chars ` +
-          `(Play limit ${ANDROID_CHANGELOG_LIMIT}). Trim before uploading.`
-      );
-    }
+  if (releases.length === 0) {
+    throw new Error('No release files found in releases/ (expected e.g. 1.0.0.md)');
   }
+  return releases;
+}
 
-  // 3. App Store "What's New" — deliver uploads a single current value, so only
-  //    the latest release goes here, overwritten each time.
-  write(join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'), appStoreText + '\n');
+function storeText(body) {
+  const text = toPlainText(body);
+  validateStoreText(text);
+  return text;
+}
 
+// In-app What's New data. Svelte compiles the current release's first-party
+// Markdown into ordinary DOM creation instead of parsing HTML on the response frame.
+function appOutputs(releases) {
+  const [latest] = releases;
+  return [
+    { path: 'web/src/lib/releaseHues.ts', render: renderReleaseHueModule },
+    {
+      path: 'web/src/lib/releases.json',
+      render: () => `${JSON.stringify(renderReleaseMetadata(releases), null, 2)}\n`,
+    },
+    {
+      path: 'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+      render: () => renderReleaseComponent(latest.body, latest.filename),
+    },
+    {
+      path: 'web/src/lib/components/page/ReleaseHistory.svelte',
+      render: () => renderReleaseHistory(releases),
+    },
+  ];
+}
+
+// Google Play changelogs — one file per versionCode (supply layout).
+function playChangelogOutputs(releases) {
+  return releases
+    .filter((release) => release.meta.androidVersionCode)
+    .map((release) => ({
+      path: `fastlane/metadata/android/en-US/changelogs/${release.meta.androidVersionCode}.txt`,
+      render: () => `${storeText(release.body)}\n`,
+    }));
+}
+
+// App Store "What's New" — deliver uploads a single current value, so only the
+// latest release goes here, overwritten each time.
+function appStoreOutputs([latest]) {
+  return [
+    {
+      path: 'fastlane/metadata/en-US/release_notes.txt',
+      render: () => `${storeText(latest.body)}\n`,
+    },
+  ];
+}
+
+// Every file a run writes, as a repo-relative path and its renderer, in write order.
+function releaseNoteOutputs(releases) {
+  return [...appOutputs(releases), ...playChangelogOutputs(releases), ...appStoreOutputs(releases)];
+}
+
+export const releaseNoteOutputPaths = (releases) =>
+  releaseNoteOutputs(releases).map(({ path }) => path);
+
+function warnIfAndroidChangelogTooLong(latest) {
+  if (!latest.meta.androidVersionCode) return;
+  const { length } = toPlainText(latest.body);
+  if (length > ANDROID_CHANGELOG_LIMIT) {
+    console.warn(
+      `  ⚠ ${latest.filename}: Android changelog is ${length} chars ` +
+        `(Play limit ${ANDROID_CHANGELOG_LIMIT}). Trim before uploading.`
+    );
+  }
+}
+
+function main() {
+  const releases = readReleases();
+  console.log(`Generating release notes from ${releases.length} release file(s)…`);
+  // Rendering validates each store text, so a refusal comes before the first write.
+  const outputs = releaseNoteOutputs(releases).map(({ path, render }) => ({
+    path,
+    contents: render(),
+  }));
+  for (const { path, contents } of outputs) {
+    writeFileDeep(join(ROOT, path), contents);
+    console.log(`  wrote ${path}`);
+  }
+  warnIfAndroidChangelogTooLong(releases[0]);
   console.log('Done.');
 }
 

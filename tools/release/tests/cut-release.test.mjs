@@ -1,16 +1,126 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   chooseVersionCode,
+  findHandEditedVersionFiles,
   findStrayReleasePaths,
+  GIT_STATUS_ARGS,
   parseReleaseArgs,
   pnpmVersionArgs,
+  releaseSetPaths,
   renderReleaseFile,
 } from '../cut-release.mjs';
+import {
+  ANDROID_GRADLE_PATH,
+  bumpAndroidGradle,
+  bumpIosPbxproj,
+  IOS_PBXPROJ_PATH,
+  readAndroidVersion,
+} from '../lib/native-version.mjs';
 import { parseFrontmatter } from '../lib/release-frontmatter.mjs';
+
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
+
+// A checkout at 1.6.0 (versionCode 8), where each test cuts 1.7.0 (versionCode 9).
+const HEAD_VERSION_FILES = {
+  'package.json': `${JSON.stringify({ name: 'splotch', version: '1.6.0', private: true }, null, 2)}\n`,
+  [ANDROID_GRADLE_PATH]:
+    'android {\n    defaultConfig {\n        versionCode 8\n        versionName "1.6.0"\n    }\n}\n',
+  [IOS_PBXPROJ_PATH]: ['Debug', 'Release']
+    .map(
+      (configuration) =>
+        `\t\t${configuration} = {\n\t\t\tbuildSettings = {\n` +
+        '\t\t\t\tCURRENT_PROJECT_VERSION = 8;\n\t\t\t\tMARKETING_VERSION = 1.6.0;\n\t\t\t};\n\t\t};\n'
+    )
+    .join(''),
+};
+const BUMPED_VERSION_FILES = {
+  'package.json': `${JSON.stringify({ name: 'splotch', version: '1.7.0', private: true }, null, 2)}\n`,
+  [ANDROID_GRADLE_PATH]: bumpAndroidGradle(HEAD_VERSION_FILES[ANDROID_GRADLE_PATH], '1.7.0', 9),
+  [IOS_PBXPROJ_PATH]: bumpIosPbxproj(HEAD_VERSION_FILES[IOS_PBXPROJ_PATH], '1.7.0', 9),
+};
+const DEVELOPMENT_TEAM_LINE = '\t\t\t\tDEVELOPMENT_TEAM = ABCDE12345;\n';
+
+const releaseDocument = (version, androidVersionCode) =>
+  renderReleaseFile(
+    [`version: ${version}`, 'date: 2026-10-01']
+      .concat(androidVersionCode ? [`androidVersionCode: ${androidVersionCode}`] : [])
+      .join('\n'),
+    `## New\n\n* What ${version} adds`
+  );
+
+// The releases as a 1.7.0 cut leaves them: the new release pinned at versionCode 9.
+const RELEASES_AFTER_CUT = [
+  {
+    filename: '1.7.0.md',
+    meta: { version: '1.7.0', androidVersionCode: '9' },
+    body: '## New\n\n* What 1.7.0 adds',
+  },
+  {
+    filename: '1.6.0.md',
+    meta: { version: '1.6.0', androidVersionCode: '8' },
+    body: '## New\n\n* What 1.6.0 adds',
+  },
+];
+const RELEASE_SET = releaseSetPaths('1.7.0', RELEASES_AFTER_CUT);
+
+// A `git status --porcelain -z` listing: every field NUL-terminated, a rename's
+// source in a field of its own.
+const listing = (...fields) => fields.map((field) => `${field}\0`).join('');
+
+// What a dry run of 1.7.0 leaves, and so what a real cut finds before its first write.
+const DRY_RUN_LISTING = listing(
+  ' M package.json',
+  ` M ${ANDROID_GRADLE_PATH}`,
+  ` M ${IOS_PBXPROJ_PATH}`,
+  '?? releases/1.7.0.md',
+  ' M web/src/lib/releases.json',
+  ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+  ' M web/src/lib/components/page/ReleaseHistory.svelte',
+  '?? fastlane/metadata/android/en-US/changelogs/9.txt',
+  ' M fastlane/metadata/en-US/release_notes.txt'
+);
+
+const roots = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+function scratchDir() {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-release-cut-'));
+  roots.push(root);
+  return root;
+}
+
+function writeFiles(root, files) {
+  for (const [path, contents] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), contents);
+  }
+}
+
+// Git with no global or system config, so this machine's signing, hooks, or default
+// branch cannot change what happens in a scratch repository.
+const SCRATCH_GIT_ENV = {
+  ...process.env,
+  GIT_CONFIG_GLOBAL: '/dev/null',
+  GIT_CONFIG_NOSYSTEM: '1',
+};
+
+function commitEverything(root) {
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: root, encoding: 'utf8', env: SCRATCH_GIT_ENV });
+  git('init', '-q', '--initial-branch=main', '.');
+  git('config', 'user.email', 'release@test');
+  git('config', 'user.name', 'release test');
+  git('add', '-A');
+  git('commit', '-qm', 'before the release');
+  return git;
+}
 
 describe('parseReleaseArgs', () => {
   it('takes a version and the two flags', () => {
@@ -122,33 +232,153 @@ describe('renderReleaseFile', () => {
   });
 });
 
-describe('findStrayReleasePaths', () => {
-  it('keeps only paths outside release artifacts after normalizing porcelain output', () => {
-    const status = [
-      ' M package.json',
-      ' M web/src/lib/releases.json',
-      ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
-      ' M web/src/lib/components/page/ReleaseHistory.svelte',
-      ' M android/app/build.gradle',
-      ' M ios/App/project.pbxproj',
-      ' M fastlane/Fastfile',
-      ' M "releases/notes with spaces.md"',
-      'R  tools/old.mjs -> releases/renamed.md',
-      'R  releases/old.md -> tools/new.mjs',
-      ' M tools/release/cut-release.mjs',
-    ].join('\n');
-
-    expect(findStrayReleasePaths(status)).toEqual([
-      'tools/new.mjs',
-      'tools/release/cut-release.mjs',
+describe('releaseSetPaths', () => {
+  it('is exactly the version files, the release document, and every generator output', () => {
+    expect(RELEASE_SET).toEqual([
+      'package.json',
+      'android/app/build.gradle',
+      'ios/App/App.xcodeproj/project.pbxproj',
+      'releases/1.7.0.md',
+      'web/src/lib/releaseHues.ts',
+      'web/src/lib/releases.json',
+      'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+      'web/src/lib/components/page/ReleaseHistory.svelte',
+      'fastlane/metadata/android/en-US/changelogs/9.txt',
+      'fastlane/metadata/android/en-US/changelogs/8.txt',
+      'fastlane/metadata/en-US/release_notes.txt',
     ]);
+  });
+});
+
+describe('findStrayReleasePaths', () => {
+  // The documented flow is `--dry-run`, then the real cut of the same version.
+  it('passes the tree a dry run of the same version leaves', () => {
+    expect(findStrayReleasePaths(DRY_RUN_LISTING, RELEASE_SET)).toEqual([]);
+  });
+
+  it('refuses a changed file beside the version files, such as Info.plist', () => {
+    expect(findStrayReleasePaths(listing(' M ios/App/App/Info.plist'), RELEASE_SET)).toEqual([
+      'ios/App/App/Info.plist',
+    ]);
+  });
+
+  // The generator reads every releases/*.md, so a draft of the next release would
+  // ship as the newest What's New and App Store notes inside this release.
+  it('refuses a draft of the next release', () => {
+    expect(findStrayReleasePaths(listing('?? releases/1.8.0.md'), RELEASE_SET)).toEqual([
+      'releases/1.8.0.md',
+    ]);
+  });
+
+  it('refuses a file inside a new directory', () => {
+    const plugin = 'android/app/src/main/java/art/splotch/app/DebugPlugin.java';
+
+    expect(findStrayReleasePaths(listing(`?? ${plugin}`), RELEASE_SET)).toEqual([plugin]);
+  });
+
+  it('reports a change outside the set after generation', () => {
+    const generated = DRY_RUN_LISTING + listing(' M web/src/lib/releaseSections.ts');
+
+    expect(findStrayReleasePaths(generated, RELEASE_SET)).toEqual([
+      'web/src/lib/releaseSections.ts',
+    ]);
+  });
+
+  // A rename deletes its source in the commit, so both of its paths are checked.
+  it('checks both paths of a rename', () => {
+    expect(
+      findStrayReleasePaths(listing('R  releases/1.7.0.md', 'tools/old.mjs'), RELEASE_SET)
+    ).toEqual(['tools/old.mjs']);
+    expect(
+      findStrayReleasePaths(listing('R  tools/new.mjs', 'releases/1.7.0.md'), RELEASE_SET)
+    ).toEqual(['tools/new.mjs']);
   });
 
   // A version bump does not rewrite pnpm-lock.yaml the way it rewrote
   // package-lock.json, so a dirty lockfile here is somebody else's change
   // and `git add -A` would sweep it into the release commit.
   it('treats a dirty lockfile as a stray change', () => {
-    expect(findStrayReleasePaths(' M pnpm-lock.yaml')).toEqual(['pnpm-lock.yaml']);
+    expect(findStrayReleasePaths(listing(' M pnpm-lock.yaml'), RELEASE_SET)).toEqual([
+      'pnpm-lock.yaml',
+    ]);
+  });
+
+  it('refuses a listing it cannot read', () => {
+    expect(() => findStrayReleasePaths(listing('Mpackage.json'), RELEASE_SET)).toThrow(
+      new Error('Unreadable git status record: "Mpackage.json"')
+    );
+    expect(() => findStrayReleasePaths(listing('R  releases/1.7.0.md'), RELEASE_SET)).toThrow(
+      new Error('git status record has no source path: "R  releases/1.7.0.md"')
+    );
+  });
+});
+
+describe('findHandEditedVersionFiles', () => {
+  const editedAfter = (edits) =>
+    findHandEditedVersionFiles({
+      version: '1.7.0',
+      versionCode: 9,
+      head: HEAD_VERSION_FILES,
+      working: { ...BUMPED_VERSION_FILES, ...edits },
+    });
+
+  it('passes version files that hold exactly the bump', () => {
+    expect(editedAfter({})).toEqual([]);
+  });
+
+  // Xcode writes the signing Team into project.pbxproj when one is picked in its UI.
+  it('refuses a DEVELOPMENT_TEAM line in the pbxproj', () => {
+    const pbxproj = BUMPED_VERSION_FILES[IOS_PBXPROJ_PATH].replace(
+      '\t\t\t\tMARKETING_VERSION',
+      `${DEVELOPMENT_TEAM_LINE}\t\t\t\tMARKETING_VERSION`
+    );
+
+    expect(editedAfter({ [IOS_PBXPROJ_PATH]: pbxproj })).toEqual([IOS_PBXPROJ_PATH]);
+  });
+
+  it('refuses a debugging edit in build.gradle', () => {
+    const gradle = BUMPED_VERSION_FILES[ANDROID_GRADLE_PATH].replace(
+      'versionName "1.7.0"',
+      'versionName "1.7.0"\n        debuggable true'
+    );
+
+    expect(editedAfter({ [ANDROID_GRADLE_PATH]: gradle })).toEqual([ANDROID_GRADLE_PATH]);
+  });
+
+  // pnpm decides package.json's formatting; only its data is the release's business.
+  it('compares package.json as data', () => {
+    const bumped = { name: 'splotch', version: '1.7.0', private: true };
+
+    expect(editedAfter({ 'package.json': JSON.stringify(bumped) })).toEqual([]);
+    expect(
+      editedAfter({ 'package.json': JSON.stringify({ ...bumped, dependencies: { left: '1' } }) })
+    ).toEqual(['package.json']);
+  });
+});
+
+describe('the git status listing', () => {
+  // -z and --untracked-files=all are only meaningful as git's behavior: without them a
+  // new directory lists as `?? android/`, and a path with spaces or non-ASCII comes back
+  // quoted and octal-escaped, so neither matches an exact path.
+  it('names each new file raw, and both paths of a staged rename', () => {
+    const root = scratchDir();
+    writeFiles(root, {
+      'package.json': '{}\n',
+      'releases/1.6.0.md': releaseDocument('1.6.0', 8),
+      'tools/old.mjs': 'export {};\n',
+    });
+    const git = commitEverything(root);
+    git('mv', 'tools/old.mjs', 'releases/1.7.0.md');
+    writeFiles(root, {
+      'android/app/src/main/java/art/splotch/app/DebugPlugin.java': 'class DebugPlugin {}\n',
+      'releases/draft notes für 1.8.0.md': 'draft\n',
+    });
+
+    expect(findStrayReleasePaths(git(...GIT_STATUS_ARGS), RELEASE_SET).sort()).toEqual([
+      'android/app/src/main/java/art/splotch/app/DebugPlugin.java',
+      'releases/draft notes für 1.8.0.md',
+      'tools/old.mjs',
+    ]);
   });
 });
 
@@ -159,29 +389,15 @@ describe('findStrayReleasePaths', () => {
 // — so the tree this runs against is never clean. A release cut is the worst
 // place to find that out, and it is not reachable from any other test.
 describe('the pnpm version bump', () => {
-  const roots = [];
-
-  afterEach(() => {
-    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
-  });
-
   /** A git repo mid-release: committed, then dirtied the way bumpVersions() dirties it. */
   function releaseInProgress() {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-release-bump-'));
-    roots.push(root);
-    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
-
-    writeFileSync(
-      join(root, 'package.json'),
-      `${JSON.stringify({ name: 'p', version: '1.5.0' })}\n`
-    );
-    writeFileSync(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n");
-    writeFileSync(join(root, 'build.gradle'), 'versionName "1.5.0"\n');
-    git('init', '-q', '.');
-    git('config', 'user.email', 'release@test');
-    git('config', 'user.name', 'release test');
-    git('add', '-A');
-    git('commit', '-qm', 'before the release');
+    const root = scratchDir();
+    writeFiles(root, {
+      'package.json': `${JSON.stringify({ name: 'p', version: '1.5.0' })}\n`,
+      'pnpm-lock.yaml': "lockfileVersion: '9.0'\n",
+      'build.gradle': 'versionName "1.5.0"\n',
+    });
+    const git = commitEverything(root);
     writeFileSync(join(root, 'build.gradle'), 'versionName "1.6.0"\n'); // setAndroidVersion
     return { root, git };
   }
@@ -210,5 +426,161 @@ describe('the pnpm version bump', () => {
     expect(changed).toEqual(['build.gradle', 'package.json']);
     expect(git('tag').trim()).toBe('');
     expect(git('rev-list', '--count', 'HEAD').trim()).toBe('1');
+  });
+});
+
+// The release scripts and every module they import, copied rather than imported:
+// ROOT is two folders above tools/lib/proc.mjs, so the copies run the real cut
+// against the scratch checkout, end to end.
+const RELEASE_SCRIPTS = [
+  'tools/lib/html.mjs',
+  'tools/lib/proc.mjs',
+  'tools/release/cut-release.mjs',
+  'tools/release/gen-release-notes.mjs',
+  'tools/release/lib/native-version.mjs',
+  'tools/release/lib/release-frontmatter.mjs',
+  'tools/release/lib/release-markdown.mjs',
+];
+
+// A cut launches node, pnpm, the generator, and git several times over. The dry run
+// plus real cut takes about 1.4 s on a Mac; process launches run up to nine times
+// slower on a loaded CI runner (see PNPM_LAUNCHES_TIMEOUT_MS in
+// tools/rival-agent/tests/worktree.test.mjs), which still leaves this twice over.
+const SCRATCH_CUT_TIMEOUT_MS = 30_000;
+
+// The order these pin is the point: the stray-path refusal comes before the first
+// write, and the hand-edit refusal comes before the commit.
+describe('a release cut in a scratch checkout', () => {
+  /** A 1.6.0 checkout with its generated notes committed and an unpinned 1.7.0.md. */
+  function scratchCheckout() {
+    const root = scratchDir();
+    writeFiles(root, {
+      ...Object.fromEntries(
+        RELEASE_SCRIPTS.map((path) => [path, readFileSync(join(repoRoot, path), 'utf8')])
+      ),
+      ...HEAD_VERSION_FILES,
+      'ios/App/App/Info.plist': '<plist version="1.0"><dict/></plist>\n',
+      'releases/1.6.0.md': releaseDocument('1.6.0', 8),
+    });
+    execFileSync('node', ['tools/release/gen-release-notes.mjs'], { cwd: root });
+    const git = commitEverything(root);
+    writeFiles(root, { 'releases/1.7.0.md': releaseDocument('1.7.0') });
+    const cut = (...flags) =>
+      spawnSync('node', ['tools/release/cut-release.mjs', '1.7.0', ...flags], {
+        cwd: root,
+        encoding: 'utf8',
+        env: SCRATCH_GIT_ENV,
+      });
+    const contents = () =>
+      Object.fromEntries(
+        git('ls-files', '-z', '--cached', '--others')
+          .split('\0')
+          .filter(Boolean)
+          .map((path) => [path, readFileSync(join(root, path), 'utf8')])
+      );
+    return { root, git, cut, contents };
+  }
+
+  it('refuses a stray change before writing anything', { timeout: SCRATCH_CUT_TIMEOUT_MS }, () => {
+    const { root, git, cut, contents } = scratchCheckout();
+    writeFiles(root, {
+      'ios/App/App/Info.plist': '<plist version="1.0"><dict/><!-- x --></plist>\n',
+    });
+    const before = contents();
+
+    const result = cut('--no-publish');
+
+    expect(result.stderr).toContain(
+      'Working tree has changes outside the release set:\n  ios/App/App/Info.plist\n'
+    );
+    expect(result.status).toBe(1);
+    expect(contents()).toEqual(before);
+    expect(git('rev-list', '--count', 'HEAD').trim()).toBe('1');
+  });
+
+  it(
+    'commits exactly the changed release set after a dry run of the same version',
+    { timeout: SCRATCH_CUT_TIMEOUT_MS },
+    () => {
+      const { git, cut } = scratchCheckout();
+
+      const dryRun = cut('--dry-run');
+      expect(dryRun.status, dryRun.stderr).toBe(0);
+      const release = cut('--no-publish');
+      expect(release.status, release.stderr).toBe(0);
+
+      expect(git('show', '--name-only', '--format=', 'HEAD').trim().split('\n').sort()).toEqual([
+        'android/app/build.gradle',
+        'fastlane/metadata/android/en-US/changelogs/9.txt',
+        'fastlane/metadata/en-US/release_notes.txt',
+        'ios/App/App.xcodeproj/project.pbxproj',
+        'package.json',
+        'releases/1.7.0.md',
+        'web/src/lib/components/page/ReleaseHistory.svelte',
+        'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+        'web/src/lib/releases.json',
+      ]);
+      expect(readAndroidVersion(git('show', `HEAD:${ANDROID_GRADLE_PATH}`))).toEqual({
+        versionName: '1.7.0',
+        versionCode: 9,
+      });
+      expect(git('tag', '--points-at', 'HEAD').trim()).toBe('v1.7.0');
+      expect(git(...GIT_STATUS_ARGS)).toBe('');
+    }
+  );
+
+  it(
+    'refuses a hand edit inside a version file and commits nothing',
+    { timeout: SCRATCH_CUT_TIMEOUT_MS },
+    () => {
+      const { root, git, cut } = scratchCheckout();
+      writeFiles(root, {
+        [IOS_PBXPROJ_PATH]: HEAD_VERSION_FILES[IOS_PBXPROJ_PATH].replace(
+          '\t\t\t\tMARKETING_VERSION',
+          `${DEVELOPMENT_TEAM_LINE}\t\t\t\tMARKETING_VERSION`
+        ),
+      });
+
+      const result = cut('--no-publish');
+
+      expect(result.stderr).toContain(
+        `These version files differ from HEAD by more than the version bump:\n  ${IOS_PBXPROJ_PATH}\n`
+      );
+      expect(result.status).toBe(1);
+      expect(git('rev-list', '--count', 'HEAD').trim()).toBe('1');
+      expect(git('tag').trim()).toBe('');
+    }
+  );
+
+  // --dry-run skips the tree check, so the release document's own check is what
+  // stops a 1.7.0.md copied forward from 1.6.0 before the pin is written.
+  it(
+    'refuses a release document whose version is not its filename, before writing anything',
+    { timeout: SCRATCH_CUT_TIMEOUT_MS },
+    () => {
+      const { root, cut, contents } = scratchCheckout();
+      writeFiles(root, { 'releases/1.7.0.md': releaseDocument('1.6.0') });
+      const before = contents();
+
+      const result = cut('--dry-run');
+
+      expect(result.stderr).toContain(
+        '1.7.0.md: frontmatter version 1.6.0 does not match the filename version 1.7.0'
+      );
+      expect(result.status).toBe(1);
+      expect(contents()).toEqual(before);
+    }
+  );
+
+  it('fails a cut whose iOS project is missing', { timeout: SCRATCH_CUT_TIMEOUT_MS }, () => {
+    const { root, git, cut } = scratchCheckout();
+    rmSync(join(root, 'ios'), { recursive: true });
+    git('add', '-A');
+    git('commit', '-qm', 'no iOS project');
+
+    const result = cut('--dry-run');
+
+    expect(result.stderr).toMatch(/ENOENT: no such file or directory, open '.*project\.pbxproj'/);
+    expect(result.status).toBe(1);
   });
 });

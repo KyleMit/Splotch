@@ -35,8 +35,9 @@ androidVersionCode: 3
 * A fixed thing
 ```
 
-`version` is semver and must match the filename. `date` is a real calendar date in exact
-`YYYY-MM-DD` form. `androidVersionCode` is a monotonic integer filled in by the release script.
+`version` is semver and must match the filename; `gen:releases` and the release script refuse a file
+whose `version` does not. `date` is a real calendar date in exact `YYYY-MM-DD` form.
+`androidVersionCode` is a monotonic integer filled in by the release script.
 
 The body is Markdown, in a deliberately narrow subset: headings, unordered lists (`*` or `-`), and
 paragraphs, with `**bold**`, `*italic*`, `` `code` `` and `[links](url)` inline, each used on its
