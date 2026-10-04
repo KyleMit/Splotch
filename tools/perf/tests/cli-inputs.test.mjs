@@ -506,7 +506,7 @@ describe('perf entry flag refusals', () => {
     const bin = join(fixtureDir, 'bin');
     const log = join(fixtureDir, 'commands.log');
     mkdirSync(bin);
-    for (const command of ['adb', 'git', 'idevice_id', 'lsof', 'pgrep', 'ps', 'xcrun']) {
+    for (const command of ['adb', 'git', 'idevice_id', 'lsof', 'pgrep', 'ps', 'sh', 'xcrun']) {
       const shim = `#!/bin/sh\necho "${command} $*" >> '${log}'\nexit 1\n`;
       writeFileSync(join(bin, command), shim, { mode: 0o755 });
     }
