@@ -189,16 +189,6 @@ function closeTiledPreviewSnapshot(preview: ExportOptions['preview']) {
   }
 }
 
-// Rasterize at the canonical extent because WebKit's shared SVG image can retain
-// its displayed container size when createImageBitmap receives the image directly.
-function createExportOverlayBitmap(image: HTMLImageElement): ImageBitmap {
-  const canvas = new OffscreenCanvas(image.naturalWidth, image.naturalHeight);
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Canonical overlay 2D canvas context unavailable');
-  context.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
-  return canvas.transferToImageBitmap();
-}
-
 async function settleTiledExportBitmaps(
   snapshot: TiledExportSnapshot,
   texture: HTMLImageElement | null,
@@ -215,7 +205,7 @@ async function settleTiledExportBitmaps(
       (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
     ),
     loadExportOverlay(overlaySource)
-      .then((image) => (image ? createExportOverlayBitmap(image) : null))
+      .then((image) => (image ? createImageBitmap(image) : null))
       .then((bitmap): ExportBitmapResult => (bitmap ? { kind: 'overlay', bitmap } : null)),
   ];
   const settledBitmaps = await Promise.allSettled(bitmapRequests);
