@@ -1,4 +1,4 @@
-import { classifyAppiumLog } from './capture-readiness.mjs';
+import { AUTOMATION_MODE_TIMEOUT_PATTERN, classifyAppiumLog } from './capture-readiness.mjs';
 
 // The pure half of the preflight's recovery from a borrowed Appium that cannot
 // see the iPad (issue 2218). The process plumbing lives in prepare-capture.mjs.
@@ -77,7 +77,7 @@ export function newestDeviceXctestrun(entries) {
 export function grantFromRunnerLaunch({ ready, log }) {
   if (ready) return { grant: 'valid', cause: null };
   const cause = classifyAppiumLog(log);
-  if (/Timed out while enabling automation mode/i.test(String(log ?? ''))) {
+  if (AUTOMATION_MODE_TIMEOUT_PATTERN.test(String(log ?? ''))) {
     return { grant: 'expired', cause };
   }
   return { grant: 'undetermined', cause };
