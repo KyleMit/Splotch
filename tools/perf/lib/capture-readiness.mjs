@@ -61,7 +61,10 @@ export const PORT_ROLES = {
   appium: { port: 4723, onConflict: 'reuse-or-shift', shiftTo: [4733, 4743, 4753] },
   wda: { port: 8100, onConflict: 'shift', shiftTo: [8110, 8120, 8130] },
   androidCdp: { port: 9224, onConflict: 'shift', shiftTo: [9234, 9244] },
-  inspector: { port: 9221, onConflict: 'shift', shiftTo: [9231, 9241] },
+  // Fixed rather than shifted: webkit-inspector.mjs binds and reads this one
+  // port, and its usual holder is another session's relay, already attached to
+  // the one iPad a second relay would contend for.
+  inspector: { port: 9221, onConflict: 'fixed', shiftTo: [] },
   // The floor control the Android input check serves; the phone loads it over
   // the LAN, so it needs a port of its own rather than sharing the preview's.
   floorControl: { port: 4177, onConflict: 'shift', shiftTo: [4187, 4197] },
@@ -165,6 +168,15 @@ export function resolvePort(role, { holder, alternatives = [] }) {
   const spec = PORT_ROLES[role];
   if (!spec) throw new Error(`Unknown capture port role ${role}`);
   if (!holder) return { port: spec.port, action: 'start', reason: 'free' };
+
+  // Nothing in the capture path restarts a fixed role's listener, so even this
+  // checkout's own leftover blocks until it is released.
+  if (spec.onConflict === 'fixed') {
+    const reason = holder.ours
+      ? `held by this checkout (${holderDescription(holder)}), and this port never shifts: if it is a leftover, stop it or release the whole rig with npm run perf:release`
+      : `held outside this checkout (${holderDescription(holder)}), and this port never shifts`;
+    return { port: spec.port, action: 'blocked', reason };
+  }
 
   if (spec.onConflict === 'replace-if-ours-or-shift') {
     if (holder.ours) {

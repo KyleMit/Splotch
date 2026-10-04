@@ -18,12 +18,17 @@
 //     global it publishes rather than awaited.
 
 import { spawn } from 'node:child_process';
-import { pollUntil } from '../../lib/proc.mjs';
+import { ROOT, pollUntil } from '../../lib/proc.mjs';
+import { portListenerOwners } from '../../lib/vite-server.mjs';
+import { PORT_ROLES, resolvePort } from './capture-readiness.mjs';
 
 // ios_webkit_debug_proxy's own convention: one port listing the attached
 // devices, and a range from which each device gets its page-list port.
-const DEVICE_LIST_PORT = 9221;
+const DEVICE_LIST_PORT = PORT_ROLES.inspector.port;
 const DEVICE_PORT_RANGE = '9222-9322';
+// A relay that cannot bind a port says so on stderr and keeps running, so its
+// exit alone never shows that another process is answering in its place.
+const BIND_FAILURE = /Unable to bind/;
 
 const DEVICE_READY_TIMEOUT_MS = 20_000;
 const DEVICE_POLL_INTERVAL_MS = 500;
@@ -41,13 +46,22 @@ async function fetchJson(url) {
 }
 
 // The relay runs for the length of the session; the caller owns stop().
+// failure() stays null until the relay exits, fails to start, or reports a
+// port it could not bind, and then holds the relay's own account of it.
 export function startInspectorProxy() {
   const proxy = spawn(PROXY_COMMAND, ['-c', `null:${DEVICE_LIST_PORT},:${DEVICE_PORT_RANGE}`], {
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   const errorOutput = [];
+  let ended = null;
   proxy.stderr.setEncoding('utf8');
   proxy.stderr.on('data', (chunk) => errorOutput.push(chunk));
+  // A binary that never started reports 'error' and no exit. 'close' rather
+  // than 'exit', because only 'close' waits for the last of stderr.
+  proxy.on('error', (error) => (ended ??= error.message));
+  proxy.on('close', (code, signal) => {
+    ended ??= `${PROXY_COMMAND} exited ${signal ? `on ${signal}` : `with code ${code}`}`;
+  });
 
   const stop = () => {
     try {
@@ -58,20 +72,50 @@ export function startInspectorProxy() {
   };
   process.on('exit', stop);
 
-  return { proxy, stop, errorOutput };
+  const failure = () => {
+    const stderr = errorOutput.join('').trim();
+    if (ended) return [ended, stderr].filter(Boolean).join('\n');
+    return BIND_FAILURE.test(stderr) ? stderr : null;
+  };
+
+  return { proxy, stop, errorOutput, failure };
+}
+
+// What answers on the port is this relay only while its process listens there
+// alone. stderr cannot say so: a holder bound to 127.0.0.1 lets the relay's
+// wildcard bind succeed in silence and still takes every localhost request,
+// and a failed bind reaches stderr with no guaranteed lead over a holder's
+// answer. lsof is the only witness, so a listener it cannot name fails closed.
+function listenerProblem(relay) {
+  const listeners = portListenerOwners(DEVICE_LIST_PORT, ROOT);
+  const other = listeners.find(({ pid }) => pid !== relay.proxy.pid);
+  if (other) {
+    const holder = { pid: other.pid, cwd: other.cwd, ours: other.owned };
+    return `port ${DEVICE_LIST_PORT} is ${resolvePort('inspector', { holder }).reason}`;
+  }
+  if (listeners.length > 0) return null;
+  return `lsof names no listener on port ${DEVICE_LIST_PORT}, so this relay cannot be shown to serve it`;
 }
 
 // Devices appear a beat after the relay binds, so this polls rather than
-// reading once. `deviceId` picks one when several are attached.
-export async function waitForDevice(deviceId, timeoutMs = DEVICE_READY_TIMEOUT_MS) {
-  return pollUntil(
+// reading once. `deviceId` picks one when several are attached. Resolves to
+// `{ device }` only for a device this relay listed, to `{ problem }` once the
+// relay cannot serve or shares its port, and to `{}` when no device appeared.
+export async function waitForDevice(relay, deviceId, timeoutMs = DEVICE_READY_TIMEOUT_MS) {
+  const outcome = await pollUntil(
     async () => {
+      const failure = relay.failure();
+      if (failure) return { problem: failure };
       const devices = await fetchJson(`http://localhost:${DEVICE_LIST_PORT}/json`).catch(() => []);
-      return devices.find((device) => !deviceId || device.deviceId === deviceId) ?? null;
+      const device = devices.find((entry) => !deviceId || entry.deviceId === deviceId);
+      return device && { device };
     },
     timeoutMs,
     DEVICE_POLL_INTERVAL_MS
   );
+  if (outcome?.problem) return outcome;
+  const problem = relay.failure() ?? listenerProblem(relay);
+  return problem ? { problem } : (outcome ?? {});
 }
 
 // Safari's open tabs on that device. Empty until Safari is running with at
