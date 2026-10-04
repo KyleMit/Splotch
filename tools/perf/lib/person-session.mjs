@@ -426,15 +426,16 @@ export function captureVerdict(artifact, expect) {
     return { status: 'REDO', reasons: ['the artifact carries no probe report'], metrics: {} };
   }
   const phase = scored.summaries.phases[0];
-  const lost = phase.starvation?.inContact?.lostFrameTimeShare ?? phase.pacing?.lostFrameTimeShare;
+  // The share the gate judged, which a legacy-shaped phase prices from contact time.
+  const lost = scored.drawing.phases[0].lostFrameTimeShare;
   const metrics = {
-    lostFrameTimeShare: lost ?? null,
+    lostFrameTimeShare: Number.isFinite(lost) ? lost : null,
     gate: scored.drawing?.passed === true ? 'green' : 'red',
     beatMs: scored.regime.intervalMs,
     regime: scored.regime.verdict,
     contactSeconds: phase.contactSeconds ?? null,
     movesPerSecond: phase.input?.movesPerSecond ?? null,
-    fidelity: scored.fidelity.passed ? 'pass' : 'fail',
+    fidelity: !scored.fidelity ? 'n/a' : scored.fidelity.passed ? 'pass' : 'fail',
   };
 
   if (numberInvalidatingFailure(scored.fidelity)) {

@@ -82,9 +82,18 @@ const BRIEF_FILE = join(WORK, 'current-brief.md');
 const STOP_FILE = join(WORK, 'STOP');
 const E2E_SPEC_PATH = /^tests\/[\w/-]+\.(?:spec|test)\.ts$(?![\s\S])/;
 
+// A push that fails at a batch boundary is retried at the next one, which outlasts a network blip.
+// Failures that persist across boundaries at least a finding apart mean origin is refusing the
+// branch or is unreachable, and every finding accepted after that exists only in this container.
+const MAX_CONSECUTIVE_PUSH_FAILURES = 3;
+
+// What a supervisor does about a commit-path halt that left only uncommitted residue: the finding
+// is still in the backlog, so a resumed run starts it over.
+const RESUME_RETRIES_FINDING = 'RESUME=1 discards the residue and re-processes the finding';
+
 // Everything the run does to the world outside its own counters: exiting,
 // git, the shell, the agent runner, the log. Production wires the real
-// implementations in main(); tools/audit-burndown/tests/run-burndown.test.mjs
+// implementations in main(); tools/audit-burndown/tests/fixtures/run-harness.mjs
 // substitutes recorders, which is why the run takes them as an argument
 // instead of reaching for the module imports directly.
 export function createEffects(config) {
@@ -117,39 +126,32 @@ export function createEffects(config) {
 }
 
 // ---- structured output schemas ---------------------------------------------
-const SCHEMA_VERIFY = {
+// Every role envelope is a closed object that requires each property it declares, so `required`
+// is derived from the property list rather than restated beside it.
+const closedSchema = (properties) => ({
   type: 'object',
-  properties: {
-    verdict: { type: 'string', enum: ['VALID', 'INVALID'] },
-    reason: { type: 'string' },
-    brief_path: { type: 'string' },
-    // Playwright specs (relative to web/, shaped "tests/<name>.spec.ts") that
-    // exercise this finding's runtime surface — empty for a change with no
-    // behavioural surface. The per-finding E2E gate runs exactly these.
-    e2e_specs: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['verdict', 'reason', 'brief_path', 'e2e_specs'],
+  properties,
+  required: Object.keys(properties),
   additionalProperties: false,
-};
-const SCHEMA_IMPL = {
-  type: 'object',
-  properties: {
-    success: { type: 'boolean' },
-    sha: { type: 'string' },
-    summary: { type: 'string' },
-  },
-  required: ['success', 'sha', 'summary'],
-  additionalProperties: false,
-};
-const SCHEMA_REVIEW = {
-  type: 'object',
-  properties: {
-    status: { type: 'string', enum: ['APPROVED', 'CHANGES_REQUIRED'] },
-    findings: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['status', 'findings'],
-  additionalProperties: false,
-};
+});
+const SCHEMA_VERIFY = closedSchema({
+  verdict: { type: 'string', enum: ['VALID', 'INVALID'] },
+  reason: { type: 'string' },
+  brief_path: { type: 'string' },
+  // Playwright specs (relative to web/, shaped "tests/<name>.spec.ts") that
+  // exercise this finding's runtime surface — empty for a change with no
+  // behavioural surface. The per-finding E2E gate runs exactly these.
+  e2e_specs: { type: 'array', items: { type: 'string' } },
+});
+const SCHEMA_IMPL = closedSchema({
+  success: { type: 'boolean' },
+  sha: { type: 'string' },
+  summary: { type: 'string' },
+});
+const SCHEMA_REVIEW = closedSchema({
+  status: { type: 'string', enum: ['APPROVED', 'CHANGES_REQUIRED'] },
+  findings: { type: 'array', items: { type: 'string' } },
+});
 
 // ---- deferral ---------------------------------------------------------------
 const DEFERRED_HEADER = `# Audit — deferred findings
@@ -226,6 +228,7 @@ export function createBurndownRun({ config, effects }) {
   let deferred = 0;
   let consecutive = 0;
   let sincePush = 0;
+  let consecutivePushFailures = 0;
 
   // Push what has been committed. Returns false (commits held locally) if the
   // optional full-suite gate or the push itself fails.
@@ -247,6 +250,11 @@ export function createBurndownRun({ config, effects }) {
       return false;
     }
     if (!gitOk('push', '-u', 'origin', BRANCH)) {
+      consecutivePushFailures += 1;
+      if (!final && consecutivePushFailures >= MAX_CONSECUTIVE_PUSH_FAILURES)
+        halt(
+          `${consecutivePushFailures} consecutive pushes to origin failed — ${sincePush} commit(s) held locally on ${BRANCH}; push them manually before the container is reclaimed`
+        );
       logLine(
         final
           ? '  push failed on the final batch — commits held locally, push them manually'
@@ -255,6 +263,7 @@ export function createBurndownRun({ config, effects }) {
       return false;
     }
     sincePush = 0;
+    consecutivePushFailures = 0;
     return true;
   }
 
@@ -266,6 +275,21 @@ export function createBurndownRun({ config, effects }) {
   function countCommitTowardPush() {
     sincePush += 1;
     if (sincePush >= PUSH_EVERY) pushBatch();
+  }
+
+  // A failed step on an outcome's commit path ends the run, not just the finding. Carrying on would
+  // write the counters, completed.log, and COMMENT_STORE against the previous commit, and whatever
+  // the step left staged would fold into the next finding's commit. The recovery leads the message
+  // because the command output under it can run to several lines.
+  function haltIfFailed(result, step, title, recovery = RESUME_RETRIES_FINDING) {
+    if (result.status !== 0)
+      halt(`${step} failed for ${title} — ${recovery}\n${commandFailureOutput(result)}`);
+  }
+
+  function commitOrHalt(step, title, paths, commitArgs, recovery) {
+    haltIfFailed(git('add', ...paths), `${step}: git add`, title, recovery);
+    haltIfFailed(git('commit', '-q', ...commitArgs), `${step}: git commit`, title, recovery);
+    return gitOut('rev-parse', 'HEAD');
   }
 
   // `notes` carries what only this moment knows: the reviewer's unresolved
@@ -290,11 +314,10 @@ export function createBurndownRun({ config, effects }) {
     );
     // The header + appended entries aren't wrapped at dprint's width, which would
     // redden CI's Quality (format) job. Normalise before it goes into the commit.
-    runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]);
+    haltIfFailed(runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]), 'defer: dprint fmt', title);
     deleteEntryByTitle(title, AUDIT_FILE);
-    git('add', AUDIT_FILE, DEFERRED_FILE);
-    if (patchPath) git('add', patchPath);
-    git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
+    const staged = [AUDIT_FILE, DEFERRED_FILE, patchPath].filter(Boolean);
+    commitOrHalt('defer', title, staged, ['-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`]);
     deferred += 1;
     consecutive += 1;
     countCommitTowardPush();
@@ -622,17 +645,9 @@ export function createBurndownRun({ config, effects }) {
   function dropInvalidFinding(title, reason) {
     logLine(`  INVALID: ${reason}`);
     deleteEntryByTitle(title, AUDIT_FILE);
-    git('add', AUDIT_FILE);
-    git(
-      'commit',
-      '-q',
-      '-m',
-      `chore(audit): drop invalid finding\n\nAudit: ${title}\nReason: ${reason}`
-    );
-    appendFileSync(
-      join(WORK, 'completed.log'),
-      `${gitOut('rev-parse', 'HEAD')}${INVALID_DROP_MARKER}${title}\n`
-    );
+    const message = `chore(audit): drop invalid finding\n\nAudit: ${title}\nReason: ${reason}`;
+    const sha = commitOrHalt('drop', title, [AUDIT_FILE], ['-m', message]);
+    appendFileSync(join(WORK, 'completed.log'), `${sha}${INVALID_DROP_MARKER}${title}\n`);
     dropped += 1;
     consecutive = 0;
     countCommitTowardPush();
@@ -865,9 +880,11 @@ export function createBurndownRun({ config, effects }) {
     // 2026-07-25 canary) makes this a no-op instead of eating the next finding.
     if (!deleteEntryByTitle(title, AUDIT_FILE))
       logLine('  entry already gone — a role edited the audit file');
-    git('add', AUDIT_FILE);
-    git('commit', '-q', '--amend', '--no-edit');
-    const amendedSha = gitOut('rev-parse', 'HEAD');
+    // Short of the amend, HEAD is the approved fix with its entry still in the backlog, which a
+    // resumed run reads as an interrupted implementation and rewinds.
+    const keepFix = `finish the amend by hand (git add ${AUDIT_FILE}, then git commit --amend --no-edit) to keep the approved fix, which RESUME=1 alone rewinds and re-processes`;
+    const amend = ['--amend', '--no-edit'];
+    const amendedSha = commitOrHalt('close-out', title, [AUDIT_FILE], amend, keepFix);
 
     if (!shellOk(CHECK_CMD)) halt(`tree went red after ${tag} (${amendedSha})`);
 
