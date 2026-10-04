@@ -15,13 +15,13 @@ storage together. A narrower entry point remains available when only Blobs persi
 
 `lib/admin-client.mjs` owns the shared `/api/admin` request plumbing and fails any admin request
 that is answered with a redirect, so an HTTPS target cannot bounce the secret onto another URL.
-`lib/deployed-admin-target.mjs` owns both target rules. The login sends the admin secret, so each
+`lib/deployed-admin-target.mjs` owns the target rules. The login sends the admin secret, so each
 deployed entry point exits with status 2, before any request, when its URL is not HTTPS;
-`DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS=1` admits plain HTTP only for a loopback test server. Writes
-happen only for Netlify preview hostnames and loopback test servers.
-`lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the preview-only token
-round-trip used by both deployed entry points. Assertions remain in the contract layers rather than
-in the request client.
+`DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS=1` admits plain HTTP only for a loopback test server. Netlify
+preview hostnames and loopback test servers are preview targets: only they take the probe write, and
+only they must, by default, serve the checked-out version exactly. `lib/deployed-admin-contract.mjs`
+owns the persistent-token assertion plus the preview-only token round-trip used by both deployed
+entry points. Assertions remain in the contract layers rather than in the request client.
 
 ## Local contract inputs and outputs
 
@@ -52,8 +52,8 @@ immutable app asset, `version.json` and its no-cache policy, both Capacitor-orig
 representative canonical API failures that stop before any model call, `no-store` on every
 non-`OPTIONS` `/api/*` response, and the persistent admin token contract. Production asserts
 `persistent: true` through a read-only token snapshot; a preview also adds, reads back, and removes
-a unique token. The deployed version must exactly match the ADR-0030 version derived from the
-checker's current git commit. Run a manual preview check from the same branch/ref that Netlify
+a unique token. A preview's deployed version must exactly match the ADR-0030 version derived from
+the checker's current git commit. Run a manual preview check from the same branch/ref that Netlify
 built; pointing a different ref at that preview is intentionally reported as stale.
 
 The dependency-free workflow checks production daily without mutating Blobs. Manual dispatch accepts
@@ -61,12 +61,14 @@ an optional URL so it can check either production by default or an intended Netl
 GitHub's repository-wide `deployment_status` records belong to the static scrapbook on GitHub Pages,
 so they are not a valid Netlify trigger or target source.
 
-Production workflow runs set `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=false`, whether production is the
-default or its canonical URL is entered explicitly. They still require a valid version shape and the
-no-cache policy, but do not compare it to repository `HEAD`. ADR-0070 deliberately skips Netlify
-builds for docs/tooling-only commits, so `HEAD` can correctly be newer than production. Direct CLI
-runs and workflow runs with an explicit non-production URL retain the exact comparison because they
-pair a specific ref with a specific deploy.
+The checker derives version strictness from the target, for workflow and direct CLI runs alike. A
+preview target pairs a specific ref with a specific deploy, so it keeps the exact comparison. Every
+other target (production, its `www` and bare `splotchy.netlify.app` aliases, and any unrecognized
+remote host) still requires a valid version shape and the no-cache policy, but does not compare it
+to repository `HEAD`: ADR-0070 deliberately skips Netlify builds for docs/tooling-only commits, so
+`HEAD` can correctly be newer than production. `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=true` or
+`false` overrides the derived rule, for example `true` for a custom-domain branch deploy; any other
+non-empty value is a configuration error and exits with status 2.
 
 ## Deployed Blobs-only inputs and outputs
 
@@ -90,17 +92,17 @@ write persistence cannot be validated without a write and read-back.
 The API contract is documented in `docs/API.md` and implemented under `web/src/routes/api/`. When an
 endpoint or response shape changes, update the reference, extend the local smoke assertions, and
 keep the owned admin client request-only. Changes to deployed persistence semantics must update the
-Blobs workflow and ADR-0025 expectations together.
+hosted deploy workflow and ADR-0025 expectations together.
 
-The [Hosted Deploy Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
+The [Hosted Deploy Smoke workflow](../../.github/workflows/hosted-deploy-smoke.yml) runs
 `check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —
 including `web/buildVersion.ts`, `web/src/lib/server/securityHeaders.ts`, the deployed admin
 contract, and the shared tool modules — must stay dependency-free. Adding an npm dependency to any
 of them breaks the deploy gate at runtime rather than in CI's browserless job.
 
 All workflow runs share a single concurrency group because previews and production use the same
-site-wide store. Keep production-write classification in `lib/deployed-admin-target.mjs`; the
-workflow's separate URL test controls only version-freshness strictness.
+site-wide store. Keep target classification (Blobs writes and version strictness) in
+`lib/deployed-admin-target.mjs`.
 
 Run focused verification with:
 

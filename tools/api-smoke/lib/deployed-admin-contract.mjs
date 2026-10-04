@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { sleep } from '../../lib/proc.mjs';
 import { check } from '../../lib/smoke.mjs';
 import { adminClient } from './admin-client.mjs';
-import { shouldWriteBlobsProbe } from './deployed-admin-target.mjs';
+import { isPreviewTarget } from './deployed-admin-target.mjs';
 
 const READ_ATTEMPTS = 6;
 const READ_RETRY_MS = 1000;
 
 export async function checkDeployedAdminContract(base, adminSecret) {
   const admin = adminClient(base);
-  const writeProbe = shouldWriteBlobsProbe(base);
+  const writeProbe = isPreviewTarget(base);
   let session;
   let probe;
 
