@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   agentAuthCommand,
   agentRunnerDefaults,
@@ -7,6 +9,7 @@ import {
   codexRoleInstructions,
   normalizeAgentRunner,
   parseSavedAgentOutput,
+  runAgentStep,
 } from '../lib/agent-runner.mjs';
 
 describe('agent runner selection', () => {
@@ -175,5 +178,130 @@ describe('saved agent output parsing', () => {
       error: 'usage limit reached',
       structured: {},
     });
+  });
+});
+
+describe('agent step retries', () => {
+  // A call that died before printing anything, as a killed or crashed CLI does.
+  const CRASHED_CALL = { status: 1, stdout: '', stderr: 'connection reset' };
+  const CLAUDE_VERDICT = {
+    status: 0,
+    stdout: JSON.stringify({ is_error: false, structured_output: { verdict: 'VALID' } }),
+    stderr: '',
+  };
+  const claudeCap = (subtype) => ({
+    status: 1,
+    stdout: JSON.stringify({ is_error: true, subtype }),
+    stderr: '',
+  });
+  const flagValue = (args, flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : null);
+
+  let dir;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'agent-runner-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  // Runs one step with every outside-world effect recorded: each scripted
+  // result answers one CLI call, and a call past the script fails the test.
+  async function runStep({ results, ...options }) {
+    const calls = [];
+    const sleeps = [];
+    const lines = [];
+    const systemPromptFile = join(dir, 'role.md');
+    writeFileSync(systemPromptFile, 'Role prompt.\n');
+    const result = await runAgentStep({
+      runner: 'claude',
+      tag: 'F1.verify',
+      prompt: 'Verify the finding.',
+      systemPromptFile,
+      model: 'test-model',
+      effort: 'high',
+      role: 'verify',
+      schema: { type: 'object' },
+      maxTurns: 40,
+      budget: '1',
+      maxAttempts: 3,
+      root: dir,
+      workDir: join(dir, 'work'),
+      logsDir: join(dir, 'logs'),
+      runCmd: (cmd, args) => {
+        calls.push({ cmd, args });
+        const scripted = results[calls.length - 1];
+        if (!scripted) throw new Error(`unscripted CLI call ${calls.length}`);
+        return scripted;
+      },
+      logLine: (line) => lines.push(line),
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+      ...options,
+    });
+    return { result, calls, sleeps, lines };
+  }
+
+  it.each([
+    ['claude', 'no_output'],
+    ['codex', 'no_agent_message'],
+  ])(
+    'backs off 30 s and then 120 s between three failed %s attempts, then gives up without a third wait',
+    async (runner, subtype) => {
+      const { result, calls, sleeps, lines } = await runStep({
+        runner,
+        results: [CRASHED_CALL, CRASHED_CALL, CRASHED_CALL],
+      });
+      expect(calls).toHaveLength(3);
+      expect(sleeps).toEqual([30_000, 120_000]);
+      expect(lines).toEqual([
+        `  F1.verify attempt 1/3 failed (${subtype}) — backing off 30s`,
+        `  F1.verify attempt 2/3 failed (${subtype}) — backing off 120s`,
+        `  F1.verify attempt 3/3 failed (${subtype}) — giving up`,
+      ]);
+      expect(result.ok).toBe(false);
+    }
+  );
+
+  it.each(['error_max_turns', 'error_max_budget_usd'])(
+    'takes a Claude %s cap as the answer: one attempt and no back-off',
+    async (subtype) => {
+      const { result, calls, sleeps, lines } = await runStep({ results: [claudeCap(subtype)] });
+      expect(calls).toHaveLength(1);
+      expect(sleeps).toEqual([]);
+      expect(lines).toEqual([`  F1.verify hit a cap (${subtype}) — not retrying`]);
+      expect(result.ok).toBe(false);
+    }
+  );
+
+  it('mints a new Claude --session-id for each fresh attempt and returns the succeeding one', async () => {
+    const { result, calls } = await runStep({
+      results: [CRASHED_CALL, CRASHED_CALL, CLAUDE_VERDICT],
+    });
+    const sessionIds = calls.map(({ args }) => flagValue(args, '--session-id'));
+    expect(sessionIds).toEqual([expect.any(String), expect.any(String), expect.any(String)]);
+    expect(new Set(sessionIds).size).toBe(3);
+    expect(calls.map(({ args }) => flagValue(args, '--resume'))).toEqual([null, null, null]);
+    expect(result).toMatchObject({
+      ok: true,
+      sessionId: sessionIds[2],
+      structured: { verdict: 'VALID' },
+    });
+  });
+
+  it('resumes the same Claude session on every attempt without minting another', async () => {
+    const { result, calls } = await runStep({
+      sessionId: 'impl-session',
+      results: [CRASHED_CALL, CRASHED_CALL, CRASHED_CALL],
+    });
+    expect(calls.map(({ args }) => flagValue(args, '--resume'))).toEqual([
+      'impl-session',
+      'impl-session',
+      'impl-session',
+    ]);
+    expect(calls.map(({ args }) => flagValue(args, '--session-id'))).toEqual([null, null, null]);
+    expect(result).toMatchObject({ ok: false, sessionId: 'impl-session' });
   });
 });
