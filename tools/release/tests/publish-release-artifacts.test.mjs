@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { compareArtifactVersion, parsePublishArgs } from '../publish-release-artifacts.mjs';
+import {
+  compareArtifactVersion,
+  inspectArtifact,
+  parseExpected,
+  parsePublishArgs,
+} from '../publish-release-artifacts.mjs';
+import { releaseBundle } from './fixtures/release-bundle.mjs';
 
 describe('compareArtifactVersion', () => {
   it('accepts an artifact whose embedded version matches the release', () => {
@@ -33,19 +40,118 @@ describe('compareArtifactVersion', () => {
     ).toEqual(['versionCode is 5, expected 6']);
   });
 
-  it('skips the versionCode check only when a side genuinely has none', () => {
+  // Skipping on a null would quietly shrink the check to versionName alone.
+  it('treats a missing versionCode on either side as a mismatch', () => {
     expect(
       compareArtifactVersion(
         { version: '1.4.0', versionCode: null },
         { versionName: '1.4.0', versionCode: '6' }
       )
-    ).toEqual([]);
+    ).toEqual(['versionCode is 6, expected none']);
     expect(
       compareArtifactVersion(
         { version: '1.4.0', versionCode: 6 },
         { versionName: '1.4.0', versionCode: null }
       )
-    ).toEqual([]);
+    ).toEqual(['versionCode is none, expected 6']);
+    expect(
+      compareArtifactVersion(
+        { version: '1.4.0', versionCode: null },
+        { versionName: '1.4.0', versionCode: null }
+      )
+    ).toEqual(['versionCode is none, expected none']);
+  });
+});
+
+describe('parseExpected', () => {
+  const file = 'releases/1.7.0.md';
+  const source = (frontmatter) => `---\nversion: 1.7.0\n${frontmatter}\n---\n\n## New\n\n* Thing\n`;
+  const parse = (frontmatter) =>
+    parseExpected({ version: '1.7.0', file, source: source(frontmatter) });
+
+  it('reads the versionCode the release file pins', () => {
+    expect(parse('androidVersionCode: 9')).toEqual({ version: '1.7.0', versionCode: 9 });
+  });
+
+  // Number('') is 0 and Number(undefined) is NaN; neither may stand in for a pin.
+  it.each([
+    ['no androidVersionCode', 'date: 2026-10-04'],
+    ['a blank androidVersionCode', 'androidVersionCode:'],
+  ])('refuses a release file with %s', (_name, frontmatter) => {
+    expect(() => parse(frontmatter)).toThrow(
+      new Error(
+        'releases/1.7.0.md has no whole-number androidVersionCode; npm run release 1.7.0 pins it'
+      )
+    );
+  });
+
+  it('names a pin that is not a whole number', () => {
+    expect(() => parse('androidVersionCode: 9.5')).toThrow(
+      new Error(
+        'releases/1.7.0.md has no whole-number androidVersionCode (got "9.5"); ' +
+          'npm run release 1.7.0 pins it'
+      )
+    );
+  });
+
+  it('refuses a release file without frontmatter', () => {
+    expect(() => parseExpected({ version: '1.7.0', file, source: '## New\n' })).toThrow(
+      new Error('releases/1.7.0.md: malformed frontmatter')
+    );
+  });
+});
+
+describe('inspectArtifact on an Android bundle', () => {
+  const unsigned =
+    'unsigned: no META-INF/*.RSA, *.DSA or *.EC signature block; ' +
+    'rebuild it with android/keystore.properties in place';
+  let dir;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'splotch-publish-'));
+  });
+
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  function inspectBundle(bytes) {
+    const path = join(dir, 'app-release.aab');
+    writeFileSync(path, bytes);
+    return inspectArtifact({ version: '1.6.0', versionCode: 8 }, 'android', path);
+  }
+
+  it.each(['META-INF/UPLOAD.RSA', 'META-INF/CERT.DSA', 'META-INF/KEY0.EC'])(
+    'accepts a bundle whose JAR signature block is %s',
+    (signatureBlock) => {
+      expect(inspectBundle(releaseBundle({ signatureBlock }))).toEqual({
+        actual: { versionName: '1.6.0', versionCode: '8' },
+        problems: [],
+      });
+    }
+  );
+
+  it('refuses an unsigned bundle and says how to sign it', () => {
+    expect(inspectBundle(releaseBundle({ signatureBlock: null })).problems).toEqual([unsigned]);
+  });
+
+  // A signature file alone is not a signature, and a block under a module's
+  // root/META-INF/ is a packaged resource, not the bundle's own signature.
+  it.each(['META-INF/UPLOAD.SF', 'base/root/META-INF/LIBRARY.RSA'])(
+    'refuses a bundle whose only signature-like entry is %s',
+    (signatureBlock) => {
+      expect(inspectBundle(releaseBundle({ signatureBlock })).problems).toEqual([unsigned]);
+    }
+  );
+
+  it('refuses a bundle whose manifest carries no versionCode', () => {
+    expect(inspectBundle(releaseBundle({ versionCode: null })).problems).toEqual([
+      'versionCode is none, expected 8',
+    ]);
+  });
+
+  it('reports an unreadable bundle without running the bundle checks', () => {
+    expect(inspectBundle(Buffer.from('not a zip'))).toEqual({
+      problems: ['unreadable: not a zip archive (no end-of-central-directory record)'],
+    });
   });
 });
 
