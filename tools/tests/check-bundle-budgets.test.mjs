@@ -201,7 +201,7 @@ it.each([
     `[bundle-budgets] report-only: Largest lazy JS chunk is ${MAX_LAZY_CHUNK_BYTES + 1} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (_app/immutable/chunks/lazy.js)`
   );
   expect(log).toHaveBeenCalledWith(
-    `[bundle-budgets] instrumented build: release budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files (1/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads) + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
+    `[bundle-budgets] instrumented build: release budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes (1 linked files plus 0 inline CSS bytes; 1/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads); largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
   );
 });
 
@@ -227,7 +227,7 @@ it('passes a release build that modulepreloads the pinned number of chunks', asy
 
   expect(log).toHaveBeenCalledWith(
     expect.stringContaining(
-      `(${STARTUP_MODULEPRELOAD_COUNT}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads)`
+      `; ${STARTUP_MODULEPRELOAD_COUNT}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads)`
     )
   );
 });
