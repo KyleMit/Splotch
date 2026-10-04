@@ -30,7 +30,15 @@ import { spawnSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { argFlag, isMain, ROOT, runMain, sleep } from '../lib/proc.mjs';
+import {
+  argFlag,
+  argSwitch,
+  isMain,
+  rejectUnknownFlags,
+  ROOT,
+  runMain,
+  sleep,
+} from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { selectAndroidSerial } from './lib/android-serial.mjs';
 import { PORT_ROLES } from './lib/capture-readiness.mjs';
@@ -551,15 +559,17 @@ export function releaseFailures(report) {
   return failures;
 }
 
+// releaseCapture reads --android-serial itself, from this process's argv.
 if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['dry-run', 'host-only', 'stop-campaigns', 'json', 'android-serial']);
   runMain(async () => {
-    const argv = process.argv.slice(2);
+    const json = argSwitch('json');
     const report = await releaseCapture({
-      dryRun: argv.includes('--dry-run'),
-      hostOnly: argv.includes('--host-only'),
-      stopCampaigns: argv.includes('--stop-campaigns'),
+      dryRun: argSwitch('dry-run'),
+      hostOnly: argSwitch('host-only'),
+      stopCampaigns: argSwitch('stop-campaigns'),
     });
-    if (argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
+    if (json) console.log(JSON.stringify(report, null, 2));
     else printReport(report);
     if (report.blocked.length || report.survivors.length || report.failures.length) {
       process.exit(1);
