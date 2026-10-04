@@ -27,6 +27,10 @@ permissions:
   actions: read
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 # The history is a chain: two harvests starting from the same artifact would each upload a branch
 # of it, and the later upload would drop whatever the earlier one read.
 concurrency:

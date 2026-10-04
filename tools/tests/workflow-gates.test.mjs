@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  BASH_STEP_ARGS,
   jobBlock,
   jobBlocks,
   runScriptIn,
@@ -93,6 +94,41 @@ function unreadablePermissions(workflow) {
   });
 }
 
+const BASH_DEFAULTS_BLOCK = ['defaults:', '  run:', '    shell: bash'];
+const NO_BASH_DEFAULTS =
+  'run: steps and no top-level defaults block: GitHub runs them as bash -e {0}, without pipefail';
+// Each matches its key however it is spelled: at any indent, as a list item's first key, after a
+// flow mapping's `{` or `,`, quoted, or with a space before the colon.
+const SHELL_SETTING_KEY = /(?:^\s*(?:-\s+)?|[{,]\s*)(["']?)(?:defaults|shell)\1\s*:/;
+const RUN_KEY = /(?:^\s*(?:-\s+)?|[{,]\s*)(["']?)run\1\s*:/;
+
+// The exact block starts at `index` and ends where the next line YAML reads returns to column 0,
+// so no key sits under it.
+function isBashDefaultsBlock(lines, index) {
+  const exact = BASH_DEFAULTS_BLOCK.every((line, offset) => lines[index + offset] === line);
+  const next = lines
+    .slice(index + BASH_DEFAULTS_BLOCK.length)
+    .find((line) => !isBlankOrComment(line));
+  return exact && (next === undefined || /^\S/.test(next));
+}
+
+// Every way a run: step could get a shell other than BASH_STEP_ARGS: a run step in a workflow
+// without the one top-level block, or a `defaults` or `shell` key anywhere outside it.
+function shellProblems(workflow) {
+  const lines = workflow.split('\n');
+  const block = lines.findIndex((_, index) => isBashDefaultsBlock(lines, index));
+  const accepted = block < 0 ? [] : [block, block + BASH_DEFAULTS_BLOCK.length - 1];
+  const stray = lines.flatMap((line, index) =>
+    !isBlankOrComment(line) && SHELL_SETTING_KEY.test(line) && !accepted.includes(index)
+      ? [`line ${index + 1}: ${line.trim()}`]
+      : []
+  );
+  const runsScripts = jobBlocks(workflow).some((job) =>
+    stepBlocks(job.text).some((step) => step.text.split('\n').some((line) => RUN_KEY.test(line)))
+  );
+  return runsScripts && block < 0 ? [...stray, NO_BASH_DEFAULTS] : stray;
+}
+
 function writeExecutable(path, body) {
   writeFileSync(path, `#!/bin/bash\n${body}\n`);
   chmodSync(path, 0o755);
@@ -113,25 +149,44 @@ function runRestoreStep(script, { artifactId, download, unzip }) {
   writeExecutable(join(stubBin, 'gh'), GH_STUB);
   writeExecutable(join(stubBin, 'unzip'), UNZIP_STUB);
 
-  const result = spawnSync(
-    '/bin/bash',
-    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
-    {
-      cwd: workspace,
-      encoding: 'utf8',
-      env: {
-        GH_ARTIFACT_ID: artifactId,
-        GH_DOWNLOAD: download,
-        GITHUB_REPOSITORY: 'KyleMit/Splotch',
-        PATH: `${stubBin}:/usr/bin:/bin`,
-        RESTORED_HISTORY,
-        RUNNER_TEMP: runnerTemp,
-        UNZIP_RESULT: unzip,
-      },
-    }
-  );
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', script], {
+    cwd: workspace,
+    encoding: 'utf8',
+    env: {
+      GH_ARTIFACT_ID: artifactId,
+      GH_DOWNLOAD: download,
+      GITHUB_REPOSITORY: 'KyleMit/Splotch',
+      PATH: `${stubBin}:/usr/bin:/bin`,
+      RESTORED_HISTORY,
+      RUNNER_TEMP: runnerTemp,
+      UNZIP_RESULT: unzip,
+    },
+  });
 
   return { history: readFileSync(join(workspace, HISTORY_PATH), 'utf8'), result };
+}
+
+// `node` on PATH stands in for tools/perf/report-undo-gate-failures.mjs, so $2 is the
+// `--first=` flag on the call that compares the two runners.
+function runCompareStep(script, reporterStub) {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-gate-compare-'));
+  tempRoots.push(root);
+  const stubBin = join(root, 'bin');
+  const githubOutput = join(root, 'github-output');
+  mkdirSync(stubBin);
+  writeFileSync(githubOutput, '');
+  writeExecutable(join(stubBin, 'node'), reporterStub);
+
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', script], {
+    encoding: 'utf8',
+    env: {
+      FIRST_FAILURES: 'multi-finger:breach',
+      GITHUB_OUTPUT: githubOutput,
+      PATH: `${stubBin}:/usr/bin:/bin`,
+    },
+  });
+
+  return { output: readFileSync(githubOutput, 'utf8'), result };
 }
 
 describe('workflow gates', () => {
@@ -203,6 +258,92 @@ describe('workflow gates', () => {
     });
   });
 
+  // GitHub runs a run: script with no declared shell as `bash -e {0}`, without pipefail, so the
+  // WebKit retry's `node … | tr` comparison would read a crashed comparator as "not reproduced"
+  // and file nothing. One top-level block declares bash for every step and no other key may
+  // change it, so a step a test executes under BASH_STEP_ARGS runs that way in CI too.
+  describe('run: step shell', () => {
+    const buildJob = [
+      'jobs:',
+      '  build:',
+      '    runs-on: ubuntu-latest',
+      '    steps:',
+      '      - name: Build',
+      '        run: npm run build',
+    ];
+
+    it.each(workflows)('$name runs any run: step under the declared bash shell', ({ text }) => {
+      expect(shellProblems(text)).toEqual([]);
+    });
+
+    it.each([
+      {
+        spelling: 'the block before a comment',
+        yaml: [...BASH_DEFAULTS_BLOCK, '', '# Introduces the jobs.', ...buildJob],
+      },
+      {
+        spelling: 'no block where no step runs a script',
+        yaml: ['jobs:', '  build:', '    steps:', '      - uses: actions/checkout@sha'],
+      },
+    ])('accepts $spelling', ({ yaml }) => {
+      expect(shellProblems(yaml.join('\n'))).toEqual([]);
+    });
+
+    it.each([
+      { spelling: 'no block', yaml: buildJob, problems: [NO_BASH_DEFAULTS] },
+      {
+        spelling: 'the block commented out',
+        yaml: ['# defaults:', '#   run:', '#     shell: bash', ...buildJob],
+        problems: [NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'the block nested under a job',
+        yaml: [
+          'jobs:',
+          '  build:',
+          '    defaults:',
+          '      run:',
+          '        shell: bash',
+          '    steps:',
+          '      - run: npm run build',
+        ],
+        problems: ['line 3: defaults:', 'line 5: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a step-level shell',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '        shell: sh'],
+        problems: ['line 10: shell: sh'],
+      },
+      {
+        spelling: 'a shell inside a flow-style step',
+        yaml: [...BASH_DEFAULTS_BLOCK, ...buildJob, '      - { run: npm test, shell: sh }'],
+        problems: ['line 10: - { run: npm test, shell: sh }'],
+      },
+      {
+        spelling: 'a flow-style block',
+        yaml: ['defaults: { run: { shell: bash } }', ...buildJob],
+        problems: ['line 1: defaults: { run: { shell: bash } }', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a quoted key',
+        yaml: ['"defaults":', '  run:', '    shell: bash', ...buildJob],
+        problems: ['line 1: "defaults":', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a space before the colon',
+        yaml: ['defaults :', '  run:', '    shell: bash', ...buildJob],
+        problems: ['line 1: defaults :', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+      {
+        spelling: 'a key added under the block',
+        yaml: [...BASH_DEFAULTS_BLOCK, '', '    working-directory: web', ...buildJob],
+        problems: ['line 1: defaults:', 'line 3: shell: bash', NO_BASH_DEFAULTS],
+      },
+    ])('refuses $spelling', ({ yaml, problems }) => {
+      expect(shellProblems(yaml.join('\n'))).toEqual(problems);
+    });
+  });
+
   // The check-then-create requires a constant lock. queue:max permits up to
   // 100 pending jobs; queue:single replaces an existing pending reporter.
   describe('WebKit fast gate filing', () => {
@@ -219,6 +360,50 @@ describe('workflow gates', () => {
           '',
         ].join('\n')
       );
+    });
+  });
+
+  // A crashed reporter exits 1 with nothing on stdout (issue 1296), and a comparison step that
+  // succeeds with an empty `reproduced` is what the retry records as host noise, filing nothing.
+  // So a crash has to fail the step, while a comparison that ran and found no overlap succeeds.
+  describe('WebKit fast gate retry comparison', () => {
+    const compareScript = runScriptIn(
+      stepBlock(
+        jobBlock(testWorkflow, 'webkit-commit-gate-fast-retry'),
+        "Compare this runner's failure with the first runner's"
+      )
+    );
+
+    it.each([
+      { label: 'the reporter crashes', reporter: 'exit 1' },
+      {
+        label: 'only the comparison crashes',
+        reporter: 'case "$2" in --first=*) exit 1 ;; *) echo multi-finger:breach ;; esac',
+      },
+    ])('fails the step when $label', ({ reporter }) => {
+      const { result } = runCompareStep(compareScript, reporter);
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(1);
+    });
+
+    it.each([
+      {
+        label: 'a reproduced failure',
+        reporter: 'echo multi-finger:breach',
+        output: 'mine=multi-finger:breach\nreproduced=multi-finger:breach\n',
+      },
+      {
+        label: 'a failure that did not reproduce',
+        reporter: 'case "$2" in --first=*) echo ;; *) echo crayon-scribbles:breach ;; esac',
+        output: 'mine=crayon-scribbles:breach\nreproduced=\n',
+      },
+    ])('records $label from a comparison that ran', ({ reporter, output }) => {
+      const compared = runCompareStep(compareScript, reporter);
+
+      expect(compared.result.stderr).toBe('');
+      expect(compared.result.status).toBe(0);
+      expect(compared.output).toBe(output);
     });
   });
 

@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { shouldWriteBlobsProbe } from '../api-smoke/lib/deployed-admin-target.mjs';
 import {
+  BASH_STEP_ARGS,
   jobBlock,
   jobBlocks,
   runScriptIn,
@@ -68,22 +69,18 @@ function runInstallMaestro(versionOutput) {
   );
   writeExecutable(maestroStub, `printf '%s\\n' "$FAKE_MAESTRO_VERSION_OUTPUT"`);
 
-  const result = spawnSync(
-    '/bin/bash',
-    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', installMaestroScript],
-    {
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        FAKE_MAESTRO_SOURCE: maestroStub,
-        FAKE_MAESTRO_VERSION_OUTPUT: versionOutput,
-        GITHUB_PATH: githubPath,
-        HOME: home,
-        MAESTRO_VERSION: maestroVersion,
-        PATH: `${stubBin}:/usr/bin:/bin`,
-      },
-    }
-  );
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', installMaestroScript], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      FAKE_MAESTRO_SOURCE: maestroStub,
+      FAKE_MAESTRO_VERSION_OUTPUT: versionOutput,
+      GITHUB_PATH: githubPath,
+      HOME: home,
+      MAESTRO_VERSION: maestroVersion,
+      PATH: `${stubBin}:/usr/bin:/bin`,
+    },
+  });
 
   return { githubPath, home, result };
 }
@@ -138,21 +135,17 @@ function runFilingStep(script, stepEnv, existingIssue) {
   writeFileSync(ghBodyCapture, '');
   writeExecutable(join(stubBin, 'gh'), GH_STUB);
 
-  const result = spawnSync(
-    '/bin/bash',
-    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
-    {
-      encoding: 'utf8',
-      env: {
-        ...stepEnv,
-        GH_BODY_CAPTURE: ghBodyCapture,
-        GH_CALL_LOG: ghCallLog,
-        GH_EXISTING_ISSUE: existingIssue,
-        PATH: `${stubBin}:/usr/bin:/bin`,
-        RUNNER_TEMP: runnerTemp,
-      },
-    }
-  );
+  const result = spawnSync('/bin/bash', [...BASH_STEP_ARGS, '-c', script], {
+    encoding: 'utf8',
+    env: {
+      ...stepEnv,
+      GH_BODY_CAPTURE: ghBodyCapture,
+      GH_CALL_LOG: ghCallLog,
+      GH_EXISTING_ISSUE: existingIssue,
+      PATH: `${stubBin}:/usr/bin:/bin`,
+      RUNNER_TEMP: runnerTemp,
+    },
+  });
 
   return {
     body: readFileSync(ghBodyCapture, 'utf8'),
