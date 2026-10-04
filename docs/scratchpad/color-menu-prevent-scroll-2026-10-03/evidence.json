@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "base": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "owner": "web/src/lib/components/ColorControl.svelte",
+  "operation": "ColorControl.toggle trigger focus",
+  "treatment": "focus({ preventScroll: true })",
+  "decision": "REJECTED_BEFORE_TIMING",
+  "patchSHA256": "161918ee0c6f7642d65f8ebedd51ea54d5a7dd23ccb073425b58f4ededac450a",
+  "baselineSourceSHA256": "acb246562206cc184a6de371470d9fcb64ea431d09694a1b81194f26bae12964",
+  "treatmentSourceSHA256": "d9cfc3ca3ced93cc398a4a99b4613260817fa31c389fbf02797294554757e737",
+  "evidenceKind": "sanitized historical local outcome summary; raw artifacts retained locally",
+  "correctedSymmetricControl": {
+    "stock": {
+      "eligible": true,
+      "focusArgumentCount": 0,
+      "finalTriggerFocused": true,
+      "menuOpen": true
+    },
+    "candidate": {
+      "eligible": false,
+      "focusArgumentCount": 1,
+      "preventScroll": true,
+      "synchronousFocusAfterCall": true,
+      "finalTriggerFocused": false,
+      "menuOpen": true
+    },
+    "failedAssertion": "Normal trigger focus retained",
+    "observation": "strict final observation before optional late-observation callback",
+    "identityGatesPassed": true,
+    "collectorDrops": 0,
+    "collectorErrors": 0
+  },
+  "performance": {
+    "timingCaptures": 0,
+    "productTimingTrials": 0,
+    "causalConclusion": "UNRESOLVED"
+  },
+  "limitations": [
+    "Initial unmatched observation screen was confounded and is not used as regression evidence.",
+    "Strict correctness failure rejects this candidate; it does not establish a general Safari focus API defect.",
+    "No experiment, test, build, or physical capture was rerun during publication.",
+    "No scorer, readiness, input, window, configuration, acceptance, or test assertion was changed for publication."
+  ]
+}

@@ -38,7 +38,7 @@
 
   function toggle() {
     releaseAllPointers();
-    triggerEl?.focus();
+    triggerEl?.focus({ preventScroll: true });
     onOpenChange(!open);
   }
 
