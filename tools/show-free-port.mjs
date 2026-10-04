@@ -2,8 +2,6 @@ import { parseArgs } from 'node:util';
 import { findFreePort } from './lib/net.mjs';
 import { isMain, parseNumberFlag, runMain, TCP_PORT } from './lib/proc.mjs';
 
-export { findFreePort } from './lib/net.mjs';
-
 const parsePortFlag = (name, raw) =>
   raw === undefined ? undefined : parseNumberFlag(name, raw, TCP_PORT);
 

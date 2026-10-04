@@ -42,7 +42,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand, isMain, parseOrFail, sleep } from '../lib/proc.mjs';
-import { findFreePort } from '../show-free-port.mjs';
+import { findFreePort } from '../lib/net.mjs';
 import { runAgentStep } from './lib/agent-runner.mjs';
 import { readConfig } from './lib/burndown-config.mjs';
 import {
