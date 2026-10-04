@@ -12,7 +12,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
+import { ROOT, fail, run } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { freePort, spawnViteServer } from '../../lib/vite-server.mjs';
 import { buildDirHoldsNativeExport } from './build-variant.mjs';
@@ -218,8 +218,7 @@ export async function buildAndPreview(port, { build = true, timeout = 90_000 } =
     run('npm', ['run', 'build']);
   }
 
-  freePort(port);
-  await sleep(500);
+  await freePort(port);
 
   const base = `http://localhost:${port}/`;
   console.log('Starting preview server…');

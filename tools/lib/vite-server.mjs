@@ -7,26 +7,40 @@
 // stop() kills the whole group.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, realpathSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { ROOT } from './proc.mjs';
 
 const PORT_RELEASE_TIMEOUT_MS = 5_000;
 const PORT_RELEASE_POLL_INTERVAL_MS = 50;
 
-// null when lsof could not be launched, which is not the same answer as "no
-// listener": freePort() has to say it could not check rather than stay silent.
-function lsofListenerPids(port) {
-  const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
-  if (out.error) return null;
-  return (out.stdout || '')
+// The one listing failure freePort() tolerates: without lsof it cannot clear
+// the port, and the strictPort start that follows still refuses a held one.
+class LsofUnavailableError extends Error {}
+
+// lsof is the only witness to which process holds a port, so a listing it could
+// not produce throws: read as an empty answer, it would report a held port free.
+// lsof exits 1 both when nothing matches and when it fails outright; stderr is
+// what tells the failure from the empty answer.
+export function portListenerPids(port) {
+  const result = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
+  if (result.error) {
+    throw new LsofUnavailableError(
+      `lsof could not be launched to check port ${port}: ${result.error.message}`,
+      { cause: result.error }
+    );
+  }
+  if (result.signal) {
+    throw new Error(`lsof was terminated by ${result.signal} while checking port ${port}.`);
+  }
+  const pids = (result.stdout || '')
     .split('\n')
     .map((line) => Number(line.trim()))
     .filter((pid) => Number.isInteger(pid) && pid > 0);
-}
-
-export function portListenerPids(port) {
-  return lsofListenerPids(port) ?? [];
+  if (result.status !== 0 && !pids.length && result.stderr?.trim()) {
+    throw new Error(`lsof failed while checking port ${port}: ${result.stderr.trim()}`);
+  }
+  return pids;
 }
 
 // A listener's working directory is what identifies which checkout owns it. Two
@@ -52,11 +66,21 @@ function listenerOwners(pids, root) {
     return {
       pid,
       cwd: resolvedCwd,
-      owned:
-        resolvedCwd !== null &&
-        (resolvedCwd === resolvedRoot || resolvedCwd.startsWith(`${resolvedRoot}/`)),
+      owned: resolvedCwd !== null && inCheckout(resolvedCwd, resolvedRoot),
     };
   });
+}
+
+// Being under the root is not enough: Claude Code nests its worktrees inside
+// the main checkout, so a directory belongs to the nearest checkout holding a
+// `.git` entry, which is how git itself finds a worktree's top level. A cwd
+// that no longer exists, such as a pruned worktree's, cannot be placed.
+function inCheckout(cwd, root) {
+  if (!existsSync(cwd) || (cwd !== root && !cwd.startsWith(`${root}/`))) return false;
+  for (let dir = cwd; dir !== root; dir = dirname(dir)) {
+    if (existsSync(join(dir, '.git'))) return false;
+  }
+  return true;
 }
 
 const foreignPids = (owners) =>
@@ -64,7 +88,8 @@ const foreignPids = (owners) =>
 
 // Listeners on this port that belong to some OTHER checkout. A listener whose
 // working directory cannot be read counts as foreign: refusing to start is
-// recoverable, and killing something unidentified is not.
+// recoverable, and killing something unidentified is not. A test seam: the
+// production callers read portListenerOwners() instead.
 export function foreignPortListeners(port, root) {
   return foreignPids(portListenerOwners(port, root));
 }
@@ -77,18 +102,25 @@ function realPath(path) {
   }
 }
 
+// What freePort() throws for a listener outside this checkout, so a caller can
+// tell that refusal from a port that would not clear.
+export class ForeignListenerError extends Error {}
+
 // Clears this checkout's own leftover server off `port` so strictPort doesn't
-// fail and a run never reuses a stale server. It throws rather than touch a
-// listener from another checkout, and owns that refusal itself because a
-// caller-side pre-check is one a new caller forgets: an unguarded call killed
-// another worktree's preview server before anything could report which build
-// it was serving.
+// fail and a run never reuses a stale server, resolving once the port is
+// released. It throws rather than touch a listener from another checkout, and
+// owns that refusal itself because a caller-side pre-check is one a new caller
+// forgets: an unguarded call killed another worktree's preview server before
+// anything could report which build it was serving.
 //
 // Ownership is decided on the same pid list the SIGTERMs go to, so a listener
 // that appears between the check and the kill is never signalled unvetted.
-export function freePort(port) {
-  const pids = lsofListenerPids(port);
-  if (pids === null) {
+export async function freePort(port) {
+  let pids;
+  try {
+    pids = portListenerPids(port);
+  } catch (error) {
+    if (!(error instanceof LsofUnavailableError)) throw error;
     console.warn(
       `Unable to check or clear port ${port} automatically because lsof could not be launched. If the port is in use, stop its listener before retrying.`
     );
@@ -96,7 +128,7 @@ export function freePort(port) {
   }
   const foreign = foreignPids(listenerOwners(pids, ROOT));
   if (foreign.length) {
-    throw new Error(
+    throw new ForeignListenerError(
       `port ${port} is held by a listener outside this checkout (pid ${foreign.join(', ')}). ` +
         "Choose a free port — stopping it would take down another session's server."
     );
@@ -108,9 +140,10 @@ export function freePort(port) {
       // already gone
     }
   }
+  await waitForPortRelease(port);
 }
 
-export async function waitForPortRelease(port) {
+async function waitForPortRelease(port) {
   const deadline = Date.now() + PORT_RELEASE_TIMEOUT_MS;
   for (;;) {
     const pids = portListenerPids(port);

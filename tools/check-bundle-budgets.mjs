@@ -224,7 +224,7 @@ export async function checkBundleBudgets({
   if (!instrumented && problems.length) throw new Error(problems.join('\n'));
   for (const problem of problems) log(`[bundle-budgets] report-only: ${problem}`);
   log(
-    `[bundle-budgets] ${instrumented ? 'instrumented build: release budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files (${measurement.modulepreloadCount}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads) + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
+    `[bundle-budgets] ${instrumented ? 'instrumented build: release budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes (${measurement.startupFileCount} linked files plus ${measurement.inlineStyleBytes} inline CSS bytes; ${measurement.modulepreloadCount}/${STARTUP_MODULEPRELOAD_COUNT} modulepreloads); ` +
       `largest lazy JS ${measurement.largestLazyChunk.bytes}/${MAX_LAZY_CHUNK_BYTES} bytes (${measurement.largestLazyChunk.path})`
   );
 }
