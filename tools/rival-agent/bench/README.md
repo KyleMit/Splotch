@@ -27,7 +27,13 @@ A run creates one bench worktree per cell at `--base` (default `main`), applies 
 the rival on the worktree's uncommitted scope with `--fresh`, serves the broker itself, scores the
 findings against the key, removes the ledger record and the worktree, and writes one JSON per cell
 under `<out>/results/`. Cells run sequentially, repetition-major, so an interrupted run leaves a
-complete first pass. Re-running with the same `--out` skips recorded cells. The Markdown report
+complete first pass. Re-running the same command with the same `--out` skips recorded cells. Ctrl-C
+stops the bench: the rival is terminated, the interrupted cell is cleaned up but not recorded, and
+the run exits nonzero naming the `--out` to resume with, so the resume reruns that cell. Each cell's
+path is claimed by a `<cell>.bench-claim` file beside it, released once the worktree is gone. A
+bench killed outright, or a cleanup that failed, leaves the worktree and its claim behind, and the
+resumed run clears a claimed leftover before recreating the cell. A locked worktree, or anything at
+an unclaimed path, is left alone, and that cell is recorded as a setup failure. The Markdown report
 lands at `--report` (default `<out>/report.md`); `<out>` defaults to a directory under the system
 temp root.
 
@@ -65,6 +71,9 @@ log, wall clock, and normalized tokens.
 
 ## Failure behaviour
 
-A cell whose launch fails is recorded with `failed` and the bench moves on; the summary counts it.
-The run exits nonzero if `--validate` finds an invalid seed. This bench is manual and spends plan
-usage; it is never part of `npm test` or CI.
+A cell whose launch fails is recorded with `failed` and the bench moves on; the summary counts it. A
+cell whose setup fails (git refuses its worktree, or the seed no longer applies to `--base`) is
+recorded as a setup failure, its `failed` starting `setup:` so the report does not read it as the
+rival failing, and the bench moves on too. A resume skips every recorded cell, failed ones included.
+The run exits nonzero if `--validate` finds an invalid seed, or when the bench is cancelled. This
+bench is manual and spends plan usage; it is never part of `npm test` or CI.
