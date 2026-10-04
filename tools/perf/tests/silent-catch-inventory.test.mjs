@@ -76,8 +76,8 @@ const AUDITED_SWALLOWS = {
     'bare-catch@3224363f053e',
     'bare-catch@34eb7221449f',
     'bare-catch@709470fa5c48',
-    'benign-catch@3e436334ff84',
     'benign-catch@4828694def01',
+    'benign-catch@fc18d6213cdb',
   ],
   'prepare-capture.mjs': [
     'bare-catch@509719cc3b5e',
