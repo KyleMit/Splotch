@@ -26,6 +26,7 @@
 // SAMPLES (default 1), CONCURRENCY (default 4), OUT_TAG (run-dir suffix),
 // INPUTS (comma-separated input ids to replace the focus corpus),
 // REPORT_FROM=<run dir> (rebuild report/ from results.json, no API calls).
+// A count that is not a plain integer of at least 1 stops the run before any call.
 
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,8 +37,10 @@ import {
   PRODUCTION_VARIANT,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
+  apiKeysFor,
   assertProductionConfig,
   costOf,
+  countFromEnv,
   imageDims,
   imageFormat,
   pool,
@@ -46,25 +49,12 @@ import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
 import { callVariant } from './lib/image-providers.mjs';
 import { scoreComposition } from './lib/composition-score.mjs';
 import { esc } from '../lib/html.mjs';
-import { fail, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
-
-// A zero, negative, or non-numeric count would silently produce an empty run —
-// zero workers in pool(), or zero tasks — that still writes a success-looking
-// report. For a paid measurement tool that misconfiguration must fail fast.
-function positiveIntEnv(name, fallback) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === '') return fallback;
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value < 1) {
-    fail(`${name} must be a positive integer, got "${raw}"`);
-  }
-  return value;
-}
+import { parseOrFail, runId as makeRunId } from '../lib/proc.mjs';
 
 const BASE = join(ROOT, 'tools/model-eval');
 const IN = join(BASE, 'inputs');
-const SAMPLES = positiveIntEnv('SAMPLES', 1);
-const CONCURRENCY = positiveIntEnv('CONCURRENCY', 4);
+const SAMPLES = parseOrFail(() => countFromEnv('SAMPLES', { fallback: 1, min: 1 }));
+const CONCURRENCY = parseOrFail(() => countFromEnv('CONCURRENCY', { fallback: 4, min: 1 }));
 const FILTER = process.env.FILTER || '';
 const LAB_FILTER = (process.env.LABS || '')
   .split(',')
@@ -427,8 +417,8 @@ async function reportOnly(dir) {
 async function main() {
   if (process.env.REPORT_FROM) return reportOnly(process.env.REPORT_FROM);
   assertProductionConfig();
-  requireEnv('OPENAI_API_KEY', 'set it in web/.env or export it');
   const labs = selectLabs();
+  const apiKeys = parseOrFail(() => apiKeysFor(labs.map((lab) => lab.variant ?? DEFAULT_VARIANT)));
   const inputs = loadInputs();
   const runId = makeRunId(process.env.OUT_TAG ?? 'adherence');
   const outDir = join(BASE, 'output', runId);
@@ -457,7 +447,7 @@ async function main() {
   const thunks = tasks.map(({ input, lab, sample }) => async () => {
     const variant = lab.variant ?? DEFAULT_VARIANT;
     const result = await callVariant(variant, {
-      apiKeys: { openai: process.env.OPENAI_API_KEY },
+      apiKeys,
       image: input.image,
       prompt: lab.prompt,
       systemInstruction: SAFETY_SYSTEM_INSTRUCTION,

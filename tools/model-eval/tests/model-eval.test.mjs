@@ -1,8 +1,13 @@
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { IMAGE_SIZES, imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
 import {
+  apiKeysFor,
   assertProductionConfig,
   costOf,
+  countFromEnv,
   imageDims,
   takePerCategory,
   selectModelVariants,
@@ -11,6 +16,13 @@ import {
   VARIANTS,
 } from '../lib/model-eval.mjs';
 import { callVariant } from '../lib/image-providers.mjs';
+
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
+// An entry start under a loaded host can pass Vitest's 5 s default. spawnSync blocks the event
+// loop, so Vitest's own timeout cannot fire during it: the child carries the limit, set below the
+// test's so a hung entry fails the test instead of the CI job.
+const ENTRY_TIMEOUT_MS = 15_000;
+const ENTRY_TEST_TIMEOUT_MS = 20_000;
 
 const openAiRequests = vi.hoisted(() => []);
 vi.mock('openai', () => ({
@@ -297,5 +309,106 @@ describe('takePerCategory', () => {
 
   it('keeps a category that has fewer inputs than the cap', () => {
     expect(takePerCategory(files, 5)).toEqual(files);
+  });
+});
+
+describe('countFromEnv', () => {
+  // Number() reads each of these as NaN, as a count below the floor, or as a number other than
+  // the digits written: the uncapped grid, the empty run, and the thousand-sample run.
+  it.each([
+    ['PER_CATEGORY', '2x', 0],
+    ['CONCURRENCY', '0', 1],
+    ['CONCURRENCY', 'abc', 1],
+    ['CONCURRENCY', '2.0', 1],
+    ['SAMPLES', '0', 1],
+    ['SAMPLES', 'abc', 1],
+    ['SAMPLES', '1e3', 1],
+    ['SAMPLES', '0x10', 1],
+  ])('rejects %s=%s, naming the variable', (name, raw, min) => {
+    expect(() => countFromEnv(name, { fallback: min, min }, { [name]: raw })).toThrow(
+      new Error(`${name} must be an integer >= ${min}, got "${raw}"`)
+    );
+  });
+
+  it('reads PER_CATEGORY=0 as the no-cap count rather than rejecting it', () => {
+    expect(countFromEnv('PER_CATEGORY', { fallback: 0, min: 0 }, { PER_CATEGORY: '0' })).toBe(0);
+  });
+
+  it.each([{}, { CONCURRENCY: '' }])(
+    'keeps the fallback for an unset or empty value: %j',
+    (env) => {
+      expect(countFromEnv('CONCURRENCY', { fallback: 4, min: 1 }, env)).toBe(4);
+    }
+  );
+
+  it('reads a plain integer', () => {
+    expect(countFromEnv('CONCURRENCY', { fallback: 4, min: 1 }, { CONCURRENCY: '6' })).toBe(6);
+  });
+});
+
+// Spawned with no provider key, so an entry that let a malformed count through would stop at
+// its key check, with a different line, instead of reaching a paid call.
+describe('an entry given a malformed count', () => {
+  it.each([
+    ['run-model-evaluation.mjs', 'SAMPLES', '1e3', 1],
+    ['run-model-evaluation.mjs', 'CONCURRENCY', '0', 1],
+    ['run-model-evaluation.mjs', 'PER_CATEGORY', '2x', 0],
+    ['run-prompt-adherence.mjs', 'SAMPLES', 'abc', 1],
+    ['run-prompt-adherence.mjs', 'CONCURRENCY', '0x10', 1],
+  ])(
+    '%s exits on %s=%s before anything else runs',
+    (script, name, raw, min) => {
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--experimental-strip-types',
+          '--disable-warning=ExperimentalWarning',
+          join(import.meta.dirname, '..', script),
+        ],
+        { cwd: repoRoot, encoding: 'utf8', env: { [name]: raw }, timeout: ENTRY_TIMEOUT_MS }
+      );
+
+      expect(result.stderr).toBe(`${name} must be an integer >= ${min}, got "${raw}"\n`);
+      expect(result.stdout).toBe('');
+      expect(result.status).toBe(1);
+    },
+    ENTRY_TEST_TIMEOUT_MS
+  );
+});
+
+describe('apiKeysFor', () => {
+  const [gemini, openai] = ['gemini-2-5-flash-image', 'gpt-image-2-low'].map((key) =>
+    VARIANTS.find((variant) => variant.key === key)
+  );
+  const bothKeys = { GEMINI_API_KEY: 'gemini-key', OPENAI_API_KEY: 'openai-key' };
+
+  it('returns a key for each provider the variants call, and only those', () => {
+    expect(apiKeysFor([openai, openai], bothKeys)).toEqual({ openai: 'openai-key' });
+    expect(apiKeysFor([gemini, openai], bothKeys)).toEqual({
+      gemini: 'gemini-key',
+      openai: 'openai-key',
+    });
+  });
+
+  it.each(['', undefined])(
+    'names a key set to %j and both documented ways to supply it',
+    (value) => {
+      expect(() => apiKeysFor([gemini, openai], { ...bothKeys, OPENAI_API_KEY: value })).toThrow(
+        new Error(
+          'Missing OPENAI_API_KEY — export it, or invoke this entry point with node --env-file=web/.env from the repo root'
+        )
+      );
+    }
+  );
+
+  // The hint sends an operator to web/.env, so every key the harness asks for must be one the
+  // file's template declares.
+  it('finds every provider key among the variables web/.env.example declares', () => {
+    const example = readFileSync(join(repoRoot, 'web', '.env.example'), 'utf8');
+    const declared = Object.fromEntries(
+      [...example.matchAll(/^(\w+)=/gm)].map(([, name]) => [name, 'declared'])
+    );
+
+    expect(apiKeysFor(VARIANTS, declared)).toEqual({ gemini: 'declared', openai: 'declared' });
   });
 });
