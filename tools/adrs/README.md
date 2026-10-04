@@ -22,14 +22,17 @@ checkout lists `tools/lib` beside `tools/adrs`.
 ## Inputs and outputs
 
 The checker reads record filenames and first headings from `docs/adrs/`, parses canonical entries
-and local links from `docs/adrs/README.md`, and asks Git which records the branch genuinely added.
-It writes only diagnostics. In GitHub Actions it also emits workflow-command annotations for the
-offending paths and lines; locally it prints the same failures as plain text.
+and local links from `docs/adrs/README.md`, and asks Git which records are new relative to the base.
+A record counts as an addition whether it is committed, staged, or untracked, so a local run rejects
+a colliding number before the record is committed. It writes only diagnostics. In GitHub Actions it
+also emits workflow-command annotations for the offending paths and lines; locally it prints the
+same failures as plain text.
 
 `lib/adr-integrity.mjs` owns the dependency-free parsing, comparison, and diagnostic formatting.
-`tests/adr-integrity.test.mjs` covers those pure rules. Keep the entry point, its library, and the
-shared `tools/lib/proc.mjs` import compatible with the default Node version on GitHub's runner
-unless the workflow is intentionally changed to install Node.
+`tests/adr-integrity.test.mjs` covers those pure rules; `tests/check-adr-integrity.test.mjs` runs
+the entry's Git queries and its command line against temporary repositories. Keep the entry point,
+its library, and the shared `tools/lib/proc.mjs` import compatible with the default Node version on
+GitHub's runner unless the workflow is intentionally changed to install Node.
 
 ## Failure behavior
 
@@ -46,12 +49,12 @@ that ADR number. Do not hand-edit only the reported link or suppress the base co
 
 The index parser intentionally recognizes the two canonical shapes documented in ADR-0095 rather
 than implementing general Markdown parsing. Update the parser and its focused cases together if the
-index presentation changes. Preserve rename-aware Git comparison so retitling an existing record
-does not look like a newly added collision.
+index presentation changes. Preserve rename-aware Git comparison so retitling an existing record,
+whether with `git mv` or a plain `mv`, does not look like a newly added collision.
 
 Run the focused verification with:
 
 ```sh
-npm run test:tools -- tools/adrs/tests/adr-integrity.test.mjs
+npm run test:tools -- tools/adrs
 npm run check:adrs
 ```

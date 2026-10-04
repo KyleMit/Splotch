@@ -17,9 +17,9 @@ import {
 
 const DEFAULT_BASE_REF = 'origin/main';
 
-function git(args) {
+function git(root, args) {
   return execFileSync('git', args, {
-    cwd: ROOT,
+    cwd: root,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -27,40 +27,49 @@ function git(args) {
     .filter(Boolean);
 }
 
-function baseEntries(baseRef) {
+function baseEntries(root, baseRef) {
   try {
-    return git(['ls-tree', '--name-only', `${baseRef}:${ADR_DIR}`]);
+    return git(root, ['ls-tree', '--name-only', `${baseRef}:${ADR_DIR}`]);
   } catch {
     return null;
   }
 }
 
-// -M so a retitled record is reported as a rename, not an addition; --diff-filter=A
-// then leaves only records this branch genuinely introduced. Two-dot because the
-// workflow's --depth=1 base fetch leaves no merge base for a three-dot range.
-function addedRecords(baseRef) {
+function listAdrEntries(root, args) {
+  return git(root, [...args, '--', ADR_DIR]).map((path) => path.slice(`${ADR_DIR}/`.length));
+}
+
+// Additions count whether committed, staged, or untracked, so a collision fails
+// before the commit that would carry it. The diff runs from the base tree to the
+// working tree: -M reports a retitle as a rename rather than an addition, and it
+// is two-dot because the workflow's --depth=1 base fetch leaves no merge base for
+// a three-dot range. Diff never lists an untracked file, so ls-files supplies
+// those, less any taking the number of a base record that HEAD holds and the
+// working tree deleted: a retitle by plain mv, which diff cannot see as one.
+function addedRecords(root, baseRef, base) {
   try {
-    return git([
+    const tracked = listAdrEntries(root, ['diff', '-M', '--diff-filter=A', '--name-only', baseRef]);
+    const untracked = listAdrEntries(root, ['ls-files', '--others', '--exclude-standard']);
+    const deleted = listAdrEntries(root, [
       'diff',
-      '-M',
-      '--diff-filter=A',
+      '--no-renames',
+      '--diff-filter=D',
       '--name-only',
-      baseRef,
       'HEAD',
-      '--',
-      ADR_DIR,
-    ]).map((path) => path.slice(`${ADR_DIR}/`.length));
+    ]);
+    const retitledNumbers = new Set(deleted.filter((file) => base.includes(file)).map(adrNumber));
+    return [...tracked, ...untracked.filter((file) => !retitledNumbers.has(adrNumber(file)))];
   } catch {
     return null;
   }
 }
 
-function firstLines(entries) {
+function firstLines(root, entries) {
   return entries
     .filter((entry) => adrNumber(entry) !== null)
     .map((file) => ({
       file,
-      firstLine: readFileSync(join(ROOT, ADR_DIR, file), 'utf8').split('\n', 1)[0],
+      firstLine: readFileSync(join(root, ADR_DIR, file), 'utf8').split('\n', 1)[0],
     }));
 }
 
@@ -80,21 +89,21 @@ function warn(message) {
   if (process.env.GITHUB_ACTIONS) console.log(`::warning::${message}`);
 }
 
-export function checkAdrIntegrity() {
-  const baseRef = argFlag('base', DEFAULT_BASE_REF);
-  const head = readdirSync(join(ROOT, ADR_DIR));
-  const base = baseEntries(baseRef);
-  const added = base === null ? null : addedRecords(baseRef);
+export function checkAdrIntegrity({ baseRef, root }) {
+  const head = readdirSync(join(root, ADR_DIR));
+  const base = baseEntries(root, baseRef);
+  const added = base === null ? null : addedRecords(root, baseRef, base);
+  const warnings = [];
 
   if (base === null || added === null) {
-    warn(
+    warnings.push(
       `Could not resolve ${baseRef} — checking the working tree only, so a number ` +
         `this branch takes from the base branch will not be caught. Fetch the base ref to restore it.`
     );
   }
 
   for (const name of malformedRecordNames(head)) {
-    warn(
+    warnings.push(
       `${ADR_DIR}/${name} starts with four digits but is not a valid record name ` +
         `(NNNN-lower-kebab-case.md), so it is invisible to this check.`
     );
@@ -102,19 +111,21 @@ export function checkAdrIntegrity() {
 
   const duplicates = duplicateNumbers(head);
   const collisions = added === null ? [] : collisionsAgainstBase(base, added);
-  const mismatches = headingMismatches(firstLines(head));
-  const index = indexIntegrity(head, readFileSync(join(ROOT, ADR_DIR, 'README.md'), 'utf8'));
-  const problems = formatProblems({ duplicates, collisions, mismatches, index, baseRef });
+  const mismatches = headingMismatches(firstLines(root, head));
+  const index = indexIntegrity(head, readFileSync(join(root, ADR_DIR, 'README.md'), 'utf8'));
+  return {
+    warnings,
+    recordCount: head.filter((entry) => adrNumber(entry) !== null).length,
+    duplicates,
+    collisions,
+    mismatches,
+    index,
+    problems: formatProblems({ duplicates, collisions, mismatches, index, baseRef }),
+    nextFreeNumber: nextAdrNumber([...head, ...(base ?? [])]),
+  };
+}
 
-  if (problems.length === 0) {
-    const records = head.filter((entry) => adrNumber(entry) !== null).length;
-    console.log(
-      `ADR integrity OK — ${records} records, every number unique, every record indexed once, ` +
-        `and every local ADR link valid.`
-    );
-    return;
-  }
-
+function annotateProblems({ duplicates, collisions, mismatches, index }) {
   for (const { number, files } of duplicates) {
     for (const file of files) {
       const others = files.filter((other) => other !== file).join(', ');
@@ -150,7 +161,21 @@ export function checkAdrIntegrity() {
   for (const { file, line } of index.unknown) {
     annotate('error', 'README.md', `Index target ${file} is not an ADR record`, line);
   }
+}
 
+function printReport(result) {
+  const { warnings, recordCount, problems, duplicates, collisions, nextFreeNumber } = result;
+  for (const message of warnings) warn(message);
+
+  if (problems.length === 0) {
+    console.log(
+      `ADR integrity OK — ${recordCount} records, every number unique, every record indexed once, ` +
+        `and every local ADR link valid.`
+    );
+    return;
+  }
+
+  annotateProblems(result);
   console.error('ADR integrity check failed:\n');
   for (const problem of problems) console.error(`  • ${problem}`);
   console.error(
@@ -159,17 +184,20 @@ export function checkAdrIntegrity() {
       `label and existing target.`
   );
   if (duplicates.length > 0 || collisions.length > 0) {
-    const free = nextAdrNumber([...head, ...(base ?? [])]);
     console.error(
       `For a numbering collision, give the record with fewer inbound references a free number; ` +
-        `if tied, renumber the later-landed record. ${free} is the next free number. Then update ` +
-        `its H1, index entry, and every ADR-NNNN reference to it.`
+        `if tied, renumber the later-landed record. ${nextFreeNumber} is the next free number. ` +
+        `Then update its H1, index entry, and every ADR-NNNN reference to it.`
     );
   }
-  process.exit(1);
 }
 
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['base']);
-  runMain(async () => checkAdrIntegrity());
+  const baseRef = argFlag('base', DEFAULT_BASE_REF);
+  runMain(async () => {
+    const result = checkAdrIntegrity({ baseRef, root: ROOT });
+    printReport(result);
+    if (result.problems.length > 0) process.exit(1);
+  });
 }
