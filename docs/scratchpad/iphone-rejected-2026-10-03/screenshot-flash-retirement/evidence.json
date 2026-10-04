@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "status": "REJECTED_PHYSICAL_TRIAL",
+  "purpose": "Closed, unmerged evidence PR; historical experiment only; not shipping code.",
+  "baseCommit": "af31a00d11cee749f7cbc24bd61035970453aca5",
+  "originalLocalCommit": "2cbbbd9923d9ec525d20d414988925fc64620992",
+  "originalLocalBranch": "codex/iphone-screenshot-performance",
+  "target": "iPhone Safari",
+  "mode": "portrait/light",
+  "minimalDiffSummary": "Remove the screenshot flash at its animation end and omit it when reduced motion was stamped at launch.",
+  "touchedProductionPaths": ["web/src/lib/drawing/polaroidAnimation.ts"],
+  "sourceFiles": [
+    {
+      "path": "web/src/lib/drawing/polaroidAnimation.test.ts",
+      "role": "regression-test",
+      "baselineExists": true,
+      "baselineSha256": "89b4f7a0d5abad7fd46591f0b682b551396bc38d5994fbd00f7d947fce5037c1",
+      "treatmentSha256": "33ae5b6374e9a92f1d6190ae2215e6b5ed1bf4c3ef706593d8f8317db1647e61",
+      "baselineGitBlob": "119aed12d9f568ee8bb5229e6a88b2cf1ad16c6a",
+      "treatmentGitBlob": "a51e06f2a36837bce2c3ac4ae685254cbe11906d"
+    },
+    {
+      "path": "web/src/lib/drawing/polaroidAnimation.ts",
+      "role": "production",
+      "baselineExists": true,
+      "baselineSha256": "601301ed72316b00fc1d6932769bbc74dcb47d7962f5754eb9d19d5f4153e2a9",
+      "treatmentSha256": "ee471466b78e19ced92d449f6901f2e960994d89b917793e80389f6747d63086",
+      "baselineGitBlob": "8eb5009c4d52ede9ccca749e96e76a9daa90d054",
+      "treatmentGitBlob": "3f1d4c091913288b8b1fb603f78fb662406cdb6f"
+    }
+  ],
+  "localSourcePatch": {
+    "sha256": "2fc1d36298c43422fda7608a7dbf48d75a2653ce7b7e722870f0681c4fef342e",
+    "definition": "git diff --binary --full-index <baseCommit> <originalLocalCommit>; complete original source and regression-test diff, exact Git output bytes"
+  },
+  "historicalMeasuredResult": {
+    "canonicalScreenshotMs": {
+      "baseline": {
+        "p95": 18,
+        "max": 56
+      },
+      "treatment": {
+        "p95": 18,
+        "max": 38
+      }
+    },
+    "readinessMs": {
+      "baseline": [203, 203],
+      "treatment": [203, 308]
+    },
+    "scoredAndRawFrames": {
+      "baseline": [350, 573],
+      "treatment": [363, 580]
+    },
+    "validActivationsPerArm": 4,
+    "repeats": 4
+  },
+  "reasonRejected": "The first valid result still failed production scoring despite the lower isolated maximum. Readiness did not supply a supported benefit.",
+  "unchangedGates": [
+    "Production scorer and acceptance thresholds unchanged.",
+    "Input path, cadence, readiness predicate and activity-window rules unchanged.",
+    "First valid failing result retained; no candidate retry for this archived trial."
+  ],
+  "historicalChecksReported": [
+    "Format, type and lint checks and eight lifecycle tests passed; original-source negative controls failed four intended guards.",
+    "52 stable paired WebKit frames across layouts, themes and motion preferences had zero changed RGBA channels."
+  ],
+  "evidenceProvenance": {
+    "kind": "Local operator campaign summary only",
+    "record": "Private campaign experiment-history.md",
+    "lines": [291, 293],
+    "recordSha256": "d07e719500961ee20d39655d17c725984523370f57bd5a1da78abc92250018de",
+    "rawPrivateArtifactsPublished": false
+  },
+  "publicationVerification": {
+    "sourceCommitAndBranchVerified": true,
+    "baseAncestorVerified": true,
+    "productionFilesCopiedFromExactGitObjects": true,
+    "newTestsRun": false,
+    "newPerformanceRun": false,
+    "historicalPhysicalResultRevalidated": false,
+    "allOriginalChangedFilesCopiedFromExactGitObjects": true
+  },
+  "limitations": [
+    "Historical results are summarized from the local operator record; no new tests or performance runs were performed for this publication.",
+    "Raw logs, phone traces, screenshots, packets, device identifiers and local endpoints remain private and are omitted.",
+    "No causal bottleneck, browser/system floor, cross-runtime benefit or shipping acceptance is established."
+  ],
+  "touchedTestPaths": ["web/src/lib/drawing/polaroidAnimation.test.ts"],
+  "allChangedPaths": [
+    "web/src/lib/drawing/polaroidAnimation.test.ts",
+    "web/src/lib/drawing/polaroidAnimation.ts"
+  ],
+  "regressionTestDiffReview": {
+    "status": "PASS_NO_RELAXATION",
+    "summary": "Added lifecycle assertions cover animation-end flash removal, reduced-motion preview preservation, corrected preview ownership, timeout cleanup and late bitmap closure. Existing assertions are retained; no performance harness or acceptance changes.",
+    "testsCopiedByteForByte": true,
+    "testExecutionForPublication": false
+  }
+}

@@ -2,7 +2,7 @@ import { getViewState } from './engine';
 import type { ExportOptions } from './exportDrawing';
 import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
-import { stampMotionAtStart } from '$lib/platform/reducedMotion';
+import { stampMotionAtStart, START_REDUCED_MOTION_ATTRIBUTE } from '$lib/platform/reducedMotion';
 
 const POLAROID_MAX_WIDTH_PX = 480;
 const POLAROID_PREFERRED_MIN_WIDTH_PX = 260;
@@ -77,7 +77,10 @@ function mountPolaroidAnimation(canvas: HTMLCanvasElement, size: PolaroidSize) {
   canvas.style.height = `${size.cssHeight}px`;
 
   frame.appendChild(canvas);
-  overlay.appendChild(flash);
+  if (!flash.hasAttribute(START_REDUCED_MOTION_ATTRIBUTE)) {
+    flash.addEventListener('animationend', () => flash.remove(), { once: true });
+    overlay.appendChild(flash);
+  }
   overlay.appendChild(frame);
   const removeOverlay = () => {
     window.clearTimeout(cleanupTimer);
