@@ -15,10 +15,15 @@
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import OpenAI from 'openai';
 import { imageSizeFor } from '../../../web/src/lib/server/ai/imageSize.ts';
+import {
+  classifyOpenAiResponse,
+  isSafetyError,
+} from '../../../web/src/lib/server/ai/openaiSafety.ts';
 import { ORCHESTRATOR_MODEL, ORCHESTRATOR_REASONING_EFFORT } from './model-eval.mjs';
 
 // Tighten every configurable Gemini harm category to its most aggressive
-// setting, matching the production adapter.
+// setting: the configuration the app's Gemini adapter shipped with, kept so the
+// historical baseline is measured as it was served.
 const GEMINI_SAFETY_SETTINGS = [
   HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
   HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
@@ -47,9 +52,10 @@ const imageToolSize = ({ width, height }) =>
 const firstLine = (err) => (err?.message || String(err)).split('\n')[0];
 
 // Gemini can throw on blocked content rather than answering with a block reason,
-// and the production adapter routes that to its refusal path. Mirrored here so a
-// refused drawing is not counted as an upstream error — which would understate
-// the refusal column the safety headline is read off.
+// and the app's Gemini adapter routed that to its refusal path. This baseline
+// adapter keeps that rule, so a refused drawing is not counted as an upstream
+// error — which would understate the refusal column the safety headline is read
+// off.
 function isGeminiSafetyError(err) {
   const status = err?.status;
   const message = firstLine(err).toUpperCase();
@@ -142,17 +148,14 @@ function openAiUsage(response) {
   };
 }
 
-// The prose the orchestrator answers with when it declines to call the image
-// tool. A `refusal` content part is the SDK's typed decline; a plain `text` part
-// is the model following the system instruction's "reply with one short
-// sentence" — both mean the same thing to the child.
-function openAiMessageText(response) {
-  return (response?.output ?? [])
-    .filter((item) => item.type === 'message')
-    .flatMap((item) => item.content ?? [])
-    .map((part) => part.refusal ?? part.text ?? '')
-    .join(' ')
-    .trim();
+// The app discards a finished picture that arrived beside a machine-readable
+// decline, and production's classifier names those declines. `resultRow` in
+// run-model-evaluation.mjs keeps only the reason, and the report prints it
+// through `firstSentence`, so the names go first: after the decline's own
+// sentence they would never be shown.
+function refusalReason({ reason, imageDiscardedBy }) {
+  if (imageDiscardedBy.length === 0) return reason;
+  return `(image discarded: ${imageDiscardedBy.join(', ')}) ${reason}`;
 }
 
 async function callOpenAi({
@@ -204,41 +207,30 @@ async function callOpenAi({
   } catch (err) {
     // A request the safety system rejects outright never becomes a response, so
     // it has to be recovered from the thrown error to land as a refusal.
-    if (err?.code === 'moderation_blocked') {
-      return { kind: 'refusal', reason: 'moderation_blocked', usage: null };
-    }
+    if (isSafetyError(err)) return { kind: 'refusal', reason: 'moderation_blocked', usage: null };
     return { kind: 'error', reason: firstLine(err), usage: null };
   }
 
+  // Production's own classifier decides the outcome, so a cell counts as a
+  // refusal or an error exactly when the app would refuse it or offer a retry.
   const usage = openAiUsage(response);
-  const call = (response.output ?? []).find((item) => item.type === 'image_generation_call');
-  if (call?.result) {
+  const classified = classifyOpenAiResponse(response);
+  if (classified.kind === 'image') {
+    const call = response.output.find((item) => item.type === 'image_generation_call');
     return {
       kind: 'image',
-      data: call.result,
-      mimeType: `image/${call.output_format || 'png'}`,
+      data: classified.data,
+      mimeType: classified.mimeType,
       usage,
-      finishReason: call.status ?? null,
-      revisedPrompt: call.revised_prompt ?? null,
+      finishReason: call?.status ?? null,
+      revisedPrompt: call?.revised_prompt ?? null,
     };
   }
-
-  const text = openAiMessageText(response);
-  if (text) return { kind: 'refusal', reason: text, usage, finishReason: response.status ?? null };
-  // Neither a picture nor a sentence. Name the output items that did come back —
-  // an image call that stopped short reads very differently from an empty
-  // output list, and "completed" alone tells you neither.
-  const shape = (response.output ?? [])
-    .map((item) => `${item.type}${item.status ? `:${item.status}` : ''}`)
-    .join(', ');
-  return {
-    kind: 'error',
-    reason:
-      response.error?.message ??
-      `no image and no text (status ${response.status ?? 'unknown'}; output: ${shape || 'none'})`,
-    usage,
-    finishReason: response.status ?? null,
-  };
+  const finishReason = response.status ?? null;
+  if (classified.kind === 'safety') {
+    return { kind: 'refusal', reason: refusalReason(classified), usage, finishReason };
+  }
+  return { kind: 'error', reason: classified.reason, usage, finishReason };
 }
 
 const ADAPTERS = { gemini: callGemini, openai: callOpenAi };

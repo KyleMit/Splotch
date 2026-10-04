@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { git, removeDisposableWorktree } from '../../worktree.mjs';
 
@@ -60,17 +68,76 @@ export function loadSeeds(directory = SEEDS_DIRECTORY, names) {
   });
 }
 
-export function createBenchWorktree(repoRoot, base, directory) {
-  git(repoRoot, ['worktree', 'add', '--detach', directory, base]);
+// The bench claims a cell's path with this file beside it before `git worktree add`, and releases
+// the claim only once the worktree is gone. A crash or a failed cleanup leaves the claim with its
+// leftover, and the claim is the record that the leftover is the bench's to clear.
+const CLAIM_SUFFIX = '.bench-claim';
+const claimPath = (directory) => `${directory}${CLAIM_SUFFIX}`;
+
+// git marks a linked worktree with a `.git` file naming its admin entry under the repository's
+// `worktrees/` directory. A `git worktree remove` that fails partway deletes that entry but leaves
+// the directory, `.git` file included: a stale worktree of this repository that git no longer lists.
+function isStaleWorktreeOf(repoRoot, directory) {
+  const marker = join(directory, '.git');
+  if (!statSync(marker, { throwIfNoEntry: false })?.isFile()) return false;
+  const gitdir = /^gitdir: (.+)$/m.exec(readFileSync(marker, 'utf8'))?.[1];
+  if (!gitdir) return false;
+  const adminEntry = resolve(realpathSync(directory), gitdir);
+  const commonDir = git(repoRoot, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
+  return (
+    dirname(adminEntry) === join(realpathSync(commonDir), 'worktrees') && !existsSync(adminEntry)
+  );
+}
+
+// A bench killed mid-cell leaves that cell's worktree registered, and a cleanup that failed leaves
+// its directory behind unregistered; `git worktree add` refuses both. A leftover is cleared only at
+// a path the bench claimed, and an unregistered directory only once it proves a stale worktree of
+// this repository, so a locked worktree, or anything else at the path, stays for `add` to refuse.
+function clearLeftoverWorktree(repoRoot, directory) {
+  if (!existsSync(claimPath(directory))) return;
+  // Path-scoped, and forced once, so a locked worktree is still refused; for a registered path whose
+  // directory is gone, it drops only the registration.
+  git(repoRoot, ['worktree', 'remove', '--force', directory], { allowFailure: true });
+  if (existsSync(directory) && isStaleWorktreeOf(repoRoot, directory)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function createBenchWorktree(repoRoot, base, directory) {
+  clearLeftoverWorktree(repoRoot, directory);
+  writeFileSync(claimPath(directory), '');
+  try {
+    // Quiet so a refusal's first line is git's reason, which is all a setup failure records, rather
+    // than the "Preparing worktree" line git prints ahead of it.
+    git(repoRoot, ['worktree', 'add', '--quiet', '--detach', directory, base]);
+  } catch (error) {
+    // A claim left on a path git refused would let a later run clear whatever occupies it.
+    rmSync(claimPath(directory), { force: true });
+    throw error;
+  }
   return directory;
 }
 
 export function removeBenchWorktree(repoRoot, directory) {
   removeDisposableWorktree(repoRoot, directory);
+  rmSync(claimPath(directory), { force: true });
 }
 
-export function applySeed(worktree, seed) {
+function applySeed(worktree, seed) {
   git(worktree, ['apply', '--whitespace=nowarn', seed.patchPath]);
+}
+
+// A cell's worktree at the base with its seed applied. A seed that no longer applies takes the
+// fresh worktree with it, and a path `createBenchWorktree` refused stays exactly as it was found.
+export function createSeededWorktree(repoRoot, base, seed, directory) {
+  createBenchWorktree(repoRoot, base, directory);
+  try {
+    applySeed(directory, seed);
+  } catch (error) {
+    removeBenchWorktree(repoRoot, directory);
+    throw error;
+  }
+  return directory;
 }
 
 // The repro runs with the seeded tree as its working directory and imports the modules under test
