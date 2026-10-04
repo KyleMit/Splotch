@@ -60,7 +60,10 @@ export function loadSeeds(directory = SEEDS_DIRECTORY, names) {
   });
 }
 
+// A bench killed mid-cell leaves that cell's worktree registered, or its directory behind, and
+// `git worktree add` refuses either; clearing the path first lets a resumed run recreate the cell.
 export function createBenchWorktree(repoRoot, base, directory) {
+  removeBenchWorktree(repoRoot, directory);
   git(repoRoot, ['worktree', 'add', '--detach', directory, base]);
   return directory;
 }

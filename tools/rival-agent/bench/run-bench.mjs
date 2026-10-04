@@ -7,6 +7,7 @@ import { parseArgs } from 'node:util';
 import { isEntryPoint } from '../broker-server.mjs';
 import { launch } from '../launch.mjs';
 import { readJson, sessionPath, SESSION_FILES } from '../spool.mjs';
+import { STREAM_FAILURE } from '../stream.mjs';
 import { git } from '../worktree.mjs';
 import { serveSession } from './lib/handler.mjs';
 import { renderReport } from './lib/report.mjs';
@@ -16,6 +17,7 @@ import {
   createBenchWorktree,
   loadSeeds,
   removeBenchWorktree,
+  SEEDS_DIRECTORY,
   validateSeed,
 } from './lib/seeds.mjs';
 
@@ -79,6 +81,8 @@ async function loadVendor(rival) {
   return rival === 'codex' ? module.codexVendor : module.claudeVendor;
 }
 
+const firstLine = (error) => error.message.split('\n')[0];
+
 function launchOptions({ cwd, model, effort, endSession = false }) {
   return {
     scope: { kind: 'uncommitted', base: undefined, commit: undefined, number: undefined },
@@ -95,7 +99,17 @@ function launchOptions({ cwd, model, effort, endSession = false }) {
 // One cell: a bench worktree at the base with the seed applied, one fresh rival round on its
 // working tree with the bench serving the broker, the findings scored against the key, and the
 // ledger record the round wrote removed again so the bench leaves nothing behind.
-async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDir, log }) {
+async function runCell({
+  repoRoot,
+  base,
+  seed,
+  rep,
+  vendor,
+  options,
+  worktreesDir,
+  log,
+  launchRival,
+}) {
   const id = cellId({ seed: seed.name, rep });
   const directory = join(worktreesDir, id);
   const startedAt = Date.now();
@@ -107,9 +121,17 @@ async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDi
     rep,
     startedAt: new Date(startedAt).toISOString(),
   };
-  createBenchWorktree(repoRoot, base, directory);
   try {
+    createBenchWorktree(repoRoot, base, directory);
     applySeed(directory, seed);
+  } catch (error) {
+    // A worktree git refuses, or a seed that no longer applies to the base, fails only this cell;
+    // the prefix keeps the report from reading that failure as the rival's.
+    removeBenchWorktree(repoRoot, directory);
+    result.failed = `setup: ${firstLine(error)}`;
+    return result;
+  }
+  try {
     const cellOptions = launchOptions({
       cwd: directory,
       model: options.model,
@@ -120,7 +142,7 @@ async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDi
     const sessionSeen = new Promise((resolveSeen) => {
       resolveSession = resolveSeen;
     });
-    const launched = launch(cellOptions, vendor, {
+    const launched = launchRival(cellOptions, vendor, {
       onProgress: (line) => {
         log(`[${id}] ${line}`);
         if (line.startsWith('session: ')) {
@@ -149,7 +171,10 @@ async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDi
       declined: result.decisions.filter((decision) => !decision.approved).length,
     };
     if (launchOutcome.status === 'rejected') {
-      result.failed = launchOutcome.reason.message.split('\n')[0];
+      // The operator stopped the run; the rival did not fail. Rethrown unrecorded, the cancellation
+      // stops the bench, and a resume with the same --out reruns this cell.
+      if (launchOutcome.reason.code === STREAM_FAILURE.cancelled) throw launchOutcome.reason;
+      result.failed = firstLine(launchOutcome.reason);
       return result;
     }
     const done = launchOutcome.value;
@@ -165,7 +190,7 @@ async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDi
     return result;
   } finally {
     try {
-      await launch(
+      await launchRival(
         launchOptions({
           cwd: directory,
           model: options.model,
@@ -175,10 +200,22 @@ async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDi
         vendor
       );
     } catch (error) {
-      log(`[${id}] end-session: ${error.message.split('\n')[0]}`);
+      log(`[${id}] end-session: ${firstLine(error)}`);
     }
     removeBenchWorktree(repoRoot, directory);
   }
+}
+
+// The interrupted cell was never recorded, so the same command with the same --out skips the
+// recorded cells and starts again from this one.
+function resumableCancellation(error, { id, out }) {
+  return Object.assign(
+    new Error(
+      `bench cancelled during ${id}, which is not recorded (${firstLine(error)}); re-run the same command with --out ${out} to resume from it`,
+      { cause: error }
+    ),
+    { code: error.code }
+  );
 }
 
 function readResults(resultsDir) {
@@ -188,13 +225,21 @@ function readResults(resultsDir) {
     .map((name) => JSON.parse(readFileSync(join(resultsDir, name), 'utf8')));
 }
 
+// `log`, `cwd`, `seedsDirectory`, `resolveVendor` and `launchRival` are seams kept for tests, which
+// run the bench in a throwaway repository against a stand-in rival; the CLI passes none of them.
 export async function runBench(
   options,
-  { log = (line) => process.stderr.write(`${line}\n`) } = {}
+  {
+    log = (line) => process.stderr.write(`${line}\n`),
+    cwd = process.cwd(),
+    seedsDirectory = SEEDS_DIRECTORY,
+    resolveVendor = loadVendor,
+    launchRival = launch,
+  } = {}
 ) {
-  const repoRoot = git(process.cwd(), ['rev-parse', '--show-toplevel']);
+  const repoRoot = git(cwd, ['rev-parse', '--show-toplevel']);
   const base = git(repoRoot, ['rev-parse', `${options.base}^{commit}`]);
-  const seeds = loadSeeds(undefined, options.seeds);
+  const seeds = loadSeeds(seedsDirectory, options.seeds);
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const out = options.out ?? join(tmpdir(), 'splotch-rival-bench', runId);
   const worktreesDir = join(out, 'worktrees');
@@ -214,7 +259,7 @@ export async function runBench(
     return { base, validated: outcomes, ok: outcomes.every((outcome) => outcome.ok) };
   }
 
-  const vendor = await loadVendor(options.rival);
+  const vendor = await resolveVendor(options.rival);
   const model = vendor.resolveModel(options.model);
   const plan = planCells({ seeds, reps: options.reps });
   const startedAt = new Date().toISOString();
@@ -236,6 +281,11 @@ export async function runBench(
       options,
       worktreesDir,
       log,
+      launchRival,
+    }).catch((error) => {
+      throw error.code === STREAM_FAILURE.cancelled
+        ? resumableCancellation(error, { id, out })
+        : error;
     });
     writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`);
     log(
