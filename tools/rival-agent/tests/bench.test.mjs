@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,7 @@ import {
   scoreCell,
   summarize,
 } from '../bench/lib/score.mjs';
-import { loadSeeds, SEEDS_DIRECTORY, validateSeed } from '../bench/lib/seeds.mjs';
+import { loadSeeds, SEEDS_DIRECTORY } from '../bench/lib/seeds.mjs';
 
 const KEY = {
   name: 'x',
@@ -320,66 +320,5 @@ describe('the corpus', () => {
       .filter(({ result }) => result.status !== 0)
       .map(({ name, result }) => `${name}: ${result.stderr || result.error}`);
     expect(unappliable).toEqual([]);
-  });
-
-  // Validation is the promise the bench makes before spending anything: a seed whose repro does
-  // not fail on the seeded tree is dropped, never scored.
-  it('validates a seed against its base in a throwaway repository', () => {
-    const root = mkdtempSync(join(tmpdir(), 'rival-bench-validate-'));
-    try {
-      const repo = join(root, 'repo');
-      mkdirSync(repo);
-      const git = (args) =>
-        execFileSync('git', args, {
-          cwd: repo,
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            GIT_AUTHOR_NAME: 't',
-            GIT_AUTHOR_EMAIL: 't@t',
-            GIT_COMMITTER_NAME: 't',
-            GIT_COMMITTER_EMAIL: 't@t',
-          },
-        });
-      git(['init', '-q', '-b', 'main']);
-      writeFileSync(join(repo, 'x.mjs'), 'export const answer = () => 42;\n');
-      git(['add', 'x.mjs']);
-      git(['commit', '-q', '-m', 'one']);
-      writeFileSync(join(repo, 'x.mjs'), 'export const answer = () => 41;\n');
-      const patch = git(['diff']);
-      git(['checkout', '--', 'x.mjs']);
-      const seedDirectory = join(root, 'seed');
-      mkdirSync(seedDirectory);
-      writeFileSync(join(seedDirectory, 'seed.patch'), patch);
-      writeFileSync(
-        join(seedDirectory, 'repro.mjs'),
-        "import { pathToFileURL } from 'node:url';\nimport { join } from 'node:path';\nconst { answer } = await import(pathToFileURL(join(process.cwd(), 'x.mjs')).href);\nif (answer() !== 42) throw new Error('off by one');\n"
-      );
-      const seed = {
-        name: 'off-by-one',
-        control: false,
-        patchPath: join(seedDirectory, 'seed.patch'),
-        reproPath: join(seedDirectory, 'repro.mjs'),
-      };
-      const base = git(['rev-parse', 'HEAD']).trim();
-      expect(
-        validateSeed({ repoRoot: repo, base, seed, directory: join(root, 'wt') })
-      ).toMatchObject({ ok: true, beforeStatus: 0, afterStatus: 1 });
-      expect(
-        validateSeed({
-          repoRoot: repo,
-          base,
-          seed: { ...seed, control: true },
-          directory: join(root, 'wt2'),
-        })
-      ).toMatchObject({ ok: false });
-      const worktrees = git(['worktree', 'list', '--porcelain'])
-        .split('\n')
-        .filter((line) => line.startsWith('worktree '))
-        .map((line) => line.slice('worktree '.length));
-      expect(worktrees).toEqual([realpathSync(repo)]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
   });
 });

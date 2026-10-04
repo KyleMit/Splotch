@@ -23,14 +23,16 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readConfig } from '../lib/burndown-config.mjs';
 import { deleteEntryByTitle } from '../lib/burndown-core.mjs';
-import { createBurndownRun, readConfig } from '../run-burndown.mjs';
+import { createBurndownRun } from '../run-burndown.mjs';
 
 const AUDIT_PATH = join('docs', 'AUDIT.md');
 const BRIEF_PATH = join('.audit-work', 'current-brief.md');
 const COMPLETED_LOG = join('.audit-work', 'completed.log');
 const COMMENT_STORE = join('.audit-work', 'pending-comments.jsonl');
 const LAUNCH_COMMAND_PATH = join('.audit-work', 'launch-command');
+const LAUNCH_PID_PATH = join('.audit-work', 'launch-pid');
 const DEFERRED_PATH = join('docs', 'AUDIT-DEFERRED.md');
 
 const FULL_SUITE_CMD = 'npm test';
@@ -431,9 +433,7 @@ describe('preflight', () => {
     expect(recorded).toContain("PUSH_EVERY='3'");
     expect(recorded).not.toContain('99');
     expect(recorded).toMatch(/-- 7$/);
-    expect(readFileSync(join('.audit-work', 'launch-pid'), 'utf8').trim()).toBe(
-      String(process.pid)
-    );
+    expect(readFileSync(LAUNCH_PID_PATH, 'utf8').trim()).toBe(String(process.pid));
   });
 });
 
