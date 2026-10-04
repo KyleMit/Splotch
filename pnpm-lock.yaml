@@ -46,8 +46,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@netlify/blobs':
-        specifier: ^11.1.0
-        version: 11.1.0(supports-color@10.2.2)
+        specifier: ^11.1.1
+        version: 11.1.1(supports-color@10.2.2)
       '@sveltejs/adapter-netlify':
         specifier: ^6.0.4
         version: 6.0.4(@sveltejs/kit@2.70.3(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.1(@typescript-eslint/types@8.70.1))(vite@8.3.0(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1)))(svelte@5.57.1(@typescript-eslint/types@8.70.1))(typescript@6.0.3)(vite@8.3.0(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1)))
@@ -1457,8 +1457,8 @@ packages:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
-  '@netlify/blobs@11.1.0':
-    resolution: {integrity: sha512-CGb+UsFLywJA22bxcdsTmla25w/AK72sVxj+KUkjees2zw717KUBmm3miTFkDA05vZi1MbnCBIxiU0cEwbWg8w==}
+  '@netlify/blobs@11.1.1':
+    resolution: {integrity: sha512-99H0BJlieiWLkTYQ4ACbw5aGlkbpgyJ3TYF1Hb76wU43eO57LnnP/m3cnMZWNWeAwXhiTEjvUTH7ghJTBoSjFQ==}
     engines: {node: '>=22.12.0'}
 
   '@netlify/dev-utils@6.0.1':
@@ -7155,7 +7155,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@netlify/blobs@11.1.0(supports-color@10.2.2)':
+  '@netlify/blobs@11.1.1(supports-color@10.2.2)':
     dependencies:
       '@netlify/dev-utils': 6.0.1
       '@netlify/otel': 7.0.2(supports-color@10.2.2)
