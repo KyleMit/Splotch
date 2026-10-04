@@ -163,8 +163,9 @@ gets. That makes it the *only* place in a cloud session to verify behavior that 
 production serving** and is absent from `npm run dev` / `vite preview` / `netlify dev` (which emit
 no CDN headers and no built service worker):
 
-* **Response headers** — `Cache-Control` on `/sounds/*`, `/styles/*`, `/icons/*`, `/*.js`, `/*.css`
-  (`netlify.toml`), security headers, content types. The egress proxy reaches `*.netlify.app`, so
+* **Response headers** — the `Cache-Control` each `netlify.toml` `[[headers]]` rule sets (the
+  week-long media folders, the immutable hashed root scripts, the no-cache `/sw.js`), security
+  headers, content types. The egress proxy reaches `*.netlify.app`, so
   `curl -sSI <branch-url>/styles/crayon.light.webp` from the sandbox shows exactly what a browser
   receives.
 * **The service-worker precache** — `curl -s <branch-url>/sw.js` returns the Workbox-generated SW
