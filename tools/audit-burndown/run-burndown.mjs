@@ -34,6 +34,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand, isMain, parseOrFail, sleep } from '../lib/proc.mjs';
+import { findFreePort } from '../show-free-port.mjs';
 import { runAgentStep } from './lib/agent-runner.mjs';
 import { readConfig } from './lib/burndown-config.mjs';
 import {
@@ -92,7 +93,7 @@ const MAX_CONSECUTIVE_PUSH_FAILURES = 3;
 const RESUME_RETRIES_FINDING = 'RESUME=1 discards the residue and re-processes the finding';
 
 // Everything the run does to the world outside its own counters: exiting,
-// git, the shell, the agent runner, the log. Production wires the real
+// git, the shell, the port probe, the agent runner, the log. Production wires the real
 // implementations in main(); tools/audit-burndown/tests/fixtures/run-harness.mjs
 // substitutes recorders, which is why the run takes them as an argument
 // instead of reaching for the module imports directly.
@@ -104,6 +105,7 @@ export function createEffects(config) {
     },
     logLine,
     hasCommand,
+    findFreePort,
     git,
     gitOk,
     gitOut,
@@ -219,6 +221,11 @@ export function createBurndownRun({ config, effects }) {
   } = config;
   const { agentStep, git, gitOk, gitOut, halt, hasCommand, logLine, runCmd, shellOk, shellResult } =
     effects;
+  // A port the operator exported or wrote into E2E_CMD stays theirs. The export is read from
+  // process.env rather than config because it reaches Playwright through the environment the
+  // gate's shell inherits, never through a knob.
+  const probeE2ePort =
+    process.env.SPLOTCH_E2E_PORT === undefined && !/\bSPLOTCH_E2E_PORT=/.test(E2E_CMD);
 
   // Fixes and drops are both "handled", but only fixes are work — conflating them
   // in the summary makes the closeout AUDIT-LOG row wrong in the flattering
@@ -414,7 +421,7 @@ export function createBurndownRun({ config, effects }) {
   //     largest slice of review wall-clock and bought nothing the driver's own
   //     run doesn't already guarantee (see prompts/reviewer.md).
   //
-  // Returns null when green, else { reason, detail, output }: `reason` is the
+  // Resolves to null when green, else { reason, detail, output }: `reason` is the
   // deferral label a human reads months later in docs/AUDIT-DEFERRED.md;
   // `detail` and the bounded command output are what the implementer gets.
   // Bundle composition is the one regression class every other gate is blind to:
@@ -430,7 +437,7 @@ export function createBurndownRun({ config, effects }) {
     return [...specs, BUNDLE_SPEC];
   }
 
-  function gateFailure(baseSha, specs) {
+  async function gateFailure(baseSha, specs) {
     const runGate = (command, reason, detail) => {
       const result = shellResult(command);
       return result.status === 0 ? null : { reason, detail, output: commandFailureOutput(result) };
@@ -447,8 +454,13 @@ export function createBurndownRun({ config, effects }) {
     // without paying full-suite E2E per finding; the batch push still runs it all.
     const e2eSpecs = withBundleGate(baseSha, specs);
     if (e2eSpecs.length) {
+      // A busy port fails Playwright before any spec runs, and the failure would be charged to
+      // this fix. Each run probes afresh, since a port free last round can be taken during a fix
+      // round; the probe reserves nothing, so a port taken during Playwright's build still fails.
+      const portPrefix = probeE2ePort ? `SPLOTCH_E2E_PORT=${await effects.findFreePort()} ` : '';
+      logLine(`  E2E gate: ${portPrefix}${e2eSpecs.join(' ')}`);
       const e2eFailure = runGate(
-        `${E2E_CMD} ${e2eSpecs.join(' ')}`,
+        `${portPrefix}${E2E_CMD} ${e2eSpecs.join(' ')}`,
         'fix broke a targeted E2E spec',
         `the Playwright spec(s) ${e2eSpecs.join(' ')} are red`
       );
@@ -630,15 +642,14 @@ export function createBurndownRun({ config, effects }) {
       return { outcome: 'defer', why: 'verifier gave no usable brief' };
     }
 
-    // Targeted E2E for a UI-touching finding (see the per-finding E2E gate in
-    // close-out). Sanitize hard: these strings are LLM-authored and reach a
+    // Targeted E2E for a UI-touching finding (see gateFailure, which logs each
+    // run). Sanitize hard: these strings are LLM-authored and reach a
     // shell, so keep only spec-path-shaped values and drop anything else.
     const e2eSpecs = [];
     for (const spec of verify.structured.e2e_specs ?? []) {
       if (typeof spec === 'string' && E2E_SPEC_PATH.test(spec)) e2eSpecs.push(spec);
       else logLine(`  rejected E2E spec: ${JSON.stringify(spec)}`);
     }
-    if (e2eSpecs.length) logLine(`  E2E gate: ${e2eSpecs.join(' ')}`);
     return { outcome: 'valid', e2eSpecs };
   }
 
@@ -728,15 +739,10 @@ export function createBurndownRun({ config, effects }) {
     captureSummary();
     const reviewCatches = [];
 
-    const brief = existsSync(BRIEF_FILE) ? readFileSync(BRIEF_FILE, 'utf8') : '';
-    const acceptanceAt = brief.split('\n').findIndex((line) => /acceptance/i.test(line));
+    const briefLines = (existsSync(BRIEF_FILE) ? readFileSync(BRIEF_FILE, 'utf8') : '').split('\n');
+    const acceptanceAt = briefLines.findIndex((line) => /acceptance/i.test(line));
     const acceptance =
-      acceptanceAt === -1
-        ? ''
-        : brief
-            .split('\n')
-            .slice(acceptanceAt, acceptanceAt + 40)
-            .join('\n');
+      acceptanceAt === -1 ? '' : briefLines.slice(acceptanceAt, acceptanceAt + 40).join('\n');
 
     let status = 'CHANGES_REQUIRED';
     let reviewUnavailable = false;
@@ -748,7 +754,7 @@ export function createBurndownRun({ config, effects }) {
       // is nothing to gain from spending it on a commit the driver is about to
       // roll back — and a red gate caught here is still recoverable, because the
       // implementer is holding the same session and can fix it in a fix round.
-      gateRed = gateFailure(baseSha, e2eSpecs);
+      gateRed = await gateFailure(baseSha, e2eSpecs);
       let feedback;
 
       if (gateRed) {

@@ -12,18 +12,27 @@
 // `capture` rebuilds records for fixes whose comments were never recorded,
 // reading the same facts the driver had: run.log for the iteration→sha mapping,
 // the role envelopes for the implementer's summary and the reviewer's catches,
-// and the commit's own docs/AUDIT.md deletion for the finding text.
+// and the commit's own deletion from the run's backlog for the finding text.
+// COMMENT_STORE and AUDIT_FILE select the store and that backlog, as they do
+// for the driver.
 
 import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isMain } from '../lib/proc.mjs';
 import { parseSavedAgentOutput } from './lib/agent-runner.mjs';
 import { commentStorePath } from './lib/burndown-config.mjs';
-import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib/burndown-core.mjs';
+import {
+  auditFile,
+  chdirRoot,
+  commandFailureOutput,
+  ensureWorkDirs,
+  git,
+  gitOut,
+  LOGS,
+  logLine,
+  WORK,
+} from './lib/burndown-core.mjs';
 import { commitCommentBody, findingProblem } from './lib/comment-sync.mjs';
-
-chdirRoot();
-
-const STORE = commentStorePath();
 
 // Every sha `done` has dropped, so `capture` can tell "never recorded" from
 // "already posted". Without it `capture` deduped against the store alone — and
@@ -41,19 +50,22 @@ const POSTED = join(WORK, 'posted-comments.log');
 const readPosted = () =>
   new Set(existsSync(POSTED) ? readFileSync(POSTED, 'utf8').split('\n').filter(Boolean) : []);
 
-const readStore = () =>
-  existsSync(STORE)
-    ? readFileSync(STORE, 'utf8')
+const readStore = (store) =>
+  existsSync(store)
+    ? readFileSync(store, 'utf8')
         .split('\n')
         .filter(Boolean)
         .map((l) => JSON.parse(l))
     : [];
 
-const writeStore = (records) =>
-  writeFileSync(
-    STORE,
-    records.length ? `${records.map((r) => JSON.stringify(r)).join('\n')}\n` : ''
-  );
+const storeLine = (record) => `${JSON.stringify(record)}\n`;
+
+// A last record that lost its newline (a hand edit) still parses, but an append
+// would join the next record onto its line, so that record is ended first.
+function appendRecord(store, record) {
+  const unterminated = existsSync(store) && /[^\n]$/.test(readFileSync(store, 'utf8'));
+  appendFileSync(store, `${unterminated ? '\n' : ''}${storeLine(record)}`);
+}
 
 const structured = (file) => {
   if (!existsSync(file)) return null;
@@ -84,10 +96,11 @@ function completedIterations() {
   return out;
 }
 
-// The fix commit deletes the finding from docs/AUDIT.md, so the finding text is
-// exactly the removed lines of that commit's diff for the file.
-function findingFromCommit(sha) {
-  const diff = gitOut('show', sha, '--', 'docs/AUDIT.md');
+// The fix commit deletes the finding from the backlog, so the finding text is
+// exactly the removed lines of that commit's diff for the file. Plumbing rather
+// than `git show`, whose output follows the host's colour and format settings.
+function findingFromCommit(sha, backlog) {
+  const diff = gitOut('diff-tree', '-p', '--no-commit-id', sha, '--', backlog);
   const removed = diff
     .split('\n')
     .filter((l) => l.startsWith('-') && !l.startsWith('---'))
@@ -95,10 +108,7 @@ function findingFromCommit(sha) {
   return removed.join('\n').trim();
 }
 
-function recordFor({ iter, title, shaShort }) {
-  const sha = gitOut('rev-parse', shaShort);
-  if (!sha) return null;
-
+function recordFor({ iter, title }, sha, backlog) {
   // Iteration log names restart at iter0001 every run, so a shorter run leaves
   // the previous run's iter0002.fix1.json sitting next to this run's
   // iter0002.impl.json. Every file an iteration writes lands after its own
@@ -133,88 +143,126 @@ function recordFor({ iter, title, shaShort }) {
   return {
     sha,
     title,
-    problem: findingProblem(findingFromCommit(sha)),
+    problem: findingProblem(findingFromCommit(sha, backlog)),
     fix,
     catches,
     e2eSpecs: verify?.e2e_specs ?? [],
   };
 }
 
-const [mode, rangeArg] = process.argv.slice(2);
-
-if (mode === 'capture') {
-  const range = rangeArg ?? 'main..HEAD';
-  // Scope to a commit range so a run.log carrying earlier runs (whose comments
-  // were already posted to a since-merged PR) cannot re-capture them.
-  const inRange = new Set(gitOut('rev-list', range).split('\n').filter(Boolean));
-  const store = readStore();
-  const known = new Set(store.map((r) => r.sha));
+// Scoped to a commit range so a run.log carrying earlier runs (whose comments
+// were already posted to a since-merged PR) cannot re-capture them. A range git
+// cannot resolve fails here instead of reading as empty: "0 captured" is also
+// what a fully drained run prints, so a typo, or the default range in a
+// checkout with no local main, would report success having checked nothing.
+function capture(range, store, backlog) {
+  const listed = git('rev-list', '--end-of-options', range, '--');
+  if (listed.status !== 0) {
+    console.error(
+      `capture: cannot resolve range ${range} (${commandFailureOutput(listed)}) — ` +
+        'pass one git can resolve, such as origin/main..HEAD or <base-sha>..HEAD'
+    );
+    return 1;
+  }
+  const inRange = new Set(listed.stdout.split('\n').filter(Boolean));
+  const records = readStore(store);
+  const known = new Set(records.map((r) => r.sha));
   const posted = readPosted();
+  const skipped = new Set();
   let added = 0;
-  let skipped = 0;
 
   for (const it of completedIterations()) {
     const sha = gitOut('rev-parse', it.shaShort);
-    if (sha && posted.has(sha) && !known.has(sha)) skipped += 1;
-    if (!sha || !inRange.has(sha) || known.has(sha) || posted.has(sha)) continue;
-    const record = recordFor(it);
-    if (!record) continue;
-    store.push(record);
+    if (!inRange.has(sha) || known.has(sha)) continue;
+    if (posted.has(sha)) {
+      skipped.add(sha);
+      continue;
+    }
+    // Appended, never rewritten: the driver appends to the same store at every
+    // close-out, and a rewrite would drop any record it added meanwhile.
+    appendRecord(store, recordFor(it, sha, backlog));
     known.add(sha);
     added += 1;
     console.log(`captured ${sha.slice(0, 12)}  ${it.title}`);
   }
 
-  writeStore(store);
   // Say what was skipped rather than staying silent about it: "0 captured" on a
   // run whose comments all landed reads like the tool failed.
-  if (skipped) console.log(`skipped ${skipped} already posted`);
-  console.log(`\n${added} captured, ${store.length} total in ${STORE}`);
-} else if (mode === 'next') {
-  // One record at a time, because the thing that posts it is an agent calling
-  // the GitHub MCP tools, not this script — there is no credential here. The
-  // agent renders one, posts it, then calls `done <sha>`; that ordering makes
-  // the loop at-least-once (a crash between the two re-offers the same record)
-  // rather than at-most-once, which is the right way round for a comment.
-  const [record] = readStore();
+  if (skipped.size) console.log(`skipped ${skipped.size} already posted`);
+  console.log(`\n${added} captured, ${records.length + added} total in ${store}`);
+  return 0;
+}
+
+// One record at a time, because the thing that posts it is an agent calling
+// the GitHub MCP tools, not this script — there is no credential here. The
+// agent renders one, posts it, then calls `done <sha>`; that ordering makes
+// the loop at-least-once (a crash between the two re-offers the same record)
+// rather than at-most-once, which is the right way round for a comment.
+function next(store) {
+  const [record] = readStore(store);
   if (!record) {
-    console.log(`nothing pending in ${STORE}`);
-    process.exit(0);
+    console.log(`nothing pending in ${store}`);
+    return 0;
   }
   console.log(`SHA ${record.sha}`);
   console.log('---8<--- body below ---8<---');
   console.log(commitCommentBody(record));
-} else if (mode === 'done') {
-  const sha = rangeArg;
-  if (!sha) {
+  return 0;
+}
+
+function done(prefix, store) {
+  if (!prefix) {
     console.error('usage: backfill-comments.mjs done <sha>');
-    process.exit(1);
+    return 1;
   }
-  const store = readStore();
-  const matches = store.filter((r) => r.sha.startsWith(sha));
-  if (matches.length === 0) {
-    console.error(`no pending record matching ${sha}`);
-    process.exit(1);
+  const records = readStore(store);
+  const matches = records.filter((r) => r.sha.startsWith(prefix));
+  // A capture racing the driver's close-out can leave two records for one
+  // commit. They are one comment, so the post that answers one answers both.
+  const shas = new Set(matches.map((r) => r.sha));
+  if (shas.size === 0) {
+    console.error(`no pending record matching ${prefix}`);
+    return 1;
   }
-  if (matches.length > 1) {
+  if (shas.size > 1) {
     console.error(
-      `ambiguous prefix ${sha} matches ${matches.length} pending records — use more characters`
+      `ambiguous prefix ${prefix} matches ${matches.length} pending records — use more characters`
     );
-    process.exit(1);
+    return 1;
   }
-  const [dropped] = matches;
-  const remaining = store.filter((r) => r !== dropped);
-  writeStore(remaining);
-  appendFileSync(POSTED, `${dropped.sha}\n`);
-  logLine(`  posted per-commit comment for ${dropped.sha.slice(0, 12)}`);
-  console.log(
-    `dropped ${dropped.sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`
-  );
-} else if (mode === 'show') {
-  const store = readStore();
-  console.log(`${store.length} pending comment(s) in ${STORE}\n`);
-  for (const record of store) console.log(`${commitCommentBody(record)}\n\n---\n`);
-} else {
+  const [sha] = shas;
+  const remaining = records.filter((r) => r.sha !== sha);
+  writeFileSync(store, remaining.map(storeLine).join(''));
+  // A committed store can be drained from a fresh checkout, which has no
+  // .audit-work/ until something creates it.
+  ensureWorkDirs();
+  appendFileSync(POSTED, `${sha}\n`);
+  logLine(`  posted per-commit comment for ${sha.slice(0, 12)}`);
+  console.log(`dropped ${sha.slice(0, 12)} — ${remaining.length} still pending in ${store}`);
+  return 0;
+}
+
+function show(store) {
+  const records = readStore(store);
+  console.log(`${records.length} pending comment(s) in ${store}\n`);
+  for (const record of records) console.log(`${commitCommentBody(record)}\n\n---\n`);
+  return 0;
+}
+
+// Runs one mode in the working directory and returns its exit code; `env`
+// supplies COMMENT_STORE and AUDIT_FILE.
+export function runBackfill(argv, env) {
+  const [mode, arg] = argv;
+  const store = commentStorePath(env);
+  if (mode === 'capture') return capture(arg ?? 'main..HEAD', store, auditFile(env));
+  if (mode === 'next') return next(store);
+  if (mode === 'done') return done(arg, store);
+  if (mode === 'show') return show(store);
   console.error('usage: backfill-comments.mjs capture [range] | show | next | done <sha>');
-  process.exit(1);
+  return 1;
+}
+
+if (isMain(import.meta.url)) {
+  chdirRoot();
+  process.exitCode = runBackfill(process.argv.slice(2), process.env);
 }
