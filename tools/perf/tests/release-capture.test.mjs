@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import {
@@ -19,6 +21,7 @@ const roots = {
   containerRoots: [`${MAIN}/.claude/worktrees`, '/Users/dev/.codex/worktrees'],
 };
 const preview = (cwd) => ({ cwd, command: 'node tools/run-web-tool.mjs vite preview --port 4173' });
+const PERF_DIR = fileURLToPath(new URL('..', import.meta.url));
 
 describe('classifyProcess', () => {
   it('owns a listener whose cwd is inside the main checkout', () => {
@@ -58,11 +61,17 @@ describe('classifyProcess', () => {
     expect(classifyProcess(entry, roots).verdict).toBe('tunnel');
   });
 
-  it('flags an owned campaign or operator driver rather than owning it', () => {
-    for (const script of ['run-campaign.mjs', 'run-operator-session.mjs']) {
-      const entry = { cwd: MAIN, command: `node tools/perf/${script}` };
-      expect(classifyProcess(entry, roots).verdict).toBe('campaign');
-    }
+  it('inventories and flags every top-level tools/perf/run-*.mjs driver rather than owning it', () => {
+    const drivers = readdirSync(PERF_DIR).filter((name) => /^run-.+\.mjs$/.test(name));
+    expect(drivers.length).toBeGreaterThan(0);
+    const judged = drivers.map((script) => {
+      const command = `node tools/perf/${script}`;
+      const { verdict } = classifyProcess({ cwd: MAIN, command }, roots);
+      return { script, inventoried: isRigCommand(command), verdict };
+    });
+    expect(judged).toEqual(
+      drivers.map((script) => ({ script, inventoried: true, verdict: 'campaign' }))
+    );
   });
 
   it('does not own a sibling directory that merely shares the checkout prefix', () => {
@@ -205,6 +214,25 @@ describe('planRelease', () => {
     expect(plan.appium.map((p) => p.pid)).toEqual([11]);
     expect(plan.servers.map((p) => p.pid)).toEqual([10, 16]);
     expect(plan.leave.map((p) => p.pid)).toEqual([14, 15]);
+  });
+
+  it('blocks on a live person session, and stops it before its rig only under stopCampaigns', () => {
+    const rig = [
+      'node tools/perf/run-person-session.mjs',
+      `node ${MAIN}/tools/perf/serve-profile-build.mjs --port=4190 --strict-port`,
+      'appium --port 4781 --log-timestamp',
+    ].map((command, index) => {
+      const { verdict } = classifyProcess({ cwd: MAIN, command }, roots);
+      return entry(20 + index, verdict, command);
+    });
+    const pids = (entries) => entries.map((p) => p.pid);
+    expect(pids(planRelease(rig).blocked)).toEqual([20]);
+    const override = planRelease(rig, { stopCampaigns: true });
+    expect([override.drivers, override.appium, override.servers].map(pids)).toEqual([
+      [20],
+      [22],
+      [21],
+    ]);
   });
 });
 
