@@ -496,17 +496,20 @@ this is only about SHAs.)
 ## While it runs
 
 * Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
-  resuming). Stop hard only when the run must end now, by signalling the driver and every process
+  resuming). Stop hard only when the run must end now, by stopping the driver and every process
   under it:
   ```bash
-  walk() { echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
-  d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && walk "$d" | xargs kill -TERM
+  walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
+  d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && { t=$(walk "$d")
+    echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }
   ```
-  It captures the whole tree before the first signal, then signals the driver first. A driver killed
-  alone orphans its in-flight `claude -p` call, which can keep editing and committing in the tree. A
-  process-group kill misses that call's tool commands, which run in sessions of their own. `kill -0`
-  refuses unless exactly one driver matched. The interrupted finding is crash residue, so relaunch
-  as **Resuming a crashed run** describes.
+  It freezes each process before listing that process's children, so nothing the tree starts
+  mid-walk escapes, then TERMs and resumes the whole tree. A driver killed alone orphans its
+  in-flight `claude -p` call, which can keep editing and committing in the tree. A process-group
+  kill misses that call's tool commands, which run in sessions of their own. `kill -0` refuses
+  unless exactly one driver matched. A process still alive a second later is printed and the command
+  exits non-zero: `kill -KILL` that pid, which came from this run's tree. The interrupted finding is
+  crash residue, so relaunch as **Resuming a crashed run** describes.
 * **Never edit a tracked file while the driver is running.** Its rollback paths run
   `git reset -q --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no
   reflog entry — and at a realistic deferral rate that fires within the hour. Committing mid-run is

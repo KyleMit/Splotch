@@ -359,18 +359,21 @@ If the driver is alive with no child `codex exec` (`audit:status` prints no
 it is orphaned: stop the driver with the hard stop below, restore the worktree to `origin/<branch>`,
 and resume from the checkpoint. Do not kill the orchestrator for a merely slow finding.
 
-To end a run immediately, stop the driver and every process under it. The command captures the whole
-tree before the first signal and signals the driver first: a driver killed alone orphans its
-in-flight `codex exec`, which can keep working in the tree. `kill -0` refuses unless exactly one
-driver matched.
+To end a run immediately, stop the driver and every process under it. The command freezes each
+process before listing that process's children, so nothing the tree starts mid-walk escapes, then
+TERMs and resumes the whole tree. A driver killed alone orphans its in-flight `codex exec`, which
+can keep working in the tree. `kill -0` refuses unless exactly one driver matched.
 
 ```bash
-walk() { echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
-d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && walk "$d" | xargs kill -TERM
+walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
+d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && { t=$(walk "$d")
+  echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }
 ```
 
-Run both commands outside the workspace sandbox, like the liveness lookup. A hard stop leaves the
-interrupted finding as crash residue, so relaunch as **Resume after a crash** describes.
+A process still alive a second later is printed and the command exits non-zero; `kill -KILL` that
+pid, which came from this run's tree. Run both commands outside the workspace sandbox, like the
+liveness lookup. A hard stop leaves the interrupted finding as crash residue, so relaunch as
+**Resume after a crash** describes.
 
 Three consecutive deferrals halt the run. Before calling them model verdicts, inspect the matching
 `.err` files for one shared mechanical error such as login loss, usage exhaustion, or sandbox
