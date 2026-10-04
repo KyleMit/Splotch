@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generate the model-eval input corpus: ~45 canvas-plausible toddler drawings that
+// Generate the model-eval input corpus: canvas-plausible toddler drawings that
 // mirror what /api/generate-image actually receives — a flattened PNG of the paper,
 // any coloring-page line art, and the child's pen / magic-brush marks. Deterministic
 // (seeded), so re-running reproduces the same corpus.
@@ -446,15 +446,24 @@ export function managedInputNames(fixtureSpecs, sampleFiles) {
   ]);
 }
 
+// FILTER narrows a run to the fixtures whose id contains it, to debug one
+// fixture without re-rendering the whole corpus.
+export function selectedSpecs(fixtureSpecs, filter) {
+  return filter ? fixtureSpecs.filter((spec) => spec.id.includes(filter)) : fixtureSpecs;
+}
+
 // Of the PNGs already in inputs/: which this run owns and will rewrite, and
-// which it has no claim on. An unclaimed file is either authored output waiting
-// to be promoted into samples/ — keep it — or a leftover from a spec or sample
-// that has since been renamed, which no longer has anything to rewrite it and
-// would otherwise sit in the corpus unnoticed. Reporting both beats guessing.
-export function partitionInputs(existingFiles, managed) {
+// which no fixture or sample produces at all. An unclaimed file is either
+// authored output waiting to be promoted into samples/ — keep it — or a leftover
+// from a spec or sample that has since been renamed, which no longer has
+// anything to rewrite it and would otherwise sit in the corpus unnoticed.
+// Reporting both beats guessing. The fixtures a FILTERed run skips are neither:
+// they stay as the last full run left them, so model-eval still reads the
+// whole corpus.
+export function partitionInputs(existingFiles, { rewrites, managed }) {
   const pngs = existingFiles.filter((file) => file.endsWith('.png'));
   return {
-    owned: pngs.filter((file) => managed.has(file)),
+    owned: pngs.filter((file) => rewrites.has(file)),
     unclaimed: pngs.filter((file) => !managed.has(file)),
   };
 }
@@ -464,15 +473,16 @@ async function main() {
   const sampleFiles = existsSync(SAMPLES)
     ? readdirSync(SAMPLES).filter((f) => f.endsWith('.svg') || f.endsWith('.png'))
     : [];
-  const { owned, unclaimed } = partitionInputs(
-    readdirSync(OUT),
-    managedInputNames(specs, sampleFiles)
-  );
+  const list = selectedSpecs(specs, process.env.FILTER);
+  const { owned, unclaimed } = partitionInputs(readdirSync(OUT), {
+    rewrites: managedInputNames(list, sampleFiles),
+    managed: managedInputNames(specs, sampleFiles),
+  });
   for (const f of owned) rmSync(join(OUT, f));
   if (unclaimed.length) {
     console.warn(
-      `Left ${unclaimed.length} input(s) this run does not produce — authored output awaiting ` +
-        `promotion into samples/, or stale after a rename:\n  ${unclaimed.join('\n  ')}`
+      `Left ${unclaimed.length} input(s) no fixture or sample produces — authored output ` +
+        `awaiting promotion into samples/, or stale after a rename:\n  ${unclaimed.join('\n  ')}`
     );
   }
 
@@ -480,8 +490,6 @@ async function main() {
   const page = await browser.newPage();
   page.on('pageerror', (e) => console.error('  page error:', e.message));
   if (process.env.DEBUG_SAMPLE) page.on('console', (m) => console.log('  [page]', m.text()));
-  const filter = process.env.FILTER;
-  const list = filter ? specs.filter((s) => s.id.includes(filter)) : specs;
   let n = 0;
   for (const spec of list) {
     const [w, h] = DIMS[spec.dim];
@@ -495,6 +503,7 @@ async function main() {
       [PAPER, C]
     );
     await page.addScriptTag({ path: RENDERER });
+    // Indexed in the full list, not the FILTERed one, so a debug render matches the corpus's.
     spec.seed = 987654 + specs.indexOf(spec) * 7;
     const debug = await page.evaluate(
       (s) => window.renderFixture(s).then(() => window.__coloredPct?.()),
