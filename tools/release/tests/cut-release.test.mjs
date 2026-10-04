@@ -552,6 +552,26 @@ describe('a release cut in a scratch checkout', () => {
     }
   );
 
+  // A checkout under core.autocrlf=true holds CRLF files that git reports as
+  // unchanged; HEAD read as stored bytes (LF) would make every cut there refuse
+  // both native files as hand-edited.
+  it(
+    'accepts the line endings a checkout converts the version files to',
+    { timeout: SCRATCH_CUT_TIMEOUT_MS },
+    () => {
+      const { root, git, cut } = scratchCheckout();
+      git('config', 'core.autocrlf', 'true');
+      for (const path of [ANDROID_GRADLE_PATH, IOS_PBXPROJ_PATH]) rmSync(join(root, path));
+      git('checkout', '--', ANDROID_GRADLE_PATH, IOS_PBXPROJ_PATH);
+      expect(readFileSync(join(root, ANDROID_GRADLE_PATH), 'utf8')).toContain('versionCode 8\r\n');
+
+      const release = cut('--no-publish');
+
+      expect(release.status, release.stderr).toBe(0);
+      expect(git('tag', '--points-at', 'HEAD').trim()).toBe('v1.7.0');
+    }
+  );
+
   // --dry-run skips the tree check, so the release document's own check is what
   // stops a 1.7.0.md copied forward from 1.6.0 before the pin is written.
   it(

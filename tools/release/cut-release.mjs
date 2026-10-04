@@ -268,7 +268,9 @@ function refuseHandEditedVersionFiles(version, versionCode) {
     findHandEditedVersionFiles({
       version,
       versionCode,
-      head: read((path) => capture('git', ['show', `HEAD:${path}`])),
+      // --filters gives HEAD as this checkout would write it: under core.autocrlf
+      // the working files hold CRLF that git itself reports as unchanged.
+      head: read((path) => capture('git', ['cat-file', '--filters', `HEAD:${path}`])),
       working: read((path) => readFileSync(join(ROOT, path), 'utf8')),
     })
   );
