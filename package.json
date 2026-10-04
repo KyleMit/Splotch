@@ -570,7 +570,7 @@
     "web-features": "3.39.0"
   },
   "dependencies": {
-    "@aparajita/capacitor-secure-storage": "^8.0.0",
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
     "@capacitor-community/media": "^9.1.0",
     "@capacitor/core": "^8.5.2",
     "@capacitor/device": "^8.0.3",
