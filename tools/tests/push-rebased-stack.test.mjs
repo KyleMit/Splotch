@@ -1,6 +1,12 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { join } from 'node:path';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
+import {
+  createTempRepo,
+  REAL_REPO_TEST_OPTIONS,
+} from '../git-housekeeping/tests/fixtures/temp-repo.mjs';
 import {
   assertPatchPreserved,
   lowerPullRequests,
@@ -40,19 +46,21 @@ const pullRequests = [
   },
 ];
 
+const NO_COMMIT = '0000000000000000000000000000000000000000';
+
 function result(status, stdout = '', stderr = '') {
   return { status, stdout, stderr };
 }
 
-// Fakes the plumbing `patchId` drives: `git diff` writes a file whose bytes stand
-// in for the range's content, and `git patch-id` hashes those bytes back. Two
-// ranges therefore compare equal exactly when the fake gave them the same
-// content, which is what lets a test state "the rebase changed this PR".
-// Stand-in content is single-token on purpose: real `git patch-id` prints
-// "<id> <commit>" and the parser keeps the first token, so a multi-word fake
-// would collapse two different ranges onto the same id and pass by accident.
+// Fakes the plumbing `patchId` drives, for the orchestration tests: `git diff`
+// writes the patch id the test assigned the range, and `git patch-id` prints it
+// back as git prints an id read from a bare diff, `<id> <commit>`. Two ranges
+// compare equal exactly when the test says so. Whether git would say so is the
+// comparator's question, and the real-repository suite answers it. An assigned
+// id is a single token, as git's are: the parser keeps the first token, so a
+// multi-word id would collapse two ranges onto one id and pass by accident.
 function createRunner({
-  contentByRange = {},
+  patchIdByRange = {},
   localHeads = {},
   calls = [],
   ghStackStatus = 0,
@@ -68,11 +76,11 @@ function createRunner({
     if (command === 'git' && args[0] === 'diff') {
       const range = args.find((arg) => arg.includes('...'));
       const output = args.find((arg) => arg.startsWith('--output=')).slice('--output='.length);
-      writeFileSync(output, contentByRange[range] ?? `content-of-${range}`);
+      writeFileSync(output, patchIdByRange[range] ?? `patch-of-${range}`);
       return result(0);
     }
     if (command === 'git' && args[0] === 'patch-id') {
-      return result(0, `patch-${readFileSync(options.stdio[0], 'utf8')}`);
+      return result(0, `${readFileSync(options.stdio[0], 'utf8')} ${NO_COMMIT}`);
     }
     if (command === 'gh' && args[0] === 'stack') return result(ghStackStatus);
     if (command === 'gh') return result(0, JSON.stringify(pullRequests));
@@ -99,35 +107,17 @@ describe('lowerPullRequests', () => {
 describe('assertPatchPreserved', () => {
   const pullRequest = pullRequests[0];
 
-  it('passes a rebase that rewrote the commit but kept the patch', () => {
-    const runCommand = createRunner({
+  it('refuses a patch git cannot identify rather than comparing empty ids', () => {
+    const fake = createRunner({
       localHeads: {
         'refs/heads/campaign/lower': SHA.lowerNew,
         'refs/heads/main': SHA.rebasedBase,
       },
-      contentByRange: {
-        [`${SHA.base}...${SHA.lowerOld}`]: 'reviewed-change',
-        [`${SHA.rebasedBase}...${SHA.lowerNew}`]: 'reviewed-change',
-      },
     });
-    expect(assertPatchPreserved({ runCommand, remoteName: 'origin', pullRequest })).toBe(
-      'preserved'
-    );
-  });
-
-  it('refuses a rebase that changed the PR content, naming the PR', () => {
-    const runCommand = createRunner({
-      localHeads: {
-        'refs/heads/campaign/lower': SHA.lowerNew,
-        'refs/heads/main': SHA.rebasedBase,
-      },
-      contentByRange: {
-        [`${SHA.base}...${SHA.lowerOld}`]: 'reviewed-change',
-        [`${SHA.rebasedBase}...${SHA.lowerNew}`]: 'reviewed-change-plus-a-quiet-edit',
-      },
-    });
+    const runCommand = (command, args, options) =>
+      command === 'git' && args[0] === 'patch-id' ? result(0) : fake(command, args, options);
     expect(() => assertPatchPreserved({ runCommand, remoteName: 'origin', pullRequest })).toThrow(
-      /PR #1512 \(campaign\/lower\)/
+      `Could not identify the patch of ${SHA.base}...${SHA.lowerOld}`
     );
   });
 
@@ -153,15 +143,93 @@ describe('assertPatchPreserved', () => {
         'refs/heads/campaign/lower': SHA.lowerNew,
         'refs/remotes/origin/main': SHA.base,
       },
-      contentByRange: {
-        [`${SHA.base}...${SHA.lowerOld}`]: 'reviewed-change',
-        [`${SHA.base}...${SHA.lowerNew}`]: 'reviewed-change',
+      patchIdByRange: {
+        [`${SHA.base}...${SHA.lowerOld}`]: 'reviewed-patch',
+        [`${SHA.base}...${SHA.lowerNew}`]: 'reviewed-patch',
       },
     });
     expect(assertPatchPreserved({ runCommand, remoteName: 'origin', pullRequest })).toBe(
       'preserved'
     );
     expect(calls).toContain('git rev-parse --verify --quiet refs/remotes/origin/main^{commit}');
+  });
+});
+
+describe('assertPatchPreserved against a real repository', REAL_REPO_TEST_OPTIONS, () => {
+  const PR_FILE = 'stack.txt';
+  const REVIEWED_EDIT = { 10: 'line 10 reviewed' };
+
+  function numberedLines(replacements = {}) {
+    const lines = Array.from(
+      { length: 20 },
+      (_, index) => replacements[index + 1] ?? `line ${index + 1}`
+    );
+    return `${lines.join('\n')}\n`;
+  }
+
+  // The lower PR as GitHub recorded it, then its branch rebased onto a main that
+  // moved on and applied `mainEdit` to the PR's file. `rewrite` is amended into the
+  // rebased commit when the rebase is meant to have changed the PR.
+  function rebaseLowerPullRequest({ prEdit = REVIEWED_EDIT, mainEdit, rewrite } = {}) {
+    const fixture = createTempRepo();
+    onTestFinished(fixture.cleanup);
+    const { headRefName } = pullRequests[0];
+    const base = fixture.commit(PR_FILE, numberedLines(), 'base');
+    fixture.sh(['checkout', '-q', '-b', headRefName]);
+    const reviewedHead = fixture.commit(PR_FILE, numberedLines(prEdit), 'reviewed change');
+    fixture.sh(['checkout', '-q', 'main']);
+    fixture.commit('unrelated.txt', 'unrelated\n', 'main moves on');
+    if (mainEdit) fixture.commit(PR_FILE, numberedLines(mainEdit), 'main edits the PR file');
+    fixture.sh(['checkout', '-q', headRefName]);
+    fixture.sh(['rebase', '-q', 'main']);
+    if (rewrite) {
+      writeFileSync(
+        join(fixture.repo, PR_FILE),
+        numberedLines({ ...mainEdit, ...prEdit, ...rewrite })
+      );
+      fixture.sh(['commit', '-q', '-a', '--amend', '--no-edit']);
+    }
+    const pullRequest = { ...pullRequests[0], headRefOid: reviewedHead, baseRefOid: base };
+    const runCommand = (command, args, options = {}) =>
+      spawnSync(command, args, {
+        encoding: 'utf8',
+        ...options,
+        cwd: fixture.repo,
+        env: fixture.env,
+      });
+    const assertPreserved = () =>
+      assertPatchPreserved({ runCommand, remoteName: 'origin', pullRequest });
+    return { ...fixture, assertPreserved };
+  }
+
+  it('passes a rebase that kept the reviewed patch', () => {
+    expect(rebaseLowerPullRequest().assertPreserved()).toBe('preserved');
+  });
+
+  it('refuses a rebase that only re-indented the reviewed line, naming the PR', () => {
+    const stack = rebaseLowerPullRequest({ rewrite: { 10: '  line 10 reviewed' } });
+    expect(stack.assertPreserved).toThrow(/PR #1512 \(campaign\/lower\)/);
+  });
+
+  it('passes a rebase onto a main that edited a line beside the reviewed hunk', () => {
+    const stack = rebaseLowerPullRequest({ mainEdit: { 8: 'line 8 on main' } });
+    expect(stack.assertPreserved()).toBe('preserved');
+  });
+
+  it("leaves out the context lines the user's diff config adds", () => {
+    const stack = rebaseLowerPullRequest({
+      prEdit: { 8: 'line 8 reviewed', 12: 'line 12 reviewed' },
+      mainEdit: { 10: 'line 10 on main' },
+    });
+    stack.sh(['config', '--global', 'diff.context', '10']);
+    stack.sh(['config', '--global', 'diff.interHunkContext', '10']);
+    expect(stack.assertPreserved()).toBe('preserved');
+  });
+
+  it("still compares patches when the user's config colours every diff", () => {
+    const stack = rebaseLowerPullRequest({ rewrite: { 10: 'line 10 rewritten' } });
+    stack.sh(['config', '--global', 'color.diff', 'always']);
+    expect(stack.assertPreserved).toThrow(/PR #1512 \(campaign\/lower\)/);
   });
 });
 
@@ -174,7 +242,7 @@ describe('pushRebasedStack', () => {
         'refs/heads/campaign/lower': SHA.lowerNew,
         'refs/heads/main': SHA.rebasedBase,
       },
-      contentByRange: {
+      patchIdByRange: {
         [`${SHA.base}...${SHA.lowerOld}`]: 'same',
         [`${SHA.rebasedBase}...${SHA.lowerNew}`]: 'same',
       },
@@ -191,7 +259,7 @@ describe('pushRebasedStack', () => {
         'refs/heads/campaign/lower': SHA.lowerNew,
         'refs/heads/main': SHA.rebasedBase,
       },
-      contentByRange: {
+      patchIdByRange: {
         [`${SHA.base}...${SHA.lowerOld}`]: 'reviewed',
         [`${SHA.rebasedBase}...${SHA.lowerNew}`]: 'rewritten',
       },
