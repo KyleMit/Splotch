@@ -4,11 +4,14 @@
 //
 //   merged      the tip is an ancestor of the base — `git branch -d` would accept
 //               it, and it is deleted at that proven commit id
-//   equivalent  a patch-id match (rebase-merged, or the PR's squash commit)
-//               *and* every file the branch touched byte-identical on the base,
-//               because patch-ids ignore whitespace. `-d` refuses these since
-//               ancestry says no, so they are deleted only behind
-//               `--include-equivalent`, at the proven commit id, proof printed
+//   equivalent  every commit unique to the branch has a counterpart on the base
+//               with the same `--verbatim` patch-id (rebase-merged), or the
+//               branch's whole diff has the same one as its merged PR's squash
+//               commit. Git's own patch-ids ignore whitespace, so `git cherry`
+//               only nominates a rebase-merged branch for that proof. `-d`
+//               refuses these since ancestry says no, so they are deleted only
+//               behind `--include-equivalent`, at the proven commit id, proof
+//               printed
 //
 // Everything else is a judgment call for the prune-git-workspace skill.
 //
