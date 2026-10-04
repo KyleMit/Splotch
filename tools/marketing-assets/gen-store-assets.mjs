@@ -31,7 +31,6 @@ import { copyFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { FREE_GENERATION_LIMIT } from '../../web/src/lib/freeGenerations.ts';
-import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
 import {
   STORE_TARGETS,
@@ -60,7 +59,7 @@ import {
   openSettingsSection,
   pickBook,
   pickBrush,
-  pickColor,
+  pickDrawingColor,
   pickPage,
   setStrokeSize,
   waitForColoringOverlay,
@@ -70,8 +69,6 @@ import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-ov
 const OUT = join(ROOT, 'store-assets');
 const CAPTURES = join(OUT, 'captures');
 const DEFAULT_PORT = 4173;
-
-const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
 
 // Play allows the 7" tablet slot to reuse the 10" images (same 1920x1080 spec).
 const TABLET7_DIR = 'screenshots/tablet7';
@@ -176,7 +173,8 @@ async function sceneHero(browser, base, capture, orientation) {
   await (orientation === 'portrait'
     ? drawIslandTall(page, insetHeroBox(box), { replay: 'engine' })
     : drawDinosaurWide(page, box, { replay: 'engine' }));
-  await pickColor(page, C.green); // the spec's resting selection: green ring, pen brush
+  // The spec's resting selection: green ring, pen brush.
+  await pickDrawingColor(page, { kind: 'palette', label: 'Green' });
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
   await ctx.close();
@@ -247,7 +245,8 @@ async function sceneMagic(browser, base, capture, orientation) {
       .catch(() => false);
     if (landed) break;
   }
-  await pickColor(page, C.purple); // the spec's ringed swatch while magic is active
+  // The spec's ringed swatch while magic is active.
+  await pickDrawingColor(page, { kind: 'palette', label: 'Purple' });
   await pickBrush(page, 'magic');
   const box = await canvasBox(page);
   await magicScribbles(page, box, orientation);

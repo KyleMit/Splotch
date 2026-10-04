@@ -29,7 +29,7 @@ import {
   rejectUnknownFlags,
   runMain,
 } from '../lib/proc.mjs';
-import { freePort, spawnViteServer, waitForPortRelease } from '../lib/vite-server.mjs';
+import { freePort, spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 
 // The candidates worth looking at, bracketing the shipped default. 0.45 is the
@@ -168,8 +168,7 @@ export async function generateGlazeSheet() {
   if (!under || !over) fail('the palette no longer has a Yellow and a Blue swatch');
 
   const port = argNumber('port', DEFAULT_PORT, TCP_PORT);
-  freePort(port);
-  await waitForPortRelease(port);
+  await freePort(port);
   const server = spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' } });
   // vite binds ::1 by default, so an IPv4 literal never answers here.
   const url = `http://localhost:${port}`;
