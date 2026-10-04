@@ -7,6 +7,7 @@ import { rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
 import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
+import { registryCeilingCases } from './fixtures/registry-ceilings.mjs';
 
 function lineArt({
   shiftedFeatureX = 0,
@@ -136,26 +137,26 @@ describe('catalog calibration', () => {
     );
   });
 
-  it('bounds every reviewed baseline exception while new pages keep the strict default', async () => {
-    const exceptions = [
-      ['farm/horse-tall', 'night'],
-      ['farm/horse-wide', 'night'],
-      ['space/astronaut-wide', 'light'],
-      ['space/ship-wide', 'night'],
-    ];
+  const warpCeilingCases = registryCeilingCases('warp-max');
 
-    for (const [page, theme] of exceptions) {
-      const [category, name] = page.split('/');
-      const penPath = join(COLORING_DIR, category, `${name}.overlay.svg`);
-      const pen = await rasterizeLineArt(penPath);
-      const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
-      const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
-      const score = await localWarp(source, fill);
-      const max = pageLevers(page, theme).flags['warp-max'];
+  it('finds reviewed warp ceilings in the notes.json registry', () => {
+    expect(warpCeilingCases.length).toBeGreaterThan(0);
+  });
 
-      expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
+  it.each(warpCeilingCases)(
+    '%s %s still needs its reviewed warp ceiling and stays within it',
+    async (page, theme) => {
+      const score = await scorePage(page, theme);
+      const levers = pageLevers(page, theme);
+
+      expect(score.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
+      expect(score.localWarpMax).toBeLessThanOrEqual(levers.flags['warp-max']);
+      expect(levers.review).toMatch(/\S/);
+      expect(levers.why).toMatch(/\S/);
     }
+  );
 
+  it('keeps the strict default for a page with no registry entry', () => {
     expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
     expect(LOCAL_WARP_MAX_PX).toBe(4);
   });
