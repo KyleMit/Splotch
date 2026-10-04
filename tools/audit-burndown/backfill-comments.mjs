@@ -17,12 +17,13 @@
 import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseSavedAgentOutput } from './lib/agent-runner.mjs';
+import { commentStorePath } from './lib/burndown-config.mjs';
 import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib/burndown-core.mjs';
 import { commitCommentBody, findingProblem } from './lib/comment-sync.mjs';
 
 chdirRoot();
 
-const STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+const STORE = commentStorePath();
 
 // Every sha `done` has dropped, so `capture` can tell "never recorded" from
 // "already posted". Without it `capture` deduped against the store alone — and
