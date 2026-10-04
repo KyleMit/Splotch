@@ -9,11 +9,15 @@ import {
   freePort,
   portListenerOwners,
   portListenerPids,
-  waitForPortRelease,
 } from '../lib/vite-server.mjs';
 
 const LISTEN_ON_ANY_PORT =
   'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})';
+// How long a listener keeps its port after SIGTERM: long enough that a freePort
+// resolving before the release still finds it bound, and well inside freePort's
+// own release timeout.
+const SIGTERM_EXIT_DELAY_MS = 300;
+const LISTEN_THEN_EXIT_SLOWLY = `process.on("SIGTERM",()=>setTimeout(()=>process.exit(0),${SIGTERM_EXIT_DELAY_MS}));${LISTEN_ON_ANY_PORT}`;
 
 // Every test spawns the listeners it inspects, because freePort stops one: a
 // listener shared across tests is gone for whichever test runs after that.
@@ -106,7 +110,7 @@ describe('freePort', () => {
   it('refuses a listener owned by another checkout and leaves it running', async () => {
     const foreign = await listenFrom(foreignRoot);
 
-    expect(() => freePort(foreign.port)).toThrow(
+    await expect(freePort(foreign.port)).rejects.toThrow(
       `port ${foreign.port} is held by a listener outside this checkout (pid ${foreign.child.pid})`
     );
 
@@ -114,11 +118,12 @@ describe('freePort', () => {
     expect(portListenerPids(foreign.port)).toContain(foreign.child.pid);
   });
 
-  it("stops this checkout's own listener", async () => {
-    const owned = await listenFrom(ROOT);
+  // A caller starts its strictPort server as soon as freePort resolves, so a
+  // listener still exiting then makes that server lose the bind.
+  it("resolves only after this checkout's listener has released the port", async () => {
+    const owned = await listenFrom(ROOT, LISTEN_THEN_EXIT_SLOWLY);
 
-    freePort(owned.port);
-    await waitForPortRelease(owned.port);
+    await freePort(owned.port);
 
     expect(portListenerPids(owned.port)).not.toContain(owned.child.pid);
   });
