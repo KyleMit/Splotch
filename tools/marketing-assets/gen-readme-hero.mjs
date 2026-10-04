@@ -4,14 +4,13 @@ import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
-import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 import { STORE_FRAME_IDENTITY_PATH } from '../../web/src/routes/dev/store-frames/lib/paths.ts';
 import {
   canvasBox,
   expandDrawer,
   hasInk,
   openAppPage,
-  pickColor,
+  pickDrawingColor,
 } from '../app-driver/lib/app-driver.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { isMain, parseNumberFlag, ROOT, sleep, TCP_PORT } from '../lib/proc.mjs';
@@ -111,10 +110,7 @@ async function captureDrawing(browser, base, device) {
       },
       { replay: 'engine' }
     );
-    const green = PALETTE_COLORS.find(({ label }) => label === 'Green');
-    if (!green || !(await pickColor(page, green.hex))) {
-      throw new Error(`${device.name}: resting palette selection is unavailable`);
-    }
+    await pickDrawingColor(page, { kind: 'palette', label: 'Green' });
     await sleep(SCREENSHOT_SETTLE_MS);
     if (!(await hasInk(page)))
       throw new Error(`${device.name}: drawing replay left a blank canvas`);
