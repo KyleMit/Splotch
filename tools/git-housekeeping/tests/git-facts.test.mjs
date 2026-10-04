@@ -174,6 +174,10 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
   let fixture;
 
   beforeEach(() => {
+    // Command-scope config outranks the repository's own, so an ambient setting
+    // would hide the one a test writes from the fixture and the library alike.
+    vi.stubEnv('GIT_CONFIG_COUNT', undefined);
+    vi.stubEnv('GIT_CONFIG_PARAMETERS', undefined);
     fixture = createTempRepo();
   });
 
