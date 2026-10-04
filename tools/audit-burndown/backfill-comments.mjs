@@ -60,6 +60,13 @@ const readStore = (store) =>
 
 const storeLine = (record) => `${JSON.stringify(record)}\n`;
 
+// A last record that lost its newline (a hand edit) still parses, but an append
+// would join the next record onto its line, so that record is ended first.
+function appendRecord(store, record) {
+  const unterminated = existsSync(store) && /[^\n]$/.test(readFileSync(store, 'utf8'));
+  appendFileSync(store, `${unterminated ? '\n' : ''}${storeLine(record)}`);
+}
+
 const structured = (file) => {
   if (!existsSync(file)) return null;
   const parsed = parseSavedAgentOutput(readFileSync(file, 'utf8'));
@@ -90,9 +97,10 @@ function completedIterations() {
 }
 
 // The fix commit deletes the finding from the backlog, so the finding text is
-// exactly the removed lines of that commit's diff for the file.
+// exactly the removed lines of that commit's diff for the file. Plumbing rather
+// than `git show`, whose output follows the host's colour and format settings.
 function findingFromCommit(sha, backlog) {
-  const diff = gitOut('show', sha, '--', backlog);
+  const diff = gitOut('diff-tree', '-p', '--no-commit-id', sha, '--', backlog);
   const removed = diff
     .split('\n')
     .filter((l) => l.startsWith('-') && !l.startsWith('---'))
@@ -172,7 +180,7 @@ function capture(range, store, backlog) {
     }
     // Appended, never rewritten: the driver appends to the same store at every
     // close-out, and a rewrite would drop any record it added meanwhile.
-    appendFileSync(store, storeLine(recordFor(it, sha, backlog)));
+    appendRecord(store, recordFor(it, sha, backlog));
     known.add(sha);
     added += 1;
     console.log(`captured ${sha.slice(0, 12)}  ${it.title}`);

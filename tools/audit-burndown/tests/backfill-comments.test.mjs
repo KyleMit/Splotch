@@ -28,12 +28,7 @@ const RUN_LOG = `${LOGS}/run.log`;
 // A backlog other than docs/AUDIT.md, as a run started with AUDIT_FILE has.
 const CUSTOM_BACKLOG = 'docs/AUDIT-SMELLS.md';
 
-// The fixture's own git calls ignore the host's config, so a global signing key
-// or hook cannot change the history the tests build.
-const FIXTURE_GIT_ENV = {
-  ...process.env,
-  GIT_CONFIG_GLOBAL: '/dev/null',
-  GIT_CONFIG_NOSYSTEM: '1',
+const FIXTURE_IDENTITY = {
   GIT_AUTHOR_NAME: 't',
   GIT_AUTHOR_EMAIL: 't@t',
   GIT_COMMITTER_NAME: 't',
@@ -58,7 +53,7 @@ let repo;
 const git = (...args) =>
   execFileSync('git', args, {
     cwd: repo,
-    env: FIXTURE_GIT_ENV,
+    env: { ...process.env, ...FIXTURE_IDENTITY },
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
@@ -117,6 +112,13 @@ const readStore = (path = DEFAULT_STORE) =>
 const printed = (stream) => console[stream].mock.calls.map((args) => args.join(' '));
 
 beforeEach(() => {
+  // Every git call, the fixture's and runBackfill's alike, reads only the temp
+  // repository's config, so a host's signing key, hook, or colour setting cannot
+  // change what a test builds or sees.
+  vi.stubEnv('GIT_CONFIG_GLOBAL', '/dev/null');
+  vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1');
+  vi.stubEnv('GIT_CONFIG_COUNT', undefined);
+  vi.stubEnv('GIT_CONFIG_PARAMETERS', undefined);
   originalCwd = process.cwd();
   repo = mkdtempSync(join(tmpdir(), 'backfill-comments-'));
   git('init', '-q', '-b', 'main');
@@ -127,6 +129,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   process.chdir(originalCwd);
   rmSync(repo, { recursive: true, force: true });
 });
@@ -269,6 +272,31 @@ describe('capture', () => {
     expect(runBackfill(['capture', `${base}..HEAD`], { AUDIT_FILE: CUSTOM_BACKLOG })).toBe(0);
 
     expect(readStore().map((r) => r.sha)).toEqual([earlier.sha, fix, driverRecord.sha]);
+  });
+
+  it('ends an unterminated last record before appending, so the store still drains', () => {
+    const { base, fix } = acceptedFix(CUSTOM_BACKLOG);
+    const earlier = record('e'.repeat(40));
+    // A hand-edited store can lose its final newline; it still parses as is.
+    writeFileSync(DEFAULT_STORE, JSON.stringify(earlier));
+
+    expect(runBackfill(['capture', `${base}..HEAD`], { AUDIT_FILE: CUSTOM_BACKLOG })).toBe(0);
+
+    expect(readStore().map((r) => r.sha)).toEqual([earlier.sha, fix]);
+    expect(runBackfill(['done', earlier.sha], {})).toBe(0);
+    expect(runBackfill(['done', fix], {})).toBe(0);
+    expect(readFileSync(DEFAULT_STORE, 'utf8')).toBe('');
+  });
+
+  it('reads the finding when the host config colours git output', () => {
+    const { base } = acceptedFix(CUSTOM_BACKLOG);
+    const colouring = join(repo, 'colouring.gitconfig');
+    writeFileSync(colouring, '[color]\n\tui = always\n');
+    vi.stubEnv('GIT_CONFIG_GLOBAL', colouring);
+
+    expect(runBackfill(['capture', `${base}..HEAD`], { AUDIT_FILE: CUSTOM_BACKLOG })).toBe(0);
+
+    expect(readStore()[0].problem).toBe('The first thing is wrong.');
   });
 
   it('counts only the posted commits inside the range as skipped', () => {
