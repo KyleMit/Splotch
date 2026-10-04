@@ -22,8 +22,23 @@ const COMMITTED_SVG = readFileSync(
   'utf8'
 );
 const PATH = '<path d="M 0 0 L 10 10" stroke="#86aed3" stroke-width="14"/>';
-const svgWith = (body, viewBox = '0 0 100 100') =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"><g fill="none">${body}</g></svg>`;
+const REPLAYED = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
+const svgWith = (body, { viewBox = '0 0 100 100', group = REPLAYED } = {}) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"><g ${group}>${body}</g></svg>`;
+const MINIMAL_PARSE = {
+  width: 100,
+  height: 100,
+  strokes: [
+    {
+      label: 'Blue',
+      strokeWidth: 14,
+      pts: [
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+      ],
+    },
+  ],
+};
 
 describe('promotional image SVG parser', () => {
   it('imports without starting the generator', () => {
@@ -39,20 +54,16 @@ describe('promotional image SVG parser', () => {
   });
 
   it('parses a minimal path into one labelled stroke', () => {
-    expect(parseSvg(svgWith(PATH))).toEqual({
-      width: 100,
-      height: 100,
-      strokes: [
-        {
-          label: 'Blue',
-          strokeWidth: 14,
-          pts: [
-            { x: 0, y: 0 },
-            { x: 10, y: 10 },
-          ],
-        },
-      ],
-    });
+    expect(parseSvg(svgWith(PATH))).toEqual(MINIMAL_PARSE);
+  });
+
+  it('inherits the presentation through nested groups', () => {
+    expect(parseSvg(svgWith(`<g>${PATH}</g>`))).toEqual(MINIMAL_PARSE);
+  });
+
+  it('accepts the presentation set on the stroke itself', () => {
+    const svg = svgWith(PATH.replace('/>', ` ${REPLAYED}/>`), { group: '' });
+    expect(parseSvg(svg)).toEqual(MINIMAL_PARSE);
   });
 
   it.each([
@@ -107,24 +118,57 @@ describe('promotional image SVG parser', () => {
       '<circle> r must be positive: -20',
     ],
     [
+      'a filled group',
+      svgWith(PATH, { group: REPLAYED.replace('fill="none"', 'fill="red"') }),
+      '<path> needs fill="none" on it or a parent <g>, got "red"',
+    ],
+    [
+      "a group that leaves SVG's default black fill",
+      svgWith(PATH, { group: REPLAYED.replace('fill="none" ', '') }),
+      '<path> needs fill="none" on it or a parent <g>, got unset',
+    ],
+    [
+      'a filled circle',
+      svgWith('<circle cx="5" cy="5" r="5" fill="red" stroke="#86aed3" stroke-width="8"/>'),
+      '<circle> needs fill="none" on it or a parent <g>, got "red"',
+    ],
+    [
+      'square caps',
+      svgWith(PATH, { group: REPLAYED.replace('linecap="round"', 'linecap="square"') }),
+      '<path> needs stroke-linecap="round" on it or a parent <g>, got "square"',
+    ],
+    [
+      "a path that overrides its group's round joins",
+      svgWith(PATH.replace('/>', ' stroke-linejoin="miter"/>')),
+      '<path> needs stroke-linejoin="round" on it or a parent <g>, got "miter"',
+    ],
+    [
       'a path that is not self-closing',
       svgWith(PATH.replace('/>', '></path>')),
       '<path> must be self-closing',
     ],
     [
       'a viewBox that is not zero-origin',
-      svgWith(PATH, '10 0 100 100'),
+      svgWith(PATH, { viewBox: '10 0 100 100' }),
       '<svg> needs a viewBox of "0 0 <width> <height>", got 10 0 100 100',
     ],
-    ['a zero-width viewBox', svgWith(PATH, '0 0 0 100'), 'viewBox width must be positive: 0'],
+    [
+      'a zero-width viewBox',
+      svgWith(PATH, { viewBox: '0 0 0 100' }),
+      'viewBox width must be positive: 0',
+    ],
     ['a comment', svgWith(`<!-- note -->${PATH}`), 'Unsupported SVG markup <!-- note -->'],
     ['text outside the tags', svgWith(`${PATH}stray`), 'Unexpected text outside SVG tags'],
     [
       'a nested <svg>',
       svgWith(`<svg viewBox="0 0 10 10">${PATH}</svg>`),
-      'Nested <svg> is unsupported',
+      'Only one <svg> element is supported',
     ],
-    ['markup with no <svg> root', `<g fill="none">${PATH}</g>`, 'No <svg> root'],
+    ['a path after </svg>', `${svgWith(PATH)}${PATH}`, '<path> is outside the <svg> root'],
+    ['a missing </svg>', svgWith(PATH).replace('</svg>', ''), 'Unclosed <svg>'],
+    ['a missing </g>', svgWith(PATH).replace('</g>', ''), 'Mismatched </svg> (open element: <g>)'],
+    ['markup with no <svg> root', `<g ${REPLAYED}>${PATH}</g>`, '<g> is outside the <svg> root'],
+    ['an empty document', '', 'No <svg> root'],
     ['an SVG with no strokes', svgWith(''), 'SVG has no strokes to replay'],
   ])('refuses %s', (_case, svg, message) => {
     expect(() => parseSvg(svg)).toThrow(new Error(message));

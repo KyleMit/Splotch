@@ -46,17 +46,27 @@ const COLOR_MAP = {
   '#e8cf77': 'Yellow',
 };
 
-// Every element the replay understands, with each attribute it reads or can safely
-// ignore. Anything else (a transform, a style, opacity, another element) changes the
-// drawing in a way the replay cannot reproduce, so it fails the parse instead.
+// What the replay draws: unfilled strokes with round caps and joins. A stroke may set
+// each value itself or inherit it from an enclosing <g>; an SVG default (a black fill,
+// butt caps, miter joins) is refused like any other value.
+const REPLAYED_PRESENTATION = {
+  fill: 'none',
+  'stroke-linecap': 'round',
+  'stroke-linejoin': 'round',
+};
+const PRESENTATION_ATTRIBUTES = Object.keys(REPLAYED_PRESENTATION);
+
+// Every element the replay understands, with each attribute it reads, checks, or can
+// safely ignore. Anything else (a transform, a style, opacity, another element) changes
+// the drawing in a way the replay cannot reproduce, so it fails the parse instead.
 const ELEMENT_ATTRIBUTES = {
   svg: ['xmlns', 'version', 'viewBox'],
-  g: ['fill', 'stroke-linecap', 'stroke-linejoin', 'vector-effect'],
-  path: ['d', 'stroke', 'stroke-width'],
-  circle: ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width'],
+  g: [...PRESENTATION_ATTRIBUTES, 'vector-effect'],
+  path: ['d', 'stroke', 'stroke-width', ...PRESENTATION_ATTRIBUTES],
+  circle: ['cx', 'cy', 'r', 'stroke', 'stroke-width', ...PRESENTATION_ATTRIBUTES],
 };
 const TAG = /<[^>]*>/g;
-const CLOSING_TAG = /^<\/(?:svg|g)>$/;
+const CLOSING_TAG = /^<\/(svg|g)>$/;
 // ATTRIBUTE reads only double-quoted values, so ELEMENT_TAG refuses a tag spelled any
 // other way rather than letting its attributes go unread.
 const ELEMENT_TAG = /^<([A-Za-z][\w:-]*)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>$/;
@@ -124,7 +134,25 @@ function parseViewBox(viewBox) {
   };
 }
 
-function parseStroke(element, attributes) {
+// The presentation an element passes on: its parent's, overridden by its own attributes.
+function inheritPresentation(parent, attributes) {
+  const presentation = { ...parent };
+  for (const name of PRESENTATION_ATTRIBUTES) {
+    if (attributes[name] !== undefined) presentation[name] = attributes[name];
+  }
+  return presentation;
+}
+
+function assertReplayedPresentation(element, presentation) {
+  for (const [name, value] of Object.entries(REPLAYED_PRESENTATION)) {
+    if (presentation[name] === value) continue;
+    const actual = presentation[name] === undefined ? 'unset' : `"${presentation[name]}"`;
+    throw new Error(`<${element}> needs ${name}="${value}" on it or a parent <g>, got ${actual}`);
+  }
+}
+
+function parseStroke(element, attributes, presentation) {
+  assertReplayedPresentation(element, presentation);
   const read = (name) => {
     if (attributes[name] === undefined) throw new Error(`<${element}> is missing ${name}`);
     return attributes[name];
@@ -140,27 +168,47 @@ function parseStroke(element, attributes) {
   return { label, strokeWidth: positive('stroke-width'), pts };
 }
 
+function closeInnermost(open, tag, element) {
+  const innermost = open.pop()?.element;
+  if (innermost === element) return;
+  throw new Error(`Mismatched ${tag} (open element: ${innermost ? `<${innermost}>` : 'none'})`);
+}
+
 // Every drawable element as { label, strokeWidth, pts }, with the viewBox size its
 // points are measured in. Markup the replay would drop or misdraw throws instead.
 export function parseSvg(text) {
   if (text.replace(TAG, '').trim()) throw new Error('Unexpected text outside SVG tags');
   let viewBox;
   const strokes = [];
+  // The open <svg> root and <g>s, innermost last, each with the presentation it passes on.
+  const open = [];
   for (const [tag] of text.matchAll(TAG)) {
-    if (CLOSING_TAG.test(tag)) continue;
+    const closing = tag.match(CLOSING_TAG);
+    if (closing) {
+      closeInnermost(open, tag, closing[1]);
+      continue;
+    }
     const match = tag.match(ELEMENT_TAG);
     if (!match) throw new Error(`Unsupported SVG markup ${tag}`);
     const [, element, attributeSource, selfClosing] = match;
     const attributes = parseAttributes(element, attributeSource);
     if (element === 'svg') {
-      if (viewBox) throw new Error('Nested <svg> is unsupported');
+      if (viewBox) throw new Error('Only one <svg> element is supported');
       viewBox = parseViewBox(attributes.viewBox);
-    } else if (element !== 'g') {
+      if (!selfClosing) open.push({ element, presentation: {} });
+      continue;
+    }
+    if (open.length === 0) throw new Error(`<${element}> is outside the <svg> root`);
+    const presentation = inheritPresentation(open.at(-1).presentation, attributes);
+    if (element === 'g') {
+      if (!selfClosing) open.push({ element, presentation });
+    } else {
       if (!selfClosing) throw new Error(`<${element}> must be self-closing`);
-      strokes.push(parseStroke(element, attributes));
+      strokes.push(parseStroke(element, attributes, presentation));
     }
   }
   if (!viewBox) throw new Error('No <svg> root');
+  if (open.length > 0) throw new Error(`Unclosed <${open.at(-1).element}>`);
   if (strokes.length === 0) throw new Error('SVG has no strokes to replay');
   return { ...viewBox, strokes };
 }

@@ -29,9 +29,10 @@ the real app canvas, and captures the 1920×1080 PNG. The Open Graph and Twitter
 `web/src/app.html` depend on those dimensions, with `web/tests/page.spec.ts` guarding agreement. The
 command replaces the committed PNG only after the live-app replay succeeds. Like the store-drawings
 compiler, it fails before driving the app on SVG input the replay cannot reproduce: an unmapped
-stroke color, a path other than one `M` followed by `L` segments, an element other than `svg`, `g`,
-`path`, or `circle`, or an unlisted attribute such as `transform`. A mapped swatch that the 1280×720
-viewport hides fails the replay instead of painting in the previous color.
+stroke color, a fill or caps and joins that are not round, a path other than one `M` followed by `L`
+segments, an element other than `svg`, `g`, `path`, or `circle`, an unlisted attribute such as
+`transform`, or a malformed document. A mapped swatch that the 1280×720 viewport hides fails the
+replay instead of painting in the previous color.
 
 ## README hero
 
