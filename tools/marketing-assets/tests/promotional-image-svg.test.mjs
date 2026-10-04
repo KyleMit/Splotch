@@ -97,6 +97,16 @@ describe('promotional image SVG parser', () => {
       '<circle> is missing r',
     ],
     [
+      'a zero stroke width',
+      svgWith(PATH.replace('stroke-width="14"', 'stroke-width="0"')),
+      '<path> stroke-width must be positive: 0',
+    ],
+    [
+      'a negative radius',
+      svgWith('<circle cx="5" cy="5" r="-20" stroke="#86aed3" stroke-width="8"/>'),
+      '<circle> r must be positive: -20',
+    ],
+    [
       'a path that is not self-closing',
       svgWith(PATH.replace('/>', '></path>')),
       '<path> must be self-closing',
@@ -106,6 +116,7 @@ describe('promotional image SVG parser', () => {
       svgWith(PATH, '10 0 100 100'),
       '<svg> needs a viewBox of "0 0 <width> <height>", got 10 0 100 100',
     ],
+    ['a zero-width viewBox', svgWith(PATH, '0 0 0 100'), 'viewBox width must be positive: 0'],
     ['a comment', svgWith(`<!-- note -->${PATH}`), 'Unsupported SVG markup <!-- note -->'],
     ['text outside the tags', svgWith(`${PATH}stray`), 'Unexpected text outside SVG tags'],
     [

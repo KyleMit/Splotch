@@ -78,6 +78,14 @@ function svgNumber(text, context) {
   return value;
 }
 
+// A zero or negative width, radius, or viewBox side renders nothing in the SVG, but the
+// replay would still draw a stroke from it.
+function positiveSvgNumber(text, context) {
+  const value = svgNumber(text, context);
+  if (value <= 0) throw new Error(`${context} must be positive: ${text}`);
+  return value;
+}
+
 // One replayed stroke is one pointer path, so a path must be a single absolute,
 // space-separated polyline: 'M x y' and then only 'L x y'.
 function parsePath(d) {
@@ -111,8 +119,8 @@ function parseViewBox(viewBox) {
   const match = viewBox?.match(ZERO_ORIGIN_VIEWBOX);
   if (!match) throw new Error(`<svg> needs a viewBox of "0 0 <width> <height>", got ${viewBox}`);
   return {
-    width: svgNumber(match[1], 'viewBox width'),
-    height: svgNumber(match[2], 'viewBox height'),
+    width: positiveSvgNumber(match[1], 'viewBox width'),
+    height: positiveSvgNumber(match[2], 'viewBox height'),
   };
 }
 
@@ -122,11 +130,14 @@ function parseStroke(element, attributes) {
     return attributes[name];
   };
   const number = (name) => svgNumber(read(name), `<${element}> ${name}`);
+  const positive = (name) => positiveSvgNumber(read(name), `<${element}> ${name}`);
   const label = COLOR_MAP[read('stroke')];
   if (!label) throw new Error(`Unmapped stroke color ${attributes.stroke} on <${element}>`);
   const pts =
-    element === 'path' ? parsePath(read('d')) : circlePts(number('cx'), number('cy'), number('r'));
-  return { label, strokeWidth: number('stroke-width'), pts };
+    element === 'path'
+      ? parsePath(read('d'))
+      : circlePts(number('cx'), number('cy'), positive('r'));
+  return { label, strokeWidth: positive('stroke-width'), pts };
 }
 
 // Every drawable element as { label, strokeWidth, pts }, with the viewBox size its
