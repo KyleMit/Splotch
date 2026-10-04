@@ -76,6 +76,8 @@ export function lowerPullRequests(pullRequests) {
 //
 // `color.diff=always` survives `--output`, and `git patch-id` finds no patch in a
 // coloured diff, so two ranges would read the same empty id whatever they changed.
+// A textconv driver from a user's global attributes would put the filter's output
+// in the diff instead of the file, which can drop a change from both ranges.
 function patchId(runCommand, baseSha, headSha) {
   const range = `${baseSha}...${headSha}`;
   const directory = mkdtempSync(join(tmpdir(), 'splotch-stack-patch-'));
@@ -87,6 +89,7 @@ function patchId(runCommand, baseSha, headSha) {
       [
         'diff',
         '--no-ext-diff',
+        '--no-textconv',
         '--no-color',
         '--binary',
         '--unified=0',

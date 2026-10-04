@@ -231,6 +231,15 @@ describe('assertPatchPreserved against a real repository', REAL_REPO_TEST_OPTION
     stack.sh(['config', '--global', 'color.diff', 'always']);
     expect(stack.assertPreserved).toThrow(/PR #1512 \(campaign\/lower\)/);
   });
+
+  it("compares the file itself when the user's global attributes assign a textconv", () => {
+    const stack = rebaseLowerPullRequest({ rewrite: { 10: 'line 10 rewritten' } });
+    const attributes = join(stack.root, 'attributes');
+    writeFileSync(attributes, `${PR_FILE} diff=firstline\n`);
+    stack.sh(['config', '--global', 'core.attributesFile', attributes]);
+    stack.sh(['config', '--global', 'diff.firstline.textconv', 'head -n 1']);
+    expect(stack.assertPreserved).toThrow(/PR #1512 \(campaign\/lower\)/);
+  });
 });
 
 describe('pushRebasedStack', () => {
