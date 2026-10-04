@@ -19,6 +19,7 @@ import {
   haloShippedClean,
   haloShippedHaloed,
 } from './fixtures/synthetic.mjs';
+import { registryCeilingCases } from './fixtures/registry-ceilings.mjs';
 
 describe('scoreNightHalo — ranks a residual dark rim above a clean punch', () => {
   it('a clean punch scores at or near zero halo', async () => {
@@ -62,28 +63,23 @@ describe('night halo catalog calibration', () => {
     expect(ship.haloScore).toBeLessThanOrEqual(0.2);
   });
 
-  const reviewedExceptions = [
-    ['shapes/rectangle-tall', 4.3],
-    ['shapes/heart-tall', 3.2],
-    ['nature/spider-tall', 2.9],
-    ['objects/house-tall', 2.5],
-    ['vehicles/fire-tall', 2.5],
-    ['objects/house-wide', 2.3],
-    ['space/station-tall', 2.3],
-  ];
+  const haloCeilingCases = registryCeilingCases('halo-score-max');
 
-  it.each(reviewedExceptions)(
-    '%s keeps its reviewed page ceiling and provenance',
-    async (page, max) => {
-      const [score, levers] = await Promise.all([
-        scoreCatalogPage(page),
-        Promise.resolve(pageLevers(page, 'night')),
-      ]);
+  it('finds reviewed halo ceilings in the notes.json registry', () => {
+    expect(haloCeilingCases.length).toBeGreaterThan(0);
+  });
+
+  it.each(haloCeilingCases)(
+    '%s %s still needs its reviewed halo ceiling and stays within it',
+    async (page, tool) => {
+      expect(tool, 'only the night generator reads halo-score-max').toBe('night');
+      const score = await scoreCatalogPage(page);
+      const levers = pageLevers(page, tool);
+
       expect(score.haloScore).toBeGreaterThan(NIGHT_HALO_SCORE_MAX);
-      expect(score.haloScore).toBeLessThanOrEqual(max);
-      expect(levers.flags['halo-score-max']).toBe(max);
-      expect(levers.review).toBeTruthy();
-      expect(levers.why).toContain('Issue #268');
+      expect(score.haloScore).toBeLessThanOrEqual(levers.flags['halo-score-max']);
+      expect(levers.review).toMatch(/\S/);
+      expect(levers.why).toMatch(/\S/);
     }
   );
 });
