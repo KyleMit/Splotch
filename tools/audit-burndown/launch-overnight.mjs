@@ -46,12 +46,15 @@ ensureWorkDirs();
 
 // An unattended launch is resume-capable by design: default RESUME=1 so a relaunch
 // after a crash recovers a dirty tree / stale STOP instead of halting (a first,
-// clean launch has nothing to recover, so it's a no-op). Set before the preflight
-// spawn — which inherits this env — so preflight warns rather than fails on crash
-// residue. An operator can still force RESUME=0 to keep the strict dirty-tree halt.
+// clean launch has nothing to recover, so it's a no-op). An operator can still
+// force RESUME=0 to keep the strict dirty-tree halt.
 process.env.RESUME = process.env.RESUME ?? '1';
 
+// Preflight validates the run it gates, so it gets the driver's effective env: the
+// RESUME default above (crash residue warns rather than fails) and the count as
+// MAX_ISSUES, which the job command sets over any inherited value.
 const preflight = spawnSync(process.execPath, ['tools/audit-burndown/check-preflight.mjs'], {
+  env: { ...process.env, MAX_ISSUES: String(count) },
   stdio: 'inherit',
 });
 if (preflight.status !== 0) {

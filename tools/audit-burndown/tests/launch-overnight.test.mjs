@@ -41,3 +41,21 @@ describe('a valid finding count', () => {
     expect(result.stderr).not.toContain('finding count must be a positive integer');
   });
 });
+
+describe('preflight', () => {
+  // readConfig refuses RETRIES=0 after it parses MAX_ISSUES, so this run stops inside preflight
+  // before any probe; an unsupported runner is refused first and would hide which MAX_ISSUES
+  // preflight read.
+  it('validates the positional count in place of an inherited MAX_ISSUES', () => {
+    const result = spawnSync(process.execPath, [SCRIPT, '5'], {
+      encoding: 'utf8',
+      env: { ...process.env, AGENT_RUNNER: 'claude', MAX_ISSUES: '', RETRIES: '0' },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('RETRIES must be an integer >= 1; received "0"');
+    expect(result.stderr).toContain('preflight failed — not launching');
+    expect(result.stderr).not.toContain('MAX_ISSUES');
+    expect(result.stdout).toBe('');
+  });
+});
