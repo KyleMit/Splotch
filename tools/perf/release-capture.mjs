@@ -559,10 +559,12 @@ export function releaseFailures(report) {
   return failures;
 }
 
-// releaseCapture reads --android-serial itself, from this process's argv.
+// releaseCapture reads --android-serial itself, from this process's argv, but only
+// after it has stopped the rig, so a value-less one is refused here first.
 if (isMain(import.meta.url)) {
   rejectUnknownFlags(['dry-run', 'host-only', 'stop-campaigns', 'json', 'android-serial']);
   runMain(async () => {
+    argFlag('android-serial', null);
     const json = argSwitch('json');
     const report = await releaseCapture({
       dryRun: argSwitch('dry-run'),

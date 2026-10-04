@@ -1011,6 +1011,10 @@ if (isMain(import.meta.url)) {
     const verifyLaunch = argSwitch('verify-ios-launch');
     const holdAwake = argSwitch('hold-android-awake');
     const appiumUrl = argFlag('appium-url', null);
+    // Judged here because prepareCapture reads them only on reaching each device,
+    // the UDID after --wake-android has already written to the phone.
+    argFlag('android-serial', null);
+    argFlag('ios-udid', null);
     const report = await prepareCapture(process.argv.slice(2), { android: !iosOnly });
     // Android first: it is the cheaper of the two verifications, so a bad
     // input path surfaces before a minute is spent building WebDriverAgent.
