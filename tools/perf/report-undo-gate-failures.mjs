@@ -14,11 +14,13 @@
 // reproduction means, and a reporting script that exits non-zero would be
 // indistinguishable from the gate it reports on. Empty output means "nothing
 // reproduced" ONLY in the second mode's comparable case — which is why an
-// uncomparable pair prints a sentinel rather than an empty line.
+// uncomparable pair prints a sentinel rather than an empty line. Any flag but
+// --first is a broken caller rather than a mode: it is refused on stderr with a
+// non-zero exit before either mode runs, and stdout stays empty.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { isMain, ROOT } from '../lib/proc.mjs';
+import { isMain, rejectUnknownFlags, ROOT } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
   comparableFingerprints,
@@ -97,4 +99,7 @@ function main(argv) {
   console.log(formatGateFailures(reproducedGateFailures(first, current)));
 }
 
-if (isMain(import.meta.url)) main(process.argv.slice(2));
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['first']);
+  main(process.argv.slice(2));
+}

@@ -11,7 +11,14 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { fail, isMain, runMain } from '../lib/proc.mjs';
+import {
+  fail,
+  isMain,
+  parseOrFail,
+  readSwitch,
+  rejectUnknownFlags,
+  runMain,
+} from '../lib/proc.mjs';
 import { isUnattributable, readEvidenceIndex } from './lib/capture-rescore.mjs';
 import {
   bucketRows,
@@ -103,11 +110,11 @@ export function unattributableCaptureProblem(path, { includeUnattributable = fal
 }
 
 export async function analyzeCapture(argv = process.argv.slice(2)) {
+  const includeUnattributable = parseOrFail(() => readSwitch(argv, 'include-unattributable'));
+  const forensics = !parseOrFail(() => readSwitch(argv, 'no-forensics'));
   const path = argv.find((arg) => !arg.startsWith('--'));
   if (!path) fail('Usage: npm run perf:analyze:frames -- <real-screen.json>');
-  const refusal = unattributableCaptureProblem(path, {
-    includeUnattributable: argv.includes('--include-unattributable'),
-  });
+  const refusal = unattributableCaptureProblem(path, { includeUnattributable });
   if (refusal) fail(refusal);
   let capture;
   try {
@@ -117,7 +124,7 @@ export async function analyzeCapture(argv = process.argv.slice(2)) {
   }
   if (!capture?.report?.phases) fail(`${path} has no .report.phases — not a real-screen capture.`);
 
-  const summaries = printRun(capture, { forensics: !argv.includes('--no-forensics') });
+  const summaries = printRun(capture, { forensics });
   const out = join(dirname(path), 'summaries.json');
   // `{ intervalMs, phases }`, so the saved file carries the derived beat — the
   // whole point of this entry point is a capture outliving its maths.
@@ -126,4 +133,7 @@ export async function analyzeCapture(argv = process.argv.slice(2)) {
   return summaries;
 }
 
-if (isMain(import.meta.url)) runMain(analyzeCapture);
+if (isMain(import.meta.url)) {
+  rejectUnknownFlags(['include-unattributable', 'no-forensics']);
+  runMain(analyzeCapture);
+}

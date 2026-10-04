@@ -6,9 +6,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { summarizeRun } from './real-screen-stats.mjs';
-import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './input-fidelity.mjs';
-import { refreshRegimeVerdict } from './refresh-regime.mjs';
+import { drawingVerdicts } from './capture-verdicts.mjs';
 import { CAMPAIGN_TARGETS } from './campaign-plan.mjs';
 import { FLOOR_CONTROL_PAGE } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
@@ -151,29 +149,23 @@ export function rescoreCapture(parsed, { name, targetId }) {
   const report = rawReportOf(parsed);
   if (!report) return null;
   const brush = brushOf(parsed, name);
-  const summaries = summarizeRun(report);
-  const phase = summaries.phases?.[0];
-  if (!phase) return null;
+  // The target a capture was filed under declares the runtime that judges it —
+  // the transport string alone does not separate an iPad WKWebView from an
+  // Android one — and the regime its beat is held to. An unknown target declares
+  // neither: the capture is judged by the runtime it recorded, and its beat
+  // reads unestablished.
+  const target = targetId ? CAMPAIGN_TARGETS[targetId] : null;
+  const { summaries, fidelity, regime } = drawingVerdicts(parsed, {
+    report,
+    captureRuntime: target?.captureRuntime ?? null,
+    refreshRegime: target?.refreshRegime ?? null,
+  });
+  if (!summaries.phases?.[0]) return null;
   // An unknown target must NOT quietly fall back to the plain gate: a cell that
   // carries an exception would then be scored against a threshold it was
   // explicitly excused from, and the table would say PASS or FAIL either way.
   const gateShare = targetId ? lostFrameTimeShareGateFor(targetId, brush) : null;
   const drawing = scoreDrawingRun(summaries.phases, gateShare ?? LOST_FRAME_TIME_SHARE_GATE);
-  // A capture written before the artifact carried a runtime has to be told which
-  // table judges it, and the target it was filed under is the only record of that
-  // — the transport string alone does not separate an iPad WKWebView from an
-  // Android one. An unknown target falls back to the runtime every threshold was
-  // originally set from, so such a capture scores exactly as it did before.
-  const runtime =
-    parsed?.fidelity?.runtime ??
-    (targetId ? CAMPAIGN_TARGETS[targetId]?.captureRuntime : null) ??
-    DEFAULT_CAPTURE_RUNTIME;
-  const fidelity = inputFidelity(phase.input ?? {}, runtime);
-  const regime = refreshRegimeVerdict(
-    summaries.intervalMs,
-    targetId ? (CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null) : null,
-    summaries.regimeMixture
-  );
   const floorControl = parsed?.page === FLOOR_CONTROL_PAGE;
   return {
     name,
