@@ -26,7 +26,7 @@ overrides:
   # every command, and the `catalog:` protocol it recommends instead would take the
   # range out of package.json, which is where Dependabot reads it. Kept honest by
   # tools/tests/pnpm-overrides.test.mjs, which fails when the two ranges diverge.
-  '@capacitor/assets>sharp': ^0.35.4
+  '@capacitor/assets>sharp': ^0.35.5
   # replace@1.2.2 pins vulnerable minimatch exactly, ajv@8.20.0's compatible
   # range retained vulnerable fast-uri, workbox-build's compatible range
   # retained vulnerable browserslist, and minimatch's compatible ranges
