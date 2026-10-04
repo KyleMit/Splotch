@@ -64,7 +64,22 @@ export function lowerPullRequests(pullRequests) {
 
 // `git patch-id` over a range, via a temp file: the diff is binary-safe and can
 // be large, so it is never carried through a shell pipe.
+//
+// Whitespace is content; context is not. `--verbatim` hashes the whitespace that
+// `--stable` strips, so re-indenting a reviewed PR's lines changes its id. With no
+// context lines, a base that edited a line beside the PR's hunk leaves the id
+// alone; `--inter-hunk-context=0` holds that against a user's
+// `diff.interHunkContext`, which fuses nearby hunks with the lines between them.
+// The price is one blind spot: an identical hunk relocated within its file keeps
+// its id, and a rebase relocates a hunk only through a conflict resolution that
+// rewrites its placement.
+//
+// `color.diff=always` survives `--output`, and `git patch-id` finds no patch in a
+// coloured diff, so two ranges would read the same empty id whatever they changed.
+// A textconv driver from a user's global attributes would put the filter's output
+// in the diff instead of the file, which can drop a change from both ranges.
 function patchId(runCommand, baseSha, headSha) {
+  const range = `${baseSha}...${headSha}`;
   const directory = mkdtempSync(join(tmpdir(), 'splotch-stack-patch-'));
   const diffPath = join(directory, 'branch.diff');
   try {
@@ -74,24 +89,32 @@ function patchId(runCommand, baseSha, headSha) {
       [
         'diff',
         '--no-ext-diff',
+        '--no-textconv',
+        '--no-color',
         '--binary',
+        '--unified=0',
+        '--inter-hunk-context=0',
         `--output=${diffPath}`,
-        `${baseSha}...${headSha}`,
+        range,
         '--',
       ],
       {},
-      `Could not compare ${baseSha}...${headSha}`
+      `Could not compare ${range}`
     );
     if (statSync(diffPath).size === 0) return 'empty';
     const diffFile = openSync(diffPath, 'r');
     try {
-      return requireProcess(
+      const id = requireProcess(
         runCommand,
         'git',
-        ['patch-id', '--stable'],
+        ['patch-id', '--verbatim'],
         { stdio: [diffFile, 'pipe', 'pipe'] },
-        'Could not identify the branch patch'
+        `Could not identify the patch of ${range}`
       ).split(/\s+/)[0];
+      if (!id) {
+        throw new Error(`Could not identify the patch of ${range}: git patch-id printed no id`);
+      }
+      return id;
     } finally {
       closeSync(diffFile);
     }
