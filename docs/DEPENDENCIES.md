@@ -850,10 +850,10 @@ Non-`keep` rows first.
 The lockfile installs **1179 package entries** total (including the root); ~50 are direct, the rest
 transitive. Aggregate view (not per-package):
 
-### Active dependency-audit status and exceptions (checked 2026-08-27)
+### Active dependency-audit status and exceptions (checked 2026-10-04)
 
-`pnpm audit --audit-level=high` reports no high or critical advisories. There are no active
-exceptions.
+`pnpm audit --audit-level=high` reports one high advisory, ignored under the single active exception
+below; there are no unexcepted high or critical advisories.
 
 An exception requires an exact GHSA entry in `pnpm-workspace.yaml`'s `auditConfig.ignoreGhsas` and a
 record in this subsection in the same change. Each record must name the affected locked package
@@ -863,6 +863,26 @@ more than 90 days later, and state the concrete removal trigger. The focused qua
 must require exact agreement between the configured GHSA set and the unexpired records. Expiry,
 availability of a patched resolution, or a changed reachability analysis removes the exception;
 severity-wide and dependency-class exclusions are never recorded here.
+
+Each record is a `#### GHSA-…` heading followed by the field bullets below; the quality-policy test
+in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
+
+#### GHSA-vfj7-8cjw-p6xm
+
+* **Advisory:** `braces` <=3.0.3, stack-exhaustion denial of service through deeply nested brace
+  patterns (high). <https://github.com/advisories/GHSA-vfj7-8cjw-p6xm>
+* **Locked paths:** `braces@3.0.3`, reached only as `stylelint > globby > micromatch > braces`
+  (`pnpm why braces` lists four such development paths).
+* **Upstream evidence:** the advisory's patched range is `>=3.0.4`, and `npm view braces versions`
+  ends at 3.0.3 (published 2024-05-21), so no patched resolution exists to override to.
+  <https://www.npmjs.com/package/braces?activeTab=versions>
+* **Reachability:** `pnpm why braces --prod` is empty, so the Netlify production install never
+  contains it. The development paths expand only glob patterns written in this repository's own lint
+  configuration; no untrusted input reaches `braces`.
+* **Approved:** KyleMit, 2026-10-04
+* **Review by:** 2027-01-02
+* **Removal trigger:** a `braces` release `>=3.0.4` is published; resolve it and delete this record
+  with its `ignoreGhsas` entry. Tracked by issue 2648.
 
 ### Audit summary (checked 2026-07-17)
 
