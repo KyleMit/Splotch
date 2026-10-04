@@ -33,15 +33,15 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { hasCommand, isMain, sleep } from '../lib/proc.mjs';
-import { agentRunnerDefaults, normalizeAgentRunner, runAgentStep } from './lib/agent-runner.mjs';
+import { hasCommand, isMain, parseOrFail, sleep } from '../lib/proc.mjs';
+import { runAgentStep } from './lib/agent-runner.mjs';
+import { readConfig } from './lib/burndown-config.mjs';
 import {
-  auditFile,
   briefIsStale,
   chdirRoot,
   commandFailureOutput,
   countEntries,
-  DEFAULT_MAX_ISSUES,
+  DEFERRED_FILE,
   deferralReason,
   deleteEntryByTitle,
   diffAddsClientStaticImport,
@@ -57,7 +57,6 @@ import {
   incompleteAuditCommitPlan,
   implementationCommitMessage,
   INVALID_DROP_MARKER,
-  launchCommand,
   lintablePaths,
   logLine,
   LOGS,
@@ -82,109 +81,6 @@ const ISSUE_FILE = join(WORK, 'current-issue.md');
 const BRIEF_FILE = join(WORK, 'current-brief.md');
 const STOP_FILE = join(WORK, 'STOP');
 const E2E_SPEC_PATH = /^tests\/[\w/-]+\.(?:spec|test)\.ts$(?![\s\S])/;
-
-// ---- knobs ------------------------------------------------------------------
-// Every env knob a run reads, resolved once. `env` is a parameter so a test can
-// construct a run under a specific set of knobs without mutating the process
-// environment; production always passes its own.
-export function readConfig(env = process.env) {
-  // The runner-specific skills set this explicitly. Claude remains the default
-  // for backward compatibility with existing launch commands.
-  const AGENT_RUNNER = normalizeAgentRunner(env.AGENT_RUNNER);
-  const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
-  const MAX_ISSUES = Number(env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // canary; raise once proven
-
-  return {
-    MAX_ISSUES,
-    // The backlog the whole run pops from, deletes from, and counts. Resolved
-    // here rather than read per-call from the ambient environment so it cannot
-    // disagree with the AUDIT_FILE the recorded launch command names — a run
-    // that relabels its backlog while processing another one leaves an "exact
-    // relaunch" record for a run that never happened.
-    AUDIT_FILE: auditFile(env),
-    // The command that relaunches this exact run, resolved from the same env the
-    // knobs above came from so the recorded line can never describe a different
-    // run than the one in force (see recordLaunch).
-    LAUNCH_COMMAND: launchCommand(env, MAX_ISSUES),
-    // A supervised detached segment must stop for CI and comment reconciliation
-    // after a bounded number of outcomes. Unlike MAX_ISSUES, this counts invalid
-    // drops and deferrals too. Zero keeps the historical unbounded behavior.
-    MAX_HANDLED: Number(env.MAX_HANDLED ?? 0),
-    // Push after EVERY finding. The run lives in an ephemeral cloud container that
-    // is reclaimed without warning, so an unpushed commit is a commit at risk: the
-    // only durable artifact is what is on origin. Batching existed to amortise a
-    // full-suite gate that no longer runs here (see PUSH_TEST_CMD), which leaves
-    // nothing to amortise — a push is a second, and a lost hour of model work is an
-    // hour. Raise it only if you are pushing somewhere rate-limited.
-    PUSH_EVERY: Number(env.PUSH_EVERY ?? 1),
-    BRANCH: env.BRANCH ?? 'audit/burndown',
-    CHECK_CMD: env.CHECK_CMD ?? 'npm run check', // type-check gate, every finding
-    TEST_CMD: env.TEST_CMD ?? 'npm run test:unit', // fast-test gate, every finding
-    E2E_CMD: env.E2E_CMD ?? 'npm run test:e2e -- --retries=1', // targeted E2E (retry past transient flakes), UI-touching findings only
-    // Joins the targeted E2E gate whenever the fix's range adds a static import
-    // edge under web/src (see withBundleGate). Playwright's web server builds
-    // first, so this pays a production build per import-adding finding — set it
-    // empty to fall back to CI-only detection of bundle re-partitioning.
-    BUNDLE_SPEC: env.BUNDLE_SPEC ?? 'tests/startup-bundle.spec.ts',
-    LINT_CMD: env.LINT_CMD ?? 'npx eslint', // per-finding lint gate, on the fix's changed files
-    // Local full-suite gate before a push — OFF by default. Every push lands on the
-    // draft PR, whose CI runs the whole suite anyway, in parallel, without sitting
-    // on the critical path of the next finding. Running it locally too would cost
-    // ~1–2 min per finding to learn the same thing later than CI does. The tradeoff
-    // is real and deliberate: cross-finding regressions the per-finding targeted
-    // specs cannot see now surface in CI (asynchronously) rather than blocking the
-    // push, so the supervising agent has to actually watch CI. Set it to `npm test`
-    // to restore the blocking local gate.
-    PUSH_TEST_CMD: env.PUSH_TEST_CMD ?? '',
-    // Per-commit PR comment records: one line appended the moment its fix lands, for
-    // the supervising agent to render and post through the GitHub MCP tools. It
-    // deliberately lives OUTSIDE git — a tracked file would be caught by the
-    // rollback paths' `git reset --hard`, which is precisely how pending records
-    // would get destroyed. Point it at a committed path (and drain + delete that
-    // file at closeout) when a run will go unwatched long enough that losing the
-    // container would matter.
-    COMMENT_STORE: env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl'),
-    MAX_DEFERRALS: Number(env.MAX_DEFERRALS ?? 3), // consecutive deferrals before halting
-    // Total attempts per agent step on a transient failure — N-1 retries. Named
-    // RETRIES as an env var because that knob is published in LAUNCH_KNOBS.
-    RETRIES: Number(env.RETRIES ?? 3),
-
-    AGENT_RUNNER,
-    RUNNER_DEFAULTS,
-    MODEL_VERIFY: env.MODEL_VERIFY ?? RUNNER_DEFAULTS.verifyModel,
-    MODEL_IMPL: env.MODEL_IMPL ?? RUNNER_DEFAULTS.implementModel,
-    MODEL_IMPL_MINOR: env.MODEL_IMPL_MINOR ?? RUNNER_DEFAULTS.minorImplementModel,
-    MODEL_REVIEW: env.MODEL_REVIEW ?? RUNNER_DEFAULTS.reviewModel,
-
-    // Claude Code enforces these per-call dollar caps. Codex subscription-backed
-    // runs have no equivalent CLI switch, so its backend ignores them.
-    //
-    // Impl gets the deepest budget: a multi-file extraction fix round hit the old
-    // 4.00 cap with the work finished and every gate green (2026-08-05 canary,
-    // $4.0036), while verify and review peaked under $1 against their $3.00 caps.
-    // A cap below what the work costs saves nothing — it converts a done,
-    // gate-passing fix into a deferral and pays for the finding again on the
-    // re-run. Dollars are notional on a subscription; the real ceiling is the
-    // usage window.
-    BUDGET_VERIFY: env.BUDGET_VERIFY ?? '3.00',
-    BUDGET_IMPL: env.BUDGET_IMPL ?? '7.00',
-    BUDGET_REVIEW: env.BUDGET_REVIEW ?? '3.00',
-
-    // Both backends expose reasoning effort. Verify stays medium because an INVALID
-    // verdict permanently drops a finding; implementation stays high because it
-    // manufactures the change; review stays medium behind deterministic gates.
-    EFFORT_VERIFY: env.EFFORT_VERIFY ?? 'medium',
-    EFFORT_IMPL: env.EFFORT_IMPL ?? 'high',
-    EFFORT_REVIEW: env.EFFORT_REVIEW ?? 'medium',
-
-    // A run is fully resumable from git + docs/AUDIT.md alone, so a brand-new session
-    // (even a fresh container, with no .audit-work/) can pick up exactly where a
-    // crashed one stopped. RESUME=1 additionally clears crash residue that would
-    // otherwise block startup; the unattended launcher sets it. See "Resuming a
-    // crashed run" in the burn-down-audits skill.
-    RESUME: env.RESUME === '1' || env.RESUME === 'true',
-  };
-}
 
 // Everything the run does to the world outside its own counters: exiting,
 // git, the shell, the agent runner, the log. Production wires the real
@@ -256,7 +152,6 @@ const SCHEMA_REVIEW = {
 };
 
 // ---- deferral ---------------------------------------------------------------
-const DEFERRED_FILE = 'docs/AUDIT-DEFERRED.md';
 const DEFERRED_HEADER = `# Audit — deferred findings
 
 > Findings the scripted audit burndown (the \`burn-down-audits\` skill) moved aside instead of
@@ -1151,9 +1046,9 @@ export function createBurndownRun({ config, effects }) {
 }
 
 export async function main() {
+  const config = parseOrFail(() => readConfig(process.env));
   chdirRoot();
   ensureWorkDirs();
-  const config = readConfig(process.env);
   const run = createBurndownRun({ config, effects: createEffects(config) });
   run.preflight();
   await run.execute();

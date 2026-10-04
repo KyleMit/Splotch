@@ -2,9 +2,11 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { commentStorePath } from './lib/burndown-config.mjs';
 import {
   chdirRoot,
   countEntries,
+  DEFERRED_FILE,
   DRIVER_PROCESS_PATTERN,
   entryTitle,
   gitOut,
@@ -27,8 +29,8 @@ const completedLines = existsSync(completedLog)
 const remaining = countEntries() ?? 0;
 const dropped = completedLines.filter((l) => l.includes(INVALID_DROP_MARKER)).length;
 const done = completedLines.length - dropped;
-const deferredHeadings = existsSync('docs/AUDIT-DEFERRED.md')
-  ? readFileSync('docs/AUDIT-DEFERRED.md', 'utf8').split('\n').filter(isEntryStart)
+const deferredHeadings = existsSync(DEFERRED_FILE)
+  ? readFileSync(DEFERRED_FILE, 'utf8').split('\n').filter(isEntryStart)
   : [];
 const total = done + dropped + deferredHeadings.length + remaining;
 
@@ -96,7 +98,7 @@ if (pid) {
 
 // Unposted per-commit comments are work the supervising agent still owes the PR,
 // and nothing else surfaces them — the driver only ever appends to this file.
-const store = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+const store = commentStorePath();
 if (existsSync(store)) {
   const pending = readFileSync(store, 'utf8').split('\n').filter(Boolean).length;
   if (pending) console.log(`comments   ${pending} unposted (${store})`);

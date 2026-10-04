@@ -14,10 +14,11 @@
 //   SAMPLES=3 FILTER=art-detail__cat npm run model-eval   # variance probe
 //
 // Env: SAMPLES (default 1), FILTER (input id substring), VARIANTS (variant key
-// substring), PER_CATEGORY (cap inputs per category — the high-effort tiers are
-// expensive), CONCURRENCY (default 1 — raise it to finish sooner, at the cost of
-// latency numbers measured under load), OUT_TAG (suffix on the run dir),
-// SKIP_REPORT.
+// substring), PER_CATEGORY (cap inputs per category, default 0 = no cap — the
+// high-effort tiers are expensive), CONCURRENCY (default 1 — raise it to finish
+// sooner, at the cost of latency numbers measured under load), OUT_TAG (suffix
+// on the run dir), SKIP_REPORT. A count that is not a plain integer in range
+// stops the run before any call.
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -26,6 +27,8 @@ import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   VARIANTS,
+  apiKeysFor,
+  countFromEnv,
   evaluationMetadata,
   evaluationVariants,
   selectModelVariants,
@@ -41,19 +44,19 @@ import {
 } from './lib/model-eval.mjs';
 import { callVariant } from './lib/image-providers.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { requireEnv, runId as makeRunId } from '../lib/proc.mjs';
+import { parseOrFail, runId as makeRunId } from '../lib/proc.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
 const BASE = join(ROOT, 'tools/model-eval');
 const IN = join(BASE, 'inputs');
-const SAMPLES = Number(process.env.SAMPLES ?? 1);
-const CONCURRENCY = Number(process.env.CONCURRENCY ?? 1);
+const SAMPLES = parseOrFail(() => countFromEnv('SAMPLES', { fallback: 1, min: 1 }));
+const CONCURRENCY = parseOrFail(() => countFromEnv('CONCURRENCY', { fallback: 1, min: 1 }));
 const FILTER = process.env.FILTER || '';
 const VARIANT_FILTER = process.env.VARIANTS || '';
 // Cap the corpus per category rather than overall: the high-effort tiers cost
 // real money per cell, and an overall cap would spend the whole budget on
-// whichever categories sort first.
-const PER_CATEGORY = Number(process.env.PER_CATEGORY ?? 0);
+// whichever categories sort first. 0 is no cap.
+const PER_CATEGORY = parseOrFail(() => countFromEnv('PER_CATEGORY', { fallback: 0, min: 0 }));
 // Generous enough for the slowest tier measured on this corpus (gpt-image-2 at
 // high effort runs past two and a half minutes), so a deadline never masquerades
 // as a model failure in the report.
@@ -65,8 +68,6 @@ const RESUME = process.env.RESUME || '';
 // A fixed, filesystem-safe run id. Date.now() is fine in plain Node; kept simple.
 const runId = makeRunId(process.env.OUT_TAG);
 const OUT = join(BASE, 'output', runId);
-
-const PROVIDER_KEY_ENV = { gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY' };
 
 // Rebuild report/index.html from an existing run's results.json, with no API calls.
 //   REPORT_FROM=tools/model-eval/output/<runId> [VERDICT_FILE=verdict.html] npm run model-eval
@@ -104,9 +105,6 @@ function selectVariants() {
       `${error.message}\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
     );
     process.exit(1);
-  }
-  for (const provider of new Set(selected.map((variant) => variant.provider))) {
-    requireEnv(PROVIDER_KEY_ENV[provider], 'set it in web/.env or export it');
   }
   return selected;
 }
@@ -201,6 +199,7 @@ async function main() {
   console.log('✓ prompt + system instruction match the app source');
 
   const variants = selectVariants();
+  const apiKeys = parseOrFail(() => apiKeysFor(variants));
   const inputs = loadInputs();
 
   const outDir = RESUME || OUT;
@@ -215,11 +214,6 @@ async function main() {
     console.log(`Resuming ${effRunId}: ${doneCells.size} existing images kept, filling the rest.`);
   }
   mkdirSync(outDir, { recursive: true });
-
-  const apiKeys = {
-    gemini: process.env.GEMINI_API_KEY,
-    openai: process.env.OPENAI_API_KEY,
-  };
 
   const tasks = [];
   for (const input of inputs) {
