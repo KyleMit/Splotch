@@ -6,8 +6,13 @@
 //   npm run audit:burndown                       # canary (MAX_ISSUES=5)
 //   MAX_ISSUES=600 MAX_HANDLED=5 npm run audit:burndown
 //
-// Graceful stop:  touch .audit-work/STOP
-// Hard stop:      pkill -TERM -f 'claude -p|codex exec'
+// Graceful stop:  touch .audit-work/STOP   (exits once the in-flight finding lands)
+// Abort one call: pkill -TERM -P "$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs')" -f 'claude -p|codex exec'
+//                 (this driver's agent child only; RETRIES re-attempts the call, then the finding defers)
+// Hard stop:      walk() { echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
+//                 d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && walk "$d" | xargs kill -TERM
+//                 (TERMs the driver, then every descendant captured before any signal: a driver
+//                 killed alone orphans its in-flight call. `kill -0` refuses unless one driver matched.)
 //
 // Four design points worth knowing before editing (see the burn-down-audits
 // skill for the full architecture):

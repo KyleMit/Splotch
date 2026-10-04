@@ -496,7 +496,17 @@ this is only about SHAs.)
 ## While it runs
 
 * Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
-  resuming). Stop hard with `pkill -TERM -f 'claude -p'`.
+  resuming). Stop hard only when the run must end now, by signalling the driver and every process
+  under it:
+  ```bash
+  walk() { echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
+  d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && walk "$d" | xargs kill -TERM
+  ```
+  It captures the whole tree before the first signal, then signals the driver first. A driver killed
+  alone orphans its in-flight `claude -p` call, which can keep editing and committing in the tree. A
+  process-group kill misses that call's tool commands, which run in sessions of their own. `kill -0`
+  refuses unless exactly one driver matched. The interrupted finding is crash residue, so relaunch
+  as **Resuming a crashed run** describes.
 * **Never edit a tracked file while the driver is running.** Its rollback paths run
   `git reset -q --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no
   reflog entry — and at a realistic deferral rate that fires within the hour. Committing mid-run is
@@ -686,17 +696,21 @@ itself. No `claude` call in the sample exceeded ~13 min.
   The supervising agent shares both surfaces with the driver, so both are worthless as liveness
   signals the moment you touch them. The `logs/` directory is written **only** by role calls.
 * **Investigate (too long)** → decide whether remediation is warranted before acting. Check whether
-  the current `claude` child is alive and *working* (`ps -o %cpu,etime -p <pid>`; is its role
-  `.audit-work/logs/*.json` still growing?) versus hung (0% CPU, static log and envelope). A
-  genuinely stuck call: `pkill -TERM -f 'claude -p'` kills only that one call — the driver's
-  `RETRIES` re-attempt it or the finding defers; the orchestrator and every committed fix are
-  untouched and state stays durable. Never kill `run-burndown.mjs` itself for a merely slow finding.
+  the current `claude` child is alive and *working* (`ps -o %cpu,etime -p <pid>`, with the pid
+  `audit:status` prints; is its role `.audit-work/logs/*.json` still growing?) versus hung (0% CPU,
+  static log and envelope). A genuinely stuck call: signal the driver's own `claude -p` child and
+  nothing else. The driver's `RETRIES` re-attempt it or the finding defers; the orchestrator and
+  every committed fix are untouched and state stays durable. Never kill `run-burndown.mjs` itself
+  for a merely slow finding.
+  ```bash
+  pkill -TERM -P "$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs')" -f 'claude -p'
+  ```
 
-  **`pkill -f` will also kill the shell you typed it in.** The pattern matches whole command lines,
-  and your own `bash -c` wrapper contains the pattern — so the command reports a nonzero exit
-  (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
-  as "I shot my own shell", not "the kill failed", and re-verify with a separate
-  `pgrep -fl '^node tools/audit-burndown/run-burndown.mjs'`.
+  **Keep the `-P` scope.** `pkill -f` matches whole command lines across the host, so without `-P`
+  the `'claude -p'` pattern also matches your own `bash -c` wrapper (the command then exits `144`:
+  you shot your own shell), any background waiter whose command line mentions it, every other
+  session's `claude -p` call, and the supervising session's own CLI. `-P` limits the match to the
+  driver's direct children, and the driver spawns each call directly, without a shell.
 
   **The same self-match makes `pgrep` wait loops hang forever.** The obvious way to wait for a clean
   stop — `until ! pgrep -f 'audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done` — **can
@@ -714,24 +728,26 @@ itself. No `claude` call in the sample exceeded ~13 min.
   **orphaned**, and this is the one case where killing the orchestrator is correct. It happens when
   the container restarts without being reclaimed: the disk and the Node process survive, its
   in-flight child does not, and the driver waits forever on a process that will never report. The
-  signature is specific — `pgrep -f 'claude -p'` returns nothing but the supervising session's own
-  CLI, no new envelope for tens of minutes, HEAD frozen, and **no log line of any kind**, so an
+  signature is specific — the driver is alive with no child agent call (`audit:status` prints no
+  `current claude call` line for the in-flight finding, and
+  `pgrep -P "$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs')" -f 'claude -p'` prints
+  nothing), no new envelope for tens of minutes, HEAD frozen, and **no log line of any kind**, so an
   event-driven monitor stays silent and reads exactly like a healthy long finding. Confirm with the
-  envelope count above, then `pkill -TERM -f '^node tools/audit-burndown/run-burndown.mjs'`,
-  `git reset -q --hard origin/<branch>` to drop the half-done finding (its `docs/AUDIT.md` entry was
-  never removed, so the finding is intact and will be re-processed), and relaunch from the durable
-  checkpoint.
+  envelope count above, then end the driver with the hard stop under **While it runs**, which also
+  ends any gate it is still waiting on, `git reset -q --hard origin/<branch>` to drop the half-done
+  finding (its `docs/AUDIT.md` entry was never removed, so the finding is intact and will be
+  re-processed), and relaunch from the durable checkpoint.
 
 ### "pause" — stop cleanly after the current finding
 
 `touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
 entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
 pushes — then exits without starting the next finding. Wait for the process to exit, then confirm
-the end state is resumable: no `run-burndown.mjs` / `claude -p` process left,
-`git rev-parse HEAD` == `origin/<branch>` (nothing unpushed), the comment store drained onto the PR,
-and the durable checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in
-place** — it holds the pause; a stray relaunch would exit immediately. Stand down any run-log
-monitor while paused.
+the end state is resumable: no driver left (a driver that exits on its own leaves no agent call
+behind), `git rev-parse HEAD` == `origin/<branch>` (nothing unpushed), the comment store drained
+onto the PR, and the durable checkpoint (memory / handoff) reflecting the new counts. **Leave the
+STOP file in place** — it holds the pause; a stray relaunch would exit immediately. Stand down any
+run-log monitor while paused.
 
 ### "resume" / "continue" — start the next finding
 

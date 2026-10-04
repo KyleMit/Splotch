@@ -347,9 +347,30 @@ after="$(find .audit-work/logs -name 'iter*.json' | wc -l)"
 ```
 
 If the current nested `codex exec` is genuinely stuck, terminate that child only; the driver's retry
-loop handles it. If the driver is alive with no nested Codex child and no new envelope for tens of
-minutes, it is orphaned: stop the driver, restore the worktree to `origin/<branch>`, and resume from
-the checkpoint. Do not kill the orchestrator for a merely slow finding.
+loop handles it. Scope the signal to the driver's children: on a shared host the `'codex exec'`
+pattern alone also matches other sessions' calls, such as a rival review.
+
+```bash
+pkill -TERM -P "$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs')" -f 'codex exec'
+```
+
+If the driver is alive with no child `codex exec` (`audit:status` prints no
+`current codex exec call` line for the in-flight finding) and no new envelope for tens of minutes,
+it is orphaned: stop the driver with the hard stop below, restore the worktree to `origin/<branch>`,
+and resume from the checkpoint. Do not kill the orchestrator for a merely slow finding.
+
+To end a run immediately, stop the driver and every process under it. The command captures the whole
+tree before the first signal and signals the driver first: a driver killed alone orphans its
+in-flight `codex exec`, which can keep working in the tree. `kill -0` refuses unless exactly one
+driver matched.
+
+```bash
+walk() { echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
+d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && walk "$d" | xargs kill -TERM
+```
+
+Run both commands outside the workspace sandbox, like the liveness lookup. A hard stop leaves the
+interrupted finding as crash residue, so relaunch as **Resume after a crash** describes.
 
 Three consecutive deferrals halt the run. Before calling them model verdicts, inspect the matching
 `.err` files for one shared mechanical error such as login loss, usage exhaustion, or sandbox
