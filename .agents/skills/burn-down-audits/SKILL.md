@@ -367,7 +367,7 @@ can keep working in the tree. `kill -0` refuses unless exactly one driver matche
 ```bash
 walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
 d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && { t=$(walk "$d")
-  echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }
+  echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o stat=,pid=,command= -p "$(echo "$t" | paste -sd, -)" | grep -v '^ *Z'; }
 ```
 
 A process still alive a second later is printed and the command exits non-zero; `kill -KILL` that

@@ -501,7 +501,7 @@ this is only about SHAs.)
   ```bash
   walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
   d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && { t=$(walk "$d")
-    echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }
+    echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o stat=,pid=,command= -p "$(echo "$t" | paste -sd, -)" | grep -v '^ *Z'; }
   ```
   It freezes each process before listing that process's children, so nothing the tree starts
   mid-walk escapes, then TERMs and resumes the whole tree. A driver killed alone orphans its

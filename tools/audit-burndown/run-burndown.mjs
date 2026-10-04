@@ -11,10 +11,11 @@
 //                 (this driver's agent child only; RETRIES re-attempts the call, then the finding defers)
 // Hard stop:      walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }
 //                 d=$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs') && kill -0 "$d" && { t=$(walk "$d")
-//                   echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }
+//                   echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o stat=,pid=,command= -p "$(echo "$t" | paste -sd, -)" | grep -v '^ *Z'; }
 //                 (freezes each process before listing its children, so nothing spawned mid-walk
 //                 escapes, then TERMs and resumes the whole tree: a driver killed alone orphans its
-//                 in-flight call. `kill -0` refuses unless one driver matched; a survivor is printed.)
+//                 in-flight call. `kill -0` refuses unless one driver matched; a process still
+//                 running is printed, while an exited one awaiting its parent's reaping is not.)
 //
 // Four design points worth knowing before editing (see the burn-down-audits
 // skill for the full architecture):

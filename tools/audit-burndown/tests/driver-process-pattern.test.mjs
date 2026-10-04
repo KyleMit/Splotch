@@ -36,7 +36,7 @@ const ABORT = `pkill -TERM -P "$(pgrep -f '${DRIVER_PROCESS_PATTERN}')" -f 'clau
 const HARD_STOP = [
   `walk() { kill -STOP "$1" || return 0; echo "$1"; for c in $(pgrep -P "$1"); do walk "$c"; done; }`,
   `d=$(pgrep -f '${DRIVER_PROCESS_PATTERN}') && kill -0 "$d" && { t=$(walk "$d")`,
-  `  echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o pid=,command= -p "$(echo "$t" | paste -sd, -)"; }`,
+  `  echo "$t" | xargs kill -TERM; echo "$t" | xargs kill -CONT; sleep 1; ! ps -o stat=,pid=,command= -p "$(echo "$t" | paste -sd, -)" | grep -v '^ *Z'; }`,
 ];
 
 // The Claude skill quotes the unanchored wait loop on purpose, as the example that never exits.
@@ -178,7 +178,8 @@ const TOOLS_BEFORE_HARD_STOP = 10;
 // Launched the way launch-overnight.mjs launches the driver: a detached shell execs
 // `env … node <driver>`, and the launcher exits. The driver runs each agent call through
 // spawnSync and retries it, as runAgentStep does. The agent starts each tool command in a session
-// of its own, as the Claude Code Bash tool does, and with STAND_IN_CHURN_MS keeps starting them.
+// of its own, as the Claude Code Bash tool does; with STAND_IN_CHURN_MS it keeps starting them,
+// and with STAND_IN_IGNORE_TERM it outlives a TERM.
 const STAND_IN_LAUNCHER = String.raw`import { spawn } from 'node:child_process';
 spawn('env STAND_IN=1 node ' + process.argv[2], { shell: true, detached: true, stdio: 'ignore' }).unref();
 `;
@@ -195,17 +196,35 @@ const startTool = () => record('tool', spawn('sleep', ['300'], { detached: true,
 record('agent', process.pid);
 startTool();
 if (process.env.STAND_IN_CHURN_MS) setInterval(startTool, Number(process.env.STAND_IN_CHURN_MS));
+if (process.env.STAND_IN_IGNORE_TERM) process.on('SIGTERM', () => {});
 setInterval(() => {}, 60000);
 `;
 
+const processState = (pid) =>
+  spawnSync('ps', ['-o', 'stat=', '-p', String(pid)], { encoding: 'utf8' }).stdout.trim();
+
+// A zombie has exited and only awaits its parent's reaping, so it no longer counts as running.
 const alive = (pid) => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
+  const state = processState(pid);
+  return state !== '' && !state.startsWith('Z');
 };
+
+// Teardown freezes each process before listing its children, as the hard stop does, so it also
+// ends a tool that an agent started but had not yet logged.
+function killTree(pid) {
+  const signal = (name) => {
+    try {
+      process.kill(pid, name);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (!signal('SIGSTOP')) return;
+  const children = spawnSync('pgrep', ['-P', String(pid)], { encoding: 'utf8' }).stdout;
+  for (const child of children.split('\n').filter(Boolean)) killTree(Number(child));
+  signal('SIGKILL');
+}
 
 async function waitFor(predicate, what) {
   const deadline = Date.now() + STAND_IN_STEP_TIMEOUT_MS;
@@ -241,6 +260,7 @@ function createStandIn() {
           .map((line) => ({ kind: line.split(' ')[0], pid: Number(line.split(' ')[1]) }))
       : [];
   const kindOf = (kind) => records().filter((record) => record.kind === kind);
+  const standInCommand = (command) => command.replaceAll(DRIVER_PROCESS_PATTERN, `^node ${driver}`);
   let unrelatedCall;
   return {
     records,
@@ -251,6 +271,8 @@ function createStandIn() {
         env: { ...env, ...extraEnv },
       });
     },
+    // The driver as this test process's own child, which nothing reaps while runBlocking runs.
+    launchAsChild: () => spawn('node', [driver], { cwd: dir, env, stdio: 'ignore' }),
     // Another session's agent call: it matches the runner pattern but is no child of the driver.
     async startUnrelatedCall() {
       const call = spawn(process.execPath, [join(dir, 'bin', 'claude'), '-p', 'another session'], {
@@ -263,19 +285,24 @@ function createStandIn() {
     },
     run: (command) =>
       new Promise((resolve) => {
-        const standInCommand = command.replaceAll(DRIVER_PROCESS_PATTERN, `^node ${driver}`);
-        execFile('sh', ['-c', standInCommand], { cwd: dir, env }, (error, stdout, stderr) =>
-          resolve({ status: error ? error.code : 0, stdout, stderr })
+        execFile(
+          'sh',
+          ['-c', standInCommand(command)],
+          { cwd: dir, env },
+          (error, stdout, stderr) => resolve({ status: error ? error.code : 0, stdout, stderr })
         );
       }),
+    runBlocking(command) {
+      const { status, stdout, stderr } = spawnSync('sh', ['-c', standInCommand(command)], {
+        cwd: dir,
+        env,
+        encoding: 'utf8',
+      });
+      return { status, stdout, stderr };
+    },
     cleanup() {
-      if (unrelatedCall?.exitCode === null) unrelatedCall.kill('SIGKILL');
-      for (const kinds of [['driver', 'agent'], ['tool']]) {
-        for (const { pid } of records().filter(({ kind }) => kinds.includes(kind))) {
-          if (alive(pid)) process.kill(pid, 'SIGKILL');
-        }
-      }
-      for (const { pid } of records(unrelatedLog)) if (alive(pid)) process.kill(pid, 'SIGKILL');
+      const logged = [...records(), ...records(unrelatedLog)].map(({ pid }) => pid);
+      for (const pid of [unrelatedCall?.pid, ...logged].filter(Boolean)) killTree(pid);
       rmSync(dir, { recursive: true, force: true });
     },
   };
@@ -303,6 +330,43 @@ describe('the documented stop commands on a stand-in tree', () => {
       });
       expect(standIn.records().filter(({ pid }) => alive(pid))).toEqual([]);
       expect(unrelated.filter(alive)).toEqual(unrelated);
+    },
+    STAND_IN_TEST_TIMEOUT_MS
+  );
+
+  it(
+    'hard stop prints a process that outlives its TERM and exits non-zero',
+    async () => {
+      standIn = createStandIn();
+      standIn.launch({ STAND_IN_IGNORE_TERM: '1' });
+      await waitFor(() => standIn.kindOf('tool').length === 1, 'the agent starting a tool');
+      const [{ pid: agent }] = standIn.kindOf('agent');
+
+      const { status, stdout } = await standIn.run(HARD_STOP.join('\n'));
+      expect(status).toBe(1);
+      expect(
+        stdout
+          .trim()
+          .split('\n')
+          .map((line) => Number(line.trim().split(/\s+/)[1]))
+      ).toEqual([agent]);
+    },
+    STAND_IN_TEST_TIMEOUT_MS
+  );
+
+  it(
+    'hard stop does not count an exited driver awaiting its reaping as running',
+    async () => {
+      standIn = createStandIn();
+      const driver = standIn.launchAsChild();
+      await waitFor(() => standIn.kindOf('tool').length === 1, 'the agent starting a tool');
+
+      expect(standIn.runBlocking(HARD_STOP.join('\n'))).toEqual({
+        status: 0,
+        stdout: '',
+        stderr: '',
+      });
+      expect(processState(driver.pid)).toMatch(/^Z/);
     },
     STAND_IN_TEST_TIMEOUT_MS
   );
