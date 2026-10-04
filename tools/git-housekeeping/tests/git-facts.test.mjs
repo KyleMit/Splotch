@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -246,7 +247,70 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
     expect(branchLandedVerbatim('origin/main', 'spaced', repo)).toBe(false);
   });
 
-  it('content proof: accepts a branch whose touched files are byte-identical on the base', () => {
+  // A Markdown hard break at the end of an appended doc is trailing whitespace on
+  // the last line of the diff, the one place a trimmed diff loses it.
+  it('content proof: trailing whitespace on the last line of a diff is NOT on the base', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'trailing']);
+    commit('notes.md', 'x  \n', 'add notes');
+    sh(['checkout', '-q', 'main']);
+    commit('notes.md', 'x\n', 'add notes');
+    pushMain();
+
+    expect(isPatchEquivalent('origin/main', 'trailing', repo)).toBe(true);
+    expect(branchLandedVerbatim('origin/main', 'trailing', repo)).toBe(false);
+  });
+
+  // Hashed as UTF-8 text, every invalid byte is the same replacement character.
+  it('content proof: a change that differs only in a non-UTF-8 byte is NOT on the base', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'latin1']);
+    commit('menu.txt', Buffer.from('caf\xe9\n', 'latin1'), 'add menu');
+    sh(['checkout', '-q', 'main']);
+    const landed = commit('menu.txt', Buffer.from('caf\xe8\n', 'latin1'), 'add menu');
+    pushMain();
+
+    expect(branchLandedVerbatim('origin/main', 'latin1', repo)).toBe(false);
+    expect(squashMatches('origin/main', 'latin1', landed, repo)).toBe(false);
+  });
+
+  // A textconv driver renders a file for reading, and two different files can
+  // render alike, so a diff hashed through one matches a change that never landed.
+  it('content proof: a textconv driver that renders two changes alike proves nothing', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    writeFileSync(join(repo, '.git', 'info', 'attributes'), 'menu.txt diff=lossy\n');
+    sh(['config', 'diff.lossy.textconv', 'cut -c1-4']);
+    sh(['checkout', '-q', '-b', 'menu']);
+    commit('menu.txt', 'soup today\n', 'add menu');
+    sh(['checkout', '-q', 'main']);
+    const landed = commit('menu.txt', 'soup tomorrow\n', 'add menu');
+    pushMain();
+
+    expect(branchLandedVerbatim('origin/main', 'menu', repo)).toBe(false);
+    expect(squashMatches('origin/main', 'menu', landed, repo)).toBe(false);
+  });
+
+  // The library's git calls read the repository's config, and either setting
+  // rewrites `git diff` into output `patch-id` cannot read.
+  it.each([
+    ['color.diff', 'always'],
+    ['diff.external', 'echo'],
+  ])('content proof: a landed branch stays proven when the repository sets %s=%s', (key, value) => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'landed']);
+    const picked = commit('landed.txt', 'landed\n', 'add landed');
+    sh(['checkout', '-q', 'main']);
+    commit('filler.txt', 'main moves on', 'unrelated main commit');
+    sh(['cherry-pick', picked]);
+    const counterpart = sh(['rev-parse', 'HEAD']);
+    pushMain();
+    sh(['config', key, value]);
+
+    expect(branchLandedVerbatim('origin/main', 'landed', repo)).toBe(true);
+    expect(squashMatches('origin/main', 'landed', counterpart, repo)).toBe(true);
+  });
+
+  it('content proof: accepts a branch whose every commit has a verbatim counterpart on the base', () => {
     const { sh, commit, repo, pushMain } = fixture;
     sh(['checkout', '-q', '-b', 'same']);
     const picked = commit('same.txt', 'same\n', 'add same');
@@ -272,6 +336,22 @@ describe('merged-ness proofs on a real repository', REAL_REPO_TEST_OPTIONS, () =
 
     sh(['checkout', '-q', 'sq']);
     commit('sq.txt', 'one two\n', 'respace the same change');
+    expect(squashMatches('origin/main', 'sq', squash, repo)).toBe(false);
+  });
+
+  it('squash match: a later commit adding trailing whitespace to the last line does not match', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'sq']);
+    commit('notes.md', 'x\n', 'add notes');
+    sh(['checkout', '-q', 'main']);
+    sh(['merge', '-q', '--squash', 'sq']);
+    sh(['commit', '-q', '-m', 'squash']);
+    const squash = sh(['rev-parse', 'HEAD']);
+    pushMain();
+    expect(squashMatches('origin/main', 'sq', squash, repo)).toBe(true);
+
+    sh(['checkout', '-q', 'sq']);
+    commit('notes.md', 'x  \n', 'end the line with a hard break');
     expect(squashMatches('origin/main', 'sq', squash, repo)).toBe(false);
   });
 
