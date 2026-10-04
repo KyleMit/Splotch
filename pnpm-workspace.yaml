@@ -26,7 +26,7 @@ overrides:
   # every command, and the `catalog:` protocol it recommends instead would take the
   # range out of package.json, which is where Dependabot reads it. Kept honest by
   # tools/tests/pnpm-overrides.test.mjs, which fails when the two ranges diverge.
-  '@capacitor/assets>sharp': ^0.35.4
+  '@capacitor/assets>sharp': ^0.35.5
   # replace@1.2.2 pins vulnerable minimatch exactly, ajv@8.20.0's compatible
   # range retained vulnerable fast-uri, workbox-build's compatible range
   # retained vulnerable browserslist, and minimatch's compatible ranges
@@ -42,6 +42,15 @@ overrides:
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
+
+# Advisories the high-severity audit gate skips, each one only while no patched
+# release exists to override to. Every entry names the issue that removes it.
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 stack-exhaustion DoS; no patched release published. Dev-only:
+    # reached solely via stylelint > globby > micromatch over this repo's own globs,
+    # absent from the production install. Remove with issue 2648.
+    - GHSA-vfj7-8cjw-p6xm
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the
