@@ -5,7 +5,7 @@
 //   npm run perf:release                       stop owned rig processes, drop rig forwards, reset the phone
 //   npm run perf:release -- --dry-run          inventory and verdicts only, nothing stopped
 //   npm run perf:release -- --host-only        stop host processes but leave the phone's state alone
-//   npm run perf:release -- --stop-campaigns   also stop a live campaign or operator driver
+//   npm run perf:release -- --stop-campaigns   also stop a live capture driver
 //   npm run perf:release -- --json             machine-readable report
 //   npm run perf:release -- --android-serial=  pick the phone when more than one is attached
 //
@@ -18,9 +18,9 @@
 // an unreadable cwd, a listener from some other project, and the root-owned
 // RemoteXPC tunnel are all reported and left running.
 //
-// A live campaign or operator session is refused rather than stopped, because
-// killing one mid-cell corrupts what it was banking; --stop-campaigns is the
-// explicit override.
+// A live capture driver (CAPTURE_DRIVER_SCRIPTS) is refused rather than stopped,
+// because killing one mid-capture corrupts what it was banking; --stop-campaigns
+// is the explicit override.
 //
 // Appium is drained before it is signalled: each WebDriverAgent session is
 // DELETEd so WDA exits on the iPad. Killing the forward under a live session
@@ -68,10 +68,19 @@ const REPO_SCRIPT_ROOT_PATTERN =
 // line names nothing of this repo; its parent's does.
 const ANCESTOR_DEPTH = 5;
 
+// The long-running drivers that bank captures. A driver missing here is not
+// refused: the release stops the preview and Appium it spawned out from under it.
+const CAPTURE_DRIVER_SCRIPTS = [
+  'run-campaign.mjs',
+  'run-operator-session.mjs',
+  'run-person-session.mjs',
+];
+
+const isCaptureDriver = (command) =>
+  CAPTURE_DRIVER_SCRIPTS.some((script) => command.includes(script));
+
 const RIG_SCRIPT_PATTERNS = [
   /prepare-capture\.mjs/,
-  /run-campaign\.mjs/,
-  /run-operator-session\.mjs/,
   /serve-profile-build\.mjs/,
   /serve-probe-host\.mjs/,
   /secure-origin\.mjs serve/,
@@ -83,9 +92,8 @@ const RIG_SCRIPT_PATTERNS = [
 ];
 
 export const isRigCommand = (command) =>
-  RIG_SCRIPT_PATTERNS.some((pattern) => pattern.test(command));
+  isCaptureDriver(command) || RIG_SCRIPT_PATTERNS.some((pattern) => pattern.test(command));
 
-const CAMPAIGN_DRIVER_PATTERN = /run-campaign\.mjs|run-operator-session\.mjs/;
 const TUNNEL_PATTERN = /tunnel-creation\.mjs/;
 // The server binary, not everything installed under ~/.appium: the
 // WebDriverAgent xcodebuild Appium spawns carries that path too, and it
@@ -141,7 +149,7 @@ export function classifyProcess(
       reason: cwd ? `cwd ${cwd} is outside every checkout of this repo` : 'cwd unreadable',
     };
   }
-  if (CAMPAIGN_DRIVER_PATTERN.test(command)) {
+  if (isCaptureDriver(command)) {
     return { verdict: 'campaign', reason: `live capture driver in ${owningRoot}` };
   }
   return { verdict: 'ours', reason: `checkout ${owningRoot}` };
