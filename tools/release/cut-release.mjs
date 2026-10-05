@@ -23,29 +23,93 @@
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { parseArgs } from 'node:util';
+import { isDeepStrictEqual, parseArgs } from 'node:util';
 import { ROOT, fail, run, capture, isMain, parseOrFail } from '../lib/proc.mjs';
-import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
-import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
+import { readReleases, releaseNoteOutputPaths } from './gen-release-notes.mjs';
+import {
+  assertVersionMatchesFilename,
+  parseFrontmatter,
+  SEMVER,
+} from './lib/release-frontmatter.mjs';
+import {
+  ANDROID_GRADLE_PATH,
+  IOS_PBXPROJ_PATH,
+  bumpAndroidGradle,
+  bumpIosPbxproj,
+  readAndroidVersion,
+  setAndroidVersion,
+  setIosVersion,
+} from './lib/native-version.mjs';
 
-// No lockfile entry: pnpm-lock.yaml records dependency resolutions, not the root
-// package's own version, so a version bump leaves it untouched and a dirty
-// lockfile during a release is a stray change worth aborting on.
-const RELEASE_PATHS = [
-  'package.json',
-  'web/src/lib/releases.json',
-  'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
-  'web/src/lib/components/page/ReleaseHistory.svelte',
-  'android/',
-  'ios/',
-  'fastlane/',
-  'releases/',
+const PACKAGE_JSON_PATH = 'package.json';
+const VERSION_FILES = [PACKAGE_JSON_PATH, ANDROID_GRADLE_PATH, IOS_PBXPROJ_PATH];
+
+// Everything a cut may change: the version files, this release's document (the
+// androidVersionCode pin), and every file the generator writes for these releases.
+// Exact paths, never a directory: an ios/ or releases/ prefix would admit an
+// untracked plugin file, or a draft releases/1.8.0.md that the generator would then
+// ship as the newest notes. No lockfile: pnpm-lock.yaml records dependency
+// resolutions, not the root package's own version, so a version bump leaves it
+// untouched and a dirty lockfile during a release is a stray change.
+export const releaseSetPaths = (version, releases) => [
+  ...VERSION_FILES,
+  `releases/${version}.md`,
+  ...releaseNoteOutputPaths(releases),
 ];
 
-const isReleasePath = (path) =>
-  RELEASE_PATHS.some((allowed) =>
-    allowed.endsWith('/') ? path.startsWith(allowed) : path === allowed
-  );
+// The listing both stray-path checks read, as an argv the tests drive a real git
+// with. -z prints each path raw and NUL-terminated, where the default quotes and
+// escapes a path with spaces or non-ASCII; --untracked-files=all names each file
+// in a new directory instead of the directory, which no exact path can match.
+export const GIT_STATUS_ARGS = ['status', '--porcelain', '-z', '--untracked-files=all'];
+
+// Every path a GIT_STATUS_ARGS listing names. A rename or copy carries its source
+// as a second field, and a rename deletes that source in the commit, so both count.
+function listedPaths(status) {
+  const fields = status.split('\0');
+  if (fields.at(-1) === '') fields.pop();
+  const paths = [];
+  for (let i = 0; i < fields.length; i += 1) {
+    const record = fields[i];
+    if (!/^[ MTADRCU?!]{2} ./s.test(record)) {
+      throw new Error(`Unreadable git status record: ${JSON.stringify(record)}`);
+    }
+    paths.push(record.slice(3));
+    if (/[RC]/.test(record.slice(0, 2))) {
+      i += 1;
+      if (i === fields.length) {
+        throw new Error(`git status record has no source path: ${JSON.stringify(record)}`);
+      }
+      paths.push(fields[i]);
+    }
+  }
+  return paths;
+}
+
+export function findStrayReleasePaths(status, releasePaths) {
+  const allowed = new Set(releasePaths);
+  return listedPaths(status).filter((path) => !allowed.has(path));
+}
+
+// A hand edit inside an allowed path passes the path check: Xcode stores a signing
+// Team as DEVELOPMENT_TEAM in project.pbxproj (docs/MOBILE/ios.md keeps it in the
+// untracked ios/local.xcconfig), and a debugging line can sit in build.gradle. So
+// each version file must also equal its HEAD content through the owned bump.
+// package.json is compared as data because pnpm owns its formatting.
+export function findHandEditedVersionFiles({ version, versionCode, head, working }) {
+  const matchesBump = {
+    [PACKAGE_JSON_PATH]: isDeepStrictEqual(JSON.parse(working[PACKAGE_JSON_PATH]), {
+      ...JSON.parse(head[PACKAGE_JSON_PATH]),
+      version,
+    }),
+    [ANDROID_GRADLE_PATH]:
+      working[ANDROID_GRADLE_PATH] ===
+      bumpAndroidGradle(head[ANDROID_GRADLE_PATH], version, versionCode),
+    [IOS_PBXPROJ_PATH]:
+      working[IOS_PBXPROJ_PATH] === bumpIosPbxproj(head[IOS_PBXPROJ_PATH], version, versionCode),
+  };
+  return VERSION_FILES.filter((path) => !matchesBump[path]);
+}
 
 // The bump that moves package.json's version, as an argv the tests drive a real
 // pnpm with — the flags are only meaningful as behavior, and a release cut is a
@@ -56,9 +120,9 @@ const isReleasePath = (path) =>
 // under --no-git-tag-version — the flag that would suggest it is not going to
 // touch git at all. bumpVersions() has already written android/ and ios/ by the
 // time it calls this, so the tree is always dirty here and the release would abort
-// before package.json moved. assertOnlyReleasePaths() is what actually guards the
-// tree; this call makes no commit and no tag, and pnpm-lock.yaml holds no version
-// to resync.
+// before package.json moved. refuseStrayChanges() and refuseHandEditedVersionFiles()
+// are what actually guard the tree; this call makes no commit and no tag, and
+// pnpm-lock.yaml holds no version to resync.
 export const pnpmVersionArgs = (version) => [
   'version',
   version,
@@ -66,15 +130,6 @@ export const pnpmVersionArgs = (version) => [
   '--allow-same-version',
   '--no-git-checks',
 ];
-
-export const findStrayReleasePaths = (status) =>
-  status
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => line.slice(3))
-    .map((path) => (path.includes(' -> ') ? path.split(' -> ')[1] : path))
-    .map((path) => path.replace(/^"(.*)"$/, '$1'))
-    .filter((path) => !isReleasePath(path));
 
 const RELEASE_USAGE =
   'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0, with no prerelease suffix';
@@ -111,12 +166,17 @@ export function parseReleaseArgs(args) {
 export const renderReleaseFile = (frontmatter, body) =>
   `---\n${frontmatter.trim()}\n---\n\n${body}\n`;
 
-function releasePath(version) {
+function readReleaseFile(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
     fail(`Missing ${file}\nCreate the notes first (or run the cut-release skill), then re-run.`);
   }
-  return file;
+  return parseOrFail(() => {
+    const parsed = parseFrontmatter(readFileSync(file, 'utf8'));
+    if (!parsed) throw new Error(`${file}: malformed frontmatter`);
+    assertVersionMatchesFilename(`${version}.md`, parsed.meta.version);
+    return { file, ...parsed };
+  });
 }
 
 // The largest versionCode Google Play accepts. A pin above it, or one too long for
@@ -150,56 +210,76 @@ export function chooseVersionCode({ pin, version, gradleCode, gradleVersionName 
   return { versionCode, pinned: true };
 }
 
-function resolveVersionCode(releaseFile, version) {
-  const gradle = readFileSync(join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
-  const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
-  if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
-  let { frontmatter } = parsed;
-  const { body } = parsed;
-  const { versionCode, pinned } = parseOrFail(() =>
-    chooseVersionCode({
-      pin: parsed.meta.androidVersionCode,
+function resolveVersionCode(release, version) {
+  const { versionCode, pinned } = parseOrFail(() => {
+    const gradle = readAndroidVersion(readFileSync(join(ROOT, ANDROID_GRADLE_PATH), 'utf8'));
+    return chooseVersionCode({
+      pin: release.meta.androidVersionCode,
       version,
-      gradleCode: Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]),
-      gradleVersionName: gradle.match(/^\s*versionName\s+"([^"]*)"\s*$/m)?.[1],
-    })
-  );
+      gradleCode: gradle.versionCode,
+      gradleVersionName: gradle.versionName,
+    });
+  });
 
   if (!pinned) {
-    frontmatter = /^androidVersionCode:/m.test(frontmatter)
-      ? frontmatter.replace(/^androidVersionCode:.*$/m, `androidVersionCode: ${versionCode}`)
-      : `${frontmatter}\nandroidVersionCode: ${versionCode}`;
-    writeFileSync(releaseFile, renderReleaseFile(frontmatter, body));
+    const frontmatter = /^androidVersionCode:/m.test(release.frontmatter)
+      ? release.frontmatter.replace(
+          /^androidVersionCode:.*$/m,
+          `androidVersionCode: ${versionCode}`
+        )
+      : `${release.frontmatter}\nandroidVersionCode: ${versionCode}`;
+    writeFileSync(release.file, renderReleaseFile(frontmatter, release.body));
     console.log(`Pinned androidVersionCode: ${versionCode} in ${version}.md`);
   }
 
-  return { body, versionCode };
+  return versionCode;
 }
 
 function bumpVersions(version, versionCode) {
   setAndroidVersion(ROOT, version, versionCode);
   console.log(`Set Android versionName ${version} / versionCode ${versionCode}`);
-  if (existsSync(join(ROOT, 'ios'))) {
-    setIosVersion(ROOT, version, versionCode);
-    console.log(`Set iOS MARKETING_VERSION ${version} / CURRENT_PROJECT_VERSION ${versionCode}`);
-  } else {
-    console.log('(no ios/ project yet — skipping iOS version bump)');
-  }
+  setIosVersion(ROOT, version, versionCode);
+  console.log(`Set iOS MARKETING_VERSION ${version} / CURRENT_PROJECT_VERSION ${versionCode}`);
   run('pnpm', pnpmVersionArgs(version));
 }
 
-function generateArtifacts() {
+function generateReleaseNotes() {
   run('node', [join('tools', 'release', 'gen-release-notes.mjs')]);
 }
 
-function assertOnlyReleasePaths() {
-  const stray = findStrayReleasePaths(capture('git', ['status', '--porcelain']));
+function refuseStrayChanges(version) {
+  const stray = parseOrFail(() =>
+    findStrayReleasePaths(capture('git', GIT_STATUS_ARGS), releaseSetPaths(version, readReleases()))
+  );
   if (stray.length) {
     fail(
-      `\nWorking tree has changes outside the release artifacts:\n` +
+      `\nWorking tree has changes outside the release set:\n` +
         stray.map((path) => `  ${path}`).join('\n') +
         '\n\nCommit, stash, or revert them before releasing — otherwise `git add -A`\n' +
         'would sweep them into the release commit.'
+    );
+  }
+}
+
+function refuseHandEditedVersionFiles(version, versionCode) {
+  const read = (readFile) =>
+    Object.fromEntries(VERSION_FILES.map((path) => [path, readFile(path)]));
+  const edited = parseOrFail(() =>
+    findHandEditedVersionFiles({
+      version,
+      versionCode,
+      // --filters gives HEAD as this checkout would write it: under core.autocrlf
+      // the working files hold CRLF that git itself reports as unchanged.
+      head: read((path) => capture('git', ['cat-file', '--filters', `HEAD:${path}`])),
+      working: read((path) => readFileSync(join(ROOT, path), 'utf8')),
+    })
+  );
+  if (edited.length) {
+    fail(
+      `\nThese version files differ from HEAD by more than the version bump:\n` +
+        edited.map((path) => `  ${path}`).join('\n') +
+        '\n\nRevert that edit or commit it separately, then re-run: the release commit\n' +
+        'carries the version bump and nothing else.'
     );
   }
 }
@@ -245,18 +325,22 @@ function publish(version, body) {
 
 export function main(args = process.argv.slice(2)) {
   const { version, dryRun, noPublish } = parseOrFail(() => parseReleaseArgs(args));
-  const { body, versionCode } = resolveVersionCode(releasePath(version), version);
+  const release = readReleaseFile(version);
+  // --dry-run runs no git at all, so only a committing cut checks the tree here.
+  if (!dryRun) refuseStrayChanges(version);
+  const versionCode = resolveVersionCode(release, version);
 
   console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);
   bumpVersions(version, versionCode);
-  generateArtifacts();
+  generateReleaseNotes();
 
   if (dryRun) {
     console.log('\n--dry-run: files updated, no git actions taken.');
     return;
   }
 
-  assertOnlyReleasePaths();
+  refuseStrayChanges(version);
+  refuseHandEditedVersionFiles(version, versionCode);
   commitAndTag(version);
 
   if (noPublish) {
@@ -268,7 +352,7 @@ export function main(args = process.argv.slice(2)) {
     return;
   }
 
-  publish(version, body);
+  publish(version, release.body);
 }
 
 if (isMain(import.meta.url)) main();

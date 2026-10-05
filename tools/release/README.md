@@ -31,9 +31,12 @@ Markdown and regenerate them so all targets retain one source of truth.
 
 ## Cut a release
 
-`cut-release.mjs` requires a clean working tree outside the declared release artifacts and a valid
-`releases/<version>.md`. It updates Android and iOS versions, updates `package.json` and its
-lockfile, regenerates release notes, commits the complete release set, and tags it. The normal mode
+`cut-release.mjs` requires a valid `releases/<version>.md` whose frontmatter `version` matches its
+filename. It updates the Android and iOS versions and `package.json`, regenerates release notes,
+commits the release set, and tags it. The release set is exact: the three version files, the release
+document, and the files `gen-release-notes.mjs` writes (`releaseNoteOutputPaths()`). A committing
+run refuses any other changed or untracked path before its first write and again before it commits,
+and refuses a version file that differs from `HEAD` by more than the version bump. The normal mode
 also needs authenticated Git and GitHub access because it pushes the commit/tag and creates the
 GitHub Release. `npm run release` additionally runs the `prerelease` hook first
 (`check:coloring-assets` + `check:assets:manifest`), so a stale asset manifest fails the release
@@ -45,10 +48,11 @@ npm run release 1.6.0 -- --no-publish
 npm run release 1.6.0
 ```
 
-`--dry-run` updates release files without Git actions. `--no-publish` commits and tags locally but
-does not push or create the GitHub Release. Unknown flags fail closed so a misspelled safety flag
-cannot fall through to publishing. This command deliberately never attaches native artifacts: the
-new version must be committed before a correctly versioned binary can be built.
+`--dry-run` updates release files without Git actions; everything it changes is in the release set,
+so the real cut of the same version can follow it. `--no-publish` commits and tags locally but does
+not push or create the GitHub Release. Unknown flags fail closed so a misspelled safety flag cannot
+fall through to publishing. This command deliberately never attaches native artifacts: the new
+version must be committed before a correctly versioned binary can be built.
 
 ## Publish native artifacts
 
@@ -101,13 +105,13 @@ catalog.
 
 ## Libraries and failure behavior
 
-`lib/release-frontmatter.mjs` owns frontmatter, semver ordering, and deep writes;
-`lib/native-version.mjs` owns Android/iOS project version edits; `lib/artifact-version.mjs` owns
-embedded native-artifact inspection (the aapt2 protobuf scan, the `plutil` plist read, and the
-`.aab`/`.ipa` version semantics); `lib/aab-r8-mapping.mjs` requires Android's embedded R8 compiler
-metadata and class mappings before publishing (including a dry run); and `lib/zip.mjs` owns ZIP
-container parsing beneath it, exposing read-only `readEntry`. Keep version parsing and validation in
-these owned modules rather than duplicating it in entry points.
+`lib/release-frontmatter.mjs` owns frontmatter, the version-matches-filename rule, semver ordering,
+and deep writes; `lib/native-version.mjs` owns reading and editing the Android/iOS project versions;
+`lib/artifact-version.mjs` owns embedded native-artifact inspection (the aapt2 protobuf scan, the
+`plutil` plist read, and the `.aab`/`.ipa` version semantics); `lib/aab-r8-mapping.mjs` requires
+Android's embedded R8 compiler metadata and class mappings before publishing (including a dry run);
+and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing read-only `readEntry`. Keep
+version parsing and validation in these owned modules rather than duplicating it in entry points.
 
 The R8 mapping guard rejects unmapped bundles even when their version matches. It does not measure
 performance or prove all optimizer settings: the native release configuration tests pin code and

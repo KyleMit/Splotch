@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseReleaseSource,
   releaseAnchor,
+  releaseNoteOutputPaths,
   renderReleaseComponent,
   renderReleaseHistory,
   renderReleaseMetadata,
@@ -56,6 +57,44 @@ describe('parseReleaseSource', () => {
         '---\nversion: 2.0.0\ndate: 2026-02-29\n---\n\n## New\n\nFaster drawing.'
       )
     ).toThrow('2.0.0.md: date must be a real calendar date');
+  });
+
+  // The releases sort by this version, so a 1.7.0.md still saying 1.6.0 tied with
+  // the real 1.6.0: duplicate anchors, a second "Version 1.6.0", and either file's
+  // notes as the current What's New depending on directory order.
+  it('rejects a frontmatter version that does not match the filename', () => {
+    const release = (version) =>
+      `---\nversion: ${version}\ndate: 2026-10-01\n---\n\n## New\n\n* A thing`;
+
+    expect(() => parseReleaseSource('1.7.0.md', release('1.6.0'))).toThrow(
+      new Error('1.7.0.md: frontmatter version 1.6.0 does not match the filename version 1.7.0')
+    );
+    expect(() => parseReleaseSource('1.7.0.md', release('1.7'))).toThrow(
+      new Error('1.7.0.md: frontmatter version must look like 1.2.0, got "1.7"')
+    );
+    expect(parseReleaseSource('1.7.0.md', release('1.7.0')).meta.version).toBe('1.7.0');
+  });
+});
+
+describe('releaseNoteOutputPaths', () => {
+  it('lists the app outputs, a Play changelog per pinned release, and the App Store notes', () => {
+    const release = (version, androidVersionCode) => ({
+      filename: `${version}.md`,
+      meta: { version, date: '2026-10-01', androidVersionCode },
+      body: '## New\n\n* A thing',
+    });
+
+    expect(
+      releaseNoteOutputPaths([release('1.7.0', '9'), release('1.6.0', '8'), release('0.9.0')])
+    ).toEqual([
+      'web/src/lib/releaseHues.ts',
+      'web/src/lib/releases.json',
+      'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+      'web/src/lib/components/page/ReleaseHistory.svelte',
+      'fastlane/metadata/android/en-US/changelogs/9.txt',
+      'fastlane/metadata/android/en-US/changelogs/8.txt',
+      'fastlane/metadata/en-US/release_notes.txt',
+    ]);
   });
 });
 
