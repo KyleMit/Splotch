@@ -180,8 +180,9 @@ read goes out before the read's output does.
     the Write tool and run it as `/bin/bash <file>` or `node <file>` with literal absolute
     arguments; a bare `bash <file>` can be refused.
   * The Bash tool's shell is zsh: `set -- $row` doesn't split words, a variable named `path`
-    overwrites `PATH`, a word starting with `=` or an unmatched glob aborts the line, and
-    `${PIPESTATUS[0]}` is empty. Quote globs, and run multi-line shell as `/bin/bash <file>`.
+    overwrites `PATH`, `=word` expands to a command's path and aborts the line when no such command
+    exists, an unmatched glob aborts the line, and `${PIPESTATUS[0]}` is empty. Quote globs, and run
+    multi-line shell as `/bin/bash <file>`.
   * `git rev-parse --verify` takes one SHA per call.
   * Run a brokered rival command in your own worktree, at the head under review. When the guard
     refuses its handler line (git, nested quoting, a heredoc), run the same read-only command from a
@@ -193,4 +194,6 @@ read goes out before the read's output does.
     against a scratch copy of the old code, or inject the fault from the test side. When the
     classifier refuses the outcome itself ("Security Test Removal"), take neither route: record the
     control as not run, with the evidence you have (#2664).
+  * Delete every scratch probe or mutant copy you put inside the repo before `npm run lint`: ESLint
+    ignores `.gitignore`, so a file nobody will commit can still fail the lint gate.
   * `ruler:apply` needs sandbox-disabled writes to `.claude/` and `.agents/`.
