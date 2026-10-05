@@ -26,7 +26,7 @@ const CLAUDE_ONLY_PREFIXES = [
   '.claude/skill-notes/',
   '.claude/cloud/',
   '.claude/hooks/',
-  'docs/CLOUD/Claude.md',
+  'docs/CLOUD/Claude-Code.md',
 ];
 const CODEX_ONLY_PREFIXES = ['.agents/'];
 

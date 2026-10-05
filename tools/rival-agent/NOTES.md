@@ -205,10 +205,10 @@ in every unattended post those sessions make.
   handler's checkout (a real fix, moderate change; take it if Linux ever matters); refusing to
   launch when `os.tmpdir()` is `/tmp`. Linux now matters: a Claude Code on the web session is a
   Linux VM with `os.tmpdir()` at `/tmp`, and the Codex rival can be seeded there
-  (`docs/CLOUD/Claude.md`, "Codex reviews on the ChatGPT plan"). The exposure stands as accepted for
-  that single-handler VM — one session, one spool, and the forged-request threat still lands in the
-  handler's permission system — and the spool move is the follow-up to take once a cloud review has
-  run end to end (issue #2095, open question 4).
+  (`docs/CLOUD/Claude-Code.md`, "Codex reviews on the ChatGPT plan"). The exposure stands as
+  accepted for that single-handler VM — one session, one spool, and the forged-request threat still
+  lands in the handler's permission system — and the spool move is the follow-up to take once a
+  cloud review has run end to end (issue #2095, open question 4).
 
 ## Claude versus Codex parity
 

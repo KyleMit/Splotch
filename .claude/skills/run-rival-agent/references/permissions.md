@@ -6,7 +6,7 @@ needs an installer is Codex's sandbox, which Claude Code does not impose here. A
 web session has no CLI and no login of its own: the environment's setup script installs the CLI, and
 `tools/seed-codex-auth.mjs` seeds `auth.json` from the `CODEX_AUTH_JSON` environment variable and
 `config.toml` from `CODEX_MODEL` at SessionStart, through the same billing guard below
-(`docs/CLOUD/Claude.md`, "Codex reviews on the ChatGPT plan").
+(`docs/CLOUD/Claude-Code.md`, "Codex reviews on the ChatGPT plan").
 
 ## Billing
 

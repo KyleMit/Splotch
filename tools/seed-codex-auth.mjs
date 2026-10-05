@@ -27,7 +27,7 @@ export const SEED_WARNING_AGE_DAYS = 6;
 export const SEED_IDENTITY_SUFFIX = '.seed-id';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
-const RESEED_INSTRUCTIONS = `re-seed ${SEED_ENVIRONMENT_KEY} with \`npm run rival:seed\` on your machine (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan")`;
+const RESEED_INSTRUCTIONS = `re-seed ${SEED_ENVIRONMENT_KEY} with \`npm run rival:seed\` on your machine (docs/CLOUD/Claude-Code.md, "Codex reviews on the ChatGPT plan")`;
 
 // The environment dialog takes .env lines, where a raw JSON value's quotes and braces are at the
 // mercy of its parser; base64 is the documented paste form, raw JSON is accepted for the reader who

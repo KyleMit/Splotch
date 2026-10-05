@@ -188,7 +188,7 @@ To preview the dev server on a phone that isn't on your local network, use an ou
 Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel --url http://localhost:5173`, or
 `ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
 gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
-**[docs/CLOUD/Claude.md](../CLOUD/Claude.md)** and
+**[docs/CLOUD/Claude-Code.md](../CLOUD/Claude-Code.md)** and
 **[ADR-0021](../adrs/0021-cloud-session-tunneling.md)**.
 
 ## 3. Testing

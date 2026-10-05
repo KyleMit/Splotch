@@ -31,8 +31,9 @@ and relay it — never work around it by calling `codex` directly, and never set
 get past it. On a developer machine the remedy is `codex login`. In a Claude Code on the web session
 nobody can run that: the login and the model are seeded from the environment's `CODEX_AUTH_JSON` and
 `CODEX_MODEL` by a SessionStart hook whose status line is in your context, so ask the user to
-re-seed with `npm run rival:seed` on their machine (`docs/CLOUD/Claude.md`, "Codex reviews on the
-ChatGPT plan"). See [permissions.md](references/permissions.md) for what the launch pins and why.
+re-seed with `npm run rival:seed` on their machine (`docs/CLOUD/Claude-Code.md`, "Codex reviews on
+the ChatGPT plan"). See [permissions.md](references/permissions.md) for what the launch pins and
+why.
 
 ## Launch the rival in the background
 
@@ -40,7 +41,7 @@ Pick the scope. `--base main` is the default; `--pr <n>` is what the poster need
 the poster call the `gh` CLI, which a Claude Code on the web session does not have: there, launch
 with `--base <the PR's base branch>` after checking the PR's recorded base and head through the
 GitHub MCP tools, and carry the findings onto the PR by the marked hand relay in
-`docs/CLOUD/Claude.md` ("Codex reviews on the ChatGPT plan").
+`docs/CLOUD/Claude-Code.md` ("Codex reviews on the ChatGPT plan").
 
 ```bash
 npm run --silent rival:launch -- --pr <n> > "${TMPDIR:-/tmp}/rival-launch-<unique>.json" 2> "${TMPDIR:-/tmp}/rival-launch-<unique>.log"

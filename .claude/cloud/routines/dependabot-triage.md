@@ -66,9 +66,9 @@ PR, compare the comment you just composed with the newest such comment:
   after #A merged"). If your GitHub tools can edit a comment, edit the previous marked comment in
   place instead of posting a new one.
 
-GitHub access: the `gh` CLI is not available in this cloud environment (see docs/CLOUD/Claude.md).
-Use the GitHub MCP tools for listing PRs, reading check runs, and posting comments; use
-`git fetch origin` for branches. Follow the root CLAUDE.md "Writing on GitHub" rules: escape
-non-reference `#`-numbers and take every SHA from command output.
+GitHub access: the `gh` CLI is not available in this cloud environment (see
+docs/CLOUD/Claude-Code.md). Use the GitHub MCP tools for listing PRs, reading check runs, and
+posting comments; use `git fetch origin` for branches. Follow the root CLAUDE.md "Writing on GitHub"
+rules: escape non-reference `#`-numbers and take every SHA from command output.
 
 If there are no open Dependabot PRs, finish without posting anything.

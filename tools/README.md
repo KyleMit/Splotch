@@ -64,8 +64,8 @@ The check and optimization commands are deterministic and local except
 the network is unavailable. Despite its migration-defined name, `check:github-actions` remains an
 advisory inventory and always exits zero; changing that behavior is outside this rename-only phase.
 `dev:tunnel` requires the cloud-session tunnel credentials documented in
-[`docs/CLOUD/Claude.md`](../docs/CLOUD/Claude.md). Contract-enforcing root checks fail nonzero
-rather than silently weakening validation when an external prerequisite is missing.
+[`docs/CLOUD/Claude-Code.md`](../docs/CLOUD/Claude-Code.md). Contract-enforcing root checks fail
+nonzero rather than silently weakening validation when an external prerequisite is missing.
 
 ### Production image-report fetch
 
