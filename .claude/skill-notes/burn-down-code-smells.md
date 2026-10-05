@@ -118,6 +118,64 @@ easy, because findings arrive already grouped by the files they touch.
   `docs/CODING-STANDARDS.md` records it through #2516, open at the time, and units read that doc at
   setup.
 
+## Fifth run, 2026-10-03/04 (#2650): everything outside web/, orchestrated by the Workflow tool
+
+The orchestrator launched no lanes itself. It ran the campaign as two Workflow-tool rounds: a
+deterministic script admitted file-disjoint units into six lanes (seven in round two), had a probe
+agent read the usage meter before each launch, and serialized merges behind a promise lock, so one
+merge agent ran at a time. Round one's 19 area auditors and 19 clusterers turned 206 findings into
+154 units: 145 lane units and 9 cross-track renames to run alone. 29 merged and none was quarantined
+before a refused merge paused the queue at 09:00 EDT. The 7 shippable PRs it held merged at
+close-out, where the standards update and this section's self-heal also ran; 136 units never
+started.
+
+* **What worked:**
+  * Admission by declared file set, plus one holder at a time for the hot shared files
+    (`package.json`, `eslint.config.js`, the knip configs, the lockfile, `docs/ARCHITECTURE.md`,
+    `.ruler/`, the workflows).
+  * The promise-lock merge step: about five merges an hour (27 between 01:53 and 07:29 EDT), and the
+    push `Tests` run on every merge commit finished green.
+  * `needs-files`: a lane that needed a file outside its fence pushed what it had and returned, and
+    the script re-admitted it with the wider fence once no lane held those paths (#2655, #2676).
+  * The `unrelated` local-trial merge path, which replaced a CI round for #2675 and #2680.
+* **What failed,** each now a rule in `ship-campaign` or its parallel reference:
+  * The harness relays the user's request to every workflow agent as its only user voice. A haiku
+    usage probe with no scope guard took that request as its own task: it ran `burn-down-audits` in
+    the orchestrator's checkout, committed a checkpoint, pushed the orchestrator's branch, opened
+    draft #2678 (closed), and started a canary burndown that died after one iteration. Round two ran
+    its probes on sonnet, with a guard against skills, git, gh, npm, file edits and background
+    commands.
+  * Units told to stop at once returned usage readings they never took, stamped a day ahead, a day
+    behind, and a year behind. Round two gated only on probe readings and validated their clocks.
+  * No session cron fired while a workflow ran: the 02:23 one-shot and the hourly watchdog stayed
+    silent for about ten hours, then fired from 09:37 on, once none was running. A background Bash
+    command's completion did wake the orchestrator mid-round (23:18). Round one crossed the 02:20
+    reset of the 5-hour window only because lanes were still in flight: each finished unit re-ran
+    the launch probe, which saw the reset.
+  * In round two the classifier refused a merge agent's merge of #2681 "[Merge Without Review]",
+    after two merges. Round one relayed the user's request, which included "make sure to merge as
+    you go", to all 389 of its agents. Round two was launched from the turn round one's completion
+    notification started, so none of its 28 agents heard the user, and the harness tells each agent
+    that approval quoted in its computed prompt carries no user authority. The queue paused until
+    the user's close-out approval at 21:24, after which the orchestrator merged all seven held PRs
+    itself, after one integration trial, by 21:31.
+  * A merge agent's removal of an already-merged lane (`git worktree remove --force`,
+    `git branch -D`), which the campaign's merge brief asked for, was flagged "[Irreversible Local
+    Destruction]".
+* **Draining.** Round one drained through a marker file that the unit brief told fresh units to
+  check: each fresh unit read the brief and returned "not started". The script kept launching
+  meanwhile, so the drain cost 131 short-lived unit agents. Round two read a control file
+  (`{"drain": true}`, or a lane count) through the usage probe before each launch, which stops
+  launches at the source.
+* **Numbers.** The first wave took the 5-hour window from 3% to 66% and weekly usage from 17% to 34%
+  (22:52 to 01:12 EDT) before any unit launched; six lanes reached the 85% launch gate at 02:04.
+  After the 02:20 reset six lanes alone moved the 5-hour window from 1% to 56% by 06:54, about 12
+  points an hour, and weekly usage about 3 points an hour. The Workflow tool runs at most min(16,
+  CPUs − 2) agents at once, 8 on this 10-core host, and probes and merge agents share those slots
+  with the lanes.
+* **Unit lessons.** Units reported 223 lessons. The self-heal PR folded the durable ones into the
+  unit brief and the parallel reference, and its body lists every drop with its reason.
+
 ## Rejected or deferred during the run
 
 These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
@@ -137,7 +195,11 @@ These are the "Considered and not adopted" list in `docs/CODING-STANDARDS.md`:
 * A second run. The waves' yields on an already-campaigned codebase are unknown. Expect later waves
   to find less, and consider starting at the area passes that weren't covered.
 * The lane count under the usage limit. The first run sustained six to seven agents for about 6.5
-  hours before its first hit; the third reached the limit in 65 minutes with about 15. How long six
-  or seven unit lanes alone can run is still unknown.
+  hours before its first hit; the third reached the limit in 65 minutes with about 15. The fifth
+  measured six unit lanes alone at about 12 points of the 5-hour window an hour; seven are
+  unmeasured.
+* The fifth run's round-two fixes. No usage reset fell inside round two, so its in-round sleeper
+  never ran. No user message was relayed to it either, so its probes' scope guard never met the
+  request that sent round one's probe off task.
 * Whether the skill should also stage its rejected findings into `docs/audit-deferred/decisions/`.
   This run recorded them only in the tracking issue and the standards doc.

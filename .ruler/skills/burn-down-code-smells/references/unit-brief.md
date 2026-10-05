@@ -109,7 +109,9 @@ read goes out before the read's output does.
 * the startup numbers, if relevant;
 * perf campaigns needing `--accept-instrument-change`;
 * leftovers, drafted as a PR comment and not filed;
-* anything a later unit should know.
+* anything a later unit should know;
+* a usage reading only if you read it this run. Leave the field out rather than fill it in: the
+  orchestrator gates launches on it.
 
 ## Traps that each cost a campaign unit a CI round
 
@@ -127,9 +129,9 @@ read goes out before the read's output does.
   `web/src/lib/storageKeys.webOnly.test.ts` pins, per file, how often each known writer identifier
   of a web-only storage key appears, plus the native guards' text, so editing one of those state
   modules can fail it.
-* **Docs:** the `docs/ARCHITECTURE.md` table pads every row to its longest cell. Keep edits shorter
-  than the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one
-  edit.
+* **Docs:** a Markdown table pads every row to its longest cell (`docs/ARCHITECTURE.md`, the CI
+  table in `docs/TESTING.md`), so a new widest cell re-pads the whole table. Keep edits shorter than
+  the longest row. Resolve conflicts by taking `main`'s table and re-applying your rows in one edit.
 * **Scrapbook pages:** `npm run test:browserless` doesn't run `scrapbook:check`. After editing a
   file that a committed `scrapbook/` page inlines, such as
   `tools/scrapbook/proof-sheet-hub-assets/proof-sheet-hub.client.js`, run `npm run check:quality`
@@ -141,9 +143,16 @@ read goes out before the read's output does.
 * **Test environment:**
   * Vitest fake timers don't drive Node's `AbortSignal.timeout`.
   * `vi.resetModules()` detaches Svelte's runtime from a test's `$effect.root`.
+  * Vitest clears mocks before every test (`clearMocks` defaults on), so a `vi.fn` call made at
+    import time is gone by the test body: record it in a `vi.hoisted` array. `unstubEnvs` stays off
+    in `tools/vitest.config.mjs`, so pair `vi.stubEnv` with `vi.unstubAllEnvs()` in `afterEach`.
   * The API smoke uses `SMOKE_PORT`, not `SPLOTCH_E2E_PORT`.
-  * A test that spawns a tool calling `adb` keeps it off real devices by setting `ANDROID_HOME` to
-    an empty directory (`tools/perf/tests/cli-inputs.test.mjs`).
+  * A test that spawns a tool calling `adb` keeps it off real devices with `ANDROID_HOME` set to an
+    empty directory when the tool finds `adb` through the SDK, and with a `PATH` of logging shims
+    when it finds `adb` on `PATH` (`release-capture.mjs`, `prepare-capture.mjs`). Both are in
+    `tools/perf/tests/cli-inputs.test.mjs`.
+  * While other lanes run tests, `npm run test:browserless` can time out spawn-heavy tools tests at
+    Vitest's 5 s default. Rerun the failing files alone before blaming your change.
 * **Posting the rival's review:** `tools/rival-agent/post-review.mjs` blocks a finding whose text
   pairs `serial` or `device-id` with a value containing a digit, even a harmless one such as an
   emulator name. Post it through the `--sanitized-findings` recovery in
@@ -152,16 +161,39 @@ read goes out before the read's output does.
   Dependabot review). Don't wait for a PR-sized count after a merge.
 * **Wait loops:** never key a CI wait on a fixed check count. The count varies by PR: it drops when
   the Dependabot review check is absent, and a loop keyed on the larger number never ends. Wait for
-  the expected applicable set to register and then finish, per `drive-pr-to-mergeable` step 5.
+  the expected applicable set to register and then finish, per `drive-pr-to-mergeable` step 5. A
+  lane can't end its turn to wait, and foreground `sleep` is refused: block on
+  `gh run watch <run-id> --exit-status`, or on a Node script polling the head's check runs for the
+  expected names, inside the Bash tool's 10-minute limit.
 * **CI logs:** `gh api repos/<owner>/<repo>/actions/jobs/<id>/logs` exits 1 without
   `--allow-escape-sequences`, so with stderr discarded the logs look empty.
-* **Fresh worktree:** run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
+* **Lane worktree:**
+  * Run `npm run check` (it runs `svelte-kit sync`) before `npm run test:tools`.
+  * The format-on-edit hook formats nothing here: it runs from the parent checkout, whose Prettier
+    and dprint ignores skip `.claude/worktrees/`. Run `npx prettier --write` and `npx dprint fmt` on
+    the files you edit.
 * **Sandbox friction:**
-  * The auto-mode sandbox refuses compound shell commands that chain `git` or `gh`, any heredoc
-    whose text contains `git` (even inside `.github`), and some bare words. Write the script to a
-    file under `/tmp` and run it as `/bin/bash <file>`; a bare `bash <file>` can be refused.
+  * The worktree-isolation guard refuses a command it can't prove stays in your worktree: one that
+    names `.github` or a github URL, mixes `git` or `gh` with other tools, sets env on `git`
+    (`GIT_CONFIG_*=…`), loops a computed path into `rg` or `grep`, runs an inline `awk` program, a
+    runtime-built `sed` script or a piped `node -e`, or uses a heredoc. Put the logic in a file with
+    the Write tool and run it as `/bin/bash <file>` or `node <file>` with literal absolute
+    arguments; a bare `bash <file>` can be refused.
+  * The Bash tool's shell is zsh: `set -- $row` doesn't split words, a variable named `path`
+    overwrites `PATH`, `=word` expands to a command's path and aborts the line when no such command
+    exists, an unmatched glob aborts the line, and `${PIPESTATUS[0]}` is empty. Quote globs, and run
+    multi-line shell as `/bin/bash <file>`.
   * `git rev-parse --verify` takes one SHA per call.
-  * Run a brokered rival command in your own worktree, at the head under review.
+  * Run a brokered rival command in your own worktree, at the head under review. When the guard
+    refuses its handler line (git, nested quoting, a heredoc), run the same read-only command from a
+    scratch file with absolute paths, then run that line's closing `broker.mjs reply` on its own,
+    with your exit code and output file. Read a script the rival wrote before running it. Decline a
+    download; the `--declined` reason is the only text the rival sees, so put any substitute
+    evidence there.
   * If the sandbox refuses a temporary product-source edit for a negative control, run the guard
-    against a scratch copy of the old code, or inject the fault from the test side.
+    against a scratch copy of the old code, or inject the fault from the test side. When the
+    classifier refuses the outcome itself ("Security Test Removal"), take neither route: record the
+    control as not run, with the evidence you have (#2664).
+  * Delete every scratch probe or mutant copy you put inside the repo before `npm run lint`: ESLint
+    ignores `.gitignore`, so a file nobody will commit can still fail the lint gate.
   * `ruler:apply` needs sandbox-disabled writes to `.claude/` and `.agents/`.

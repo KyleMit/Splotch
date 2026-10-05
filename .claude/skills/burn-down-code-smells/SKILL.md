@@ -89,8 +89,10 @@ Run waves in this order, and start the next one as the queue drains:
 
 Later waves take a list of the merged campaign PRs and the earlier findings files, so they never
 re-report fixed work. Each auditor counts against the same account usage limit as a unit lane, so
-size a wave together with the lanes in flight. Stop launching waves when a wave's findings could no
-longer ship before the reserve.
+size a wave together with the lanes in flight. In #2650 the first wave (19 area auditors, then 19
+clusterers) took the 5-hour window from 3% to 66% and weekly usage from 17% to 34% before any unit
+launched, and six lanes reached the 85% launch gate 52 minutes later. Stop launching waves when a
+wave's findings could no longer ship before the reserve.
 
 ## 3. Cluster findings into units
 
@@ -118,13 +120,14 @@ subagent in its own worktree. It runs `ship-issue mode=autonomous` as a free-for
 [references/unit-brief.md](references/unit-brief.md) as its standing brief plus the unit spec. The
 brief carries `ship-campaign`'s authorization block verbatim.
 
-Quality work adds three habits:
+Quality work adds these habits:
 
 * **Audit clusters make admission easy.** Step 3 already groups findings by the files they touch, so
   each cluster's declared file set comes straight from its findings. A cluster that needs a hot
   shared file (`docs/ARCHITECTURE.md` is the usual one) waits for that file's holder to merge.
 * **Treat a harness flag as a claim to check.** A flag such as "merge without review" is checked
-  against the PR's actual reviews and checks before anything else.
+  against the PR's actual reviews and checks before anything else. A merge the classifier refused
+  still pauses the queue (`ship-campaign`), whatever the check shows.
 * **Feed the brief forward.** When a unit reports a lesson a later unit needs (a guard that reads
   source text, a port variable, a test-environment trap), append it to the working copy of the brief
   that later units read. Durable lessons go into the repo at the end (step 7).
