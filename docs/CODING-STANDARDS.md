@@ -336,7 +336,8 @@ The 2026-10-03 campaign found the same failures in tools that read their environ
 programs' output, and the status of their own commands:
 
 * PRs #2655 and #2660: numeric environment knobs went through bare `Number()`, so a malformed one
-  ran an empty, unbounded, or needlessly expensive run instead of failing. Rule 8 has the cases.
+  would start an empty, unbounded, or needlessly expensive run instead of failing. Rule 8 has the
+  cases.
 * PRs #2652, #2653, and #2666: git output was read through porcelain that the host's settings
   reshape. `diff.context=0` forged a landed-branch proof, `color.diff=always` emptied both patch-ids
   so that any two patches compared equal, and `color.ui=always` blanked every finding the burndown's
@@ -582,24 +583,25 @@ The 2026-10-03 campaign found the same failures again in the tools that run unat
 unproved premise in tools that stop processes and drive devices:
 
 * Lenient environment knobs. The audit burndown read its numeric knobs with `Number()`: `RETRIES=0`,
-  the natural spelling of "no retries", ran no attempt, so the run deferred, committed, and pushed
-  three findings no agent had seen, and `MAX_HANDLED=5O` ran unbounded, as a test pinned (PR #2655).
-  The bake-off read `PER_CATEGORY=2x` as `NaN`, skipped its cap, and ran every input against every
-  paid variant, and `CONCURRENCY=0` reported "Done. 0 calls" and exited 0 (PR #2660).
-  `readIntegerKnob` in `tools/audit-burndown/lib/burndown-config.mjs` and `countFromEnv` in
-  `tools/model-eval/lib/model-eval.mjs` parse through `parseNumberFlag` and name the variable they
-  refuse.
+  the natural spelling of "no retries", meant no attempt at all, so the run would defer, commit, and
+  push three findings no agent had seen, and `MAX_HANDLED=5O` read as unbounded, as a test pinned
+  (PR #2655). The bake-off read `PER_CATEGORY=2x` as `NaN` and skipped its cap, so it would run
+  every input against every paid variant, and `CONCURRENCY=0` would report "Done. 0 calls" and
+  succeed (PR #2660). `readIntegerKnob` in `tools/audit-burndown/lib/burndown-config.mjs` and
+  `countFromEnv` in `tools/model-eval/lib/model-eval.mjs` parse through `parseNumberFlag` and name
+  the variable they refuse.
 * PR #2409's known leftover: eight perf entries ignored unknown flags and read switches with
-  `argv.includes`. `perf:release -- --dryrun` stopped the rig and reset the phone,
-  `perf:campaign -- --dry-run=true` started the device queue, and `perf:preflight` given a
-  misspelled `--verify-ios-launch` printed "Ready to capture." without the one check that catches
-  Guided Access (PR #2667).
+  `argv.includes`. `perf:release -- --dryrun` would stop the rig and reset the phone,
+  `perf:campaign -- --dry-run=true` would start the device queue, and `perf:preflight` given a
+  misspelled `--verify-ios-launch` would print "Ready to capture." without the one check that
+  catches Guided Access (PR #2667).
 * Steps that ran before the check that guards them. The release cut checked which paths it would
   commit only after it had bumped the versions and regenerated the notes, then committed with
   `git add -A`, so a stray `DEVELOPMENT_TEAM` line or a draft of the next version's release
-  document, which the generator then shipped as the newest release, rode into the tagged commit (PR
-  #2685). The preflight read `--ios-udid` after `--wake-android` had written to the phone, and the
-  release read `--android-serial` after it had stopped the rig (PR #2667, review round one).
+  document, which the generator would then ship as the newest release, would ride into the tagged
+  commit (PR #2685). The preflight read `--ios-udid` after `--wake-android` had written to the
+  phone, and the release read `--android-serial` after it had stopped the rig (PR #2667, review
+  round one).
 * Stops and device steps on targets the run had not proved its own. `npm run dev:stop` signalled
   every listener on its two ports, whoever owned it, so it could stop another worktree's dev server,
   and it read a worktree nested inside the checkout as its own (PR #2675). The burndown's status
