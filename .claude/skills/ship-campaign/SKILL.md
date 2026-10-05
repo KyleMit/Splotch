@@ -147,7 +147,10 @@ fix done before declaring the campaign started.
   ends them all at once. Read the plan's usage windows (through the host's usage tool when it has
   one), agree two thresholds with the user — one where no new unit or agent launches, one where the
   campaign wraps up (step 5) — and record both in the ledger. Re-read usage before each launch; a
-  window's reset reopens launches.
+  window's reset reopens launches. Decide now what wakes the run for that reset: a sleeper agent
+  inside a running workflow that waits for the window's `resetsAt`, or a background Bash timer.
+  Session crons are only a backup: none fired in about ten hours of background Workflow runs
+  (#2650).
 * **Baseline.** `npm run check` and `npm run lint` pass on the fresh worktree.
 * **Devices.** When any queued unit needs the rig, the performance profile's device preflight
   applies.

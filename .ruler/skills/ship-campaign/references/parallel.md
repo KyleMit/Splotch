@@ -58,6 +58,11 @@ another lane landed never arrives through an ungated merge. The worker, after re
    * `adjacent`: merge, and read the upstream diff of each module the survey lists, including those
      reached through a re-exporting barrel;
    * `unrelated`: merge.
+
+   Every path, `reconcile-with-main` included, merges the exact commit the survey covered: the first
+   incoming commit it lists (in full as `incoming[0].sha` under `--json`), as `git merge <sha>`.
+   Another lane's fetch can move the shared `origin/main` between the survey and the merge, and
+   `git merge origin/main` would then bring in commits nobody surveyed.
 2. Commits the merge, pushes, and waits for CI on that head.
 3. Stops at shippable and reports `ready: PR <n>, head <sha>, gated main <sha>`. It copies both SHAs
    from command output. The gated `main` is `git rev-parse HEAD^2` after a catch-up merge, or the
@@ -99,10 +104,21 @@ The orchestrator handles ready PRs one at a time:
    PR whose head moved after its gate.
 4. If `main` moved, run an integration trial (below), or resume that worker with the new `main`
    commit. A resumed worker repeats the gate against it, and the orchestrator moves on to the next
-   ready PR. When the survey says `unrelated`, the worker may run a local trial merge
-   (`git merge --no-commit --no-ff origin/main`, then `npm run check`, `npm run lint`, and its
-   targeted tests) instead of a CI round. It then aborts the trial and reports ready against the new
-   commit. A second consecutive move takes the CI round.
+   ready PR. When the survey says `unrelated`, the worker may run a local trial merge of the
+   surveyed commit (`git merge --no-commit --no-ff <sha>`, then `npm run check`, `npm run lint`, and
+   its targeted tests) instead of a CI round. It then aborts the trial and reports ready against the
+   new commit. A second consecutive move takes the CI round.
+
+**When a Workflow agent performs the merge**, launch its workflow in the turn the user's explicit
+merge approval started, never in one a task notification or timer started. The harness relays only
+the user message behind the launch, and tells each agent that approval quoted in its computed prompt
+carries no user authority. In #2650 round one was launched in reply to a request that included "make
+sure to merge as you go", relayed it to all 389 of its agents, and merged 27 PRs. Round two was
+launched from the turn round one's completion notification started, so none of its 28 agents heard
+the user at all; after two merges the classifier refused the third "[Merge Without Review]",
+although that PR had a rival review, green CI and a clean local trial. That the missing user voice
+caused the refusal is likely but unproven, since two merges passed without it. A refusal pauses the
+queue either way (`ship-campaign`, "Invocation and authority").
 
 **The integration trial.** When `main` has moved under one or more ready PRs, the orchestrator can
 gate them itself instead of resuming each worker:
@@ -129,11 +145,13 @@ green PRs for a few minutes. The priority PR then merges against the `main` its 
 extra CI round.
 
 Because the orchestrator is a single process, nothing merges between its fetch and its merge except
-work outside the campaign. The post-merge CI run on `main` is the backstop for that. After a merge,
-the orchestrator resumes the worker once to detach its worktree and delete the local branch. Prefer
-that to one sweep at the end: the auto-mode classifier refused an orchestrator's end-of-campaign
-batch removal of its own clean lane worktrees (2026-09-30). Worktrees still left at the end go in
-the morning report for `prune-git-workspace`.
+work outside the campaign. The post-merge CI run on `main` is the backstop for that. Leave each
+lane's worktree and local branch in place after its merge; the remote branch goes with the merge's
+`--delete-branch`. The auto-mode classifier flagged both ways of removing lanes inside a campaign:
+an orchestrator's end-of-campaign batch removal of its own clean lane worktrees (2026-09-30), and a
+merge agent's `git worktree remove --force` plus `git branch -D` of an already-merged lane
+("[Irreversible Local Destruction]", 2026-10-04). The morning report lists the lanes for
+`prune-git-workspace`.
 
 **Tests before pushing.** Each unit runs the applicable full tier that isn't host-exclusive before
 it pushes: `npm run test:browserless` (the Vitest tiers plus the API smoke on the unit's own
@@ -149,13 +167,29 @@ genuinely needs one locally, the orchestrator schedules it while no other lane i
   resolved".
 * **A worktree-isolated lane cannot run a brokered command that invokes git in the rival's
   worktree.** The lane's isolation refuses it, and a command whose text merely contains "git" (a
-  `github` path, for example) was refused too. Brief each lane to decline such a request with that
-  reason, run the equivalent check in its own worktree, and hand the rival that result.
+  `github` path, for example) was refused too. Brief each lane to run the equivalent read-only
+  command in its own worktree, at the head under review, and answer the request with that output:
+  the handler line's closing `broker.mjs reply`, run on its own with the lane's exit code and output
+  file.
 * **Every agent shares one account usage limit**: each lane, each auditor, and each helper an agent
   spawns. Reaching it ends them all at once, so size the lanes by every agent running, and re-read
   the usage windows before each launch against the thresholds agreed at preflight (`ship-campaign`
   step 1). Late in a run, prefer finishing open PRs over opening new lanes, so an interruption can't
   eat the reserve.
+* **When a Workflow script orchestrates the lanes** (the Workflow tool, #2650):
+  * The harness relays to every agent the user message whose turn launched the workflow, as that
+    agent's only user voice, and tells it that message wins over its own computed prompt. So say in
+    each prompt that the relayed request describes the whole campaign, name the agent's one part,
+    and forbid what a helper that only reads doesn't need: skills, `git`, `gh`, `npm`, file edits,
+    background commands. Don't give a helper the smallest model. A haiku usage probe with neither
+    guard took "burn down code smells" as its own task: it ran `burn-down-audits` in the
+    orchestrator's checkout, pushed the orchestrator's branch, opened draft #2678, and started a
+    canary burndown.
+  * Gate only on readings from agents whose job was to take them, and validate each one: a
+    percentage from 0 to 100, and a clock that never runs backwards or leaps further ahead than
+    probes are ever apart. Units told to stop at once returned usage readings they never took,
+    stamped a day ahead, a day behind, and a year behind. A script that kept the newest reading
+    would have frozen its gates and its clock.
 * **Never in parallel:**
   * `profile=performance` units, the device rig, and performance captures;
   * the full Playwright suite and full `npm test`;
@@ -164,7 +198,13 @@ genuinely needs one locally, the orchestrator schedules it while no other lane i
 * **A red `main` pauses every lane's merge** (step 4), not their work. Lanes resume merging after
   the trial-repair unit lands.
 * **After an interruption,** re-derive the map from GitHub (open PRs, their heads and files, what
-  merged) before resuming any lane, and restate each resumed unit's time budget.
+  merged) before resuming any lane, and restate each resumed unit's time budget. A unit resumed or
+  re-admitted in a new worktree meets two leftovers of its old lane, which stays in place:
+  * A branch can be checked out in only one worktree, so the new one checks out a differently named
+    local branch tracking `origin/<branch>` and pushes with `git push origin HEAD:<branch>`.
+  * The rival's ledger keys a review by the handler's worktree root (`ledgerKey` in
+    `tools/rival-agent/ledger.mjs`), so round two would meet the code with a cold reviewer. Copy the
+    round-one record to the new root's key before launching round two.
 
 ## Ledger
 

@@ -253,11 +253,35 @@ that started earlier, which is why the check repeats before every launch.
     a full coupled reconcile, and got a fresh rival review and a new CI round on each new head. Both
     then merged.
   * Step 2 records that sequence. The same classifier later refused the orchestrator's batch removal
-    of its own 13 clean lane worktrees at the end. The parallel reference now prefers cleanup after
-    each merge.
+    of its own 13 clean lane worktrees at the end. The parallel reference then preferred cleanup
+    after each merge, until the 2026-10-04 section below.
 * **Lanes and the broker.** Two lanes reported that their worktree isolation refused a brokered
   command that ran git in the rival's worktree, including one whose text only contained "github".
   Both declined it and supplied their own equivalent result. The parallel reference records this.
+
+## 2026-10-04: a Workflow script as the orchestrator (#2650)
+
+The #2650 code-smell campaign ran its lanes from Workflow-tool rounds; the burn-down-code-smells
+skill note has the run record. Four changes to this skill came from it:
+
+* **Workflow agents hear the user only through the relayed request.** The harness relays the user
+  message whose turn launched a workflow to every agent as its only user voice, says that message
+  wins over the agent's computed prompt, and says approval quoted in the prompt carries no user
+  authority. Both incidents fit that mechanism. A haiku usage probe took the relayed campaign
+  request as its own task (#2678). A round launched from a completion-notification turn relayed no
+  user message at all, and the classifier refused its third merge. The parallel reference now
+  anchors every helper's prompt and launches merge-capable rounds only from the user's approval
+  turn. The refusal paused the queue, as the 2026-09-29 rule requires, until the user's close-out
+  approval.
+* **Lanes stay until the end.** The 2026-09-30 batch-removal refusal had moved cleanup to after each
+  merge, and on 2026-10-04 a merge agent's per-lane removal was flagged too. The parallel reference
+  now leaves every lane for `prune-git-workspace`, and covers what a resumed unit then meets: its
+  old lane still holding the branch, and a rival ledger keyed by the old worktree root.
+* **Merge the surveyed commit.** A unit that merged `origin/main` after its survey could pull in
+  commits another lane's fetch had just brought, so the gate names the commit to merge.
+* **Waking for a usage reset.** No session cron fired in about ten hours of background workflow
+  runs, while a background Bash command's completion did wake the session. The preflight's usage
+  bullet now asks what wakes the run at a reset.
 
 ## Open questions
 
@@ -272,4 +296,8 @@ that started earlier, which is why the check repeats before every launch.
   run with `/bin/bash`: the gate, then `gh pr merge --merge --delete-branch --match-head-commit`,
   then verification. The run treated the denial as binding and did not route around it; every unit
   then ended as an open, shippable PR for the user to merge. The cause is unvalidated, and so is
-  whether any preflight check could have surfaced it while the user was present.
+  whether any preflight check could have surfaced it while the user was present. On 2026-10-04
+  (#2650) a Workflow merge agent was refused "[Merge Without Review]" in a round that relayed no
+  user message (see that section). The missing user voice is the leading explanation, but two merges
+  in the same round passed without it, and how a later unattended round could carry the user's merge
+  approval is open.
