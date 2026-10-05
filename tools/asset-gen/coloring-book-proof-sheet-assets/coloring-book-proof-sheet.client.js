@@ -7,11 +7,16 @@ const {
   cells: CELLS,
   source: SOURCE,
   outlineLuma: OUTLINE_LUMA,
+  lineArtAlpha: LINE_ART_ALPHA,
 } = window.__COLORING_BOOK_PROOF_SHEET__;
 const RENDER_MAX = 640;
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
+// BLEND and INVERT composite only raster-era line art; see drawRasterLineArt.
 const BLEND = { dark: 'screen', light: 'multiply' };
 const INVERT = { dark: true, light: false };
+// The inverted pen: a night tile whose page has no chalk draws the pen in the
+// white the chalk SVGs bake in.
+const NIGHT_PEN_INK = '#fff';
 const VIEWS = ['outline', 'color', 'combined'];
 
 let gView = 'combined';
@@ -36,9 +41,9 @@ function fit(w, h) {
   return [Math.round(w * s), Math.round(h * s)];
 }
 
-// Fills-only fill for `--source samples` ONLY: fresh Gemini takes still carry
-// their outlines, so punch them with the line art as a mask (luma<OUTLINE_LUMA
-// -> transparent), approximating the punch asset-gen bakes into shipped fills
+// Fills-only fill for a lined fill — a `--source samples` take or a git-mode
+// raw-fill fallback still carries its outline — punched wherever the tile's line
+// art has ink, approximating the punch asset-gen bakes into shipped fills
 // (lib/punch-fill.mjs). Shipped fills are already fills-only (opaque, outline
 // pixels inpainted) and MUST be drawn as-is: re-cutting them here with a binary
 // mask at render resolution punches paper-holes whose resample phase never
@@ -55,16 +60,13 @@ function buildFills(fill, lineArt, w, h) {
     mc.width = w;
     mc.height = h;
     const mx = mc.getContext('2d', { willReadFrequently: true });
-    mx.drawImage(lineArt, 0, 0, w, h);
-    const px = mx.getImageData(0, 0, w, h),
-      d = px.data;
-    for (let i = 0; i < d.length; i += 4) {
-      // Bundle boundary: this self-contained browser runtime cannot import the Node
-      // image-stats module. image-stats.test.mjs guards this copy and its injected
-      // OUTLINE_LUMA threshold against the pipeline convention.
-      const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      d[i + 3] = l < OUTLINE_LUMA ? 255 : 0;
-    }
+    mx.drawImage(lineArt.img, 0, 0, w, h);
+    const px = mx.getImageData(0, 0, w, h);
+    // Bundle boundary: this self-contained browser runtime cannot import the Node
+    // pipeline modules. image-stats.test.mjs guards both ink tests and their
+    // injected thresholds against the pipeline convention.
+    if (lineArt.kind === 'vector') maskVectorInk(px.data);
+    else maskRasterInk(px.data);
     mx.putImageData(px, 0, 0);
     fx.globalCompositeOperation = 'destination-out';
     fx.drawImage(mc, 0, 0);
@@ -73,26 +75,75 @@ function buildFills(fill, lineArt, w, h) {
   return fc;
 }
 
-// Draw the line-art layer the way DrawingCanvas does: invert(1) in dark so black
-// lines become white, then blend (screen dark / multiply light) over the paper.
+// A canonical SVG carries its ink in alpha: lineArtMask's test in lib/line-art.mjs.
+function maskVectorInk(d) {
+  for (let i = 0; i < d.length; i += 4) {
+    d[i + 3] = d[i + 3] > LINE_ART_ALPHA ? 255 : 0;
+  }
+}
+
+// A raster-era master is opaque ink-on-white, so its ink is the dark pixels.
+function maskRasterInk(d) {
+  for (let i = 0; i < d.length; i += 4) {
+    const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    d[i + 3] = l < OUTLINE_LUMA ? 255 : 0;
+  }
+}
+
 function drawLineArt(ctx, lineArt, theme, w, h) {
+  if (lineArt.kind === 'vector') drawVectorLineArt(ctx, lineArt, theme, w, h);
+  else drawRasterLineArt(ctx, lineArt, theme, w, h);
+}
+
+// Vector overlays composite the way the app presents them (ADR-0129): plain
+// source-over, the pen's black ink on light paper and the chalk's white ink on
+// dark paper. Only the pen standing in for a missing chalk needs recolouring.
+function drawVectorLineArt(ctx, lineArt, theme, w, h) {
+  const inverted = theme === 'dark' && lineArt.role === 'pen';
+  ctx.drawImage(inverted ? inked(lineArt.img, NIGHT_PEN_INK, w, h) : lineArt.img, 0, 0, w, h);
+}
+
+// The image's coverage filled with one flat ink colour.
+function inked(img, ink, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const cx = c.getContext('2d');
+  cx.drawImage(img, 0, 0, w, h);
+  cx.globalCompositeOperation = 'source-in';
+  cx.fillStyle = ink;
+  cx.fillRect(0, 0, w, h);
+  return c;
+}
+
+// A raster-era master is opaque ink-on-white, so it blends instead of covering:
+// multiply keeps its dark ink on light paper; on dark paper invert(1) turns the
+// ink white and screen drops the inverted, now black, background.
+function drawRasterLineArt(ctx, lineArt, theme, w, h) {
   ctx.save();
   ctx.globalCompositeOperation = BLEND[theme];
   if (INVERT[theme]) ctx.filter = 'invert(1)';
-  ctx.drawImage(lineArt, 0, 0, w, h);
+  ctx.drawImage(lineArt.img, 0, 0, w, h);
   ctx.restore();
 }
 
+// The app's themed overlay swap: the pen on light paper, the chalk on dark, and
+// the pen again on dark when the page has no chalk.
+function lineArtLayer(cell, theme, imgs) {
+  if (theme === 'dark' && imgs.chalk) {
+    return { img: imgs.chalk, kind: cell.chalkKind, role: 'chalk' };
+  }
+  if (!imgs.lineArt) return null;
+  return { img: imgs.lineArt, kind: cell.lineArtKind, role: 'pen' };
+}
+
 // A tile is one themed half of a pair — its theme is fixed (light or dark);
-// only its view changes. The dark half's line art is the CHALK outline
-// (ink-on-white, same polarity as the pen) where the page has one, falling
-// back to the pen — matching DrawingCanvas's themed overlay swap.
+// only its view changes.
 function render(tile) {
-  const { canvas, theme, imgs } = tile;
+  const { canvas, theme, imgs, lineArt } = tile;
   const view = tile.view || gView;
   const fill = theme === 'dark' ? imgs.night : imgs.light;
-  const lineArt = theme === 'dark' ? imgs.chalk || imgs.lineArt : imgs.lineArt;
-  const ref = fill || lineArt || imgs.light || imgs.night;
+  const ref = fill || lineArt?.img || imgs.light || imgs.night;
   if (!ref) {
     return;
   }
@@ -116,10 +167,10 @@ function render(tile) {
   ctx.fillRect(0, 0, w, h);
 
   if (view === 'combined' && fill) {
-    // Punch the lined fill (samples take, or a git-mode raw-fill fallback) so its
-    // baked-in outline doesn't double the composited line art; shipped fills-only
-    // webps draw as-is (re-punching them dots a ring around every line).
-    if (SOURCE === 'samples' || tile.rawFill) {
+    // Punch the lined fill so its baked-in outline doesn't double the composited
+    // line art; shipped fills-only webps draw as-is (re-punching them dots a ring
+    // around every line).
+    if (tile.linedFill) {
       if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
       ctx.drawImage(tile.fills, 0, 0, w, h);
     } else {
@@ -178,16 +229,19 @@ function buildHalf(pair, cell, theme, imgsP) {
   pair.appendChild(fig);
 
   imgsP.then(([night, lineArt, light, chalk]) => {
-    // A raw-fill half still carries its own outline, so it must be punched in the
-    // combined view (like a fresh sample take) rather than drawn as-is.
-    const rawFill = theme === 'dark' ? !!cell.nightRaw : !!cell.lightRaw;
+    // A lined fill still carries its own outline, so the combined view punches it:
+    // a `--source samples` night take, or a git-mode raw-fill fallback. Light fills
+    // always come from web/static, so a samples sheet's light half is shipped.
+    const linedFill = theme === 'dark' ? SOURCE === 'samples' || !!cell.nightRaw : !!cell.lightRaw;
+    const imgs = { night, lineArt, light, chalk };
     const tile = {
       canvas,
       theme,
       vlabel: vl,
-      imgs: { night, lineArt, light, chalk },
+      imgs,
+      lineArt: lineArtLayer(cell, theme, imgs),
       view: null,
-      rawFill,
+      linedFill,
     };
     tiles.push(tile);
     frame.addEventListener('click', () => {

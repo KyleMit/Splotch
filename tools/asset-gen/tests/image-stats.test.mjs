@@ -68,16 +68,17 @@ describe('luma', () => {
   });
 
   it('keeps the proof-sheet browser bundle aligned with the pipeline convention', async () => {
-    const client = await readFile(
-      new URL(
-        '../coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js',
-        import.meta.url
-      ),
-      'utf8'
+    const client = withoutComments(
+      await readFile(
+        new URL(
+          '../coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js',
+          import.meta.url
+        ),
+        'utf8'
+      )
     );
-    const generator = await readFile(
-      new URL('../coloring/gen-book-proof-sheet.mjs', import.meta.url),
-      'utf8'
+    const generator = withoutComments(
+      await readFile(new URL('../coloring/gen-book-proof-sheet.mjs', import.meta.url), 'utf8')
     );
     const coefficientMatch = client.match(
       /const l = (\d+\.\d+) \* d\[i\] \+ (\d+\.\d+) \* d\[i \+ 1\] \+ (\d+\.\d+) \* d\[i \+ 2\]/
@@ -92,5 +93,17 @@ describe('luma', () => {
     expect(generator).toContain('outlineLuma: OUTLINE_LUMA_THRESHOLD');
     expect(client).toContain('outlineLuma: OUTLINE_LUMA');
     expect(client).toContain('l < OUTLINE_LUMA');
+    // Vector overlays carry their ink in alpha, so their mask is the shipped
+    // punch's own test (lineArtMask in lib/line-art.mjs), injected, not restated.
+    expect(generator).toMatch(
+      /^import \{[^}]*\bLINE_ART_ALPHA_THRESHOLD\b[^}]*\} from '\.\.\/lib\/line-art\.mjs';$/m
+    );
+    expect(generator).toContain('lineArtAlpha: LINE_ART_ALPHA_THRESHOLD');
+    expect(client).toContain('lineArtAlpha: LINE_ART_ALPHA');
+    expect(client).toContain('d[i + 3] = d[i + 3] > LINE_ART_ALPHA ? 255 : 0;');
   });
 });
+
+function withoutComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
