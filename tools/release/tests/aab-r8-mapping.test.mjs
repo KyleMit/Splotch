@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { rmSync, writeFileSync } from 'node:fs';
-import { zip } from './fixtures/zip-writer.mjs';
+import { R8_MAPPING, releaseBundle } from './fixtures/release-bundle.mjs';
 import { readAabR8Metadata } from '../lib/aab-r8-mapping.mjs';
 import { inspectArtifacts } from '../publish-release-artifacts.mjs';
 
@@ -21,34 +21,14 @@ vi.mock('../../mobile/android/lib/android-toolchain.mjs', async (importOriginal)
 afterAll(() => rmSync(fixture.dir, { recursive: true, force: true }));
 
 const expected = { version: '1.6.0', versionCode: 8 };
-const validMapping = '# compiler: R8\n# compiler_version: 9.4.1\nexample.Plugin -> a.b:\n';
 
 function writeBundle(mapping) {
-  const attribute = (name, value) =>
-    Buffer.concat([
-      Buffer.from([0x12, name.length]),
-      Buffer.from(name),
-      Buffer.from([0x1a, value.length]),
-      Buffer.from(value),
-    ]);
-  const entries = [
-    {
-      name: 'base/manifest/AndroidManifest.xml',
-      data: Buffer.concat([attribute('versionName', '1.6.0'), attribute('versionCode', '8')]),
-    },
-  ];
-  if (mapping !== undefined) {
-    entries.push({
-      name: 'BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map',
-      data: Buffer.from(mapping),
-    });
-  }
-  writeFileSync(fixture.aabPath, zip(entries));
+  writeFileSync(fixture.aabPath, releaseBundle({ mapping }));
 }
 
 describe('Android release mapping verification', () => {
   it('accepts a version-matching bundle with embedded R8 class mappings', () => {
-    writeBundle(validMapping);
+    writeBundle(R8_MAPPING);
     expect(readAabR8Metadata(fixture.aabPath)).toEqual({ compilerVersion: '9.4.1' });
     const result = inspectArtifacts(expected, ['android']);
     expect(result.matched).toHaveLength(1);
@@ -56,10 +36,10 @@ describe('Android release mapping verification', () => {
   });
 
   it.each([
-    ['missing mapping', undefined],
+    ['missing mapping', null],
     ['empty mapping', ''],
-    ['different compiler', validMapping.replace('compiler: R8', 'compiler: D8')],
-    ['missing compiler version', validMapping.replace('# compiler_version: 9.4.1\n', '')],
+    ['different compiler', R8_MAPPING.replace('compiler: R8', 'compiler: D8')],
+    ['missing compiler version', R8_MAPPING.replace('# compiler_version: 9.4.1\n', '')],
     ['headers without class mappings', '# compiler: R8\n# compiler_version: 9.4.1\n'],
   ])('refuses a version-matching bundle with %s', (_name, mapping) => {
     writeBundle(mapping);
@@ -71,7 +51,7 @@ describe('Android release mapping verification', () => {
   });
 
   it('reports both a stale version and missing R8 mapping', () => {
-    writeBundle(undefined);
+    writeBundle(null);
     const result = inspectArtifacts({ version: '1.7.0', versionCode: 9 }, ['android']);
     expect(result.matched).toEqual([]);
     expect(result.stale[0].problems).toEqual([

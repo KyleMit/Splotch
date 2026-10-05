@@ -12,8 +12,9 @@
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by
-// reading the version out of the binary itself and checking Android's embedded
-// R8 mapping — stale or unmapped builds are refused, not uploaded.
+// reading the version out of the binary itself, and an Android bundle must also
+// carry its JAR signature and embedded R8 mapping — stale, unsigned, or unmapped
+// builds are refused, not uploaded.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -25,6 +26,7 @@ import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 import { readAabR8Metadata } from './lib/aab-r8-mapping.mjs';
+import { readEntry } from './lib/zip.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 
@@ -37,6 +39,13 @@ const ARTIFACTS = {
   },
   ios: { label: 'iOS app', path: RELEASE_IPA, read: readIpaVersion, rebuild: 'npm run ios:ipa' },
 };
+
+// android/app/build.gradle signs the release bundle only when
+// android/keystore.properties exists, and AGP writes app-release.aab either way.
+// readEntry throws when no entry matches, so reading the signature block is the
+// presence check. Anchored at the archive root: a module's root/META-INF/ holds
+// packaged Java resources, never the bundle's own signature.
+const JAR_SIGNATURE_BLOCK = /^META-INF\/[^/]+\.(RSA|DSA|EC)$/;
 
 const PUBLISH_USAGE =
   'Usage: node tools/release/publish-release-artifacts.mjs [semver] [--only=android|ios] [--dry-run]';
@@ -76,18 +85,23 @@ export function parsePublishArgs(args) {
   return { version, only, dryRun: parsed.values['dry-run'] ?? false };
 }
 
-// Pure so the mismatch rules are testable without building a real bundle.
+// Pure so the mismatch rules are testable without building a real bundle. A
+// missing versionCode on either side is a mismatch, not a skip: every release
+// file pins one and every store build carries one, so a null means a reader or
+// a file broke.
 export function compareArtifactVersion(expected, actual) {
   const problems = [];
   if (actual.versionName !== expected.version) {
     problems.push(`versionName is ${actual.versionName}, expected ${expected.version}`);
   }
   if (
-    expected.versionCode != null &&
-    actual.versionCode != null &&
+    expected.versionCode == null ||
+    actual.versionCode == null ||
     String(actual.versionCode) !== String(expected.versionCode)
   ) {
-    problems.push(`versionCode is ${actual.versionCode}, expected ${expected.versionCode}`);
+    problems.push(
+      `versionCode is ${actual.versionCode ?? 'none'}, expected ${expected.versionCode ?? 'none'}`
+    );
   }
   return problems;
 }
@@ -97,17 +111,30 @@ function resolveVersion(explicit) {
   return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 }
 
+// What an artifact must carry to be attached to `version`, read from the text of
+// its release file. Throws instead of exiting so tests can observe the refusal;
+// main() turns the throw into the usual one-line exit.
+export function parseExpected({ version, file, source }) {
+  const parsed = parseFrontmatter(source);
+  if (!parsed) throw new Error(`${file}: malformed frontmatter`);
+  const pin = parsed.meta.androidVersionCode;
+  if (!/^\d+$/.test(pin ?? '')) {
+    throw new Error(
+      `${file} has no whole-number androidVersionCode${pin ? ` (got "${pin}")` : ''}; ` +
+        `npm run release ${version} pins it`
+    );
+  }
+  return { version, versionCode: Number(pin) };
+}
+
 function readExpected(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
-    fail(
+    throw new Error(
       `Missing ${file}\nThere is no release notes file for ${version} — run the cut-release skill first.`
     );
   }
-  const parsed = parseFrontmatter(readFileSync(file, 'utf8'));
-  if (!parsed) fail(`${file}: malformed frontmatter`);
-  const versionCode = Number(parsed.meta.androidVersionCode);
-  return { version, versionCode: Number.isInteger(versionCode) ? versionCode : null };
+  return parseExpected({ version, file, source: readFileSync(file, 'utf8') });
 }
 
 function assertReleaseExists(version) {
@@ -123,8 +150,40 @@ function assertReleaseExists(version) {
   }
 }
 
-// Reads each selected artifact's real version and sorts it into built / stale /
-// missing. Nothing uploads until every present artifact has been accounted for.
+function androidBundleProblems(aabPath) {
+  const problems = [];
+  try {
+    readEntry(aabPath, JAR_SIGNATURE_BLOCK);
+  } catch {
+    problems.push(
+      'unsigned: no META-INF/*.RSA, *.DSA or *.EC signature block; ' +
+        'rebuild it with android/keystore.properties in place'
+    );
+  }
+  try {
+    readAabR8Metadata(aabPath);
+  } catch (error) {
+    problems.push(`R8 mapping: ${error.message}`);
+  }
+  return problems;
+}
+
+// Every check one present artifact must pass before it is attached to the
+// release; an empty `problems` means it may ship.
+export function inspectArtifact(expected, platform, path) {
+  let actual;
+  try {
+    actual = ARTIFACTS[platform].read(path);
+  } catch (error) {
+    return { problems: [`unreadable: ${error.message}`] };
+  }
+  const problems = compareArtifactVersion(expected, actual);
+  if (platform === 'android') problems.push(...androidBundleProblems(path));
+  return { actual, problems };
+}
+
+// Sorts each selected artifact into built / stale / missing. Nothing uploads
+// until every present artifact has been accounted for.
 export function inspectArtifacts(expected, platforms) {
   const matched = [];
   const stale = [];
@@ -136,21 +195,7 @@ export function inspectArtifacts(expected, platforms) {
       missing.push({ platform, ...artifact });
       continue;
     }
-    let actual;
-    try {
-      actual = artifact.read(artifact.path);
-    } catch (error) {
-      stale.push({ platform, ...artifact, problems: [`unreadable: ${error.message}`] });
-      continue;
-    }
-    const problems = compareArtifactVersion(expected, actual);
-    if (platform === 'android') {
-      try {
-        readAabR8Metadata(artifact.path);
-      } catch (error) {
-        problems.push(`R8 mapping: ${error.message}`);
-      }
-    }
+    const { actual, problems } = inspectArtifact(expected, platform, artifact.path);
     if (problems.length) stale.push({ platform, ...artifact, actual, problems });
     else matched.push({ platform, ...artifact, actual });
   }
@@ -161,14 +206,10 @@ export function inspectArtifacts(expected, platforms) {
 export function main(args = process.argv.slice(2)) {
   const { version: explicit, only, dryRun } = parseOrFail(() => parsePublishArgs(args));
   const version = resolveVersion(explicit);
-  const expected = readExpected(version);
+  const expected = parseOrFail(() => readExpected(version));
   const platforms = only ? [only] : PLATFORMS;
 
-  console.log(
-    `\nPublishing artifacts for v${version}` +
-      (expected.versionCode == null ? '' : ` (versionCode ${expected.versionCode})`) +
-      '\n'
-  );
+  console.log(`\nPublishing artifacts for v${version} (versionCode ${expected.versionCode})\n`);
 
   assertReleaseExists(version);
   const { matched, stale, missing } = inspectArtifacts(expected, platforms);
