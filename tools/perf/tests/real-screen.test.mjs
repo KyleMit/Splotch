@@ -19,7 +19,8 @@ import {
   starvationEpisodes,
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
-import { probeConfigScript, validateFreeDrawOptions } from '../ios/capture-webkit-frames.mjs';
+import { validateFreeDrawOptions } from '../ios/capture-webkit-frames.mjs';
+import { probeConfigScript } from '../lib/probe-config.mjs';
 import {
   appiumCapabilities,
   blockServiceWorkerRegistrationForMeasurement,
@@ -28,18 +29,20 @@ import {
   capturedDeviceId,
   clearBundledReportMailbox,
   dismissInstallBannerForMeasurement,
-  driveTrustedGesturePasses,
   flushNativePreferences,
   handCaptureSecondsProblem,
   isWebContext,
-  nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
   refillEraserBetweenPasses,
   selectWebContext,
-  STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
-  trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
+import {
+  driveTrustedGesturePasses,
+  nativeCanvasBounds,
+  STROKES_PER_GESTURE_REPEAT,
+  trustedGestureActions,
+} from '../lib/trusted-gesture-plan.mjs';
 import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
@@ -612,10 +615,7 @@ describe('drawing acceptance gates', () => {
     const score = scoreDrawingRun([phase()]);
 
     expect(score.passed).toBe(true);
-    expect(drawingGateRows(score)[0]).toMatchObject({
-      phase: 'blank',
-      verdict: 'PASS',
-    });
+    expect(drawingGateRows(score)[0]).toMatchObject({ phase: 'blank', verdict: 'PASS' });
   });
 
   it.each([

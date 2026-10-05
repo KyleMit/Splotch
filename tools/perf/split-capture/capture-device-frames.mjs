@@ -40,7 +40,7 @@ import {
   driveTrustedGesturePasses,
   nativeCanvasBounds,
   trustedGestureActions,
-} from '../ios/capture-xcuitest-screen.mjs';
+} from '../lib/trusted-gesture-plan.mjs';
 import { parseCampaignOrientation, readinessThemeProblem } from '../lib/campaign-state.mjs';
 import {
   CONTACT_BANK_MS,

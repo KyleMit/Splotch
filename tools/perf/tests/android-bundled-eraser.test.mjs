@@ -11,7 +11,7 @@ import {
   passLiftProblem,
   strokeDelivery,
 } from '../android/capture-bundled-frames.mjs';
-import { STROKES_PER_GESTURE_REPEAT } from '../ios/capture-xcuitest-screen.mjs';
+import { STROKES_PER_GESTURE_REPEAT } from '../lib/trusted-gesture-plan.mjs';
 import { ERASER_CENSUS_GRID } from '../lib/eraser-fill.mjs';
 
 const SAMPLES = ERASER_CENSUS_GRID * ERASER_CENSUS_GRID;

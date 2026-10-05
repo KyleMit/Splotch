@@ -17,7 +17,7 @@ used, and write evidence beneath `perf-profiles/`. They require the repository d
 installed Playwright browsers. Gate commands exit non-zero for missing samples or threshold
 breaches; capture commands also fail when they cannot build, serve, or drive the app.
 
-Shared capture formats and scoring belong in `../lib/`; browser-injected payloads belong in
-`../probes/`. The behavior-preserving issue #975 manifest leaves the shared action plan in
-`../ios/capture-xcuitest-actions.mjs` and the reused probe configuration in
-`../ios/capture-webkit-frames.mjs`; web runners import those deliberate owners.
+Shared capture formats, scoring, and the probe configuration (`../lib/probe-config.mjs`) belong in
+`../lib/`; browser-injected payloads belong in `../probes/`. The behavior-preserving issue #975
+manifest leaves the shared action plan in `../ios/capture-xcuitest-actions.mjs`, which web runners
+import deliberately.

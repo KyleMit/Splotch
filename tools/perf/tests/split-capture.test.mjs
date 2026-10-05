@@ -49,10 +49,7 @@ import {
   STALE_SERVICE_WORKER_EVICTION_SOURCE,
   staleServiceWorkerProblem,
 } from '../lib/service-worker-guard.mjs';
-import {
-  STROKES_PER_GESTURE_REPEAT,
-  trustedGestureActions,
-} from '../ios/capture-xcuitest-screen.mjs';
+import { STROKES_PER_GESTURE_REPEAT, trustedGestureActions } from '../lib/trusted-gesture-plan.mjs';
 import { guardVerifyForeground } from '../split-capture/verify-android-input.mjs';
 import { STAND_DOWN_PATH } from '../split-capture/lib/chrome-tabs.mjs';
 import {
