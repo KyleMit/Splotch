@@ -1,0 +1,14 @@
+{
+  "observedAt": "2026-10-06T15:54:01.206708+00:00",
+  "registeredCheckHead": "15470a2d531f41929ea4cf61f9d61410e32025cc",
+  "actualGithubTestMerge": "b02f8abb73646747f6214ae5e511372f05e915d3",
+  "parents": [
+    "aa507a74963adac35baed84c7ab2e13cdc12a946",
+    "15470a2d531f41929ea4cf61f9d61410e32025cc"
+  ],
+  "tree": "8196a3910c8ba8405f94f7ceb178b18088c7476e",
+  "exactTreeEquivalent": true,
+  "finalIntegration": "e7413bf92066fcf45967cf04241a513fd48d49ff",
+  "integrationTreeEquivalent": true,
+  "claimLimit": "CI is associated with final head and runs expected PR merge source; Git identities/build metadata are not collapsed; records-only acceptance"
+}
