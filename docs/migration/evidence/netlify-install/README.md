@@ -20,10 +20,13 @@ The caller requires canonical regular workspace roots, current Node/manager/flag
 install or prepare lifecycle stages, no unreviewed pnpm preloads, the actual hoisted linker and
 all-false dependency build policy. Named `config get --json` children distinguish absent defaults
 from an explicit string `"undefined"`; no configuration list, auth file or complete environment is
-printed. The conservative workspace spelling guard intentionally refuses escaped/interpolated
-preload syntax and a present global pnpm configuration YAML. A future manager, lifecycle policy or
-such syntax requires a reviewed caller amendment. Authentication/network configuration remains with
-pnpm.
+printed. The initial caller conservatively refused escaped/interpolated preload syntax and every
+present global pnpm configuration YAML. The
+[store qualification amendment](store-qualification/README.md) records the narrowly admitted sole
+cache-store setting and its final local controls. The [second](second-hosted-failure/README.md) and
+[third](third-hosted-failure/README.md) actual hosted failures remain separate refused records. A
+future manager, lifecycle policy or unsupported syntax requires a reviewed caller amendment.
+Authentication/network configuration remains with pnpm.
 
 ## Local executed controls
 

@@ -1,0 +1,17 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools/tests/netlify-production-install.test.mjs
+  473:31  error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  474:12  error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  509:31  error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  511:9   error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  512:9   error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  513:9   error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  514:9   error  Avoid calling `expect` inside conditional statements   vitest/no-conditional-expect
+  531:1   error  File has too many lines (641). Maximum allowed is 500  max-lines
+
+✖ 8 problems (8 errors, 0 warnings)
+

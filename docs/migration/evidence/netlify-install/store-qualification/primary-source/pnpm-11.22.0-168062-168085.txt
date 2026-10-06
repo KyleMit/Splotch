@@ -1,0 +1,24 @@
+function transformPathKeys(config2, homedir) {
+  for (const key of PATH_KEYS) {
+    if (config2[key]) {
+      config2[key] = transformPath(config2[key], homedir);
+    }
+  }
+}
+var REGEX, transformPath, PATH_KEYS;
+var init_transformPath = __esm({
+  "../config/reader/lib/transformPath.js"() {
+    "use strict";
+    REGEX = /^~[/\\]/;
+    transformPath = (path243, homedir) => REGEX.test(path243) ? join4(homedir, path243.replace(REGEX, "")) : path243;
+    PATH_KEYS = [
+      "cacheDir",
+      "globalBinDir",
+      "globalDir",
+      "pnpmHomeDir",
+      "storeDir"
+    ];
+  }
+});
+
+// ../config/reader/lib/types.js

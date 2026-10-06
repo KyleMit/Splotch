@@ -1,0 +1,18 @@
+Third actual Netlify deploy: 6ac4c5c2cea46a0008807901
+Dashboard: https://app.netlify.com/projects/splotchy/deploys/6ac4c5c2cea46a0008807901
+Source: d9311502209cd90995399951c8b4b34484e7bf47
+Branch: feature/netlify-migration-topology-05
+
+Selected visible log lines transcribed from the expanded dashboard on 2026-10-06 at 10:04 UTC. This is an excerpt, not the full raw log.
+L62 5:56:49 AM: buildId: 6ac4c5c2cea46a00088078ff
+L63 5:56:49 AM: deployId: 6ac4c5c2cea46a0008807901
+L66 5:56:49 AM: /opt/build/repo
+L72 5:56:49 AM: branch-deploy
+L77 5:56:49 AM: $ git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs
+L83 5:56:49 AM: {"stage":"ambient-pnpm-config-refused","kind":"regular-file","sizeBytes":37,"namedKeys":["storeDir"],"unlistedKeyCount":0,"storeDirValueClass":"unrecognized"}
+L84 5:56:49 AM: AssertionError [ERR_ASSERTION]: Ambient pnpm settings need separate review
+L85 5:56:49 AM: at qualifyNoPreloads (file:///opt/build/repo/tools/netlify-production-install.mjs:193:12)
+L86 5:56:49 AM: at installNetlifyProductionDependencies (file:///opt/build/repo/tools/netlify-production-install.mjs:409:3)
+L101 5:56:50 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2
+L195 5:56:50 AM: Failing build: Failed to build site
+L196 5:56:50 AM: Finished processing build request in 31.226s

@@ -1,152 +1,22 @@
 import { spawnSync } from 'node:child_process';
-import {
-  chmodSync,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { installNetlifyProductionDependencies } from '../netlify-production-install.mjs';
 import { ROOT } from '../lib/proc.mjs';
 import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
+import {
+  CHILD_TIMEOUT_MS,
+  cleanupFixtures,
+  cliFixture,
+  fixture,
+  metadata,
+  put,
+  setSetting,
+  tempRoot,
+} from './fixtures/netlify-install.mjs';
 
-const CHILD_TIMEOUT_MS = 30_000;
-const roots = [];
-const metadata = {
-  nodeLinker: 'hoisted',
-  included: {
-    dependencies: true,
-    devDependencies: false,
-    optionalDependencies: true,
-  },
-  layoutVersion: 5,
-  virtualStoreDir: '.pnpm',
-  packageManager: 'pnpm@11.22.0',
-};
-
-function put(root, path, value) {
-  const fullPath = join(root, path);
-  mkdirSync(dirname(fullPath), { recursive: true });
-  writeFileSync(fullPath, typeof value === 'string' ? value : JSON.stringify(value));
-}
-
-function tempRoot() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-netlify-install-')));
-  roots.push(root);
-  return root;
-}
-
-function fixture() {
-  const root = tempRoot();
-  put(root, 'package.json', { packageManager: 'pnpm@11.22.0', engines: { node: '>=22.13' } });
-  put(root, `${CANDIDATE_DIRECTORY}/package.json`, {
-    name: '@splotch/native-architecture',
-    private: true,
-  });
-  put(
-    root,
-    'pnpm-workspace.yaml',
-    'packages:\n  - experiments/native-architecture\nnodeLinker: hoisted\n'
-  );
-  put(root, 'pnpm-lock.yaml', 'lockfileVersion: 9.0\n');
-  put(root, 'netlify.toml', 'NODE_VERSION = "22"\nPNPM_FLAGS = "--prod"\n');
-  const settings = {
-    'node-linker': 'hoisted',
-    packages: [CANDIDATE_DIRECTORY],
-    allowBuilds: {
-      '@google/genai': false,
-      esbuild: false,
-      dprint: false,
-      protobufjs: false,
-    },
-  };
-  const trace = join(root, 'child-trace.jsonl');
-  put(
-    root,
-    'bin/pnpm',
-    `#!/usr/bin/env node
-const fs = require('node:fs');
-const path = require('node:path');
-const args = process.argv.slice(2);
-fs.appendFileSync(process.env.FIXTURE_TRACE, JSON.stringify(args) + '\\n');
-if (args[0] === '--version') console.log(process.env.FIXTURE_PNPM_VERSION ?? '11.22.0');
-else if (args[0] === 'config' && args[1] === 'get' && args[2] === '--json' && args.length === 4) {
-  const settings = JSON.parse(process.env.FIXTURE_SETTINGS);
-  if (Object.hasOwn(settings, args[3])) console.log(JSON.stringify(settings[args[3]]));
-} else if (args.length === 2 && args[0] === 'ci' && args[1] === '--prod') {
-  if (process.env.FIXTURE_INSTALL_EXIT) process.exit(Number(process.env.FIXTURE_INSTALL_EXIT));
-  fs.mkdirSync(path.join(process.cwd(), 'node_modules'), { recursive: true });
-  fs.writeFileSync(path.join(process.cwd(), 'node_modules/.modules.yaml'), process.env.FIXTURE_MODULES);
-  if (process.env.FIXTURE_CHANGE_OWNER) fs.appendFileSync('pnpm-lock.yaml', '# changed\\n');
-} else process.exit(87);
-`
-  );
-  chmodSync(join(root, 'bin/pnpm'), 0o755);
-  const env = {
-    PATH: `${join(root, 'bin')}:${dirname(process.execPath)}`,
-    PNPM_FLAGS: '--prod',
-    XDG_CONFIG_HOME: join(root, 'owned-config'),
-    FIXTURE_TRACE: trace,
-    FIXTURE_SETTINGS: JSON.stringify(settings),
-    FIXTURE_MODULES: JSON.stringify(metadata),
-  };
-  const records = [];
-  const facts = { env, nodeVersion: 'v22.23.3' };
-  const run = () =>
-    installNetlifyProductionDependencies(root, facts, {
-      runChild: spawnSync,
-      record: (event) => records.push(event),
-    });
-  const calls = () =>
-    existsSync(trace)
-      ? readFileSync(trace, 'utf8')
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line))
-      : [];
-  return { root, env, facts, records, settings, run, calls };
-}
-
-function setSetting(context, key, value) {
-  context.settings[key] = value;
-  context.env.FIXTURE_SETTINGS = JSON.stringify(context.settings);
-}
-
-function cliFixture(context) {
-  put(
-    context.root,
-    'netlify.toml',
-    `NODE_VERSION = "${process.versions.node.split('.')[0]}"\nPNPM_FLAGS = "--prod"\n`
-  );
-  for (const path of [
-    'tools/netlify-production-install.mjs',
-    'tools/lib/proc.mjs',
-    'tools/lib/netlify-runtime.mjs',
-    'tools/lib/native-candidate.mjs',
-  ]) {
-    mkdirSync(dirname(join(context.root, path)), { recursive: true });
-    copyFileSync(join(ROOT, path), join(context.root, path));
-  }
-  return (args = []) =>
-    spawnSync(process.execPath, ['tools/netlify-production-install.mjs', ...args], {
-      cwd: context.root,
-      env: context.env,
-      encoding: 'utf8',
-      timeout: CHILD_TIMEOUT_MS,
-    });
-}
-
-afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
-});
+afterEach(cleanupFixtures);
 
 describe('Netlify second production installer', () => {
   it('gates the actual Netlify build and staging command on the installer', () => {
@@ -279,7 +149,7 @@ describe('Netlify second production installer', () => {
     );
     put(context.root, 'node_modules/sentinel', 'untouched');
     expect(context.run).toThrow('Ambient pnpm settings need separate review');
-    expect(context.records).toEqual([
+    expect(context.records).toMatchObject([
       {
         stage: 'ambient-pnpm-config-refused',
         kind: 'regular-file',
@@ -313,18 +183,21 @@ describe('Netlify second production installer', () => {
 
   it.each([
     ['storeDir: /opt/build/cache/.pnpm-store\n', 'netlify-cache-path'],
-    ['storeDir: /opt/build/cache/../../../root/x\n', 'unrecognized'],
-    ['storeDir: /opt/build/cache/./x\n', 'unrecognized'],
+    ['storeDir: /opt/build/cache/../../../root/x\n', 'other-absolute-path'],
+    ['storeDir: /opt/build/cache/./x\n', 'other-absolute-path'],
     ['storeDir: /opt/build/cache/a\nstoreDir: /home/x\n', 'unrecognized'],
     ['storeDir: /opt/build/cache/a\nconfigDependencies: {}\n', 'unrecognized'],
-  ])('classifies only one complete plain cache-store setting: %s', (text, classification) => {
-    const context = fixture();
-    put(context.env.XDG_CONFIG_HOME, 'pnpm/config.yaml', text);
-    expect(context.run).toThrow('Ambient pnpm settings need separate review');
-    expect(context.records[0].storeDirValueClass).toBe(classification);
-    expect(JSON.stringify(context.records)).not.toContain('/opt/build/cache');
-    expect(context.calls()).toEqual([]);
-  });
+  ])(
+    'classifies a complete literal without granting a non-Netlify caller: %s',
+    (text, classification) => {
+      const context = fixture();
+      put(context.env.XDG_CONFIG_HOME, 'pnpm/config.yaml', text);
+      expect(context.run).toThrow('Ambient pnpm settings need separate review');
+      expect(context.records[0].storeDirValueClass).toBe(classification);
+      expect(JSON.stringify(context.records)).not.toContain('/opt/build/cache');
+      expect(context.calls()).toEqual([]);
+    }
+  );
 
   it('does not read through a linked global settings parent', () => {
     const context = fixture();

@@ -1,0 +1,18 @@
+function pathAbsolute(filepath, cwd) {
+  const home = getHomedir();
+  if (isHomepath(filepath)) {
+    return path58.join(home, filepath.substr(2));
+  }
+  if (path58.isAbsolute(filepath)) {
+    return filepath;
+  }
+  if (cwd) {
+    return path58.join(cwd, filepath);
+  }
+  return path58.resolve(filepath);
+}
+function getHomedir() {
+  const home = os7.homedir();
+  if (!home) throw new Error("Could not find the homedir");
+  return home;
+}

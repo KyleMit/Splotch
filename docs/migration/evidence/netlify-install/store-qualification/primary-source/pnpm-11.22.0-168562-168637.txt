@@ -1,0 +1,76 @@
+  const globalYamlConfigForNpmrcAuthFile = await readWorkspaceManifest(configDir, GLOBAL_CONFIG_YAML_FILENAME);
+  const npmrcAuthFile = cliOptions["npmrc-auth-file"] ?? cliOptions.userconfig ?? readEnvVar(env4, "npmrc_auth_file") ?? readEnvVar(env4, "userconfig") ?? globalYamlConfigForNpmrcAuthFile?.npmrcAuthFile ?? readNpmEnvVar(env4, "userconfig");
+  const npmrcResult = loadNpmrcConfig({
+    cliOptions,
+    defaultOptions: defaultOptions4,
+    dir: cliOptions.dir,
+    workspaceDir: opts3.workspaceDir,
+    npmrcAuthFile,
+    configDir,
+    moduleDirname: import.meta.dirname,
+    env: opts3.env,
+    // Only the global config yaml may supply `_auth` (deleted from
+    // `globalYamlConfig` below so it isn't flagged as an unknown setting).
+    globalConfigAuth: globalYamlConfigForNpmrcAuthFile?._auth
+  });
+  const warnings = npmrcResult.warnings;
+  const configFromCliOpts = Object.fromEntries(Object.entries(cliOptions).filter(([_, value]) => typeof value !== "undefined").map(([name, value]) => [camelCase(name, { locale: "en-US" }), value]));
+  const pnpmConfig = Object.fromEntries(Object.entries(defaultOptions4).map(([key, value]) => [camelCase(key, { locale: "en-US" }), value]));
+  for (const [key, value] of Object.entries(npmrcResult.mergedConfig)) {
+    if (Object.hasOwn(types2, key)) {
+      ;
+      pnpmConfig[camelCase(key, { locale: "en-US" })] = value;
+    }
+  }
+  const globalDepsBuildConfig = extractAndRemoveDependencyBuildOptions(pnpmConfig);
+  const explicitlySetKeys = new Set(Object.keys(configFromCliOpts));
+  pnpmConfig.explicitlySetKeys = explicitlySetKeys;
+  pnpmConfig.cliOptions = cliOptions;
+  Object.assign(pnpmConfig, configFromCliOpts);
+  const cwd = fs38.realpathSync(betterPathResolve(cliOptions.dir ?? npmrcResult.localPrefix));
+  if (cwd.includes(path67.delimiter)) {
+    warnings.push(`Directory "${cwd}" contains the path delimiter character (${path67.delimiter}), so binaries from node_modules/.bin will not be accessible via PATH. Consider renaming the directory.`);
+  }
+  pnpmConfig.maxSockets = pnpmConfig.maxSockets ?? pnpmConfig["maxsockets"] ?? npmDefaults.maxsockets;
+  delete pnpmConfig["maxsockets"];
+  pnpmConfig.configDir = configDir;
+  pnpmConfig.workspaceDir = opts3.workspaceDir;
+  pnpmConfig.workspaceRoot = cliOptions["workspace-root"];
+  pnpmConfig.userAgent = cliOptions["user-agent"] ?? `${packageManager2.name}/${packageManager2.version} npm/? node/${process.version} ${process.platform} ${process.arch}`;
+  pnpmConfig.authConfig = pickIniConfig(npmrcResult.rawConfig);
+  let globalYamlRegistries;
+  const globalYamlConfig = globalYamlConfigForNpmrcAuthFile;
+  if (globalYamlConfig) {
+    delete globalYamlConfig._auth;
+    const ignoredKeys = [];
+    const kebabKeys = [];
+    for (const key in globalYamlConfig) {
+      if (!isConfigFileKey((0, import_lodash3.default)(key))) {
+        ignoredKeys.push(key);
+        delete globalYamlConfig[key];
+      } else if (!isCamelCase(key)) {
+        kebabKeys.push(key);
+        delete globalYamlConfig[key];
+      }
+    }
+    if (ignoredKeys.length > 0 || kebabKeys.length > 0) {
+      const globalYamlConfigPath = getGlobalConfigPath(configDir);
+      const movable = ignoredKeys.filter((key) => !isRefusedByAProjectManifest(key));
+      const nowhere = ignoredKeys.filter(isRefusedByAProjectManifest);
+      if (movable.length > 0) {
+        warnings.push(`The following settings cannot be set in the global config file ("${globalYamlConfigPath}") and were ignored: ${quoteAndJoin(movable)}. Move them to a project-level pnpm-workspace.yaml. To share these settings across projects, use config dependencies: https://pnpm.io/11.x/config-dependencies`);
+      }
+      if (nowhere.length > 0) {
+        warnings.push(`The following settings cannot be set in the global config file ("${globalYamlConfigPath}") and were ignored: ${quoteAndExplain(nowhere)}.`);
+      }
+      if (kebabKeys.length > 0) {
+        warnings.push(`The following settings in the global config file ("${globalYamlConfigPath}") were ignored because they are not written in camelCase: ${kebabKeys.map((k2) => `"${k2}" (use "${camelCase(k2)}")`).join(", ")}.`);
+      }
+    }
+    addSettingsFromWorkspaceManifestToConfig(pnpmConfig, {
+      configFromCliOpts,
+      expandRequestDestinationEnv: true,
+      projectManifest: void 0,
+      skipSettings: GLOBAL_CONFIG_SKIPPED_KEYS,
+      workspaceDir: void 0,
+      workspaceManifest: globalYamlConfig

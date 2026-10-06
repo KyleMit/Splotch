@@ -1,0 +1,35 @@
+[
+  {
+    "stage": "format",
+    "argv": [
+      "node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--write",
+      "tools/netlify-production-install.mjs",
+      "tools/lib/netlify-cache-config.mjs",
+      "tools/tests/netlify-production-install.test.mjs",
+      "tools/tests/netlify-cache-config.test.mjs",
+      "tools/tests/fixtures/netlify-install.mjs"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 0.14877345808781683,
+    "log": "/private/tmp/splotch-netlify-store-final-format.log.txt",
+    "logSha256": "d58e6bc55924ac68cf74c7f0980293255eb1daeb2156fd86795ea4176faa5926"
+  },
+  {
+    "stage": "focused",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "tests/netlify-production-install.test.mjs",
+      "tests/netlify-cache-config.test.mjs",
+      "--maxWorkers=1"
+    ],
+    "exitCode": 1,
+    "durationSeconds": 26.602472207974643,
+    "log": "/private/tmp/splotch-netlify-store-final-focused.log.txt",
+    "logSha256": "fc0c513515ebdd46470303bf25560895455d89ac8db2b5f01a0d2e4eb3e7bfb2"
+  }
+]

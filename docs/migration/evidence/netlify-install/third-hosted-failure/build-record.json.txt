@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-06T10:05:02.014951+00:00",
+  "fieldsPresent": [
+    "created_at",
+    "deploy_id",
+    "deploy_pending_review_reason",
+    "deploy_state",
+    "done",
+    "error",
+    "id",
+    "sha",
+    "strict_contributor_verification_failure"
+  ],
+  "build": {
+    "id": "6ac4c5c2cea46a00088078ff",
+    "deploy_id": "6ac4c5c2cea46a0008807901",
+    "sha": "d9311502209cd90995399951c8b4b34484e7bf47",
+    "done": true,
+    "created_at": "2026-10-06T09:56:18.580Z"
+  },
+  "error": "Failed during stage 'building site': Build script returned non-zero exit code: 2",
+  "scope": "Fixed build identity and redacted bounded error text only"
+}

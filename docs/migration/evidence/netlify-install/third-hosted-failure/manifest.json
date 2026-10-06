@@ -1,0 +1,27 @@
+{
+  "source": "d9311502209cd90995399951c8b4b34484e7bf47",
+  "deploy": "6ac4c5c2cea46a0008807901",
+  "status": "failed",
+  "files": [
+    {
+      "path": "build-record.json.txt",
+      "bytes": 650,
+      "sha256": "5386fc04c7dc9bf0d2310c0afe8fb377ec3a0481fa7d67c9ac7d98b90cc77114"
+    },
+    {
+      "path": "deploy-observation.json.txt",
+      "bytes": 2385,
+      "sha256": "aeb787447aff55a2c0a81ada3c1ec7262f64f711b028ecab66d680b3e1f168c6"
+    },
+    {
+      "path": "registration.json.txt",
+      "bytes": 853,
+      "sha256": "4f108bc6b0bd35f079686ddde2320f04bbd83950e84d5f5aec54f914804d5a09"
+    },
+    {
+      "path": "visible-log-excerpt.txt",
+      "bytes": 1398,
+      "sha256": "3b5172489df3f5cce64a9d19681d62ebd8c148d804b71896a4c7c4c3a2ac3135"
+    }
+  ]
+}

@@ -1,21 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-  accessSync,
-  closeSync,
-  constants,
-  fstatSync,
-  lstatSync,
-  openSync,
-  readFileSync,
-  readSync,
-  realpathSync,
-} from 'node:fs';
+import { accessSync, constants, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { delimiter, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { delimiter, isAbsolute, join, relative, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
+import { qualifyAmbientPnpmConfig, verifyAmbientPnpmConfig } from './lib/netlify-cache-config.mjs';
 import { CANDIDATE_DIRECTORY } from './lib/native-candidate.mjs';
 import { verifyNetlifyRuntime } from './lib/netlify-runtime.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
@@ -24,19 +15,6 @@ const SUPPORTED_PNPM_VERSION = '11.22.0';
 const CONFIG_TIMEOUT_MS = 30_000;
 const INSTALL_TIMEOUT_MS = 15 * 60_000;
 const MAX_CONFIG_OUTPUT_BYTES = 16_384;
-const MAX_AMBIENT_CONFIG_BYTES = 4096;
-const AMBIENT_CONFIG_KEYS = [
-  'storeDir',
-  'cacheDir',
-  'stateDir',
-  'globalDir',
-  'nodeLinker',
-  'globalPnpmfile',
-  'pnpmfile',
-  'configDependencies',
-  'lockfileDir',
-  'managePackageManagerVersions',
-];
 const OWNER_PATHS = [
   'package.json',
   'pnpm-lock.yaml',
@@ -141,57 +119,8 @@ function globalConfigPath(env) {
     : join(homedir(), '.config/pnpm/config.yaml');
 }
 
-function ambientConfigObservation(path, entry) {
-  const observation = {
-    stage: 'ambient-pnpm-config-refused',
-    kind: entry.isSymbolicLink() ? 'symlink' : entry.isFile() ? 'regular-file' : 'other',
-    sizeBytes: entry.size,
-    namedKeys: [],
-    unlistedKeyCount: 0,
-    storeDirValueClass: 'unobserved',
-  };
-  if (!entry.isFile() || entry.isSymbolicLink() || entry.size > MAX_AMBIENT_CONFIG_BYTES) {
-    return observation;
-  }
-  if (realpathSync(dirname(path)) !== dirname(path)) {
-    return { ...observation, kind: 'linked-parent' };
-  }
-  const file = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try {
-    const actual = fstatSync(file);
-    if (!actual.isFile() || actual.size > MAX_AMBIENT_CONFIG_BYTES) return observation;
-    const buffer = Buffer.alloc(MAX_AMBIENT_CONFIG_BYTES + 1);
-    const bytes = readSync(file, buffer, 0, buffer.length, 0);
-    if (bytes > MAX_AMBIENT_CONFIG_BYTES) return observation;
-    const text = buffer.subarray(0, bytes).toString('utf8');
-    const scrapedKeys = [...text.matchAll(/^([A-Za-z][A-Za-z0-9-]{0,63}):/gm)].map(
-      (match) => match[1]
-    );
-    observation.namedKeys = scrapedKeys.filter((key) => AMBIENT_CONFIG_KEYS.includes(key));
-    observation.unlistedKeyCount = scrapedKeys.length - observation.namedKeys.length;
-    const store = /^storeDir: (\/opt\/build\/cache\/[A-Za-z0-9._/-]+)(?:\r?\n)?$/.exec(text);
-    observation.storeDirValueClass =
-      store &&
-      store[0] === text &&
-      store[1]
-        .split('/')
-        .slice(4)
-        .every((part) => part && part !== '.' && part !== '..')
-        ? 'netlify-cache-path'
-        : 'unrecognized';
-    return observation;
-  } finally {
-    closeSync(file);
-  }
-}
-
 function qualifyNoPreloads(root, env, record) {
-  const path = globalConfigPath(env);
-  const entry = optionalLstat(path);
-  if (entry !== null) {
-    record(ambientConfigObservation(path, entry));
-    assert.fail('Ambient pnpm settings need separate review');
-  }
+  const ambient = qualifyAmbientPnpmConfig(globalConfigPath(env), root, env, record);
   const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
   // pnpm expands YAML keys; this closed spelling guard refuses unsupported escapes/interpolation.
   assert.ok(
@@ -214,6 +143,7 @@ function qualifyNoPreloads(root, env, record) {
     if (env[name])
       assert.equal(env[name], root, 'Workspace discovery override differs from checkout');
   }
+  return ambient;
 }
 
 function currentOwners(root) {
@@ -294,7 +224,7 @@ function configSetting(key, launcher, root, env, runChild) {
   }
 }
 
-function qualifyConfig(launcher, root, env, runChild) {
+function qualifyConfig(launcher, root, env, runChild, ambient) {
   const rows = [];
   for (const key of ABSENT_CONFIG_KEYS) {
     assert.ok(
@@ -321,8 +251,18 @@ function qualifyConfig(launcher, root, env, runChild) {
       Object.values(builds).every((verdict) => verdict === false),
     'Clean-install skipped rebuild requires the reviewed all-false build policy'
   );
+  const store = configSetting('store-dir', launcher, root, env, runChild);
+  assert.ok(
+    store === (ambient.storeDir ?? ABSENT),
+    'Effective pnpm store differs from the qualified ambient setting'
+  );
   return [
     ...rows,
+    {
+      key: 'store-dir',
+      disposition:
+        ambient.storeDir === null ? 'pnpm-11.22-source-default' : 'qualified-netlify-cache-literal',
+    },
     { key: 'node-linker', value: 'hoisted' },
     { key: 'packages', value: packages },
     { key: 'allowBuilds', value: builds },
@@ -370,11 +310,12 @@ function installedMetadata(root) {
   };
 }
 
-function installStage(launcher, root, env, runChild, record) {
+function installStage(launcher, root, env, runChild, record, ambient) {
   const argv = ['ci', '--prod'];
   const startedAt = new Date().toISOString();
   const started = performance.now();
   record({ stage: 'second-production-install-start', cwd: root, argv, startedAt });
+  verifyAmbientPnpmConfig(ambient);
   const child = runChild(launcher.path, argv, {
     cwd: root,
     env,
@@ -392,6 +333,7 @@ function installStage(launcher, root, env, runChild, record) {
     launchFailed: Boolean(child.error),
   };
   record(result);
+  verifyAmbientPnpmConfig(ambient);
   assert.ok(
     !child.error && child.status === 0 && child.signal == null,
     'Second production install failed'
@@ -406,7 +348,13 @@ export function installNetlifyProductionDependencies(
   { runChild, record }
 ) {
   qualifyRoots(root);
-  qualifyNoPreloads(root, env, record);
+  const ambient = qualifyNoPreloads(root, env, record);
+  const qualifiedChild = (...args) => {
+    verifyAmbientPnpmConfig(ambient);
+    const child = runChild(...args);
+    verifyAmbientPnpmConfig(ambient);
+    return child;
+  };
   const before = currentOwners(root);
   const manifest = readManifest(root, 'package.json');
   readManifest(root, `${CANDIDATE_DIRECTORY}/package.json`);
@@ -422,18 +370,24 @@ export function installNetlifyProductionDependencies(
   });
   const childEnv = { ...env, COREPACK_ENABLE_NETWORK: '0' };
   const launcher = managerLauncher(root, childEnv);
-  const version = query(launcher, root, childEnv, ['--version'], runChild);
+  const version = query(launcher, root, childEnv, ['--version'], qualifiedChild);
   assert.ok(/^\d+\.\d+\.\d+$/.test(version), 'Invalid pnpm version output');
   verifyNetlifyRuntime(root, manifest, {
     env: childEnv,
     nodeVersion,
     packageManagerVersion: version,
   });
-  const settings = qualifyConfig(launcher, root, childEnv, runChild);
+  const settings = qualifyConfig(launcher, root, childEnv, qualifiedChild, ambient);
   qualifyRoots(root);
   assert.deepEqual(currentOwners(root), before, 'Qualification changed installer source owners');
+  verifyAmbientPnpmConfig(ambient);
   record({
     stage: 'second-production-install-qualified',
+    ambient: {
+      kind: ambient.proof === null ? 'absent' : 'sole-netlify-cache-setting',
+      sha256: ambient.proof?.sha256 ?? null,
+      scalarForm: ambient.form ?? null,
+    },
     launcher,
     node: { path: realpathSync(process.execPath), version: nodeVersion },
     settings,
@@ -441,7 +395,7 @@ export function installNetlifyProductionDependencies(
     residue: residueProbe(root),
     scope: 'Workspace reconstruction; initial platform install/cache logs are separate evidence',
   });
-  const result = installStage(launcher, root, childEnv, runChild, record);
+  const result = installStage(launcher, root, childEnv, runChild, record, ambient);
   qualifyRoots(root);
   assert.deepEqual(currentOwners(root), before, 'Second installer changed source owners');
   const metadata = installedMetadata(root);

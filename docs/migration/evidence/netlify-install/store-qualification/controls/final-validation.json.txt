@@ -1,0 +1,59 @@
+[
+  {
+    "stage": "format",
+    "argv": [
+      "node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--write",
+      "tools/netlify-production-install.mjs",
+      "tools/lib/netlify-cache-config.mjs",
+      "tools/tests/netlify-production-install.test.mjs",
+      "tools/tests/netlify-cache-config.test.mjs",
+      "tools/tests/fixtures/netlify-install.mjs"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 0.1474301250418648,
+    "log": "/private/tmp/splotch-netlify-store-clean-exclusion-format.log.txt",
+    "logSha256": "61ac20558c9d6a872818c2c9429f5c8d43f8f3c5e5a5a3d8e2bfbcd8f2f370dc"
+  },
+  {
+    "stage": "focused",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "tests/netlify-production-install.test.mjs",
+      "tests/netlify-cache-config.test.mjs",
+      "--maxWorkers=1"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 28.578076707897708,
+    "log": "/private/tmp/splotch-netlify-store-clean-exclusion-focused.log.txt",
+    "logSha256": "d4d44c5771e00d40edfaaf141628aa097a5adb840b22b2b1dedfc2880ec3010a"
+  },
+  {
+    "stage": "full-tools",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 35.478467707987875,
+    "log": "/private/tmp/splotch-netlify-store-clean-exclusion-full-tools.log.txt",
+    "logSha256": "5140e9db64d1ccf6395e3dec233f3eb0bf84e72bae1260866253f2111e5b7f93"
+  },
+  {
+    "stage": "quality",
+    "argv": [
+      "npm",
+      "run",
+      "check:quality"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 51.39706487499643,
+    "log": "/private/tmp/splotch-netlify-store-clean-exclusion-quality.log.txt",
+    "logSha256": "19526917d28d05fadfa9a757103461231bd83e96e4f8606fc133fa86ccc522bf"
+  }
+]
