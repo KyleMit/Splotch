@@ -42,6 +42,11 @@ without waiting for every control and overlay to mount. Ink accepted before hydr
 handoff, and the hydrated UI receives the engine's current state. When retaining the Canvas2D
 surface, hydration adopts the same owned canvas and complete layered topology.
 
+Keep retained engine-owned paper and its layered topology outside React roots by default. An
+unrelated hydration mismatch must actually trigger React recovery while the paper's input/tile node
+identities, accepted pixels and history survive. If an alternative ownership boundary is proposed,
+it must prove the same recovery behavior before adoption.
+
 Evidence: [early boot](../../web/src/lib/drawing/earlyBoot.ts),
 [adoption guard](../../web/tests/early-boot.spec.ts), and
 [ADR-0072](../adrs/0072-early-engine-boot-adopt-contract.md).
@@ -127,9 +132,12 @@ and [test-tier boundaries](../TESTING.md).
 
 ## Structural proofs before foundation selection
 
-1. Render a representative shared control/dialog and retained drawing surface through each viable
-   web vocabulary. Prove prerendering, CSP compatibility, theme seeding, canvas ownership, and
-   browser history on Safari and Chromium before extrapolating from native primitives.
+1. Begin with a vocabulary-neutral realistic host/history/worker proof and retained paper. The
+   embedded SvelteKit host is the lower-change first check, not a final host verdict; investigate a
+   separate same-origin product document when a required contract or measured retained-runtime cost
+   warrants it. Then render representative shared controls/dialogs through each viable web
+   vocabulary in that host, proving prerendering, CSP, seeds, canvas ownership and browser history
+   on Safari and Chromium.
 2. Exercise every surviving UI arm in its chosen realistic host: embedded in the retained SvelteKit
    route, or a separate product build deployed with the retained routes on the same origin. A
    standalone harness pass is insufficient. Prove prerendering and hash/nonce CSP, pre-paint seeds
