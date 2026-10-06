@@ -143,6 +143,14 @@ describe('contained Magic action witnesses', () => {
       'read-failed',
       () => {
         const value = magicSnapshot();
+        delete value.magicWorkCounts.magicOrphanedReplyDisposals;
+        return value;
+      },
+    ],
+    [
+      'read-failed',
+      () => {
+        const value = magicSnapshot();
         value.magicWorkCounts.magicPoolBuilds = -1;
         return value;
       },
@@ -207,6 +215,8 @@ describe('contained Magic action witnesses', () => {
     window.__drawingDebug = { getMagicWorkDebug: () => value };
     armMagicProbe(clock);
     value.magicWorkCounts.magicInitialPosts = 2;
+    value.magicWorkCounts.magicSupersededDisposals = 1;
+    value.magicWorkCounts.magicOrphanedReplyDisposals = 2;
     value.magicWorkCounts.magicRecodes['apply-fill'].magicRecodeChanges = 1;
     value.magicBrushState.magicSheetOrigin.x = 90;
     clock.at(80);
@@ -215,6 +225,8 @@ describe('contained Magic action witnesses', () => {
       available: true,
       deltas: {
         magicInitialPosts: 2,
+        magicSupersededDisposals: 1,
+        magicOrphanedReplyDisposals: 2,
         magicRecodes: { 'apply-fill': { magicRecodeChanges: 1 } },
       },
     });

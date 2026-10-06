@@ -27,9 +27,6 @@
 import { magicSheetWorkerSupported, rasterizeMagicSheetInWorker } from './magicSheetRasterClient';
 import { magicWorkCounters, type MagicMainCause, type MagicRasterOrigin } from './magicWorkDebug';
 import { PERF_MARKS } from './perf';
-
-type RasterDecision = 'started' | 'unsupported' | 'no-bounds';
-type MagicSourceKind = 'none' | 'fill' | 'gradient';
 import {
   createRainbowGradient,
   MAGIC_GRADIENT_COUNT,
@@ -37,6 +34,10 @@ import {
   type RainbowGradient,
 } from './magicSheetGradient';
 import { edgeMargins, extendSheetEdges } from './magicSheetEdges';
+
+type RasterDecision = 'started' | 'unsupported' | 'no-bounds';
+type MagicSourceKind = 'none' | 'fill' | 'gradient';
+
 // Give the line art first use of the connection, then recover independently if
 // its decode never settles and therefore never releases the deferred fill.
 const DEFERRED_FILL_FALLBACK_MS = 15_000;
@@ -156,6 +157,7 @@ function publishWorkerSheet(
     if (PERF_MARKS) performance.measure('magicWitness.publish', { start });
   }
 }
+
 function rasterizeFillOffThread(
   image: HTMLImageElement,
   imageUrl: string,

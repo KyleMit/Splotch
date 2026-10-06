@@ -16,8 +16,12 @@ paints, registers an appearance, recodes history or changes source identity.
 record their actual finite branches. `web/src/lib/drawing/magicWorkWitness.ts` combines the owner
 readers and traces both real recode callers. Completed worker installation, logical requests,
 initial/retry post attempts, resolution/rejection, retirement, main attempts, completed paints and
-accepted publication remain separate. Decoded-fill resize rasterization is `fill-direct`, including
-on a worker-capable runtime. It does not imply worker failure.
+accepted publication remain separate. `magicSupersededDisposals` counts resolved bitmaps discarded
+by the brush after its source changed. `magicOrphanedReplyDisposals` counts bitmaps closed by the
+client because the request is missing or belongs to another worker, including late replies after
+retirement or redispatch. They do not fabricate another resolution or rejection. Decoded-fill resize
+rasterization is `fill-direct`, including on a worker-capable runtime. It does not imply worker
+failure.
 
 `magicRecodeCompletedDelegations` counts the renderer calls that returned a changed/no-change
 boolean. Exceptions retain their original behavior and increment `magicRecodeThrows`; the throwing

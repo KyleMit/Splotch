@@ -91,6 +91,7 @@ function createCounts() {
     magicMainPaints: 0,
     magicWorkerPublications: 0,
     magicSupersededDisposals: 0,
+    magicOrphanedReplyDisposals: 0,
     magicWorkerRequests: 0,
     magicWorkerAcquisitions: 0,
     magicWorkerConstructionAttempts: 0,
@@ -157,6 +158,9 @@ export function createMagicWorkCounters() {
     },
     recordSupersededDisposal() {
       counts.magicSupersededDisposals++;
+    },
+    recordOrphanedReplyDisposal() {
+      counts.magicOrphanedReplyDisposals++;
     },
     recordWorkerRequest() {
       counts.magicWorkerRequests++;

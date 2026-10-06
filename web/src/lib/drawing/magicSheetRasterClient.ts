@@ -110,7 +110,7 @@ function magicSheetRasterWorker() {
       if (!request || request.worker !== worker) {
         if ('bitmap' in data) {
           data.bitmap.close();
-          if (PERF_MARKS) magicWorkCounters?.recordSupersededDisposal();
+          if (PERF_MARKS) magicWorkCounters?.recordOrphanedReplyDisposal();
         }
         return;
       }

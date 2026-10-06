@@ -87,6 +87,7 @@ it('derives every current window seam and engine measure family', () => {
     'magicMainOutcomes',
     'magicMainPaints',
     'magicMainStaleAttempts',
+    'magicOrphanedReplyDisposals',
     'magicPaperSize',
     'magicPendingFillRaster',
     'magicPendingGradientRaster',

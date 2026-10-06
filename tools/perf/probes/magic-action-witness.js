@@ -9,6 +9,7 @@ export function createMagicActionWitness() {
     'magicMainPaints',
     'magicWorkerPublications',
     'magicSupersededDisposals',
+    'magicOrphanedReplyDisposals',
     'magicWorkerRequests',
     'magicWorkerAcquisitions',
     'magicWorkerConstructionAttempts',

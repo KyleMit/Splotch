@@ -166,6 +166,11 @@ describe('magic sheet worker raster', () => {
     const staleBitmap = { close: vi.fn() } as unknown as ImageBitmap;
     workers[0].respond({ id: firstRequest.id, bitmap: staleBitmap });
     await vi.waitFor(() => expect(staleBitmap.close).toHaveBeenCalledOnce());
+    expect(await workCounts()).toMatchObject({
+      magicResolvedRequests: 1,
+      magicSupersededDisposals: 1,
+      magicOrphanedReplyDisposals: 0,
+    });
     expect(magic.captureMagicSheet()).toBeNull();
 
     const currentBitmap = { close: vi.fn() } as unknown as ImageBitmap;
@@ -183,6 +188,11 @@ describe('magic sheet worker raster', () => {
     const firstBitmap = { close: vi.fn() } as unknown as ImageBitmap;
     workers[0].respond({ id: workers[0].posted[0].id, bitmap: firstBitmap });
     await vi.waitFor(() => expect(firstBitmap.close).toHaveBeenCalledOnce());
+    expect(await workCounts()).toMatchObject({
+      magicResolvedRequests: 1,
+      magicSupersededDisposals: 1,
+      magicOrphanedReplyDisposals: 0,
+    });
     expect(magic.captureMagicSheet()).toBeNull();
 
     const secondBitmap = { close: vi.fn() } as unknown as ImageBitmap;
@@ -284,7 +294,9 @@ describe('magic sheet worker raster', () => {
       magicWorkerFailures: { 'coded-reply': 1 },
       magicRejectedRequests: 2,
       magicWorkerRetirements: 1,
-      magicSupersededDisposals: 1,
+      magicResolvedRequests: 0,
+      magicSupersededDisposals: 0,
+      magicOrphanedReplyDisposals: 1,
     });
 
     magic.setColorSheet('/coloring/third.light.webp');
@@ -371,7 +383,13 @@ describe('magic sheet worker raster', () => {
       }),
     ]);
     expect(magic.captureMagicSheet()).toBeNull();
+    const lateBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: secondRequestId, bitmap: lateBitmap });
+    expect(lateBitmap.close).toHaveBeenCalledOnce();
     expect(await workCounts()).toMatchObject({
+      magicOrphanedReplyDisposals: 1,
+      magicSupersededDisposals: 0,
+      magicResolvedRequests: 0,
       magicWorkerRequests: 2,
       magicWorkerConstructed: 2,
       magicInitialPosts: 2,

@@ -50,6 +50,7 @@ const RELEASE_ONLY_DEBUG_PROPERTIES = [
   'magicMainOutcomes',
   'magicMainPaints',
   'magicMainStaleAttempts',
+  'magicOrphanedReplyDisposals',
   'magicPaperSize',
   'magicPendingFillRaster',
   'magicPendingGradientRaster',
