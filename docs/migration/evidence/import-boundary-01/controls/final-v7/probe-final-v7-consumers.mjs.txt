@@ -1,0 +1,95 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { assertDeclaredCandidateImports as currentGuard } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs';
+import { assertDeclaredCandidateImports as oldGuard } from '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/old-ecdd/candidate-imports.mjs';
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const root = '/private/tmp/splotch-resume-01a111b0/import-boundary';
+const evidence = join(root, 'final-v7');
+const require = createRequire(join(worktree, 'package.json'));
+const babel = require('@babel/core');
+const ts = require('typescript');
+const inputs = JSON.parse(readFileSync(join(evidence, 'source-inputs.json')));
+const verify = () => { for (const [path, { sha256 }] of Object.entries(inputs.files)) assert.equal(createHash('sha256').update(readFileSync(join(worktree, path))).digest('hex'), sha256, path); };
+verify();
+function capture(operation) { try { return { passed: true, result: operation() }; } catch (error) { return { passed: false, error: String(error) }; } }
+function fixture(name) {
+  const target = join(evidence, 'consumers', name, 'candidate');
+  mkdirSync(dirname(target), { recursive: true });
+  cpSync(join(worktree, 'experiments/native-architecture'), target, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+  symlinkSync(join(worktree, 'node_modules'), join(target, 'node_modules'));
+  return target;
+}
+const variants = JSON.parse(readFileSync(join(root, 'round3-diagnosis/receipt.json'))).results;
+const configurationResults = [];
+for (const { name, file, source } of variants) {
+  const candidate = fixture(name);
+  const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+  const path = join(candidate, file);
+  mkdirSync(dirname(path), { recursive: true });
+  const original = name.startsWith('A') ? readFileSync(path, 'utf8') : null;
+  const baseline = capture(() => currentGuard(candidate, manifest));
+  writeFileSync(path, source);
+  const old = capture(() => oldGuard(candidate, manifest));
+  const current = capture(() => currentGuard(candidate, manifest));
+  const options = { babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate, envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true } };
+  const consumer = capture(() => name.startsWith('A') ? babel.loadPartialConfig({ ...options, filename: join(candidate, 'src/ProbeApp.tsx') }).options.plugins.map((item) => item.file?.resolved) : babel.transformFileSync(path, options).code);
+  if (original) writeFileSync(path, original); else unlinkSync(path);
+  const restored = capture(() => currentGuard(candidate, manifest));
+  configurationResults.push({ name, source, candidate, baseline, old, current, consumer, restored });
+  assert.equal(baseline.passed, true);
+  assert.equal(consumer.passed, true);
+  assert.equal(restored.passed, true);
+  if (name.startsWith('A')) {
+    assert.equal(old.passed, true);
+    assert.equal(current.passed, false);
+    assert.match(current.error, /unsupported configuration export alias/);
+    assert.ok(consumer.result.some((path) => path?.includes('babel-plugin-react-compiler')));
+  } else {
+    assert.equal(old.passed, false);
+    assert.match(old.error, /has no supported literal configuration export/);
+    assert.equal(current.passed, true);
+  }
+}
+const positions = JSON.parse(readFileSync(join(root, 'jsx-pragma-positions-v2/receipt.json'))).results;
+const jsxResults = [];
+for (const { name, source, proposedFence } of positions) {
+  const candidate = fixture(name);
+  cpSync(join(root, 'jsx-pragma/node_modules'), join(dirname(candidate), 'node_modules'), { recursive: true });
+  const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+  const path = join(candidate, 'src/PragmaHelper.tsx');
+  const entry = join(candidate, 'src/index.ts');
+  const original = readFileSync(entry, 'utf8');
+  const baseline = capture(() => currentGuard(candidate, manifest));
+  writeFileSync(path, source);
+  writeFileSync(entry, `${original}\nimport { probe } from './PragmaHelper';\nvoid probe;\n`);
+  const old = capture(() => oldGuard(candidate, manifest));
+  const current = capture(() => currentGuard(candidate, manifest));
+  const options = { babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate, envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true } };
+  const babelOutput = babel.transformFileSync(path, options).code;
+  const parsed = ts.getParsedCommandLineOfConfigFile(join(candidate, 'tsconfig.json'), {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: (error) => { throw error; } });
+  const tsOutput = ts.transpileModule(source, { fileName: path, compilerOptions: parsed.options }).outputText;
+  const typecheck = spawnSync(process.execPath, [join(worktree, 'node_modules/typescript/bin/tsc'), '--project', join(candidate, 'tsconfig.json'), '--noEmit'], { cwd: candidate, encoding: 'utf8', timeout: 30000 });
+  writeFileSync(join(dirname(candidate), 'typecheck.log.txt'), typecheck.stdout + typecheck.stderr);
+  writeFileSync(join(dirname(candidate), 'babel-output.mjs.txt'), babelOutput);
+  writeFileSync(join(dirname(candidate), 'typescript-output.mjs.txt'), tsOutput);
+  const hoistedOwner = realpathSync(createRequire(path).resolve('splotch-owned-jsx-runtime-probe/jsx-runtime'));
+  unlinkSync(path);
+  writeFileSync(entry, original);
+  const restored = capture(() => currentGuard(candidate, manifest));
+  jsxResults.push({ name, source, candidate, baseline, old, current, babelOutput, tsOutput, typecheck: { status: typecheck.status, stdout: typecheck.stdout, stderr: typecheck.stderr }, hoistedOwner, restored });
+  assert.equal(baseline.passed, true);
+  assert.equal(old.passed, true);
+  assert.equal(typecheck.status, 0);
+  assert.equal(current.passed, !proposedFence);
+  if (proposedFence) assert.match(current.error, /unsupported per-file JSX import source/);
+  assert.equal(restored.passed, true);
+}
+const currentConfig = require('expo/metro-config').getDefaultConfig(join(worktree, 'experiments/native-architecture'));
+verify();
+const receipt = { sourceInputs: 'source-inputs.json', oldSourceHead: 'ecdd26f93849a8a26542536be82e63068c662749', compositionHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim(), versions: { babel: babel.version, typescript: ts.version, babelPresetExpo: require('babel-preset-expo/package.json').version }, configurationResults, jsxResults, currentExpoMetroDefault: { babelTransformerPath: currentConfig.transformer.babelTransformerPath, enableBabelRCLookup: currentConfig.transformer.enableBabelRCLookup ?? null }, sourceInputsUnchanged: true, status: execFileSync('git', ['status', '--short'], { cwd: worktree, encoding: 'utf8' }) };
+writeFileSync(join(evidence, 'consumer-controls.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify({ sourceInputsUnchanged: true, configurationCases: configurationResults.length, jsxCases: jsxResults.length, actualTypechecks: jsxResults.map((result) => result.typecheck.status), intendedOldFalsePasses: configurationResults.filter((result) => result.name.startsWith('A')).length + jsxResults.filter((result) => !result.current.passed).length, intendedOldFalseRejections: configurationResults.filter((result) => !result.old.passed).length }));

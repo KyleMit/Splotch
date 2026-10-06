@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
+import { assertDeclaredCandidateImports } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs';
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const evidence = '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/nested-json';
+const require = createRequire(join(worktree, 'package.json'));
+const babel = require('@babel/core');
+mkdirSync(evidence, { recursive: true });
+const results = [];
+for (const name of ['babel.config.json', '.babelrc.json', 'app.config.json']) {
+  const candidate = join(evidence, name, 'candidate');
+  cpSync(join(worktree, 'experiments/native-architecture'), candidate, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+  symlinkSync(join(worktree, 'node_modules'), join(candidate, 'node_modules'));
+  mkdirSync(join(candidate, 'src/config'), { recursive: true });
+  writeFileSync(join(candidate, `src/config/${name}`), '{"apiBase":"https://example.invalid"}');
+  const path = join(candidate, 'src/JsonProbe.ts');
+  writeFileSync(path, `import config from './config/${name}';\nexport const apiBase=config.apiBase;\n`);
+  const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+  let guard;
+  try { guard = { passed: true, result: assertDeclaredCandidateImports(candidate, manifest) }; }
+  catch (error) { guard = { passed: false, error: String(error) }; }
+  const typecheck = spawnSync(process.execPath, [join(worktree, 'node_modules/typescript/bin/tsc'), '--project', join(candidate, 'tsconfig.json'), '--noEmit'], { cwd: candidate, encoding: 'utf8', timeout: 30000 });
+  const babelResult = babel.transformFileSync(path, { babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate, envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true } });
+  results.push({ name, candidate, guard, typecheck: { status: typecheck.status, stdout: typecheck.stdout, stderr: typecheck.stderr }, babelOutput: babelResult.code });
+  assert.equal(typecheck.status, 0);
+  assert.match(babelResult.code, new RegExp(name.replaceAll('.', '\\.')));
+}
+writeFileSync(join(evidence, 'receipt.json'), `${JSON.stringify({ sourceInputs: '../source-inputs.json', results }, null, 2)}\n`);
+console.log(JSON.stringify({ evidence, results: results.map(({ name, guard, typecheck }) => ({ name, guard: guard.passed, error: guard.error, typecheck: typecheck.status })) }));

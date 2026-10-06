@@ -1,0 +1,22 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Missing expected exception/. Input:
+
+'AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unsupported Babel options/. Input:\n' +
+  '\n' +
+  "'AssertionError [ERR_ASSERTION]: src/OptionHelper.emitted.mjs imports undeclared splotch-owned-jsx-runtime-probe/jsx-runtime'\n"
+
+    at file:///private/tmp/splotch-resume-01a111b0/import-boundary/probe-babel-options-v8.mjs:68:121 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unsupported Babel options/. Input:\n' +
+    '\n' +
+    "'AssertionError [ERR_ASSERTION]: src/OptionHelper.emitted.mjs imports undeclared splotch-owned-jsx-runtime-probe/jsx-runtime'\n",
+  expected: /Missing expected exception/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.16.0

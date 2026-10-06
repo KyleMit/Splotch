@@ -1,0 +1,116 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { spawn, execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, openSync, closeSync, lstatSync, readlinkSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { join } from 'node:path';
+
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const artifactRoot = '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v8-composed';
+const deadlineMs = 10 * 60 * 1000;
+const port = Number(readFileSync(join(artifactRoot, 'free-port.txt'), 'utf8').trim());
+const source = JSON.parse(readFileSync(join(artifactRoot, 'source-inputs.json')));
+const verifyInputs = () => { for (const [file, { sha256 }] of Object.entries(source.files)) assert.equal(createHash('sha256').update(readFileSync(join(worktree, file))).digest('hex'), sha256, file); };
+verifyInputs();
+const frozenHead = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim();
+assert.equal(frozenHead, source.compositionHead);
+const frozenTree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: worktree, encoding: 'utf8' }).trim();
+const verifyTrackedTools = () => { const paths=execFileSync('git',['ls-files','tools'],{cwd:worktree,encoding:'utf8'}).trim().split('\n').filter(path=>path.endsWith('.mjs')); assert.equal(createHash('sha256').update(paths.join('\n')+'\n').digest('hex'),source.trackedToolInputs.sha256); };
+verifyTrackedTools();
+const indexPath = execFileSync('git', ['rev-parse', '--git-path', 'index'], { cwd: worktree, encoding: 'utf8' }).trim();
+const indexSha256 = createHash('sha256').update(readFileSync(indexPath)).digest('hex');
+const indexEntriesSha256 = () => createHash('sha256').update(execFileSync('git', ['ls-files', '--stage', '-z'], { cwd: worktree })).digest('hex');
+const indexEntriesBefore = indexEntriesSha256();
+function trackedWorkingtree() {
+  const paths = execFileSync('git', ['ls-files', '-z'], { cwd: worktree, encoding: 'utf8' }).split('\0').filter(Boolean).sort();
+  const digest = createHash('sha256');
+  let bytes = 0;
+  for (const path of paths) {
+    const target = join(worktree, path);
+    const input = lstatSync(target).isSymbolicLink() ? Buffer.from(readlinkSync(target)) : readFileSync(target);
+    bytes += input.length;
+    digest.update(`${path}\0${createHash('sha256').update(input).digest('hex')}\n`);
+  }
+  return { count: paths.length, bytes, sha256: digest.digest('hex') };
+}
+const trackedInputs = trackedWorkingtree();
+const require = createRequire(join(worktree, 'package.json'));
+const installedGraph = ['typescript','expo','react','react-native','@expo/config','@babel/core','metro-resolver','yaml'].map((name) => {
+  const manifestPath = require.resolve(`${name}/package.json`); const bytes = readFileSync(manifestPath); return { name, manifestPath, version: JSON.parse(bytes).version, sha256: createHash('sha256').update(bytes).digest('hex') };
+});
+const installedInput = { nodeVersion: process.version, executable: process.execPath, pnpmVersion: execFileSync('pnpm',['--version'],{cwd:worktree,encoding:'utf8'}).trim(), frozenLockSha256: source.files['pnpm-lock.yaml'].sha256, installedGraph, qualification: 'Same owned frozen lock installation, no dependency changes since complete installed topology receipt' };
+writeFileSync(join(artifactRoot,'installed-inputs.json'),JSON.stringify(installedInput,null,2)+'\n');
+const server = createServer();
+await new Promise((resolve, reject) => server.once('error', reject).listen(port, '127.0.0.1', resolve));
+await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+const receiptPath = join(artifactRoot, 'browserless-lease.json');
+const receipt = {
+  schemaVersion: 1,
+  owner: '/root/import_boundary',
+  resource: 'exclusive host Browserless tier',
+  worktree,
+  sourceInputs: 'source-inputs.json',
+  sourceCommit: source.sourceCommit,
+  acceptedBase: source.sourceBase,
+  actualHead: frozenHead,
+  actualTree: frozenTree,
+  relevantInputEquality: 'composition-equality.json',
+  command: `SMOKE_PORT=${port} npm run test:browserless`,
+  port,
+  portUnusedImmediatelyBeforeLaunch: true,
+  startedAt: new Date().toISOString(),
+  deadlineMs,
+  deadlineBasis: 'Parent granted a 600-second final tier bound; prior positive full tier measured 76.508 seconds, providing about eightfold headroom on the same exclusive host and unchanged installation',
+  installedInputs: 'installed-inputs.json',
+  index: { path: indexPath, sha256: indexSha256, entriesSha256: indexEntriesBefore },
+  trackedWorkingtree: trackedInputs,
+  launcherPid: process.pid,
+  releaseCondition: 'command exits and its owned process group is gone and smoke port binds again',
+  status: 'running',
+};
+const fd = openSync(join(artifactRoot, 'browserless.log.txt'), 'w');
+const child = spawn('npm', ['run', 'test:browserless'], {
+  cwd: worktree, env: { ...process.env, SMOKE_PORT: String(port) }, stdio: ['ignore', fd, fd], detached: true,
+});
+receipt.childPid = child.pid;
+receipt.processGroup = child.pid;
+writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify(receipt));
+const timer = setTimeout(() => {
+  receipt.deadlineExceededAt = new Date().toISOString();
+  receipt.ownedChildStillPendingAtTermination = child.exitCode === null && child.signalCode === null;
+  if (receipt.ownedChildStillPendingAtTermination) process.kill(-child.pid, 'SIGTERM');
+}, deadlineMs);
+const outcome = await new Promise((resolve, reject) => {
+  child.once('error', reject);
+  child.once('exit', (exitCode, signal) => resolve({ exitCode, signal }));
+});
+clearTimeout(timer);
+closeSync(fd);
+verifyInputs();
+verifyTrackedTools();
+assert.equal(indexEntriesSha256(), indexEntriesBefore);
+receipt.index.sha256After = createHash('sha256').update(readFileSync(indexPath)).digest('hex');
+assert.deepEqual(trackedWorkingtree(), trackedInputs);
+for (const identity of installedGraph) assert.equal(createHash('sha256').update(readFileSync(identity.manifestPath)).digest('hex'),identity.sha256,identity.name);
+assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim(), frozenHead);
+receipt.gitHeadUnchanged = true;
+receipt.sourceAndInstalledInputsUnchanged = true;
+receipt.gitTrackedToolInputsUnchanged = true;
+receipt.gitIndexUnchanged = true;
+receipt.completeTrackedWorkingtreeUnchanged = true;
+receipt.finishedAt = new Date().toISOString();
+receipt.outcome = outcome;
+try { process.kill(-child.pid, 0); receipt.ownedProcessGroupGone = false; }
+catch (error) { receipt.ownedProcessGroupGone = error.code === 'ESRCH'; }
+const releaseServer = createServer();
+try {
+  await new Promise((resolve, reject) => releaseServer.once('error', reject).listen(port, '127.0.0.1', resolve));
+  await new Promise((resolve, reject) => releaseServer.close((error) => error ? reject(error) : resolve()));
+  receipt.smokePortReleased = true;
+} catch (error) { receipt.smokePortReleased = false; receipt.releaseError = { code: error.code, message: error.message }; }
+receipt.status = receipt.ownedProcessGroupGone && receipt.smokePortReleased ? 'released' : 'needs_owned_process_inspection';
+writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify(receipt));
+process.exitCode = outcome.exitCode ?? 1;

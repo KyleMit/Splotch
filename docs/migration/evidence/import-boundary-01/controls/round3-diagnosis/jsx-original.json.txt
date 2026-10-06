@@ -1,0 +1,250 @@
+{
+  "head": "ecdd26f93849a8a26542536be82e63068c662749",
+  "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma/candidate",
+  "packageName": "splotch-owned-jsx-runtime-probe",
+  "declaredInCandidate": false,
+  "source": "/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = <probe value=\"jsx pragma probe\" />;\n",
+  "references": [],
+  "compilerOptions": {
+    "jsx": "ReactJSX",
+    "module": "Preserve",
+    "noEmit": true
+  },
+  "versions": {
+    "typescript": "6.0.3",
+    "babel": "7.29.7",
+    "babelPresetExpo": "57.0.13"
+  },
+  "baselineGuard": {
+    "name": "baseline guard",
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 13,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "baselineTsc": {
+    "name": "baseline-typecheck",
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "reachableGuard": {
+    "name": "undeclared reachable pragma guard",
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/PragmaHelper.tsx",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 14,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "actualTsc": {
+    "name": "undeclared-pragma-typecheck",
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "emittedTsc": {
+    "name": "undeclared-pragma-emit",
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "tsOutput": "import { jsx as _jsx } from \"splotch-owned-jsx-runtime-probe/jsx-runtime\";\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = _jsx(\"probe\", { value: \"jsx pragma probe\" });\n",
+  "babelOutput": "import{jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(\"probe\",{value:\"jsx pragma probe\"});",
+  "resolved": "/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+  "runtime": {
+    "marker": "owned-hoisted-runtime",
+    "type": "probe",
+    "props": {
+      "value": "jsx pragma probe"
+    }
+  },
+  "declaredGuard": {
+    "name": "declared pragma guard",
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/PragmaHelper.emitted.mjs",
+        "src/PragmaHelper.tsx",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 15,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "directGuard": {
+    "name": "literal runtime import guard",
+    "passed": false,
+    "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.direct.ts imports undeclared splotch-owned-jsx-runtime-probe/jsx-runtime"
+  },
+  "restoredGuard": {
+    "name": "restored guard",
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 13,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "restoredTsc": {
+    "name": "restored-typecheck",
+    "status": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "restoredEntryMatches": true,
+  "worktreeStatus": "",
+  "sourceBefore": {
+    "tools/migration/check-native-topology.mjs": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+    "tools/migration/lib/native-identity.mjs": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+    "tools/migration/lib/candidate-imports.mjs": "3966a741bcc0afe5493bdda0ec2a1b58b5d81b6a81892d9532fa5448c29e66a5",
+    "tools/migration/lib/candidate-references.mjs": "51f20b17f62a4f791dff84d56390426df6f4f2bf1dfb6bab7667562274c6baeb",
+    "tools/migration/tests/candidate-imports.test.mjs": "b5fe5973abd8eb421fe0f6e66ecf7cb42052c6e7747ca677956cd787d4e81d9a",
+    "tools/migration/README.md": "1a1962eba684bd666d2b162d3a26b74dc821b4731012a31e902087299574eec0",
+    "package.json": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+    "pnpm-lock.yaml": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+    "pnpm-workspace.yaml": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+    "experiments/native-architecture/alignment.json": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b",
+    "experiments/native-architecture/app.json": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8",
+    "experiments/native-architecture/babel.config.cjs": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62",
+    "experiments/native-architecture/metro.config.cjs": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c",
+    "experiments/native-architecture/package.json": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+    "experiments/native-architecture/scripts/check-transform.cjs": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb",
+    "experiments/native-architecture/src/ProbeApp.tsx": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248",
+    "experiments/native-architecture/src/index.ts": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+    "experiments/native-architecture/tsconfig.json": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60",
+    "tools/migration/tests/candidate-configs.test.mjs": "a572e149ce62f7c97ddb627238d0602887a8f15540c6607d36092ef753e07847",
+    "tools/migration/tests/candidate-fixtures.mjs": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9"
+  },
+  "sourceAfter": {
+    "tools/migration/check-native-topology.mjs": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+    "tools/migration/lib/native-identity.mjs": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+    "tools/migration/lib/candidate-imports.mjs": "3966a741bcc0afe5493bdda0ec2a1b58b5d81b6a81892d9532fa5448c29e66a5",
+    "tools/migration/lib/candidate-references.mjs": "51f20b17f62a4f791dff84d56390426df6f4f2bf1dfb6bab7667562274c6baeb",
+    "tools/migration/tests/candidate-imports.test.mjs": "b5fe5973abd8eb421fe0f6e66ecf7cb42052c6e7747ca677956cd787d4e81d9a",
+    "tools/migration/README.md": "1a1962eba684bd666d2b162d3a26b74dc821b4731012a31e902087299574eec0",
+    "package.json": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+    "pnpm-lock.yaml": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+    "pnpm-workspace.yaml": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+    "experiments/native-architecture/alignment.json": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b",
+    "experiments/native-architecture/app.json": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8",
+    "experiments/native-architecture/babel.config.cjs": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62",
+    "experiments/native-architecture/metro.config.cjs": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c",
+    "experiments/native-architecture/package.json": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+    "experiments/native-architecture/scripts/check-transform.cjs": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb",
+    "experiments/native-architecture/src/ProbeApp.tsx": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248",
+    "experiments/native-architecture/src/index.ts": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+    "experiments/native-architecture/tsconfig.json": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60",
+    "tools/migration/tests/candidate-configs.test.mjs": "a572e149ce62f7c97ddb627238d0602887a8f15540c6607d36092ef753e07847",
+    "tools/migration/tests/candidate-fixtures.mjs": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9"
+  }
+}

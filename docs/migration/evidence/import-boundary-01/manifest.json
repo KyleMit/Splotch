@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 18512,
-      "sha256": "a41ea655cc507a3d796cff5a4bcaf6307a722782f341b38295121608f08fa1a7"
+      "bytes": 23979,
+      "sha256": "7adc529bea71b26550d3dd8a3406c402096e120af1ff33624a1f5129cdae6f06"
     },
     {
       "path": "controls/development/initial-lint.log.txt",
@@ -783,6 +783,471 @@
       "sha256": "2ead452784b96f911d50b4f50e2a0665b968a7ff1897a3ee658ad40ead45c6bd"
     },
     {
+      "path": "controls/final-v6/candidate-configs.test.mjs.txt",
+      "bytes": 13237,
+      "sha256": "7db04d37d54b132f13c3342a79b70891b50b076390f474d451234b6f9cc87162"
+    },
+    {
+      "path": "controls/final-v6/candidate-imports.mjs.txt",
+      "bytes": 8668,
+      "sha256": "3754c693c52f07dc3d2ac5440ebe4f781e32f90ffc279334bbe43e2ebe1de764"
+    },
+    {
+      "path": "controls/final-v6/candidate-references.mjs.txt",
+      "bytes": 17832,
+      "sha256": "78362feb1bfb80bf846bb170cc66660f470b3d05246c9a01ff768c1bb65f4caa"
+    },
+    {
+      "path": "controls/final-v6/check-migration-native-topology.log.txt",
+      "bytes": 52161,
+      "sha256": "9a6f420e962993309ef111901bb81b59018e8ac207a419ed632cb3c2565359f5"
+    },
+    {
+      "path": "controls/final-v6/check.log.txt",
+      "bytes": 2275,
+      "sha256": "958f39f6c7272a09fcfe8ff3a95bdbc3ce54ff09f2b9601216c7dcb105b4c308"
+    },
+    {
+      "path": "controls/final-v6/consumer-controls.json.txt",
+      "bytes": 101713,
+      "sha256": "4a51f9140a697e3cbf1354bb1049368ed23aa18f05c77fab5c5e408ee159960f"
+    },
+    {
+      "path": "controls/final-v6/consumer-controls.log.txt",
+      "bytes": 176,
+      "sha256": "3cd98a31f7bc9a9b83b136acdee122629aba6b59fd15de3dc4e6e16a7989b1bf"
+    },
+    {
+      "path": "controls/final-v6/format-check.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/final-v6/lint.log.txt",
+      "bytes": 303,
+      "sha256": "967645c7ad97ad01a30bef4006da035a6d35c4a291db4f5ab1158085bdc57b9f"
+    },
+    {
+      "path": "controls/final-v6/probe-final-v6-consumers.mjs.txt",
+      "bytes": 7765,
+      "sha256": "0a74cdab37066327ebb6fd71b8aa9d69edca8cc3520f30e113f40653c235f33a"
+    },
+    {
+      "path": "controls/final-v6/run-static-v6.mjs.txt",
+      "bytes": 1500,
+      "sha256": "acb719e364a11b8598156321fd2379a0787f1604217447c392b1cfe20008a76b"
+    },
+    {
+      "path": "controls/final-v6/scoped.json.txt",
+      "bytes": 584,
+      "sha256": "7c6aa53119b0b29e468cd7fe1fd16038d36243b4f6f351e7a8bc342375a8fccf"
+    },
+    {
+      "path": "controls/final-v6/scoped.log.txt",
+      "bytes": 563,
+      "sha256": "3fe5f7ebce8e8c3ad88b9e515b7e07dd6a8a150467596ff18b219e1f3fc92e66"
+    },
+    {
+      "path": "controls/final-v6/source-inputs.json.txt",
+      "bytes": 3888,
+      "sha256": "77c79a9644311c4082f9982e2d9799fc99520acab3dcb57d121f110396b93dcf"
+    },
+    {
+      "path": "controls/final-v6/static-gates.json.txt",
+      "bytes": 1194,
+      "sha256": "077c01d9165ea1741ee7c6d36be347002ea5fe0841dd399aa96140333765a8af"
+    },
+    {
+      "path": "controls/final-v7/README.md.txt",
+      "bytes": 6050,
+      "sha256": "ef29519c7a81387dad81b85160a1cee7e91b63be7d1cddd1b57b53a6921be0ff"
+    },
+    {
+      "path": "controls/final-v7/browserless-executor.json.txt",
+      "bytes": 154,
+      "sha256": "44535056cfb7eabd0cf7bf325c72592a0dff02a19e5abed32d273efea7372b6f"
+    },
+    {
+      "path": "controls/final-v7/browserless-lease.json.txt",
+      "bytes": 1677,
+      "sha256": "b7552c08606fea4553fcd2072d336dc515d7d4f675f1b87dcf2773858821a5e8"
+    },
+    {
+      "path": "controls/final-v7/browserless.log.txt",
+      "bytes": 32640,
+      "sha256": "2c9f071b826f761210cc6f342f0cd5ec67c67e39e291456c1abc2b3fd89ff721"
+    },
+    {
+      "path": "controls/final-v7/candidate-configs.test.mjs.txt",
+      "bytes": 13759,
+      "sha256": "6183d8795f985d09ff5c44befa59202bd247f5deb5f8bc43a5249a79f69cabd4"
+    },
+    {
+      "path": "controls/final-v7/candidate-imports.mjs.txt",
+      "bytes": 8737,
+      "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7"
+    },
+    {
+      "path": "controls/final-v7/candidate-references.mjs.txt",
+      "bytes": 17825,
+      "sha256": "c197ce7dc9d470fbefdd35df820952da5174b4568691d7d1661955c014f03c7a"
+    },
+    {
+      "path": "controls/final-v7/check-migration-native-topology.log.txt",
+      "bytes": 52161,
+      "sha256": "9a6f420e962993309ef111901bb81b59018e8ac207a419ed632cb3c2565359f5"
+    },
+    {
+      "path": "controls/final-v7/check.log.txt",
+      "bytes": 2275,
+      "sha256": "9f77ffabc1ae6742cbc988388797bbabec75d4e6cde7d5d1a297b4e846beb59e"
+    },
+    {
+      "path": "controls/final-v7/consumer-controls.json.txt",
+      "bytes": 101713,
+      "sha256": "84380cf8bc47c013415dbc4f07ec03869b8b660b940b3dd0bdf6ebae12409e45"
+    },
+    {
+      "path": "controls/final-v7/consumer-controls.log.txt",
+      "bytes": 176,
+      "sha256": "3cd98a31f7bc9a9b83b136acdee122629aba6b59fd15de3dc4e6e16a7989b1bf"
+    },
+    {
+      "path": "controls/final-v7/format-check.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/final-v7/free-port.txt",
+      "bytes": 5,
+      "sha256": "e1e42e4de4dda7e09572a201aa6a6b439cfcb669b2a7f3e9d7a61681e0c7eacf"
+    },
+    {
+      "path": "controls/final-v7/installed-inputs.json.txt",
+      "bytes": 2417,
+      "sha256": "c57bee761a017fa0360f8a7c0391fad5afe178cf6d0ce91ee99edf77a500554a"
+    },
+    {
+      "path": "controls/final-v7/lint.log.txt",
+      "bytes": 303,
+      "sha256": "967645c7ad97ad01a30bef4006da035a6d35c4a291db4f5ab1158085bdc57b9f"
+    },
+    {
+      "path": "controls/final-v7/nested-json-controls.json.txt",
+      "bytes": 5303,
+      "sha256": "0dea9817c9e817e89ae80c09b5170e8baa8db17e4dbf2903b094caf42d5b2bc8"
+    },
+    {
+      "path": "controls/final-v7/nested-json-controls.log.txt",
+      "bytes": 263,
+      "sha256": "18e4cbd6c97111f09506063470d679884ccb3820eb14862d40be352f7a481eab"
+    },
+    {
+      "path": "controls/final-v7/old-rejection-controls.json.txt",
+      "bytes": 3015,
+      "sha256": "62eb7674663ef8808d40dc21ccc90ce1434c330ae2f10b25e7b11b23f27fe05a"
+    },
+    {
+      "path": "controls/final-v7/old-rejection-controls.log.txt",
+      "bytes": 69,
+      "sha256": "712d89519d21fbe313540ba2043cad139e78a25c4253d27327954a16cf72dffd"
+    },
+    {
+      "path": "controls/final-v7/probe-final-v7-consumers.mjs.txt",
+      "bytes": 7765,
+      "sha256": "804abfcbb3ac5575ceacd5f5e4fbd6240f0c0562eca9ea192a1a13e78e06e90b"
+    },
+    {
+      "path": "controls/final-v7/probe-nested-json-v7.mjs.txt",
+      "bytes": 2704,
+      "sha256": "f88e5d4f9798f724cfd36027442b204cfc965a6290be69c9aa46cf9413961167"
+    },
+    {
+      "path": "controls/final-v7/probe-v7-old-rejections.mjs.txt",
+      "bytes": 2488,
+      "sha256": "bf26c3d579cd33e94c4f56b733041f4fb48947c761880556dd9502359640608c"
+    },
+    {
+      "path": "controls/final-v7/run-browserless-v7.mjs.txt",
+      "bytes": 6775,
+      "sha256": "175c2b69e7eb9792313b1ca0e61f7b3a1148ae8ddaddc85a9353baeb8486e756"
+    },
+    {
+      "path": "controls/final-v7/run-static-v7.mjs.txt",
+      "bytes": 1500,
+      "sha256": "2f8950412d066a9cded30055c7ee984f8e62fa1eb13680af47532eccbb74e59e"
+    },
+    {
+      "path": "controls/final-v7/scoped.json.txt",
+      "bytes": 584,
+      "sha256": "8dc95cac69157b74ef0b7183a85509012a25758fe1bc704145b83b0684b93a01"
+    },
+    {
+      "path": "controls/final-v7/scoped.log.txt",
+      "bytes": 563,
+      "sha256": "cc50d5ed6183a011a92f20ae9f3e1367a962b5404c82346ebe51bc98d08797a2"
+    },
+    {
+      "path": "controls/final-v7/source-inputs.json.txt",
+      "bytes": 3937,
+      "sha256": "3328613c75841c4dedac8fdf4e4786d12d0c3ab99586b3d5093d3bd9050bc25f"
+    },
+    {
+      "path": "controls/final-v7/static-gates.json.txt",
+      "bytes": 1194,
+      "sha256": "ac3d83e2f9ce5c29293b027c9feb252ed9a7e550d20ebd5d46fafe6e4ad9be7f"
+    },
+    {
+      "path": "controls/final-v8/README.md.txt",
+      "bytes": 6508,
+      "sha256": "5c25838b5cd0539688d6c9552d1fcbc47428874e4adbc3c2b0bc682e5f5eccef"
+    },
+    {
+      "path": "controls/final-v8/babel-options-control-fixture-error.log.txt",
+      "bytes": 983,
+      "sha256": "33bf7cd3223a8c998ed9c1a1eb5e9e229767f458e0c954f216a74cb5bf71c5fd"
+    },
+    {
+      "path": "controls/final-v8/babel-options-controls.json.txt",
+      "bytes": 59994,
+      "sha256": "dca21f4e24b6df999e2ae16457906bd5e89d9e8f17524f209bfb0e98231cdc3a"
+    },
+    {
+      "path": "controls/final-v8/babel-options.log.txt",
+      "bytes": 2699,
+      "sha256": "3f8d71cec782f8b6d6514fe6fbafbad7140df44a765c962cdc0c912a75448d6c"
+    },
+    {
+      "path": "controls/final-v8/browserless-executor.json.txt",
+      "bytes": 752,
+      "sha256": "5669cc90ed4da63788f8c441e3186569249a8406cc110bee8b7190e98689f3c6"
+    },
+    {
+      "path": "controls/final-v8/browserless-lease.json.txt",
+      "bytes": 2005,
+      "sha256": "9b65423af9e2f3ccc8e25e8e0ae0fae078d0ea0a05b9640b8f4fcd04632b1d35"
+    },
+    {
+      "path": "controls/final-v8/browserless.log.txt",
+      "bytes": 32895,
+      "sha256": "09d9cc240ec9874d5f7771b994cbec56c8b8372f752452ceb36e77ac867e61e6"
+    },
+    {
+      "path": "controls/final-v8/candidate-configs.test.mjs.txt",
+      "bytes": 15825,
+      "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f"
+    },
+    {
+      "path": "controls/final-v8/candidate-imports.mjs.txt",
+      "bytes": 8737,
+      "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7"
+    },
+    {
+      "path": "controls/final-v8/candidate-imports.test.mjs.txt",
+      "bytes": 15283,
+      "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98"
+    },
+    {
+      "path": "controls/final-v8/candidate-references.mjs.txt",
+      "bytes": 18705,
+      "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40"
+    },
+    {
+      "path": "controls/final-v8/check-migration-native-topology.log.txt",
+      "bytes": 52161,
+      "sha256": "9a6f420e962993309ef111901bb81b59018e8ac207a419ed632cb3c2565359f5"
+    },
+    {
+      "path": "controls/final-v8/check.log.txt",
+      "bytes": 2275,
+      "sha256": "9f77ffabc1ae6742cbc988388797bbabec75d4e6cde7d5d1a297b4e846beb59e"
+    },
+    {
+      "path": "controls/final-v8/composed-source-inputs.json.txt",
+      "bytes": 4012,
+      "sha256": "ca3a4bac81fc59f5ccef62ddcab747f2010bffa01159cf2d0aa6c66970df1de9"
+    },
+    {
+      "path": "controls/final-v8/composition-equality.json.txt",
+      "bytes": 6976,
+      "sha256": "019bf4629d9714aa6a6a1e3aabf4c0864da1f7de1040d286c45c72211bb5604f"
+    },
+    {
+      "path": "controls/final-v8/consumer-controls.json.txt",
+      "bytes": 101982,
+      "sha256": "ed954653ab6985db8396ee809acea5ff3bbf9f1e2b7f0e93dc7f4283261b176e"
+    },
+    {
+      "path": "controls/final-v8/consumer-controls.log.txt",
+      "bytes": 176,
+      "sha256": "3cd98a31f7bc9a9b83b136acdee122629aba6b59fd15de3dc4e6e16a7989b1bf"
+    },
+    {
+      "path": "controls/final-v8/format-check.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/final-v8/free-port.txt",
+      "bytes": 5,
+      "sha256": "e1e42e4de4dda7e09572a201aa6a6b439cfcb669b2a7f3e9d7a61681e0c7eacf"
+    },
+    {
+      "path": "controls/final-v8/installed-inputs.json.txt",
+      "bytes": 2417,
+      "sha256": "c57bee761a017fa0360f8a7c0391fad5afe178cf6d0ce91ee99edf77a500554a"
+    },
+    {
+      "path": "controls/final-v8/lint.log.txt",
+      "bytes": 303,
+      "sha256": "967645c7ad97ad01a30bef4006da035a6d35c4a291db4f5ab1158085bdc57b9f"
+    },
+    {
+      "path": "controls/final-v8/nested-json-controls.json.txt",
+      "bytes": 5303,
+      "sha256": "3d4fb768f87788a3b3071415683ac34be2c14c1a6b957826e5ab3df6aefb1187"
+    },
+    {
+      "path": "controls/final-v8/nested-json-controls.log.txt",
+      "bytes": 263,
+      "sha256": "a30c55c7abe0622b708e8056838c3ea88385661bfec959b28de47471f31b241f"
+    },
+    {
+      "path": "controls/final-v8/packet-format.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/final-v8/probe-babel-options-v8-before-control-fix.mjs.txt",
+      "bytes": 6898,
+      "sha256": "742b881dc413417a5eaad866f86aef1978a3a7f8b7f8754bacc480b6ed2af59a"
+    },
+    {
+      "path": "controls/final-v8/probe-babel-options-v8.mjs.txt",
+      "bytes": 6901,
+      "sha256": "891bebe9e384a117667ad18e2acb380fb4b1306ddbd47f8a2dd4c56312a1079a"
+    },
+    {
+      "path": "controls/final-v8/probe-final-v8-consumers.mjs.txt",
+      "bytes": 7765,
+      "sha256": "c50e0042294fadf0a93b45ad4636a7f1a00975cae2b3020cd273fe39eece4909"
+    },
+    {
+      "path": "controls/final-v8/probe-nested-json-v8.mjs.txt",
+      "bytes": 2704,
+      "sha256": "0ddaba7f30daa5a8b00fb9bded6492cbdb954634952604f06b52a1ad56833b63"
+    },
+    {
+      "path": "controls/final-v8/run-browserless-v8.mjs.txt",
+      "bytes": 7380,
+      "sha256": "d4ca922e38a45ee3fd6f9c06ea82558b2fe885ca3a64c7b4fa8fa8c243eae83a"
+    },
+    {
+      "path": "controls/final-v8/run-static-v8.mjs.txt",
+      "bytes": 1500,
+      "sha256": "8fc708a6ee42792a74a14f17d0da1c725711cddfb65c68919778a76baf5a998c"
+    },
+    {
+      "path": "controls/final-v8/scoped.json.txt",
+      "bytes": 584,
+      "sha256": "5ccdf30ca0b3f43ca384d02d2ffea15e063d2469d702d1ec8abe29fa84008512"
+    },
+    {
+      "path": "controls/final-v8/scoped.log.txt",
+      "bytes": 562,
+      "sha256": "72e34bd8bc82e0c1b3724fd30f91469371d22ce5dd4b9a3bc026b991b1599852"
+    },
+    {
+      "path": "controls/final-v8/source-inputs.json.txt",
+      "bytes": 3879,
+      "sha256": "978d8feb5b50f657d00f371bb4bec74295a2a7cee8dd8bed364a789d9acb9377"
+    },
+    {
+      "path": "controls/final-v8/static-gates.json.txt",
+      "bytes": 1194,
+      "sha256": "af889058c021ffb4819b6f71603c314afb0995efcde3700523404f0d864da747"
+    },
+    {
+      "path": "controls/round3-diagnosis/babel-jsx-options-v7.json.txt",
+      "bytes": 21033,
+      "sha256": "bbda198819b12e4ed3f2a84d9cd413f5528f2e64471f8f6c3895ae422f53124a"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-original-baseline-typecheck.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-original-restored-typecheck.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-original-undeclared-pragma-emit.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-original-undeclared-pragma-typecheck.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-original.json.txt",
+      "bytes": 11365,
+      "sha256": "e978bdfd345eef7fee2582261294caa936668699d056fc9757406ff1d0211283"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-positions-v2.json.txt",
+      "bytes": 12556,
+      "sha256": "3266064a5d87a0956e1b235480771b9fde9d5f500c5f6bc50f5a498ff7dacaa0"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-positions.json.txt",
+      "bytes": 9085,
+      "sha256": "395574147172bba39102dfdbdf58ee98dc12e529518916abe588d08fccdff5bd"
+    },
+    {
+      "path": "controls/round3-diagnosis/jsx-setup-emit-layout-error.log.txt",
+      "bytes": 253,
+      "sha256": "5f035dac099698c22a981ae404f3210e24637b8ee68dbe4b9aec0f5ae9c676f9"
+    },
+    {
+      "path": "controls/round3-diagnosis/nested-json-original.json.txt",
+      "bytes": 2909,
+      "sha256": "6abb9333448ab797c27c982a77f026c35326ec0ff4c5b1d9363ba989f7bf8540"
+    },
+    {
+      "path": "controls/round3-diagnosis/probe-babel-jsx-options.mjs.txt",
+      "bytes": 4488,
+      "sha256": "3161ef33f70bdf686345bfcbb3347b44532a1f0d33669f0043557e5d0a3c86bb"
+    },
+    {
+      "path": "controls/round3-diagnosis/probe-jsx-positions.mjs.txt",
+      "bytes": 6655,
+      "sha256": "8e1516f8c4f03d5ffbb23d5f96fc011dcdfdb152ad9ae2cbdd40983d2ce3b212"
+    },
+    {
+      "path": "controls/round3-diagnosis/probe-jsx-pragma.mjs.txt",
+      "bytes": 8019,
+      "sha256": "2c8940de454d907a6155b5636cadb6624711c20abae81d69e6f9532d1d9083fc"
+    },
+    {
+      "path": "controls/round3-diagnosis/probe-nested-json.mjs.txt",
+      "bytes": 2714,
+      "sha256": "21822d18e244148f9a36c3a9732bdb90c9b78ce41d2c1e4ca853c50a9f010d01"
+    },
+    {
+      "path": "controls/round3-diagnosis/probe-round3-configs.mjs.txt",
+      "bytes": 5196,
+      "sha256": "d40addeb6217463c28d23201152b6bb996f7910d51cf46970f6816f336b7d283"
+    },
+    {
+      "path": "controls/round3-diagnosis/round3-config-original.json.txt",
+      "bytes": 17999,
+      "sha256": "b02e12081b859ee2856c5fd8b7a13ecef6f65a6201e27bc126be3d6d23fa7238"
+    },
+    {
       "path": "controls/run-browserless-v3.mjs.txt",
       "bytes": 3911,
       "sha256": "ba6db19ca663202f0273ef333fade1fabf05b2daaa123f6acb6f3effa2aeae5a"
@@ -886,6 +1351,26 @@
       "path": "review/round-2/session.json.txt",
       "bytes": 810,
       "sha256": "e1034edbb3971e7a9a99eb381f4e69ff78d83b15b5c98b4ae34117966e8eb962"
+    },
+    {
+      "path": "review/round-3/done.json.txt",
+      "bytes": 1636,
+      "sha256": "36010391c11c4b272f58da79bbb35150cee1b9397027481efbfcdb6b8c71a2bb"
+    },
+    {
+      "path": "review/round-3/findings.json.txt",
+      "bytes": 5537,
+      "sha256": "a63e5a92529426c285e2b8f4ab0c1f61cd660e35cae571f0c6d2b148f39983cc"
+    },
+    {
+      "path": "review/round-3/public-before-repairs.json.txt",
+      "bytes": 27620,
+      "sha256": "a1eeab9020204b510553dd9c0cc40934ab1a4b2d6b15969f3089ffd31f59c96c"
+    },
+    {
+      "path": "review/round-3/session.json.txt",
+      "bytes": 810,
+      "sha256": "ac2b66fe568539663f1724581e18900d744639479a9fdb94d9b3ccc0fee3e532"
     },
     {
       "path": "source-inputs.json",

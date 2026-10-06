@@ -1,9 +1,10 @@
 # Candidate import boundary: F1 correction
 
 Owner: the import-boundary unit worker; parent integrator owns review, final CI and integration. The
-original reproduction uses accepted source dc08a90abc67b53124146bf288c80de0f9ffd1dd. Implementation
-composes accepted records-only integration e7413bf92066fcf45967cf04241a513fd48d49ff over the
-previous preservation-only base aa507a74963adac35baed84c7ab2e13cdc12a946. This unit changes no
+original reproduction uses accepted source dc08a90abc67b53124146bf288c80de0f9ffd1dd. The committed
+repair is 49c274e565ef8f9936b0a997a24f89a46b8ec3c7, composed over accepted records-only integration
+f14966ee98563e3c569fbcb90beea6d9c684614a at 0ffbfad71c18b1bb284517011b30258298a0d283. Historical
+execution and review identities remain attached to their own receipts. This unit changes no
 candidate dependency, lock, shipping source or native project.
 
 ## Uncertainty and boundary
@@ -62,8 +63,9 @@ is introduced.
 The first substantive F1 review was the combined continuation/F1 question in Claude conversation
 bbe89d5b-644f-4d4f-9366-e5156cebf4ea. Its raw findings are preserved under `review/`; two
 substantive rounds remained at that plan checkpoint. PR2697 is not reopened. The parent adopted this
-actual identity into PR2703 and successfully resumed it for substantive round two; one final round
-remains.
+actual identity into PR2703 and successfully resumed it for substantive rounds two and three. All
+three substantive rounds are used; none remain. The changed repair head has no independent
+acceptance, and the parent must disposition the required final-review provenance and approval.
 
 All four blocking amendments were accepted after local verification:
 
@@ -132,7 +134,8 @@ migration complete.
 The actual original conversation resumed for round two on ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24.
 `review/round-2/` preserves complete findings, session/done metadata and the public review with all
 five threads. The review requested changes; neither the prior full tier nor reviewer agreement
-accepted those configuration gaps. Two substantive rounds are used and one remains.
+accepted those configuration gaps. Two substantive rounds were used and one remained at that
+historical checkpoint.
 
 | Finding                           | Executed disposition                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -186,7 +189,70 @@ asset tests, 22 store tests, 7,614 tool tests and 42 API checks. Its 75.067-seco
 is harness cost. The five-minute deadline, source/tracked-tool/installed identities, owned process
 group, tool handle and verified port/process release are recorded in the lease.
 
-Final original-Claude round three, exact final-head CI and parent integration remain required.
+At that checkpoint, final original-Claude round three, exact final-head CI and parent integration
+remained required. Round-three outcomes and the subsequent repair are recorded below.
+
+## Original round three and bounded repair
+
+The actual original Claude conversation resumed for round three on
+ecdd26f93849a8a26542536be82e63068c662749, with accepted base
+e7413bf92066fcf45967cf04241a513fd48d49ff. The complete selected technical metadata and public review
+are under `review/round-3/`; review 5431448391 reported two configuration alias bypasses and a
+nested ordinary-module false rejection. The review's conditional scoped disposition was tied to that
+old source. All three rounds are used and zero remain. This changed repair was not independently
+reviewed; no fourth or fresh conversation has been launched to reset that budget.
+
+Both reported bypasses passed the old guard while actual installed Babel loaded an undeclared
+`babel-plugin-react-compiler`: an initializer alias plus `Object.assign`, and destructuring the
+exported `plugins` array before `push`. The corrected finite grammar permits a CommonJS export
+assignment only as its own expression statement and refuses configuration vocabulary bindings or
+foreign configuration objects. It preserves current `api.cache` and literal exports. Config-owner
+classification is rooted at the candidate: nested ordinary modules named `app.config.ts`,
+`babel.config.ts` or `.babelrc.ts`, and ordinary similarly named JSON data, are positives under
+actual TypeScript/Babel. Metro string module references and alternate config lookup remain explicit
+non-coverage owned by native/Metro graph qualification, alongside native provider-context commands.
+
+A parent source challenge found another real dependency edge. A reachable TSX helper's
+`@jsxImportSource` comment passed the old guard and actual candidate typecheck under hoisting;
+installed TypeScript and Babel emitted the owned undeclared runtime import, and the emitted Babel
+module executed that runtime. Fourteen comment-position and literal-lookalike cases qualified the
+installed consumers. Babel consumes after-import, later, JSX-expression, empty-block and template-
+expression comments that TypeScript does not necessarily consume. The finite guard visibly refuses
+per-file JSX import-source pragmas, while string, template, regular-expression and JSX-text
+lookalikes and default automatic React remain positives. This is source/dependency evidence, without
+React Native mount or device execution. The initial emit-layout setup error is preserved separately.
+
+Actual Expo preset options also injected an undeclared JSX runtime while the v7 guard and actual
+typecheck passed. The current production Babel config has no option consumer. Rather than interpret
+arbitrary Babel semantics, v8 permits the current default and a literal empty object tuple option;
+nonempty or opaque Babel preset/plugin options and extra tuple members refuse before the
+`require.resolve` branch. Expo config plugin options keep their separate owner. Ten actual Babel
+consumer controls include default/empty restored positives, literal/native/opaque option rejects and
+JS/JSON plugin extra-member rejects. Eight rejecting assertions fail against the exact prior v7
+guard for the intended missing rejection. The first control fixture materialized emitted source
+before checking the old guard, accidentally exercising a different import rejection; the producer
+refused certification, and that setup outcome is preserved separately.
+
+`controls/round3-diagnosis/` preserves original actual-consumer observations; `controls/final-v6/`,
+`controls/final-v7/` and `controls/final-v8/` retain their own source manifest and executed
+outcomes. The v7 full Browserless tier passed 4,463 app, 45 SSR, 298 asset, 22 store, 7,644 tool and
+42 API checks in 76.508 seconds. Its verified lease released all owned processes and port 5300. That
+harness duration is not product latency, and its earlier source does not accept the subsequent v8
+Babel option policy.
+
+Final v8 scoped checks pass 973 tests across six suites. Typecheck, lint, formatting and the actual
+public topology command pass. The 19 combined config/JSX consumer controls, three nested JSON
+controls and ten Babel-option controls pass with restored positives. The immutable executed v8
+source manifest records the precommit/base identity; `composition-equality.json.txt` then verifies
+all twenty source/config/package/lock bytes at the committed repair and records-only composed head,
+with unchanged enumeration of all 861 tracked tool modules. Those matching inputs scope reuse of the
+prior static/scoped/consumer receipts; the complete composed-source full tier passes all five
+stages: 4,463 app, 45 SSR, 298 asset, 22 store, 7,652 tool and 42 API checks. The 600-second
+exclusive lease records source/index/install inputs and all 8,570 tracked files (1,152,781,999
+bytes); all remained unchanged. The owned process group was gone and port 5300 rebound at release.
+The measured 77.063-second duration is harness cost. Exact final-head CI, final-review
+approval/provenance disposition and parent integration remain separate pending gates. The root
+`source-inputs.json` remains the immutable historical v5 input record.
 
 ## Preservation and replay
 
