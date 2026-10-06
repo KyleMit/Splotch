@@ -23,7 +23,7 @@ payload. Metro runtime resolution was unverified and is outside the reproduced g
 claim. The original GitHub receipt is the 14:51 pre-review observation, not an at-merge receipt. The
 unverified live-state item was closed by subsequent native GitHub operations. A post-integration
 recheck in `preservation-post-integration-github-state.json.txt` retains merged/head/base and
-published review state; Git also verifies aa507 parents dc08/63c5 and tree equality with63c5.
+published review state; Git also verifies aa507 parents dc08/63c5 and tree equality with 63c5.
 
 PR 2700 merged unchanged into `codex/native-migration` at aa507a74963adac35baed84c7ab2e13cdc12a946,
 with preservation review
@@ -39,12 +39,13 @@ suffix preserves machine receipt bytes without formatter rewriting. The report's
 filenames remain historical.
 
 The original native-intake summary remains unchanged. Executed `recheck-native-intake.py` and its
-complete `native-intake-recheck.json.txt` independently bind all70 live row bytes, modes, manifest
+complete `native-intake-recheck.json.txt` independently bind all 70 live row bytes, modes, manifest
 hash, worktree HEAD and observation time. It checks preservation only.
 
 `unit-source-snapshot.json.txt` binds the retained committed source/tree and pending F1 file/diff
 hashes. Retained Quality, Browserless, E2E and release metadata copies are named
 `retained-*.json.txt`; complete logs and artifacts are durably mirrored under
 `/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/retained` and belong to its PR2702
-acceptance unit. These records identify executed source; they do not accept that implementation or
-make its unperformed public calls/review/CI pass.
+acceptance unit. The source snapshot identifies committed contents. The gate receipts lack
+at-execution source identity; the owner attests they ran on the staged set later committed as a575.
+These records do not accept that implementation or make its unperformed public calls/review/CI pass.
