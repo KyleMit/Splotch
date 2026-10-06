@@ -1,4 +1,4 @@
-# Complete hosted topology export: local qualification
+# Complete hosted topology export
 
 The selected nonproduction proof branch needs a complete installed-tree export. Earlier UI logs were
 clipped, and supported export of the historical deployment returned 404. Those observations
@@ -79,7 +79,47 @@ selected original round-two technical provenance. Provider raw conversations and
 state remain host-local. Verify the outer digest and every regular member before extracting into a
 new owned records directory; the earlier capsule remains byte-exact at its original source hashes.
 
-An actual automatic nonproduction build, complete immutable body retrieval, strict offline
-consumption, original Claude acceptance and final-head CI remain pending. No RN compilation,
+The repaired source 39a2cbc8371645687f475b02fb1ebb7ae55820cc was pushed by an ordinary fast-forward
+of the existing exact nonproduction proof ref. Supported Netlify CLI 26.1.0 `getDeploy` returned the
+complete response for ready branch deployment 6ac566ac46de700008f09313, build
+6ac566ac46de700008f09311 and site 8804b246-aa43-44dc-b997-4dc452079910. Its source matches that
+commit; `published_at` is null. Selected public metadata and the complete response count/digest are
+retained. The raw response contains host-local authentication-related state and is excluded from
+publication.
+
+The
+[immutable deployed file](https://6ac566ac46de700008f09313--splotchy.netlify.app/migration-install-topology.json)
+returned HTTP200 with JSON media type and 65,935 complete decoded bytes, SHA256
+3766cfe95ee457e5e57dbe3414b70a73ff65d52afc7f5727e5b99d5dad7f8564. The strict reader verified all 444
+installed package locations and 95 resolutions across the five contexts against the exact committed
+five-input contract, runtime Node22.23.3, pnpm11.22.0 and production flags `--prod`.
+Candidate-exclusive packages were absent. The complete body establishes an exported installed graph
+at the deployed observation point; it does not supply complete installation or build logs. The
+observer, committed deployed producer, supported metadata response and exact body transport are
+separate provenance predicates.
+
+Five actual reader invocations refused the real missing-file404 HTML response, a derived JSON
+truncation, fatal UTF-8, changed deployment-source metadata and changed transport digest for their
+distinct intended reasons. Each exact original-body restoration returned zero. Complete channels,
+eleven reader/source inputs, original hosted inputs and semantic index remained exact; all actual
+owned process groups were independently absent. The 1.927-second run measures validation cost. Its
+first attempt failed because sandbox access denied the required process observer. That setup failure
+and release are preserved separately, and are not an accepted rejecting control.
+
+The actual 27,199-byte service-worker body lacks the export path literal. This is a precache
+observation; it does not establish every runtime-cache route. No production deployment or hosting
+configuration was changed. Full curl certificate/network diagnostics and raw response headers remain
+host-local, with byte counts/digests and exact selected public transport fields retained. The
+exported artifact body is complete.
+
+The additive [actual export capsule](actual-hosted-export.tar.gz) and
+[complete manifest](actual-hosted-export-manifest.json) preserve 127 safe regular members, including
+all three complete public HTTP bodies, transport/deployment receipts, exact tested reader inputs,
+finite producers, full rejecting/restored reader channels, process release and the failed setup
+record. Verify the outer digest and every member before extraction into a new owned records
+directory. The earlier two capsules remain byte-exact. Subsequent evidence/document publication
+keeps the tested source identity explicit; it does not change the recorded deployment's commit.
+
+Original Claude final-round acceptance and final-head CI remain pending. No RN compilation,
 replacement UI, installed native app, physical comparison, continuity, signed upgrade, production
 deployment or final architecture acceptance follows from this unit.
