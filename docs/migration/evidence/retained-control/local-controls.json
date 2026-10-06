@@ -1,0 +1,407 @@
+{
+  "observedAt": "2026-10-06T17:15:34.422600+00:00",
+  "status": "local retained controls completed; original final review and final new-head CI pending",
+  "acceptance": false,
+  "sourceHead": "85c8c926829602e07ab508e9ec150593aa890f21",
+  "sourceTree": "100e345bb2a2cb8871ea830c26202d86019fb1bc",
+  "topologyHead": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "node": "v24.16.0",
+  "controllerSha256": "7dbdb2d5092c3f7f6d1a3d3b8e2cb75fe1921f68a967c0814c4a571a63083824",
+  "sourceBinderSha256": "5c637e7fc284331d9315b81e443dc9ce15f5d2c893bd649f008bd614bf9e64cb",
+  "installedBinderSha256": "4c61643b0d6d8ef31bdff2709f3a5465dd32687ada0ff00d225f5c18c1ad1211",
+  "completeCallsReceipt": "public-calls-final/calls.json",
+  "callsReceiptSha256": "75a35472d54e839a65f539221781e904af5d082e23ae99cf9d3f18a0fd26d322",
+  "deadlineSeconds": 2100,
+  "totalElapsedSeconds": 906.0068206250435,
+  "summedCallElapsedSeconds": 873.260629542172,
+  "calls": [
+    {
+      "label": "release-build",
+      "started": "2026-10-06T16:40:58.328495+00:00",
+      "elapsedSeconds": 232.68612683401443,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": null,
+      "portAvailableBefore": null,
+      "portAvailableAfter": null,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "4a8eaee1f6f81a63da47d5b181c1279785718c8ba0bc6070935116f16b786786",
+      "sourceAfterSha256": "131c7006cbe1d7bc95893a3ffa7a267eb982b8ada77d63cccb3f158a31925430",
+      "logSha256": "5b881863823b0ffdda113c8836ce31200727ff2d3d778454ea48df197be3c4b3"
+    },
+    {
+      "label": "release-check",
+      "started": "2026-10-06T16:44:53.536867+00:00",
+      "elapsedSeconds": 50.870934917009436,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": null,
+      "portAvailableBefore": null,
+      "portAvailableAfter": null,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "608513a563578c874f26589ad449dad02a3a191469734866743985cba55c45ba",
+      "sourceAfterSha256": "2c777c60e2bc481645b7c05565b0ab8ec02b0dfd974c76a26247a62c1d76a851",
+      "logSha256": "004d3cfa98294a96d91d1bcb46fb8ecf340d774d87e9aa6cb8cbff9a1457abf3"
+    },
+    {
+      "label": "release-browser-1",
+      "started": "2026-10-06T16:45:48.178899+00:00",
+      "elapsedSeconds": 115.10397204104811,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": 5300,
+      "portAvailableBefore": true,
+      "portAvailableAfter": true,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "123d50fbdad394b526326d4ccdd4995f0a42121a8e6de0b58f96ed7b7ddfb7c8",
+      "sourceAfterSha256": "2c7659be58ec42369de4bc56c0eb28c29a34debb247f102f18d0f49db9587c13",
+      "logSha256": "819199daa9049535e29d568e7d3fb0f916a57040cd594366007f5ff43240ad12"
+    },
+    {
+      "label": "mechanism-build",
+      "started": "2026-10-06T16:47:45.982572+00:00",
+      "elapsedSeconds": 196.6882698329864,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": null,
+      "portAvailableBefore": null,
+      "portAvailableAfter": null,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "3b846afb2f2d7677c4ed1f35b399e83aacbe9c059436d92e38426c52538f4e1a",
+      "sourceAfterSha256": "456b18c70432ae4461246673fadbfd0389f96bf35b316b220bb801dc0b01a5cb",
+      "logSha256": "22d6f079689f50390dbc671f0153988ac3eb69010bf86637542293e8ecc60be6"
+    },
+    {
+      "label": "mechanism-check",
+      "started": "2026-10-06T16:51:05.435065+00:00",
+      "elapsedSeconds": 50.956333209061995,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": null,
+      "portAvailableBefore": null,
+      "portAvailableAfter": null,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "dcac94cce7a4cd48dbf44d296b445479d6afa4d4c83b7045afcbff0cd42dfc81",
+      "sourceAfterSha256": "8c769a5668c5330edb0d42353f5c2bbd7218890c484f5904c30f13bf43805d34",
+      "logSha256": "e633f3ddc5f25e1eeb0c1609f723589a4d2591417915e843d2d64e04b35c6bcc"
+    },
+    {
+      "label": "mechanism-browser-1",
+      "started": "2026-10-06T16:51:59.743283+00:00",
+      "elapsedSeconds": 116.88139170804061,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": 5300,
+      "portAvailableBefore": true,
+      "portAvailableAfter": true,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "1e31a90d44ab66f522ae4d4f9fb325006cf80d6d23cce51f61c68cf2add4917b",
+      "sourceAfterSha256": "8991c10873492b02e3b451f84b86969a074c344c2be2419e56c7065da618bed7",
+      "logSha256": "44955e67ff47459bc7050ed27acefe8844ffdc1c194496d7d38ced4c2e657a67"
+    },
+    {
+      "label": "mechanism-browser-2",
+      "started": "2026-10-06T16:53:59.336996+00:00",
+      "elapsedSeconds": 110.07360100001097,
+      "exitCode": 0,
+      "timedOut": false,
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "port": 5300,
+      "portAvailableBefore": true,
+      "portAvailableAfter": true,
+      "ownedGroupRemaining": [],
+      "sourceBeforeSha256": "31762dac7e61abe95d1e10c04c316798bfbe51b02600fc50455ede7bb169abb9",
+      "sourceAfterSha256": "d57069b1ba9d1e7c3c4e4917cbc7fd27244de024eba1fb5f4967c27105169fe1",
+      "logSha256": "44955e67ff47459bc7050ed27acefe8844ffdc1c194496d7d38ced4c2e657a67"
+    }
+  ],
+  "borrowedInstalledGraphBindings": [
+    {
+      "receipt": "public-calls-final/installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "48e3be997463865cd2b415ce775bd98f7c95d4d498eecd56966c9163caae0489",
+      "observed": "2026-10-06T16:55:52.789Z",
+      "captureElapsedSeconds": 1.780710792,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "09a7144bd406c2424dca6571a1cacbb1b00120bdf239ff0af9b085519389dd6c",
+      "observed": "2026-10-06T16:40:55.590Z",
+      "captureElapsedSeconds": 6.689456708,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-browser-1-installed-after.json",
+      "rawBytes": 17349636,
+      "sha256": "f266f1ca420fb8f8811a6a50a11a87ec574c5c82b00bc4bba091a83c2b3eb7c3",
+      "observed": "2026-10-06T16:53:56.545Z",
+      "captureElapsedSeconds": 7.65569925,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-browser-1-installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "48ddf44db9c8aff0f077d91a6576c8f482e8be2ca2292ec784b8399e9e936bd4",
+      "observed": "2026-10-06T16:51:59.666Z",
+      "captureElapsedSeconds": 1.692595167,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-browser-2-installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "fb292f257a02bc93e5b4975b8bde007a3b0794c3927d102d7130ef3d3e074e1f",
+      "observed": "2026-10-06T16:55:49.323Z",
+      "captureElapsedSeconds": 7.445924292,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-browser-2-installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "67a5d400f438abdd7c1c16090e9bf56df14de50c3a0fa42f719f0bfd56edc6de",
+      "observed": "2026-10-06T16:53:59.259Z",
+      "captureElapsedSeconds": 1.659114334,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-build-installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "c4a0fa7cdf0551f273143e3b5338f23317d3032260153ce398204cb1a0d9f2c1",
+      "observed": "2026-10-06T16:51:02.588Z",
+      "captureElapsedSeconds": 2.588723792,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-build-installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "5bab7bf1edbe84de0b8b8d7d066dd99babeb1466ca1a8855c0289dbdd575d11f",
+      "observed": "2026-10-06T16:47:45.907Z",
+      "captureElapsedSeconds": 1.761523958,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-check-installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "fcd7318740a6fb0ccc78ae204aa46ff2455aee75b5b572549b728a0b74882318",
+      "observed": "2026-10-06T16:51:56.307Z",
+      "captureElapsedSeconds": 7.012416375,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/mechanism-check-installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "c1c667fe94b5239890940edfbf8d98bcf007cba3c88b5a2c463bd1270d457417",
+      "observed": "2026-10-06T16:51:05.356Z",
+      "captureElapsedSeconds": 1.773057709,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-browser-1-installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "b85da54abee400f2e4140cb3c0187ccfc055a10bc11b3101f48397261daa9d0a",
+      "observed": "2026-10-06T16:47:43.204Z",
+      "captureElapsedSeconds": 7.643915458,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-browser-1-installed-before.json",
+      "rawBytes": 17349636,
+      "sha256": "46bb24cfec51ee1ac2c8b702a5a0cfee5b7af06da922f7c32cf069a4022e757e",
+      "observed": "2026-10-06T16:45:48.096Z",
+      "captureElapsedSeconds": 1.88907575,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-build-installed-after.json",
+      "rawBytes": 17349637,
+      "sha256": "2fb723f0e99ab8dad0ff54d79099199c9404c864105ffacb76b3f01ef12a13d6",
+      "observed": "2026-10-06T16:44:50.927Z",
+      "captureElapsedSeconds": 2.838944125,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-build-installed-before.json",
+      "rawBytes": 17349637,
+      "sha256": "3668e06eb36298b7a8491799ad5ffa65f224d37336bdc79c6fc063f90a3d04e4",
+      "observed": "2026-10-06T16:40:58.254Z",
+      "captureElapsedSeconds": 1.732844542,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-check-installed-after.json",
+      "rawBytes": 17349636,
+      "sha256": "e29c0c793175772512714b766addfa2d1af546e8e7a8d2aa7b751340403caead",
+      "observed": "2026-10-06T16:45:44.326Z",
+      "captureElapsedSeconds": 6.96371125,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    },
+    {
+      "receipt": "public-calls-final/release-check-installed-before.json",
+      "rawBytes": 17349635,
+      "sha256": "80ff0dc9bda4349f140484ca3dd7fd6a0fc6a42ead11731286a68c7b80a6214e",
+      "observed": "2026-10-06T16:44:53.461Z",
+      "captureElapsedSeconds": 1.6356735,
+      "entries": 64872,
+      "inventorySha256": "fe4675bc57b857b9c72a2b9286ca49b2a727de3dffa08c43a885629b521d2cb5"
+    }
+  ],
+  "artifacts": {
+    "release": {
+      "root": "public-calls-final/release/splotch-web-host-00Wgl6",
+      "inputsSha256": "7697bec90ce545c7cd93556e11274088de3385475e73122c972a36e79e39e5e0",
+      "resultSha256": "c3d9bbd5579847a29867b983c212844aab182856de254a8c6ba03c6f78ebf27c",
+      "roles": {
+        "reference": {
+          "outputCounts": {
+            "web/.svelte-kit/output": 1546,
+            "web/build": 1227,
+            "web/.netlify": 322
+          },
+          "totalBytes": 90336502,
+          "appShellUrl": "/?app-shell-build=48aefdb8-8b8f-4669-b1bf-38a7631b702e"
+        },
+        "control": {
+          "outputCounts": {
+            "web/.svelte-kit/output": 1546,
+            "web/build": 1227,
+            "web/.netlify": 322
+          },
+          "totalBytes": 90336502,
+          "appShellUrl": "/?app-shell-build=48aefdb8-8b8f-4669-b1bf-38a7631b702e"
+        }
+      },
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": ["explicit owned-copy absolute path prefix"],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      }
+    },
+    "mechanism": {
+      "root": "public-calls-final/mechanism/splotch-web-host-CKf8UD",
+      "inputsSha256": "3fe2364bb76eb7babd4906d2c332479df00f9bea2ef6491e8936e9faed72637c",
+      "resultSha256": "2b4252c1e27614982b25e9d6fec341528431599e41d50ad5cb4f93a521d6df13",
+      "roles": {
+        "reference": {
+          "outputCounts": {
+            "web/.svelte-kit/output": 1546,
+            "web/build": 1227,
+            "web/.netlify": 322
+          },
+          "totalBytes": 90358372,
+          "appShellUrl": "/?app-shell-build=4d09bcb4-6f88-4716-ad31-b163c9b1494c"
+        },
+        "control": {
+          "outputCounts": {
+            "web/.svelte-kit/output": 1546,
+            "web/build": 1227,
+            "web/.netlify": 322
+          },
+          "totalBytes": 90358372,
+          "appShellUrl": "/?app-shell-build=4d09bcb4-6f88-4716-ad31-b163c9b1494c"
+        }
+      },
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": ["explicit owned-copy absolute path prefix"],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      }
+    }
+  },
+  "firstInvocationWitnessBefore": "public-calls-final/first-browser-witness.json",
+  "firstInvocationWitnessAfter": "public-calls-final/first-browser-witness-after-repeat.json",
+  "firstInvocationRowsUnchanged": true,
+  "firstInvocationRows": [
+    {
+      "path": "browser-results/browser-control-c1610ee7-5851-45f9-a1d5-ab9cf5474ba5/.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45,
+      "mode": 420
+    },
+    {
+      "path": "browser-results/browser-control-c1610ee7-5851-45f9-a1d5-ab9cf5474ba5/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png",
+      "sha256": "913ed393f1c6d48889ac2005c1898c3a28471793380984120bb5827bf6f7118b",
+      "bytes": 214186,
+      "mode": 420
+    },
+    {
+      "path": "browser-report/browser-control-c1610ee7-5851-45f9-a1d5-ab9cf5474ba5/index.html",
+      "sha256": "d0ccb13d92710f05620029c65cd67957427e4288147fb3f06fd1e4e598bca166",
+      "bytes": 521503,
+      "mode": 420
+    }
+  ],
+  "release": {
+    "receipt": "public-calls-final/active-lease.json",
+    "owner": "retained_control",
+    "controllerPid": 64851,
+    "state": "completed-public-calls",
+    "released": "2026-10-06T16:55:53.536539+00:00",
+    "ownedGroupsRemaining": [],
+    "portsAvailableAfter": {
+      "5300": true
+    }
+  },
+  "fullGates": [
+    {
+      "command": "npm run check:quality",
+      "receipt": "nonce-repair/full-quality-v2/invocation.json",
+      "sourceHead": "85c8c926829602e07ab508e9ec150593aa890f21",
+      "sourceTree": "100e345bb2a2cb8871ea830c26202d86019fb1bc",
+      "exitCode": 0
+    },
+    {
+      "command": "SMOKE_PORT=5300 npm run test:browserless",
+      "receipt": "nonce-repair/full-browserless-v2/invocation.json",
+      "sourceHead": "85c8c926829602e07ab508e9ec150593aa890f21",
+      "sourceTree": "100e345bb2a2cb8871ea830c26202d86019fb1bc",
+      "exitCode": 0
+    }
+  ],
+  "provenanceLimits": [
+    "The source-bound local broad gates captured complete source/index plus Node and installed lock; complete borrowed graph witness is fresh around each of the later seven calls.",
+    "Older a575 local broad Quality/Browserless/E2E receipts lacked at-execution source binding and remain owner-attested exploratory evidence.",
+    "Five accepted f149 documentation files changed source head to be7164243515bd4f43b96edb0ba8964b71d45b7e/tree4f4c91176b1dd6e733b70be085ca4b9ddd42f022; actual runtime/build/checker/package/lock owners equal the local executed source.",
+    "Registered be7164 checks tested merge2d121765746de27851665a5e6ebcb75dbcf58b85/tree4f4c, with f149 and be7164 parents. This earlier-source CI remains distinct from the final evidence/status commit and cannot supply its final-head acceptance.",
+    "This is a retained SvelteKit control only: visible ink and early paper/input-canvas adoption. No React recovery, native runtime, deployed PWA update/offline, architecture selection or physical performance claim."
+  ],
+  "failuresPreserved": "nonce-repair/failure-dispositions.json",
+  "originalReviewer": {
+    "conversation": "b5bb0824-3f7a-4ad7-9e05-4e8e9af77333",
+    "roundsUsed": 2,
+    "roundsRemaining": 1,
+    "roundTwoReview": "https://github.com/KyleMit/Splotch/pull/2702#pullrequestreview-5431123113",
+    "finalRoundPending": true
+  }
+}

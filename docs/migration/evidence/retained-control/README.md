@@ -1,9 +1,10 @@
 # Retained control acceptance
 
-Status: original Claude round two completed; reviewed nonce repairs are under final-source
-qualification. The seven repaired-source public calls, original round three and final PR-head CI
-remain pending. This unit accepts only the retained SvelteKit control harness. It does not accept a
-React host, native candidate, architecture choice, deployment or physical performance.
+Status: original Claude round two completed; all seven repaired-source public calls and source-bound
+local Quality/Browserless gates passed at 85c8c926829602e07ab508e9ec150593aa890f21. Original round
+three and final PR-head CI remain pending. This unit accepts only the retained SvelteKit control
+harness. It does not accept a React host, native candidate, architecture choice, deployment or
+physical performance.
 
 ## Source and preserved evidence
 
@@ -62,6 +63,31 @@ mechanism browser twice, with complete logs and preserved first-invocation evide
 environment or frozen input changes invalidate receipts that depend on those inputs. Required
 final-head CI and complete supported artifact/log export precede integration. Root retains merger
 and cross-unit acceptance ownership.
+
+The [exact-source local receipt](local-controls.json) records all seven exits, the named
+2,100-second cumulative deadline, 906.007 seconds actual wall time, complete per-call source/index
+and installed-graph bindings, invocation evidence and owned release. Both actual release and
+mechanism comparisons covered all 3,095 emitted files in each copy with zero output normalizations.
+The second mechanism browser invocation preserved the first invocation's screenshot, report and
+last-run bytes and modes. Every owned caller/group was absent at release and port 5300 was
+available. The wall time measures harness cost, not application latency.
+
+The [complete structured/log capsule](local-execution.tar.xz) preserves each original selected
+receipt byte and mode, including all sixteen complete borrowed-installed-graph bindings, both
+artifact input graphs, controls, screenshots, failed setup receipts, nonce diagnosis and actual
+review metadata. Its [member manifest](local-execution-manifest.json.txt) and
+[compression verification](compression-lease.json.txt) bind all decoded members, original inputs and
+archive bytes. Recover it into an owned records directory after verifying its size and SHA-256;
+reject absolute paths, parent traversal, duplicate names or nonregular members before extraction. Do
+not extract over source or execute archived scripts automatically. Full emitted-product byte copies
+remain durably host-local; their complete recorded inventories remain in the capsule. Raw
+conversations and authentication state are excluded.
+
+The later accepted f14966ee98563e3c569fbcb90beea6d9c684614a documentation merge changed only five
+documentation paths. Its composed source be7164243515bd4f43b96edb0ba8964b71d45b7e has identical
+runtime/build/checker/package/lock owners to the executed local source; its metadata remains a
+separate CI scope. This evidence/status amendment also requires fresh final-head CI before the
+original final review. Unchanged local executions retain their exact 85c8 source scope.
 
 The original substantive review is Claude conversation b5bb0824-3f7a-4ad7-9e05-4e8e9af77333, round
 one against d1402f6b2bedd2c30cbc88d30597466855b33874 and 63b9b4d19c630b576d13159b49003488454c5071.

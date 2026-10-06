@@ -1,0 +1,32 @@
+{
+  "owner": "retained_control",
+  "pid": 82015,
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/private/tmp/splotch-resume-01a111b0/retained/package-local-evidence.py"
+  ],
+  "processStartIdentity": "82015 81283 82015 Tue Oct  6 13:14:51 2026     /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /private/tmp/splotch-resume-01a111b0/retained/package-local-evidence.py",
+  "started": "2026-10-06T17:14:52.279269+00:00",
+  "deadlineSeconds": 600,
+  "sourceBefore": {
+    "head": "be7164243515bd4f43b96edb0ba8964b71d45b7e",
+    "tree": "4f4c91176b1dd6e733b70be085ca4b9ddd42f022",
+    "porcelain": ""
+  },
+  "selectedFiles": 382,
+  "rawBytes": 700814168,
+  "state": "verified-complete",
+  "finished": "2026-10-06T17:16:10.005620+00:00",
+  "elapsedSeconds": 78.02318095800001,
+  "sourceAfter": {
+    "head": "be7164243515bd4f43b96edb0ba8964b71d45b7e",
+    "tree": "4f4c91176b1dd6e733b70be085ca4b9ddd42f022",
+    "porcelain": ""
+  },
+  "sourceUnchanged": true,
+  "decodedMembers": 382,
+  "archiveBytes": 11480252,
+  "archiveSha256": "e737b114404347f1a687502af6e2d6236f48df3950dae4a92a07e206c9e5fb44",
+  "manifestSha256": "c6ebe5ee2e18863a6eb09cfc43e64c22835ac7d9c98aa85acafc471027433393",
+  "ownedChildren": []
+}
