@@ -1,0 +1,41 @@
+{
+  "observedAtUtc": "2026-10-06T22:38:53.377149+00:00",
+  "owner": "/root",
+  "scope": "Separate narrow parent disposition of completed original physical install and read-only recorded wrapper outcome; unchanged historical consumers, not whole units or product acceptance.",
+  "parentReadbackSetupFailure": {
+    "toolChunk": "a0d22b",
+    "exitCode": 1,
+    "reason": "Parent assumed native mirror permissions0444; actual producer and manifest intentionally preserve source0644, bytes/inodes matched. First read-only attempt halted before writes; corrected predicate compares both actual modes to the recorded mode. No consumer/source retry or intended control claim."
+  },
+  "native": {
+    "accepted": "Corrected pure validator over exact three original wrapper0/1/0 calls, captured controls, same-PID explicit loads, copied Jansi bytes, full input/final output graphs and released executable mode",
+    "sourceTree": "7da00012890a72e46eb5cdc390dab8c63f0035a3",
+    "executionSha256": "035c86916d494a6e3827fd291b32f26e7de6f4862420434f82521e8df0314b10",
+    "qualificationSha256": "b4798a54162a71e09e3b8bd7c1b54cd8390526c813fb6be1565ab22d30fd52a9",
+    "releaseSha256": "e30a0fba0a81e1d105cda53556b4c6599857eb2d70d0dbdebcc7f4465e171002",
+    "allOwnedProcessesReleased": true,
+    "originalStageRemainsFailed": true,
+    "completeDyld": "Failed/open",
+    "N1CurrentCompositionRNCompileMountDrawAccepted": false,
+    "originalReviewUsed": 2,
+    "originalReviewRemaining": 1
+  },
+  "neutral": {
+    "accepted": "One actual frozen ignored-hook physical install and complete finite-context graph, exact pins/Forge patch, old raw graph preservation and unchanged source/index/lock at709",
+    "executionQualificationSha256": "bcd06b84d778492c41bbb77eae3f1ade55c3ca2e2037a0d8af9eeed8b1bc6515",
+    "resultSha256": "38146966ffba875685bada4f80b38b7c2cfca22dfd561973dc4222f6c0443429",
+    "releaseSha256": "c115396209589009c94bd535212c9b5c66560cfe545d1a07f794923847c54d57",
+    "canonicalMirrorSha256": "d0a606feab92febadda654b856471163172c56dff501551e9c5cd5f9e8b74653",
+    "canonicalMirrorCount": 57,
+    "allOwnedProcessesReleased": true,
+    "applicationHostCompilerSourceProductAccepted": false,
+    "originalReviewUsed": 1,
+    "originalReviewRemaining": 2
+  },
+  "claimLimits": [
+    "Historical declared inputs only; relevant changed inputs must be requalified.",
+    "Read-only native qualification changes one private final mode expectation, does not relabel original failed runtime stage.",
+    "Physical installation is independent from executed host, product behavior, performance, native continuity and release acceptance.",
+    "No independent Claude round consumed or budget reset; F1 material changed-source independent acceptance remains held."
+  ]
+}
