@@ -25,9 +25,12 @@ The persistent integration branch is `codex/native-migration`, accepted at
 dc08a90abc67b53124146bf288c80de0f9ffd1dd. This checkpoint branch starts at that commit and adds
 records and data capsules only. Its source changes are the migration README, progress checklist,
 this packet and `docs/migration/evidence/continuation/`. It does not integrate either unfinished
-unit. Read the pushed checkpoint branch to obtain these records; verify its live remote head before
-acting. The [work ledger](../migration/README.md#work-ledger) lists all eight accepted PRs and merge
-commits. The epic had no API-enumerated sub-issues at the latest check; this checklist is the
+unit. The checkpoint is committed locally. Remote publication awaits explicit human approval after
+automatic approval review rejected exporting the source/evidence payload to KyleMit/Splotch. Until
+publication succeeds, this packet and its capsules are available on this host only; another machine
+cannot fetch them. Verify the branch's actual upstream and remote head before treating it as
+portable. The [work ledger](../migration/README.md#work-ledger) lists all eight accepted PRs and
+merge commits. The epic had no API-enumerated sub-issues at the latest check; this checklist is the
 current scope inventory, not an existing GitHub child-issue backlog.
 
 | Recoverable work            | Exact state                                                                                                                                   | Storage                                                                                 |
@@ -119,8 +122,9 @@ retained.
 Preservation checked all seventy native intake bytes/modes, all selected preparation identities,
 archive member hashes/modes and both Git-bundle prerequisites. No prepared source was imported or
 executed while making this checkpoint. The migration worktrees were left unchanged. The preservation
-PR records formatting/reference checks and the final integrity review; inspect that PR for the
-checkpoint's own validation rather than attributing old app checks to this docs-only commit.
+validation receipt records formatting/reference checks and the final integrity review; inspect that
+receipt for the checkpoint's own validation rather than attributing old app checks to this docs-only
+commit. A remote checkpoint PR has not been opened while publication approval is pending.
 
 ## Risks & next 3 steps
 
@@ -128,7 +132,8 @@ checkpoint's own validation rather than attributing old app checks to this docs-
    branches, PRs, manifest, original Claude identity and available hardware. Mark facts confirmed,
    stale or missing before execution; absorb and delete only this transient packet. Replace incoming
    links to it with durable progress/evidence entry points in that same deletion commit. Keep the
-   progress, provenance and evidence records. Review/integrate the checkpoint PR if still pending.
+   progress, provenance and evidence records. Review/integrate the checkpoint PR if one has been
+   opened and remains pending.
 2. Finish the retained control unit first. Recover the exact source/history, triage advisory guard
    findings, including the reported reachable-import guard hole before candidate source expansion,
    compose the CI proposal, choose a numeric deadline from measured cost and run final applicable

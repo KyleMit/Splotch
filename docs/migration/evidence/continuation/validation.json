@@ -58,5 +58,12 @@
     "No new migration code, dependency install, native build/mount or performance capture",
     "No original Claude resumption, review-budget reset, ledger adoption or integration merge",
     "No app/npm test repetition on this docs-only checkpoint; historical acceptance remains exact-source scoped"
-  ]
+  ],
+  "publication": {
+    "status": "blocked-pending-human-approval",
+    "destination": "KyleMit/Splotch",
+    "branch": "codex/migration-continuation-records",
+    "reason": "Automatic approval review rejected exporting source snapshots, browser evidence and derived records without explicit authorization for this payload and destination",
+    "remoteWritePerformed": false
+  }
 }

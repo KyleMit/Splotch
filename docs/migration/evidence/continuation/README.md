@@ -7,6 +7,12 @@ dc08a90abc67b53124146bf288c80de0f9ffd1dd. These capsules preserve unfinished wor
 evidence as data; they do not add candidate code to the application or accept an implementation.
 Implementation remains paused until the maintainer authorizes it.
 
+The checkpoint is committed locally on `codex/migration-continuation-records`. Automatic approval
+review rejected its initial push because explicit authorization was missing for exporting this
+source/evidence payload to KyleMit/Splotch. Publication awaits human approval. Until a push
+succeeds, all capsules and this packet are host-local; verify the actual upstream before relying on
+another machine to recover them.
+
 ## Stored records
 
 The [manifest](manifest.json) gives exact outer hashes, lengths, Git prerequisites and every archive
@@ -31,10 +37,11 @@ large original dependency fingerprints verbatim; compression changes storage, no
 
 ## Verify and recover
 
-Start from the pushed `codex/migration-continuation-records` branch or its reviewed descendant.
-Fetch the accepted integration history as well; both bundles deliberately omit their already
-accepted prerequisites. Re-read the manifest and verify all bytes before using the capsules. This
-standard library check reads stored data without importing or executing any prepared source:
+After approved publication, start from the pushed `codex/migration-continuation-records` branch or
+its reviewed descendant. On the original host, the local branch already contains the records. Fetch
+the accepted integration history as well; both bundles deliberately omit their already accepted
+prerequisites. Re-read the manifest and verify all bytes before using the capsules. This standard
+library check reads stored data without importing or executing any prepared source:
 
 ```sh
 python3 - <<'PY'
