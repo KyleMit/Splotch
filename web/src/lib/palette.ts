@@ -36,6 +36,7 @@ const PALETTE_SOURCE = [
 // them in TRIM_ORDER priority (see the trim rules in ColorPalette.svelte).
 // Purple must stay at index 0 — it's the default selection.
 export const PALETTE_COLORS: readonly PaletteColor[] = PALETTE_SOURCE;
+export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
 
 /** Every swatch label in PALETTE_COLORS — a closed vocabulary, not a string. */
 export type PaletteLabel = (typeof PALETTE_SOURCE)[number]['label'];

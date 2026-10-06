@@ -14,7 +14,7 @@
 
 import { dev } from '$app/environment';
 import { pageCompositionKey } from '$lib/state/books';
-import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
+import { DEFAULT_STROKE_COLOR } from '$lib/palette';
 import { resolvedTheme } from '$lib/state/appearance.svelte';
 import { themedOverlayUrl } from '$lib/state/coloringBook.svelte';
 import type { ResolvedTheme } from '$lib/theme';
@@ -24,7 +24,7 @@ import {
   ERASER_SIZE_MULTIPLIER,
   getStrokeWidthPx,
   type StrokeSize,
-} from '$lib/state/strokeWidth.svelte';
+} from './strokeSettings';
 import {
   calculateStrokeSpeed,
   COLOR_CHANGE_DEBOUNCE_MS,

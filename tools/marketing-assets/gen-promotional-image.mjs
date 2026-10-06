@@ -74,7 +74,7 @@ const ATTRIBUTE = /([\w:-]+)="([^"]*)"/g;
 const ZERO_ORIGIN_VIEWBOX = /^0 0 (\S+) (\S+)$/;
 
 // SVG stroke width → app stroke size. Each size's pen width is STROKE_WIDTHS in
-// tools/store-drawings/gen-pointer-instructions.mjs, drift-guarded against the app.
+// tools/store-drawings/gen-pointer-instructions.mjs, derived from the app width owner.
 function svgWidthToAppSize(w) {
   if (w <= 9) return 2; // SVG 8   → size 2
   if (w <= 14) return 3; // SVG 14  → size 3

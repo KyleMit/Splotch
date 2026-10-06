@@ -2,9 +2,16 @@ import { STORAGE_KEYS, readInt, writeInt, onDurableRestore, type StorageKey } fr
 import { toolState, type ToolState } from './tool.svelte';
 import type { CommonIconName } from '$lib/components/iconTypes';
 
-export type StrokeSize = 1 | 2 | 3 | 4 | 5;
-export const STROKE_SIZES: readonly StrokeSize[] = [1, 2, 3, 4, 5];
-export const DEFAULT_SIZE: StrokeSize = 3;
+import { STROKE_SIZES, DEFAULT_SIZE, type StrokeSize } from '../drawing/strokeSettings';
+
+export {
+  STROKE_SIZES,
+  DEFAULT_SIZE,
+  ERASER_SIZE_MULTIPLIER,
+  getStrokeWidthPx,
+  getEraserWidthPx,
+  type StrokeSize,
+} from '../drawing/strokeSettings';
 
 // Spelled out rather than built from a template string: each literal is checked
 // against the generated icon union, so a renamed or deleted SVG is a compile
@@ -36,19 +43,6 @@ export const ERASER_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
   3: 'size-eraser-3',
   4: 'size-eraser-4',
   5: 'size-eraser-5',
-};
-
-// The eraser runs noticeably larger than the pen at the same stroke level — a
-// toddler erasing wants big sweeps, not precision, and 1.4× was too subtle to
-// feel. Matching the pen exactly makes precise erasing frustrating.
-export const ERASER_SIZE_MULTIPLIER = 2;
-
-const SIZE_TO_PX: Record<StrokeSize, number> = {
-  1: 2,
-  2: 4,
-  3: 8,
-  4: 14,
-  5: 22,
 };
 
 function readStrokeLevel(key: StorageKey, fallback: StrokeSize): StrokeSize {
@@ -109,11 +103,3 @@ export const strokeWidthState = createStrokeWidth(toolState);
 export const { activeStrokeSize, setStrokeSize } = strokeWidthState;
 
 onDurableRestore(strokeWidthState.reloadStrokeWidth);
-
-export function getStrokeWidthPx(size: StrokeSize): number {
-  return SIZE_TO_PX[size];
-}
-
-export function getEraserWidthPx(size: StrokeSize): number {
-  return getStrokeWidthPx(size) * ERASER_SIZE_MULTIPLIER;
-}

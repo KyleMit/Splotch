@@ -3,9 +3,15 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { runInThisContext } from 'node:vm';
 import { DEFAULT_SIZE_LEVEL, SIZE_PX, replayInPage } from '../web/replay-input-recording.mjs';
 import { CONTACT_BANK_MS } from '../split-capture/lib/probe-host-protocol.mjs';
 import { DRAW_SECONDS } from '../split-capture/capture-hand-input.mjs';
+import {
+  STROKE_SIZES,
+  DEFAULT_SIZE,
+  getStrokeWidthPx,
+} from '../../../web/src/lib/drawing/strokeSettings.ts';
 
 const state = vi.hoisted(() => ({ directEntryUrl: null, runMain: vi.fn() }));
 const chromium = vi.hoisted(() => ({ connectOverCDP: vi.fn() }));
@@ -27,6 +33,7 @@ const perfEntryPath = (entry) => join(repoRoot, 'tools', 'perf', entry);
 const analyzePath = join(repoRoot, 'tools', 'perf', 'analyze-chrome-trace.mjs');
 const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-web-inspector.mjs');
 const replayPath = join(repoRoot, 'tools', 'perf', 'web', 'replay-input-recording.mjs');
+const TYPE_STRIP_FLAGS = ['--experimental-strip-types', '--disable-warning=ExperimentalWarning'];
 const scenarioPath = join(repoRoot, 'tools', 'perf', 'web', 'capture-web-session.mjs');
 const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'web', 'run-undo-scenarios.mjs');
 const handCapturePath = join(repoRoot, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs');
@@ -51,7 +58,9 @@ async function replayActions(actions) {
   vi.stubGlobal('document', { querySelector: () => canvas });
   vi.stubGlobal('window', { __engine: engine });
   vi.stubGlobal('requestAnimationFrame', (callback) => callback());
-  await replayInPage({
+  // Playwright serializes the function, so module closures must be unavailable.
+  const replay = runInThisContext(`(${replayInPage.toString()})`);
+  await replay({
     events: actions.map(([name, value]) => ({ kind: 'action', name, value })),
     recCanvas: { w: 1, h: 1 },
     sizePx: SIZE_PX,
@@ -75,8 +84,8 @@ afterEach(() => {
   rmSync(fixtureDir, { recursive: true, force: true });
 });
 
-function expectCliFailure(script, args, message) {
-  const result = spawnSync(process.execPath, [script, ...args], {
+function expectCliFailure(script, args, message, execArgv = []) {
+  const result = spawnSync(process.execPath, [...execArgv, script, ...args], {
     cwd: repoRoot,
     encoding: 'utf8',
     env: { ...process.env, ANDROID_HOME: unreachableAndroidHome() },
@@ -150,7 +159,8 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       replayPath,
       [`--recording=${path}`],
-      `Replay recording not found or unreadable: ${path}`
+      `Replay recording not found or unreadable: ${path}`,
+      TYPE_STRIP_FLAGS
     );
   });
 
@@ -161,7 +171,8 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       replayPath,
       [`--recording=${path}`],
-      `Replay recording is not valid JSON: ${path}`
+      `Replay recording is not valid JSON: ${path}`,
+      TYPE_STRIP_FLAGS
     );
   });
 
@@ -172,7 +183,8 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       replayPath,
       [`--recording=${path}`],
-      `Replay recording has no events array: ${path}`
+      `Replay recording has no events array: ${path}`,
+      TYPE_STRIP_FLAGS
     );
   });
 
@@ -194,7 +206,8 @@ describe('performance CLI input failures', () => {
     expectCliFailure(
       replayPath,
       [`--recording=${path}`],
-      `Replay recording selects size level 9, 0, which the app does not have (known: 1, 2, 3, 4, 5): ${path}`
+      `Replay recording selects size level 9, 0, which the app does not have (known: 1, 2, 3, 4, 5): ${path}`,
+      TYPE_STRIP_FLAGS
     );
   });
 
@@ -273,29 +286,12 @@ describe('performance CLI input failures', () => {
     expect(result.stderr).toMatch(/^Unknown flag --stroke=4 — known flags: .*\bstrokes\b/);
   });
 
-  // The drift guard for SIZE_PX and DEFAULT_SIZE_LEVEL: the app's SIZE_TO_PX and
-  // DEFAULT_SIZE live in a Svelte rune module no Node code can import, so they
-  // are read from the source text.
   it('replays every recorded size level at the app stroke width', async () => {
-    const strokeWidthSource = readFileSync(
-      join(repoRoot, 'web/src/lib/state/strokeWidth.svelte.ts'),
-      'utf8'
-    );
-    const appTable = /const SIZE_TO_PX\b[^=]*=\s*\{([^}]*)\}/.exec(strokeWidthSource)?.[1];
-    const appWidths = Object.fromEntries(
-      [...(appTable ?? '').matchAll(/(\d+):\s*(\d+)/g)].map(([, level, px]) => [level, Number(px)])
-    );
-    expect(Object.keys(appWidths)).not.toHaveLength(0);
-    expect(SIZE_PX).toEqual(appWidths);
-    const appDefault = /export const DEFAULT_SIZE\b[^=]*=\s*(\d+);/.exec(strokeWidthSource)?.[1];
-    expect(DEFAULT_SIZE_LEVEL).toBe(Number(appDefault));
-
-    const levels = Object.keys(appWidths).map(Number);
-    const engine = await replayActions(levels.map((level) => ['size', level]));
+    const engine = await replayActions(STROKE_SIZES.map((level) => ['size', level]));
 
     expect(engine.setStrokeWidth.mock.calls.flat()).toEqual([
-      SIZE_PX[DEFAULT_SIZE_LEVEL],
-      ...levels.map((level) => appWidths[level]),
+      getStrokeWidthPx(DEFAULT_SIZE),
+      ...STROKE_SIZES.map(getStrokeWidthPx),
     ]);
   });
 

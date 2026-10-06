@@ -4,7 +4,7 @@
 // synthetic squiggles.
 //
 //   npm run perf:web:replay -- --recording=perf-profiles/recordings/my-session.json
-//   node tools/perf/web/replay-input-recording.mjs --recording=… --turbo --no-build
+//   node --experimental-strip-types --disable-warning=ExperimentalWarning tools/perf/web/replay-input-recording.mjs --recording=… --turbo --no-build
 //
 // It opens /dev/engine (which exposes window.__engine + getUndoDebug), sizes the
 // canvas to the recorded device, replays the captured pointer stream + UI actions
@@ -13,6 +13,11 @@
 // how YOUR input landed in tiled history (undo depth, patch/base rasters, bytes).
 
 import { chromium } from '@playwright/test';
+import {
+  STROKE_SIZES,
+  DEFAULT_SIZE,
+  getStrokeWidthPx,
+} from '../../../web/src/lib/drawing/strokeSettings.ts';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
@@ -31,11 +36,10 @@ import { profilePath } from '../lib/profile-paths.mjs';
 import { buildMetrics, writeProfileArtifacts } from '../lib/profile-artifacts.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
-// The app's SIZE_TO_PX and DEFAULT_SIZE (web/src/lib/state/strokeWidth.svelte.ts),
-// a Svelte rune module this Node script cannot import;
-// tools/perf/tests/cli-inputs.test.mjs fails when they disagree.
-export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
-export const DEFAULT_SIZE_LEVEL = 3;
+export const SIZE_PX = Object.fromEntries(
+  STROKE_SIZES.map((size) => [size, getStrokeWidthPx(size)])
+);
+export const DEFAULT_SIZE_LEVEL = DEFAULT_SIZE;
 const MAX_IDLE_GAP_MS = 250;
 
 export async function runReplayScenario(argv = process.argv.slice(2)) {
