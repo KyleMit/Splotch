@@ -8,9 +8,17 @@ import { ROOT, isMain, runMain } from './lib/proc.mjs';
 import { CANDIDATE_DIRECTORY } from './lib/native-candidate.mjs';
 import { verifyNetlifyRuntime } from './lib/netlify-runtime.mjs';
 
-export const TOPOLOGY_PROOF_BRANCH = 'feature/netlify-migration-topology-05';
-export const PRODUCTION_INSTALL_CONTRACT =
-  'docs/migration/evidence/netlify-install/production-install-contract.json';
+import {
+  TOPOLOGY_PROOF_BRANCH,
+  PRODUCTION_INSTALL_CONTRACT,
+  TOPOLOGY_INPUT_PATHS,
+  TOPOLOGY_CONTEXTS,
+  topologyArtifactKeys,
+  assertTopologyGraph,
+  TOPOLOGY_INSPECTION_SCOPE,
+} from './migration/lib/netlify-topology-report.mjs';
+
+export { TOPOLOGY_PROOF_BRANCH, PRODUCTION_INSTALL_CONTRACT };
 const PROCESS_TIMEOUT_MS = 30_000;
 const MAX_PROCESS_OUTPUT_BYTES = 1024 * 1024;
 
@@ -39,20 +47,6 @@ export function topologyProofContext(env) {
   assert.equal(env.CONTEXT, 'branch-deploy', 'Named proof ref must never use production context');
   assert.match(env.COMMIT_REF ?? '', /^[a-f0-9]{40}$/, 'Missing proof checkout identity');
   return true;
-}
-
-function artifactSet(rows, label) {
-  assert.ok(Array.isArray(rows), `${label} artifact list is missing`);
-  const keys = rows.map((row) => {
-    assert.deepEqual(Object.keys(row).sort(), ['key', 'name', 'version']);
-    assert.equal(typeof row.name, 'string');
-    assert.equal(typeof row.version, 'string');
-    assert.equal(row.key, `${row.name}@${row.version}`, `Invalid ${label} artifact identity`);
-    return row.key;
-  });
-  assert.equal(new Set(keys).size, keys.length, `Duplicate ${label} artifact`);
-  assert.deepEqual(keys, [...keys].sort(), `Unsorted ${label} artifacts`);
-  return new Set(keys);
 }
 
 function installedPackages(root, candidate, contexts) {
@@ -131,14 +125,7 @@ export function inspectNetlifyProductionInstall(rootDirectory, contract, facts) 
   assert.equal(contract.schemaVersion, 1);
   assert.equal(contract.candidateDirectory, CANDIDATE_DIRECTORY);
   const candidate = containedPath(root, join(root, CANDIDATE_DIRECTORY));
-  const hashes = {
-    lockSha256: 'pnpm-lock.yaml',
-    rootManifestSha256: 'package.json',
-    candidateManifestSha256: `${CANDIDATE_DIRECTORY}/package.json`,
-    workspaceSha256: 'pnpm-workspace.yaml',
-    netlifyConfigSha256: 'netlify.toml',
-  };
-  for (const [key, path] of Object.entries(hashes))
+  for (const [key, path] of Object.entries(TOPOLOGY_INPUT_PATHS))
     assert.equal(
       sha256(containedPath(root, join(root, path))),
       contract[key],
@@ -149,9 +136,12 @@ export function inspectNetlifyProductionInstall(rootDirectory, contract, facts) 
   assert.equal(candidateManifest.private, true, 'Candidate workspace must remain private');
   assert.equal(manifest.packageManager, contract.packageManager);
   verifyNetlifyRuntime(root, manifest, facts);
-  const production = artifactSet(contract.productionArtifacts, 'production');
-  const direct = artifactSet(contract.productionDirect, 'direct production');
-  const exclusive = artifactSet(contract.candidateExclusiveArtifacts, 'candidate-exclusive');
+  const production = topologyArtifactKeys(contract.productionArtifacts, 'production');
+  const direct = topologyArtifactKeys(contract.productionDirect, 'direct production');
+  const exclusive = topologyArtifactKeys(
+    contract.candidateExclusiveArtifacts,
+    'candidate-exclusive'
+  );
   assert.deepEqual(
     contract.productionDirect.map((row) => row.name).sort(),
     Object.keys(manifest.dependencies).sort(),
@@ -161,13 +151,7 @@ export function inspectNetlifyProductionInstall(rootDirectory, contract, facts) 
     assert.ok(production.has(key), `Direct package outside production closure: ${key}`);
   for (const key of exclusive)
     assert.ok(!production.has(key), `Invalid candidate-exclusive ownership: ${key}`);
-  const contexts = [
-    root,
-    candidate,
-    join(root, 'web'),
-    join(root, 'netlify/functions'),
-    join(root, 'tools'),
-  ];
+  const contexts = TOPOLOGY_CONTEXTS.map((context) => join(root, context));
   const installed = installedPackages(root, candidate, contexts);
   for (const row of installed) {
     assert.ok(
@@ -190,22 +174,24 @@ export function inspectNetlifyProductionInstall(rootDirectory, contract, facts) 
       return { context: relative(root, context) || '.', ...resolved };
     })
   );
-  return {
+  const record = {
     disposition: 'production-installed-tree-passed',
     proofBranch: TOPOLOGY_PROOF_BRANCH,
     context: facts.env.CONTEXT,
     commit: facts.headSha,
     nodeVersion: facts.nodeVersion,
     packageManager: manifest.packageManager,
+    packageManagerVersion: facts.packageManagerVersion,
     productionFlags: facts.env.PNPM_FLAGS,
-    lockSha256: contract.lockSha256,
+    ...Object.fromEntries(Object.keys(TOPOLOGY_INPUT_PATHS).map((key) => [key, contract[key]])),
     candidateExclusiveArtifactCount: exclusive.size,
     installedPackageCount: installed.length,
     installed,
     resolutions,
-    scope:
-      'Post-install tree and identity; cloud install/build/deploy logs remain separate evidence',
+    scope: TOPOLOGY_INSPECTION_SCOPE,
   };
+  assertTopologyGraph(record, contract);
+  return record;
 }
 
 export function runNetlifyTopologyWitness() {

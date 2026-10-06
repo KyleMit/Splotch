@@ -18,7 +18,8 @@
     "tools/mobile/check-static-bundle.mjs!",
     "tools/check-bundle-budgets.mjs!",
     "tools/check-eager-error-bundle.mjs!",
-    "tools/stage-netlify-functions.mjs!"
+    "tools/stage-netlify-functions.mjs!",
+    "tools/migration/gen-hosted-topology.mjs!"
   ],
   "paths": {
     "$lib/*": ["web/src/lib/*"]

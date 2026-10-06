@@ -118,3 +118,29 @@ capability's tests; wrapper/browser sources live under `migration/probes/web-hos
 and the retained-control CI job register these callers over the accepted topology checkpoint. CI
 runs release build/check/browser, then mechanism build/check/browser twice, serially on one runner.
 The acceptance record owns the measured harness-cost derivation for its numeric job deadline.
+
+`gen:migration:hosted-topology` runs after all ordinary web postbuild guards. Only the exact
+nonproduction proof ref writes `web/build/migration-install-topology.json`; other builds return
+before reading evidence. Native builds and development servers have no static input to copy. A
+second writer refuses an existing path. The export contains the complete installed package and
+five-context resolution rows, reviewed input hashes, actual runtime identities and individually
+selected non-secret deploy identifiers. Its observation happens after the build. It proves no native
+candidate execution, performance, continuity or deployed application behavior.
+
+`check:migration:hosted-topology -- --artifact <downloaded-json> --commit <sha> --metadata <json>`
+requires the exact source checkout. The metadata file contains only `id`, `build_id`, `site_id`,
+`commit_ref`, `branch`, `context` and `state` from the supported deploy read. Fetch the file using
+the deploy-ID permalink, preserve its URL, status, content type and complete decoded body with byte
+count and SHA-256, and reject HTML or partial responses. Bind that transport receipt to the exact
+bytes supplied to the reader. The offline reader rechecks graph and deploy/source invariants against
+the contract bytes in that checkout; its receipt alone does not establish a physical package census
+for an arbitrary local JSON file. Completeness also requires the selected immutable response and its
+exact committed physical producer. Full deploy logs are optional corroboration; their availability
+cannot replace this reader or the complete downloaded graph. Raw metadata may contain tokens and
+stays host-local.
+
+The export owner changes when the production manifest, lock, candidate manifest, workspace, Netlify
+configuration, proof branch or postbuild ownership changes. Regenerate reviewed proof inputs before
+a fresh hosted run; do not rewrite historical execution evidence. Remove the export command and its
+proof-only hosted output after its complete evidence has transferred to the campaign's accepted
+topology record and a replacement owner has been reviewed.
