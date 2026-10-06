@@ -18,17 +18,22 @@ export function readLockFile(path) {
   return lock;
 }
 
+export function artifactIdentity(key) {
+  const match = /^(@[^/]+\/[^@]+|[^@]+)@(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)$/.exec(key);
+  if (!match) throw new Error(`Unsupported package identity: ${key}`);
+  return { key, name: match[1], version: match[2] };
+}
+
 export function artifactMap(lock) {
   return new Map(
     Object.entries(lock.packages).map(([key, value]) => {
-      const match = /^(@[^/]+\/[^@]+|[^@]+)@(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)$/.exec(key);
-      if (!match) throw new Error(`Unsupported package identity: ${key}`);
+      const identity = artifactIdentity(key);
       const resolution = requireMapping(value.resolution, `${key} resolution`);
       if (typeof resolution.integrity !== 'string') throw new Error(`Missing integrity: ${key}`);
       if (resolution.tarball && !resolution.tarball.startsWith('https://registry.npmjs.org/')) {
         throw new Error(`Nonregistry artifact requires separate review: ${key}`);
       }
-      return [key, { key, name: match[1], version: match[2], ...resolution }];
+      return [key, { ...identity, ...resolution }];
     })
   );
 }
@@ -89,6 +94,20 @@ export function candidateExclusiveArtifacts(lock) {
   return [...getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY, true)]
     .filter((key) => !production.has(key))
     .map((key) => all.get(key));
+}
+
+export function candidateOnlyPackageNames(lock) {
+  const all = artifactMap(lock);
+  const production = new Set(
+    [...getImporterArtifactKeys(lock, '.')].map((key) => all.get(key).name)
+  );
+  return [
+    ...new Set(
+      [...getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY, true)]
+        .map((key) => all.get(key).name)
+        .filter((name) => !production.has(name))
+    ),
+  ].sort();
 }
 
 export function changedArtifactMaps(original, selected) {

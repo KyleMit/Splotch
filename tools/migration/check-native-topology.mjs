@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
-import { artifactMap, candidateExclusiveArtifacts, readLockFile } from './lib/lock-artifacts.mjs';
+import { artifactMap, candidateOnlyPackageNames, readLockFile } from './lib/lock-artifacts.mjs';
 import {
   assertCandidateManifest,
   assertDeclaredCandidateImports,
@@ -59,10 +59,7 @@ export async function checkNativeTopology(argv) {
     lock,
     readJson(join(evidence, 'baseline-production-artifacts.json')).artifacts
   );
-  const shippingImports = assertShippingImports(
-    root,
-    candidateExclusiveArtifacts(lock).map((artifact) => artifact.name)
-  );
+  const shippingImports = assertShippingImports(root, candidateOnlyPackageNames(lock));
   const identities = inspectNativeIdentities(candidate, alignment);
   const config = inspectNativeConfig(root, candidate, identities, lock);
   runCandidateNode(root, [

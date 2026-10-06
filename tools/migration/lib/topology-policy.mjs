@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'n
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { parseDocument } from 'yaml';
 import {
+  artifactIdentity,
   artifactMap,
   candidateExclusiveArtifacts,
   changedArtifactMaps,
@@ -62,10 +63,15 @@ export function assertAlignmentUpdateOwner(dependabot, alignment) {
 }
 
 export function assertProductionClosure(lock, baselineArtifacts) {
-  const baseline = new Set(baselineArtifacts);
+  const baseline = new Set(baselineArtifacts.map((key) => artifactIdentity(key).name));
+  const artifacts = artifactMap(lock);
   const production = getImporterArtifactKeys(lock, '.');
   const candidate = getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY, true);
-  const leaks = [...candidate].filter((key) => production.has(key) && !baseline.has(key));
+  const candidateNames = new Set([...candidate].map((key) => artifacts.get(key).name));
+  const leaks = [...production].filter((key) => {
+    const name = artifacts.get(key).name;
+    return candidateNames.has(name) && !baseline.has(name);
+  });
   assert.deepEqual(
     leaks,
     [],
