@@ -1,0 +1,64 @@
+# Product UI migration
+
+This campaign delivers the migration tracked by
+[epic 2690](https://github.com/KyleMit/Splotch/issues/2690). The maintainer authorized Codex and
+Claude to make decisions and complete the work autonomously, with independent review throughout. The
+goal is a complete, integrated, tuned product across web, Android, and iOS, with existing-user
+continuity.
+
+The working direction is React Native mobile with a shared web-capable product UI. It remains an
+architecture hypothesis until the structural checks in the [contract](CONTRACT.md) support it.
+Native drawing inside Capacitor is a live competing option. React Native Web and React Strict DOM
+are candidates for the shared web vocabulary; neither is selected. Flutter remains a real
+alternative. A complete React DOM rewrite is not a prerequisite to native work.
+
+## Campaign records
+
+* [Migration contract](CONTRACT.md): scope, decisions, phase exits, and completion evidence.
+* [Product acceptance](ACCEPTANCE.md): behaviors and scenarios that the replacement must preserve.
+* [Web contract](WEB-CONTRACT.md): startup, hosting, security, navigation, and offline boundaries.
+* [Upgrade contract](UPGRADES.md): native services, persisted data, and same-identity upgrade proof.
+
+These documents define pending requirements, not claims that a candidate already passes. Existing
+tests and ADRs remain authoritative until a reviewed change replaces or amends them. Keep evidence
+linked from the work ledger instead of changing an unchecked requirement into an assertion.
+
+## Branch and review discipline
+
+`codex/native-migration` is the persistent integration branch. Each bounded unit branches from its
+current reviewed head, opens a small PR against it, completes Claude review and applicable CI, then
+merges back. This is a sequence of reviewed integration PRs, not a GitHub atomic stack. The final
+cutover PR targets `main`; merge the integration branch's product changes into `main` only after the
+relevant release gates pass. Keep the shipping Svelte/Capacitor app runnable during development.
+
+Maintain exact reviewed commits and review dispositions in the unit's PR. Copy SHAs from command
+output. Do not advance the integration branch with unresolved material findings or pending checks.
+The native handler owns commands, changes, tests, GitHub writes, and device reservations; Claude
+independently challenges assumptions and verifies the resulting evidence through `run-rival-agent`.
+Codex subagents can investigate or implement bounded areas; they do not substitute for Claude's
+independent review.
+
+Review architecture decisions, implementation plans, meaningful completed units, and phase exits.
+Use alternatives and causal evidence to resolve disagreement. Agreement alone is not a performance
+result. Keep routine mechanical changes inside their unit rather than adding a separate ceremony for
+each edit. Product-visible and compatibility decisions are delegated to the pair; record the
+options, choice, recurring cost, and validation in the PR and relevant ADR.
+
+## Work ledger
+
+| Unit                            | State                 | Evidence and next exit                                                                                                                                                                  |
+| ------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture direction review   | Conditional agreement | Claude reviewed the complete proposal at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4; see the contract's decision summary. No candidate performance was measured.                          |
+| Phase 0: migration contract     | In review             | Product, web, and native audits define scope. Baseline provenance, architecture-comparison implementation plans, and Claude's contract review must be recorded before this phase exits. |
+| Phase 1: architecture checks    | Pending               | Compare causal mechanisms, native build/integration feasibility, and shared web contract feasibility; choose released dependency versions and record the decision.                      |
+| Phase 2: foundation             | Pending               | Runnable isolated candidate builds, shared behavior boundaries, native bindings, test/capture entry points, and CI.                                                                     |
+| Phase 3: drawing                | Pending               | Complete renderer/input/history/export/audio behaviors behind the selected platform boundary.                                                                                           |
+| Phase 4: complete product       | Pending               | Every applicable acceptance scenario has a replacement implementation and test/evidence mapping.                                                                                        |
+| Phase 5: integrated tuning      | Pending               | Full canonical workloads, complete UI, matched physical-device controls, and release-gate evidence.                                                                                     |
+| Phase 6: cutover and retirement | Pending               | Independent target readiness, signed artifacts and upgrade proof, hosted deployment checks, final Claude review, and documented retirement of replaced UI owners.                       |
+
+The ledger is updated in each reviewed unit. Preserve failures and rejected assumptions beside their
+dispositions. Main continues moving during the campaign: reconcile its product changes into the
+integration branch at phase boundaries and before cutover, using `reconcile-with-main`, and refresh
+dependencies after dependency changes. A new shipping feature joins the acceptance inventory before
+the replacement can claim parity.
