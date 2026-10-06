@@ -1,0 +1,1828 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/import_boundary",
+  "integrator": "/root",
+  "recordedAt": "2026-10-06T17:12:54.278Z",
+  "purpose": "Final CI and public-head status for the existing F1 unit; preserve on an independent records branch so the tested implementation head stays immutable",
+  "publicHead": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+  "publicTree": "21a6acacd1d20c275a1df169e02b1dd2ec2f1205",
+  "acceptedBase": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "sourceRepairCommit": "49c274e565ef8f9936b0a997a24f89a46b8ec3c7",
+  "implementationEvidence": {
+    "root": "docs/migration/evidence/import-boundary-01",
+    "manifestSha256": "6e324b3f0b49048e70c96f36230fa774e113e7fd7e33ac32add5e29ea90a5848",
+    "producerFiles": 275,
+    "trackedPacketFiles": 276,
+    "priorImmutableProducersVerified": 177,
+    "source20MatchesExecutedAndCommitted": true
+  },
+  "publicPullRequest": {
+    "url": "https://github.com/KyleMit/Splotch/pull/2703",
+    "number": 2703,
+    "state": "open",
+    "merged": false,
+    "mergeable": true,
+    "draft": true,
+    "body": "The five-file candidate guard missed entry → local helper → undeclared root-only `yaml`, while actual typecheck passed under hoisting. This unit checks maintained candidate JS/TS/config files, literal dependency references, package traversal, local ownership and canonical app/Node roles. Declared hoisted packages remain valid; the shared shipping/Forge parser is unchanged.\n\nInstalled Expo/Babel/TypeScript controls exposed additional configuration false passes and false rejections. The bounded grammar now follows actual root config selection, refuses aliased config exports/mutations and unsupported resolution context, and preserves ordinary nested modules. Per-file JSX import-source pragmas and nonempty/opaque Babel preset/plugin options are visibly unsupported; actual default React, literal-empty tuple options and string/template/regex/JSX-text lookalikes remain positives. Expo config plugin options keep their separate owner.\n\nPublished source/evidence: e4e9fc044d46d49c3565379a3e6419e8eff4af9d; accepted base f14966ee98563e3c569fbcb90beea6d9c684614a. Validation passes check, lint, formatting, the actual public topology command, six scoped suites / 973 checks, actual consumer/rejecting/restored controls, and all five Browserless stages (4,463 app; 45 SSR; 298 asset; 22 store; 7,652 tool; 42 API checks). The exclusive full tier binds source/index/installed inputs and all 8,570 tracked files before/after, verifies owned process/port release, and measured 77.063 seconds of harness cost. Source input equality scopes reuse after the records-only base composition.\n\nThe [unit evidence](https://github.com/KyleMit/Splotch/tree/e4e9fc044d46d49c3565379a3e6419e8eff4af9d/docs/migration/evidence/import-boundary-01) preserves original old-source and review-head outcomes, failed setup/control runs separately, complete output, exact source snapshots and all three original review provenance records. Its manifest covers 275 producer files; all 177 prior immutable producers remain unchanged. This changes no candidate dependency, lock, shipping runtime or native project.\n\nOriginal Claude conversation bbe89d5b-644f-4d4f-9366-e5156cebf4ea used all three substantive rounds; zero remain. Round three reviewed ecdd26f93849a8a26542536be82e63068c662749 and identified the repaired alias and nested-module cases. The changed final source has not received independent acceptance. No fourth/fresh conversation or budget reset has been launched. Final-head Tests run 37500539722 and ADR Integrity 37500539766 succeeded. All 18 Tests jobs completed: 14 passed and four conditional WebKit gates skipped. Quality's native complete checkout log binds actual tested merge ebe71ae3a6e80347bb2238bea8acb42d8ee80a00 to the exact published head tree; its candidate topology step passed. The dedicated Native topology proof run 37500539752 skipped and supplies no native runtime proof. Required substantive-budget approval/provenance disposition and parent integration remain pending. Draft status is intentional.\n\nMetro string module references/alternate config lookup and native provider-context commands retain separate PHASE-1 graph/toolchain owners and explicit noncoverage. No React Native compile, mount, performance, continuity or product acceptance is claimed.",
+    "title": "fix(migration): enforce candidate import and literal configuration ownership",
+    "base": "codex/native-migration",
+    "base_sha": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+    "head": "codex/migration-import-boundary",
+    "head_sha": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+    "head_repo_id": 1138315402,
+    "head_repo_full_name": "KyleMit/Splotch",
+    "merge_commit_sha": "ebe71ae3a6e80347bb2238bea8acb42d8ee80a00",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "requested_reviewers": null,
+    "requested_team_reviewers": null,
+    "diff": null,
+    "comments": null,
+    "created_at": "2026-10-06T15:29:37Z",
+    "updated_at": "2026-10-06T17:12:05Z",
+    "closed_at": null,
+    "merged_at": null,
+    "commits": 7,
+    "changed_files": 284,
+    "additions": 47334,
+    "deletions": 28,
+    "display_url": "https://github.com/KyleMit/Splotch/pull/2703",
+    "display_title": "fix(migration): enforce candidate import and literal configuration ownership"
+  },
+  "workflowRuns": {
+    "workflow_runs": [
+      {
+        "id": 37500539752,
+        "name": "Native topology proof",
+        "status": "completed",
+        "conclusion": "skipped",
+        "run_number": 31,
+        "jobs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539752/jobs",
+        "logs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539752/logs",
+        "workflow_id": 376150911
+      },
+      {
+        "id": 37500539766,
+        "name": "ADR Integrity",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 2879,
+        "jobs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539766/jobs",
+        "logs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539766/logs",
+        "workflow_id": 333306557
+      },
+      {
+        "id": 37500539722,
+        "name": "Tests",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 6734,
+        "jobs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539722/jobs",
+        "logs_url": "https://api.github.com/repos/KyleMit/Splotch/actions/runs/37500539722/logs",
+        "workflow_id": 285690264
+      }
+    ]
+  },
+  "workflowJobs": [
+    {
+      "runId": 37500539722,
+      "jobs": [
+        {
+          "id": 112396102304,
+          "name": "Release build smoke",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Build without profiling seams",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Build native bundle boundary",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            }
+          ]
+        },
+        {
+          "id": 112396102493,
+          "name": "Browserless tests",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run unit tests with coverage",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run asset-pipeline tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Run store-drawing pipeline tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Run repo-script tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "API contract smoke",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102597,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Format check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Type check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Lint",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Native candidate topology",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "CSS lint",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "SVG optimization check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Agent-file drift",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Ideas review drift",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Design-token drift",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Token style lint",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            },
+            {
+              "name": "Dead-code check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Production dependency check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Asset manifest check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Scrapbook index check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            },
+            {
+              "name": "Audit dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 18
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 35
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 36
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 37
+            }
+          ]
+        },
+        {
+          "id": 112396102611,
+          "name": "Tests (3/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102631,
+          "name": "WebKit smoke",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run WebKit smoke",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            }
+          ]
+        },
+        {
+          "id": 112396102704,
+          "name": "Page-load performance",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run page-load performance gate",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Upload Lighthouse reports",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            }
+          ]
+        },
+        {
+          "id": 112396102742,
+          "name": "Tests (4/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102848,
+          "name": "Tests (1/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102917,
+          "name": "Tests (2/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102921,
+          "name": "Firefox smoke",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run Firefox smoke",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            }
+          ]
+        },
+        {
+          "id": 112396102943,
+          "name": "Tests (5/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396102981,
+          "name": "Tests (6/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396103106,
+          "name": "Tests (8/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396103164,
+          "name": "Tests (7/8)",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run e2e tests",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "App-driver smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 6
+            },
+            {
+              "name": "Worker-sweep smoke",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 7
+            },
+            {
+              "name": "Upload report",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-playwright",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14
+            },
+            {
+              "name": "Post Run ./.github/actions/setup-pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 16
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 17
+            }
+          ]
+        },
+        {
+          "id": 112396103759,
+          "name": "WebKit commit gate (fast)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": null
+        },
+        {
+          "id": 112396104590,
+          "name": "WebKit commit gate (full)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": null
+        },
+        {
+          "id": 112396105404,
+          "name": "WebKit commit gate (fast, fresh-runner retry)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": null
+        },
+        {
+          "id": 112396105756,
+          "name": "WebKit commit gate (failure report)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "run_id": 37500539722,
+          "logs_url": null,
+          "steps": null
+        }
+      ]
+    },
+    {
+      "runId": 37500539752,
+      "jobs": [
+        {
+          "id": 112396153468,
+          "name": "Exact topology proof inputs",
+          "status": "completed",
+          "conclusion": "skipped",
+          "run_id": 37500539752,
+          "logs_url": null,
+          "steps": null
+        }
+      ]
+    },
+    {
+      "runId": 37500539766,
+      "jobs": [
+        {
+          "id": 112396109774,
+          "name": "ADR numbers, headings, and index entries agree",
+          "status": "completed",
+          "conclusion": "success",
+          "run_id": 37500539766,
+          "logs_url": null,
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Fetch the base branch",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Check ADR integrity",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "registeredJobSummary": {
+    "total": 20,
+    "success": 15,
+    "skipped": 5,
+    "testsRun": {
+      "id": 37500539722,
+      "jobs": 18,
+      "success": 14,
+      "conditionalWebKitSkipped": 4,
+      "conclusion": "success"
+    },
+    "adrRun": {
+      "id": 37500539766,
+      "conclusion": "success"
+    },
+    "dedicatedTopologyRun": {
+      "id": 37500539752,
+      "conclusion": "skipped",
+      "claimLimit": "Skipped supplies no topology runtime proof; Quality candidate-topology step passed"
+    }
+  },
+  "qualityExport": {
+    "observedAt": "2026-10-06T17:09:03.738Z",
+    "exportTool": "mcp__codex_apps__github_fetch_workflow_job_logs",
+    "repo": "KyleMit/Splotch",
+    "workflowRun": 37500539722,
+    "jobId": 112396102597,
+    "jobName": "Quality",
+    "jobConclusion": "success",
+    "representation": "Complete native decoded log content; includes initial runner setup and final credential cleanup, no UI clipping",
+    "logPath": "f1-quality-e4e9-complete.log.txt",
+    "bytes": 135370,
+    "sha256": "1b7a5886b560d7f5f6c7da83dbc1b340add0412cddca633a16a4b29680e4387a",
+    "lineCount": 2029,
+    "checkout": {
+      "pullRequest": 2703,
+      "actualTestedMerge": "ebe71ae3a6e80347bb2238bea8acb42d8ee80a00",
+      "head": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+      "base": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+      "attribution": [
+        "2026-10-06T17:03:22.2749442Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ebe71ae3a6e80347bb2238bea8acb42d8ee80a00:refs/remotes/pull/2703/merge",
+        "2026-10-06T17:03:46.7996792Z  * [new ref]         ebe71ae3a6e80347bb2238bea8acb42d8ee80a00 -> pull/2703/merge",
+        "2026-10-06T17:03:49.2655316Z HEAD is now at ebe71ae Merge e4e9fc044d46d49c3565379a3e6419e8eff4af9d into f14966ee98563e3c569fbcb90beea6d9c684614a",
+        "2026-10-06T17:03:49.2786891Z [command]/usr/bin/git log -1 --format=%H",
+        "2026-10-06T17:03:49.2812646Z ebe71ae3a6e80347bb2238bea8acb42d8ee80a00"
+      ],
+      "actualTestedTree": "21a6acacd1d20c275a1df169e02b1dd2ec2f1205",
+      "headTree": "21a6acacd1d20c275a1df169e02b1dd2ec2f1205",
+      "parents": [
+        "f14966ee98563e3c569fbcb90beea6d9c684614a",
+        "e4e9fc044d46d49c3565379a3e6419e8eff4af9d"
+      ],
+      "treeEqual": true,
+      "identityOwner": "Native decoded checkout log plus fetched exact Git commit; native commit metadata lacked tree/parents"
+    },
+    "scope": "Complete Quality export identifies actual CI-tested merge, exact parents and tree equality to published head. The source20 and full local gate remain their scoped evidence; no complete hosted installed graph or native runtime acceptance inferred."
+  },
+  "review": {
+    "budget": {
+      "verifiedAt": "2026-10-06T17:09:03.641Z",
+      "repoRoot": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "path": "/Users/kylemit/.config/splotch-rival-agent/ledger/127185991e781703c4bcd03c8d5d1228.json",
+      "key": "127185991e781703c4bcd03c8d5d1228",
+      "sha256": "6bc43d25eaeffbcc7e052e69bc1b9b49ec4f9f993c5533e5711090546e29d4f1",
+      "bytes": 258,
+      "record": {
+        "rival": "claude",
+        "rivalSessionId": "bbe89d5b-644f-4d4f-9366-e5156cebf4ea",
+        "rounds": 3,
+        "lastBase": "e7413bf92066fcf45967cf04241a513fd48d49ff",
+        "lastHead": "ecdd26f93849a8a26542536be82e63068c662749",
+        "updatedAt": "2026-10-06T16:17:59.979Z"
+      },
+      "roundsUsed": 3,
+      "roundsRemaining": 0,
+      "originalIdentityMatches": true,
+      "policyOwner": "/Users/kylemit/.local/libexec/splotch-rival-agent/ledger.mjs",
+      "policyMaxRounds": 3,
+      "mutation": false,
+      "initialLookupDisposition": "Canonical checkout repoRoot creates a different absent key; actual round3 session and exclusive adoption use this assigned worktree repoRoot and the existing127185record. No rekey, new record or mutation."
+    },
+    "publicReviewThreads": {
+      "review_threads": [
+        {
+          "id": "PRRT_kwDOQ9lQis6pim-d",
+          "is_resolved": true,
+          "is_outdated": true,
+          "path": "tools/migration/lib/candidate-references.mjs",
+          "line": null,
+          "diff_side": "RIGHT",
+          "start_line": null,
+          "start_diff_side": null,
+          "original_line": 235,
+          "original_start_line": null,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76Le72",
+              "database_id": 4197314294,
+              "body": "**blocking:** **False pass: a flat `app.json` (no `expo` key) bypasses the plugin check, but Expo still applies its plugins.**\n\n`readCandidateJsonConfig` reads only `config.expo?.plugins`. `@expo/config` reads `config.expo ?? config` (`node_modules/@expo/config/build/Config.js:142`, `:549`).\n\n**Repro** on a scratch candidate copy, with `app.json` set to `{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}`. `expo-font` is root-hoisted, has `app.plugin.js`, and is undeclared by the candidate:\n- real checker: **ACCEPT**\n- `getConfig(...).exp.plugins`: `[\"expo-font\"]`\n\nControl: the same plugin under `{\"expo\":{...}}` is REJECTed with `imports undeclared expo-font`. `inspectNativeConfig` resolves this plugin successfully, so no other topology gate catches it.\n\n**Fix:** use `config.expo ?? config` (matching Expo) or reject a top-level `plugins` key without `expo`. Add the flat form as a rejecting mutation.",
+              "created_at": "2026-10-06T15:35:41Z",
+              "updated_at": "2026-10-06T15:35:42Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76M_SA",
+              "database_id": 4197708928,
+              "body": "Fixed in ecdd26f93849a8a26542536be82e63068c662749. Expo JSON now uses `config.expo ?? config`. The installed `getConfig` flat and wrapped consumers preserve their plugin selection; undeclared `expo-font` rejects, and declared/restored positives pass. Complete receipts: `controls/final-v4/config-consumers-v4.json.txt` and final input reuse qualification in the unit evidence.",
+              "created_at": "2026-10-06T16:11:23Z",
+              "updated_at": "2026-10-06T16:11:23Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pim-n",
+          "is_resolved": true,
+          "is_outdated": true,
+          "path": "tools/migration/lib/candidate-imports.mjs",
+          "line": null,
+          "diff_side": "RIGHT",
+          "start_line": null,
+          "start_diff_side": null,
+          "original_line": 62,
+          "original_start_line": null,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76Le8G",
+              "database_id": 4197314310,
+              "body": "**blocking:** **False pass: `app.config.json` is never discovered, but Expo prefers it over `app.json`.**\n\nDiscovery admits only the literal `app.json`. `@expo/config` resolves `./app.config.json` first (`Config.js:333`).\n\n**Repro:** add `app.config.json` = `{\"expo\":{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}}` to a scratch candidate copy.\n- real checker: **ACCEPT** (still 7 scanned files)\n- `getConfig`: `staticConfigPath` is `app.config.json`, plugins are `[\"expo-font\"]`\n\n**Fix:** discover `app.config.json` and parse it with `readCandidateJsonConfig` (with the `expo ?? root` fallback), or reject its presence visibly. Add a rejecting mutation.",
+              "created_at": "2026-10-06T15:35:42Z",
+              "updated_at": "2026-10-06T15:35:42Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76M_2-",
+              "database_id": 4197711294,
+              "body": "Fixed in ecdd26f93849a8a26542536be82e63068c662749. Discovery includes `app.config.json`, and its plugin references use the same Expo reduction as `app.json`. Installed Expo confirms the preferred static filename and actual `expo-font` selection while the guard rejects the undeclared plugin; declared and restored controls pass.",
+              "created_at": "2026-10-06T16:11:38Z",
+              "updated_at": "2026-10-06T16:11:38Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pim-u",
+          "is_resolved": true,
+          "is_outdated": true,
+          "path": "tools/migration/lib/candidate-references.mjs",
+          "line": null,
+          "diff_side": "RIGHT",
+          "start_line": null,
+          "start_diff_side": "RIGHT",
+          "original_line": 152,
+          "original_start_line": 64,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76Le8V",
+              "database_id": 4197314325,
+              "body": "**blocking:** **False pass: plugin/preset arrays set by member assignment are invisible.**\n\nThe README says computed plugin/preset configuration fails visibly. But `configurationReferences` only runs on `PropertyAssignment`/`ShorthandPropertyAssignment` nodes, so `obj.plugins = [...]` (and `.push(...)`) produce no reference and no refusal.\n\n**Repros** with the real checker on scratch copies:\n- **Babel:** `babel.config.cjs` = `const base = { presets: [require.resolve('babel-preset-expo')] }; base.plugins = ['babel-plugin-react-compiler']; module.exports = base;`. Checker **ACCEPT**. `@babel/core` `loadPartialConfig` loads `<root>/node_modules/babel-plugin-react-compiler/dist/index.js`, which the candidate doesn't declare.\n- **Expo:** `app.config.js` = `module.exports = ({ config }) => { config.plugins = [...(config.plugins ?? []), 'expo-font']; return config; };`. This is the idiomatic Expo dynamic-config mutation. Checker **ACCEPT**. `getConfig` plugins are `[\"expo-font\"]`.\n\n**Fix:** in Babel/Expo config files, also refuse (or extract literals from) any assignment or call whose target's access name is `plugins`/`presets`: `BinaryExpression` `=` with a property-access left side, or `.push`/`.unshift`/`.concat` on such a member. Add both as rejecting mutations.",
+              "created_at": "2026-10-06T15:35:42Z",
+              "updated_at": "2026-10-06T15:35:42Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76NAa6",
+              "database_id": 4197713594,
+              "body": "Fixed in ecdd26f93849a8a26542536be82e63068c662749. Babel/Expo configs support literal object exports and functions returning literal objects. Member reads/mutations, list aliases, spreads, opaque exports, computed/accessor/method/prototype/duplicate shapes and unsupported Babel composition refuse visibly. Installed Babel and Expo still load the reported packages in the rejecting fixtures; current Babel `api.cache`, literal configurations and explicitly declared plugin positives pass.",
+              "created_at": "2026-10-06T16:11:52Z",
+              "updated_at": "2026-10-06T16:11:53Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pim-8",
+          "is_resolved": true,
+          "is_outdated": false,
+          "path": "tools/migration/lib/candidate-imports.mjs",
+          "line": 118,
+          "diff_side": "RIGHT",
+          "start_line": 108,
+          "start_diff_side": "RIGHT",
+          "original_line": 100,
+          "original_start_line": 90,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76Le8m",
+              "database_id": 4197314342,
+              "body": "**suggestion:** **The app→Node role check is bypassed by an extensionless import of a symlinked Node-owned file.**\n\nThe README says internal aliases keep their canonical role, and the test (`candidate-imports.test.mjs:208-213`) checks only `import './helper.cjs'` with an explicit extension. `assertLocalReference` checks the physical target only `if (existsSync(path))`. For the normal extensionless TS/Metro form, the lexical path doesn't exist, so only the lexical role (`src/...` = app) is checked.\n\n**Repro:** `scripts/helper.ts` with `src/alias.ts -> ../scripts/helper.ts`.\n- `import { read } from './alias'`: **ACCEPT**\n- `from './alias.ts'`: REJECT (`imports Node configuration or script into app source: scripts/helper.ts`)\n\nSymlinked files are uncommon, so this is a suggestion rather than a blocker.\n\n**Fix:** when `path` doesn't exist, probe the discovered-file set for `path + ext` / `path/index + ext` and apply the role check to each match's realpath. Alternatively, reject at discovery any file symlink whose canonical role differs from its lexical role.",
+              "created_at": "2026-10-06T15:35:42Z",
+              "updated_at": "2026-10-06T15:35:42Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76NA4_",
+              "database_id": 4197715519,
+              "body": "Fixed in ecdd26f93849a8a26542536be82e63068c662749. Discovery refuses app file/directory aliases into canonical Node-owned configs/scripts before physical deduplication, closing the extensionless path without a new resolver. File/directory rejecting controls and restored positives pass; Node-to-app directory aliases retain canonical app rules.",
+              "created_at": "2026-10-06T16:12:04Z",
+              "updated_at": "2026-10-06T16:12:04Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pim_E",
+          "is_resolved": true,
+          "is_outdated": false,
+          "path": "tools/migration/lib/candidate-imports.mjs",
+          "line": 157,
+          "diff_side": "RIGHT",
+          "start_line": 156,
+          "start_diff_side": "RIGHT",
+          "original_line": 137,
+          "original_start_line": 136,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76Le8w",
+              "database_id": 4197314352,
+              "body": "**suggestion:** **False rejection: declared npm packages that share a Node builtin's name are refused in app source.**\n\n`isBuiltin(specifier)` is checked before the declared-package check. A legitimately declared RN polyfill such as `buffer`, `events`, `url` or `util` is rejected.\n\n**Repro:** add `\"buffer\": \"6.0.3\"` to scratch `devDependencies` and put `import { Buffer } from 'buffer'` in `src/bytes.ts`. Real checker REJECTs: `imports Node builtin into app source: buffer`.\n\nMetro resolves these bare names to the npm package, not a Node builtin, so this is a plausible maintenance mutation that the checker blocks for the wrong reason.\n\n**Fix:** in app source, treat a bare specifier whose package name is declared as a package reference. Reserve the builtin refusal for `node:`-prefixed or undeclared builtin names. Add a positive control.",
+              "created_at": "2026-10-06T15:35:42Z",
+              "updated_at": "2026-10-06T15:35:42Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76NBQt",
+              "database_id": 4197717037,
+              "body": "Fixed in ecdd26f93849a8a26542536be82e63068c662749. Declared bare builtin-name packages use package ownership; `node:` and undeclared builtin imports retain the app fence. Four declared-name positives pass. Installed Metro resolves an owned synthetic future `buffer` package; `node:buffer` rejects. The receipt explicitly limits this to resolver evidence, with no package install or native runtime claim.",
+              "created_at": "2026-10-06T16:12:14Z",
+              "updated_at": "2026-10-06T16:12:14Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pjuft",
+          "is_resolved": true,
+          "is_outdated": false,
+          "path": "tools/migration/lib/candidate-references.mjs",
+          "line": 218,
+          "diff_side": "RIGHT",
+          "start_line": 183,
+          "start_diff_side": "RIGHT",
+          "original_line": 206,
+          "original_start_line": 183,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76NQe1",
+              "database_id": 4197779381,
+              "body": "**blocking:** **Aliased config mutation still bypasses the guard, and Babel really loads the undeclared plugin.**\n\nThe README (`tools/migration/README.md:24`) and the evidence table (`import-boundary-01/README.md:141`) say config member mutations are refused visibly. `assertFiniteConfigurationSyntax` only refuses member accesses named `plugins`/`presets`. Mutating the exported object through an alias or a destructured binding never touches such a member, and no other check sees it.\n\n**Repro** on scratch copies of the candidate with the real `assertDeclaredCandidateImports`, confirmed with the candidate's `@babel/core` `loadPartialConfig`:\n- A1, `babel.config.cjs`:\n  ```js\n  const c = (module.exports = { presets: [require.resolve('babel-preset-expo')] });\n  Object.assign(c, { plugins: ['babel-plugin-react-compiler'] });\n  ```\n  Checker **ACCEPT**. Babel resolves `node_modules/babel-plugin-react-compiler/dist/index.js`.\n- A2:\n  ```js\n  const { plugins } = (module.exports = { presets: [require.resolve('babel-preset-expo')], plugins: [] });\n  plugins.push('babel-plugin-react-compiler');\n  ```\n  Checker **ACCEPT**. Babel loads the same undeclared root-hoisted plugin.\n\n`isModuleExports` allows `module.exports = …` anywhere it is the left side of `=`, including inside a variable initializer. That is what lets the export be aliased.\n\n**Fix (small):** in config-kind files:\n1. Accept a `module.exports =` assignment only when its parent is an `ExpressionStatement`.\n2. Refuse `plugins`/`presets` (and Expo `expo`) as binding-pattern names and as property names in any object literal outside the analysed export/return objects.\n3. Add A1 and A2 as rejecting mutations.\n\nIf that isn't done, narrow both README claims to direct member operations and list aliased mutation as emitted noncoverage.",
+              "created_at": "2026-10-06T16:18:36Z",
+              "updated_at": "2026-10-06T16:18:36Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76O6ja",
+              "database_id": 4198213850,
+              "body": "Fixed in 49c274e565ef8f9936b0a997a24f89a46b8ec3c7; complete executed evidence is published at e4e9fc044d46d49c3565379a3e6419e8eff4af9d. `module.exports = …` requires its own ExpressionStatement (`candidate-references.mjs:209`), and configuration vocabulary bindings / foreign object keys refuse outside analysed export/return objects (`:243`, `:251`). Actual A1/A2 fixtures reproduce old ecdd guard acceptance plus Babel loading the undeclared compiler. The repaired guard refuses the named export-alias boundary; actual consumer/typecheck and restored positives are preserved under `controls/round3-diagnosis/` and `controls/final-v8/`. Six scoped suites pass 973 checks and the replacement full Browserless tier passes all five stages with verified unchanged inputs and release. This closes the demonstrated bypass; independent acceptance of the changed final source remains pending because all three original substantive rounds are exhausted.",
+              "created_at": "2026-10-06T17:04:38Z",
+              "updated_at": "2026-10-06T17:04:38Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        },
+        {
+          "id": "PRRT_kwDOQ9lQis6pjuf4",
+          "is_resolved": true,
+          "is_outdated": false,
+          "path": "tools/migration/lib/candidate-references.mjs",
+          "line": 67,
+          "diff_side": "RIGHT",
+          "start_line": 64,
+          "start_diff_side": "RIGHT",
+          "original_line": 67,
+          "original_start_line": 64,
+          "resolved_by": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          },
+          "comments": [
+            {
+              "id": "PRRC_kwDOQ9lQis76NQfD",
+              "database_id": 4197779395,
+              "body": "**suggestion:** **False rejection: nested app source named `app.config.*` (and Babel config names) is forced through the config grammar.**\n\n`candidateConfigurationKind` matches `(?:^|\\/)app\\.config\\.` at any depth. Discovery reads only root `app.json`/`app.config.json`, and Expo reads only the project-root `app.config.*`.\n\n**Repro:** add `src/config/app.config.ts` = `export const apiBase = 'https://example.invalid';` (an ordinary app module). The real checker REJECTs with `src/config/app.config.ts has no supported literal configuration export`.\n\nThis strictness is new in this response: the round-2 code only inspected `plugins` properties in such files. The same applies to nested `babel.config.*`/`.babelrc*`, which Expo's Metro transformer doesn't read (`babelrc: false`; only `projectRoot` config names).\n\n**Fix:** anchor both patterns to the candidate root (`^app\\.config\\.`, `^(?:babel\\.config\\.|\\.babelrc(?:\\.|$))`), consistent with discovery and `isNodeOwner`. Add `src/config/app.config.ts` as a positive control.",
+              "created_at": "2026-10-06T16:18:36Z",
+              "updated_at": "2026-10-06T16:18:36Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            },
+            {
+              "id": "PRRC_kwDOQ9lQis76O7Xm",
+              "database_id": 4198217190,
+              "body": "Fixed in 49c274e565ef8f9936b0a997a24f89a46b8ec3c7, with complete evidence at e4e9fc044d46d49c3565379a3e6419e8eff4af9d. `candidateConfigurationKind` anchors Babel/Expo patterns at the candidate root (`candidate-references.mjs:64`); Babel JSON discovery uses that same root owner. Actual installed-consumer controls qualify ordinary `src/config/app.config.ts`, `babel.config.ts` and `.babelrc.ts`, plus similarly named nested JSON data. Repaired guard and actual TypeScript/Babel pass all six ordinary-module/data positives; root configs keep their dependency checks. Metro strings/alternate lookup are explicit noncoverage under the separate native/Metro graph owner. Final v8 scoped/static/full gates passed; resolving this demonstrated false rejection does not imply new-source independent acceptance or reset the exhausted original review budget.",
+              "created_at": "2026-10-06T17:04:59Z",
+              "updated_at": "2026-10-06T17:04:59Z",
+              "author": {
+                "login": "KyleMit",
+                "name": "KyleMit",
+                "email": null,
+                "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                "id": null
+              },
+              "viewer_did_author": true
+            }
+          ]
+        }
+      ]
+    },
+    "substantiveRoundsUsed": 3,
+    "remaining": 0,
+    "originalRound3ReviewedSource": "ecdd26f93849a8a26542536be82e63068c662749",
+    "changedFinalSourceIndependentAcceptance": "NOT ESTABLISHED; requires parent approval/provenance exception; no fresh/fourth launch or ledger/wrapper mutation"
+  },
+  "repairs": {
+    "round2": {
+      "flatExpoJson": "candidate-references.mjs:452",
+      "preferredStaticConfig": "candidate-imports.mjs:68",
+      "memberConfiguration": "candidate-references.mjs:194",
+      "canonicalExtensionlessAliases": "candidate-imports.mjs:74",
+      "declaredBareBuiltinNamePackage": "candidate-imports.mjs:154"
+    },
+    "round3": {
+      "exportInitializerAlias": "candidate-references.mjs:209",
+      "destructuredVocabularyAndForeignObjects": "candidate-references.mjs:243",
+      "rootOnlyConfigurationOwner": "candidate-references.mjs:64"
+    },
+    "parentCounterexamples": {
+      "perFileJsxImportSource": "candidate-references.mjs:343",
+      "babelOptions": "candidate-references.mjs:86",
+      "babelJsonOptions": "candidate-references.mjs:471",
+      "metroStringsNoncoverage": "candidate-imports.mjs:216"
+    }
+  },
+  "localExecutedGates": {
+    "scoped": 973,
+    "check": 0,
+    "lint": 0,
+    "format": 0,
+    "publicTopology": 0,
+    "browserless": {
+      "app": 4463,
+      "ssr": 45,
+      "asset": 298,
+      "store": 22,
+      "tools": 7652,
+      "api": 42,
+      "exitCode": 0,
+      "durationSeconds": 77.063,
+      "leaseReleased": true,
+      "artifact": "docs/migration/evidence/import-boundary-01/controls/final-v8/browserless-lease.json.txt"
+    }
+  },
+  "acceptance": {
+    "unit": "held for independent changed-source review authorization/provenance",
+    "integration": "not merged",
+    "architectureOrNativeRuntime": "not established",
+    "performanceContinuityProductRelease": "not established"
+  },
+  "sourceUnchangedAfterPublication": true
+}

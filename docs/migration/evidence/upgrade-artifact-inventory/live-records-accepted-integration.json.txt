@@ -1,0 +1,32 @@
+{
+  "integration": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "reviewedHead": "45a01d182b602f18e66bfc3fffdd0c4edf7339c6",
+  "facts": [
+    {
+      "commit": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+      "parents": [
+        "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+        "45a01d182b602f18e66bfc3fffdd0c4edf7339c6"
+      ],
+      "tree": "3114d70ea2bf9d97c82bfa379283ee55201d8bfe"
+    },
+    {
+      "commit": "45a01d182b602f18e66bfc3fffdd0c4edf7339c6",
+      "parents": [
+        "74c4cc5fc945ecac4e6d6492e389d30f5d4f1ce8"
+      ],
+      "tree": "3114d70ea2bf9d97c82bfa379283ee55201d8bfe"
+    },
+    {
+      "commit": "f152df156386fdaafd17f66cfc8df849715ce6ad",
+      "parents": [
+        "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+        "45a01d182b602f18e66bfc3fffdd0c4edf7339c6"
+      ],
+      "tree": "3114d70ea2bf9d97c82bfa379283ee55201d8bfe"
+    }
+  ],
+  "nativePr": "live-records-pr-native.json.txt",
+  "ciAttribution": "live-records-ci-attribution.json.txt",
+  "claimLimit": "Accepted live records only; complete actual Quality log and Tests/ADR metadata, not all individual checkout logs or installed graph"
+}

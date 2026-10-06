@@ -74,6 +74,54 @@ Any main release or distributed integration candidate during the campaign joins 
 exact commit/artifact/channel and format differences. Earlier readers must remain available until
 every supported source class is accepted; “HEAD works” cannot retire legacy access.
 
+### Verified published bytes and tagged source
+
+The [2026-10-06 inventory](evidence/upgrade-artifact-inventory/README.md) qualifies all ten
+currently attached native binaries against complete release metadata and reads their actual embedded
+versions with the unchanged release readers. It also freezes eight actual tag commits, 364 selected
+source blobs and 1,199 searched production-source identities. These are completed inventory checks;
+signed installs, effective origins, installed graphs and transactional upgrades remain pending.
+
+| Public tag | Tagged Android version / code | Actual attached AAB version / code       | Actual attached IPA version / code |
+| ---------- | ----------------------------- | ---------------------------------------- | ---------------------------------- |
+| v1.0.0     | 1.0.0 / 1                     | 1.0 / 1                                  | None                               |
+| v1.0.1     | 1.0.1 / 2                     | 1.0 / 1; identical bytes to v1.0.0 asset | None                               |
+| v1.1.0     | 1.1.0 / 3                     | 1.0.1 / 2                                | None                               |
+| v1.2.0     | 1.2.0 / 4                     | None                                     | None                               |
+| v1.3.0     | 1.3.0 / 5                     | 1.2.0 / 4                                | None                               |
+| v1.4.0     | 1.4.0 / 6                     | 1.4.0 / 6                                | 1.4.0 / 6                          |
+| v1.5.0     | 1.5.0 / 7                     | 1.5.0 / 7                                | 1.5.0 / 7                          |
+| v1.6.0     | 1.6.0 / 8                     | 1.6.0 / 8                                | 1.6.0 / 8                          |
+
+Preserve the literal oldest marketing version `1.0`; do not normalize it into a matching tag. The
+four Android tag mismatches are real observations, not rejecting controls. An embedded version does
+not identify the binary's compiled source or installed dependency graph, including where numbers
+match. The IPA comparison reads embedded numbers; tagged iOS project versions and entitlements need
+their own qualification. Keep both conservative tagged-source fixtures and the actual binary
+variants until source/channel association is established; do not drop a source class because a
+currently attached asset differs from its label.
+
+The oldest eight persistent core owners are byte- and mode-identical, and their whole package lock
+graphs match after excluding only root version metadata. Their root manifests also differ in
+`build:cap`, and v1.0.1 adds the asset-stripping script; Gradle release versions differ. The fixture
+collapse therefore covers the specified persistent core only. Native builds, source-to-binary
+association, service behavior and runtime acceptance are not collapsed.
+
+Freeze the package graph and every actual native lock separately. No Android Gradle lockfile is
+committed in these eight trees. At v1.5.0 the package lock declares Capacitor core/iOS 8.4.2 and
+Android 8.4.1 while the committed SPM lock declares capacitor-swift-pm 8.4.1. These source pins
+cannot establish what an installed or compiled artifact consumed. Qualify the actual resolved plugin
+implementations before relying on secure prefixes, payloads, accessibility defaults, installation
+identifiers or effective WebView origins.
+
+The same bounded source search finds no held-picture store/hint or pending-removal owner in any of
+the eight tags. This supports the matrix's released-source applicability, not absence of arbitrary
+runtime data. Current-main fixtures with those owners still need separate same-ID feasibility.
+Historical admin credentials also need disposition: v1.0.x declares the plaintext admin-access slot,
+while v1.2.0–v1.4.0 declares secure `admin-session`. Record historical bundle reachability and
+web/admin applicability before retiring those owners; current native policy cannot answer that
+historical question.
+
 ## Persistent data inventory
 
 | Data                       | Source location and format                                                                                                                                                    | Replacement obligation                                                                                                             |
@@ -171,6 +219,20 @@ value into an allowance shared by unrelated installations. Reinstallation reset 
 those accepted in ADR-0105.
 
 ## Coloring storage and lifecycle continuity
+
+The [frozen released owners](evidence/upgrade-artifact-inventory/README.md) at both v1.5.0 and
+v1.6.0 use `coloring/<appVersion-resolution>/<bookId>`. Their nativeStore helper passes
+`${manifest.appVersion}-${manifest.resolution}` to native status/install/remove. Android's released
+plugin and iOS's released coordinator delete other version directories during `status()`. Calling
+that method with a replacement version can delete legacy books before preservation.
+
+First enumerate the actual old directories, markers, jobs and background ownership without invoking
+destructive status or cleanup. Preserve verified bytes and source job identities before reconciling
+to the selected replacement namespace. Released Android jobs live at `coloring/jobs/<bookId>.json`
+and retain their own version in the worker input; released iOS keeps the `current.json` job beneath
+runtime `coloring` → `jobs` and the existing wifi/metered background sessions. The separate
+ColoringPackStorage class is a later source owner, absent from these tags. The current-source
+resolution-only layout below remains a separate obligation for any distributed source that uses it.
 
 [Android storage](../../android/app/src/main/java/art/splotch/app/ColoringPackStorage.java) uses
 `noBackupFilesDir/coloring/<resolution>/<bookId>` and publishes `.installed` after verification. The

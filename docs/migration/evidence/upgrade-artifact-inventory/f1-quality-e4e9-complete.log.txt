@@ -1,0 +1,2028 @@
+﻿2026-10-06T17:03:21.5588729Z Current runner version: '2.337.0'
+2026-10-06T17:03:21.5617231Z ##[group]Runner Image Provisioner
+2026-10-06T17:03:21.5618216Z Hosted Compute Agent
+2026-10-06T17:03:21.5618999Z Version: 20260901.588
+2026-10-06T17:03:21.5619794Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-06T17:03:21.5620762Z Build Date: 2026-09-01T19:56:44Z
+2026-10-06T17:03:21.5621592Z Worker ID: {0ecf750d-90eb-47d1-b906-ef5d1e18e8cf}
+2026-10-06T17:03:21.5622506Z Azure Region: eastus
+2026-10-06T17:03:21.5623255Z ##[endgroup]
+2026-10-06T17:03:21.5625098Z ##[group]Operating System
+2026-10-06T17:03:21.5625901Z Ubuntu
+2026-10-06T17:03:21.5626528Z 24.04.5
+2026-10-06T17:03:21.5627291Z LTS
+2026-10-06T17:03:21.5627956Z ##[endgroup]
+2026-10-06T17:03:21.5628648Z ##[group]Runner Image
+2026-10-06T17:03:21.5629469Z Image: ubuntu-24.04
+2026-10-06T17:03:21.5630145Z Version: 20260927.320.1
+2026-10-06T17:03:21.5631753Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-06T17:03:21.5633740Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+2026-10-06T17:03:21.5635015Z ##[endgroup]
+2026-10-06T17:03:21.5636448Z ##[group]GITHUB_TOKEN Permissions
+2026-10-06T17:03:21.5638805Z Actions: read
+2026-10-06T17:03:21.5639536Z Contents: read
+2026-10-06T17:03:21.5640244Z Metadata: read
+2026-10-06T17:03:21.5640897Z ##[endgroup]
+2026-10-06T17:03:21.5643695Z Secret source: Actions
+2026-10-06T17:03:21.5644950Z Cache mode: write
+2026-10-06T17:03:21.5645969Z Prepare workflow directory
+2026-10-06T17:03:21.6090720Z Prepare all required actions
+2026-10-06T17:03:21.6147958Z Getting action download info
+2026-10-06T17:03:21.7702046Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-10-06T17:03:21.9745050Z Complete job name: Quality
+2026-10-06T17:03:22.0390920Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+2026-10-06T17:03:22.0391702Z with:
+2026-10-06T17:03:22.0392077Z   repository: KyleMit/Splotch
+2026-10-06T17:03:22.0394977Z   token: ***
+2026-10-06T17:03:22.0395318Z   ssh-strict: true
+2026-10-06T17:03:22.0395660Z   ssh-user: git
+2026-10-06T17:03:22.0396008Z   persist-credentials: true
+2026-10-06T17:03:22.0396385Z   clean: true
+2026-10-06T17:03:22.0396871Z   sparse-checkout-cone-mode: true
+2026-10-06T17:03:22.0397277Z   fetch-depth: 1
+2026-10-06T17:03:22.0397612Z   fetch-tags: false
+2026-10-06T17:03:22.0397962Z   show-progress: true
+2026-10-06T17:03:22.0398313Z   lfs: false
+2026-10-06T17:03:22.0398630Z   submodules: false
+2026-10-06T17:03:22.0398979Z   set-safe-directory: true
+2026-10-06T17:03:22.0399379Z   allow-unsafe-pr-checkout: false
+2026-10-06T17:03:22.0399923Z ##[endgroup]
+2026-10-06T17:03:22.1224310Z Syncing repository: KyleMit/Splotch
+2026-10-06T17:03:22.1226549Z ##[group]Getting Git version info
+2026-10-06T17:03:22.1227718Z Working directory is '/home/runner/work/Splotch/Splotch'
+2026-10-06T17:03:22.1229070Z [command]/usr/bin/git version
+2026-10-06T17:03:22.1280773Z git version 2.55.0
+2026-10-06T17:03:22.1305728Z ##[endgroup]
+2026-10-06T17:03:22.1314015Z Temporarily overriding HOME='/home/runner/work/_temp/61356d96-6f8a-4da7-9d22-6b018cd95f6a' before making global git config changes
+2026-10-06T17:03:22.1315788Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-06T17:03:22.1321362Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Splotch/Splotch
+2026-10-06T17:03:22.1361561Z Deleting the contents of '/home/runner/work/Splotch/Splotch'
+2026-10-06T17:03:22.1364156Z ##[group]Determining repository object format
+2026-10-06T17:03:22.1365407Z ##[endgroup]
+2026-10-06T17:03:22.1366554Z ##[group]Initializing the repository
+2026-10-06T17:03:22.1368782Z [command]/usr/bin/git init /home/runner/work/Splotch/Splotch
+2026-10-06T17:03:22.1529336Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-06T17:03:22.1530648Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-06T17:03:22.1532500Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-06T17:03:22.1533432Z hint: call:
+2026-10-06T17:03:22.1533908Z hint:
+2026-10-06T17:03:22.1534533Z hint: 	git config --global init.defaultBranch <name>
+2026-10-06T17:03:22.1535274Z hint:
+2026-10-06T17:03:22.1535972Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-06T17:03:22.1537341Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-06T17:03:22.1538271Z hint:
+2026-10-06T17:03:22.1538771Z hint: 	git branch -m <name>
+2026-10-06T17:03:22.1539337Z hint:
+2026-10-06T17:03:22.1540111Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-06T17:03:22.1541768Z Initialized empty Git repository in /home/runner/work/Splotch/Splotch/.git/
+2026-10-06T17:03:22.1546374Z [command]/usr/bin/git remote add origin https://github.com/KyleMit/Splotch
+2026-10-06T17:03:22.1589005Z ##[endgroup]
+2026-10-06T17:03:22.1590088Z ##[group]Disabling automatic garbage collection
+2026-10-06T17:03:22.1591497Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-06T17:03:22.1623121Z ##[endgroup]
+2026-10-06T17:03:22.1624248Z ##[group]Setting up auth
+2026-10-06T17:03:22.1625123Z Removing SSH command configuration
+2026-10-06T17:03:22.1628061Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-06T17:03:22.1660585Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-06T17:03:22.2148931Z Removing HTTP extra header
+2026-10-06T17:03:22.2153689Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-06T17:03:22.2184866Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-06T17:03:22.2370231Z Removing includeIf entries pointing to credentials config files
+2026-10-06T17:03:22.2374710Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-06T17:03:22.2403773Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-06T17:03:22.2593802Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-06T17:03:22.2626340Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Splotch/Splotch/.git.path /home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:03:22.2655373Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/Splotch/Splotch/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:03:22.2687712Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:03:22.2717017Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:03:22.2744031Z ##[endgroup]
+2026-10-06T17:03:22.2744872Z ##[group]Fetching the repository
+2026-10-06T17:03:22.2749442Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ebe71ae3a6e80347bb2238bea8acb42d8ee80a00:refs/remotes/pull/2703/merge
+2026-10-06T17:03:46.7995735Z From https://github.com/KyleMit/Splotch
+2026-10-06T17:03:46.7996792Z  * [new ref]         ebe71ae3a6e80347bb2238bea8acb42d8ee80a00 -> pull/2703/merge
+2026-10-06T17:03:46.7999346Z ##[endgroup]
+2026-10-06T17:03:46.8001186Z ##[group]Determining the checkout info
+2026-10-06T17:03:46.8002539Z ##[endgroup]
+2026-10-06T17:03:46.8005399Z [command]/usr/bin/git sparse-checkout disable
+2026-10-06T17:03:46.8057897Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-06T17:03:46.8086612Z ##[group]Checking out the ref
+2026-10-06T17:03:46.8089943Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/2703/merge
+2026-10-06T17:03:47.8569237Z Updating files:  30% (2643/8577)
+2026-10-06T17:03:47.9864293Z Updating files:  31% (2659/8577)
+2026-10-06T17:03:48.2884539Z Updating files:  32% (2745/8577)
+2026-10-06T17:03:48.4598509Z Updating files:  33% (2831/8577)
+2026-10-06T17:03:48.6352883Z Updating files:  34% (2917/8577)
+2026-10-06T17:03:48.6418436Z Updating files:  35% (3002/8577)
+2026-10-06T17:03:48.6487472Z Updating files:  36% (3088/8577)
+2026-10-06T17:03:48.6557609Z Updating files:  37% (3174/8577)
+2026-10-06T17:03:48.6616095Z Updating files:  38% (3260/8577)
+2026-10-06T17:03:48.6686524Z Updating files:  39% (3346/8577)
+2026-10-06T17:03:48.6743028Z Updating files:  40% (3431/8577)
+2026-10-06T17:03:48.6820972Z Updating files:  41% (3517/8577)
+2026-10-06T17:03:48.6915484Z Updating files:  42% (3603/8577)
+2026-10-06T17:03:48.6981772Z Updating files:  43% (3689/8577)
+2026-10-06T17:03:48.7067395Z Updating files:  44% (3774/8577)
+2026-10-06T17:03:48.7132950Z Updating files:  45% (3860/8577)
+2026-10-06T17:03:48.7198871Z Updating files:  46% (3946/8577)
+2026-10-06T17:03:48.7455302Z Updating files:  47% (4032/8577)
+2026-10-06T17:03:48.8189237Z Updating files:  48% (4117/8577)
+2026-10-06T17:03:48.8477891Z Updating files:  48% (4151/8577)
+2026-10-06T17:03:48.8552989Z Updating files:  49% (4203/8577)
+2026-10-06T17:03:48.8656607Z Updating files:  50% (4289/8577)
+2026-10-06T17:03:48.8757117Z Updating files:  51% (4375/8577)
+2026-10-06T17:03:48.8794823Z Updating files:  52% (4461/8577)
+2026-10-06T17:03:48.8841614Z Updating files:  53% (4546/8577)
+2026-10-06T17:03:48.8969669Z Updating files:  54% (4632/8577)
+2026-10-06T17:03:48.9132050Z Updating files:  55% (4718/8577)
+2026-10-06T17:03:48.9293287Z Updating files:  56% (4804/8577)
+2026-10-06T17:03:48.9645264Z Updating files:  57% (4889/8577)
+2026-10-06T17:03:48.9801901Z Updating files:  58% (4975/8577)
+2026-10-06T17:03:48.9870764Z Updating files:  59% (5061/8577)
+2026-10-06T17:03:48.9921030Z Updating files:  60% (5147/8577)
+2026-10-06T17:03:48.9971898Z Updating files:  61% (5232/8577)
+2026-10-06T17:03:49.0212292Z Updating files:  62% (5318/8577)
+2026-10-06T17:03:49.0268469Z Updating files:  63% (5404/8577)
+2026-10-06T17:03:49.0330995Z Updating files:  64% (5490/8577)
+2026-10-06T17:03:49.0373936Z Updating files:  65% (5576/8577)
+2026-10-06T17:03:49.0516442Z Updating files:  66% (5661/8577)
+2026-10-06T17:03:49.0637966Z Updating files:  67% (5747/8577)
+2026-10-06T17:03:49.0691940Z Updating files:  68% (5833/8577)
+2026-10-06T17:03:49.0745443Z Updating files:  69% (5919/8577)
+2026-10-06T17:03:49.0810311Z Updating files:  70% (6004/8577)
+2026-10-06T17:03:49.0851405Z Updating files:  71% (6090/8577)
+2026-10-06T17:03:49.0919239Z Updating files:  72% (6176/8577)
+2026-10-06T17:03:49.0962805Z Updating files:  73% (6262/8577)
+2026-10-06T17:03:49.1021714Z Updating files:  74% (6347/8577)
+2026-10-06T17:03:49.1054414Z Updating files:  75% (6433/8577)
+2026-10-06T17:03:49.1096015Z Updating files:  76% (6519/8577)
+2026-10-06T17:03:49.1130421Z Updating files:  77% (6605/8577)
+2026-10-06T17:03:49.1170961Z Updating files:  78% (6691/8577)
+2026-10-06T17:03:49.1212183Z Updating files:  79% (6776/8577)
+2026-10-06T17:03:49.1247056Z Updating files:  80% (6862/8577)
+2026-10-06T17:03:49.1312575Z Updating files:  81% (6948/8577)
+2026-10-06T17:03:49.1314312Z Updating files:  82% (7034/8577)
+2026-10-06T17:03:49.1359729Z Updating files:  83% (7119/8577)
+2026-10-06T17:03:49.1400131Z Updating files:  84% (7205/8577)
+2026-10-06T17:03:49.1446261Z Updating files:  85% (7291/8577)
+2026-10-06T17:03:49.1595232Z Updating files:  86% (7377/8577)
+2026-10-06T17:03:49.1710201Z Updating files:  87% (7462/8577)
+2026-10-06T17:03:49.1805855Z Updating files:  88% (7548/8577)
+2026-10-06T17:03:49.1883601Z Updating files:  89% (7634/8577)
+2026-10-06T17:03:49.1958357Z Updating files:  90% (7720/8577)
+2026-10-06T17:03:49.1982469Z Updating files:  91% (7806/8577)
+2026-10-06T17:03:49.2005882Z Updating files:  92% (7891/8577)
+2026-10-06T17:03:49.2078981Z Updating files:  93% (7977/8577)
+2026-10-06T17:03:49.2163879Z Updating files:  94% (8063/8577)
+2026-10-06T17:03:49.2235175Z Updating files:  95% (8149/8577)
+2026-10-06T17:03:49.2333447Z Updating files:  96% (8234/8577)
+2026-10-06T17:03:49.2475904Z Updating files:  97% (8320/8577)
+2026-10-06T17:03:49.2529976Z Updating files:  98% (8406/8577)
+2026-10-06T17:03:49.2578606Z Updating files:  99% (8492/8577)
+2026-10-06T17:03:49.2579155Z Updating files: 100% (8577/8577)
+2026-10-06T17:03:49.2579480Z Updating files: 100% (8577/8577), done.
+2026-10-06T17:03:49.2651592Z Note: switching to 'refs/remotes/pull/2703/merge'.
+2026-10-06T17:03:49.2651912Z 
+2026-10-06T17:03:49.2652080Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-06T17:03:49.2652534Z changes and commit them, and you can discard any commits you make in this
+2026-10-06T17:03:49.2652910Z state without impacting any branches by switching back to a branch.
+2026-10-06T17:03:49.2653126Z 
+2026-10-06T17:03:49.2653278Z If you want to create a new branch to retain commits you create, you may
+2026-10-06T17:03:49.2653635Z do so (now or later) by using -c with the switch command. Example:
+2026-10-06T17:03:49.2653827Z 
+2026-10-06T17:03:49.2653924Z   git switch -c <new-branch-name>
+2026-10-06T17:03:49.2654062Z 
+2026-10-06T17:03:49.2654145Z Or undo this operation with:
+2026-10-06T17:03:49.2654276Z 
+2026-10-06T17:03:49.2654348Z   git switch -
+2026-10-06T17:03:49.2654455Z 
+2026-10-06T17:03:49.2654617Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-06T17:03:49.2654859Z 
+2026-10-06T17:03:49.2655316Z HEAD is now at ebe71ae Merge e4e9fc044d46d49c3565379a3e6419e8eff4af9d into f14966ee98563e3c569fbcb90beea6d9c684614a
+2026-10-06T17:03:49.2744742Z ##[endgroup]
+2026-10-06T17:03:49.2786891Z [command]/usr/bin/git log -1 --format=%H
+2026-10-06T17:03:49.2812646Z ebe71ae3a6e80347bb2238bea8acb42d8ee80a00
+2026-10-06T17:03:49.3050503Z Prepare all required actions
+2026-10-06T17:03:49.3050984Z Getting action download info
+2026-10-06T17:03:49.3884678Z Download action repository 'pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2' (SHA:84cb39b217b10273981911c288cd62326dc7c6d2)
+2026-10-06T17:03:49.5340450Z ##[group]Run ./.github/actions/setup-pnpm
+2026-10-06T17:03:49.5340702Z with:
+2026-10-06T17:03:49.5340863Z   cache: true
+2026-10-06T17:03:49.5341024Z   install: true
+2026-10-06T17:03:49.5341191Z ##[endgroup]
+2026-10-06T17:03:49.5384920Z ##[start-action display=Run pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2;id=__self.__pnpm_setup]
+2026-10-06T17:03:49.5439666Z ##[group]Run pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2
+2026-10-06T17:03:49.5439941Z with:
+2026-10-06T17:03:49.5440103Z   runtime: node@22
+2026-10-06T17:03:49.5440282Z   cache: true
+2026-10-06T17:03:49.5440437Z   install: true
+2026-10-06T17:03:49.5440618Z   dest: ~/setup-pnpm
+2026-10-06T17:03:49.5440852Z   cache-dependency-path: pnpm-lock.yaml
+2026-10-06T17:03:49.5441109Z   package-json-file: package.json
+2026-10-06T17:03:49.5441323Z ##[endgroup]
+2026-10-06T17:03:49.7281328Z ##[group]Installing pnpm...
+2026-10-06T17:03:49.7290988Z Downloading pnpm 11.22.0 from the npm registry
+2026-10-06T17:03:49.8787884Z ==> Downloading pnpm 11.22.0
+2026-10-06T17:03:51.7872879Z ##[endgroup]
+2026-10-06T17:03:51.7873265Z Installation Completed!
+2026-10-06T17:03:51.7873686Z ##[group]Installing runtime node@22...
+2026-10-06T17:03:52.8963979Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-10-06T17:03:52.9066013Z Packages: +1
+2026-10-06T17:03:52.9066894Z +
+2026-10-06T17:03:53.8964431Z Progress: resolved 1, reused 0, downloaded 1, added 0
+2026-10-06T17:03:54.0498745Z Packages are hard linked from the content-addressable store to the virtual store.
+2026-10-06T17:03:54.0499434Z   Content-addressable store is at: /home/runner/setup-pnpm/store/v11
+2026-10-06T17:03:54.0500355Z   Virtual store is at:             store/v11/links
+2026-10-06T17:03:54.0501126Z Progress: resolved 1, reused 0, downloaded 1, added 1, done
+2026-10-06T17:03:54.2013687Z 
+2026-10-06T17:03:54.2014114Z global:
+2026-10-06T17:03:54.2014317Z + node 22.23.3
+2026-10-06T17:03:54.2014432Z 
+2026-10-06T17:03:54.2049699Z Done in 1.5s using pnpm v11.22.0
+2026-10-06T17:03:54.2982038Z ##[endgroup]
+2026-10-06T17:03:54.2987345Z ##[group]Restoring cache...
+2026-10-06T17:03:54.3015485Z [command]/home/runner/setup-pnpm/pnpm store path
+2026-10-06T17:03:54.7487591Z /home/runner/setup-pnpm/store/v11
+2026-10-06T17:03:54.8500969Z Cache hit for: pnpm-cache-Linux-x64-9b178718ba7ab6530fce636072eec692f982ad29ff7503014c79bbe3755824fd
+2026-10-06T17:03:55.8465031Z Received 277417378 of 277417378 (100.0%), 274.7 MBs/sec
+2026-10-06T17:03:55.8466080Z Cache Size: ~265 MB (277417378 B)
+2026-10-06T17:03:55.8571763Z [command]/usr/bin/tar -xf /home/runner/work/_temp/049f2cb9-e804-42b0-873b-633a00ef61f6/cache.tzst -P -C /home/runner/work/Splotch/Splotch --use-compress-program unzstd
+2026-10-06T17:03:58.3179266Z Cache restored successfully
+2026-10-06T17:03:58.3291657Z Cache restored from key: pnpm-cache-Linux-x64-9b178718ba7ab6530fce636072eec692f982ad29ff7503014c79bbe3755824fd
+2026-10-06T17:03:58.3292638Z ##[endgroup]
+2026-10-06T17:03:58.3293083Z ##[group]Running pnpm install --no-runtime...
+2026-10-06T17:03:58.7942103Z Scope: all 2 workspace projects
+2026-10-06T17:03:58.9054205Z ? Verifying lockfile against supply-chain policies (1497 entries)...
+2026-10-06T17:03:58.9703842Z Lockfile is up to date, resolution step is skipped
+2026-10-06T17:03:59.1939423Z Packages: +1418
+2026-10-06T17:03:59.1939781Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2026-10-06T17:03:59.2267963Z Progress: resolved 0, reused 1, downloaded 0, added 0
+2026-10-06T17:04:00.2281773Z Progress: resolved 0, reused 1009, downloaded 0, added 0
+2026-10-06T17:04:00.7180350Z Packages are hard linked from the content-addressable store to the virtual store.
+2026-10-06T17:04:00.7183293Z   Content-addressable store is at: /home/runner/setup-pnpm/store/v11
+2026-10-06T17:04:00.7183851Z   Virtual store is at:             node_modules/.pnpm
+2026-10-06T17:04:01.2502387Z Progress: resolved 0, reused 1326, downloaded 6, added 55
+2026-10-06T17:04:02.2516933Z Progress: resolved 0, reused 1326, downloaded 6, added 381
+2026-10-06T17:04:03.2527000Z Progress: resolved 0, reused 1326, downloaded 6, added 830
+2026-10-06T17:04:04.2808170Z Progress: resolved 0, reused 1326, downloaded 6, added 1361
+2026-10-06T17:04:05.2800276Z Progress: resolved 0, reused 1326, downloaded 6, added 1418
+2026-10-06T17:04:05.5722980Z ✓ Lockfile passes supply-chain policies (1497 entries in 6.6s)
+2026-10-06T17:04:05.5756154Z Progress: resolved 0, reused 1326, downloaded 6, added 1418, done
+2026-10-06T17:04:05.9460791Z 
+2026-10-06T17:04:06.1049025Z Done in 7.3s using pnpm v11.22.0
+2026-10-06T17:04:06.2778833Z ##[endgroup]
+2026-10-06T17:04:06.2783416Z (node:2104) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+2026-10-06T17:04:06.2784101Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-06T17:04:06.2937410Z ##[end-action id=__self.__pnpm_setup;outcome=success;conclusion=success;duration_ms=16755]
+2026-10-06T17:04:06.2984645Z ##[group]Run npm run format:check
+2026-10-06T17:04:06.2984954Z [36;1mnpm run format:check[0m
+2026-10-06T17:04:06.3194161Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:04:06.3194503Z env:
+2026-10-06T17:04:06.3194698Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:04:06.3194948Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:04:06.3195179Z ##[endgroup]
+2026-10-06T17:04:06.7933206Z 
+2026-10-06T17:04:06.7933679Z > splotch@1.6.0 format:check
+2026-10-06T17:04:06.7934281Z > prettier --check . && npm run format:md:check
+2026-10-06T17:04:06.7934949Z 
+2026-10-06T17:04:06.8766438Z Checking formatting...
+2026-10-06T17:04:36.2482434Z All matched files use Prettier code style!
+2026-10-06T17:04:36.3703328Z 
+2026-10-06T17:04:36.3703703Z > splotch@1.6.0 preformat:md:check
+2026-10-06T17:04:36.3704146Z > node tools/check-dprint-plugins.mjs
+2026-10-06T17:04:36.3704416Z 
+2026-10-06T17:04:36.4015018Z 
+2026-10-06T17:04:36.4015609Z > splotch@1.6.0 format:md:check
+2026-10-06T17:04:36.4016077Z > dprint check --incremental=false
+2026-10-06T17:04:36.4016435Z 
+2026-10-06T17:04:36.4262260Z Compiling /home/runner/work/Splotch/Splotch/node_modules/@dprint/markdown/plugin.wasm
+2026-10-06T17:04:36.4287406Z Compiling /home/runner/work/Splotch/Splotch/node_modules/@dprint/typescript/plugin.wasm
+2026-10-06T17:04:36.4295880Z Compiling /home/runner/work/Splotch/Splotch/node_modules/@dprint/json/plugin.wasm
+2026-10-06T17:04:39.7767393Z ##[group]Run npm run check
+2026-10-06T17:04:39.7767748Z [36;1mnpm run check[0m
+2026-10-06T17:04:39.7824480Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:04:39.7824776Z env:
+2026-10-06T17:04:39.7824965Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:04:39.7825209Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:04:39.7825431Z ##[endgroup]
+2026-10-06T17:04:39.8649134Z 
+2026-10-06T17:04:39.8649511Z > splotch@1.6.0 precheck
+2026-10-06T17:04:39.8649910Z > node tools/mobile/check-app-ids.mjs && node tools/run-web-tool.mjs svelte-kit sync
+2026-10-06T17:04:39.8650188Z 
+2026-10-06T17:04:39.8940753Z [check-app-ids] all native app IDs match "art.splotch.app" and names match "Splotch".
+2026-10-06T17:04:39.9202587Z $ svelte-kit sync
+2026-10-06T17:04:40.6958738Z [33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+2026-10-06T17:04:40.6960391Z   - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+2026-10-06T17:04:40.6981264Z   - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+2026-10-06T17:04:40.6982314Z   - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+2026-10-06T17:04:40.6983392Z   - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+2026-10-06T17:04:40.6988399Z   - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+2026-10-06T17:04:40.7015011Z   - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+2026-10-06T17:04:40.7017943Z   - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+2026-10-06T17:04:40.7019081Z   - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+2026-10-06T17:04:40.7020236Z   - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+2026-10-06T17:04:40.7021424Z   - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+2026-10-06T17:04:40.7022562Z   - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+2026-10-06T17:04:40.7023606Z   - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+2026-10-06T17:04:40.7024608Z   - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+2026-10-06T17:04:40.7025751Z Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+2026-10-06T17:04:40.8892655Z 
+2026-10-06T17:04:40.8893138Z > splotch@1.6.0 check
+2026-10-06T17:04:40.8893884Z > node tools/run-web-tool.mjs svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && npm run check:netlify
+2026-10-06T17:04:40.8894435Z 
+2026-10-06T17:04:40.9153252Z $ svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+2026-10-06T17:04:54.3444195Z Loading svelte-check in workspace: /home/runner/work/Splotch/Splotch/web
+2026-10-06T17:04:54.3444767Z Getting Svelte diagnostics...
+2026-10-06T17:04:54.3444987Z 
+2026-10-06T17:04:54.3509055Z [32msvelte-check found 0 errors and 0 warnings
+2026-10-06T17:04:54.4992615Z [39m
+2026-10-06T17:04:54.4992899Z > splotch@1.6.0 check:netlify
+2026-10-06T17:04:54.4993175Z > tsc --project netlify/tsconfig.json
+2026-10-06T17:04:54.4993345Z 
+2026-10-06T17:04:55.7364767Z ##[group]Run npm run lint
+2026-10-06T17:04:55.7365016Z [36;1mnpm run lint[0m
+2026-10-06T17:04:55.7422041Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:04:55.7422336Z env:
+2026-10-06T17:04:55.7422517Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:04:55.7422772Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:04:55.7422993Z ##[endgroup]
+2026-10-06T17:04:55.8240094Z 
+2026-10-06T17:04:55.8240562Z > splotch@1.6.0 lint
+2026-10-06T17:04:55.8240899Z > eslint .
+2026-10-06T17:04:55.8241084Z 
+2026-10-06T17:05:41.2233303Z 
+2026-10-06T17:05:41.2234028Z /home/runner/work/Splotch/Splotch/tools/migration/tests/candidate-configs.test.mjs
+2026-10-06T17:05:41.2235058Z   7:9  warning  'candidate' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+2026-10-06T17:05:41.2235662Z 
+2026-10-06T17:05:41.2236073Z ✖ 1 problem (0 errors, 1 warning)
+2026-10-06T17:05:41.2236304Z 
+2026-10-06T17:05:41.6075037Z ##[group]Run npm run check:migration:native-topology
+2026-10-06T17:05:41.6075370Z [36;1mnpm run check:migration:native-topology[0m
+2026-10-06T17:05:41.6131543Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:05:41.6131826Z env:
+2026-10-06T17:05:41.6132007Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:05:41.6132246Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:05:41.6132463Z ##[endgroup]
+2026-10-06T17:05:41.6940272Z 
+2026-10-06T17:05:41.6940724Z > splotch@1.6.0 check:migration:native-topology
+2026-10-06T17:05:41.6941093Z > node tools/migration/check-native-topology.mjs
+2026-10-06T17:05:41.6941276Z 
+2026-10-06T17:05:47.3133038Z {
+2026-10-06T17:05:47.3133630Z   "scope": "Candidate topology only; no native compile, mount, performance or upgrade result",
+2026-10-06T17:05:47.3134391Z   "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+2026-10-06T17:05:47.3134877Z   "candidateImports": {
+2026-10-06T17:05:47.3135242Z     "scannedCandidateFiles": [
+2026-10-06T17:05:47.3135522Z       "app.json",
+2026-10-06T17:05:47.3135775Z       "babel.config.cjs",
+2026-10-06T17:05:47.3136048Z       "metro.config.cjs",
+2026-10-06T17:05:47.3136331Z       "scripts/check-transform.cjs",
+2026-10-06T17:05:47.3136963Z       "src/ProbeApp.tsx",
+2026-10-06T17:05:47.3137235Z       "src/index.ts",
+2026-10-06T17:05:47.3137475Z       "tsconfig.json"
+2026-10-06T17:05:47.3137719Z     ],
+2026-10-06T17:05:47.3137953Z     "localTsconfigFiles": [
+2026-10-06T17:05:47.3138228Z       "tsconfig.json"
+2026-10-06T17:05:47.3138474Z     ],
+2026-10-06T17:05:47.3138702Z     "dependencyReferences": 13,
+2026-10-06T17:05:47.3139023Z     "generatedSubpathExclusions": [
+2026-10-06T17:05:47.3139332Z       "node_modules",
+2026-10-06T17:05:47.3139569Z       ".git",
+2026-10-06T17:05:47.3139785Z       ".expo",
+2026-10-06T17:05:47.3140007Z       "dist",
+2026-10-06T17:05:47.3140225Z       "android/.gradle",
+2026-10-06T17:05:47.3140512Z       "android/.cxx",
+2026-10-06T17:05:47.3140758Z       "android/build",
+2026-10-06T17:05:47.3141014Z       "android/app/.cxx",
+2026-10-06T17:05:47.3141272Z       "android/app/build",
+2026-10-06T17:05:47.3141726Z       "ios/Pods",
+2026-10-06T17:05:47.3141945Z       "ios/build"
+2026-10-06T17:05:47.3142152Z     ],
+2026-10-06T17:05:47.3142501Z     "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+2026-10-06T17:05:47.3143243Z     "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+2026-10-06T17:05:47.3145011Z     "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+2026-10-06T17:05:47.3147373Z   },
+2026-10-06T17:05:47.3147615Z   "forgeMitigation": {
+2026-10-06T17:05:47.3148048Z     "status": "affected-published-version-with-guarded-lib-only-local-mitigation",
+2026-10-06T17:05:47.3148656Z     "advisory": "GHSA-86w9-cpqp-85rv",
+2026-10-06T17:05:47.3148994Z     "issue": 2696,
+2026-10-06T17:05:47.3149500Z     "patchedRsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+2026-10-06T17:05:47.3150043Z     "lockedPaths": [
+2026-10-06T17:05:47.3150811Z       "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+2026-10-06T17:05:47.3151690Z       "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
+2026-10-06T17:05:47.3152467Z       "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+2026-10-06T17:05:47.3153170Z       "experiments/native-architecture>expo>@expo/cli>node-forge"
+2026-10-06T17:05:47.3153593Z     ],
+2026-10-06T17:05:47.3153821Z     "installedCopies": [
+2026-10-06T17:05:47.3154112Z       {
+2026-10-06T17:05:47.3154672Z         "path": "node_modules/node-forge",
+2026-10-06T17:05:47.3155210Z         "rsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+2026-10-06T17:05:47.3155714Z         "controls": [
+2026-10-06T17:05:47.3155990Z           {
+2026-10-06T17:05:47.3156349Z             "name": "public e=3 forgery rejected with default verification options",
+2026-10-06T17:05:47.3157029Z             "passed": true
+2026-10-06T17:05:47.3157304Z           },
+2026-10-06T17:05:47.3157533Z           {
+2026-10-06T17:05:47.3157825Z             "name": "signed malformed outer-extra rejected",
+2026-10-06T17:05:47.3158223Z             "passed": true
+2026-10-06T17:05:47.3158491Z           },
+2026-10-06T17:05:47.3158701Z           {
+2026-10-06T17:05:47.3158972Z             "name": "signed malformed nested-extra rejected",
+2026-10-06T17:05:47.3159331Z             "passed": true
+2026-10-06T17:05:47.3159586Z           },
+2026-10-06T17:05:47.3159838Z           {
+2026-10-06T17:05:47.3160137Z             "name": "signed malformed nonempty-1 rejected",
+2026-10-06T17:05:47.3160525Z             "passed": true
+2026-10-06T17:05:47.3160891Z           },
+2026-10-06T17:05:47.3161168Z           {
+2026-10-06T17:05:47.3161463Z             "name": "signed malformed nonempty-8 rejected",
+2026-10-06T17:05:47.3161856Z             "passed": true
+2026-10-06T17:05:47.3162138Z           },
+2026-10-06T17:05:47.3162369Z           {
+2026-10-06T17:05:47.3162663Z             "name": "signed malformed nonempty-32 rejected",
+2026-10-06T17:05:47.3163073Z             "passed": true
+2026-10-06T17:05:47.3163347Z           },
+2026-10-06T17:05:47.3163570Z           {
+2026-10-06T17:05:47.3163826Z             "name": "signed malformed constructed rejected",
+2026-10-06T17:05:47.3164190Z             "passed": true
+2026-10-06T17:05:47.3164461Z           },
+2026-10-06T17:05:47.3164698Z           {
+2026-10-06T17:05:47.3164994Z             "name": "fixed compatibility encoding absent accepted",
+2026-10-06T17:05:47.3176956Z             "passed": true
+2026-10-06T17:05:47.3177237Z           },
+2026-10-06T17:05:47.3177488Z           {
+2026-10-06T17:05:47.3177821Z             "name": "fixed compatibility encoding empty accepted",
+2026-10-06T17:05:47.3178236Z             "passed": true
+2026-10-06T17:05:47.3178453Z           },
+2026-10-06T17:05:47.3178716Z           {
+2026-10-06T17:05:47.3179020Z             "name": "fixed compatibility encoding long-null accepted",
+2026-10-06T17:05:47.3179306Z             "passed": true
+2026-10-06T17:05:47.3179477Z           },
+2026-10-06T17:05:47.3179657Z           {
+2026-10-06T17:05:47.3180004Z             "name": "fixed compatibility encoding indefinite-inner accepted",
+2026-10-06T17:05:47.3180598Z             "passed": true
+2026-10-06T17:05:47.3180812Z           },
+2026-10-06T17:05:47.3180978Z           {
+2026-10-06T17:05:47.3181204Z             "name": "fixed compatibility encoding nonminimal-oid accepted",
+2026-10-06T17:05:47.3181605Z             "passed": true
+2026-10-06T17:05:47.3181782Z           },
+2026-10-06T17:05:47.3181946Z           {
+2026-10-06T17:05:47.3182116Z             "name": "wrong digest rejected",
+2026-10-06T17:05:47.3182436Z             "passed": true
+2026-10-06T17:05:47.3182609Z           },
+2026-10-06T17:05:47.3182770Z           {
+2026-10-06T17:05:47.3183016Z             "name": "indefinite outer DigestInfo accepted",
+2026-10-06T17:05:47.3183326Z             "passed": true
+2026-10-06T17:05:47.3183505Z           },
+2026-10-06T17:05:47.3183666Z           {
+2026-10-06T17:05:47.3183911Z             "name": "Node SHA256 signature accepted",
+2026-10-06T17:05:47.3184181Z             "passed": true
+2026-10-06T17:05:47.3184386Z           },
+2026-10-06T17:05:47.3184588Z           {
+2026-10-06T17:05:47.3184821Z             "name": "RSA PSS accepted",
+2026-10-06T17:05:47.3185035Z             "passed": true
+2026-10-06T17:05:47.3185230Z           },
+2026-10-06T17:05:47.3185425Z           {
+2026-10-06T17:05:47.3185669Z             "name": "RSA NONE accepted and wrong digest rejected",
+2026-10-06T17:05:47.3185930Z             "passed": true
+2026-10-06T17:05:47.3186337Z           }
+2026-10-06T17:05:47.3186501Z         ]
+2026-10-06T17:05:47.3186826Z       }
+2026-10-06T17:05:47.3187038Z     ],
+2026-10-06T17:05:47.3187264Z     "consumers": [
+2026-10-06T17:05:47.3187493Z       {
+2026-10-06T17:05:47.3187964Z         "consumer": "/home/runner/work/Splotch/Splotch/node_modules/@expo/code-signing-certificates",
+2026-10-06T17:05:47.3188622Z         "control": "actual certificate/signature/CSR and tamper rejection",
+2026-10-06T17:05:47.3189401Z         "resolvedEntry": "/home/runner/work/Splotch/Splotch/node_modules/@expo/code-signing-certificates/build/main.js",
+2026-10-06T17:05:47.3189835Z         "passed": true
+2026-10-06T17:05:47.3190040Z       },
+2026-10-06T17:05:47.3190245Z       {
+2026-10-06T17:05:47.3190481Z         "consumer": "/home/runner/work/Splotch/Splotch/node_modules/@expo/cli",
+2026-10-06T17:05:47.3191105Z         "control": "actual CLI manifest signing and iOS parser with host subprocess fixture",
+2026-10-06T17:05:47.3191675Z         "resolvedEntry": "/home/runner/work/Splotch/Splotch/node_modules/@expo/cli/build/src/utils/codesigning.js",
+2026-10-06T17:05:47.3192351Z         "helperEntry": "/home/runner/work/Splotch/Splotch/node_modules/@expo/code-signing-certificates/build/main.js",
+2026-10-06T17:05:47.3192906Z         "passed": true
+2026-10-06T17:05:47.3193099Z       }
+2026-10-06T17:05:47.3193274Z     ],
+2026-10-06T17:05:47.3193496Z     "scannedPackages": 1418,
+2026-10-06T17:05:47.3193699Z     "staticMainReferences": [
+2026-10-06T17:05:47.3193905Z       {
+2026-10-06T17:05:47.3194152Z         "package": "@expo/cli",
+2026-10-06T17:05:47.3194404Z         "version": "57.0.27",
+2026-10-06T17:05:47.3194692Z         "path": "node_modules/@expo/cli/build/src/run/ios/codeSigning/Security.js"
+2026-10-06T17:05:47.3195070Z       },
+2026-10-06T17:05:47.3195214Z       {
+2026-10-06T17:05:47.3195420Z         "package": "@expo/code-signing-certificates",
+2026-10-06T17:05:47.3195698Z         "version": "0.0.6",
+2026-10-06T17:05:47.3196093Z         "path": "node_modules/@expo/code-signing-certificates/build/__tests__/main-test.js"
+2026-10-06T17:05:47.3196430Z       },
+2026-10-06T17:05:47.3196751Z       {
+2026-10-06T17:05:47.3196985Z         "package": "@expo/code-signing-certificates",
+2026-10-06T17:05:47.3197228Z         "version": "0.0.6",
+2026-10-06T17:05:47.3197645Z         "path": "node_modules/@expo/code-signing-certificates/build/main.d.ts"
+2026-10-06T17:05:47.3197927Z       },
+2026-10-06T17:05:47.3198083Z       {
+2026-10-06T17:05:47.3198330Z         "package": "@expo/code-signing-certificates",
+2026-10-06T17:05:47.3198598Z         "version": "0.0.6",
+2026-10-06T17:05:47.3199071Z         "path": "node_modules/@expo/code-signing-certificates/build/main.js"
+2026-10-06T17:05:47.3199449Z       }
+2026-10-06T17:05:47.3199587Z     ],
+2026-10-06T17:05:47.3199942Z     "unpatchedDistBundles": "registry bytes preserved; static subpath consumers forbidden",
+2026-10-06T17:05:47.3200886Z     "limits": "Static import/require and subpath literal references plus exact known consumer bytes; not a general proof about arbitrary computed code or live certificate-fetch/signing workflows"
+2026-10-06T17:05:47.3201487Z   },
+2026-10-06T17:05:47.3201728Z   "inventory": {
+2026-10-06T17:05:47.3201913Z     "candidateArtifacts": 468,
+2026-10-06T17:05:47.3202132Z     "reviewedArtifacts": 267
+2026-10-06T17:05:47.3202367Z   },
+2026-10-06T17:05:47.3202598Z   "production": {
+2026-10-06T17:05:47.3202776Z     "shippingArtifacts": 542,
+2026-10-06T17:05:47.3203001Z     "candidateArtifacts": 468,
+2026-10-06T17:05:47.3203232Z     "sharedArtifacts": 139
+2026-10-06T17:05:47.3203476Z   },
+2026-10-06T17:05:47.3203649Z   "shippingImports": {
+2026-10-06T17:05:47.3203844Z     "scannedShippingFiles": 549,
+2026-10-06T17:05:47.3204621Z     "scope": "Shipping source plus local production-entry import/re-export/dynamic-literal/require closure; computed imports and subprocess commands remain owned by production Knip/build checks"
+2026-10-06T17:05:47.3205351Z   },
+2026-10-06T17:05:47.3205495Z   "identities": {
+2026-10-06T17:05:47.3205879Z     "direct": {
+2026-10-06T17:05:47.3206071Z       "@babel/core": {
+2026-10-06T17:05:47.3206250Z         "name": "@babel/core",
+2026-10-06T17:05:47.3206455Z         "version": "7.29.7",
+2026-10-06T17:05:47.3206988Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@babel/core",
+2026-10-06T17:05:47.3207582Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@babel/core/package.json"
+2026-10-06T17:05:47.3207938Z       },
+2026-10-06T17:05:47.3208087Z       "@types/react": {
+2026-10-06T17:05:47.3208359Z         "name": "@types/react",
+2026-10-06T17:05:47.3208558Z         "version": "19.2.2",
+2026-10-06T17:05:47.3208853Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@types/react",
+2026-10-06T17:05:47.3209446Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@types/react/package.json"
+2026-10-06T17:05:47.3209802Z       },
+2026-10-06T17:05:47.3210054Z       "babel-preset-expo": {
+2026-10-06T17:05:47.3210261Z         "name": "babel-preset-expo",
+2026-10-06T17:05:47.3210485Z         "version": "57.0.13",
+2026-10-06T17:05:47.3210928Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/babel-preset-expo",
+2026-10-06T17:05:47.3211441Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/babel-preset-expo/package.json"
+2026-10-06T17:05:47.3211809Z       },
+2026-10-06T17:05:47.3211951Z       "expo": {
+2026-10-06T17:05:47.3212181Z         "name": "expo",
+2026-10-06T17:05:47.3212462Z         "version": "57.0.26",
+2026-10-06T17:05:47.3212726Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/expo",
+2026-10-06T17:05:47.3213142Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/expo/package.json"
+2026-10-06T17:05:47.3213471Z       },
+2026-10-06T17:05:47.3213615Z       "react": {
+2026-10-06T17:05:47.3213814Z         "name": "react",
+2026-10-06T17:05:47.3214107Z         "version": "19.2.3",
+2026-10-06T17:05:47.3214376Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/react",
+2026-10-06T17:05:47.3214783Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/react/package.json"
+2026-10-06T17:05:47.3215107Z       },
+2026-10-06T17:05:47.3215262Z       "react-native": {
+2026-10-06T17:05:47.3215494Z         "name": "react-native",
+2026-10-06T17:05:47.3215785Z         "version": "0.86.3",
+2026-10-06T17:05:47.3216051Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/react-native",
+2026-10-06T17:05:47.3216494Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/react-native/package.json"
+2026-10-06T17:05:47.3217156Z       }
+2026-10-06T17:05:47.3217327Z     },
+2026-10-06T17:05:47.3217476Z     "wrapper": {
+2026-10-06T17:05:47.3217646Z       "name": "@expo/metro",
+2026-10-06T17:05:47.3217919Z       "version": "56.0.2",
+2026-10-06T17:05:47.3218185Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro",
+2026-10-06T17:05:47.3218627Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/package.json"
+2026-10-06T17:05:47.3218961Z     },
+2026-10-06T17:05:47.3219107Z     "metro": {
+2026-10-06T17:05:47.3219266Z       "name": "metro",
+2026-10-06T17:05:47.3219437Z       "version": "0.84.5",
+2026-10-06T17:05:47.3219742Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro",
+2026-10-06T17:05:47.3220257Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro/package.json"
+2026-10-06T17:05:47.3220626Z     },
+2026-10-06T17:05:47.3220773Z     "metroFamily": {
+2026-10-06T17:05:47.3220941Z       "metro": {
+2026-10-06T17:05:47.3221102Z         "name": "metro",
+2026-10-06T17:05:47.3221278Z         "version": "0.84.5",
+2026-10-06T17:05:47.3221588Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro",
+2026-10-06T17:05:47.3222096Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro/package.json"
+2026-10-06T17:05:47.3222575Z       },
+2026-10-06T17:05:47.3222743Z       "metro-babel-transformer": {
+2026-10-06T17:05:47.3222964Z         "name": "metro-babel-transformer",
+2026-10-06T17:05:47.3223181Z         "version": "0.84.5",
+2026-10-06T17:05:47.3223492Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-babel-transformer",
+2026-10-06T17:05:47.3223979Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-babel-transformer/package.json"
+2026-10-06T17:05:47.3224334Z       },
+2026-10-06T17:05:47.3224485Z       "metro-cache": {
+2026-10-06T17:05:47.3224672Z         "name": "metro-cache",
+2026-10-06T17:05:47.3224975Z         "version": "0.84.5",
+2026-10-06T17:05:47.3225412Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-cache",
+2026-10-06T17:05:47.3225959Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-cache/package.json"
+2026-10-06T17:05:47.3226290Z       },
+2026-10-06T17:05:47.3226454Z       "metro-cache-key": {
+2026-10-06T17:05:47.3226733Z         "name": "metro-cache-key",
+2026-10-06T17:05:47.3227029Z         "version": "0.84.5",
+2026-10-06T17:05:47.3227326Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-cache-key",
+2026-10-06T17:05:47.3227779Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-cache-key/package.json"
+2026-10-06T17:05:47.3228114Z       },
+2026-10-06T17:05:47.3228266Z       "metro-config": {
+2026-10-06T17:05:47.3228455Z         "name": "metro-config",
+2026-10-06T17:05:47.3228645Z         "version": "0.84.5",
+2026-10-06T17:05:47.3228987Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-config",
+2026-10-06T17:05:47.3229540Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-config/package.json"
+2026-10-06T17:05:47.3229933Z       },
+2026-10-06T17:05:47.3230083Z       "metro-core": {
+2026-10-06T17:05:47.3230261Z         "name": "metro-core",
+2026-10-06T17:05:47.3230450Z         "version": "0.84.5",
+2026-10-06T17:05:47.3230788Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-core",
+2026-10-06T17:05:47.3231336Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-core/package.json"
+2026-10-06T17:05:47.3231724Z       },
+2026-10-06T17:05:47.3231884Z       "metro-file-map": {
+2026-10-06T17:05:47.3232085Z         "name": "metro-file-map",
+2026-10-06T17:05:47.3232285Z         "version": "0.84.5",
+2026-10-06T17:05:47.3232943Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-file-map",
+2026-10-06T17:05:47.3233629Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-file-map/package.json"
+2026-10-06T17:05:47.3234155Z       },
+2026-10-06T17:05:47.3234349Z       "metro-minify-terser": {
+2026-10-06T17:05:47.3234559Z         "name": "metro-minify-terser",
+2026-10-06T17:05:47.3234776Z         "version": "0.84.5",
+2026-10-06T17:05:47.3235070Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-minify-terser",
+2026-10-06T17:05:47.3235538Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-minify-terser/package.json"
+2026-10-06T17:05:47.3235882Z       },
+2026-10-06T17:05:47.3236035Z       "metro-resolver": {
+2026-10-06T17:05:47.3236220Z         "name": "metro-resolver",
+2026-10-06T17:05:47.3236415Z         "version": "0.84.5",
+2026-10-06T17:05:47.3236886Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-resolver",
+2026-10-06T17:05:47.3237330Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-resolver/package.json"
+2026-10-06T17:05:47.3237659Z       },
+2026-10-06T17:05:47.3237816Z       "metro-runtime": {
+2026-10-06T17:05:47.3238003Z         "name": "metro-runtime",
+2026-10-06T17:05:47.3238238Z         "version": "0.84.5",
+2026-10-06T17:05:47.3239154Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-runtime",
+2026-10-06T17:05:47.3239804Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-runtime/package.json"
+2026-10-06T17:05:47.3240241Z       },
+2026-10-06T17:05:47.3240420Z       "metro-source-map": {
+2026-10-06T17:05:47.3240625Z         "name": "metro-source-map",
+2026-10-06T17:05:47.3240852Z         "version": "0.84.5",
+2026-10-06T17:05:47.3241225Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-source-map",
+2026-10-06T17:05:47.3241838Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro/node_modules/metro-source-map/package.json"
+2026-10-06T17:05:47.3242280Z       },
+2026-10-06T17:05:47.3242443Z       "metro-symbolicate": {
+2026-10-06T17:05:47.3242664Z         "name": "metro-symbolicate",
+2026-10-06T17:05:47.3242883Z         "version": "0.84.5",
+2026-10-06T17:05:47.3243179Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-symbolicate",
+2026-10-06T17:05:47.3243663Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-symbolicate/package.json"
+2026-10-06T17:05:47.3244022Z       },
+2026-10-06T17:05:47.3244204Z       "metro-transform-plugins": {
+2026-10-06T17:05:47.3244429Z         "name": "metro-transform-plugins",
+2026-10-06T17:05:47.3244665Z         "version": "0.84.5",
+2026-10-06T17:05:47.3244972Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-transform-plugins",
+2026-10-06T17:05:47.3245501Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-transform-plugins/package.json"
+2026-10-06T17:05:47.3245885Z       },
+2026-10-06T17:05:47.3246049Z       "metro-transform-worker": {
+2026-10-06T17:05:47.3246279Z         "name": "metro-transform-worker",
+2026-10-06T17:05:47.3246493Z         "version": "0.84.5",
+2026-10-06T17:05:47.3246991Z         "directory": "/home/runner/work/Splotch/Splotch/node_modules/metro-transform-worker",
+2026-10-06T17:05:47.3247502Z         "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/metro-transform-worker/package.json"
+2026-10-06T17:05:47.3247874Z       }
+2026-10-06T17:05:47.3248032Z     },
+2026-10-06T17:05:47.3248180Z     "config": {
+2026-10-06T17:05:47.3248357Z       "name": "@expo/metro-config",
+2026-10-06T17:05:47.3248575Z       "version": "57.0.12",
+2026-10-06T17:05:47.3248863Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro-config",
+2026-10-06T17:05:47.3249353Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/metro-config/package.json"
+2026-10-06T17:05:47.3249835Z     },
+2026-10-06T17:05:47.3249982Z     "refresh": {
+2026-10-06T17:05:47.3250171Z       "name": "react-refresh",
+2026-10-06T17:05:47.3250366Z       "version": "0.14.2",
+2026-10-06T17:05:47.3250670Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/react-refresh",
+2026-10-06T17:05:47.3251130Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/react-refresh/package.json"
+2026-10-06T17:05:47.3251477Z     },
+2026-10-06T17:05:47.3251745Z     "refreshBabel": "/home/runner/work/Splotch/Splotch/node_modules/react-refresh/babel.js",
+2026-10-06T17:05:47.3252122Z     "rendererVersion": "19.2.3",
+2026-10-06T17:05:47.3252330Z     "cli": {
+2026-10-06T17:05:47.3252489Z       "name": "@expo/cli",
+2026-10-06T17:05:47.3252686Z       "version": "57.0.27",
+2026-10-06T17:05:47.3252956Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/cli",
+2026-10-06T17:05:47.3253388Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/cli/package.json"
+2026-10-06T17:05:47.3253725Z     },
+2026-10-06T17:05:47.3253870Z     "expoConfig": {
+2026-10-06T17:05:47.3254057Z       "name": "@expo/config",
+2026-10-06T17:05:47.3254248Z       "version": "57.0.9",
+2026-10-06T17:05:47.3254530Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/@expo/config",
+2026-10-06T17:05:47.3255072Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/@expo/config/package.json"
+2026-10-06T17:05:47.3255424Z     },
+2026-10-06T17:05:47.3255593Z     "autolinking": {
+2026-10-06T17:05:47.3255788Z       "name": "expo-modules-autolinking",
+2026-10-06T17:05:47.3256022Z       "version": "57.0.13",
+2026-10-06T17:05:47.3256329Z       "directory": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-autolinking",
+2026-10-06T17:05:47.3257043Z       "manifestPath": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-autolinking/package.json"
+2026-10-06T17:05:47.3257413Z     }
+2026-10-06T17:05:47.3257563Z   },
+2026-10-06T17:05:47.3257706Z   "config": {
+2026-10-06T17:05:47.3257988Z     "projectRoot": "/home/runner/work/Splotch/Splotch/experiments/native-architecture",
+2026-10-06T17:05:47.3258306Z     "entries": {
+2026-10-06T17:05:47.3258608Z       "android": "/home/runner/work/Splotch/Splotch/experiments/native-architecture/src/index.ts",
+2026-10-06T17:05:47.3259090Z       "ios": "/home/runner/work/Splotch/Splotch/experiments/native-architecture/src/index.ts"
+2026-10-06T17:05:47.3259431Z     },
+2026-10-06T17:05:47.3259616Z     "serverRoot": "/home/runner/work/Splotch/Splotch",
+2026-10-06T17:05:47.3259875Z     "nodeModulesPaths": [
+2026-10-06T17:05:47.3260181Z       "/home/runner/work/Splotch/Splotch/experiments/native-architecture/node_modules",
+2026-10-06T17:05:47.3260551Z       "/home/runner/work/Splotch/Splotch/node_modules"
+2026-10-06T17:05:47.3260771Z     ],
+2026-10-06T17:05:47.3260934Z     "watchFolders": [
+2026-10-06T17:05:47.3261140Z       "/home/runner/work/Splotch/Splotch/node_modules",
+2026-10-06T17:05:47.3261466Z       "/home/runner/work/Splotch/Splotch/experiments/native-architecture"
+2026-10-06T17:05:47.3261764Z     ],
+2026-10-06T17:05:47.3261916Z     "nativeConditions": {
+2026-10-06T17:05:47.3262108Z       "ios": [
+2026-10-06T17:05:47.3262266Z         "react-native"
+2026-10-06T17:05:47.3262448Z       ],
+2026-10-06T17:05:47.3262594Z       "android": [
+2026-10-06T17:05:47.3262773Z         "react-native"
+2026-10-06T17:05:47.3262936Z       ],
+2026-10-06T17:05:47.3263098Z       "tvos": [
+2026-10-06T17:05:47.3263254Z         "react-native"
+2026-10-06T17:05:47.3263424Z       ],
+2026-10-06T17:05:47.3263569Z       "macos": [
+2026-10-06T17:05:47.3263736Z         "react-native"
+2026-10-06T17:05:47.3263898Z       ],
+2026-10-06T17:05:47.3264037Z       "web": [
+2026-10-06T17:05:47.3264200Z         "browser"
+2026-10-06T17:05:47.3264447Z       ]
+2026-10-06T17:05:47.3264786Z     },
+2026-10-06T17:05:47.3265090Z     "expoModules": {
+2026-10-06T17:05:47.3265527Z       "android": {
+2026-10-06T17:05:47.3265833Z         "search": {
+2026-10-06T17:05:47.3266263Z           "expo": {
+2026-10-06T17:05:47.3266570Z             "name": "expo",
+2026-10-06T17:05:47.3267066Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo",
+2026-10-06T17:05:47.3267559Z             "version": "57.0.26",
+2026-10-06T17:05:47.3267872Z             "config": {
+2026-10-06T17:05:47.3268196Z               "platforms": [
+2026-10-06T17:05:47.3268531Z                 "apple",
+2026-10-06T17:05:47.3268888Z                 "android"
+2026-10-06T17:05:47.3269197Z               ],
+2026-10-06T17:05:47.3282384Z               "apple": {
+2026-10-06T17:05:47.3282662Z                 "modules": [
+2026-10-06T17:05:47.3282965Z                   "ExpoFetchModule"
+2026-10-06T17:05:47.3283278Z                 ],
+2026-10-06T17:05:47.3283535Z                 "podspecPath": "Expo.podspec"
+2026-10-06T17:05:47.3283867Z               },
+2026-10-06T17:05:47.3284118Z               "android": {
+2026-10-06T17:05:47.3284404Z                 "modules": [
+2026-10-06T17:05:47.3284679Z                   "expo.modules.fetch.ExpoFetchModule"
+2026-10-06T17:05:47.3284935Z                 ]
+2026-10-06T17:05:47.3285107Z               }
+2026-10-06T17:05:47.3285266Z             },
+2026-10-06T17:05:47.3285448Z             "duplicates": []
+2026-10-06T17:05:47.3285633Z           },
+2026-10-06T17:05:47.3285810Z           "@expo/dom-webview": {
+2026-10-06T17:05:47.3286017Z             "name": "@expo/dom-webview",
+2026-10-06T17:05:47.3286525Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/@expo/dom-webview",
+2026-10-06T17:05:47.3287063Z             "version": "57.0.1",
+2026-10-06T17:05:47.3287258Z             "config": {
+2026-10-06T17:05:47.3287438Z               "platforms": [
+2026-10-06T17:05:47.3287631Z                 "apple",
+2026-10-06T17:05:47.3287828Z                 "android"
+2026-10-06T17:05:47.3288001Z               ],
+2026-10-06T17:05:47.3288176Z               "apple": {
+2026-10-06T17:05:47.3288362Z                 "modules": [
+2026-10-06T17:05:47.3288569Z                   "DomWebViewModule"
+2026-10-06T17:05:47.3288784Z                 ]
+2026-10-06T17:05:47.3288939Z               },
+2026-10-06T17:05:47.3289116Z               "android": {
+2026-10-06T17:05:47.3289304Z                 "modules": [
+2026-10-06T17:05:47.3289527Z                   "expo.modules.webview.DomWebViewModule"
+2026-10-06T17:05:47.3289764Z                 ],
+2026-10-06T17:05:47.3289934Z                 "publication": {
+2026-10-06T17:05:47.3290161Z                   "groupId": "expo.modules.webview",
+2026-10-06T17:05:47.3290408Z                   "artifactId": "expo.modules.webview",
+2026-10-06T17:05:47.3290637Z                   "version": "57.0.1",
+2026-10-06T17:05:47.3290856Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3291078Z                 }
+2026-10-06T17:05:47.3291237Z               }
+2026-10-06T17:05:47.3291393Z             },
+2026-10-06T17:05:47.3291552Z             "duplicates": []
+2026-10-06T17:05:47.3291749Z           },
+2026-10-06T17:05:47.3291917Z           "@expo/log-box": {
+2026-10-06T17:05:47.3292106Z             "name": "@expo/log-box",
+2026-10-06T17:05:47.3292399Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/@expo/log-box",
+2026-10-06T17:05:47.3292699Z             "version": "57.0.4",
+2026-10-06T17:05:47.3292894Z             "config": {
+2026-10-06T17:05:47.3293070Z               "platforms": [
+2026-10-06T17:05:47.3293253Z                 "apple",
+2026-10-06T17:05:47.3293432Z                 "android"
+2026-10-06T17:05:47.3293609Z               ],
+2026-10-06T17:05:47.3293772Z               "apple": {
+2026-10-06T17:05:47.3293981Z                 "podspecPath": "ExpoLogBox.podspec"
+2026-10-06T17:05:47.3294213Z               },
+2026-10-06T17:05:47.3294378Z               "android": {
+2026-10-06T17:05:47.3294586Z                 "modules": []
+2026-10-06T17:05:47.3294772Z               }
+2026-10-06T17:05:47.3294927Z             },
+2026-10-06T17:05:47.3295102Z             "duplicates": []
+2026-10-06T17:05:47.3295284Z           },
+2026-10-06T17:05:47.3295614Z           "expo-asset": {
+2026-10-06T17:05:47.3295821Z             "name": "expo-asset",
+2026-10-06T17:05:47.3296118Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-asset",
+2026-10-06T17:05:47.3296434Z             "version": "57.0.18",
+2026-10-06T17:05:47.3296843Z             "config": {
+2026-10-06T17:05:47.3297086Z               "platforms": [
+2026-10-06T17:05:47.3297279Z                 "apple",
+2026-10-06T17:05:47.3297473Z                 "android",
+2026-10-06T17:05:47.3297667Z                 "web"
+2026-10-06T17:05:47.3297838Z               ],
+2026-10-06T17:05:47.3298013Z               "apple": {
+2026-10-06T17:05:47.3298186Z                 "modules": [
+2026-10-06T17:05:47.3298383Z                   "AssetModule"
+2026-10-06T17:05:47.3298584Z                 ]
+2026-10-06T17:05:47.3298740Z               },
+2026-10-06T17:05:47.3298909Z               "android": {
+2026-10-06T17:05:47.3299093Z                 "modules": [
+2026-10-06T17:05:47.3299296Z                   "expo.modules.asset.AssetModule"
+2026-10-06T17:05:47.3299545Z                 ],
+2026-10-06T17:05:47.3299725Z                 "publication": {
+2026-10-06T17:05:47.3299945Z                   "groupId": "expo.modules.asset",
+2026-10-06T17:05:47.3300193Z                   "artifactId": "expo.modules.asset",
+2026-10-06T17:05:47.3300441Z                   "version": "57.0.18",
+2026-10-06T17:05:47.3300793Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3301024Z                 }
+2026-10-06T17:05:47.3301180Z               }
+2026-10-06T17:05:47.3301357Z             },
+2026-10-06T17:05:47.3301516Z             "duplicates": []
+2026-10-06T17:05:47.3301711Z           },
+2026-10-06T17:05:47.3301883Z           "expo-constants": {
+2026-10-06T17:05:47.3302082Z             "name": "expo-constants",
+2026-10-06T17:05:47.3302387Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-constants",
+2026-10-06T17:05:47.3302700Z             "version": "57.0.20",
+2026-10-06T17:05:47.3302888Z             "config": {
+2026-10-06T17:05:47.3303076Z               "platforms": [
+2026-10-06T17:05:47.3303252Z                 "apple",
+2026-10-06T17:05:47.3303433Z                 "android",
+2026-10-06T17:05:47.3303599Z                 "web"
+2026-10-06T17:05:47.3303771Z               ],
+2026-10-06T17:05:47.3303936Z               "apple": {
+2026-10-06T17:05:47.3304103Z                 "modules": [
+2026-10-06T17:05:47.3304296Z                   "ConstantsModule"
+2026-10-06T17:05:47.3304489Z                 ]
+2026-10-06T17:05:47.3304639Z               },
+2026-10-06T17:05:47.3304809Z               "android": {
+2026-10-06T17:05:47.3304980Z                 "modules": [
+2026-10-06T17:05:47.3305203Z                   "expo.modules.constants.ConstantsModule"
+2026-10-06T17:05:47.3305450Z                 ],
+2026-10-06T17:05:47.3305611Z                 "services": [
+2026-10-06T17:05:47.3305848Z                   "expo.modules.constants.ConstantsService"
+2026-10-06T17:05:47.3306096Z                 ]
+2026-10-06T17:05:47.3306250Z               }
+2026-10-06T17:05:47.3306421Z             },
+2026-10-06T17:05:47.3306576Z             "duplicates": []
+2026-10-06T17:05:47.3306933Z           },
+2026-10-06T17:05:47.3307093Z           "expo-file-system": {
+2026-10-06T17:05:47.3307312Z             "name": "expo-file-system",
+2026-10-06T17:05:47.3307625Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-file-system",
+2026-10-06T17:05:47.3307949Z             "version": "57.0.7",
+2026-10-06T17:05:47.3308151Z             "config": {
+2026-10-06T17:05:47.3308323Z               "platforms": [
+2026-10-06T17:05:47.3308519Z                 "apple",
+2026-10-06T17:05:47.3308689Z                 "android"
+2026-10-06T17:05:47.3308873Z               ],
+2026-10-06T17:05:47.3309040Z               "apple": {
+2026-10-06T17:05:47.3309215Z                 "modules": [
+2026-10-06T17:05:47.3309413Z                   "FileSystemModule",
+2026-10-06T17:05:47.3309633Z                   "FileSystemLegacyModule"
+2026-10-06T17:05:47.3309966Z                 ],
+2026-10-06T17:05:47.3310162Z                 "appDelegateSubscribers": [
+2026-10-06T17:05:47.3310428Z                   "FileSystemBackgroundSessionHandler"
+2026-10-06T17:05:47.3310669Z                 ]
+2026-10-06T17:05:47.3310823Z               },
+2026-10-06T17:05:47.3311005Z               "android": {
+2026-10-06T17:05:47.3311203Z                 "modules": [
+2026-10-06T17:05:47.3311456Z                   "expo.modules.filesystem.FileSystemModule",
+2026-10-06T17:05:47.3311804Z                   "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+2026-10-06T17:05:47.3312091Z                 ],
+2026-10-06T17:05:47.3312264Z                 "publication": {
+2026-10-06T17:05:47.3312493Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3312765Z                   "artifactId": "expo.modules.filesystem",
+2026-10-06T17:05:47.3313016Z                   "version": "57.0.7",
+2026-10-06T17:05:47.3313237Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3313474Z                 }
+2026-10-06T17:05:47.3313644Z               }
+2026-10-06T17:05:47.3313797Z             },
+2026-10-06T17:05:47.3313971Z             "duplicates": []
+2026-10-06T17:05:47.3314151Z           },
+2026-10-06T17:05:47.3314319Z           "expo-font": {
+2026-10-06T17:05:47.3314509Z             "name": "expo-font",
+2026-10-06T17:05:47.3314897Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-font",
+2026-10-06T17:05:47.3315207Z             "version": "57.0.4",
+2026-10-06T17:05:47.3315405Z             "config": {
+2026-10-06T17:05:47.3315590Z               "platforms": [
+2026-10-06T17:05:47.3315785Z                 "apple",
+2026-10-06T17:05:47.3315955Z                 "android",
+2026-10-06T17:05:47.3316139Z                 "web"
+2026-10-06T17:05:47.3316320Z               ],
+2026-10-06T17:05:47.3316582Z               "apple": {
+2026-10-06T17:05:47.3316893Z                 "modules": [
+2026-10-06T17:05:47.3317099Z                   "FontLoaderModule",
+2026-10-06T17:05:47.3317327Z                   "FontUtilsModule"
+2026-10-06T17:05:47.3317527Z                 ]
+2026-10-06T17:05:47.3317697Z               },
+2026-10-06T17:05:47.3317851Z               "android": {
+2026-10-06T17:05:47.3318043Z                 "modules": [
+2026-10-06T17:05:47.3318270Z                   "expo.modules.font.FontLoaderModule",
+2026-10-06T17:05:47.3318527Z                   "expo.modules.font.FontUtilsModule"
+2026-10-06T17:05:47.3318769Z                 ],
+2026-10-06T17:05:47.3318949Z                 "publication": {
+2026-10-06T17:05:47.3319172Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3319413Z                   "artifactId": "expo.modules.font",
+2026-10-06T17:05:47.3319657Z                   "version": "57.0.4",
+2026-10-06T17:05:47.3319894Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3320127Z                 }
+2026-10-06T17:05:47.3320278Z               }
+2026-10-06T17:05:47.3320443Z             },
+2026-10-06T17:05:47.3320603Z             "duplicates": []
+2026-10-06T17:05:47.3320796Z           },
+2026-10-06T17:05:47.3320962Z           "expo-keep-awake": {
+2026-10-06T17:05:47.3321179Z             "name": "expo-keep-awake",
+2026-10-06T17:05:47.3321482Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-keep-awake",
+2026-10-06T17:05:47.3321795Z             "version": "57.0.2",
+2026-10-06T17:05:47.3322000Z             "config": {
+2026-10-06T17:05:47.3322179Z               "platforms": [
+2026-10-06T17:05:47.3322374Z                 "apple",
+2026-10-06T17:05:47.3322545Z                 "android"
+2026-10-06T17:05:47.3322734Z               ],
+2026-10-06T17:05:47.3322889Z               "apple": {
+2026-10-06T17:05:47.3323074Z                 "modules": [
+2026-10-06T17:05:47.3323270Z                   "KeepAwakeModule"
+2026-10-06T17:05:47.3323461Z                 ]
+2026-10-06T17:05:47.3323631Z               },
+2026-10-06T17:05:47.3323785Z               "android": {
+2026-10-06T17:05:47.3323973Z                 "modules": [
+2026-10-06T17:05:47.3324319Z                   "expo.modules.keepawake.KeepAwakeModule"
+2026-10-06T17:05:47.3324569Z                 ],
+2026-10-06T17:05:47.3324735Z                 "publication": {
+2026-10-06T17:05:47.3324960Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3325222Z                   "artifactId": "expo.modules.keepawake",
+2026-10-06T17:05:47.3325480Z                   "version": "57.0.2",
+2026-10-06T17:05:47.3325697Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3325928Z                 }
+2026-10-06T17:05:47.3326097Z               }
+2026-10-06T17:05:47.3326253Z             },
+2026-10-06T17:05:47.3326431Z             "duplicates": []
+2026-10-06T17:05:47.3326607Z           },
+2026-10-06T17:05:47.3326944Z           "expo-modules-core": {
+2026-10-06T17:05:47.3327163Z             "name": "expo-modules-core",
+2026-10-06T17:05:47.3327482Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core",
+2026-10-06T17:05:47.3327811Z             "version": "57.0.20",
+2026-10-06T17:05:47.3328013Z             "config": {
+2026-10-06T17:05:47.3328202Z               "platforms": [
+2026-10-06T17:05:47.3328403Z                 "apple",
+2026-10-06T17:05:47.3328575Z                 "android"
+2026-10-06T17:05:47.3328754Z               ],
+2026-10-06T17:05:47.3328914Z               "apple": {
+2026-10-06T17:05:47.3329101Z                 "podspecPath": [
+2026-10-06T17:05:47.3329464Z                   "./ExpoModulesCore.podspec",
+2026-10-06T17:05:47.3329724Z                   "./ExpoModulesWorklets.podspec"
+2026-10-06T17:05:47.3329939Z                 ]
+2026-10-06T17:05:47.3330107Z               },
+2026-10-06T17:05:47.3330283Z               "android": {
+2026-10-06T17:05:47.3330468Z                 "gradlePlugins": [
+2026-10-06T17:05:47.3330673Z                   {
+2026-10-06T17:05:47.3330863Z                     "id": "expo-module-gradle-plugin",
+2026-10-06T17:05:47.3331118Z                     "group": "expo.modules",
+2026-10-06T17:05:47.3331375Z                     "sourceDir": "expo-module-gradle-plugin",
+2026-10-06T17:05:47.3331649Z                     "applyToRootProject": false
+2026-10-06T17:05:47.3331864Z                   }
+2026-10-06T17:05:47.3332038Z                 ]
+2026-10-06T17:05:47.3332189Z               }
+2026-10-06T17:05:47.3332351Z             },
+2026-10-06T17:05:47.3332506Z             "duplicates": []
+2026-10-06T17:05:47.3332694Z           }
+2026-10-06T17:05:47.3332848Z         },
+2026-10-06T17:05:47.3333028Z         "extraDependencies": [],
+2026-10-06T17:05:47.3333223Z         "coreFeatures": [],
+2026-10-06T17:05:47.3333419Z         "modules": [
+2026-10-06T17:05:47.3333598Z           {
+2026-10-06T17:05:47.3333766Z             "packageName": "@expo/dom-webview",
+2026-10-06T17:05:47.3333998Z             "projects": [
+2026-10-06T17:05:47.3334181Z               {
+2026-10-06T17:05:47.3334346Z                 "name": "expo-dom-webview",
+2026-10-06T17:05:47.3334714Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/@expo/dom-webview/android",
+2026-10-06T17:05:47.3335087Z                 "modules": [
+2026-10-06T17:05:47.3335260Z                   {
+2026-10-06T17:05:47.3335500Z                     "classifier": "expo.modules.webview.DomWebViewModule",
+2026-10-06T17:05:47.3335789Z                     "name": null
+2026-10-06T17:05:47.3335982Z                   }
+2026-10-06T17:05:47.3336137Z                 ],
+2026-10-06T17:05:47.3336317Z                 "services": [],
+2026-10-06T17:05:47.3336530Z                 "packages": [],
+2026-10-06T17:05:47.3336882Z                 "publication": {
+2026-10-06T17:05:47.3337154Z                   "groupId": "expo.modules.webview",
+2026-10-06T17:05:47.3337403Z                   "artifactId": "expo.modules.webview",
+2026-10-06T17:05:47.3337635Z                   "version": "57.0.1",
+2026-10-06T17:05:47.3337852Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3338068Z                 }
+2026-10-06T17:05:47.3338219Z               }
+2026-10-06T17:05:47.3338365Z             ],
+2026-10-06T17:05:47.3338666Z             "packageVersion": "57.0.1"
+2026-10-06T17:05:47.3338860Z           },
+2026-10-06T17:05:47.3339005Z           {
+2026-10-06T17:05:47.3339165Z             "packageName": "@expo/log-box",
+2026-10-06T17:05:47.3339401Z             "projects": [
+2026-10-06T17:05:47.3339574Z               {
+2026-10-06T17:05:47.3339735Z                 "name": "expo-log-box",
+2026-10-06T17:05:47.3340066Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/@expo/log-box/android",
+2026-10-06T17:05:47.3340428Z                 "modules": [],
+2026-10-06T17:05:47.3340620Z                 "services": [],
+2026-10-06T17:05:47.3340809Z                 "packages": [
+2026-10-06T17:05:47.3341031Z                   "expo.modules.logbox.ExpoLogBoxPackage"
+2026-10-06T17:05:47.3341279Z                 ]
+2026-10-06T17:05:47.3341432Z               }
+2026-10-06T17:05:47.3341579Z             ],
+2026-10-06T17:05:47.3341743Z             "packageVersion": "57.0.4"
+2026-10-06T17:05:47.3341937Z           },
+2026-10-06T17:05:47.3342095Z           {
+2026-10-06T17:05:47.3342278Z             "packageName": "expo",
+2026-10-06T17:05:47.3342568Z             "projects": [
+2026-10-06T17:05:47.3342827Z               {
+2026-10-06T17:05:47.3343062Z                 "name": "expo",
+2026-10-06T17:05:47.3343513Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo/android",
+2026-10-06T17:05:47.3344130Z                 "modules": [
+2026-10-06T17:05:47.3344415Z                   {
+2026-10-06T17:05:47.3344730Z                     "classifier": "expo.modules.fetch.ExpoFetchModule",
+2026-10-06T17:05:47.3345134Z                     "name": null
+2026-10-06T17:05:47.3345461Z                   }
+2026-10-06T17:05:47.3345627Z                 ],
+2026-10-06T17:05:47.3345793Z                 "services": [],
+2026-10-06T17:05:47.3345991Z                 "packages": [
+2026-10-06T17:05:47.3346216Z                   "expo.modules.ExpoModulesPackage"
+2026-10-06T17:05:47.3346440Z                 ]
+2026-10-06T17:05:47.3346605Z               }
+2026-10-06T17:05:47.3347628Z             ],
+2026-10-06T17:05:47.3347864Z             "packageVersion": "57.0.26"
+2026-10-06T17:05:47.3348207Z           },
+2026-10-06T17:05:47.3348408Z           {
+2026-10-06T17:05:47.3348636Z             "packageName": "expo-asset",
+2026-10-06T17:05:47.3348938Z             "projects": [
+2026-10-06T17:05:47.3349177Z               {
+2026-10-06T17:05:47.3349413Z                 "name": "expo-asset",
+2026-10-06T17:05:47.3349876Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-asset/android",
+2026-10-06T17:05:47.3350367Z                 "modules": [
+2026-10-06T17:05:47.3350620Z                   {
+2026-10-06T17:05:47.3350922Z                     "classifier": "expo.modules.asset.AssetModule",
+2026-10-06T17:05:47.3351285Z                     "name": null
+2026-10-06T17:05:47.3351550Z                   }
+2026-10-06T17:05:47.3351762Z                 ],
+2026-10-06T17:05:47.3351986Z                 "services": [],
+2026-10-06T17:05:47.3352255Z                 "packages": [],
+2026-10-06T17:05:47.3352521Z                 "publication": {
+2026-10-06T17:05:47.3352828Z                   "groupId": "expo.modules.asset",
+2026-10-06T17:05:47.3353183Z                   "artifactId": "expo.modules.asset",
+2026-10-06T17:05:47.3353512Z                   "version": "57.0.18",
+2026-10-06T17:05:47.3353833Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3354146Z                 }
+2026-10-06T17:05:47.3354363Z               }
+2026-10-06T17:05:47.3354571Z             ],
+2026-10-06T17:05:47.3354802Z             "packageVersion": "57.0.18"
+2026-10-06T17:05:47.3355087Z           },
+2026-10-06T17:05:47.3355290Z           {
+2026-10-06T17:05:47.3355522Z             "packageName": "expo-constants",
+2026-10-06T17:05:47.3355833Z             "projects": [
+2026-10-06T17:05:47.3356082Z               {
+2026-10-06T17:05:47.3356315Z                 "name": "expo-constants",
+2026-10-06T17:05:47.3356961Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-constants/android",
+2026-10-06T17:05:47.3357621Z                 "modules": [
+2026-10-06T17:05:47.3357910Z                   {
+2026-10-06T17:05:47.3358236Z                     "classifier": "expo.modules.constants.ConstantsModule",
+2026-10-06T17:05:47.3358621Z                     "name": null
+2026-10-06T17:05:47.3358869Z                   }
+2026-10-06T17:05:47.3359084Z                 ],
+2026-10-06T17:05:47.3359306Z                 "services": [
+2026-10-06T17:05:47.3359621Z                   "expo.modules.constants.ConstantsService"
+2026-10-06T17:05:47.3359955Z                 ],
+2026-10-06T17:05:47.3360174Z                 "packages": []
+2026-10-06T17:05:47.3360424Z               }
+2026-10-06T17:05:47.3360626Z             ],
+2026-10-06T17:05:47.3360852Z             "packageVersion": "57.0.20"
+2026-10-06T17:05:47.3361167Z           },
+2026-10-06T17:05:47.3361396Z           {
+2026-10-06T17:05:47.3361636Z             "packageName": "expo-file-system",
+2026-10-06T17:05:47.3361960Z             "projects": [
+2026-10-06T17:05:47.3362197Z               {
+2026-10-06T17:05:47.3362426Z                 "name": "expo-file-system",
+2026-10-06T17:05:47.3362931Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-file-system/android",
+2026-10-06T17:05:47.3363453Z                 "modules": [
+2026-10-06T17:05:47.3363707Z                   {
+2026-10-06T17:05:47.3364242Z                     "classifier": "expo.modules.filesystem.FileSystemModule",
+2026-10-06T17:05:47.3364629Z                     "name": null
+2026-10-06T17:05:47.3364874Z                   },
+2026-10-06T17:05:47.3365103Z                   {
+2026-10-06T17:05:47.3365503Z                     "classifier": "expo.modules.filesystem.legacy.FileSystemLegacyModule",
+2026-10-06T17:05:47.3365979Z                     "name": null
+2026-10-06T17:05:47.3366226Z                   }
+2026-10-06T17:05:47.3366437Z                 ],
+2026-10-06T17:05:47.3366823Z                 "services": [],
+2026-10-06T17:05:47.3367091Z                 "packages": [],
+2026-10-06T17:05:47.3367349Z                 "publication": {
+2026-10-06T17:05:47.3367630Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3367979Z                   "artifactId": "expo.modules.filesystem",
+2026-10-06T17:05:47.3368322Z                   "version": "57.0.7",
+2026-10-06T17:05:47.3368618Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3368934Z                 }
+2026-10-06T17:05:47.3369156Z               }
+2026-10-06T17:05:47.3369386Z             ],
+2026-10-06T17:05:47.3369642Z             "packageVersion": "57.0.7"
+2026-10-06T17:05:47.3369946Z           },
+2026-10-06T17:05:47.3370162Z           {
+2026-10-06T17:05:47.3370410Z             "packageName": "expo-font",
+2026-10-06T17:05:47.3370747Z             "projects": [
+2026-10-06T17:05:47.3371012Z               {
+2026-10-06T17:05:47.3371246Z                 "name": "expo-font",
+2026-10-06T17:05:47.3371748Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-font/android",
+2026-10-06T17:05:47.3372302Z                 "modules": [
+2026-10-06T17:05:47.3372590Z                   {
+2026-10-06T17:05:47.3372922Z                     "classifier": "expo.modules.font.FontLoaderModule",
+2026-10-06T17:05:47.3373329Z                     "name": null
+2026-10-06T17:05:47.3373612Z                   },
+2026-10-06T17:05:47.3373849Z                   {
+2026-10-06T17:05:47.3374168Z                     "classifier": "expo.modules.font.FontUtilsModule",
+2026-10-06T17:05:47.3374569Z                     "name": null
+2026-10-06T17:05:47.3374835Z                   }
+2026-10-06T17:05:47.3375067Z                 ],
+2026-10-06T17:05:47.3375306Z                 "services": [],
+2026-10-06T17:05:47.3375591Z                 "packages": [],
+2026-10-06T17:05:47.3375880Z                 "publication": {
+2026-10-06T17:05:47.3376204Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3376581Z                   "artifactId": "expo.modules.font",
+2026-10-06T17:05:47.3377286Z                   "version": "57.0.4",
+2026-10-06T17:05:47.3377640Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3377981Z                 }
+2026-10-06T17:05:47.3378208Z               }
+2026-10-06T17:05:47.3378433Z             ],
+2026-10-06T17:05:47.3378735Z             "packageVersion": "57.0.4"
+2026-10-06T17:05:47.3379035Z           },
+2026-10-06T17:05:47.3379255Z           {
+2026-10-06T17:05:47.3379510Z             "packageName": "expo-keep-awake",
+2026-10-06T17:05:47.3379842Z             "projects": [
+2026-10-06T17:05:47.3380089Z               {
+2026-10-06T17:05:47.3380319Z                 "name": "expo-keep-awake",
+2026-10-06T17:05:47.3380832Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-keep-awake/android",
+2026-10-06T17:05:47.3381341Z                 "modules": [
+2026-10-06T17:05:47.3381585Z                   {
+2026-10-06T17:05:47.3381907Z                     "classifier": "expo.modules.keepawake.KeepAwakeModule",
+2026-10-06T17:05:47.3382312Z                     "name": null
+2026-10-06T17:05:47.3382568Z                   }
+2026-10-06T17:05:47.3382778Z                 ],
+2026-10-06T17:05:47.3383014Z                 "services": [],
+2026-10-06T17:05:47.3383276Z                 "packages": [],
+2026-10-06T17:05:47.3383543Z                 "publication": {
+2026-10-06T17:05:47.3383832Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3384325Z                   "artifactId": "expo.modules.keepawake",
+2026-10-06T17:05:47.3384694Z                   "version": "57.0.2",
+2026-10-06T17:05:47.3385004Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3385293Z                 }
+2026-10-06T17:05:47.3385501Z               }
+2026-10-06T17:05:47.3385707Z             ],
+2026-10-06T17:05:47.3385930Z             "packageVersion": "57.0.2"
+2026-10-06T17:05:47.3386191Z           },
+2026-10-06T17:05:47.3386388Z           {
+2026-10-06T17:05:47.3386618Z             "packageName": "expo-modules-core",
+2026-10-06T17:05:47.3387049Z             "projects": [
+2026-10-06T17:05:47.3387284Z               {
+2026-10-06T17:05:47.3387524Z                 "name": "expo-modules-core",
+2026-10-06T17:05:47.3388038Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core/android",
+2026-10-06T17:05:47.3388521Z                 "modules": [],
+2026-10-06T17:05:47.3388777Z                 "services": [],
+2026-10-06T17:05:47.3389045Z                 "packages": [
+2026-10-06T17:05:47.3389394Z                   "expo.modules.adapters.react.ReactAdapterPackage",
+2026-10-06T17:05:47.3389820Z                   "expo.modules.core.BasePackage",
+2026-10-06T17:05:47.3390245Z                   "expo.modules.kotlin.edgeToEdge.EdgeToEdgePackage"
+2026-10-06T17:05:47.3390619Z                 ]
+2026-10-06T17:05:47.3390829Z               }
+2026-10-06T17:05:47.3391102Z             ],
+2026-10-06T17:05:47.3391342Z             "plugins": [
+2026-10-06T17:05:47.3391601Z               {
+2026-10-06T17:05:47.3391868Z                 "id": "expo-module-gradle-plugin",
+2026-10-06T17:05:47.3392239Z                 "group": "expo.modules",
+2026-10-06T17:05:47.3392885Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core/expo-module-gradle-plugin",
+2026-10-06T17:05:47.3393553Z                 "applyToRootProject": false
+2026-10-06T17:05:47.3393876Z               }
+2026-10-06T17:05:47.3394101Z             ],
+2026-10-06T17:05:47.3394353Z             "packageVersion": "57.0.20"
+2026-10-06T17:05:47.3394659Z           }
+2026-10-06T17:05:47.3394869Z         ]
+2026-10-06T17:05:47.3395082Z       },
+2026-10-06T17:05:47.3395314Z       "apple": {
+2026-10-06T17:05:47.3395554Z         "search": {
+2026-10-06T17:05:47.3395792Z           "expo": {
+2026-10-06T17:05:47.3396036Z             "name": "expo",
+2026-10-06T17:05:47.3396423Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo",
+2026-10-06T17:05:47.3396974Z             "version": "57.0.26",
+2026-10-06T17:05:47.3397275Z             "config": {
+2026-10-06T17:05:47.3397678Z               "platforms": [
+2026-10-06T17:05:47.3397964Z                 "apple",
+2026-10-06T17:05:47.3398225Z                 "android"
+2026-10-06T17:05:47.3398486Z               ],
+2026-10-06T17:05:47.3398724Z               "apple": {
+2026-10-06T17:05:47.3398985Z                 "modules": [
+2026-10-06T17:05:47.3399278Z                   "ExpoFetchModule"
+2026-10-06T17:05:47.3399579Z                 ],
+2026-10-06T17:05:47.3399846Z                 "podspecPath": "Expo.podspec"
+2026-10-06T17:05:47.3400173Z               },
+2026-10-06T17:05:47.3400410Z               "android": {
+2026-10-06T17:05:47.3400677Z                 "modules": [
+2026-10-06T17:05:47.3401003Z                   "expo.modules.fetch.ExpoFetchModule"
+2026-10-06T17:05:47.3401355Z                 ]
+2026-10-06T17:05:47.3401595Z               }
+2026-10-06T17:05:47.3401817Z             },
+2026-10-06T17:05:47.3402049Z             "duplicates": []
+2026-10-06T17:05:47.3402316Z           },
+2026-10-06T17:05:47.3402564Z           "@expo/dom-webview": {
+2026-10-06T17:05:47.3402872Z             "name": "@expo/dom-webview",
+2026-10-06T17:05:47.3403284Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/@expo/dom-webview",
+2026-10-06T17:05:47.3403703Z             "version": "57.0.1",
+2026-10-06T17:05:47.3403954Z             "config": {
+2026-10-06T17:05:47.3404197Z               "platforms": [
+2026-10-06T17:05:47.3404566Z                 "apple",
+2026-10-06T17:05:47.3404810Z                 "android"
+2026-10-06T17:05:47.3405040Z               ],
+2026-10-06T17:05:47.3405267Z               "apple": {
+2026-10-06T17:05:47.3405504Z                 "modules": [
+2026-10-06T17:05:47.3405772Z                   "DomWebViewModule"
+2026-10-06T17:05:47.3406051Z                 ]
+2026-10-06T17:05:47.3406260Z               },
+2026-10-06T17:05:47.3406481Z               "android": {
+2026-10-06T17:05:47.3406844Z                 "modules": [
+2026-10-06T17:05:47.3407204Z                   "expo.modules.webview.DomWebViewModule"
+2026-10-06T17:05:47.3407535Z                 ],
+2026-10-06T17:05:47.3407788Z                 "publication": {
+2026-10-06T17:05:47.3408187Z                   "groupId": "expo.modules.webview",
+2026-10-06T17:05:47.3408695Z                   "artifactId": "expo.modules.webview",
+2026-10-06T17:05:47.3409145Z                   "version": "57.0.1",
+2026-10-06T17:05:47.3409585Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3410015Z                 }
+2026-10-06T17:05:47.3410294Z               }
+2026-10-06T17:05:47.3410586Z             },
+2026-10-06T17:05:47.3410891Z             "duplicates": []
+2026-10-06T17:05:47.3411265Z           },
+2026-10-06T17:05:47.3411558Z           "@expo/log-box": {
+2026-10-06T17:05:47.3411927Z             "name": "@expo/log-box",
+2026-10-06T17:05:47.3412518Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/@expo/log-box",
+2026-10-06T17:05:47.3413147Z             "version": "57.0.4",
+2026-10-06T17:05:47.3413486Z             "config": {
+2026-10-06T17:05:47.3413857Z               "platforms": [
+2026-10-06T17:05:47.3414202Z                 "apple",
+2026-10-06T17:05:47.3414536Z                 "android"
+2026-10-06T17:05:47.3414858Z               ],
+2026-10-06T17:05:47.3417128Z               "apple": {
+2026-10-06T17:05:47.3417437Z                 "podspecPath": "ExpoLogBox.podspec"
+2026-10-06T17:05:47.3417739Z               },
+2026-10-06T17:05:47.3417963Z               "android": {
+2026-10-06T17:05:47.3418212Z                 "modules": []
+2026-10-06T17:05:47.3418461Z               }
+2026-10-06T17:05:47.3418659Z             },
+2026-10-06T17:05:47.3418891Z             "duplicates": []
+2026-10-06T17:05:47.3419135Z           },
+2026-10-06T17:05:47.3419339Z           "expo-asset": {
+2026-10-06T17:05:47.3419585Z             "name": "expo-asset",
+2026-10-06T17:05:47.3419987Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-asset",
+2026-10-06T17:05:47.3420413Z             "version": "57.0.18",
+2026-10-06T17:05:47.3420665Z             "config": {
+2026-10-06T17:05:47.3421093Z               "platforms": [
+2026-10-06T17:05:47.3421348Z                 "apple",
+2026-10-06T17:05:47.3421617Z                 "android",
+2026-10-06T17:05:47.3421874Z                 "web"
+2026-10-06T17:05:47.3422099Z               ],
+2026-10-06T17:05:47.3422334Z               "apple": {
+2026-10-06T17:05:47.3422609Z                 "modules": [
+2026-10-06T17:05:47.3422903Z                   "AssetModule"
+2026-10-06T17:05:47.3423161Z                 ]
+2026-10-06T17:05:47.3423390Z               },
+2026-10-06T17:05:47.3423624Z               "android": {
+2026-10-06T17:05:47.3423872Z                 "modules": [
+2026-10-06T17:05:47.3424164Z                   "expo.modules.asset.AssetModule"
+2026-10-06T17:05:47.3424477Z                 ],
+2026-10-06T17:05:47.3424715Z                 "publication": {
+2026-10-06T17:05:47.3425037Z                   "groupId": "expo.modules.asset",
+2026-10-06T17:05:47.3425414Z                   "artifactId": "expo.modules.asset",
+2026-10-06T17:05:47.3425775Z                   "version": "57.0.18",
+2026-10-06T17:05:47.3426128Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3426450Z                 }
+2026-10-06T17:05:47.3427000Z               }
+2026-10-06T17:05:47.3427233Z             },
+2026-10-06T17:05:47.3427535Z             "duplicates": []
+2026-10-06T17:05:47.3427821Z           },
+2026-10-06T17:05:47.3428064Z           "expo-constants": {
+2026-10-06T17:05:47.3428568Z             "name": "expo-constants",
+2026-10-06T17:05:47.3429010Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-constants",
+2026-10-06T17:05:47.3429522Z             "version": "57.0.20",
+2026-10-06T17:05:47.3429835Z             "config": {
+2026-10-06T17:05:47.3430107Z               "platforms": [
+2026-10-06T17:05:47.3430396Z                 "apple",
+2026-10-06T17:05:47.3430674Z                 "android",
+2026-10-06T17:05:47.3430945Z                 "web"
+2026-10-06T17:05:47.3431185Z               ],
+2026-10-06T17:05:47.3431440Z               "apple": {
+2026-10-06T17:05:47.3431692Z                 "modules": [
+2026-10-06T17:05:47.3431961Z                   "ConstantsModule"
+2026-10-06T17:05:47.3432237Z                 ]
+2026-10-06T17:05:47.3432443Z               },
+2026-10-06T17:05:47.3432662Z               "android": {
+2026-10-06T17:05:47.3432929Z                 "modules": [
+2026-10-06T17:05:47.3433281Z                   "expo.modules.constants.ConstantsModule"
+2026-10-06T17:05:47.3433656Z                 ],
+2026-10-06T17:05:47.3433899Z                 "services": [
+2026-10-06T17:05:47.3434257Z                   "expo.modules.constants.ConstantsService"
+2026-10-06T17:05:47.3434631Z                 ]
+2026-10-06T17:05:47.3434837Z               }
+2026-10-06T17:05:47.3435143Z             },
+2026-10-06T17:05:47.3435387Z             "duplicates": []
+2026-10-06T17:05:47.3435675Z           },
+2026-10-06T17:05:47.3435924Z           "expo-file-system": {
+2026-10-06T17:05:47.3436242Z             "name": "expo-file-system",
+2026-10-06T17:05:47.3436899Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-file-system",
+2026-10-06T17:05:47.3437351Z             "version": "57.0.7",
+2026-10-06T17:05:47.3437630Z             "config": {
+2026-10-06T17:05:47.3437878Z               "platforms": [
+2026-10-06T17:05:47.3438132Z                 "apple",
+2026-10-06T17:05:47.3438374Z                 "android"
+2026-10-06T17:05:47.3438615Z               ],
+2026-10-06T17:05:47.3438843Z               "apple": {
+2026-10-06T17:05:47.3439081Z                 "modules": [
+2026-10-06T17:05:47.3439351Z                   "FileSystemModule",
+2026-10-06T17:05:47.3439667Z                   "FileSystemLegacyModule"
+2026-10-06T17:05:47.3440511Z                 ],
+2026-10-06T17:05:47.3440720Z                 "appDelegateSubscribers": [
+2026-10-06T17:05:47.3440979Z                   "FileSystemBackgroundSessionHandler"
+2026-10-06T17:05:47.3441220Z                 ]
+2026-10-06T17:05:47.3441377Z               },
+2026-10-06T17:05:47.3441533Z               "android": {
+2026-10-06T17:05:47.3441888Z                 "modules": [
+2026-10-06T17:05:47.3442114Z                   "expo.modules.filesystem.FileSystemModule",
+2026-10-06T17:05:47.3442450Z                   "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+2026-10-06T17:05:47.3442723Z                 ],
+2026-10-06T17:05:47.3442977Z                 "publication": {
+2026-10-06T17:05:47.3443320Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3443736Z                   "artifactId": "expo.modules.filesystem",
+2026-10-06T17:05:47.3444120Z                   "version": "57.0.7",
+2026-10-06T17:05:47.3444471Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3444823Z                 }
+2026-10-06T17:05:47.3445077Z               }
+2026-10-06T17:05:47.3445308Z             },
+2026-10-06T17:05:47.3445547Z             "duplicates": []
+2026-10-06T17:05:47.3445849Z           },
+2026-10-06T17:05:47.3446095Z           "expo-font": {
+2026-10-06T17:05:47.3446400Z             "name": "expo-font",
+2026-10-06T17:05:47.3446960Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-font",
+2026-10-06T17:05:47.3447364Z             "version": "57.0.4",
+2026-10-06T17:05:47.3447554Z             "config": {
+2026-10-06T17:05:47.3447739Z               "platforms": [
+2026-10-06T17:05:47.3447932Z                 "apple",
+2026-10-06T17:05:47.3448213Z                 "android",
+2026-10-06T17:05:47.3448649Z                 "web"
+2026-10-06T17:05:47.3448903Z               ],
+2026-10-06T17:05:47.3449152Z               "apple": {
+2026-10-06T17:05:47.3449435Z                 "modules": [
+2026-10-06T17:05:47.3449749Z                   "FontLoaderModule",
+2026-10-06T17:05:47.3450213Z                   "FontUtilsModule"
+2026-10-06T17:05:47.3450876Z                 ]
+2026-10-06T17:05:47.3451171Z               },
+2026-10-06T17:05:47.3451471Z               "android": {
+2026-10-06T17:05:47.3451751Z                 "modules": [
+2026-10-06T17:05:47.3452211Z                   "expo.modules.font.FontLoaderModule",
+2026-10-06T17:05:47.3452876Z                   "expo.modules.font.FontUtilsModule"
+2026-10-06T17:05:47.3453350Z                 ],
+2026-10-06T17:05:47.3453783Z                 "publication": {
+2026-10-06T17:05:47.3469902Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3470345Z                   "artifactId": "expo.modules.font",
+2026-10-06T17:05:47.3470709Z                   "version": "57.0.4",
+2026-10-06T17:05:47.3471088Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3471437Z                 }
+2026-10-06T17:05:47.3471679Z               }
+2026-10-06T17:05:47.3471770Z             },
+2026-10-06T17:05:47.3471887Z             "duplicates": []
+2026-10-06T17:05:47.3471978Z           },
+2026-10-06T17:05:47.3472094Z           "expo-keep-awake": {
+2026-10-06T17:05:47.3472221Z             "name": "expo-keep-awake",
+2026-10-06T17:05:47.3472464Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-keep-awake",
+2026-10-06T17:05:47.3472583Z             "version": "57.0.2",
+2026-10-06T17:05:47.3472682Z             "config": {
+2026-10-06T17:05:47.3472780Z               "platforms": [
+2026-10-06T17:05:47.3472877Z                 "apple",
+2026-10-06T17:05:47.3472976Z                 "android"
+2026-10-06T17:05:47.3473066Z               ],
+2026-10-06T17:05:47.3473226Z               "apple": {
+2026-10-06T17:05:47.3473325Z                 "modules": [
+2026-10-06T17:05:47.3473447Z                   "KeepAwakeModule"
+2026-10-06T17:05:47.3473542Z                 ]
+2026-10-06T17:05:47.3473631Z               },
+2026-10-06T17:05:47.3473739Z               "android": {
+2026-10-06T17:05:47.3473852Z                 "modules": [
+2026-10-06T17:05:47.3474021Z                   "expo.modules.keepawake.KeepAwakeModule"
+2026-10-06T17:05:47.3474121Z                 ],
+2026-10-06T17:05:47.3474235Z                 "publication": {
+2026-10-06T17:05:47.3474405Z                   "groupId": "host.exp.exponent",
+2026-10-06T17:05:47.3474587Z                   "artifactId": "expo.modules.keepawake",
+2026-10-06T17:05:47.3475201Z                   "version": "57.0.2",
+2026-10-06T17:05:47.3475361Z                   "repository": "local-maven-repo"
+2026-10-06T17:05:47.3475462Z                 }
+2026-10-06T17:05:47.3475545Z               }
+2026-10-06T17:05:47.3475637Z             },
+2026-10-06T17:05:47.3475742Z             "duplicates": []
+2026-10-06T17:05:47.3475868Z           },
+2026-10-06T17:05:47.3475992Z           "expo-modules-core": {
+2026-10-06T17:05:47.3476116Z             "name": "expo-modules-core",
+2026-10-06T17:05:47.3476317Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core",
+2026-10-06T17:05:47.3476397Z             "version": "57.0.20",
+2026-10-06T17:05:47.3476465Z             "config": {
+2026-10-06T17:05:47.3476543Z               "platforms": [
+2026-10-06T17:05:47.3476616Z                 "apple",
+2026-10-06T17:05:47.3477109Z                 "android"
+2026-10-06T17:05:47.3477186Z               ],
+2026-10-06T17:05:47.3477261Z               "apple": {
+2026-10-06T17:05:47.3477353Z                 "podspecPath": [
+2026-10-06T17:05:47.3477453Z                   "./ExpoModulesCore.podspec",
+2026-10-06T17:05:47.3477546Z                   "./ExpoModulesWorklets.podspec"
+2026-10-06T17:05:47.3477617Z                 ]
+2026-10-06T17:05:47.3477684Z               },
+2026-10-06T17:05:47.3477751Z               "android": {
+2026-10-06T17:05:47.3477829Z                 "gradlePlugins": [
+2026-10-06T17:05:47.3478036Z                   {
+2026-10-06T17:05:47.3478143Z                     "id": "expo-module-gradle-plugin",
+2026-10-06T17:05:47.3478227Z                     "group": "expo.modules",
+2026-10-06T17:05:47.3478383Z                     "sourceDir": "expo-module-gradle-plugin",
+2026-10-06T17:05:47.3478554Z                     "applyToRootProject": false
+2026-10-06T17:05:47.3478777Z                   }
+2026-10-06T17:05:47.3478950Z                 ]
+2026-10-06T17:05:47.3479126Z               }
+2026-10-06T17:05:47.3479301Z             },
+2026-10-06T17:05:47.3479520Z             "duplicates": []
+2026-10-06T17:05:47.3479672Z           },
+2026-10-06T17:05:47.3479890Z           "expo-modules-jsi": {
+2026-10-06T17:05:47.3480123Z             "name": "expo-modules-jsi",
+2026-10-06T17:05:47.3480499Z             "path": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-jsi",
+2026-10-06T17:05:47.3480609Z             "version": "57.1.1",
+2026-10-06T17:05:47.3480715Z             "config": {
+2026-10-06T17:05:47.3480834Z               "platforms": [
+2026-10-06T17:05:47.3480933Z                 "apple"
+2026-10-06T17:05:47.3481031Z               ]
+2026-10-06T17:05:47.3481123Z             },
+2026-10-06T17:05:47.3481256Z             "duplicates": []
+2026-10-06T17:05:47.3481356Z           }
+2026-10-06T17:05:47.3481474Z         },
+2026-10-06T17:05:47.3481627Z         "extraDependencies": [],
+2026-10-06T17:05:47.3481766Z         "coreFeatures": [],
+2026-10-06T17:05:47.3481892Z         "modules": [
+2026-10-06T17:05:47.3482017Z           {
+2026-10-06T17:05:47.3482210Z             "packageName": "@expo/dom-webview",
+2026-10-06T17:05:47.3482350Z             "pods": [
+2026-10-06T17:05:47.3482489Z               {
+2026-10-06T17:05:47.3482642Z                 "podName": "ExpoDomWebView",
+2026-10-06T17:05:47.3483080Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/@expo/dom-webview/ios"
+2026-10-06T17:05:47.3483206Z               }
+2026-10-06T17:05:47.3483324Z             ],
+2026-10-06T17:05:47.3483478Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3483613Z               "ExpoDomWebView"
+2026-10-06T17:05:47.3483737Z             ],
+2026-10-06T17:05:47.3483869Z             "modules": [
+2026-10-06T17:05:47.3483986Z               {
+2026-10-06T17:05:47.3484147Z                 "name": null,
+2026-10-06T17:05:47.3484303Z                 "class": "DomWebViewModule"
+2026-10-06T17:05:47.3484423Z               }
+2026-10-06T17:05:47.3484550Z             ],
+2026-10-06T17:05:47.3484739Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3484889Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3485243Z             "debugOnly": false,
+2026-10-06T17:05:47.3485414Z             "packageVersion": "57.0.1"
+2026-10-06T17:05:47.3485540Z           },
+2026-10-06T17:05:47.3485664Z           {
+2026-10-06T17:05:47.3485814Z             "packageName": "@expo/log-box",
+2026-10-06T17:05:47.3485944Z             "pods": [
+2026-10-06T17:05:47.3486067Z               {
+2026-10-06T17:05:47.3486233Z                 "podName": "ExpoLogBox",
+2026-10-06T17:05:47.3486571Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/@expo/log-box"
+2026-10-06T17:05:47.3486817Z               }
+2026-10-06T17:05:47.3486960Z             ],
+2026-10-06T17:05:47.3487088Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3487156Z               "ExpoLogBox"
+2026-10-06T17:05:47.3487221Z             ],
+2026-10-06T17:05:47.3487348Z             "modules": [],
+2026-10-06T17:05:47.3487536Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3487715Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3487861Z             "debugOnly": false,
+2026-10-06T17:05:47.3488009Z             "packageVersion": "57.0.4"
+2026-10-06T17:05:47.3488130Z           },
+2026-10-06T17:05:47.3488245Z           {
+2026-10-06T17:05:47.3488413Z             "packageName": "expo",
+2026-10-06T17:05:47.3488538Z             "pods": [
+2026-10-06T17:05:47.3488628Z               {
+2026-10-06T17:05:47.3488919Z                 "podName": "Expo",
+2026-10-06T17:05:47.3489178Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo"
+2026-10-06T17:05:47.3489278Z               }
+2026-10-06T17:05:47.3489382Z             ],
+2026-10-06T17:05:47.3489500Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3489614Z               "Expo"
+2026-10-06T17:05:47.3489729Z             ],
+2026-10-06T17:05:47.3489841Z             "modules": [
+2026-10-06T17:05:47.3489955Z               {
+2026-10-06T17:05:47.3490065Z                 "name": null,
+2026-10-06T17:05:47.3490196Z                 "class": "ExpoFetchModule"
+2026-10-06T17:05:47.3490312Z               }
+2026-10-06T17:05:47.3490407Z             ],
+2026-10-06T17:05:47.3490547Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3490681Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3490807Z             "debugOnly": false,
+2026-10-06T17:05:47.3490934Z             "packageVersion": "57.0.26"
+2026-10-06T17:05:47.3491010Z           },
+2026-10-06T17:05:47.3491079Z           {
+2026-10-06T17:05:47.3491163Z             "packageName": "expo-asset",
+2026-10-06T17:05:47.3491225Z             "pods": [
+2026-10-06T17:05:47.3491289Z               {
+2026-10-06T17:05:47.3491368Z                 "podName": "ExpoAsset",
+2026-10-06T17:05:47.3491545Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-asset/ios"
+2026-10-06T17:05:47.3491609Z               }
+2026-10-06T17:05:47.3491668Z             ],
+2026-10-06T17:05:47.3491745Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3491816Z               "ExpoAsset"
+2026-10-06T17:05:47.3491881Z             ],
+2026-10-06T17:05:47.3491951Z             "modules": [
+2026-10-06T17:05:47.3492014Z               {
+2026-10-06T17:05:47.3492079Z                 "name": null,
+2026-10-06T17:05:47.3492157Z                 "class": "AssetModule"
+2026-10-06T17:05:47.3492215Z               }
+2026-10-06T17:05:47.3492279Z             ],
+2026-10-06T17:05:47.3492363Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3492438Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3492510Z             "debugOnly": false,
+2026-10-06T17:05:47.3492586Z             "packageVersion": "57.0.18"
+2026-10-06T17:05:47.3492646Z           },
+2026-10-06T17:05:47.3492711Z           {
+2026-10-06T17:05:47.3492795Z             "packageName": "expo-constants",
+2026-10-06T17:05:47.3492862Z             "pods": [
+2026-10-06T17:05:47.3492925Z               {
+2026-10-06T17:05:47.3492999Z                 "podName": "EXConstants",
+2026-10-06T17:05:47.3493187Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-constants/ios"
+2026-10-06T17:05:47.3493403Z               }
+2026-10-06T17:05:47.3493462Z             ],
+2026-10-06T17:05:47.3493575Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3493685Z               "EXConstants"
+2026-10-06T17:05:47.3493763Z             ],
+2026-10-06T17:05:47.3493861Z             "modules": [
+2026-10-06T17:05:47.3493953Z               {
+2026-10-06T17:05:47.3494066Z                 "name": null,
+2026-10-06T17:05:47.3494190Z                 "class": "ConstantsModule"
+2026-10-06T17:05:47.3494282Z               }
+2026-10-06T17:05:47.3494381Z             ],
+2026-10-06T17:05:47.3494509Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3494628Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3494739Z             "debugOnly": false,
+2026-10-06T17:05:47.3494853Z             "packageVersion": "57.0.20"
+2026-10-06T17:05:47.3494952Z           },
+2026-10-06T17:05:47.3495047Z           {
+2026-10-06T17:05:47.3495186Z             "packageName": "expo-file-system",
+2026-10-06T17:05:47.3495286Z             "pods": [
+2026-10-06T17:05:47.3495381Z               {
+2026-10-06T17:05:47.3495501Z                 "podName": "ExpoFileSystem",
+2026-10-06T17:05:47.3495815Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-file-system/ios"
+2026-10-06T17:05:47.3495913Z               }
+2026-10-06T17:05:47.3496008Z             ],
+2026-10-06T17:05:47.3496221Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3496331Z               "ExpoFileSystem"
+2026-10-06T17:05:47.3496431Z             ],
+2026-10-06T17:05:47.3496536Z             "modules": [
+2026-10-06T17:05:47.3496629Z               {
+2026-10-06T17:05:47.3496867Z                 "name": null,
+2026-10-06T17:05:47.3496993Z                 "class": "FileSystemModule"
+2026-10-06T17:05:47.3497080Z               },
+2026-10-06T17:05:47.3497172Z               {
+2026-10-06T17:05:47.3497267Z                 "name": null,
+2026-10-06T17:05:47.3497409Z                 "class": "FileSystemLegacyModule"
+2026-10-06T17:05:47.3497518Z               }
+2026-10-06T17:05:47.3497613Z             ],
+2026-10-06T17:05:47.3497747Z             "appDelegateSubscribers": [
+2026-10-06T17:05:47.3497907Z               "FileSystemBackgroundSessionHandler"
+2026-10-06T17:05:47.3497998Z             ],
+2026-10-06T17:05:47.3498127Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3498239Z             "debugOnly": false,
+2026-10-06T17:05:47.3498361Z             "packageVersion": "57.0.7"
+2026-10-06T17:05:47.3498457Z           },
+2026-10-06T17:05:47.3498548Z           {
+2026-10-06T17:05:47.3498670Z             "packageName": "expo-font",
+2026-10-06T17:05:47.3498772Z             "pods": [
+2026-10-06T17:05:47.3498862Z               {
+2026-10-06T17:05:47.3498972Z                 "podName": "ExpoFont",
+2026-10-06T17:05:47.3499238Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-font/ios"
+2026-10-06T17:05:47.3499334Z               }
+2026-10-06T17:05:47.3499434Z             ],
+2026-10-06T17:05:47.3499544Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3499651Z               "ExpoFont"
+2026-10-06T17:05:47.3499748Z             ],
+2026-10-06T17:05:47.3499845Z             "modules": [
+2026-10-06T17:05:47.3499939Z               {
+2026-10-06T17:05:47.3500041Z                 "name": null,
+2026-10-06T17:05:47.3500159Z                 "class": "FontLoaderModule"
+2026-10-06T17:05:47.3500260Z               },
+2026-10-06T17:05:47.3500348Z               {
+2026-10-06T17:05:47.3500451Z                 "name": null,
+2026-10-06T17:05:47.3500572Z                 "class": "FontUtilsModule"
+2026-10-06T17:05:47.3500664Z               }
+2026-10-06T17:05:47.3500760Z             ],
+2026-10-06T17:05:47.3500899Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3501019Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3501128Z             "debugOnly": false,
+2026-10-06T17:05:47.3501241Z             "packageVersion": "57.0.4"
+2026-10-06T17:05:47.3501471Z           },
+2026-10-06T17:05:47.3501569Z           {
+2026-10-06T17:05:47.3501707Z             "packageName": "expo-keep-awake",
+2026-10-06T17:05:47.3501808Z             "pods": [
+2026-10-06T17:05:47.3501903Z               {
+2026-10-06T17:05:47.3502024Z                 "podName": "ExpoKeepAwake",
+2026-10-06T17:05:47.3502334Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-keep-awake/ios"
+2026-10-06T17:05:47.3502429Z               }
+2026-10-06T17:05:47.3502525Z             ],
+2026-10-06T17:05:47.3502639Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3502745Z               "ExpoKeepAwake"
+2026-10-06T17:05:47.3502840Z             ],
+2026-10-06T17:05:47.3502942Z             "modules": [
+2026-10-06T17:05:47.3503033Z               {
+2026-10-06T17:05:47.3503137Z                 "name": null,
+2026-10-06T17:05:47.3503259Z                 "class": "KeepAwakeModule"
+2026-10-06T17:05:47.3503351Z               }
+2026-10-06T17:05:47.3503446Z             ],
+2026-10-06T17:05:47.3503574Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3503713Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3503824Z             "debugOnly": false,
+2026-10-06T17:05:47.3503942Z             "packageVersion": "57.0.2"
+2026-10-06T17:05:47.3504031Z           },
+2026-10-06T17:05:47.3504129Z           {
+2026-10-06T17:05:47.3504268Z             "packageName": "expo-modules-core",
+2026-10-06T17:05:47.3504511Z             "pods": [
+2026-10-06T17:05:47.3504619Z               {
+2026-10-06T17:05:47.3504756Z                 "podName": "ExpoModulesCore",
+2026-10-06T17:05:47.3505056Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core"
+2026-10-06T17:05:47.3505155Z               },
+2026-10-06T17:05:47.3505249Z               {
+2026-10-06T17:05:47.3505391Z                 "podName": "ExpoModulesWorklets",
+2026-10-06T17:05:47.3505686Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-core"
+2026-10-06T17:05:47.3505786Z               }
+2026-10-06T17:05:47.3505881Z             ],
+2026-10-06T17:05:47.3505997Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3506109Z               "ExpoModulesCore",
+2026-10-06T17:05:47.3506230Z               "ExpoModulesWorklets"
+2026-10-06T17:05:47.3506327Z             ],
+2026-10-06T17:05:47.3506430Z             "modules": [],
+2026-10-06T17:05:47.3506557Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3506795Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3506906Z             "debugOnly": false,
+2026-10-06T17:05:47.3507023Z             "packageVersion": "57.0.20"
+2026-10-06T17:05:47.3507111Z           },
+2026-10-06T17:05:47.3507206Z           {
+2026-10-06T17:05:47.3507344Z             "packageName": "expo-modules-jsi",
+2026-10-06T17:05:47.3507435Z             "pods": [
+2026-10-06T17:05:47.3507523Z               {
+2026-10-06T17:05:47.3507633Z                 "podName": "ExpoModulesJSI",
+2026-10-06T17:05:47.3507919Z                 "podspecDir": "/home/runner/work/Splotch/Splotch/node_modules/expo-modules-jsi/apple"
+2026-10-06T17:05:47.3508011Z               }
+2026-10-06T17:05:47.3508092Z             ],
+2026-10-06T17:05:47.3508194Z             "swiftModuleNames": [
+2026-10-06T17:05:47.3508296Z               "ExpoModulesJSI"
+2026-10-06T17:05:47.3508377Z             ],
+2026-10-06T17:05:47.3508472Z             "modules": [],
+2026-10-06T17:05:47.3508586Z             "appDelegateSubscribers": [],
+2026-10-06T17:05:47.3508697Z             "reactDelegateHandlers": [],
+2026-10-06T17:05:47.3508795Z             "debugOnly": false,
+2026-10-06T17:05:47.3508897Z             "packageVersion": "57.1.1"
+2026-10-06T17:05:47.3508982Z           }
+2026-10-06T17:05:47.3509074Z         ]
+2026-10-06T17:05:47.3509161Z       }
+2026-10-06T17:05:47.3509258Z     },
+2026-10-06T17:05:47.3509345Z     "rnConfig": {
+2026-10-06T17:05:47.3509438Z       "android": {
+2026-10-06T17:05:47.3509677Z         "root": "/home/runner/work/Splotch/Splotch/experiments/native-architecture",
+2026-10-06T17:05:47.3510071Z         "reactNativePath": "/home/runner/work/Splotch/Splotch/node_modules/react-native",
+2026-10-06T17:05:47.3510173Z         "dependencies": {
+2026-10-06T17:05:47.3510269Z           "expo": {
+2026-10-06T17:05:47.3510455Z             "root": "/home/runner/work/Splotch/Splotch/node_modules/expo",
+2026-10-06T17:05:47.3510553Z             "name": "expo",
+2026-10-06T17:05:47.3510646Z             "platforms": {
+2026-10-06T17:05:47.3510738Z               "android": {
+2026-10-06T17:05:47.3510972Z                 "sourceDir": "/home/runner/work/Splotch/Splotch/node_modules/expo/android",
+2026-10-06T17:05:47.3511194Z                 "packageImportPath": "import expo.modules.ExpoModulesPackage;",
+2026-10-06T17:05:47.3511345Z                 "packageInstance": "new ExpoModulesPackage()",
+2026-10-06T17:05:47.3511446Z                 "buildTypes": [],
+2026-10-06T17:05:47.3511555Z                 "componentDescriptors": [],
+2026-10-06T17:05:47.3512015Z                 "cmakeListsPath": "/home/runner/work/Splotch/Splotch/node_modules/expo/android/build/generated/source/codegen/jni/CMakeLists.txt",
+2026-10-06T17:05:47.3512159Z                 "cxxModuleCMakeListsModuleName": null,
+2026-10-06T17:05:47.3512278Z                 "cxxModuleCMakeListsPath": null,
+2026-10-06T17:05:47.3512401Z                 "cxxModuleHeaderName": null,
+2026-10-06T17:05:47.3512513Z                 "isPureCxxDependency": false
+2026-10-06T17:05:47.3512698Z               }
+2026-10-06T17:05:47.3512792Z             }
+2026-10-06T17:05:47.3512877Z           }
+2026-10-06T17:05:47.3512956Z         },
+2026-10-06T17:05:47.3513051Z         "project": {}
+2026-10-06T17:05:47.3513129Z       },
+2026-10-06T17:05:47.3513215Z       "ios": {
+2026-10-06T17:05:47.3513450Z         "root": "/home/runner/work/Splotch/Splotch/experiments/native-architecture",
+2026-10-06T17:05:47.3513702Z         "reactNativePath": "/home/runner/work/Splotch/Splotch/node_modules/react-native",
+2026-10-06T17:05:47.3513799Z         "dependencies": {
+2026-10-06T17:05:47.3513893Z           "expo": {
+2026-10-06T17:05:47.3514066Z             "root": "/home/runner/work/Splotch/Splotch/node_modules/expo",
+2026-10-06T17:05:47.3514165Z             "name": "expo",
+2026-10-06T17:05:47.3514258Z             "platforms": {
+2026-10-06T17:05:47.3514343Z               "ios": {
+2026-10-06T17:05:47.3514618Z                 "podspecPath": "/home/runner/work/Splotch/Splotch/node_modules/expo/Expo.podspec",
+2026-10-06T17:05:47.3514720Z                 "version": "57.0.26",
+2026-10-06T17:05:47.3514828Z                 "configurations": [],
+2026-10-06T17:05:47.3514940Z                 "scriptPhases": []
+2026-10-06T17:05:47.3515022Z               }
+2026-10-06T17:05:47.3515108Z             }
+2026-10-06T17:05:47.3515192Z           }
+2026-10-06T17:05:47.3515272Z         },
+2026-10-06T17:05:47.3515363Z         "project": {
+2026-10-06T17:05:47.3515445Z           "ios": {
+2026-10-06T17:05:47.3515749Z             "sourceDir": "/home/runner/work/Splotch/Splotch/experiments/native-architecture/ios"
+2026-10-06T17:05:47.3515851Z           }
+2026-10-06T17:05:47.3515940Z         }
+2026-10-06T17:05:47.3516034Z       }
+2026-10-06T17:05:47.3516126Z     },
+2026-10-06T17:05:47.3516408Z     "generatedNativeIntegration": "Pending: no generated candidate native trees"
+2026-10-06T17:05:47.3516504Z   },
+2026-10-06T17:05:47.3516595Z   "transform": {
+2026-10-06T17:05:47.3517071Z     "projectRoot": "/home/runner/work/Splotch/Splotch/experiments/native-architecture",
+2026-10-06T17:05:47.3517402Z     "filename": "/home/runner/work/Splotch/Splotch/experiments/native-architecture/src/ProbeApp.tsx",
+2026-10-06T17:05:47.3517499Z     "coreVersion": "7.29.7",
+2026-10-06T17:05:47.3517606Z     "presetVersion": "57.0.13",
+2026-10-06T17:05:47.3517740Z     "transformed": true
+2026-10-06T17:05:47.3517831Z   },
+2026-10-06T17:05:47.3517947Z   "graphMetroVersions": [
+2026-10-06T17:05:47.3518041Z     "0.84.5",
+2026-10-06T17:05:47.3518136Z     "0.84.6"
+2026-10-06T17:05:47.3518230Z   ],
+2026-10-06T17:05:47.3518324Z   "shipping": {
+2026-10-06T17:05:47.3518560Z     "hashes": {
+2026-10-06T17:05:47.3518922Z       "capacitor.config.json": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+2026-10-06T17:05:47.3519331Z       "android/capacitor.settings.gradle": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+2026-10-06T17:05:47.3519737Z       "ios/App/CapApp-SPM/Package.swift": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+2026-10-06T17:05:47.3519834Z     },
+2026-10-06T17:05:47.3519929Z     "plugins": [
+2026-10-06T17:05:47.3520022Z       {
+2026-10-06T17:05:47.3520185Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3520489Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/android/capacitor"
+2026-10-06T17:05:47.3520584Z       },
+2026-10-06T17:05:47.3520671Z       {
+2026-10-06T17:05:47.3520823Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3521196Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@aparajita/capacitor-secure-storage/android"
+2026-10-06T17:05:47.3521289Z       },
+2026-10-06T17:05:47.3521381Z       {
+2026-10-06T17:05:47.3521530Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3521852Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor-community/media/android"
+2026-10-06T17:05:47.3521946Z       },
+2026-10-06T17:05:47.3522040Z       {
+2026-10-06T17:05:47.3522320Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3522804Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/device/android"
+2026-10-06T17:05:47.3522971Z       },
+2026-10-06T17:05:47.3523144Z       {
+2026-10-06T17:05:47.3523345Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3523716Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/haptics/android"
+2026-10-06T17:05:47.3523838Z       },
+2026-10-06T17:05:47.3523932Z       {
+2026-10-06T17:05:47.3524130Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3524504Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/network/android"
+2026-10-06T17:05:47.3524633Z       },
+2026-10-06T17:05:47.3524751Z       {
+2026-10-06T17:05:47.3524901Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3525250Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/preferences/android"
+2026-10-06T17:05:47.3525369Z       },
+2026-10-06T17:05:47.3525465Z       {
+2026-10-06T17:05:47.3525597Z         "owner": "android/capacitor.settings.gradle",
+2026-10-06T17:05:47.3525961Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/screen-orientation/android"
+2026-10-06T17:05:47.3526080Z       },
+2026-10-06T17:05:47.3526214Z       {
+2026-10-06T17:05:47.3526434Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3526899Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@aparajita/capacitor-secure-storage"
+2026-10-06T17:05:47.3526987Z       },
+2026-10-06T17:05:47.3527085Z       {
+2026-10-06T17:05:47.3527220Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3527472Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor-community/media"
+2026-10-06T17:05:47.3527560Z       },
+2026-10-06T17:05:47.3527641Z       {
+2026-10-06T17:05:47.3527788Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3528023Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/device"
+2026-10-06T17:05:47.3528108Z       },
+2026-10-06T17:05:47.3528193Z       {
+2026-10-06T17:05:47.3528316Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3528573Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/haptics"
+2026-10-06T17:05:47.3528659Z       },
+2026-10-06T17:05:47.3528740Z       {
+2026-10-06T17:05:47.3528881Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3529124Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/network"
+2026-10-06T17:05:47.3529442Z       },
+2026-10-06T17:05:47.3529607Z       {
+2026-10-06T17:05:47.3529841Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3530292Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/preferences"
+2026-10-06T17:05:47.3530461Z       },
+2026-10-06T17:05:47.3530598Z       {
+2026-10-06T17:05:47.3530824Z         "owner": "ios/App/CapApp-SPM/Package.swift",
+2026-10-06T17:05:47.3531314Z         "path": "/home/runner/work/Splotch/Splotch/node_modules/@capacitor/screen-orientation"
+2026-10-06T17:05:47.3531457Z       }
+2026-10-06T17:05:47.3531626Z     ]
+2026-10-06T17:05:47.3531725Z   }
+2026-10-06T17:05:47.3531838Z }
+2026-10-06T17:05:47.3577862Z ##[group]Run npm run lint:css
+2026-10-06T17:05:47.3578003Z [36;1mnpm run lint:css[0m
+2026-10-06T17:05:47.3635104Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:05:47.3635185Z env:
+2026-10-06T17:05:47.3635282Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:05:47.3635389Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:05:47.3635463Z ##[endgroup]
+2026-10-06T17:05:47.4427695Z 
+2026-10-06T17:05:47.4428567Z > splotch@1.6.0 lint:css
+2026-10-06T17:05:47.4428857Z > stylelint "**/*.{css,svelte}"
+2026-10-06T17:05:47.4429008Z 
+2026-10-06T17:05:48.6601268Z ##[group]Run npm run check:svg-assets
+2026-10-06T17:05:48.6601539Z [36;1mnpm run check:svg-assets[0m
+2026-10-06T17:05:48.6657288Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:05:48.6657570Z env:
+2026-10-06T17:05:48.6657746Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:05:48.6657984Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:05:48.6658204Z ##[endgroup]
+2026-10-06T17:05:48.7451712Z 
+2026-10-06T17:05:48.7452187Z > splotch@1.6.0 check:svg-assets
+2026-10-06T17:05:48.7452514Z > node tools/optimize-svg-assets.mjs --check
+2026-10-06T17:05:48.7452692Z 
+2026-10-06T17:05:54.3340376Z [optimize-svg-assets] 303 SVG(s) already optimal — nothing to do.
+2026-10-06T17:05:54.3548009Z ##[group]Run npm run ruler:check
+2026-10-06T17:05:54.3548268Z [36;1mnpm run ruler:check[0m
+2026-10-06T17:05:54.3603658Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:05:54.3603940Z env:
+2026-10-06T17:05:54.3604117Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:05:54.3604356Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:05:54.3604571Z ##[endgroup]
+2026-10-06T17:05:54.4410872Z 
+2026-10-06T17:05:54.4411347Z > splotch@1.6.0 ruler:check
+2026-10-06T17:05:54.4411767Z > node tools/ruler/check-generated-files.mjs
+2026-10-06T17:05:54.4411947Z 
+2026-10-06T17:05:54.4701026Z $ npm run ruler:apply
+2026-10-06T17:05:54.5443599Z 
+2026-10-06T17:05:54.5444071Z > splotch@1.6.0 ruler:apply
+2026-10-06T17:05:54.5444378Z > node tools/ruler/apply-ruler.mjs
+2026-10-06T17:05:54.5444541Z 
+2026-10-06T17:05:54.5824781Z $ ruler apply
+2026-10-06T17:05:54.8404489Z [ruler] Nested mode is experimental and may change in future releases.
+2026-10-06T17:05:54.8446225Z [ruler] Skills support is experimental and behavior may change in future releases.
+2026-10-06T17:05:54.9022204Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9037821Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9051056Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9060058Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9069729Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9078116Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9087700Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9098487Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9108478Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9118937Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9129069Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9136484Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9145820Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9153488Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9162203Z [ruler] Applying rules for Claude Code...
+2026-10-06T17:05:54.9175290Z [ruler] Applying rules for OpenAI Codex CLI...
+2026-10-06T17:05:54.9189443Z Ruler apply completed successfully.
+2026-10-06T17:05:54.9254550Z $ /home/runner/setup-pnpm/store/v11/links/@/node/22.23.3/edf95e74e8a9f0141839783d22bf0c20e48c2ca0034da9f4ff4a981eef4863fe/node_modules/node/bin/node /home/runner/work/Splotch/Splotch/tools/ruler/mirror-skill-notes.mjs
+2026-10-06T17:05:54.9650388Z [skill-notes] mirrored 21 file(s) to .claude/skill-notes and .agents/skill-notes
+2026-10-06T17:05:54.9685395Z $ /home/runner/setup-pnpm/store/v11/links/@/node/22.23.3/edf95e74e8a9f0141839783d22bf0c20e48c2ca0034da9f4ff4a981eef4863fe/node_modules/node/bin/node /home/runner/work/Splotch/Splotch/tools/ruler/apply-skill-forks.mjs
+2026-10-06T17:05:54.9986015Z [skill-forks] applied 0 runner-specific skill(s) and 0 note(s)
+2026-10-06T17:05:55.0089673Z $ dprint fmt
+2026-10-06T17:05:55.4419170Z Formatted [0m[1m58[0m files.
+2026-10-06T17:05:55.6952711Z [ruler:check] Generated agent files are in sync with .ruler/.
+2026-10-06T17:05:55.7076927Z ##[group]Run npm run check:ideas-review
+2026-10-06T17:05:55.7077412Z [36;1mnpm run check:ideas-review[0m
+2026-10-06T17:05:55.7152638Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:05:55.7152934Z env:
+2026-10-06T17:05:55.7153116Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:05:55.7153359Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:05:55.7153583Z ##[endgroup]
+2026-10-06T17:05:55.7948048Z 
+2026-10-06T17:05:55.7948498Z > splotch@1.6.0 check:ideas-review
+2026-10-06T17:05:55.7948893Z > node tools/asset-gen/ideas-exploration/build-review.mjs --check
+2026-10-06T17:05:55.7949126Z 
+2026-10-06T17:06:01.8088353Z [ideas-review] ideas-review.html is current.
+2026-10-06T17:06:01.8301225Z ##[group]Run npm run gen:tokens:check
+2026-10-06T17:06:01.8301509Z [36;1mnpm run gen:tokens:check[0m
+2026-10-06T17:06:01.8357270Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:01.8357553Z env:
+2026-10-06T17:06:01.8357731Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:01.8357972Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:01.8358188Z ##[endgroup]
+2026-10-06T17:06:01.9140306Z 
+2026-10-06T17:06:01.9140500Z > splotch@1.6.0 gen:tokens:check
+2026-10-06T17:06:01.9141187Z > node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-token-css.mjs --check
+2026-10-06T17:06:01.9141566Z 
+2026-10-06T17:06:01.9754488Z tokens.css is up to date.
+2026-10-06T17:06:01.9885505Z ##[group]Run npm run lint:tokens
+2026-10-06T17:06:01.9885888Z [36;1mnpm run lint:tokens[0m
+2026-10-06T17:06:01.9956567Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:01.9957344Z env:
+2026-10-06T17:06:01.9957622Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:01.9957990Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:01.9958385Z ##[endgroup]
+2026-10-06T17:06:02.0752288Z 
+2026-10-06T17:06:02.0753023Z > splotch@1.6.0 lint:tokens
+2026-10-06T17:06:02.0753604Z > node tools/tokens/lint-token-styles.mjs
+2026-10-06T17:06:02.0753851Z 
+2026-10-06T17:06:02.5902610Z Token style lint passed (9 allowlisted raw-hex files, 2 allowlisted raw-font-size files, 24 ratcheted unpinned-:global() files, 0 raw z-index, 0 !important).
+2026-10-06T17:06:02.6157829Z ##[group]Run npm run lint:dead
+2026-10-06T17:06:02.6158355Z [36;1mnpm run lint:dead[0m
+2026-10-06T17:06:02.6214892Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:02.6215337Z env:
+2026-10-06T17:06:02.6215637Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:02.6215997Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:02.6216398Z ##[endgroup]
+2026-10-06T17:06:02.7051126Z 
+2026-10-06T17:06:02.7051734Z > splotch@1.6.0 lint:dead
+2026-10-06T17:06:02.7052456Z > knip --no-progress --include files,exports,types,duplicates
+2026-10-06T17:06:02.7052730Z 
+2026-10-06T17:06:05.1793563Z ##[group]Run npm run lint:deps:prod
+2026-10-06T17:06:05.1793825Z [36;1mnpm run lint:deps:prod[0m
+2026-10-06T17:06:05.1850778Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:05.1851068Z env:
+2026-10-06T17:06:05.1851246Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:05.1851485Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:05.1851710Z ##[endgroup]
+2026-10-06T17:06:05.2660607Z 
+2026-10-06T17:06:05.2661126Z > splotch@1.6.0 lint:deps:prod
+2026-10-06T17:06:05.2661641Z > knip --config knip.production.json --production --strict --no-progress
+2026-10-06T17:06:05.2661901Z 
+2026-10-06T17:06:06.3080511Z ##[group]Run npm run check:assets:manifest
+2026-10-06T17:06:06.3080786Z [36;1mnpm run check:assets:manifest[0m
+2026-10-06T17:06:06.3137090Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:06.3137379Z env:
+2026-10-06T17:06:06.3137561Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:06.3137801Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:06.3138042Z ##[endgroup]
+2026-10-06T17:06:06.3982182Z 
+2026-10-06T17:06:06.3982917Z > splotch@1.6.0 check:assets:manifest
+2026-10-06T17:06:06.3983441Z > node tools/asset-gen/gen-asset-manifest.mjs --check
+2026-10-06T17:06:06.3983693Z 
+2026-10-06T17:06:06.6065145Z [asset-manifest] 1014 asset(s) match the manifest.
+2026-10-06T17:06:06.6190912Z ##[group]Run npm run scrapbook:check
+2026-10-06T17:06:06.6191341Z [36;1mnpm run scrapbook:check[0m
+2026-10-06T17:06:06.6250033Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:06.6250320Z env:
+2026-10-06T17:06:06.6250499Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:06.6250758Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:06.6250978Z ##[endgroup]
+2026-10-06T17:06:06.7065592Z 
+2026-10-06T17:06:06.7066026Z > splotch@1.6.0 scrapbook:check
+2026-10-06T17:06:06.7066475Z > node tools/scrapbook/publish-scrapbook.mjs --check
+2026-10-06T17:06:06.7066839Z 
+2026-10-06T17:06:07.0195567Z scrapbook: every collection resolves to a reachable entry page; index.html is current.
+2026-10-06T17:06:07.0423921Z ##[group]Run pnpm audit --audit-level=high
+2026-10-06T17:06:07.0424205Z [36;1mpnpm audit --audit-level=high[0m
+2026-10-06T17:06:07.0482856Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-06T17:06:07.0483148Z env:
+2026-10-06T17:06:07.0483328Z   PNPM_HOME: /home/runner/setup-pnpm
+2026-10-06T17:06:07.0483566Z   PNPM_CONFIG_GLOBAL_SHIMS: {"node":false}
+2026-10-06T17:06:07.0483782Z ##[endgroup]
+2026-10-06T17:06:07.8031662Z 5 vulnerabilities found
+2026-10-06T17:06:07.8031979Z Severity: 1 low | 2 moderate | 2 high (2 ignored)
+2026-10-06T17:06:07.8240272Z Post job cleanup.
+2026-10-06T17:06:07.8243383Z ##[start-action display=Run pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2;id=__071b3c8d-a28d-4dcc-9a9d-08201a615048.__pnpm_setup]
+2026-10-06T17:06:07.8283941Z Post job cleanup.
+2026-10-06T17:06:07.9864775Z ##[group]Running pnpm store prune...
+2026-10-06T17:06:08.4375984Z Removed stale project registry entry: /home/runner/setup-pnpm/global/v11/8f2-1a111d66210-c54d65624f652ff1
+2026-10-06T17:06:08.4378622Z Checking 2 registered project(s) for global virtual store usage
+2026-10-06T17:06:08.8211872Z No unused packages found in global virtual store
+2026-10-06T17:06:08.9281469Z Removed all cached metadata files
+2026-10-06T17:06:09.7539566Z Removed 595 files (21.3 MB)
+2026-10-06T17:06:09.8963573Z Removed 5 packages
+2026-10-06T17:06:10.0995708Z ##[endgroup]
+2026-10-06T17:06:10.0997811Z (node:3037) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+2026-10-06T17:06:10.0998960Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-06T17:06:10.1001530Z Cache hit occurred on the primary key pnpm-cache-Linux-x64-9b178718ba7ab6530fce636072eec692f982ad29ff7503014c79bbe3755824fd, not saving cache.
+2026-10-06T17:06:10.1131676Z ##[end-action id=__071b3c8d-a28d-4dcc-9a9d-08201a615048.__pnpm_setup;outcome=success;conclusion=success;duration_ms=2288]
+2026-10-06T17:06:10.1190428Z Post job cleanup.
+2026-10-06T17:06:10.1976913Z [command]/usr/bin/git version
+2026-10-06T17:06:10.2014773Z git version 2.55.0
+2026-10-06T17:06:10.2045232Z Temporarily overriding HOME='/home/runner/work/_temp/46ce5644-4fe6-4395-9a99-b2205ca33d2a' before making global git config changes
+2026-10-06T17:06:10.2046315Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-06T17:06:10.2050560Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Splotch/Splotch
+2026-10-06T17:06:10.2082091Z Removing SSH command configuration
+2026-10-06T17:06:10.2087360Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-06T17:06:10.2120341Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-06T17:06:10.2343312Z Removing HTTP extra header
+2026-10-06T17:06:10.2349439Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-06T17:06:10.2391582Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-06T17:06:10.2612156Z Removing includeIf entries pointing to credentials config files
+2026-10-06T17:06:10.2616940Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-06T17:06:10.2650108Z includeif.gitdir:/home/runner/work/Splotch/Splotch/.git.path
+2026-10-06T17:06:10.2650878Z includeif.gitdir:/home/runner/work/Splotch/Splotch/.git/worktrees/*.path
+2026-10-06T17:06:10.2651607Z includeif.gitdir:/github/workspace/.git.path
+2026-10-06T17:06:10.2652293Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-06T17:06:10.2658006Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Splotch/Splotch/.git.path
+2026-10-06T17:06:10.2683689Z /home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:06:10.2692506Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Splotch/Splotch/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-39d7a807\-d132\-4923\-8532\-0b0ed937ed42\.config
+2026-10-06T17:06:10.2729018Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/Splotch/Splotch/.git/worktrees/*.path
+2026-10-06T17:06:10.2765154Z /home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:06:10.2773416Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/Splotch/Splotch/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-39d7a807\-d132\-4923\-8532\-0b0ed937ed42\.config
+2026-10-06T17:06:10.2807405Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-10-06T17:06:10.2830515Z /github/runner_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:06:10.2836833Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-39d7a807\-d132\-4923\-8532\-0b0ed937ed42\.config
+2026-10-06T17:06:10.2869118Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-06T17:06:10.2891998Z /github/runner_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config
+2026-10-06T17:06:10.2898716Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-39d7a807\-d132\-4923\-8532\-0b0ed937ed42\.config
+2026-10-06T17:06:10.2956257Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-06T17:06:10.3157107Z Removing credentials config '/home/runner/work/_temp/git-credentials-39d7a807-d132-4923-8532-0b0ed937ed42.config'
+2026-10-06T17:06:10.3284759Z Cleaning up orphan processes

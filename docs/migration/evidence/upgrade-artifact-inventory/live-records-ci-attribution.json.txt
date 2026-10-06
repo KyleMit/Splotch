@@ -1,0 +1,32 @@
+{
+  "observedAtUtc": "2026-10-06T16:50:11.470261+00:00",
+  "registeredHead": "45a01d182b602f18e66bfc3fffdd0c4edf7339c6",
+  "actualQualityCheckout": "f152df156386fdaafd17f66cfc8df849715ce6ad",
+  "gitParents": [
+    "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+    "45a01d182b602f18e66bfc3fffdd0c4edf7339c6"
+  ],
+  "treeIdentities": {
+    "f152df156386fdaafd17f66cfc8df849715ce6ad": "3114d70ea2bf9d97c82bfa379283ee55201d8bfe",
+    "45a01d182b602f18e66bfc3fffdd0c4edf7339c6": "3114d70ea2bf9d97c82bfa379283ee55201d8bfe"
+  },
+  "testsRunId": 37497449898,
+  "testsConclusion": "success",
+  "adrRunId": 37497449897,
+  "adrConclusion": "success",
+  "testJobs": 18,
+  "executedSuccess": 14,
+  "conditionalSkipped": 4,
+  "originalReviewer": "2f4a5196-afdf-482e-a4a9-3574ba4f94f0",
+  "round": 2,
+  "resumed": true,
+  "used": 2,
+  "remaining": 1,
+  "reviewId": 5431734360,
+  "findings": 0,
+  "unverified": 0,
+  "claimLimits": [
+    "Complete actual Quality checkout log and complete native metadata for latest workflow jobs; other individual checkout logs not exported",
+    "Live records acceptance only; no migration implementation, installed graph, native/runtime/physical/product/release assertion"
+  ]
+}

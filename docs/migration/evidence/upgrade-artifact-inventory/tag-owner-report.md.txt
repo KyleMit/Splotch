@@ -1,0 +1,180 @@
+# Tagged continuity owner inventory
+
+This bounded read-only unit froze actual Git source for all eight supported tags. It did not install
+dependencies, execute tagged code or binaries, query signing state, use a device, or modify app source.
+The parent branch base was f14966ee98563e3c569fbcb90beea6d9c684614a. The eight live tag objects,
+association receipt, release metadata and binary-qualification receipt are frozen under `inputs/`.
+Their hashes and mutual tag/commit/asset metadata agreement are recorded. Matching artifact versions
+do not establish compiled-source association.
+
+## Executed result
+
+The exact finite selection contains 364 files and 6,374,883 bytes. Each selected row records the tag,
+commit/tree, source path, Git mode/blob object, byte length and SHA-256. Frozen bytes also reproduce
+the Git blob hash. `manifest.json` records 1,199 searched production source rows with the same
+identities, selection rules and actual present/absent role paths. `semantic-signals.json` records
+literal matches and original line numbers; absence claims below are bounded by that search scope.
+
+| Tag | Exact commit | Actual lib root | Selected files | Searched production files |
+| --- | --- | --- | --- | --- |
+| v1.0.0 | 06f5bf94f367a9a0e697e49306a13eb053474dc5 | src/lib | 27 | 46 |
+| v1.0.1 | c7091f351243fef6288b9ffdc70b1cc6112ee774 | src/lib | 28 | 47 |
+| v1.1.0 | 2966e81dce4183e64dab8b9c1138b1bf1a99b224 | src/lib | 27 | 60 |
+| v1.2.0 | aaf24315dcef143e38ae2418bbfdb4a4d418eb4a | src/lib | 34 | 73 |
+| v1.3.0 | 1a7113d0fdb38923d9283555190030ac866e2c53 | web/src/lib | 42 | 103 |
+| v1.4.0 | 4756b058f75d22e12d43fac7be5af70236c8be5c | web/src/lib | 46 | 181 |
+| v1.5.0 | ad3702e44d384a2a7acc6dd497dc791df848c06a | web/src/lib | 76 | 303 |
+| v1.6.0 | d8b86469f63c57a06a9de45664a42eea15b99eb0 | web/src/lib | 84 | 386 |
+
+`inventory.py` executed actual `git ls-tree`, `rev-parse`, `cat-file --batch` and blob hashing. It
+then verified the finite frozen source set. `execution.log.txt` records its passing result and
+controls. `qualify.py` linked the complete native tag response, all eight associations, existing
+binary-reader receipt input hashes and all ten published asset metadata rows; it also exercised a
+real source-byte substitution. Its receipt and log preserve that separate invocation.
+
+The wrong-tag commit control rejected with `SOURCE_COMMIT_MISMATCH`, the removed storage owner
+rejected with `SELECTED_OWNER_SET_MISMATCH`, and v1.1.0 storage bytes substituted into the v1.0.0
+owner rejected with `FROZEN_BYTES_MISMATCH`. Both restoration boundaries passed the same byte/mode/
+Git-blob verifier. Historical tag/artifact version mismatches were preserved separately and were
+never counted as intended controls. The main checkout head and status were unchanged throughout the
+inventory invocation.
+
+## Oldest-source collapse
+
+The eight named core owners are byte- and mode-identical between v1.0.0 and v1.0.1:
+`src/lib/{storage.js,secureStorage.js,platform.js}`,
+`src/lib/state/{settings.svelte.js,strokeWidth.svelte.js}`, `capacitor.config.json`, Android
+`AndroidManifest.xml`, and `MainActivity.java`. The full `package-lock.json` graph compares equal
+after excluding only `/version` and `/packages//version`. The root manifest comparison excludes
+only `/version`; it retains the real `/scripts/build:cap` difference.
+
+This supports the provisional persistent-core fixture collapse in UPGRADES.md. It does not collapse
+the whole selected source, native build, service behavior, tag/binary source association or runtime
+acceptance. The preserved raw differences are Android Gradle release versions, root/lock versions,
+the native-build script change, and the new strip script. See `oldest-collapse.json` for every raw
+path comparison and the exact allowed JSON exclusions.
+
+Anchors in the frozen oldest sources:
+
+- `sources/v1.0.0/src/lib/storage.js:43–101` defines string, boolean and integer parsing/writing;
+  `110–124` keeps present localStorage authoritative and restores durable values only if local is
+  absent. No tombstone is part of that recovery.
+- `sources/v1.0.0/src/lib/secureStorage.js:17,101,113–118` names `gemini-api-key`, uses the native
+  plugin and conflates caught secure-read errors with null. A continuity reader must preserve this
+  source behavior as history while distinguishing read failure in new acceptance evidence.
+- `sources/v1.0.0/src/lib/state/settings.svelte.js:4–26,42,102–117` holds inline keys, plaintext
+  access/admin slots and secure-first API-key hydration. `strokeWidth.svelte.js:13–26` names the
+  separate pen/eraser integer keys and allowed sizes.
+- `sources/v1.0.1/package.json:17` appends `node scripts/strip-native-assets.mjs` to `build:cap`;
+  the script is absent from v1.0.0 and frozen from v1.0.1. This difference is not root-version
+  metadata and was not normalized away.
+
+## Actual tag applicability
+
+No enumerated production source in any of the eight tags contains the held-picture database
+literal `splotch-unsaved-pictures`, its known hint, or the pending-removal literal
+`splotch-pending-durable-removals`. Neither `unsavedPictureStore.ts` nor `saveFailure.svelte.ts`
+exists at the actual legacy or later lib paths in those trees. No declared vault-absence-marker
+signal matched. These findings qualify the released-source portion of the matrix; the unreleased
+source with held pictures requires its own fixture and identity. They do not prove runtime absence
+of arbitrary data or externally supplied plugin records.
+
+The early keys live inline. v1.1.0 moves those owners to TypeScript; v1.2.0 settings adds
+`splotch-sound-volume` (`sources/v1.2.0/src/lib/state/settings.svelte.ts:5,99,128–129`). v1.3.0
+moves the lib root to `web/src/lib` and includes Pencil preference keys (`state/settings.svelte.ts:
+46–47,98–102`). `storageKeys.ts` first occurs in v1.4.0; its own `15–17,22–29` records legacy
+advanced controls, drawer, admin-link, theme, brush, pen/eraser, install and save-folder choices.
+These are real historical keys rather than aliases inferred from HEAD.
+
+v1.5.0 adds native coloring packs and the installation allowance owner. v1.6.0 adds secure
+`managed-access-code` (`sources/v1.6.0/web/src/lib/secureStorage.ts:29–30,217–219`) and separate
+drawing/delete sound choices and session hints (`storageKeys.ts:2–5,30–44`). Its native setter
+still calls `SecureStorage.set(name,value)` without an access option (`secureStorage.ts:163–175`).
+App source alone does not verify the installed plugin's prefix, payload encoding, Keychain default,
+access group, synchronization state or native-store accessibility. Its committed SPM lock pins
+KeychainSwift 21.0.0; the plugin's actual resolved implementation remains a separate gate.
+
+The source also preserves historical admin owners omitted from the concise API-key/code summary:
+v1.0.x has `splotch-admin-access-token` (`state/settings.svelte.js:24,48,74`), while v1.2.0–v1.4.0
+secure modules declare `admin-session` (v1.2.0 `secureStorage.ts:22,150–152`; v1.4.0
+`web/src/lib/secureStorage.ts:25,210–212`). This inventory records presence; historical native
+bundle reachability and an appropriate web/admin disposition are not inferred from today's policy.
+
+## Released coloring paths and lifecycle
+
+Both v1.5.0 and v1.6.0 use the same actual storage-version helper:
+`sources/<tag>/web/src/lib/coloringPacks/nativeStore.ts:9–10` returns
+`${manifest.appVersion}-${manifest.resolution}`. That version token reaches status/install/remove
+at `19–34,42–45`. These released native layouts differ from HEAD's resolution-only layout.
+
+For each of those two tags:
+
+- Android `ColoringPacksPlugin.java:34–42` owns unique work `splotch-coloring-pack`, marker
+  `.installed` and `noBackupFilesDir/coloring/<appVersion-resolution>/<bookId>`. `88–103` persists
+  jobs under `coloring/jobs/<bookId>.json` and enqueues `art.splotch.app.ColoringPackWorker` with
+  its job path. `status():48–49` calls `deleteOldVersions`; `193–203` deletes other version
+  directories while sparing `jobs`. A legacy status call with a replacement version can therefore
+  delete source books before their obligations transfer.
+- Android `ColoringPackWorker.java:38–55` reads the persisted job, uses its recorded version,
+  verifies downloaded files before publishing the marker and then deletes the job file. Its
+  verification uses expected byte length and SHA-256 (`70–85,131–139`). These files are the
+  released owner pair; no separate `ColoringPackStorage.java` exists in any of the eight tags.
+- iOS `ColoringPacksPlugin.swift:288–312` owns Application Support
+  `coloring/<appVersion-resolution>/<bookId>`, marker `.installed`, backup exclusion and
+  `jobs/current.json`. `264–273` writes/reads the Codable job; `242–247` publishes its marker after
+  verification and removes the completed job. `163–164` owns background session identifiers
+  `art.splotch.app.coloring-packs.wifi` and `.metered`. `status():335–348` removes other version
+  directories while sparing `jobs`, so it has the same source-preservation hazard.
+- iOS `AppDelegate.swift:9–22` resumes pending downloads on launch and reconnects URLSession
+  background events to the existing coordinator.
+
+These anchors establish actual source formats and owners. They do not establish runtime download
+success, current contents, channel association, completed-book correctness, background-session
+reconnection or a replacement transaction. A non-destructive native directory enumeration precedes
+any status call that could retire a source namespace.
+
+## Identity and dependency locks
+
+Every frozen Capacitor config declares `art.splotch.app` and `server.androidScheme = https`. None
+declares an explicit hostname or iOS scheme. The actual effective WebView origin/profile remains a
+runtime/compiled-input gate, not a conclusion from omitted config fields.
+
+The free-generation identity is first present in v1.5.0 and remains in v1.6.0. Each tag's
+`web/src/lib/state/freeGenerations.svelte.ts:8–10,20–44` records the web-only persisted UUID,
+native `Device.getId().identifier`, namespace `splotch-free-generation-v1`, UTF-8 encoding and
+SHA-256. Native raw identifier behavior belongs to the locked plugin implementation and is not
+proven by its TypeScript call. v1.4.0's device-info import does not establish an allowance identity.
+No raw identifier or secret was read or logged.
+
+The whole package lock is frozen per tag: `package-lock.json` through v1.5.0, `pnpm-lock.yaml`
+at v1.6.0. iOS `Package.resolved` exists from v1.2.0 onward, together with each actual CapApp-SPM
+`Package.swift` and project. Android Gradle declarations, properties and wrapper are frozen. No
+Gradle lockfile or `dependency-locks/` record is committed in any of these eight trees; the source
+cannot provide a complete resolved Android native graph by itself.
+
+`identity-and-locks.json` preserves native package versions/integrities and SPM revision pins. It
+records a real v1.5.0 ambiguity: the root package lock has core/iOS 8.4.2 and Android 8.4.1, while
+committed `Package.resolved` pins capacitor-swift-pm 8.4.1. The v1.6.0 root and SPM declarations
+both identify 8.5.1. These are actual source declarations, not qualification of installed package or
+compiled artifact identities.
+
+## Reproduction and evidence boundaries
+
+Run the task-local producer against the frozen input receipts and an owned new output directory:
+
+```sh
+mkdir /private/tmp/splotch-tag-owners-reproduction
+python3 inventory.py --repo /Users/kylemit/Code/Splotch \
+  --inputs inputs --output /private/tmp/splotch-tag-owners-reproduction
+```
+
+The producer deliberately binds the parent base and refuses an existing `sources/` directory;
+if the parent advances, rerunning the old invocation fails rather than relabeling a new base.
+The tag sources are immutable Git inputs and can be independently compared with the frozen rows
+without moving the checkout or rerunning a browser/device suite. Retain this receipt when the parent
+advances; its historical source/base identity must remain unchanged.
+
+No acceptance of signed upgrades, effective origins, installed dependency graphs, source-to-binary
+association, keychain policy, physical floors, transactional import or performance is implied.
+Current-main/distributed-candidate formats and moving release/channel inventories remain separate
+obligations. Parent owns documentation, review, integration and acceptance.

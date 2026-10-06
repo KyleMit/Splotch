@@ -1,0 +1,86 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import os
+import signal
+import subprocess
+import time
+
+ROOT = Path('/private/tmp/splotch-resume-01a111b0/continuity-intake')
+TOTAL_DEADLINE_SECONDS = 300
+CALL_DEADLINE_SECONDS = 90
+TAGS = {'v1.0.0', 'v1.0.1', 'v1.1.0', 'v1.2.0', 'v1.3.0', 'v1.4.0', 'v1.5.0', 'v1.6.0'}
+ASSETS = {'app-release.aab', 'App.ipa'}
+started = time.monotonic()
+rows = json.loads((ROOT / 'live-release-inventory.json').read_text())['rows']
+assert {row['tag'] for row in rows} == TAGS
+receipt = {'startedAtUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owner': 'parent integrator', 'pid': os.getpid(), 'pgid': os.getpgid(0), 'deadlineSeconds': TOTAL_DEADLINE_SECONDS, 'producerSha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), 'calls': []}
+def save():
+    (ROOT / 'supported-artifacts-download.json').write_text(json.dumps(receipt, indent=2) + '\n')
+save()
+try:
+    for row in rows:
+        tag = row['tag']
+        assert all(asset['name'] in ASSETS for asset in row['assets'])
+        dest = ROOT / 'artifacts' / tag
+        dest.mkdir(exist_ok=True)
+        assert not dest.is_symlink()
+        if not row['assets']:
+            receipt['calls'].append({'tag': tag, 'state': 'no published binary assets; source/channel applicability remains pending'})
+            save()
+            continue
+        pending = []
+        for asset in row['assets']:
+            path = dest / asset['name']
+            if path.exists():
+                assert path.is_file() and not path.is_symlink()
+                data = path.read_bytes()
+                assert len(data) == asset['bytes']
+                assert 'sha256:' + hashlib.sha256(data).hexdigest() == asset['digest']
+            else:
+                pending.append(asset['name'])
+        if pending:
+            command = ['gh', 'release', 'download', tag, '-R', 'KyleMit/Splotch', '--dir', str(dest)]
+            for name in pending:
+                command.extend(['--pattern', name])
+            remaining = TOTAL_DEADLINE_SECONDS - (time.monotonic() - started)
+            assert remaining > 0
+            call = {'tag': tag, 'command': command, 'startedAtUtc': datetime.datetime.now(datetime.timezone.utc).isoformat()}
+            proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+            call.update({'pid': proc.pid, 'pgid': os.getpgid(proc.pid)})
+            receipt['calls'].append(call)
+            save()
+            try:
+                stdout, stderr = proc.communicate(timeout=min(CALL_DEADLINE_SECONDS, remaining))
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGTERM)
+                stdout, stderr = proc.communicate(timeout=10)
+                call['timeout'] = True
+            (ROOT / (tag + '.download.stdout.txt')).write_bytes(stdout)
+            (ROOT / (tag + '.download.stderr.txt')).write_bytes(stderr)
+            call.update({'exitCode': proc.returncode, 'completedAtUtc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'stdoutBytes': len(stdout), 'stderrBytes': len(stderr), 'parentWaitedForOwnedChild': True})
+            save()
+            assert proc.returncode == 0, f'{tag} download exited {proc.returncode}'
+        else:
+            receipt['calls'].append({'tag': tag, 'state': 'reuse independently hash/size-qualified actual published bytes'})
+        qualified = []
+        for asset in row['assets']:
+            path = dest / asset['name']
+            assert path.is_file() and not path.is_symlink()
+            data = path.read_bytes()
+            digest = hashlib.sha256(data).hexdigest()
+            assert len(data) == asset['bytes'] and 'sha256:' + digest == asset['digest']
+            qualified.append({'assetId': asset['id'], 'name': asset['name'], 'bytes': len(data), 'sha256': digest})
+        receipt['calls'][-1]['qualifiedArtifacts'] = qualified
+        save()
+    receipt['exitCode'] = 0
+except Exception as error:
+    receipt['exitCode'] = 1
+    receipt['failure'] = str(error)
+    raise
+finally:
+    receipt['completedAtUtc'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    receipt['elapsedSeconds'] = time.monotonic() - started
+    receipt['claimLimits'] = ['Read-only public artifact download and byte identity only; no signing/channel/install/runtime or upgrade acceptance', 'No artifact extraction or candidate/source mutation', 'All gh child handles belong to this finite downloader; credentials remain host-local']
+    save()

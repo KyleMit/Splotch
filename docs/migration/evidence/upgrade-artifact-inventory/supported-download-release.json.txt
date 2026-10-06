@@ -1,0 +1,16 @@
+{
+  "observedAtUtc": "2026-10-06T16:45:49.994932+00:00",
+  "downloadExitCode": 0,
+  "recordedOwnedGroups": [
+    67085,
+    67091,
+    67097,
+    67102,
+    67107,
+    67112
+  ],
+  "hostPsCompleteExitCode": 0,
+  "remainingGroupRows": [],
+  "stopActions": [],
+  "scope": "Finite read-only artifact-download children released; no host listeners/device/native runs acquired"
+}

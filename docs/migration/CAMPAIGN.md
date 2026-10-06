@@ -7,9 +7,10 @@ gates. The parent integrator owns cross-unit decisions and acceptance. Prepared,
 and integrated states remain distinct. This live register supersedes the pause status only; it does
 not alter historical evidence.
 
-Snapshot observed at 2026-10-06 16:27 UTC. Current source identities, review budgets and lease
-transitions are bound in
-[live-transition-1627.json.txt](evidence/resumption/live-transition-1627.json.txt). The prior
+Snapshot observed at 2026-10-06 17:03 UTC; the upgrade inventory transition below records the
+current source and lease states. The prior
+[16:27 transition](evidence/resumption/live-transition-1627.json.txt), including its source
+identities and review budgets, remains immutable. The earlier
 [16:07 snapshot](evidence/burden-preregistration/unit-transition-round2.json.txt), the
 [15:47 snapshot](evidence/burden-preregistration/unit-transition.json.txt) and
 [15:17 snapshot](evidence/resumption/unit-source-snapshot.json.txt) keep their historical scopes.
@@ -19,9 +20,19 @@ authority.
 
 ## Verified frontier
 
-Accepted integration: c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b after burden PR 2704.
-[Acceptance receipt](evidence/resumption/burden-accepted-integration.json.txt) binds its reviewed
-head a8a49e399e5d37bfc923776e0818948b950f8f65, actual Quality checkout
+Live records PR 2705 integrated at f14966ee98563e3c569fbcb90beea6d9c684614a after original Claude
+round two accepted source 45a01d182b602f18e66bfc3fffdd0c4edf7339c6 with zero findings and zero
+unverified claims. Final-head Tests/ADR runs 37497449898/37497449897 passed. Actual Quality checkout
+f152df156386fdaafd17f66cfc8df849715ce6ad and integration share the reviewed tree,
+3114d70ea2bf9d97c82bfa379283ee55201d8bfe; their Git identities remain distinct. This accepts records
+only.
+[Acceptance receipt](evidence/upgrade-artifact-inventory/live-records-accepted-integration.json.txt)
+links the complete native metadata and exact Git attribution. The timestamped transition below
+preserves the earlier snapshot’s scope.
+
+Previously accepted preregistration integration: c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b after
+burden PR 2704. [Acceptance receipt](evidence/resumption/burden-accepted-integration.json.txt) binds
+its reviewed head a8a49e399e5d37bfc923776e0818948b950f8f65, actual Quality checkout
 a0781a9a40532f26d8066191dfedae6d8bb84bbe and integration to the same tree, preserving their distinct
 Git identities. The
 [complete native CI metadata](evidence/resumption/burden-final-head-ci-metadata.json.txt) records
@@ -55,30 +66,57 @@ The immutable [capsules](evidence/continuation/README.md) remain the portable in
 
 ## Units and dependencies
 
-| Unit                                                            | Owner and exact input                                                                                                                           | Dependencies / artifact root                                                                                | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                          | Rival provenance                                                                                                                                                        |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                                  | capsules; durable root `preservation`                                                                       | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                    | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction   |
-| F1 candidate import boundary                                    | import_boundary; 3470e0b410e86909486e5bee876a8239d45ad5f3, c7 docs merge over reviewed ecdd source; five-path repair uncommitted                | Actual dc08 checker, candidate and frozen graph; durable `import-boundary`, PR2703                          | ecdd committed/pushed after source-bound full Browserless pass. Original finalround3 confirmed two alias bypasses; parent also reproduced implicit JSX imports with actual TS/Babel consumers. Combined finite repairs have 962 scoped passes; final real controls/gates pending. Material finding and exhausted review budget halt dependent acceptance                                             | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3used/0remaining; no fourth/fresh review or acceptance of changed repair source |
-| Retained Svelte controls                                        | retained_control; b2d1edc120954db235ced8be5c82ef98c3df2168 docs merge over 3a92; root-attached replacement worktree migration-retained-controls | Historical 8dd, qualified lock; durable `retained`, PR2702                                                  | Round2 nonce/context/readback repairs frozen in staged97b493 tree. Earlier full Quality passed, but Browserless failed an obsolete preview fixture before its intended teardown behavior. Fixture repaired, scoped953 pass; replacement final Quality/Browserless granted after SDK lease release. Compose c7 before final calls; seven calls, original finalround3 and final-headCI pending         | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual PR-keyed round2 resumed, review5431123113; 2used/1remaining; unrelated ledger preserved; fresh fallback blocks acceptance  |
-| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8             | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                         | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                                |
-| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                             | explicit capture-session lease, actual devices and preregistration below; baseline banked separately        | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                           | Review required before consequential probe and phase exit                                                                                                               |
-| Continuity, neutral React host, vocabularies and faithful paper | owners assigned only when preceding bounded units qualify                                                                                       | PHASE-1 units 5–9; retained accepted control before real host; compilation before local same-ID feasibility | Preserved preparation only. No React recovery, native continuity, faithful renderer or shared-vocabulary runtime acceptance                                                                                                                                                                                                                                                                          | Each meaningful plan and executed unit needs scoped review                                                                                                              |
-| Matched comparison, selected product and release                | parent final integrator                                                                                                                         | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                        | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                         | Final Codex and Claude inventory review mandatory                                                                                                                       |
+| Unit                                                            | Owner and exact input                                                                                                                  | Dependencies / artifact root                                                                                                 | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                          | Rival provenance                                                                                                                                                      |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                         | capsules; durable root `preservation`                                                                                        | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                    | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction |
+| F1 candidate import boundary                                    | import_boundary; composed 0ffbfad71c18b1bb284517011b30258298a0d283, repair 49c274e565ef8f9936b0a997a24f89a46b8ec3c7 over accepted f149 | Actual checker/candidate/frozen graph; durable `import-boundary`, PR2703                                                     | Frozen 973 scoped tests/full Browserless pass with complete relevant inputs unchanged; final evidence commit/push and final-head CI pending. Changed-source independent acceptance remains halted at exhausted budget; native expansion depends on acceptance                                                                                                                                        | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3 used / 0 remaining; no fresh/reset/fourth review authorized                 |
+| Retained Svelte controls                                        | retained_control; clean 85c8c926829602e07ab508e9ec150593aa890f21/tree 100e345bb2a2cb8871ea830c26202d86019fb1bc                         | Historical 8dd and qualified lock; durable `retained`, PR2702                                                                | Source-bound final Quality/Browserless and all seven distinct public calls pass; source/index/complete borrowed graph unchanged, lease released. f149 composition, final-head CI and original final review pending; 85c8 local receipt scope retained                                                                                                                                                | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual original round2 resumed; 2 used / 1 remaining; unrelated ledger preserved; fresh fallback blocks acceptance              |
+| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8    | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                                          | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                              |
+| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                    | explicit capture-session lease, actual devices and preregistration below; baseline banked separately                         | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                           | Review required before consequential probe and phase exit                                                                                                             |
+| Continuity, neutral React host, vocabularies and faithful paper | parent owns published artifact/tag-source inventory at f149; remaining runnable owners assigned after preceding gates                  | PHASE-1 units 5–9; retained acceptance before real host; compilation before same-ID feasibility; durable `continuity-intake` | Eight-tag/ten-binary inventory and intended controls execute; review/CI/integration pending. Preserved host preparation only; no React recovery, native continuity, faithful renderer or vocabulary runtime acceptance                                                                                                                                                                               | Fresh scoped original reviewer required for inventory; implementation plans/revisions and phase exits retain their own budgets                                        |
+| Matched comparison, selected product and release                | parent final integrator                                                                                                                | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                                         | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                         | Final Codex and Claude inventory review mandatory                                                                                                                     |
 
 Owners update this register at meaningful transitions, changed inputs, failures and handoffs.
 Accepted units link source/PR receipts; do not multiply private packets or reuse stale results.
 
+## Upgrade inventory transition
+
+Observed at 2026-10-06 17:03 UTC on parent base f14966ee98563e3c569fbcb90beea6d9c684614a. Parent
+owns the published-byte/tagged-owner unit, with bounded read-only inventory from
+preservation_verify. [Complete evidence](evidence/upgrade-artifact-inventory/README.md) preserves
+ten binaries' actual digests/embedded versions, eight tag identities, 364 frozen source blobs, 1,199
+searched-source identities and intended/restored controls. Sources/binaries and their unresolved
+compiled/channel associations remain distinct. Preparation and scoped execution pass; unit review,
+commit/push, final-head CI and integration are pending. No continuity acceptance.
+
+Retained's seven final local calls passed on source 85c8c926829602e07ab508e9ec150593aa890f21, tree
+100e345bb2a2cb8871ea830c26202d86019fb1bc, with complete borrowed graph/source/index unchanged. Whole
+harness wall time was 906.007 seconds under the 2100-second deadline; this is harness cost, not
+application latency. Owned callers/groups were gone and port 5300 rebind passed at release
+16:55:53.536539Z. That result keeps its 85c8 scope; f149 composition, final-head CI and original
+b5bb0824-3f7a-4ad7-9e05-4e8e9af77333 round three remain required.
+
+F1's composed bounded repair 0ffbfad71c18b1bb284517011b30258298a0d283, source
+49c274e565ef8f9936b0a997a24f89a46b8ec3c7, passed 973 scoped tests and the applicable full
+Browserless tier with source/index/installed inputs unchanged. Its owned group/port released at
+17:01:08.672Z. Commit/push of final evidence, final-head CI and independent acceptance remain
+pending. Original bbe89d5b-644f-4d4f-9366-e5156cebf4ea has3 used / 0 remaining; no reset, fresh or
+fourth review is authorized. Native candidate expansion remains dependent on F1 acceptance.
+
+No host/device lease is held at this transition. The exact Temurin17 macOS/aarch64 archive is
+byte-qualified and fully inspected, with observed setgid directory modes/signature trust and later
+owned publication subject to the original N1 source challenge. No Java17, Gradle or RN candidate
+execution is implied. Physical devices, product and signed-channel gates remain pending.
+
 ## Resource leases
 
-Retained is granted the exclusive replacement full Quality/Browserless slot after native SDK
-qualification released at 16:26:51.107Z. Actual retained start/handles are pending at this snapshot;
-each command has a 600-second deadline and selects an unused port5300 for Browserless. Native's
-recorded PID/group88277 is gone. Its NDK extraction failure remains unaccepted: the archive contains
-a 9,868-byte AppleDouble file that the released extractor omitted. The earlier opposite direction
-was corrected after direct member inspection. F1's prior source-bound full pass and retained's
-failed public call, completed Workbox diagnostic and failed preview-fixture gate keep their exact
-source scopes. No device/performance lease is held. Passive enumeration found no attached Android or
-usable iPad; exact IDs stay host-local. Physical work requires actual access and capture preflight.
+No host or device lease is held at the 17:03 transition. Retained released its completed seven calls
+at 16:55:53.536539Z; F1 released its replacement full Browserless call at 17:01:08.672Z. Both
+verified owned groups gone and port 5300 rebind. Historical native NDK extraction, retained nonce
+and obsolete-preview-fixture failures retain their exact unaccepted scopes; later positive repairs
+do not relabel those failures as rejecting controls. Passive enumeration still establishes no
+attached Android or usable iPad at its own observation time. Physical work requires actual access
+and capture preflight.
 
 Before exclusive execution, record owner, workload, selected unused port/device, process/tool
 handles, command/start identity and completion/failure release condition in the unit's lease
@@ -109,7 +147,7 @@ ranges and retirement/addition inventory. PR2704 is accepted at
 c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b. Actual original Claude
 conversation9bbc9f6a-7cff-4a23-aa31-35e18feec8f0 resumed for final round three at
 sourcea8a49e399e5d37bfc923776e0818948b950f8f65; review5431393919 has zero findings and zero
-unverified claims, 3used/0remaining. Final-head CI passed. This enables further probe planning;
+unverified claims, 3 used / 0 remaining. Final-head CI passed. This enables further probe planning;
 remedies and comparative results still require their own current physical controls, calibrated
 outcomes, reviewed predicates and evidence. No architecture, performance, product or release gate
 follows from estimates or preregistration integration.
