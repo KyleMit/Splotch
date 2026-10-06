@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
-      "sha256": "55e20439126f8f9017feecceae26b0e158762da5399748749b1121351f81e39a",
-      "bytes": 12711
+      "sha256": "34315b21a167c8d941a6c45fe0f1668715b8dc764852ba11bdcaff193c220855",
+      "bytes": 12846
     },
     {
       "path": "docs/migration/evidence/native-topology-05/README.md",
@@ -26,6 +26,16 @@
       "path": "docs/migration/evidence/native-topology-05/candidate-exclusive-artifacts.json",
       "sha256": "25eace14fcfd607e6cffa6ef6d5e62bd7f721be0901a88a8f0aa2cc3b50a6ce6",
       "bytes": 35747
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/committed-code-map.json",
+      "sha256": "f35228670b36d89d6a48b48abee314955260a815cb7641e625520152105a410d",
+      "bytes": 3267
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/committed-code-map.log.txt",
+      "sha256": "7ff767809331aef795971221e072717d6a462fcb79ac05d32e6297eebb6beb0f",
+      "bytes": 183
     },
     {
       "path": "docs/migration/evidence/native-topology-05/controls/dead-code-knip.log.txt",
@@ -209,8 +219,8 @@
     },
     {
       "path": "docs/migration/evidence/native-topology-05/forge-source-review.json",
-      "sha256": "576df3f941e42e4df21b5d6c214139aa73847830752e6c4ae0f6b5a271abf82f",
-      "bytes": 4611
+      "sha256": "3d897fcc9a2951ae63f75cd52b637cb7a23ca0189053ae25a943fa78a5d1410a",
+      "bytes": 4660
     },
     {
       "path": "docs/migration/evidence/native-topology-05/forge-topology-check.json",

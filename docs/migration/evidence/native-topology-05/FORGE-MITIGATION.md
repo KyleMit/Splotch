@@ -153,7 +153,9 @@ while four repository-tool assertions exposed synthetic import text, unqualified
 paths and missing candidate code-map ownership. Those inputs were corrected without weakening the
 specifier/doc guards. Candidate source has a measured area owned by the shared directory constant;
 captured migration data/logs use the existing evidence exclusion class, with prose still measured.
-The map tables require committed-rule regeneration and are not manually edited.
+The [committed code-map receipt](committed-code-map.json) records generation after integration
+reconciliation. Its generated tables are unchanged by the subsequent prose update; both output
+identities are recorded.
 
 Independent source review also found the helper entry-selection gap described above. Its specific
 main/exports/caller-context controls and all affected ownership guards passed in

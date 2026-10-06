@@ -9,8 +9,8 @@
   "files": [
     {
       "path": "docs/CODE-MAP.md",
-      "bytes": 14376,
-      "sha256": "7c3a8fa2593c3a3adda10e0a5e83fe346870421774e37a6f9628164510196800"
+      "bytes": 13808,
+      "sha256": "6f7274a8a6d268e2fa7e9aeea4b3f535c61892a8b7fbe06f035e7ae24b6dd90b"
     },
     {
       "path": "docs/DEPENDENCIES.md",
@@ -24,8 +24,8 @@
     },
     {
       "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
-      "bytes": 12711,
-      "sha256": "55e20439126f8f9017feecceae26b0e158762da5399748749b1121351f81e39a"
+      "bytes": 12846,
+      "sha256": "34315b21a167c8d941a6c45fe0f1668715b8dc764852ba11bdcaff193c220855"
     },
     {
       "path": "patches/node-forge@1.4.0.patch",
@@ -104,7 +104,6 @@
     }
   ],
   "pending": [
-    "Integration reconciliation and committed-rule code-map generation",
     "Final-head required test tier and independent PR review/CI",
     "Clean production install/build and actual hosted proof"
   ],
@@ -117,5 +116,7 @@
   "mandatoryRepairedGuard": "forge-repaired-topology.json",
   "affectedFocusedTests": "forge-repaired-focused.json",
   "repairedQuality": "forge-repaired-quality.json",
-  "independentSourceReview": "forge-independent-source-review.json"
+  "independentSourceReview": "forge-independent-source-review.json",
+  "reconciledCodeMap": "committed-code-map.json",
+  "reconciledSourceCommit": "c20bb9f0665f439563268f31901f3fd8eae23c7a"
 }
