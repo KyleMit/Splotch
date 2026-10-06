@@ -88,14 +88,17 @@ delivery promises or confidence intervals.
 The five columns are UI/behavior synchronization; tools/dependencies/floors; native
 bindings/order/lifecycle/upgrades; web/security/PWA adapters; tests/physical/privacy/release. All
 ranges cover a fully deployed 24 months. Revised LOWER endpoints allow plausible
-direct-binding/shared-vocabulary savings rather than encoding retention's dominance twice. The
-original upper endpoints remain: none of those savings is demonstrated. This is an explicit
-round-one amendment, not observed candidate performance.
+direct-binding/shared-vocabulary savings for replacement arms rather than encoding retention's
+dominance twice. Native paper retains the original tools and bindings floors, 6 and 6: it keeps the
+Capacitor services and adds paper bindings, so those floors cannot fall below retention's. The
+round-two review corrected the unsupported proposed floors of 4 and 3. Original upper endpoints
+remain; none of these savings is demonstrated. These are explicit reviewed range amendments, not
+observed candidate performance.
 
 | Arm                                 | UI    | Tools | Bindings | Web  | Validation |
 | ----------------------------------- | ----- | ----- | -------- | ---- | ---------- |
 | Svelte/Capacitor retention          | 2–8   | 4–12  | 4–12     | 2–8  | 8–20       |
-| Svelte with native paper            | 2–10  | 4–18  | 3–18     | 2–8  | 8–24       |
+| Svelte with native paper            | 2–10  | 6–18  | 6–18     | 2–8  | 8–24       |
 | RN with shared web UI               | 1–12  | 3–20  | 2–20     | 2–14 | 8–28       |
 | RN mobile with Svelte web           | 8–24  | 6–24  | 2–20     | 2–8  | 10–28      |
 | Flutter shared UI                   | 1–18  | 3–20  | 2–20     | 3–18 | 8–28       |
@@ -145,11 +148,16 @@ retired owner, surviving/new obligations, evidence and exact source.
 
 ## Candidate choice and limits
 
-Lower DEMONSTRATED recurring burden requires evidence-backed nonoverlapping aggregate recurring
-bounds after the same category/retirement rules; overlapping estimate-only ranges prove neither arm
-cheaper. Among eligible native candidates, the contract's viable native-paper hybrid default applies
-unless RN shows lower demonstrated burden or passes the separately preregistered additional-benefit
-exception. Burden-only differences that remain uncertain favor lower-change retention.
+Lower DEMONSTRATED recurring burden uses fully deployed 24-month recurring effort only. RN has lower
+burden than native paper only when sum_c R[RN,c].upper is STRICTLY LESS than sum_c
+R[native-paper,c].lower, with evidence-backed ranges and reviewed feasibility for every credited
+owner retirement. Initial I, reserve Q, delay D, horizon fraction f and transition T are excluded
+from this arm-to-arm recurring comparison; the separate burden-only migration eligibility test above
+retains them. This implements the [contract's lower-recurring-burden rule](CONTRACT.md). Overlapping
+estimate-only ranges prove neither arm cheaper. Among eligible native candidates, the viable
+native-paper hybrid default applies unless RN satisfies this comparison or passes the separately
+preregistered additional-benefit exception. Burden-only differences that remain uncertain favor
+lower-change retention.
 
 Before seeing comparative timing, the physical materiality registration must include the arm-to-arm
 burden difference and its concrete added tool/bridge/UI/release owners, their compensation and
@@ -162,7 +170,7 @@ calibration.
 
 With current overlapping estimate-only ranges and no reviewed retirement-feasibility proof, no
 burden-only migration qualifies. For native paper, I.upper=62, Q.upper=36, recurring upper=78,
-D.upper=12, T=39, so cost upper=137 effort-weeks; the baseline recurring lower is20 and saving
+D.upper=12, T=39, so cost upper=137 effort-weeks; the baseline recurring lower is 20 and saving
 lower=(20−78)/2=−29. RN shared UI has I.upper=102, Q.upper=52, recurring upper=94, D.upper=18,
 T=70.5 and cost upper=224.5; its saving lower=(20−94)/4=−18.5. Endpoint arithmetic is illustrative
 decision policy, not measured precision. No failed structural candidate or unproved observer becomes

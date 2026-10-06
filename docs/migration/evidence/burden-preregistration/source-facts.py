@@ -133,9 +133,9 @@ def examples(commits, rule):
 def main():
     parser = argparse.ArgumentParser(description='Read pinned local Git history; write compact source-change facts.')
     parser.add_argument('--repo', type=Path, default=Path.cwd())
-    parser.add_argument('--output', type=Path, default=Path(__file__).with_suffix('.json'))
+    parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--original', type=Path, help='Optional explicit immutable raw receipt verification')
-    parser.add_argument('--disposition-output', type=Path, default=Path(__file__).with_name('burden-facts-v2-disposition.json'))
+    parser.add_argument('--disposition-output', type=Path, required=True)
     args = parser.parse_args()
     paths = [args.output.resolve(), args.disposition_output.resolve(), Path(__file__).resolve()]
     if args.original is not None:

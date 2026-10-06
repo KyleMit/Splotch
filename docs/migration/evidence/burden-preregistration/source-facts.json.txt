@@ -21,7 +21,7 @@
     "setHash": "SHA256 of unique full identifiers sorted lexicographically, each followed by LF, UTF-8; empty set hashes empty bytes.",
     "examples": "Most recent three matching commits in the returned Git log order; matched paths only, no unrelated full commit-path dump.",
     "reproduction": "Pinned head, time window, expected commit-set hash, old counts and category definitions are fixed. The local repository defaults to the current directory; only local repository/input/output paths are configurable. No raw receipt is required. An explicit --original additionally verifies all raw commit/path rows without changing the compact result. No network, checkout, installation or source mutation.",
-    "scriptSha256": "9efb3522965ce64ac4b9460f8f81f15b609ef1be4e6612a18633aacd222f7145"
+    "scriptSha256": "fc0366c669d81e40ca84c1ce33fe21ed3a8795fa5f12bd2abd1af34f3fb85aaf"
   },
   "categories": {
     "UI and behavior": {
