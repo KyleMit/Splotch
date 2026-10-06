@@ -105,26 +105,16 @@ function configurationPropertyName(property, file) {
     !ts.isComputedPropertyName(property.name) || ts.isStringLiteralLike(name),
     `${file} uses unsupported computed configuration property`
   );
-  assert.notEqual(name?.text, '__proto__', `${file} uses unsupported configuration prototype`);
   return name?.text;
-}
-
-function configurationProperties(node, file) {
-  const names = new Set();
-  return node.properties.map((property) => {
-    const name = configurationPropertyName(property, file);
-    assert.ok(
-      !names.has(name),
-      `${file} uses unsupported duplicate configuration property ${name}`
-    );
-    names.add(name);
-    return { property, name };
-  });
 }
 
 function configurationObjectReferences(node, file, kind) {
   assert.ok(ts.isObjectLiteralExpression(node), `${file} uses unsupported opaque configuration`);
-  let properties = configurationProperties(node, file);
+  const properties = node.properties.map((property) => ({
+    property,
+    name: configurationPropertyName(property, file),
+  }));
+  let config = node;
   if (kind === 'expo') {
     const expo = properties.find(({ name }) => name === 'expo')?.property;
     if (expo) {
@@ -132,11 +122,12 @@ function configurationObjectReferences(node, file, kind) {
         ts.isPropertyAssignment(expo) && ts.isObjectLiteralExpression(expo.initializer),
         `${file} uses unsupported opaque Expo configuration`
       );
-      properties = configurationProperties(expo.initializer, file);
+      config = expo.initializer;
     }
   }
   const references = [];
-  for (const { property, name } of properties) {
+  for (const property of config.properties) {
+    const name = configurationPropertyName(property, file);
     if (kind === 'babel')
       assert.ok(
         name === 'plugins' || name === 'presets',
@@ -184,10 +175,6 @@ function assertFiniteConfigurationSyntax(node, file, kind) {
   if (ts.isSpreadAssignment(node)) assert.fail(`${file} uses unsupported configuration spread`);
   if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
     const name = accessName(node);
-    assert.ok(
-      name !== 'prototype' && name !== '__proto__',
-      `${file} uses unsupported configuration prototype`
-    );
     if (name === 'plugins' || (kind === 'babel' && name === 'presets'))
       assert.fail(`${file} uses unsupported ${name} member operation`);
     if (isModuleExports(node))
@@ -208,7 +195,6 @@ function sourceConfigurationReferences(ast, file, kind) {
   const references = [];
   let exports = 0;
   function visit(node) {
-    ts.forEachChild(node, visit);
     assertFiniteConfigurationSyntax(node, file, kind);
     let value;
     if (ts.isBinaryExpression(node) && isModuleExports(node.left)) value = node.right;
@@ -222,6 +208,7 @@ function sourceConfigurationReferences(ast, file, kind) {
       exports++;
       references.push(...configurationExportReferences(value, file, kind));
     }
+    ts.forEachChild(node, visit);
   }
   visit(ast);
   assert.ok(exports, `${file} has no supported literal configuration export`);

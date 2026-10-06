@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {cpSync,mkdtempSync,readFileSync,rmSync,symlinkSync,writeFileSync} from 'node:fs';
+import {createRequire} from 'node:module';import {join} from 'node:path';import {pathToFileURL} from 'node:url';
+const worktree='/Users/kylemit/.codex/worktrees/3218/Splotch';const root=mkdtempSync('/private/tmp/splotch-resume-01a111b0/import-boundary/expo-duplicate-');const candidate=join(root,'candidate');
+cpSync(join(worktree,'experiments/native-architecture'),candidate,{recursive:true,filter:path=>!path.includes('/node_modules')});symlinkSync(join(worktree,'node_modules'),join(candidate,'node_modules'));
+const require=createRequire(join(worktree,'package.json'));const {getConfig}=require('@expo/config');const {assertDeclaredCandidateImports}=await import(pathToFileURL(join(worktree,'tools/migration/lib/native-identity.mjs')));const manifest=JSON.parse(readFileSync(join(candidate,'package.json')));
+assertDeclaredCandidateImports(candidate,manifest);
+const source="module.exports={expo:{name:'x',slug:'x',plugins:[]},expo:{name:'x',slug:'x',plugins:['expo-font']}};";writeFileSync(join(candidate,'app.config.cjs'),source);
+let guard;try{guard={passed:true,result:assertDeclaredCandidateImports(candidate,manifest)}}catch(error){guard={passed:false,message:error.message}}
+const config=getConfig(candidate);assert.deepEqual(config.exp.plugins,['expo-font']);rmSync(join(candidate,'app.config.cjs'));assertDeclaredCandidateImports(candidate,manifest);const receipt={restoredPositive:true,source,root,guard,actualExpo:{dynamicConfigPath:config.dynamicConfigPath,plugins:config.exp.plugins},sourceInputs:'final-v4/source-inputs.json',claim:'Final guard visibly refuses duplicate keys; installed Expo still selects last literal wrapper. No native/runtime proof'};writeFileSync('/private/tmp/splotch-resume-01a111b0/import-boundary/expo-duplicate-v4-final.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));

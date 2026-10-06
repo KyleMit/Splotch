@@ -1,53 +1,12 @@
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
-import {
-  assertDeclaredCandidateImports,
-  dependencySpecifiers,
-  readJson,
-} from '../lib/native-identity.mjs';
+import { assertDeclaredCandidateImports } from '../lib/native-identity.mjs';
+import { candidateImport, createCandidateFixtures } from './candidate-fixtures.mjs';
 
-const root = join(import.meta.dirname, '../../..');
-const candidate = join(root, CANDIDATE_DIRECTORY);
-const manifest = readJson(join(candidate, 'package.json'));
-const fixtures = [];
-
-function fixture() {
-  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-candidate-imports-')));
-  fixtures.push(directory);
-  const target = join(directory, 'candidate');
-  cpSync(candidate, target, { recursive: true, filter: (path) => !path.includes('/node_modules') });
-  symlinkSync(join(root, 'node_modules'), join(target, 'node_modules'));
-  return target;
-}
-
-function write(candidate, path, source) {
-  mkdirSync(dirname(join(candidate, path)), { recursive: true });
-  writeFileSync(join(candidate, path), source);
-}
-
-function expectRejectedMutationAndRestore(candidate, path, source, reason) {
-  const original = readFileSync(join(candidate, path), 'utf8');
-  write(candidate, path, source);
-  expect(() => assertDeclaredCandidateImports(candidate, manifest)).toThrow(reason);
-  write(candidate, path, original);
-  expect(() => assertDeclaredCandidateImports(candidate, manifest)).not.toThrow();
-}
-
-afterEach(() =>
-  fixtures.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true }))
-);
+const { candidate, manifest, fixture, write, expectRejectedMutationAndRestore, cleanup } =
+  createCandidateFixtures();
+afterEach(cleanup);
 
 describe('candidate source import ownership', () => {
   it('accepts the actual candidate and exposes finite generated subpath exclusions', () => {
@@ -99,7 +58,7 @@ describe('candidate source import ownership', () => {
       'src/index.ts imports undeclared yaml'
     );
     write(target, 'src/Extra.ts', "import 'yaml';\n");
-    write(target, 'src/index.ts', `${entry}\nimport './Extra';\n`);
+    write(target, 'src/index.ts', `${entry}\n${candidateImport('./Extra')}\n`);
     expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
       'src/Extra.ts imports undeclared yaml'
     );
@@ -196,23 +155,59 @@ describe('candidate source import ownership', () => {
     expectRejectedMutationAndRestore(
       target,
       'src/index.ts',
-      "import '../scripts/helper.cjs';",
+      candidateImport('../scripts/helper.cjs'),
       'Node configuration or script into app source'
     );
     expectRejectedMutationAndRestore(
       target,
       'src/index.ts',
-      "import '../metro.config';",
+      candidateImport('../metro.config'),
       'Node configuration or script into app source'
     );
     symlinkSync(join(target, 'scripts/helper.cjs'), join(target, 'src/helper.cjs'));
-    expectRejectedMutationAndRestore(
-      target,
-      'src/index.ts',
-      "import './helper.cjs';",
-      'Node configuration or script into app source'
+    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
+      'src/helper.cjs aliases Node configuration or script into app source'
     );
+    rmSync(join(target, 'src/helper.cjs'));
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
+
+  it.each(['buffer', 'events', 'url', 'util'])(
+    'accepts an explicitly declared bare %s polyfill',
+    (specifier) => {
+      const target = fixture();
+      write(target, 'src/Polyfill.ts', `import '${specifier}';`);
+      const declared = {
+        ...manifest,
+        devDependencies: { ...manifest.devDependencies, [specifier]: 'fixture-only' },
+      };
+      expect(() => assertDeclaredCandidateImports(target, declared)).not.toThrow();
+      write(target, 'src/Polyfill.ts', `import 'node:${specifier}';`);
+      expect(() => assertDeclaredCandidateImports(target, declared)).toThrow(
+        'Node builtin into app source'
+      );
+      rmSync(join(target, 'src/Polyfill.ts'));
+      expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    }
+  );
+
+  it.each(['file', 'directory'])(
+    'rejects an extensionless app import through a Node-owned %s alias',
+    (kind) => {
+      const target = fixture();
+      write(target, 'scripts/helper.ts', "import 'node:fs';");
+      const alias = join(target, 'src/alias.ts');
+      symlinkSync(join(target, kind === 'file' ? 'scripts/helper.ts' : 'scripts'), alias);
+      const entry = readFileSync(join(target, 'src/index.ts'), 'utf8');
+      write(target, 'src/index.ts', `${entry}\n${candidateImport('./alias')}`);
+      expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
+        'src/alias.ts aliases Node configuration or script into app source'
+      );
+      rmSync(alias);
+      write(target, 'src/index.ts', entry);
+      expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    }
+  );
 
   it('keeps canonical app roles when an internal directory alias is discovered first', () => {
     const target = fixture();
@@ -258,13 +253,13 @@ describe('candidate source import ownership', () => {
     write(
       target,
       'src/Local.ts',
-      "/// <reference path='./local/types.d.ts' />\nimport './local'; require('./local/asset.ttf');\n"
+      `/// <reference path='./local/types.d.ts' />\n${candidateImport('./local')} require('./local/asset.ttf');\n`
     );
     expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
     expectRejectedMutationAndRestore(
       target,
       'src/Local.ts',
-      "import '../../web/src/x';",
+      candidateImport('../../web/src/x'),
       'escapes candidate ownership'
     );
     for (const path of [
@@ -276,7 +271,7 @@ describe('candidate source import ownership', () => {
       expectRejectedMutationAndRestore(
         target,
         'src/Local.ts',
-        `import '../${path}';`,
+        candidateImport(`../${path}`),
         'excluded candidate output'
       );
     const external = join(target, '../foreign');
@@ -304,7 +299,7 @@ describe('candidate source import ownership', () => {
     expectRejectedMutationAndRestore(
       target,
       'src/index.ts',
-      "import '../android/app/build/generated.js';",
+      candidateImport('../android/app/build/generated.js'),
       'excluded candidate output'
     );
     symlinkSync(join(target, 'android/app/build/generated.js'), join(target, 'src/generated.js'));
@@ -331,83 +326,5 @@ describe('candidate source import ownership', () => {
     expect(result.nonCoverage).toContain(
       'native source, materialization and toolchain qualification'
     );
-  });
-});
-
-describe('candidate configuration dependency ownership', () => {
-  it('accepts explicit current Babel, Expo and tsconfig dependency references', () => {
-    const target = fixture();
-    write(target, 'babel.config.cjs', "module.exports = { presets: ['babel-preset-expo'] };\n");
-    write(target, 'app.config.ts', "export default { expo: { plugins: [['expo', {}]] } };\n");
-    write(target, 'app.json', '{"expo":{"plugins":[["expo",{}]]}}');
-    write(target, 'tsconfig.base.json', '{"compilerOptions":{"types":["react"]}}');
-    write(target, 'tsconfig.json', '{"extends":"./tsconfig.base.json"}');
-    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
-  });
-
-  it.each([
-    ['tsconfig.json', '{"extends":"yaml"}', 'imports undeclared yaml'],
-    ['tsconfig.json', '{"compilerOptions":{"types":["node"]}}', 'imports undeclared @types/node'],
-    ['tsconfig.json', '{"compilerOptions":{"jsxImportSource":"yaml"}}', 'imports undeclared yaml'],
-    ['app.json', '{"expo":{"plugins":["yaml"]}}', 'imports undeclared yaml'],
-    [
-      'babel.config.cjs',
-      "module.exports={plugins:['babel-plugin-missing']};",
-      'imports undeclared babel-plugin-missing',
-    ],
-    ['babel.config.cjs', "module.exports={presets:['expo']};", 'unsupported Babel alias'],
-    [
-      'babel.config.cjs',
-      'module.exports={plugins:pluginNames};',
-      'unsupported plugins configuration',
-    ],
-    [
-      'babel.config.cjs',
-      "module.exports={['plugins']:['babel-plugin-missing']};",
-      'imports undeclared babel-plugin-missing',
-    ],
-    [
-      'babel.config.cjs',
-      "const plugins=['babel-plugin-missing']; module.exports={plugins};",
-      'unsupported plugins configuration',
-    ],
-    [
-      'tsconfig.json',
-      '{"compilerOptions":{"paths":{"alias":["../../web/src/x"]}}}',
-      'unsupported tsconfig paths ownership',
-    ],
-    [
-      'tsconfig.json',
-      '{"compilerOptions":{"rootDirs":["./src","../foreign"]}}',
-      'unsupported tsconfig rootDirs ownership',
-    ],
-    ['tsconfig.json', '{"extends":"../foreign.json"}', 'escapes candidate ownership'],
-    ['tsconfig.json', '{"include":["../foreign/**/*.ts"]}', 'escapes candidate ownership'],
-  ])('rejects %s configuration for its stated reason', (path, source, reason) => {
-    const target = fixture();
-    expectRejectedMutationAndRestore(target, path, source, reason);
-  });
-
-  it('rejects dotfile Babel JSON and triple-slash undeclared type references', () => {
-    const target = fixture();
-    write(target, '.babelrc', '{"plugins":["babel-plugin-missing"]}');
-    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
-      'imports undeclared babel-plugin-missing'
-    );
-    rmSync(join(target, '.babelrc'));
-    write(target, 'src/Types.d.ts', '/// <reference types="node" />\n');
-    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
-      'imports undeclared @types/node'
-    );
-    write(target, 'src/Types.d.ts', '/// <reference types="expo/types" />\n');
-    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
-  });
-
-  it('preserves shared shipping and Forge computed-import semantics', () => {
-    expect(dependencySpecifiers('import(name); require(name);', 'shared.mjs')).toEqual([]);
-    expect(dependencySpecifiers("require('yaml'); import('expo');", 'shared.mjs')).toEqual([
-      'yaml',
-      'expo',
-    ]);
   });
 });

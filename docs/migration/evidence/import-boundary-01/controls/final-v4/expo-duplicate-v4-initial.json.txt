@@ -1,0 +1,48 @@
+{
+  "restoredPositive": true,
+  "source": "module.exports={expo:{name:'x',slug:'x',plugins:[]},expo:{name:'x',slug:'x',plugins:['expo-font']}};",
+  "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/expo-duplicate-eSmc3N",
+  "guard": {
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.config.cjs",
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 13,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "actualExpo": {
+    "dynamicConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/expo-duplicate-eSmc3N/candidate/app.config.cjs",
+    "plugins": [
+      "expo-font"
+    ]
+  },
+  "sourceIdentity": "Exact pre-duplicate-fix reader SHA256 0a8a3ec6995605987d421ad830f9ac825c85fd798c3458bfc530e569ccbae248 reconstructed and verified against prior regression receipt; imports SHA256 3966a741bcc0afe5493bdda0ec2a1b58b5d81b6a81892d9532fa5448c29e66a5 unchanged",
+  "claim": "Finite literal grammar selects first duplicate expo property while actual JavaScript consumer selects last; not native/runtime proof"
+}

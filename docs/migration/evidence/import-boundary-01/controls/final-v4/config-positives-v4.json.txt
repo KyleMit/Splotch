@@ -1,0 +1,154 @@
+{
+  "sourceInputs": "final-v4/source-inputs.json",
+  "base": "5ecb23f7c1372c848788d80ee76503ddd7dd9cc7",
+  "currentPositive": {
+    "scannedCandidateFiles": [
+      "app.json",
+      "babel.config.cjs",
+      "metro.config.cjs",
+      "scripts/check-transform.cjs",
+      "src/ProbeApp.tsx",
+      "src/index.ts",
+      "tsconfig.json"
+    ],
+    "localTsconfigFiles": [
+      "tsconfig.json"
+    ],
+    "dependencyReferences": 13,
+    "generatedSubpathExclusions": [
+      "node_modules",
+      ".git",
+      ".expo",
+      "dist",
+      "android/.gradle",
+      "android/.cxx",
+      "android/build",
+      "android/app/.cxx",
+      "android/app/build",
+      "ios/Pods",
+      "ios/build"
+    ],
+    "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+    "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+    "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+  },
+  "declaredConfigPositive": {
+    "guard": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 15,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    },
+    "expoPlugins": [
+      "expo-font"
+    ],
+    "babelPlugin": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+  },
+  "futurePolyfill": {
+    "fixtureManifest": {
+      "name": "buffer",
+      "version": "0.0.0-owned-fixture",
+      "main": "index.js"
+    },
+    "guard": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/Polyfill.ts",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "localTsconfigFiles": [
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 14,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    },
+    "metro": {
+      "type": "sourceFile",
+      "filePath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-positive-7YhBXF/polyfills/node_modules/buffer/index.js"
+    },
+    "metroVersion": "0.84.5",
+    "metroPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/metro-resolver/src/resolve.js",
+    "metroSha256": "28717c2544657eefe77e94cda302247dee9f2dad0ddc14818558b8bf6948970a",
+    "scope": "Owned synthetic future polyfill package through installed Metro resolver; no dependency install and no claim this package is currently installed or app runtime exercised"
+  },
+  "rejectingControl": "src/Polyfill.ts imports Node builtin into app source: node:buffer",
+  "restoredPositive": {
+    "scannedCandidateFiles": [
+      "app.json",
+      "babel.config.cjs",
+      "metro.config.cjs",
+      "scripts/check-transform.cjs",
+      "src/Polyfill.ts",
+      "src/ProbeApp.tsx",
+      "src/index.ts",
+      "tsconfig.json"
+    ],
+    "localTsconfigFiles": [
+      "tsconfig.json"
+    ],
+    "dependencyReferences": 14,
+    "generatedSubpathExclusions": [
+      "node_modules",
+      ".git",
+      ".expo",
+      "dist",
+      "android/.gradle",
+      "android/.cxx",
+      "android/build",
+      "android/app/.cxx",
+      "android/app/build",
+      "ios/Pods",
+      "ios/build"
+    ],
+    "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+    "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+    "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+  },
+  "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-positive-7YhBXF",
+  "scope": "Static guard, installed Expo/Babel config consumers and installed Metro resolution only; no native build, device or runtime mount proof"
+}

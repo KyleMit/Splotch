@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/import_boundary",
+  "resource": "exclusive host Browserless tier",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "sourceInputs": "source-inputs.json",
+  "command": "SMOKE_PORT=5300 npm run test:browserless",
+  "port": 5300,
+  "portUnusedImmediatelyBeforeLaunch": true,
+  "startedAt": "2026-10-06T16:01:32.934Z",
+  "deadlineMs": 300000,
+  "deadlineBasis": "Prior v3 full tier measured 75.277 seconds; 300-second numeric bound gives nearly fourfold headroom on the same exclusive host and frozen installed graph",
+  "installedInputs": "installed-inputs.json",
+  "launcherPid": 11317,
+  "releaseCondition": "command exits and its owned process group is gone and smoke port binds again",
+  "status": "released",
+  "childPid": 11342,
+  "processGroup": 11342,
+  "sourceAndInstalledInputsUnchanged": true,
+  "finishedAt": "2026-10-06T16:02:45.200Z",
+  "outcome": {
+    "exitCode": 1,
+    "signal": null
+  },
+  "ownedProcessGroupGone": true,
+  "smokePortReleased": true,
+  "executor": {
+    "tool": "exec_command/write_stdin",
+    "sessionId": 16112
+  }
+}

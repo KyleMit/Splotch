@@ -2,8 +2,9 @@
 
 Owner: the import-boundary unit worker; parent integrator owns review, final CI and integration. The
 original reproduction uses accepted source dc08a90abc67b53124146bf288c80de0f9ffd1dd. Implementation
-composes the preservation-only integration base aa507a74963adac35baed84c7ab2e13cdc12a946. This unit
-changes no candidate dependency, lock, shipping source or native project.
+composes accepted records-only integration e7413bf92066fcf45967cf04241a513fd48d49ff over the
+previous preservation-only base aa507a74963adac35baed84c7ab2e13cdc12a946. This unit changes no
+candidate dependency, lock, shipping source or native project.
 
 ## Uncertainty and boundary
 
@@ -60,8 +61,9 @@ is introduced.
 
 The first substantive F1 review was the combined continuation/F1 question in Claude conversation
 bbe89d5b-644f-4d4f-9366-e5156cebf4ea. Its raw findings are preserved under `review/`; two
-substantive rounds remain. PR2697 is not reopened. The parent will adopt this actual identity into
-the new PR ledger and resume it for executed-source review.
+substantive rounds remained at that plan checkpoint. PR2697 is not reopened. The parent adopted this
+actual identity into PR2703 and successfully resumed it for substantive round two; one final round
+remains.
 
 All four blocking amendments were accepted after local verification:
 
@@ -78,9 +80,10 @@ preservation comments belong to the parent preservation unit, not this implement
 ## Executed evidence and remaining gates
 
 `source-inputs.json` binds the tested source files and accepted candidate/package/lock inputs.
-Complete final source command output and process receipts live under `controls/final-v3/`. The new
-rejecting assertions were also executed against the exact accepted old checker: 33 controls failed
-at the expected rejecting assertions, with no syntax/setup failure. The final checker was restored
+Complete combined-repair source command output and receipts live under `controls/final-v5/`;
+`controls/final-v3/` is the reviewed prior head and remains historical evidence. The new rejecting
+assertions were also executed against the exact accepted old checker: 33 controls failed at the
+expected rejecting assertions, with no syntax/setup failure. The final checker was restored
 byte-for-byte afterward.
 
 `controls/final-v1/` preserves the earlier executed source and its source manifest. Subsequent
@@ -111,18 +114,79 @@ failure identified a test-helper naming issue; the assertion helper was renamed 
 `expect*` convention and scoped lint passed. These are setup/development outcomes, never intended
 negative controls.
 
-Final v3 targeted controls, full typecheck/lint, formatting and the public topology command passed.
-The replacement full Browserless tier passed all five stages: 4,463 app unit tests, 45 SSR tests,
-298 asset tests, 22 store tests, 7,571 tool tests and 42 API smoke checks. Its explicit exclusive
-host lease records the source snapshot, unused smoke port, process group, numeric deadline and
-verified release. The scanner/config scope does not change shipping/browser runtime source;
-registered final-head CI owns the remaining browser jobs. The mistaken unregistered topology script
-invocation and partial test-path selection are preserved as setup/scope errors, separate from the
-successful registered command and complete four-suite scoped gate.
+At the prior v3 checkpoint, targeted controls, full typecheck/lint, formatting and the public
+topology command passed. The replacement full Browserless tier passed all five stages: 4,463 app
+unit tests, 45 SSR tests, 298 asset tests, 22 store tests, 7,571 tool tests and 42 API smoke checks.
+Its explicit exclusive host lease records the source snapshot, unused smoke port, process group,
+numeric deadline and verified release. The scanner/config scope does not change shipping/browser
+runtime source; registered final-head CI owns the remaining browser jobs. The mistaken unregistered
+topology script invocation and partial test-path selection are preserved as setup/scope errors,
+separate from the successful registered command and complete four-suite scoped gate.
 
 Independent resumed executed-source acceptance, final-head CI, push and integration remain separate
 states recorded by the parent in the live campaign register. This packet does not mark the unit or
 migration complete.
+
+## Resumed round two and combined repair
+
+The actual original conversation resumed for round two on ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24.
+`review/round-2/` preserves complete findings, session/done metadata and the public review with all
+five threads. The review requested changes; neither the prior full tier nor reviewer agreement
+accepted those configuration gaps. Two substantive rounds are used and one remains.
+
+| Finding                           | Executed disposition                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flat Expo JSON plugins            | Parse `expo ?? root`, matching installed Expo; flat undeclared `expo-font` rejects, wrapped and declared forms remain positives.                                                                                                                                                                                                                                                      |
+| Preferred static config           | Discover `app.config.json`; installed Expo selects it over `app.json`, and the guard checks its plugin imports.                                                                                                                                                                                                                                                                       |
+| Babel/Expo member configuration   | Support literal object exports and functions returning literal objects. Refuse member reads/mutations, spreads, opaque forwarding, computed keys, accessors/methods and unsupported Babel composition keys. Actual Babel/Expo consumers still load the reported packages; the guard visibly refuses unestablished ownership. Current Babel `api.cache` and literal plugin forms pass. |
+| Extensionless app alias into Node | Apply canonical role fences to discovered file/directory aliases before physical-file deduplication. App-to-Node aliases reject; Node-to-app aliases retain canonical application rules.                                                                                                                                                                                              |
+| Declared builtin-name polyfill    | Treat declared bare names as package imports; reserve builtin refusal for `node:` or undeclared builtin names. Installed Metro resolves an owned synthetic `buffer` package. This is future-positive resolver evidence, not an installed shipping polyfill or native runtime proof.                                                                                                   |
+
+Separate bounded probes found valid TypeScript `extends` directory collisions and a physical-file
+cache that erased lexical alias context. TypeScript selects an existing file before `.json`
+fallback; the guard follows that selection and preserves outside/excluded ownership fences.
+Symlinked local tsconfigs and semantic config filenames are explicitly unsupported because their
+lexical paths affect consumer semantics. All eleven actual TypeScript fixtures typecheck with exit
+zero; the intended unsupported/escape guard results are recorded independently.
+
+A literal duplicate Expo wrapper initially selected the guard's first object while JavaScript and
+installed Expo selected the last. Duplicate configuration keys and prototype shapes now refuse
+visibly. The exact prerepair reader was reconstructed and verified against its observed SHA256; its
+executable replay and the final duplicate-key rejection both preserve actual Expo behavior.
+
+Final combined scoped controls pass 126 tests across five suites. Replacing both scanner files with
+exact ee7 code yields 18 intended false-pass assertion failures and four intended declared-polyfill
+false-rejection failures; the new files restore byte-for-byte. Three broader policy fixtures were
+already rejected for undeclared packages by ee7 and only changed refusal reason: they are preserved
+as preexisting rejects and excluded from the false-pass count. The initial regression harness
+incorrectly treated all failures as false passes and refused to certify that run; its correction
+separates these outcomes. A prototype fixture initially failed for another valid fence's message;
+the final syntax traversal reaches the prototype boundary and the intended control passes.
+
+The mistaken Vitest project filter, partial suite selection, Metro metadata export-path error and
+sandbox loopback refusal are preserved as setup/scope errors. They are distinct from intended
+negative controls. No candidate/package/lock dependency or shipping runtime change is introduced.
+The frozen twenty-file source manifest and final static-gate receipt bind check, lint, formatting
+and the actual public topology command. Six final scoped suites pass 935 checks, including 809
+tracked-tool import-resolution checks. The actual final public command rejects direct and reachable
+`yaml` mutations while hoisted typecheck still passes; restored guard/typecheck positives and source
+bytes are verified. The first combined v4 Browserless run failed one tool guard after that guard
+enumerated the tracked F1 test. Eight synthetic relative imports inside fixture strings were
+mistaken for real repository imports. Before the initial v3 commit, that new test was untracked and
+absent from this guard's Git file list; its earlier passing tier cannot establish the tracked state.
+The correction belongs to the fixture owner: construct fixture import text through `candidateImport`
+without weakening the repository guard or expanding its exceptions. New tool files are staged before
+v5 gates, and the manifest binds the tracked tool paths. The failed v4 full tier, complete outputs
+and verified process release remain separate from the successful replacement v5 tier. Consumer
+receipts are reused only through the explicit v4-to-v5 relevant-input equality receipt;
+scanner/config/candidate/installed inputs did not change when fixture text construction changed.
+
+The replacement full Browserless tier passes all five stages: 4,463 app tests, 45 SSR tests, 298
+asset tests, 22 store tests, 7,614 tool tests and 42 API checks. Its 75.067-second measured duration
+is harness cost. The five-minute deadline, source/tracked-tool/installed identities, owned process
+group, tool handle and verified port/process release are recorded in the lease.
+
+Final original-Claude round three, exact final-head CI and parent integration remain required.
 
 ## Preservation and replay
 

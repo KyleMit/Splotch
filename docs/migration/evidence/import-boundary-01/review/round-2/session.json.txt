@@ -1,0 +1,18 @@
+{
+  "id": "e460add8-1d01-4565-8b10-394246713171",
+  "rival": "claude",
+  "scope": {
+    "base": "aa507a74963adac35baed84c7ab2e13cdc12a946",
+    "head": "ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24",
+    "description": "pull request 2703",
+    "range": "aa507a74963adac35baed84c7ab2e13cdc12a946...ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24"
+  },
+  "question": false,
+  "worktree": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/e460add8-1d01-4565-8b10-394246713171/worktree",
+  "packetDir": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/e460add8-1d01-4565-8b10-394246713171/packet",
+  "round": 2,
+  "resumed": true,
+  "repoRoot": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "branch": "codex/migration-import-boundary",
+  "createdAt": "2026-10-06T15:31:02.578Z"
+}

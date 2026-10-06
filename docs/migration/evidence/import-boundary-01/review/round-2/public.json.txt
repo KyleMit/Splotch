@@ -1,0 +1,173 @@
+{
+  "threads": {
+    "review_threads": [
+      {
+        "id": "PRRT_kwDOQ9lQis6pim-d",
+        "is_resolved": false,
+        "is_outdated": false,
+        "path": "tools/migration/lib/candidate-references.mjs",
+        "line": 235,
+        "diff_side": "RIGHT",
+        "start_line": 235,
+        "start_diff_side": null,
+        "original_line": 235,
+        "original_start_line": null,
+        "resolved_by": null,
+        "comments": [
+          {
+            "id": "PRRC_kwDOQ9lQis76Le72",
+            "database_id": 4197314294,
+            "body": "**blocking:** **False pass: a flat `app.json` (no `expo` key) bypasses the plugin check, but Expo still applies its plugins.**\n\n`readCandidateJsonConfig` reads only `config.expo?.plugins`. `@expo/config` reads `config.expo ?? config` (`node_modules/@expo/config/build/Config.js:142`, `:549`).\n\n**Repro** on a scratch candidate copy, with `app.json` set to `{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}`. `expo-font` is root-hoisted, has `app.plugin.js`, and is undeclared by the candidate:\n- real checker: **ACCEPT**\n- `getConfig(...).exp.plugins`: `[\"expo-font\"]`\n\nControl: the same plugin under `{\"expo\":{...}}` is REJECTed with `imports undeclared expo-font`. `inspectNativeConfig` resolves this plugin successfully, so no other topology gate catches it.\n\n**Fix:** use `config.expo ?? config` (matching Expo) or reject a top-level `plugins` key without `expo`. Add the flat form as a rejecting mutation.",
+            "created_at": "2026-10-06T15:35:41Z",
+            "updated_at": "2026-10-06T15:35:42Z",
+            "author": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "viewer_did_author": true
+          }
+        ]
+      },
+      {
+        "id": "PRRT_kwDOQ9lQis6pim-n",
+        "is_resolved": false,
+        "is_outdated": false,
+        "path": "tools/migration/lib/candidate-imports.mjs",
+        "line": 62,
+        "diff_side": "RIGHT",
+        "start_line": 62,
+        "start_diff_side": null,
+        "original_line": 62,
+        "original_start_line": null,
+        "resolved_by": null,
+        "comments": [
+          {
+            "id": "PRRC_kwDOQ9lQis76Le8G",
+            "database_id": 4197314310,
+            "body": "**blocking:** **False pass: `app.config.json` is never discovered, but Expo prefers it over `app.json`.**\n\nDiscovery admits only the literal `app.json`. `@expo/config` resolves `./app.config.json` first (`Config.js:333`).\n\n**Repro:** add `app.config.json` = `{\"expo\":{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}}` to a scratch candidate copy.\n- real checker: **ACCEPT** (still 7 scanned files)\n- `getConfig`: `staticConfigPath` is `app.config.json`, plugins are `[\"expo-font\"]`\n\n**Fix:** discover `app.config.json` and parse it with `readCandidateJsonConfig` (with the `expo ?? root` fallback), or reject its presence visibly. Add a rejecting mutation.",
+            "created_at": "2026-10-06T15:35:42Z",
+            "updated_at": "2026-10-06T15:35:42Z",
+            "author": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "viewer_did_author": true
+          }
+        ]
+      },
+      {
+        "id": "PRRT_kwDOQ9lQis6pim-u",
+        "is_resolved": false,
+        "is_outdated": false,
+        "path": "tools/migration/lib/candidate-references.mjs",
+        "line": 152,
+        "diff_side": "RIGHT",
+        "start_line": 64,
+        "start_diff_side": "RIGHT",
+        "original_line": 152,
+        "original_start_line": 64,
+        "resolved_by": null,
+        "comments": [
+          {
+            "id": "PRRC_kwDOQ9lQis76Le8V",
+            "database_id": 4197314325,
+            "body": "**blocking:** **False pass: plugin/preset arrays set by member assignment are invisible.**\n\nThe README says computed plugin/preset configuration fails visibly. But `configurationReferences` only runs on `PropertyAssignment`/`ShorthandPropertyAssignment` nodes, so `obj.plugins = [...]` (and `.push(...)`) produce no reference and no refusal.\n\n**Repros** with the real checker on scratch copies:\n- **Babel:** `babel.config.cjs` = `const base = { presets: [require.resolve('babel-preset-expo')] }; base.plugins = ['babel-plugin-react-compiler']; module.exports = base;`. Checker **ACCEPT**. `@babel/core` `loadPartialConfig` loads `<root>/node_modules/babel-plugin-react-compiler/dist/index.js`, which the candidate doesn't declare.\n- **Expo:** `app.config.js` = `module.exports = ({ config }) => { config.plugins = [...(config.plugins ?? []), 'expo-font']; return config; };`. This is the idiomatic Expo dynamic-config mutation. Checker **ACCEPT**. `getConfig` plugins are `[\"expo-font\"]`.\n\n**Fix:** in Babel/Expo config files, also refuse (or extract literals from) any assignment or call whose target's access name is `plugins`/`presets`: `BinaryExpression` `=` with a property-access left side, or `.push`/`.unshift`/`.concat` on such a member. Add both as rejecting mutations.",
+            "created_at": "2026-10-06T15:35:42Z",
+            "updated_at": "2026-10-06T15:35:42Z",
+            "author": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "viewer_did_author": true
+          }
+        ]
+      },
+      {
+        "id": "PRRT_kwDOQ9lQis6pim-8",
+        "is_resolved": false,
+        "is_outdated": false,
+        "path": "tools/migration/lib/candidate-imports.mjs",
+        "line": 100,
+        "diff_side": "RIGHT",
+        "start_line": 90,
+        "start_diff_side": "RIGHT",
+        "original_line": 100,
+        "original_start_line": 90,
+        "resolved_by": null,
+        "comments": [
+          {
+            "id": "PRRC_kwDOQ9lQis76Le8m",
+            "database_id": 4197314342,
+            "body": "**suggestion:** **The app→Node role check is bypassed by an extensionless import of a symlinked Node-owned file.**\n\nThe README says internal aliases keep their canonical role, and the test (`candidate-imports.test.mjs:208-213`) checks only `import './helper.cjs'` with an explicit extension. `assertLocalReference` checks the physical target only `if (existsSync(path))`. For the normal extensionless TS/Metro form, the lexical path doesn't exist, so only the lexical role (`src/...` = app) is checked.\n\n**Repro:** `scripts/helper.ts` with `src/alias.ts -> ../scripts/helper.ts`.\n- `import { read } from './alias'`: **ACCEPT**\n- `from './alias.ts'`: REJECT (`imports Node configuration or script into app source: scripts/helper.ts`)\n\nSymlinked files are uncommon, so this is a suggestion rather than a blocker.\n\n**Fix:** when `path` doesn't exist, probe the discovered-file set for `path + ext` / `path/index + ext` and apply the role check to each match's realpath. Alternatively, reject at discovery any file symlink whose canonical role differs from its lexical role.",
+            "created_at": "2026-10-06T15:35:42Z",
+            "updated_at": "2026-10-06T15:35:42Z",
+            "author": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "viewer_did_author": true
+          }
+        ]
+      },
+      {
+        "id": "PRRT_kwDOQ9lQis6pim_E",
+        "is_resolved": false,
+        "is_outdated": false,
+        "path": "tools/migration/lib/candidate-imports.mjs",
+        "line": 137,
+        "diff_side": "RIGHT",
+        "start_line": 136,
+        "start_diff_side": "RIGHT",
+        "original_line": 137,
+        "original_start_line": 136,
+        "resolved_by": null,
+        "comments": [
+          {
+            "id": "PRRC_kwDOQ9lQis76Le8w",
+            "database_id": 4197314352,
+            "body": "**suggestion:** **False rejection: declared npm packages that share a Node builtin's name are refused in app source.**\n\n`isBuiltin(specifier)` is checked before the declared-package check. A legitimately declared RN polyfill such as `buffer`, `events`, `url` or `util` is rejected.\n\n**Repro:** add `\"buffer\": \"6.0.3\"` to scratch `devDependencies` and put `import { Buffer } from 'buffer'` in `src/bytes.ts`. Real checker REJECTs: `imports Node builtin into app source: buffer`.\n\nMetro resolves these bare names to the npm package, not a Node builtin, so this is a plausible maintenance mutation that the checker blocks for the wrong reason.\n\n**Fix:** in app source, treat a bare specifier whose package name is declared as a package reference. Reserve the builtin refusal for `node:`-prefixed or undeclared builtin names. Add a positive control.",
+            "created_at": "2026-10-06T15:35:42Z",
+            "updated_at": "2026-10-06T15:35:42Z",
+            "author": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "viewer_did_author": true
+          }
+        ]
+      }
+    ]
+  },
+  "reviews": {
+    "reviews": [
+      {
+        "id": "PRR_kwDOQ9lQis8AAAABQ7TeNA",
+        "state": "COMMENTED",
+        "body": "_Independent review by the claude rival agent, round 2, of pull request 2703._\n\n**Verdict: request changes.** The import-source half of F1 is now sound. The new configuration coverage still has reproduced false passes in which Expo or Babel actually loads an undeclared root-hoisted package while the checker accepts. These contradict the README's claim that Expo JSON/JS plugin arrays are checked and that computed configuration fails visibly.\n\n## Round-1 amendments\n1. **Parser coverage: addressed.** The candidate-only `candidate-references.mjs` uses `isStringLiteralLike`, import-equals, `ImportTypeNode`, JSDoc and triple-slash references, and picks `ScriptKind` by extension. It fails closed on computed arguments, `require` aliases, `createRequire` and `import.meta.resolve`. I re-ran my round-1 forms (`import Y = require('yaml')`, ``require(`yaml`)``, `typeof import('yaml')`) through the real checker, and all three now REJECT. The shared shipping/Forge `dependencySpecifiers` is unchanged, as scoped.\n2. **Declared-prefix traversal: addressed.** `expo/../yaml` now REJECTs as a malformed package specifier.\n3. **Escape and role semantics: mostly addressed.** Canonical checks apply only to local and discovered targets, builtins are role-split, and multi-argument `require.resolve` is refused visibly. Two gaps remain: an extensionless import of a symlinked Node-owned file bypasses the role check, and declared npm polyfills that share a builtin's name are falsely rejected (findings 4 and 5).\n4. **Discovery and config coverage: partially addressed.** The filesystem walk, visible exclusions and the emitted Podfile/Gradle non-coverage are good. Expo config coverage is incomplete (findings 1 and 2), and Babel/Expo configuration built by member assignment silently passes (finding 3).\n5. **Real-boundary controls: addressed substantively.** `candidate-imports.test.mjs` plus `ownership.test.mjs` pass locally: 66 tests.\n\nThe PR2700 present-tense \"remains paused\" wording is still at `docs/migration/PROGRESS.md:3-5`. This PR doesn't touch that file, so it's not a finding here; it remains a register follow-up.\n\n## How I checked\n- Read the six source/docs paths in full.\n- Built scratch candidate copies inside the worktree, ran the real `assertDeclaredCandidateImports` on each, and confirmed actual consumer behaviour with the installed `@expo/config` `getConfig` and `@babel/core` `loadPartialConfig`.\n- Removed all scratch copies afterwards.\n- Did not run any full browser, performance, native or device suite.\n\n<!-- splotch-rival-review:rival=claude;base=aa507a74963adac35baed84c7ab2e13cdc12a946;head=ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24;id=3eab677a-4d6f-4376-a745-fa42edf49c6a -->",
+        "submitted_at": "2026-10-06T15:35:41Z",
+        "author": {
+          "login": "KyleMit",
+          "name": "KyleMit",
+          "email": null,
+          "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+          "id": null
+        }
+      }
+    ]
+  }
+}

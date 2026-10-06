@@ -1,0 +1,227 @@
+{
+  "oldHead": "ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24",
+  "results": [
+    {
+      "name": "false-passes",
+      "command": [
+        "run",
+        "test:tools",
+        "--",
+        "tools/migration/tests/candidate-imports.test.mjs",
+        "tools/migration/tests/candidate-configs.test.mjs",
+        "-t",
+        "covers both Expo JSON forms|visibly refuses unestablished dependency configuration|visibly refuses Babel JSON|refuses a local tsconfig alias|refuses semantic configuration aliases|rejects an extensionless app import",
+        "--reporter=json",
+        "--outputFile=/private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-passes-v4.json"
+      ],
+      "exitCode": 1,
+      "failedCount": 21,
+      "intendedCount": 18,
+      "preexistingRejects": [
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported Babel configuration key e…' but got 'babel.config.cjs imports undeclared b…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported Babel configuration key o…' but got 'babel.config.cjs imports undeclared b…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported configuration spread' but got 'app.config.cjs imports undeclared exp…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        }
+      ],
+      "failures": [
+        {
+          "fullName": "candidate configuration dependency ownership covers both Expo JSON forms in app.json",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:84:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership covers both Expo JSON forms in app.config.json",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:84:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported Babel configuration key e…' but got 'babel.config.cjs imports undeclared b…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported Babel configuration key o…' but got 'babel.config.cjs imports undeclared b…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in babel.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw error including 'unsupported configuration spread' but got 'app.config.cjs imports undeclared exp…'\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses unestablished dependency configuration in app.config.cjs",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at expectRejectedMutationAndRestore (/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-fixtures.mjs:42:71)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:168:5\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2868:91\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses Babel JSON env ownership",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:203:68\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses Babel JSON overrides ownership",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:203:68\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership visibly refuses Babel JSON extends ownership",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:203:68\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership refuses a local tsconfig alias before physical-file cache reuse can erase its lexical context",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:239:68\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3299:20"
+          ]
+        },
+        {
+          "fullName": "candidate configuration dependency ownership refuses semantic configuration aliases and restores their current owners",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs:250:68\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3299:20"
+          ]
+        },
+        {
+          "fullName": "candidate source import ownership rejects an extensionless app import through a Node-owned file alias",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:203:70\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate source import ownership rejects an extensionless app import through a Node-owned directory alias",
+          "messages": [
+            "AssertionError: expected [Function] to throw an error\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:203:70\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        }
+      ],
+      "intendedAssertion": "expected [Function] to throw an error"
+    },
+    {
+      "name": "false-rejections",
+      "command": [
+        "run",
+        "test:tools",
+        "--",
+        "tools/migration/tests/candidate-imports.test.mjs",
+        "tools/migration/tests/candidate-configs.test.mjs",
+        "-t",
+        "accepts an explicitly declared bare",
+        "--reporter=json",
+        "--outputFile=/private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-rejections-v4.json"
+      ],
+      "exitCode": 1,
+      "failedCount": 4,
+      "intendedCount": 4,
+      "preexistingRejects": [],
+      "failures": [
+        {
+          "fullName": "candidate source import ownership accepts an explicitly declared bare buffer polyfill",
+          "messages": [
+            "AssertionError: expected [Function] to not throw an error but 'AssertionError [ERR_ASSERTION]: src/P…' was thrown\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:184:74\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate source import ownership accepts an explicitly declared bare events polyfill",
+          "messages": [
+            "AssertionError: expected [Function] to not throw an error but 'AssertionError [ERR_ASSERTION]: src/P…' was thrown\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:184:74\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate source import ownership accepts an explicitly declared bare url polyfill",
+          "messages": [
+            "AssertionError: expected [Function] to not throw an error but 'AssertionError [ERR_ASSERTION]: src/P…' was thrown\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:184:74\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        },
+        {
+          "fullName": "candidate source import ownership accepts an explicitly declared bare util polyfill",
+          "messages": [
+            "AssertionError: expected [Function] to not throw an error but 'AssertionError [ERR_ASSERTION]: src/P…' was thrown\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:2288:114)\n    at Proxy.<anonymous> (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.DGdajAO2.js:1945:14)\n    at Proxy.methodWrapper (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/chai/index.js:1700:25)\n    at /Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs:184:74\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2869:63\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:1628:35\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:2783:26\n    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3319:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/run.C5UmxDPh.js:3314:10)"
+          ]
+        }
+      ],
+      "intendedAssertion": "expected [Function] to not throw an error"
+    }
+  ],
+  "restoredSource": [
+    {
+      "path": "tools/migration/lib/candidate-imports.mjs",
+      "sha256": "3966a741bcc0afe5493bdda0ec2a1b58b5d81b6a81892d9532fa5448c29e66a5"
+    },
+    {
+      "path": "tools/migration/lib/candidate-references.mjs",
+      "sha256": "51f20b17f62a4f791dff84d56390426df6f4f2bf1dfb6bab7667562274c6baeb"
+    }
+  ],
+  "restoreVerified": true
+}

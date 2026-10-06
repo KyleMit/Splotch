@@ -4,6 +4,7 @@ import { isBuiltin } from 'node:module';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import ts from 'typescript';
 import {
+  candidateConfigurationKind,
   candidateSourceReferences,
   isRelativeCandidateSpecifier,
   readCandidateJsonConfig,
@@ -48,6 +49,10 @@ function discoverCandidateFiles(candidate) {
   function visit(directory) {
     const physical = realpathSync(directory);
     assertOwnedPath(candidate, physical, relative(candidate, directory));
+    assert.ok(
+      isNodeOwner(relative(candidate, directory)) || !isNodeOwner(relative(candidate, physical)),
+      `${relative(candidate, directory)} aliases Node configuration or script into app source`
+    );
     if (visited.has(physical)) return;
     visited.add(physical);
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -59,10 +64,22 @@ function discoverCandidateFiles(candidate) {
         SOURCE_EXTENSION.test(entry.name) ||
         /^tsconfig.*\.json$/.test(entry.name) ||
         /^(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(entry.name) ||
-        relative(candidate, path) === 'app.json'
+        ['app.json', 'app.config.json'].includes(relative(candidate, path))
       ) {
-        assertOwnedPath(candidate, realpathSync(path), relative(candidate, path));
-        files.push(realpathSync(path));
+        const physical = realpathSync(path);
+        const file = relative(candidate, path);
+        assertOwnedPath(candidate, physical, file);
+        assert.ok(
+          isNodeOwner(file) || !isNodeOwner(relative(candidate, physical)),
+          `${file} aliases Node configuration or script into app source`
+        );
+        if (candidateConfigurationKind(file) || /^tsconfig.*\.json$/.test(entry.name))
+          assert.equal(
+            path,
+            physical,
+            `${file} uses unsupported symlinked candidate configuration`
+          );
+        files.push(physical);
       }
     }
   }
@@ -133,6 +150,8 @@ function assertReference(candidate, declared, file, { specifier, kind }) {
     assertLocalReference(candidate, file, specifier);
   } else if (kind === 'types') {
     assertTypeReference(candidate, declared, file, specifier);
+  } else if (!specifier.startsWith('node:') && declared.has(specifier.split('/')[0])) {
+    assertPackageReference(declared, file, specifier);
   } else if (isBuiltin(specifier)) {
     assert.ok(isNodeOwner(file), `${file} imports Node builtin into app source: ${specifier}`);
   } else {
@@ -142,16 +161,26 @@ function assertReference(candidate, declared, file, { specifier, kind }) {
 
 function tsconfigReferences(candidate, path, visited) {
   const physical = realpathSync(path);
+  assertOwnedPath(candidate, physical, relative(candidate, path));
+  assert.equal(
+    path,
+    physical,
+    `${relative(candidate, path)} uses unsupported symlinked local tsconfig`
+  );
   if (visited.has(physical)) return [];
   visited.add(physical);
-  assertOwnedPath(candidate, physical, relative(candidate, path));
   const file = relative(candidate, path);
   const { references, localExtends } = readCandidateTsconfig(readFileSync(path, 'utf8'), file);
   for (const specifier of localExtends) {
-    assertLocalReference(candidate, file, specifier);
     const base = resolve(dirname(path), specifier);
-    const extended = existsSync(base) ? base : `${base}.json`;
-    assert.ok(existsSync(extended), `${file} has unresolved local tsconfig: ${specifier}`);
+    const extended = ts.sys.fileExists(base) || base.endsWith('.json') ? base : `${base}.json`;
+    const target = relative(dirname(path), extended);
+    const selected = target.startsWith('.') ? target : `./${target}`;
+    references.find(
+      (reference) => reference.kind === 'import' && reference.specifier === specifier
+    ).specifier = selected;
+    assertLocalReference(candidate, file, selected);
+    assert.ok(ts.sys.fileExists(extended), `${file} has unresolved local tsconfig: ${specifier}`);
     references.push(...tsconfigReferences(candidate, extended, visited));
   }
   return references;
@@ -176,11 +205,12 @@ export function assertDeclaredCandidateImports(candidate, manifest) {
     assertReference(candidate, declared, file, reference);
   return {
     scannedCandidateFiles: files.map((path) => relative(candidate, path)),
+    localTsconfigFiles: [...configVisited].map((path) => relative(candidate, path)).sort(),
     dependencyReferences: references.length,
     generatedSubpathExclusions: [...GENERATED_SUBPATHS],
     dependencyDirectoryExclusion: 'node_modules at any candidate depth',
     scope:
-      'All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins',
+      'All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references',
     nonCoverage:
       'Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned',
   };

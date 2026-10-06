@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/candidate-imports.test.mjs tools/migration/tests/candidate-configs.test.mjs -t accepts an explicitly declared bare --reporter=json --outputFile=/private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-rejections-v4.json
+
+JSON report written to /private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-rejections-v4.json
