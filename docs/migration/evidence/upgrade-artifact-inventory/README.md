@@ -1,8 +1,10 @@
 # Upgrade artifact and legacy-owner inventory
 
-Parent-owned records unit over f14966ee98563e3c569fbcb90beea6d9c684614a. Scoped execution completed;
-independent review, final-head CI and integration are pending. All continuity, installed-graph,
-signing/channel and physical acceptance remains pending.
+Parent-owned records unit over f14966ee98563e3c569fbcb90beea6d9c684614a. Scoped execution completed.
+Original Claude round one found two blocking evidence defects and two suggestions, all confirmed and
+addressed in the current revision. Changed-head independent review, final-head CI and integration
+are pending. All continuity, installed-graph, signing/channel and physical acceptance remains
+pending.
 
 The complete native release/tag responses, exact download/reader producers and their receipts
 preserve eight tag identities and ten actual published binary identities. The native GitHub
@@ -16,7 +18,7 @@ identical; v1.2.0 has no assets. Matching embedded versions at v1.4.0–v1.6.0 d
 source, installed graph, signing identity or distribution history. Conservative tag fixtures and
 actual binary variants remain in scope pending those associations.
 
-[manifest.json.txt](manifest.json.txt) binds each immutable copied producer/receipt and the complete
+[manifest.json.txt](manifest.json.txt) binds each copied producer/receipt and the complete
 [tag-owners.tar.gz](tag-owners.tar.gz) capsule. The capsule contains 385 regular members, including
 364 actual selected Git blobs / 6,374,883 bytes, the complete 1,199-row searched-source identity
 scope, three executed source-inventory producers/logs and their intended/restored controls. Every
@@ -32,7 +34,26 @@ asset-stripper and Gradle version differences remain; whole native builds/servic
 collapsed. Both released pack implementations use appVersion-resolution directories, and their
 status calls can delete other versions. Non-destructive legacy enumeration must precede a
 replacement status/cleanup operation. Historical admin slots, v1.5 lock-source discrepancies and
-missing committed Android resolved locks remain explicit qualification obligations.
+missing committed Android resolved locks remain explicit qualification obligations. The separate
+[source-owner amendment](tag-owner-amendment.md.txt) corrects the immutable source report's
+incomplete iOS launch description: a released pending-job/version mismatch can delete the entire old
+namespace before JavaScript starts. Its [six exact anchors](ios-launch-owner-amendment.json.txt)
+bind both released tags and the accepted integration behavior. Reused launch callbacks must defer
+destructive reconciliation until preservation completes.
+
+The envelope separates the original composer's 15-file/capsule scope from the 11 later parent
+additions and the current [dated repair invocation](round1-repairs.json.txt). Its saved
+[producer](repair-upgrade-round1.py.txt) verified the prior published 26-file envelope before
+changing representations and metadata links. The original manifest remains recoverable at its
+recorded reviewed Git object; no later row is attributed to the earlier composer invocation. The
+[actual complete ADR response](live-records-adr-native.json.txt) now carries run 37497449897. The
+prior mislabeled response is preserved byte-for-byte as a
+[pre-integration PR snapshot](live-records-pr-before-integration-native.json.txt). The
+[complete records Quality response](live-records-quality-native.json.txt.gz) preserves exact
+original native JSON and its nested decoded log through standard gzip. This removes a false
+device-identifier match on a GitHub pnpm registry token without editing content or weakening the
+guard. First-head CI's intended repository guard failed; that failure remains separate from the
+later repaired-head pass required for integration.
 
 The original real AAB/IPA EOCD mutation receipts remain unchanged. A later
 [complete saved producer](qualify-reader-controls-final.mjs.txt) and
@@ -49,7 +70,7 @@ checks all members without writing source:
 
 ```sh
 python3 - <<'PY'
-import hashlib, json, tarfile
+import gzip, hashlib, json, tarfile
 from pathlib import Path
 root = Path('docs/migration/evidence/upgrade-artifact-inventory')
 manifest = json.loads((root / 'manifest.json.txt').read_bytes())
@@ -70,6 +91,10 @@ for row in manifest['files']:
     raw = (root / row['path']).read_bytes()
     assert len(raw) == row['bytes']
     assert hashlib.sha256(raw).hexdigest() == row['sha256']
+    if 'uncompressedBytes' in row:
+        decoded = gzip.decompress(raw)
+        assert len(decoded) == row['uncompressedBytes']
+        assert hashlib.sha256(decoded).hexdigest() == row['uncompressedSha256']
 PY
 ```
 

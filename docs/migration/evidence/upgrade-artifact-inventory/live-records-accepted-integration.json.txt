@@ -28,5 +28,9 @@
   ],
   "nativePr": "live-records-pr-native.json.txt",
   "ciAttribution": "live-records-ci-attribution.json.txt",
-  "claimLimit": "Accepted live records only; complete actual Quality log and Tests/ADR metadata, not all individual checkout logs or installed graph"
+  "claimLimit": "Accepted live records only; complete actual Quality log and Tests/ADR metadata, not all individual checkout logs or installed graph",
+  "adrMetadata": "live-records-adr-native.json.txt",
+  "qualityMetadata": "live-records-quality-native.json.txt.gz",
+  "amendedAtUtc": "2026-10-06T17:34:47.222588+00:00",
+  "amendmentScope": "Correct metadata linkage and representation only; original accepted records identities remain unchanged"
 }

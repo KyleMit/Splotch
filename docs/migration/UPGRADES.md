@@ -227,6 +227,18 @@ v1.6.0 use `coloring/<appVersion-resolution>/<bookId>`. Their nativeStore helper
 plugin and iOS's released coordinator delete other version directories during `status()`. Calling
 that method with a replacement version can delete legacy books before preservation.
 
+The
+[released iOS launch-owner amendment](evidence/upgrade-artifact-inventory/tag-owner-amendment.md.txt)
+also binds a third destructive path. In both tags, AppDelegate calls `resumePendingDownload()` at
+launch. If the persisted job's appVersion differs from the running bundle version, the coordinator
+removes the whole version directory named by that job, removes the job and cancels tasks. This can
+delete completed books before JavaScript starts. Fixtures passing through older upgrade chains must
+account for any data already removed by that behavior. A reused launch hook must defer destructive
+reconciliation until non-destructive enumeration and preservation finish; avoiding status alone is
+insufficient. The accepted integration coordinator removes the mismatched job, but does not delete
+its old version directory at this boundary. These are source facts pending actual installed-graph
+and continuity execution.
+
 First enumerate the actual old directories, markers, jobs and background ownership without invoking
 destructive status or cleanup. Preserve verified bytes and source job identities before reconciling
 to the selected replacement namespace. Released Android jobs live at `coloring/jobs/<bookId>.json`
@@ -253,9 +265,9 @@ Support's `coloring/<resolution>/<bookId>` with backup exclusion. Its persisted 
 `current.json` file below the runtime `coloring` → `jobs` directory. Background session identifiers
 are `art.splotch.app.coloring-packs.wifi` and `art.splotch.app.coloring-packs.metered`.
 [AppDelegate](../../ios/App/App/AppDelegate.swift) resumes pending work at launch and reconnects
-background URLSession completion events. Extract the coordinator and rebind those callbacks without
-orphaning sessions. Preserve metered-network policy, feature-disable cancellation, and offline
-remove.
+background URLSession completion events. Extract the coordinator and rebind those callbacks with
+non-destructive launch enumeration before reconciliation, without orphaning sessions. Preserve
+metered-network policy, feature-disable cancellation, and offline remove.
 
 The existing [pack-store contract](../../web/src/lib/coloringPacks/store.ts) is a useful product
 seam. [The native adapter](../../web/src/lib/coloringPacks/nativeStore.ts) converts file URLs
