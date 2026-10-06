@@ -115,7 +115,10 @@ describe('retained host CI wiring', () => {
     expect(job.env.TOPOLOGY_LOCK_SHA256).toBe(
       '705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92'
     );
-    expect(job.env.ARTIFACT_PARENT).toBe('${{ runner.temp }}/retained-web-host');
+    expect(job.env.ARTIFACT_PARENT).toBeUndefined();
+    expect(controlStep().env).toEqual({
+      ARTIFACT_PARENT: '${{ runner.temp }}/retained-web-host',
+    });
   });
 
   it('drives release then mechanism and repeats the mechanism browser caller', () => {

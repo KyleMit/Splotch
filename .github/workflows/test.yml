@@ -722,7 +722,6 @@ jobs:
     env:
       TOPOLOGY_SHA: dc08a90abc67b53124146bf288c80de0f9ffd1dd
       TOPOLOGY_LOCK_SHA256: 705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92
-      ARTIFACT_PARENT: ${{ runner.temp }}/retained-web-host
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -736,6 +735,8 @@ jobs:
           browsers: chromium
 
       - name: Build and check retained release and mechanism
+        env:
+          ARTIFACT_PARENT: ${{ runner.temp }}/retained-web-host
         run: |
           set -euo pipefail
           for artifact in release mechanism; do
