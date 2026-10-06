@@ -57,9 +57,10 @@ and distribution/signing history before accepting upgrade evidence.
 Freeze each tag's own source manifest rather than projecting HEAD's storageKeys.ts backward. For
 early tags inspect the inline key declarations and their readers/writers; later tags own their
 central registry. Native and web-only records are distinct: the free-generation installation string
-already existed on the v1.6.0 web path before its registry move, but native identity uses Device ID.
-Obsolete settings such as splotch-advanced-controls need an explicit reviewed semantic mapping to
-the replacement's drawer policy; absence from HEAD's registry is not permission to drop the choice.
+has existed inline on the web path since v1.5.0, before its registry move, but native identity uses
+Device ID. Obsolete settings such as splotch-advanced-controls need an explicit reviewed semantic
+mapping to the replacement's drawer policy; absence from HEAD's registry is not permission to drop
+the choice.
 
 Run each source class's applicable same-ID scenarios. Only v1.0.0/v1.0.1 are provisionally collapsed
 for persistent-data fixtures: storage.js, secureStorage.js, settings/stroke-width/platform modules,

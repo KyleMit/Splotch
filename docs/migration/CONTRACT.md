@@ -85,15 +85,18 @@ Review and run bounded checks for:
   lifecycle identities have a preservation or reconciliation path.
 
 Apply the same mechanism and fidelity bar to both native candidates, and allow bounded tuning before
-interpreting early timing. If native paper removes the dominant reproducible costs while retaining
-Svelte, prefer that path when its host/input/layer glue has the lower recurring burden. Select full
-RN when its matched checks demonstrate removal of the motivating cost and it offers a material
-additional mechanism benefit or a lower demonstrated integration/recurring burden, and the shared
-web and upgrade contracts hold. If surrounding WebView costs remain material in the hybrid, that is
-a reason to prefer full native UI; if RN fails required fidelity, continuity, or web-sharing checks,
-it must be repaired or yield to the viable alternative. Record thresholds and ownership comparisons
-before seeing candidate results. These checks select a foundation; the integrated, tuned
-application's final performance verdict remains a later gate.
+interpreting early timing. A candidate is eligible only when its matched checks remove the
+motivating cost and satisfy fidelity, continuity, and applicable web contracts. Among eligible
+candidates, prefer native paper inside Capacitor when its host/input/layer glue has the lower
+recurring burden, unless RN demonstrates an additional mechanism benefit that exceeds a
+preregistered materiality threshold and justifies the additional burden. Select RN when it has the
+lower demonstrated burden or meets that exception; otherwise select the viable hybrid. If neither
+removes the motivating cost, continue causal investigation before selecting a foundation. Define
+materiality from current-control variability, the owning action budgets, visible readiness, and the
+cost of the extra ownership before seeing candidate results. For example, residual
+surrounding-WebView cost can justify RN only when its matched improvement crosses that registered
+threshold. A failed required contract must be repaired or the candidate yields. These checks select
+a foundation; the integrated, tuned application's final performance verdict remains a later gate.
 
 Evaluate Flutter or separate platform UI plans in more depth if a leading path fails a structural
 requirement or its recurring burden dominates. Select the architecture in an ADR with alternatives,
