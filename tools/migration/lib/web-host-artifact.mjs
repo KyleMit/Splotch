@@ -14,6 +14,11 @@ import {
 import { assertOwnedArtifact, ownedPath, pathInside } from './web-host-ownership.mjs';
 import { assertFinalInputBindings } from './web-host-inputs.mjs';
 import { sha256 } from './web-host-source.mjs';
+import { appShellPrecacheUrl } from '../../../web/src/lib/pwa/appShellRoute.ts';
+import {
+  APP_SHELL_PRECACHE_URL_PATTERN,
+  precacheUrlsFromSource,
+} from '../../lib/pwa-precache-source.mjs';
 
 export function readWebHostArtifact(requestedRoot) {
   if (typeof requestedRoot !== 'string' || !requestedRoot)
@@ -54,6 +59,16 @@ export function readWebHostArtifact(requestedRoot) {
     if (sha256(readFileSync(join(copyRoot, 'pnpm-lock.yaml'))) !== inputs.snapshot.lockSha256)
       throw new Error(`${role} lock changed after its build`);
     assertOwnedOutputIntegrity(owned, copyRoot, result.evidence[role]?.outputs, role);
+    const expectedUrl = appShellPrecacheUrl(inputs.pinned.appShellNonce);
+    const actualUrls = precacheUrlsFromSource(
+      readFileSync(join(copyRoot, 'web/.svelte-kit/output/client/sw.js'), 'utf8')
+    ).filter((url) => APP_SHELL_PRECACHE_URL_PATTERN.test(url));
+    if (
+      actualUrls.length !== 1 ||
+      actualUrls[0] !== expectedUrl ||
+      result.evidence[role].appShellUrl !== expectedUrl
+    )
+      throw new Error(`Artifact ${role} app-shell URL disagrees with its recorded paired nonce`);
   }
   const copyRoot = inputs.copies.control;
   return { owned, inputs, result, artifact, copyRoot };

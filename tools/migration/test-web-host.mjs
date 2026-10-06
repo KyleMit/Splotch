@@ -4,6 +4,7 @@ import { isMain, runMain, parseNumberFlag, TCP_PORT } from '../lib/proc.mjs';
 import { writeOwnedJson } from './lib/web-host-ownership.mjs';
 import { WEB_HOST_ENV } from '../../migration/probes/web-host/host/contract.ts';
 import { readWebHostArtifact } from './lib/web-host-artifact.mjs';
+import { PINNED_APP_SHELL_NONCE_ENV } from '../../web/appShellBuildNonce.ts';
 import {
   copiedBuildEnvironment,
   freshBrowserEnvironment,
@@ -54,6 +55,7 @@ export async function testWebHost(argv) {
       registry
     )
   );
+  delete env[PINNED_APP_SHELL_NONCE_ENV];
   readWebHostArtifact(values['artifact-root']);
   assertBrowserRegistry(registry);
   let record;

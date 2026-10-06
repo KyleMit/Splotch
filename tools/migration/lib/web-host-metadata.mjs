@@ -6,6 +6,10 @@ import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { sourceGit } from './web-host-source.mjs';
+import {
+  assertAppShellBuildNonce,
+  PINNED_APP_SHELL_NONCE_ENV,
+} from '../../../web/appShellBuildNonce.ts';
 
 export function freezeGitMetadata(snapshot) {
   let describe;
@@ -49,7 +53,9 @@ export async function pinBuildMetadata(copyRoot, gitMetadata) {
     throw new Error(`Unregistered build-metadata Git query: ${command}`);
   };
   const metadata = owner.buildMetadata({ isCapacitor: false, packageVersion, runGit });
-  const env = {};
+  const nonceOwner = await import(pathToFileURL(join(copyRoot, 'web/appShellBuildNonce.ts')).href);
+  const appShellNonce = nonceOwner.appShellBuildNonce({ env: {} });
+  const env = { [nonceOwner.PINNED_APP_SHELL_NONCE_ENV]: appShellNonce };
   owner.buildMetadataOncePerProcess({ isCapacitor: false, env, derive: () => metadata });
   const parsed = JSON.parse(env[owner.PINNED_BUILD_METADATA_ENV]);
   if (
@@ -59,7 +65,7 @@ export async function pinBuildMetadata(copyRoot, gitMetadata) {
   ) {
     throw new Error('Copied metadata owner rejected the frozen web metadata');
   }
-  return { metadata, env };
+  return { metadata, appShellNonce, env };
 }
 
 export function assertPinnedBuildMetadata(pinned) {
@@ -68,13 +74,16 @@ export function assertPinnedBuildMetadata(pinned) {
     !pinned.env ||
     typeof pinned.metadata?.appVersion !== 'string' ||
     typeof pinned.metadata?.buildTime !== 'string' ||
-    Object.keys(pinned.env).length !== 1 ||
-    typeof pinned.env[PINNED_BUILD_METADATA_ENV] !== 'string'
+    Object.keys(pinned.env).sort().join() !==
+      [PINNED_BUILD_METADATA_ENV, PINNED_APP_SHELL_NONCE_ENV].sort().join() ||
+    typeof pinned.env[PINNED_BUILD_METADATA_ENV] !== 'string' ||
+    pinned.env[PINNED_APP_SHELL_NONCE_ENV] !== pinned.appShellNonce
   ) {
     throw new Error(
       'Artifact must contain only its actual pinned build-metadata environment value'
     );
   }
+  assertAppShellBuildNonce(pinned.appShellNonce);
   const metadata = buildMetadataOncePerProcess({
     isCapacitor: false,
     env: { ...pinned.env },

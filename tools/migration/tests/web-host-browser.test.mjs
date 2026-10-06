@@ -18,6 +18,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { PINNED_BUILD_METADATA_ENV } from '../../../web/buildVersion.ts';
+import { PINNED_APP_SHELL_NONCE_ENV } from '../../../web/appShellBuildNonce.ts';
+import { appShellPrecacheUrl } from '../../../web/src/lib/pwa/appShellRoute.ts';
 import {
   WEB_HOST_COPY_ROLES,
   WEB_HOST_ENV,
@@ -71,7 +73,7 @@ const label = process.env[${JSON.stringify(WEB_HOST_ENV.browserRun)}];
 const root = process.env[${JSON.stringify(WEB_HOST_ENV.artifactRoot)}];
 for (const [parent, name] of [['browser-results', 'fixture.png'], ['browser-report', 'index.html']])
   fs.writeFileSync(path.join(root, parent, label, name), label);
-fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ registry: process.env.PLAYWRIGHT_BROWSERS_PATH, browserRun: label, executable: process.env.PLAYWRIGHT_CHROMIUM ?? null, temporary: process.env.TMPDIR, xdg: process.env.XDG_CACHE_HOME, transform: process.env.PWTEST_CACHE_DIR, loader: process.env.NODE_OPTIONS ?? null, nodePath: process.env.NODE_PATH ?? null }));
+fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify({ registry: process.env.PLAYWRIGHT_BROWSERS_PATH, browserRun: label, executable: process.env.PLAYWRIGHT_CHROMIUM ?? null, temporary: process.env.TMPDIR, xdg: process.env.XDG_CACHE_HOME, transform: process.env.PWTEST_CACHE_DIR, loader: process.env.NODE_OPTIONS ?? null, nodePath: process.env.NODE_PATH ?? null, nonce: process.env[${JSON.stringify(PINNED_APP_SHELL_NONCE_ENV)}] ?? null }));
 process.exit(${exitCode});`;
 
   for (const role of WEB_HOST_COPY_ROLES) {
@@ -108,6 +110,15 @@ process.exit(${exitCode});`;
   let bindings = captureInputBindings(owned, snapshot);
   for (const role of WEB_HOST_COPY_ROLES) bindings = freezeCopyInputs(owned, bindings, role);
   const metadata = { appVersion: '1.6.0', buildTime: '2026-10-06 00:00' };
+  const appShellNonce = '806d050f-45b0-4419-9997-0a0065232d26';
+  const appShellUrl = appShellPrecacheUrl(appShellNonce);
+  for (const role of WEB_HOST_COPY_ROLES) {
+    mkdirSync(join(owned.root, role, 'web/.svelte-kit/output/client'), { recursive: true });
+    writeFileSync(
+      join(owned.root, role, 'web/.svelte-kit/output/client/sw.js'),
+      `precacheAndRoute([{url:${JSON.stringify(appShellUrl)},revision:null}],{});`
+    );
+  }
   const inputs = {
     artifact: 'release',
     variant: WEB_HOST_VARIANT,
@@ -115,7 +126,11 @@ process.exit(${exitCode});`;
     bindings,
     pinned: {
       metadata,
-      env: { [PINNED_BUILD_METADATA_ENV]: JSON.stringify({ ...metadata, isCapacitor: false }) },
+      appShellNonce,
+      env: {
+        [PINNED_BUILD_METADATA_ENV]: JSON.stringify({ ...metadata, isCapacitor: false }),
+        [PINNED_APP_SHELL_NONCE_ENV]: appShellNonce,
+      },
     },
     copies: Object.fromEntries(WEB_HOST_COPY_ROLES.map((role) => [role, join(owned.root, role)])),
   };
@@ -124,6 +139,7 @@ process.exit(${exitCode});`;
     WEB_HOST_COPY_ROLES.map((role) => [
       role,
       {
+        appShellUrl,
         version: { version: metadata.appVersion },
         outputs: Object.fromEntries(
           WEB_HOST_OUTPUT_PATHS.map((output) => [
@@ -231,6 +247,7 @@ it.each([0, 23])(
     ).toBe(true);
     expect(child.loader).toBeNull();
     expect(child.nodePath).toBeNull();
+    expect(child.nonce).toBeNull();
     expect(fileInventory(child.transform)).toEqual([]);
     const path = readdirSync(join(fixture.owned.root, 'controls')).find((name) =>
       name.endsWith('.json')

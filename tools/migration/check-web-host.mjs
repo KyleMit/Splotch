@@ -34,14 +34,7 @@ export async function checkWebHost(argv) {
     import(pathToFileURL(join(copyRoot, 'tools/check-pwa-precache.mjs')).href),
   ]);
   const owner = { bundle, pwa };
-  collectControlEvidence(
-    owned,
-    inputs.copies.reference,
-    copyRoot,
-    inputs.pinned.metadata,
-    owner,
-    artifact
-  );
+  collectControlEvidence(owned, inputs.copies.reference, copyRoot, inputs.pinned, owner, artifact);
   console.log(
     `Structural control checked: ${owned.root}; ${inputs.snapshot.provisional ? 'provisional source' : 'committed source'}; remaining acceptance stays pending`
   );

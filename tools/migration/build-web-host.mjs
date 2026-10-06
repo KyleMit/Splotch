@@ -130,7 +130,7 @@ export async function buildWebHost(argv) {
       owned,
       copies.reference,
       copies.control,
-      pinned.metadata,
+      pinned,
       owner,
       options.artifact
     );

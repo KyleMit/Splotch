@@ -34,8 +34,10 @@ as failure, even if the child exits successfully.
 
 Before the first PR is accepted, record real child exits, both build passes, ordinary/wrapper
 comparison, active-checkout isolation, screenshots, browser controls and applicable repository
-checks. Complete emitted-byte comparison (recorded UUID/copy-path normalization only), wrapper
-module receipts and source/startup checks must bind the tested source. Root discovery and CI
-register the retained control over the accepted topology checkpoint. Deployed headers, worker
-update/offline behavior, React SSR/hydration/recovery, startup accounting and physical performance
-remain later gates. No architecture selection follows from a retained control.
+checks. Complete emitted-byte comparison (recorded owned-copy path normalization only), wrapper
+module receipts and source/startup checks must bind the tested source. Paired builds share one
+recorded app-shell nonce through the actual nonce owner; ambient shipping pins fail loudly, and
+readback requires both emitted shell URLs to equal the pin. No nonce URL normalization remains. Root
+discovery and CI register the retained control over the accepted topology checkpoint. Deployed
+headers, worker update/offline behavior, React SSR/hydration/recovery, startup accounting and
+physical performance remain later gates. No architecture selection follows from a retained control.

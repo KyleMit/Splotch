@@ -16,6 +16,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { PINNED_BUILD_METADATA_ENV } from '../../../web/buildVersion.ts';
+import { PINNED_APP_SHELL_NONCE_ENV } from '../../../web/appShellBuildNonce.ts';
+import { appShellPrecacheUrl } from '../../../web/src/lib/pwa/appShellRoute.ts';
 import {
   WEB_HOST_COPY_ROLES,
   WEB_HOST_ENV,
@@ -29,6 +31,7 @@ import { createOwnedArtifact, writeOwnedJson } from '../lib/web-host-ownership.m
 import { captureInputBindings, freezeCopyInputs } from '../lib/web-host-inputs.mjs';
 import { fileInventory } from '../lib/web-host-files.mjs';
 import { sha256 } from '../lib/web-host-source.mjs';
+import { readWebHostArtifact } from '../lib/web-host-artifact.mjs';
 
 const roots = [];
 const PREVIEW_READY_TIMEOUT_MS = 15_000;
@@ -95,6 +98,15 @@ function completedPreviewFixture() {
   let bindings = captureInputBindings(owned, snapshot);
   for (const role of WEB_HOST_COPY_ROLES) bindings = freezeCopyInputs(owned, bindings, role);
   const metadata = { appVersion: '1.6.0', buildTime: '2026-10-06 00:00' };
+  const appShellNonce = '806d050f-45b0-4419-9997-0a0065232d26';
+  const appShellUrl = appShellPrecacheUrl(appShellNonce);
+  for (const role of WEB_HOST_COPY_ROLES) {
+    write(
+      join(owned.root, role),
+      'web/.svelte-kit/output/client/sw.js',
+      'precacheAndRoute([{url:' + JSON.stringify(appShellUrl) + ',revision:null}],{});'
+    );
+  }
   writeOwnedJson(owned, WEB_HOST_INPUTS, {
     artifact: 'release',
     variant: WEB_HOST_VARIANT,
@@ -102,7 +114,11 @@ function completedPreviewFixture() {
     bindings,
     pinned: {
       metadata,
-      env: { [PINNED_BUILD_METADATA_ENV]: JSON.stringify({ ...metadata, isCapacitor: false }) },
+      appShellNonce,
+      env: {
+        [PINNED_BUILD_METADATA_ENV]: JSON.stringify({ ...metadata, isCapacitor: false }),
+        [PINNED_APP_SHELL_NONCE_ENV]: appShellNonce,
+      },
     },
     copies: Object.fromEntries(WEB_HOST_COPY_ROLES.map((role) => [role, join(owned.root, role)])),
   });
@@ -116,6 +132,7 @@ function completedPreviewFixture() {
       WEB_HOST_COPY_ROLES.map((role) => [
         role,
         {
+          appShellUrl,
           version: { version: metadata.appVersion },
           outputs: Object.fromEntries(
             WEB_HOST_OUTPUT_PATHS.map((output) => [
@@ -148,6 +165,7 @@ it(
   'keeps the actual preview descendants inside the Playwright-owned server group',
   async ({ signal }) => {
     const fixture = completedPreviewFixture();
+    expect(() => readWebHostArtifact(fixture.owned.root)).not.toThrow();
     const launcher = spawn(
       process.execPath,
       [

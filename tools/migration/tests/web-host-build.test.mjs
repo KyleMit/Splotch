@@ -45,6 +45,8 @@ import {
 } from '../lib/web-host-files.mjs';
 import { compareProductBytes } from '../lib/web-host-comparison.mjs';
 import { ROOT } from '../../lib/proc.mjs';
+import { PINNED_BUILD_METADATA_ENV } from '../../../web/buildVersion.ts';
+import { PINNED_APP_SHELL_NONCE_ENV } from '../../../web/appShellBuildNonce.ts';
 
 const fixtures = [];
 function fixture() {
@@ -194,26 +196,51 @@ it('uses the actual copied version owner with frozen source Git and no copied Gi
   expect(gitMetadata.tagSha).toBe(options.topologySha);
   const copy = fixture();
   mkdirSync(join(copy, 'web'));
-  copyFileSync(join(ROOT, 'web/buildVersion.ts'), join(copy, 'web/buildVersion.ts'));
+  for (const path of [
+    'web/buildVersion.ts',
+    'web/appShellBuildNonce.ts',
+    'tools/migration/lib/web-host-ownership.mjs',
+    'migration/probes/web-host/host/contract.ts',
+  ]) {
+    mkdirSync(join(copy, path, '..'), { recursive: true });
+    copyFileSync(join(ROOT, path), join(copy, path));
+  }
   writeFileSync(join(copy, 'package.json'), '{"version":"1.6.0","type":"module"}');
   const pinned = await pinBuildMetadata(copy, gitMetadata);
   expect(pinned.metadata.appVersion).toBe('1.6.0');
   expect(() => assertPinnedBuildMetadata(pinned)).not.toThrow();
-  const envKey = Object.keys(pinned.env)[0];
+  const envKey = PINNED_BUILD_METADATA_ENV;
+  expect(pinned.env[PINNED_APP_SHELL_NONCE_ENV]).toBe(pinned.appShellNonce);
+  const separatelyPinned = await pinBuildMetadata(copy, gitMetadata);
+  expect(separatelyPinned.appShellNonce).not.toBe(pinned.appShellNonce);
   const mismatched = {
     ...pinned,
     env: {
+      ...pinned.env,
       [envKey]: JSON.stringify({ ...pinned.metadata, appVersion: 'other', isCapacitor: false }),
     },
   };
   expect(() => assertPinnedBuildMetadata(mismatched)).toThrow(/disagrees/);
-  expect(() => assertPinnedBuildMetadata({ ...pinned, env: { [envKey]: 'invalid' } })).toThrow(
-    /invalid/
-  );
+  expect(() =>
+    assertPinnedBuildMetadata({ ...pinned, env: { ...pinned.env, [envKey]: 'invalid' } })
+  ).toThrow(/invalid/);
   expect(() =>
     assertPinnedBuildMetadata({ ...pinned, env: { ...pinned.env, NODE_PATH: '/outside' } })
   ).toThrow(/only/);
-  expect(JSON.parse(Object.values(pinned.env)[0]).isCapacitor).toBe(false);
+  expect(JSON.parse(pinned.env[PINNED_BUILD_METADATA_ENV]).isCapacitor).toBe(false);
+  expect(() =>
+    assertPinnedBuildMetadata({
+      ...pinned,
+      appShellNonce: 'invalid',
+      env: { ...pinned.env, [PINNED_APP_SHELL_NONCE_ENV]: 'invalid' },
+    })
+  ).toThrow(/UUIDv4/);
+  expect(() =>
+    assertPinnedBuildMetadata({ ...pinned, appShellNonce: '806d050f-45b0-4419-9997-0a0065232d26' })
+  ).toThrow(/only/);
+  const { [PINNED_APP_SHELL_NONCE_ENV]: omitted, ...missingNonce } = pinned.env;
+  expect(omitted).toBe(pinned.appShellNonce);
+  expect(() => assertPinnedBuildMetadata({ ...pinned, env: missingNonce })).toThrow(/only/);
 });
 
 it('binds both retained build contexts and rejects foreign included and external UI edges', () => {
@@ -385,11 +412,11 @@ it('copies valid source links after their targets and rejects external source li
   expect(() => freezeSource({ ...options, provisional: true })).toThrow(/escapes the checkout/);
 });
 
-it('allows only recorded shell URLs/copy paths in product byte comparisons', () => {
+it('normalizes owned copy paths and rejects different shell nonces directly', () => {
   const referenceRoot = fixture();
   const controlRoot = fixture();
   const referenceUrl = '/?app-shell-build=reference-fixture';
-  const controlUrl = '/?app-shell-build=control-fixture';
+  const controlUrl = referenceUrl;
   for (const [root, shell] of [
     [referenceRoot, referenceUrl],
     [controlRoot, controlUrl],
@@ -413,8 +440,13 @@ it('allows only recorded shell URLs/copy paths in product byte comparisons', () 
   writeFileSync(join(controlRoot, 'web/build/app.js'), 'changed app');
   expect(compare).toThrow(/Unexplained/);
   writeFileSync(join(controlRoot, 'web/build/app.js'), 'same app');
-  writeFileSync(join(controlRoot, 'web/build/sw.js'), '/?app-shell-build=unrecorded');
-  expect(compare).toThrow(/Unexplained/);
+  writeFileSync(
+    join(controlRoot, 'web/build/sw.js'),
+    `${controlRoot}/web/source;/?app-shell-build=different-pin`
+  );
+  expect(compare).toThrow('Unexplained retained-control product bytes differ: web/build/sw.js');
+  writeFileSync(join(controlRoot, 'web/build/sw.js'), `${controlRoot}/web/source;${referenceUrl}`);
+  expect(compare().normalized).toHaveLength(1);
 });
 
 it('binds an owned browser copy to its captured product bytes', () => {

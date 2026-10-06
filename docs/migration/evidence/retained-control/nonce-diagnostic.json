@@ -1,0 +1,580 @@
+{
+  "started": "2026-10-06T15:43:34.687Z",
+  "caller": [
+    "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+    "/private/tmp/splotch-resume-01a111b0/retained/sw-diagnosis/reproduce-workbox.mjs"
+  ],
+  "execPath": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+  "node": "v24.16.0",
+  "artifactRoot": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc",
+  "sourceSha": "3a92d297bc2c48f7a372e89cbe764bd498adcb9f",
+  "sourceTree": "db24062b33250e879b7696fcff1c5646029e0d68",
+  "inputsSha256": "16b52fa4309455809e42254a2a76f379f054340a257885470dd3605e74350dd8",
+  "options": {
+    "babelPresetEnvTargets": ["chrome >= 56"],
+    "inlineWorkboxRuntime": false,
+    "mode": "production",
+    "sourcemap": false
+  },
+  "optionOwners": [
+    "web/vite.config.ts",
+    "node_modules/vite-plugin-pwa/dist/index.js",
+    "node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+    "node_modules/workbox-build/build/lib/bundle.js"
+  ],
+  "steps": [
+    {
+      "label": "reference-reproduced",
+      "ownerRole": "reference",
+      "started": "2026-10-06T15:44:06.265Z",
+      "finished": "2026-10-06T15:44:06.641Z",
+      "sourceRawSha256": "4399e6a7c7e032144317fd669e19a5ea4d903ff40a5092bbc2c8e30cbdacd12e",
+      "resolvedOwner": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/lib/bundle.js",
+      "swDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/web/.svelte-kit/output/client/sw.js",
+      "environment": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "SPLOTCH_PINNED_BUILD_METADATA": "{\"appVersion\":\"1.6.2735\",\"buildTime\":\"2026-10-06 15:29\",\"isCapacitor\":false}",
+        "CAPACITOR": "false",
+        "PERF_MARKS": "false",
+        "PUBLIC_ENABLE_DEV_HARNESS": "false",
+        "TMPDIR": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/tmp",
+        "NPM_CONFIG_CACHE": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "NPM_CONFIG_USERCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-user-npmrc",
+        "NPM_CONFIG_GLOBALCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-global-npmrc",
+        "XDG_CACHE_HOME": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "SPLOTCH_WEB_HOST_ARTIFACT_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc",
+        "SPLOTCH_WEB_HOST_COPY_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference",
+        "SPLOTCH_WEB_HOST_TOKEN": "0759e575-3fdd-4a69-b08d-644289403ded",
+        "SPLOTCH_WEB_HOST_ARTIFACT": "release",
+        "SPLOTCH_MIGRATION_WEB_HOST": "retained-control"
+      },
+      "environmentSha256": "253a36bcac4cb5f1d039fe8b655eb93600b330ee2fc9f7127efb0d22110daf2c",
+      "emitted": [
+        {
+          "name": "sw.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/web/.svelte-kit/output/client/sw.js",
+          "bytes": 27199,
+          "sha256": "32ac3f9d86db10a4b44ce87bb3d783ba6c8dea7dcbd634c0e62390882c728d2f"
+        },
+        {
+          "name": "workbox-10e0918b.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/web/.svelte-kit/output/client/workbox-10e0918b.js",
+          "bytes": 21749,
+          "sha256": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+        }
+      ],
+      "outputRoot": "/private/tmp/splotch-resume-01a111b0/retained/sw-diagnosis/reference-reproduced"
+    },
+    {
+      "label": "control-reproduced",
+      "ownerRole": "control",
+      "started": "2026-10-06T15:44:06.853Z",
+      "finished": "2026-10-06T15:44:07.221Z",
+      "sourceRawSha256": "fb70a30aa86d9bdc04045f63dd167e74ee0586cf56278dfc166fa71d0149276a",
+      "resolvedOwner": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/bundle.js",
+      "swDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+      "environment": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "SPLOTCH_PINNED_BUILD_METADATA": "{\"appVersion\":\"1.6.2735\",\"buildTime\":\"2026-10-06 15:29\",\"isCapacitor\":false}",
+        "CAPACITOR": "false",
+        "PERF_MARKS": "false",
+        "PUBLIC_ENABLE_DEV_HARNESS": "false",
+        "TMPDIR": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/tmp",
+        "NPM_CONFIG_CACHE": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "NPM_CONFIG_USERCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-user-npmrc",
+        "NPM_CONFIG_GLOBALCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-global-npmrc",
+        "XDG_CACHE_HOME": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "SPLOTCH_WEB_HOST_ARTIFACT_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc",
+        "SPLOTCH_WEB_HOST_COPY_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control",
+        "SPLOTCH_WEB_HOST_TOKEN": "0759e575-3fdd-4a69-b08d-644289403ded",
+        "SPLOTCH_WEB_HOST_ARTIFACT": "release",
+        "SPLOTCH_MIGRATION_WEB_HOST": "retained-control"
+      },
+      "environmentSha256": "48bf320f8f35d9905e3040339c383d52ce2eb59e2a1ac19d2d8fa2de49b7aa54",
+      "emitted": [
+        {
+          "name": "sw.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+          "bytes": 27199,
+          "sha256": "e91e11153d04260cb99e0c201962decf47fe9ade3aebbe0e44d81b4cd6241d6e"
+        },
+        {
+          "name": "workbox-10e0918b.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/workbox-10e0918b.js",
+          "bytes": 21749,
+          "sha256": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+        }
+      ],
+      "outputRoot": "/private/tmp/splotch-resume-01a111b0/retained/sw-diagnosis/control-reproduced"
+    },
+    {
+      "label": "control-nonce-only",
+      "ownerRole": "control",
+      "started": "2026-10-06T15:44:07.222Z",
+      "finished": "2026-10-06T15:44:07.490Z",
+      "sourceRawSha256": "2462a59e3ee8d4b210bf90e6fa74deb995261d0e6578b69bc76b81af88f5243d",
+      "resolvedOwner": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/bundle.js",
+      "swDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+      "environment": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "SPLOTCH_PINNED_BUILD_METADATA": "{\"appVersion\":\"1.6.2735\",\"buildTime\":\"2026-10-06 15:29\",\"isCapacitor\":false}",
+        "CAPACITOR": "false",
+        "PERF_MARKS": "false",
+        "PUBLIC_ENABLE_DEV_HARNESS": "false",
+        "TMPDIR": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/tmp",
+        "NPM_CONFIG_CACHE": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "NPM_CONFIG_USERCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-user-npmrc",
+        "NPM_CONFIG_GLOBALCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-global-npmrc",
+        "XDG_CACHE_HOME": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "SPLOTCH_WEB_HOST_ARTIFACT_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc",
+        "SPLOTCH_WEB_HOST_COPY_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control",
+        "SPLOTCH_WEB_HOST_TOKEN": "0759e575-3fdd-4a69-b08d-644289403ded",
+        "SPLOTCH_WEB_HOST_ARTIFACT": "release",
+        "SPLOTCH_MIGRATION_WEB_HOST": "retained-control"
+      },
+      "environmentSha256": "48bf320f8f35d9905e3040339c383d52ce2eb59e2a1ac19d2d8fa2de49b7aa54",
+      "emitted": [
+        {
+          "name": "sw.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+          "bytes": 27199,
+          "sha256": "32ac3f9d86db10a4b44ce87bb3d783ba6c8dea7dcbd634c0e62390882c728d2f"
+        },
+        {
+          "name": "workbox-10e0918b.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/workbox-10e0918b.js",
+          "bytes": 21749,
+          "sha256": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+        }
+      ],
+      "outputRoot": "/private/tmp/splotch-resume-01a111b0/retained/sw-diagnosis/control-nonce-only"
+    },
+    {
+      "label": "control-handler-reject",
+      "ownerRole": "control",
+      "started": "2026-10-06T15:44:07.492Z",
+      "finished": "2026-10-06T15:44:07.753Z",
+      "sourceRawSha256": "c7f7a7d6d6942820e55302e99474d1e28e9af450e024367c331136798017205f",
+      "resolvedOwner": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/bundle.js",
+      "swDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+      "environment": {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "SPLOTCH_PINNED_BUILD_METADATA": "{\"appVersion\":\"1.6.2735\",\"buildTime\":\"2026-10-06 15:29\",\"isCapacitor\":false}",
+        "CAPACITOR": "false",
+        "PERF_MARKS": "false",
+        "PUBLIC_ENABLE_DEV_HARNESS": "false",
+        "TMPDIR": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/tmp",
+        "NPM_CONFIG_CACHE": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "NPM_CONFIG_USERCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-user-npmrc",
+        "NPM_CONFIG_GLOBALCONFIG": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/empty-global-npmrc",
+        "XDG_CACHE_HOME": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/runtime/cache",
+        "SPLOTCH_WEB_HOST_ARTIFACT_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc",
+        "SPLOTCH_WEB_HOST_COPY_ROOT": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control",
+        "SPLOTCH_WEB_HOST_TOKEN": "0759e575-3fdd-4a69-b08d-644289403ded",
+        "SPLOTCH_WEB_HOST_ARTIFACT": "release",
+        "SPLOTCH_MIGRATION_WEB_HOST": "retained-control"
+      },
+      "environmentSha256": "48bf320f8f35d9905e3040339c383d52ce2eb59e2a1ac19d2d8fa2de49b7aa54",
+      "emitted": [
+        {
+          "name": "sw.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/sw.js",
+          "bytes": 27240,
+          "sha256": "9af3996041088cb4c646e97d04779daef7586427bd47468539893a65dd705c9f"
+        },
+        {
+          "name": "workbox-10e0918b.js",
+          "originalDest": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/.svelte-kit/output/client/workbox-10e0918b.js",
+          "bytes": 21749,
+          "sha256": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+        }
+      ],
+      "outputRoot": "/private/tmp/splotch-resume-01a111b0/retained/sw-diagnosis/control-handler-reject"
+    }
+  ],
+  "classification": "bounded causal diagnostic, not product acceptance",
+  "limits": [
+    "Workbox generated-set equivalence only",
+    "no deployed offline/update runtime claim",
+    "no output-normalization allowance changed",
+    "no source graph/cache or release-mode change"
+  ],
+  "restoredInstalledModules": [
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/lib/bundle.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/lib/bundle.js",
+      "bytes": 5061,
+      "sha256": "1a35c5587e400b14695e3b021cbdc9eb90f628ace71b359c772b45d6648c66d6"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+      "bytes": 2805,
+      "sha256": "e02ec4b06f83552afd4fce2e23b99f9bcd9e5d395e9c7e51a434b1a1f6882b94"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+      "bytes": 38308,
+      "sha256": "f184e85ee5dbd92232486dc1443d9dfa0c6fc981620cd6e0eeefb9495c44b9cd"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/vite-plugin-pwa/dist/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/vite-plugin-pwa/dist/index.js",
+      "bytes": 41381,
+      "sha256": "3a668f6f26ab402a7d90e2ac22adfa9f749fdf6d74e27eaee2e68b5456025f73"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/web/vite.config.ts",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/web/vite.config.ts",
+      "bytes": 12852,
+      "sha256": "a63f4fe2c6cb42a7dd40d944d23d3584b6e70f1e134a660ee59e7e87446df4cb"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+      "bytes": 14386,
+      "sha256": "69ef2284c734e78d3812991efd945361a115dacaa202d1fd74a9f770ca97b956"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+      "bytes": 46971,
+      "sha256": "98eee3d5a03aac277c01f78be8af18fe19cae7cb0fe79e2b9817af44051a07b9"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/rollup/dist/rollup.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/rollup/dist/rollup.js",
+      "bytes": 4701,
+      "sha256": "4afcb1ade043bf512ca372b67d78763da68fa476a83f035ed87cc1f6e86bf670"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+      "bytes": 8200,
+      "sha256": "f70c2976288836f8c8ac6d7cb7097f3d10251a1381ae84c547b6af85bfb5229b"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+      "bytes": 11747,
+      "sha256": "7398aea5d9f4cd0b5701bf20d4b8b8526454d4ca0f16fe61d381fd6ce85ac235"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@babel/preset-env/lib/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@babel/preset-env/lib/index.js",
+      "bytes": 11688,
+      "sha256": "4c3cbd742bba4ff2734543904ee6b20d55da01c65154a44e2a7a0b50345da8a5"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+      "bytes": 4342,
+      "sha256": "c9747748f30f8a173c35ae8698450d7a3e339def968b8a76c56562772a780016"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/tempy/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/tempy/index.js",
+      "bytes": 1547,
+      "sha256": "0673a4f26825818826aa649c51e329568563b889428d8c2ce7ba6354597bb9a3"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/fs-extra/lib/index.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/fs-extra/lib/index.js",
+      "bytes": 719,
+      "sha256": "24ca8c7fb0666041f080415bf1bcfb4ae4815a21073557d9a85c01173f8947c8"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/upath/build/code/upath.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/upath/build/code/upath.js",
+      "bytes": 4736,
+      "sha256": "5cf74265d277b1bf32d438d2694ed08bf5845d5f273086b98b8680a94c2e952d"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/terser/dist/bundle.min.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/terser/dist/bundle.min.js",
+      "bytes": 1079014,
+      "sha256": "d618c8b41aa11c39a073c3db4fb0425eb23970de3f868ce48bf43faba20344c9"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/terser/lib/scope.js",
+      "realPath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/node_modules/terser/lib/scope.js",
+      "bytes": 35512,
+      "sha256": "6efa6fdb4d67a4baabc07d5563bb02ed8092417581d06ffdf407b19f2c683028"
+    }
+  ],
+  "restoredInstalledInventory": {
+    "count": 64714,
+    "sha256": "95fc9d4bb83ec6a9b66bbb7bc1b7de3ac291d025f893b91ab01dc33ab987cc55",
+    "evidence": "replacement-installed-before.json"
+  },
+  "roles": {
+    "reference": {
+      "copy": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference",
+      "shellUrl": "/?app-shell-build=806d050f-45b0-4419-9997-0a0065232d26",
+      "nonceCount": 3,
+      "originalFiles": {
+        "sw.js": "32ac3f9d86db10a4b44ce87bb3d783ba6c8dea7dcbd634c0e62390882c728d2f",
+        "workbox-10e0918b.js": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+      },
+      "modules": [
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/lib/bundle.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/lib/bundle.js",
+          "bytes": 5061,
+          "sha256": "1a35c5587e400b14695e3b021cbdc9eb90f628ace71b359c772b45d6648c66d6"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+          "bytes": 2805,
+          "sha256": "e02ec4b06f83552afd4fce2e23b99f9bcd9e5d395e9c7e51a434b1a1f6882b94"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+          "bytes": 38308,
+          "sha256": "f184e85ee5dbd92232486dc1443d9dfa0c6fc981620cd6e0eeefb9495c44b9cd"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/vite-plugin-pwa/dist/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/vite-plugin-pwa/dist/index.js",
+          "bytes": 41381,
+          "sha256": "3a668f6f26ab402a7d90e2ac22adfa9f749fdf6d74e27eaee2e68b5456025f73"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/web/vite.config.ts",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/web/vite.config.ts",
+          "bytes": 12852,
+          "sha256": "a63f4fe2c6cb42a7dd40d944d23d3584b6e70f1e134a660ee59e7e87446df4cb"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+          "bytes": 14386,
+          "sha256": "69ef2284c734e78d3812991efd945361a115dacaa202d1fd74a9f770ca97b956"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+          "bytes": 46971,
+          "sha256": "98eee3d5a03aac277c01f78be8af18fe19cae7cb0fe79e2b9817af44051a07b9"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/rollup/dist/rollup.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/rollup/dist/rollup.js",
+          "bytes": 4701,
+          "sha256": "4afcb1ade043bf512ca372b67d78763da68fa476a83f035ed87cc1f6e86bf670"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+          "bytes": 8200,
+          "sha256": "f70c2976288836f8c8ac6d7cb7097f3d10251a1381ae84c547b6af85bfb5229b"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+          "bytes": 11747,
+          "sha256": "7398aea5d9f4cd0b5701bf20d4b8b8526454d4ca0f16fe61d381fd6ce85ac235"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@babel/preset-env/lib/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@babel/preset-env/lib/index.js",
+          "bytes": 11688,
+          "sha256": "4c3cbd742bba4ff2734543904ee6b20d55da01c65154a44e2a7a0b50345da8a5"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+          "bytes": 4342,
+          "sha256": "c9747748f30f8a173c35ae8698450d7a3e339def968b8a76c56562772a780016"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/tempy/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/tempy/index.js",
+          "bytes": 1547,
+          "sha256": "0673a4f26825818826aa649c51e329568563b889428d8c2ce7ba6354597bb9a3"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/fs-extra/lib/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/fs-extra/lib/index.js",
+          "bytes": 719,
+          "sha256": "24ca8c7fb0666041f080415bf1bcfb4ae4815a21073557d9a85c01173f8947c8"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/upath/build/code/upath.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/upath/build/code/upath.js",
+          "bytes": 4736,
+          "sha256": "5cf74265d277b1bf32d438d2694ed08bf5845d5f273086b98b8680a94c2e952d"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/terser/dist/bundle.min.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/terser/dist/bundle.min.js",
+          "bytes": 1079014,
+          "sha256": "d618c8b41aa11c39a073c3db4fb0425eb23970de3f868ce48bf43faba20344c9"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/terser/lib/scope.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/reference/node_modules/terser/lib/scope.js",
+          "bytes": 35512,
+          "sha256": "6efa6fdb4d67a4baabc07d5563bb02ed8092417581d06ffdf407b19f2c683028"
+        }
+      ],
+      "rawSha256": "4399e6a7c7e032144317fd669e19a5ea4d903ff40a5092bbc2c8e30cbdacd12e",
+      "normalizedRawSha256": "eb12262965cdb1accd6918e48b870ae92a39b352998053124dc1c8094b9c96d9",
+      "cleanupImportSha256": "09c341cd32526ea44cba8a808a59e7ea42d3846d104e886e3eb482bd21f12ddc"
+    },
+    "control": {
+      "copy": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control",
+      "shellUrl": "/?app-shell-build=047b8185-9007-4c14-b908-c249dea41fe1",
+      "nonceCount": 3,
+      "originalFiles": {
+        "sw.js": "e91e11153d04260cb99e0c201962decf47fe9ade3aebbe0e44d81b4cd6241d6e",
+        "workbox-10e0918b.js": "d1a237ed512a2fe040fc1162397b4bedbc54b2cb3cab9251d93f8136414b0016"
+      },
+      "modules": [
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/bundle.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/bundle.js",
+          "bytes": 5061,
+          "sha256": "1a35c5587e400b14695e3b021cbdc9eb90f628ace71b359c772b45d6648c66d6"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/lib/write-sw-using-default-template.js",
+          "bytes": 2805,
+          "sha256": "e02ec4b06f83552afd4fce2e23b99f9bcd9e5d395e9c7e51a434b1a1f6882b94"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/workbox-build/build/schema/GenerateSWOptions.json",
+          "bytes": 38308,
+          "sha256": "f184e85ee5dbd92232486dc1443d9dfa0c6fc981620cd6e0eeefb9495c44b9cd"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/vite-plugin-pwa/dist/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/vite-plugin-pwa/dist/index.js",
+          "bytes": 41381,
+          "sha256": "3a668f6f26ab402a7d90e2ac22adfa9f749fdf6d74e27eaee2e68b5456025f73"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/vite.config.ts",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/web/vite.config.ts",
+          "bytes": 12852,
+          "sha256": "a63f4fe2c6cb42a7dd40d944d23d3584b6e70f1e134a660ee59e7e87446df4cb"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-babel/dist/cjs/index.js",
+          "bytes": 14386,
+          "sha256": "69ef2284c734e78d3812991efd945361a115dacaa202d1fd74a9f770ca97b956"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-node-resolve/dist/cjs/index.js",
+          "bytes": 46971,
+          "sha256": "98eee3d5a03aac277c01f78be8af18fe19cae7cb0fe79e2b9817af44051a07b9"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/rollup/dist/rollup.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/rollup/dist/rollup.js",
+          "bytes": 4701,
+          "sha256": "4afcb1ade043bf512ca372b67d78763da68fa476a83f035ed87cc1f6e86bf670"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-terser/dist/cjs/index.js",
+          "bytes": 8200,
+          "sha256": "f70c2976288836f8c8ac6d7cb7097f3d10251a1381ae84c547b6af85bfb5229b"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@trickfilm400/rollup-plugin-off-main-thread/index.js",
+          "bytes": 11747,
+          "sha256": "7398aea5d9f4cd0b5701bf20d4b8b8526454d4ca0f16fe61d381fd6ce85ac235"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@babel/preset-env/lib/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@babel/preset-env/lib/index.js",
+          "bytes": 11688,
+          "sha256": "4c3cbd742bba4ff2734543904ee6b20d55da01c65154a44e2a7a0b50345da8a5"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/@rollup/plugin-replace/dist/cjs/index.js",
+          "bytes": 4342,
+          "sha256": "c9747748f30f8a173c35ae8698450d7a3e339def968b8a76c56562772a780016"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/tempy/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/tempy/index.js",
+          "bytes": 1547,
+          "sha256": "0673a4f26825818826aa649c51e329568563b889428d8c2ce7ba6354597bb9a3"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/fs-extra/lib/index.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/fs-extra/lib/index.js",
+          "bytes": 719,
+          "sha256": "24ca8c7fb0666041f080415bf1bcfb4ae4815a21073557d9a85c01173f8947c8"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/upath/build/code/upath.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/upath/build/code/upath.js",
+          "bytes": 4736,
+          "sha256": "5cf74265d277b1bf32d438d2694ed08bf5845d5f273086b98b8680a94c2e952d"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/terser/dist/bundle.min.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/terser/dist/bundle.min.js",
+          "bytes": 1079014,
+          "sha256": "d618c8b41aa11c39a073c3db4fb0425eb23970de3f868ce48bf43faba20344c9"
+        },
+        {
+          "path": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/terser/lib/scope.js",
+          "realPath": "/private/tmp/splotch-resume-01a111b0/retained/public-calls/release/splotch-web-host-zWQlPc/control/node_modules/terser/lib/scope.js",
+          "bytes": 35512,
+          "sha256": "6efa6fdb4d67a4baabc07d5563bb02ed8092417581d06ffdf407b19f2c683028"
+        }
+      ],
+      "rawSha256": "fb70a30aa86d9bdc04045f63dd167e74ee0586cf56278dfc166fa71d0149276a",
+      "normalizedRawSha256": "eb12262965cdb1accd6918e48b870ae92a39b352998053124dc1c8094b9c96d9",
+      "cleanupImportSha256": "09c341cd32526ea44cba8a808a59e7ea42d3846d104e886e3eb482bd21f12ddc"
+    }
+  },
+  "originalProductComparison": {
+    "expected": "reject the recorded unexplained generated bytes",
+    "message": "Unexplained retained-control product bytes differ: ./sw.js"
+  },
+  "nonceOnlyPositive": {
+    "compared": "complete emitted bytes",
+    "normalized": [],
+    "allowances": ["recorded per-build app-shell URL", "explicit owned-copy absolute path prefix"],
+    "buildTime": "identical pinned owner metadata; no time normalization"
+  },
+  "handlerMutation": {
+    "before": "if (canonicalResponse) return canonicalResponse;",
+    "after": "if (canonicalResponse) return new Response(\"retained-control-reject\", { status: 418 });",
+    "sourceOccurrences": 1,
+    "emittedSentinelRetained": true,
+    "emittedStatusRetained": true,
+    "rejection": "Unexplained retained-control product bytes differ: ./sw.js"
+  },
+  "restoredPositive": {
+    "compared": "complete emitted bytes",
+    "normalized": [],
+    "allowances": ["recorded per-build app-shell URL", "explicit owned-copy absolute path prefix"],
+    "buildTime": "identical pinned owner metadata; no time normalization"
+  },
+  "status": "diagnostic-passed",
+  "restoredInstalledAfterSha256": "95fc9d4bb83ec6a9b66bbb7bc1b7de3ac291d025f893b91ab01dc33ab987cc55",
+  "sourceUnchanged": true,
+  "installedRolesUnchanged": true,
+  "finished": "2026-10-06T15:44:38.199Z",
+  "sourceBeforeSha256": "6d4b912fbd5ea95dd17e2695734cba1edb54255a2ee4b84ed73c3dba3c25b55a",
+  "sourceAfterSha256": "6d4b912fbd5ea95dd17e2695734cba1edb54255a2ee4b84ed73c3dba3c25b55a"
+}

@@ -10,6 +10,8 @@ import {
 } from '../../../migration/probes/web-host/host/contract.ts';
 import { fileInventory } from './web-host-files.mjs';
 import { sha256 } from './web-host-source.mjs';
+import { appShellPrecacheUrl } from '../../../web/src/lib/pwa/appShellRoute.ts';
+import { assertPinnedBuildMetadata } from './web-host-metadata.mjs';
 
 function exactKeys(value, keys) {
   return (
@@ -130,21 +132,18 @@ function assertOutputShape(reference, control) {
     throw new Error('Retained wrapper changed shipping host sources');
 }
 
-export function collectControlEvidence(
-  owned,
-  referenceRoot,
-  controlRoot,
-  metadata,
-  owner,
-  artifact
-) {
+export function collectControlEvidence(owned, referenceRoot, controlRoot, pinned, owner, artifact) {
+  assertPinnedBuildMetadata(pinned);
   const passes = JSON.parse(readFileSync(join(owned.root, WEB_HOST_PASSES), 'utf8'));
   assertControlGraphs(passes, { controlRoot, artifact });
   const reference = buildInventory(referenceRoot, owner);
   const control = buildInventory(controlRoot, owner);
+  const shellUrl = appShellPrecacheUrl(pinned.appShellNonce);
+  if (reference.appShellUrl !== shellUrl || control.appShellUrl !== shellUrl)
+    throw new Error('Emitted app-shell URL disagrees with its owned paired nonce');
   assertOutputShape(reference, control);
   const byteComparison = compareProductBytes({ referenceRoot, controlRoot, reference, control });
-  if (control.version.version !== metadata.appVersion)
+  if (control.version.version !== pinned.metadata.appVersion)
     throw new Error('Emitted web version disagrees with the pinned metadata owner');
   return {
     reference,
@@ -152,7 +151,7 @@ export function collectControlEvidence(
     passes,
     byteComparison,
     structuralComparison:
-      'complete output bytes with recorded UUID/copy-path normalization; output paths, startup/lazy measurements, version and host sources match',
+      'complete output bytes with explicit copy-path normalization; output paths, startup/lazy measurements, version and host sources match',
     pending: [
       'browser release ink and mechanism early acceptance/adoption',
       'deployed CSP/PWA',

@@ -1,4 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { appShellBuildNonce } from './appShellBuildNonce.ts';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -75,7 +76,7 @@ const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);
 // Unique per build rather than derived from content: SvelteKit prerenders the
 // shell after the service worker is generated, so its bytes cannot be hashed
 // here, and a URL no earlier worker cached makes each install fetch its own copy.
-const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(randomUUID());
+const APP_SHELL_PRECACHE_URL = appShellPrecacheUrl(appShellBuildNonce({ env: process.env }));
 // A stalled navigation answers from the service worker after this long instead of
 // leaving a child waiting for a load that may not finish.
 const NAVIGATION_NETWORK_TIMEOUT_SECONDS = 5;

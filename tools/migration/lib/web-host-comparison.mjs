@@ -2,12 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { sha256 } from './web-host-source.mjs';
 
-function normalizedText(bytes, copyRoot, shellUrl) {
+function normalizedText(bytes, copyRoot) {
   const text = bytes.toString('utf8');
   if (!Buffer.from(text).equals(bytes)) return null;
-  return text
-    .replaceAll(`${copyRoot}/`, '<owned-copy>/')
-    .replaceAll(shellUrl, '<recorded-app-shell>');
+  return text.replaceAll(`${copyRoot}/`, '<owned-copy>/');
 }
 
 export function compareProductBytes({ referenceRoot, controlRoot, reference, control }) {
@@ -24,8 +22,8 @@ export function compareProductBytes({ referenceRoot, controlRoot, reference, con
       if (entry.link) throw new Error(`Product symlink differs: ${output}/${entry.path}`);
       const left = readFileSync(join(referenceRoot, output, entry.path));
       const right = readFileSync(join(controlRoot, output, entry.path));
-      const leftText = normalizedText(left, referenceRoot, reference.appShellUrl);
-      const rightText = normalizedText(right, controlRoot, control.appShellUrl);
+      const leftText = normalizedText(left, referenceRoot);
+      const rightText = normalizedText(right, controlRoot);
       if (leftText === null || rightText === null || leftText !== rightText) {
         throw new Error(
           `Unexplained retained-control product bytes differ: ${output}/${entry.path}`
@@ -42,7 +40,7 @@ export function compareProductBytes({ referenceRoot, controlRoot, reference, con
   return {
     compared: 'complete emitted bytes',
     normalized,
-    allowances: ['recorded per-build app-shell URL', 'explicit owned-copy absolute path prefix'],
+    allowances: ['explicit owned-copy absolute path prefix'],
     buildTime: 'identical pinned owner metadata; no time normalization',
   };
 }

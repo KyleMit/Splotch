@@ -68,16 +68,19 @@ startup costs.
 Outputs are a new `splotch-web-host-*` temporary root (or under the explicitly separate existing
 `--output-parent`), a fresh ownership marker, frozen inputs, reference/control copies, both wrapper
 passes, output hashes, named child logs under `controls/*.log.txt` and a result. Emitted bytes must
-match after only the recorded app-shell URL and owned-copy path prefix normalization; other
-differences fail. File kind and mode must match before a matching byte digest is accepted. Build
-time is identical pinned metadata, not normalized. pnpm source hardlinks are valid; destination
-files have independent inodes. Relative dependency links must resolve inside the dependency copy.
-Only copied `.bin` shim paths naming the original checkout are relocated, with before/after hashes
-recorded. No dependency preparation runs here. Each copy invokes the actual `prebuild`, then
-`npm --ignore-scripts run build`, then the actual `postbuild`, with input guards between stages. The
-control forwards only its wrapper config. npm owns each lifecycle event and script body; the staged
-invocation differs from one ordinary `npm run build`. Additional implicit pre/post hooks are
-rejected rather than skipped.
+match after only the explicitly recorded owned-copy path prefix normalization; other differences
+fail. Both copies share one recorded UUIDv4 app-shell nonce, which the actual copied nonce owner
+honors only inside its verified marked artifact and copy. Ordinary builds derive fresh nonces
+without writing environment state; the shipping PWA postbuild guard refuses an ambient pin. Build
+and artifact readback check both emitted shell URLs against that exact recorded nonce. File kind and
+mode must match before a matching byte digest is accepted. Build time is identical pinned metadata,
+not normalized. pnpm source hardlinks are valid; destination files have independent inodes. Relative
+dependency links must resolve inside the dependency copy. Only copied `.bin` shim paths naming the
+original checkout are relocated, with before/after hashes recorded. No dependency preparation runs
+here. Each copy invokes the actual `prebuild`, then `npm --ignore-scripts run build`, then the
+actual `postbuild`, with input guards between stages. The control forwards only its wrapper config.
+npm owns each lifecycle event and script body; the staged invocation differs from one ordinary
+`npm run build`. Additional implicit pre/post hooks are rejected rather than skipped.
 
 Both copies bind all materialized source/dependency bytes, modes and symlink targets. Generated
 source paths come from the existing icon/release generators; those files and Kit support become
