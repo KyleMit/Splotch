@@ -1,0 +1,14 @@
+{
+  "status": "completed",
+  "argv": [
+    "npm",
+    "test"
+  ],
+  "exitCode": 1,
+  "port": 5300,
+  "cwd": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch",
+  "node": "22.23.2",
+  "log": "/private/tmp/splotch-netlify-install-full-tier.log.txt",
+  "bytes": 253823,
+  "sha256": "9dbcf6ecd7f17b4e9291dbec283a3210a5ad56db6e00269c047877e37bfd8412"
+}

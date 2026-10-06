@@ -1,0 +1,80 @@
+
+> splotch@1.6.0 check:migration:native-topology:evidence
+> node tools/migration/check-native-topology-evidence.mjs
+
+{
+  "scope": "Exact topology05 proof inputs; not the live Quality invariants",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "inventory": {
+    "reviewedArtifacts": 267
+  },
+  "shipping": {
+    "hashes": {
+      "capacitor.config.json": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+      "android/capacitor.settings.gradle": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+      "ios/App/CapApp-SPM/Package.swift": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+    },
+    "plugins": [
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/android/capacitor"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@aparajita/capacitor-secure-storage/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor-community/media/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/device/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/haptics/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/network/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/preferences/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/screen-orientation/android"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@aparajita/capacitor-secure-storage"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor-community/media"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/device"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/haptics"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/network"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/preferences"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full/node_modules/@capacitor/screen-orientation"
+      }
+    ]
+  }
+}

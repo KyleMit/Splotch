@@ -1,0 +1,48 @@
+[
+  {
+    "stage": "format",
+    "argv": [
+      "node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--write",
+      "tools/netlify-production-install.mjs",
+      "tools/lib/netlify-cache-config.mjs",
+      "tools/tests/netlify-production-install.test.mjs",
+      "tools/tests/netlify-cache-config.test.mjs",
+      "tools/tests/fixtures/netlify-install.mjs",
+      "tools/tests/netlify-home-store.test.mjs"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 0.1825511660426855,
+    "log": "/private/tmp/splotch-netlify-home-store-format.log.txt",
+    "logSha256": "a5951eaaf830c1acd2725852199f406a93db4bf4bbacfbbe926f50b0e6baaa0a"
+  },
+  {
+    "stage": "focused",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "tests/netlify-production-install.test.mjs",
+      "tests/netlify-cache-config.test.mjs",
+      "tests/netlify-home-store.test.mjs",
+      "--maxWorkers=1"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 53.59905445796903,
+    "log": "/private/tmp/splotch-netlify-home-store-focused.log.txt",
+    "logSha256": "fb1225a7f56a0bcbd3240ad0472e1735bf4a6929042ca603d2425623e1b30c8d"
+  },
+  {
+    "stage": "real-manager",
+    "argv": [
+      "python3",
+      "/private/tmp/splotch-netlify-home-store-real-controls.py"
+    ],
+    "exitCode": 1,
+    "durationSeconds": 1.1063981669722125,
+    "log": "/private/tmp/splotch-netlify-home-store-real-manager.log.txt",
+    "logSha256": "854850764dd02bca7920cd2bf5f793b2605334c37eec1fba498b4d0a5a98f47f"
+  }
+]

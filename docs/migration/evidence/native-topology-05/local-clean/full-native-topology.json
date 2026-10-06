@@ -1,0 +1,1253 @@
+{
+  "scope": "Candidate topology only; no native compile, mount, performance or upgrade result",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "forgeMitigation": {
+    "status": "affected-published-version-with-guarded-lib-only-local-mitigation",
+    "advisory": "GHSA-86w9-cpqp-85rv",
+    "issue": 2696,
+    "patchedRsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+    "lockedPaths": [
+      "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
+      "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>expo>@expo/cli>node-forge"
+    ],
+    "installedCopies": [
+      {
+        "path": "node_modules/node-forge",
+        "rsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+        "controls": [
+          {
+            "name": "public e=3 forgery rejected with default verification options",
+            "passed": true
+          },
+          {
+            "name": "signed malformed outer-extra rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nested-extra rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-1 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-8 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-32 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed constructed rejected",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding absent accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding empty accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding long-null accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding indefinite-inner accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding nonminimal-oid accepted",
+            "passed": true
+          },
+          {
+            "name": "wrong digest rejected",
+            "passed": true
+          },
+          {
+            "name": "indefinite outer DigestInfo accepted",
+            "passed": true
+          },
+          {
+            "name": "Node SHA256 signature accepted",
+            "passed": true
+          },
+          {
+            "name": "RSA PSS accepted",
+            "passed": true
+          },
+          {
+            "name": "RSA NONE accepted and wrong digest rejected",
+            "passed": true
+          }
+        ]
+      }
+    ],
+    "consumers": [
+      {
+        "consumer": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/code-signing-certificates",
+        "control": "actual certificate/signature/CSR and tamper rejection",
+        "resolvedEntry": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/code-signing-certificates/build/main.js",
+        "passed": true
+      },
+      {
+        "consumer": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/cli",
+        "control": "actual CLI manifest signing and iOS parser with host subprocess fixture",
+        "resolvedEntry": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/cli/build/src/utils/codesigning.js",
+        "helperEntry": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/code-signing-certificates/build/main.js",
+        "passed": true
+      }
+    ],
+    "scannedPackages": 1419,
+    "staticMainReferences": [
+      {
+        "package": "@expo/cli",
+        "version": "57.0.27",
+        "path": "node_modules/@expo/cli/build/src/run/ios/codeSigning/Security.js"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/__tests__/main-test.js"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/main.d.ts"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/main.js"
+      }
+    ],
+    "unpatchedDistBundles": "registry bytes preserved; static subpath consumers forbidden",
+    "limits": "Static import/require and subpath literal references plus exact known consumer bytes; not a general proof about arbitrary computed code or live certificate-fetch/signing workflows"
+  },
+  "inventory": {
+    "reviewedArtifacts": 267
+  },
+  "production": {
+    "shippingArtifacts": 542,
+    "candidateArtifacts": 468,
+    "sharedArtifacts": 139
+  },
+  "shippingImports": {
+    "scannedShippingFiles": 546,
+    "scope": "Shipping source plus local production-entry import/re-export/dynamic-literal/require closure; computed imports and subprocess commands remain owned by production Knip/build checks"
+  },
+  "identities": {
+    "direct": {
+      "@babel/core": {
+        "name": "@babel/core",
+        "version": "7.29.7",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@babel/core",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@babel/core/package.json"
+      },
+      "@types/react": {
+        "name": "@types/react",
+        "version": "19.2.2",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@types/react",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@types/react/package.json"
+      },
+      "babel-preset-expo": {
+        "name": "babel-preset-expo",
+        "version": "57.0.13",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/babel-preset-expo",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/babel-preset-expo/package.json"
+      },
+      "expo": {
+        "name": "expo",
+        "version": "57.0.26",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo/package.json"
+      },
+      "react": {
+        "name": "react",
+        "version": "19.2.3",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react/package.json"
+      },
+      "react-native": {
+        "name": "react-native",
+        "version": "0.86.3",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-native",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-native/package.json"
+      }
+    },
+    "wrapper": {
+      "name": "@expo/metro",
+      "version": "56.0.2",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/package.json"
+    },
+    "metro": {
+      "name": "metro",
+      "version": "0.84.5",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro/package.json"
+    },
+    "metroFamily": {
+      "metro": {
+        "name": "metro",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro/package.json"
+      },
+      "metro-babel-transformer": {
+        "name": "metro-babel-transformer",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-babel-transformer",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-babel-transformer/package.json"
+      },
+      "metro-cache": {
+        "name": "metro-cache",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-cache",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-cache/package.json"
+      },
+      "metro-cache-key": {
+        "name": "metro-cache-key",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-cache-key",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-cache-key/package.json"
+      },
+      "metro-config": {
+        "name": "metro-config",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-config",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-config/package.json"
+      },
+      "metro-core": {
+        "name": "metro-core",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-core",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-core/package.json"
+      },
+      "metro-file-map": {
+        "name": "metro-file-map",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-file-map",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-file-map/package.json"
+      },
+      "metro-minify-terser": {
+        "name": "metro-minify-terser",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-minify-terser",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-minify-terser/package.json"
+      },
+      "metro-resolver": {
+        "name": "metro-resolver",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-resolver",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-resolver/package.json"
+      },
+      "metro-runtime": {
+        "name": "metro-runtime",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-runtime",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-runtime/package.json"
+      },
+      "metro-source-map": {
+        "name": "metro-source-map",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-source-map",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro/node_modules/metro-source-map/package.json"
+      },
+      "metro-symbolicate": {
+        "name": "metro-symbolicate",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-symbolicate",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-symbolicate/package.json"
+      },
+      "metro-transform-plugins": {
+        "name": "metro-transform-plugins",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-transform-plugins",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-transform-plugins/package.json"
+      },
+      "metro-transform-worker": {
+        "name": "metro-transform-worker",
+        "version": "0.84.5",
+        "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-transform-worker",
+        "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/metro-transform-worker/package.json"
+      }
+    },
+    "config": {
+      "name": "@expo/metro-config",
+      "version": "57.0.12",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro-config",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/metro-config/package.json"
+    },
+    "refresh": {
+      "name": "react-refresh",
+      "version": "0.14.2",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-refresh",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-refresh/package.json"
+    },
+    "refreshBabel": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-refresh/babel.js",
+    "rendererVersion": "19.2.3",
+    "cli": {
+      "name": "@expo/cli",
+      "version": "57.0.27",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/cli",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/cli/package.json"
+    },
+    "expoConfig": {
+      "name": "@expo/config",
+      "version": "57.0.9",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/config",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/config/package.json"
+    },
+    "autolinking": {
+      "name": "expo-modules-autolinking",
+      "version": "57.0.13",
+      "directory": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-autolinking",
+      "manifestPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-autolinking/package.json"
+    }
+  },
+  "config": {
+    "projectRoot": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture",
+    "entries": {
+      "android": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture/src/index.ts",
+      "ios": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture/src/index.ts"
+    },
+    "serverRoot": "/private/tmp/splotch-topology05-clean.2izk1qay/full",
+    "nodeModulesPaths": [
+      "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture/node_modules",
+      "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules"
+    ],
+    "watchFolders": [
+      "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules",
+      "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture"
+    ],
+    "nativeConditions": {
+      "ios": ["react-native"],
+      "android": ["react-native"],
+      "tvos": ["react-native"],
+      "macos": ["react-native"],
+      "web": ["browser"]
+    },
+    "expoModules": {
+      "android": {
+        "search": {
+          "expo": {
+            "name": "expo",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo",
+            "version": "57.0.26",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["ExpoFetchModule"],
+                "podspecPath": "Expo.podspec"
+              },
+              "android": {
+                "modules": ["expo.modules.fetch.ExpoFetchModule"]
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/dom-webview": {
+            "name": "@expo/dom-webview",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/dom-webview",
+            "version": "57.0.1",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["DomWebViewModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.webview.DomWebViewModule"],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/log-box": {
+            "name": "@expo/log-box",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/log-box",
+            "version": "57.0.4",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "podspecPath": "ExpoLogBox.podspec"
+              },
+              "android": {
+                "modules": []
+              }
+            },
+            "duplicates": []
+          },
+          "expo-asset": {
+            "name": "expo-asset",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-asset",
+            "version": "57.0.18",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["AssetModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.asset.AssetModule"],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-constants": {
+            "name": "expo-constants",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-constants",
+            "version": "57.0.20",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["ConstantsModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.constants.ConstantsModule"],
+                "services": ["expo.modules.constants.ConstantsService"]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-file-system": {
+            "name": "expo-file-system",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-file-system",
+            "version": "57.0.7",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["FileSystemModule", "FileSystemLegacyModule"],
+                "appDelegateSubscribers": ["FileSystemBackgroundSessionHandler"]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.filesystem.FileSystemModule",
+                  "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-font": {
+            "name": "expo-font",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-font",
+            "version": "57.0.4",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["FontLoaderModule", "FontUtilsModule"]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.font.FontLoaderModule",
+                  "expo.modules.font.FontUtilsModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-keep-awake": {
+            "name": "expo-keep-awake",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-keep-awake",
+            "version": "57.0.2",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["KeepAwakeModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.keepawake.KeepAwakeModule"],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-core": {
+            "name": "expo-modules-core",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core",
+            "version": "57.0.20",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "podspecPath": ["./ExpoModulesCore.podspec", "./ExpoModulesWorklets.podspec"]
+              },
+              "android": {
+                "gradlePlugins": [
+                  {
+                    "id": "expo-module-gradle-plugin",
+                    "group": "expo.modules",
+                    "sourceDir": "expo-module-gradle-plugin",
+                    "applyToRootProject": false
+                  }
+                ]
+              }
+            },
+            "duplicates": []
+          }
+        },
+        "extraDependencies": [],
+        "coreFeatures": [],
+        "modules": [
+          {
+            "packageName": "@expo/dom-webview",
+            "projects": [
+              {
+                "name": "expo-dom-webview",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/dom-webview/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.webview.DomWebViewModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.1"
+          },
+          {
+            "packageName": "@expo/log-box",
+            "projects": [
+              {
+                "name": "expo-log-box",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/log-box/android",
+                "modules": [],
+                "services": [],
+                "packages": ["expo.modules.logbox.ExpoLogBoxPackage"]
+              }
+            ],
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo",
+            "projects": [
+              {
+                "name": "expo",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.fetch.ExpoFetchModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": ["expo.modules.ExpoModulesPackage"]
+              }
+            ],
+            "packageVersion": "57.0.26"
+          },
+          {
+            "packageName": "expo-asset",
+            "projects": [
+              {
+                "name": "expo-asset",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-asset/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.asset.AssetModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.18"
+          },
+          {
+            "packageName": "expo-constants",
+            "projects": [
+              {
+                "name": "expo-constants",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-constants/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.constants.ConstantsModule",
+                    "name": null
+                  }
+                ],
+                "services": ["expo.modules.constants.ConstantsService"],
+                "packages": []
+              }
+            ],
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-file-system",
+            "projects": [
+              {
+                "name": "expo-file-system",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-file-system/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.filesystem.FileSystemModule",
+                    "name": null
+                  },
+                  {
+                    "classifier": "expo.modules.filesystem.legacy.FileSystemLegacyModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.7"
+          },
+          {
+            "packageName": "expo-font",
+            "projects": [
+              {
+                "name": "expo-font",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-font/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.font.FontLoaderModule",
+                    "name": null
+                  },
+                  {
+                    "classifier": "expo.modules.font.FontUtilsModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo-keep-awake",
+            "projects": [
+              {
+                "name": "expo-keep-awake",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-keep-awake/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.keepawake.KeepAwakeModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.2"
+          },
+          {
+            "packageName": "expo-modules-core",
+            "projects": [
+              {
+                "name": "expo-modules-core",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core/android",
+                "modules": [],
+                "services": [],
+                "packages": [
+                  "expo.modules.adapters.react.ReactAdapterPackage",
+                  "expo.modules.core.BasePackage",
+                  "expo.modules.kotlin.edgeToEdge.EdgeToEdgePackage"
+                ]
+              }
+            ],
+            "plugins": [
+              {
+                "id": "expo-module-gradle-plugin",
+                "group": "expo.modules",
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core/expo-module-gradle-plugin",
+                "applyToRootProject": false
+              }
+            ],
+            "packageVersion": "57.0.20"
+          }
+        ]
+      },
+      "apple": {
+        "search": {
+          "expo": {
+            "name": "expo",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo",
+            "version": "57.0.26",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["ExpoFetchModule"],
+                "podspecPath": "Expo.podspec"
+              },
+              "android": {
+                "modules": ["expo.modules.fetch.ExpoFetchModule"]
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/dom-webview": {
+            "name": "@expo/dom-webview",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/dom-webview",
+            "version": "57.0.1",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["DomWebViewModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.webview.DomWebViewModule"],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/log-box": {
+            "name": "@expo/log-box",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/log-box",
+            "version": "57.0.4",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "podspecPath": "ExpoLogBox.podspec"
+              },
+              "android": {
+                "modules": []
+              }
+            },
+            "duplicates": []
+          },
+          "expo-asset": {
+            "name": "expo-asset",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-asset",
+            "version": "57.0.18",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["AssetModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.asset.AssetModule"],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-constants": {
+            "name": "expo-constants",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-constants",
+            "version": "57.0.20",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["ConstantsModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.constants.ConstantsModule"],
+                "services": ["expo.modules.constants.ConstantsService"]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-file-system": {
+            "name": "expo-file-system",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-file-system",
+            "version": "57.0.7",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["FileSystemModule", "FileSystemLegacyModule"],
+                "appDelegateSubscribers": ["FileSystemBackgroundSessionHandler"]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.filesystem.FileSystemModule",
+                  "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-font": {
+            "name": "expo-font",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-font",
+            "version": "57.0.4",
+            "config": {
+              "platforms": ["apple", "android", "web"],
+              "apple": {
+                "modules": ["FontLoaderModule", "FontUtilsModule"]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.font.FontLoaderModule",
+                  "expo.modules.font.FontUtilsModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-keep-awake": {
+            "name": "expo-keep-awake",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-keep-awake",
+            "version": "57.0.2",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "modules": ["KeepAwakeModule"]
+              },
+              "android": {
+                "modules": ["expo.modules.keepawake.KeepAwakeModule"],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-core": {
+            "name": "expo-modules-core",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core",
+            "version": "57.0.20",
+            "config": {
+              "platforms": ["apple", "android"],
+              "apple": {
+                "podspecPath": ["./ExpoModulesCore.podspec", "./ExpoModulesWorklets.podspec"]
+              },
+              "android": {
+                "gradlePlugins": [
+                  {
+                    "id": "expo-module-gradle-plugin",
+                    "group": "expo.modules",
+                    "sourceDir": "expo-module-gradle-plugin",
+                    "applyToRootProject": false
+                  }
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-jsi": {
+            "name": "expo-modules-jsi",
+            "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-jsi",
+            "version": "57.1.1",
+            "config": {
+              "platforms": ["apple"]
+            },
+            "duplicates": []
+          }
+        },
+        "extraDependencies": [],
+        "coreFeatures": [],
+        "modules": [
+          {
+            "packageName": "@expo/dom-webview",
+            "pods": [
+              {
+                "podName": "ExpoDomWebView",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/dom-webview/ios"
+              }
+            ],
+            "swiftModuleNames": ["ExpoDomWebView"],
+            "modules": [
+              {
+                "name": null,
+                "class": "DomWebViewModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.1"
+          },
+          {
+            "packageName": "@expo/log-box",
+            "pods": [
+              {
+                "podName": "ExpoLogBox",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@expo/log-box"
+              }
+            ],
+            "swiftModuleNames": ["ExpoLogBox"],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo",
+            "pods": [
+              {
+                "podName": "Expo",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo"
+              }
+            ],
+            "swiftModuleNames": ["Expo"],
+            "modules": [
+              {
+                "name": null,
+                "class": "ExpoFetchModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.26"
+          },
+          {
+            "packageName": "expo-asset",
+            "pods": [
+              {
+                "podName": "ExpoAsset",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-asset/ios"
+              }
+            ],
+            "swiftModuleNames": ["ExpoAsset"],
+            "modules": [
+              {
+                "name": null,
+                "class": "AssetModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.18"
+          },
+          {
+            "packageName": "expo-constants",
+            "pods": [
+              {
+                "podName": "EXConstants",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-constants/ios"
+              }
+            ],
+            "swiftModuleNames": ["EXConstants"],
+            "modules": [
+              {
+                "name": null,
+                "class": "ConstantsModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-file-system",
+            "pods": [
+              {
+                "podName": "ExpoFileSystem",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-file-system/ios"
+              }
+            ],
+            "swiftModuleNames": ["ExpoFileSystem"],
+            "modules": [
+              {
+                "name": null,
+                "class": "FileSystemModule"
+              },
+              {
+                "name": null,
+                "class": "FileSystemLegacyModule"
+              }
+            ],
+            "appDelegateSubscribers": ["FileSystemBackgroundSessionHandler"],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.7"
+          },
+          {
+            "packageName": "expo-font",
+            "pods": [
+              {
+                "podName": "ExpoFont",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-font/ios"
+              }
+            ],
+            "swiftModuleNames": ["ExpoFont"],
+            "modules": [
+              {
+                "name": null,
+                "class": "FontLoaderModule"
+              },
+              {
+                "name": null,
+                "class": "FontUtilsModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo-keep-awake",
+            "pods": [
+              {
+                "podName": "ExpoKeepAwake",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-keep-awake/ios"
+              }
+            ],
+            "swiftModuleNames": ["ExpoKeepAwake"],
+            "modules": [
+              {
+                "name": null,
+                "class": "KeepAwakeModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.2"
+          },
+          {
+            "packageName": "expo-modules-core",
+            "pods": [
+              {
+                "podName": "ExpoModulesCore",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core"
+              },
+              {
+                "podName": "ExpoModulesWorklets",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-core"
+              }
+            ],
+            "swiftModuleNames": ["ExpoModulesCore", "ExpoModulesWorklets"],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-modules-jsi",
+            "pods": [
+              {
+                "podName": "ExpoModulesJSI",
+                "podspecDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo-modules-jsi/apple"
+              }
+            ],
+            "swiftModuleNames": ["ExpoModulesJSI"],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.1.1"
+          }
+        ]
+      }
+    },
+    "rnConfig": {
+      "android": {
+        "root": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture",
+        "reactNativePath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-native",
+        "dependencies": {
+          "expo": {
+            "root": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo",
+            "name": "expo",
+            "platforms": {
+              "android": {
+                "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo/android",
+                "packageImportPath": "import expo.modules.ExpoModulesPackage;",
+                "packageInstance": "new ExpoModulesPackage()",
+                "buildTypes": [],
+                "componentDescriptors": [],
+                "cmakeListsPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo/android/build/generated/source/codegen/jni/CMakeLists.txt",
+                "cxxModuleCMakeListsModuleName": null,
+                "cxxModuleCMakeListsPath": null,
+                "cxxModuleHeaderName": null,
+                "isPureCxxDependency": false
+              }
+            }
+          }
+        },
+        "project": {}
+      },
+      "ios": {
+        "root": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture",
+        "reactNativePath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/react-native",
+        "dependencies": {
+          "expo": {
+            "root": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo",
+            "name": "expo",
+            "platforms": {
+              "ios": {
+                "podspecPath": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/expo/Expo.podspec",
+                "version": "57.0.26",
+                "configurations": [],
+                "scriptPhases": []
+              }
+            }
+          }
+        },
+        "project": {
+          "ios": {
+            "sourceDir": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture/ios"
+          }
+        }
+      }
+    },
+    "generatedNativeIntegration": "Pending: no generated candidate native trees"
+  },
+  "transform": {
+    "projectRoot": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture",
+    "filename": "/private/tmp/splotch-topology05-clean.2izk1qay/full/experiments/native-architecture/src/ProbeApp.tsx",
+    "coreVersion": "7.29.7",
+    "presetVersion": "57.0.13",
+    "transformed": true
+  },
+  "graphMetroVersions": ["0.84.5", "0.84.6"],
+  "shipping": {
+    "hashes": {
+      "capacitor.config.json": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+      "android/capacitor.settings.gradle": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+      "ios/App/CapApp-SPM/Package.swift": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+    },
+    "plugins": [
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/android/capacitor"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@aparajita/capacitor-secure-storage/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor-community/media/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/device/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/haptics/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/network/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/preferences/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/screen-orientation/android"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@aparajita/capacitor-secure-storage"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor-community/media"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/device"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/haptics"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/network"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/preferences"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/private/tmp/splotch-topology05-clean.2izk1qay/full/node_modules/@capacitor/screen-orientation"
+      }
+    ]
+  }
+}

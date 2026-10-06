@@ -1,0 +1,51 @@
+  const configResult = lookupConfig(opts3, key, isScopedKey) ?? (isPropertyPath(key) ? lookupByPropertyPath(opts3, key) : { value: void 0 });
+  const output = displayConfig(configResult?.value, opts3);
+  return { output, exitCode: 0 };
+}
+function lookupConfig(opts3, key, isScopedKey) {
+  if (isScopedKey) {
+    if (key.endsWith(":registry")) {
+      const scope = key.slice(0, key.length - ":registry".length);
+      const merged = opts3._config.registries?.[scope];
+      if (merged !== void 0) {
+        return { value: merged };
+      }
+    }
+    return { value: opts3.authConfig[key] };
+  }
+  if (key === "globalconfig") {
+    return { value: getGlobalConfigPath(opts3.configDir) };
+  }
+  const kebabKey = isCamelCase(key) ? (0, import_lodash4.default)(key) : key;
+  if (Object.hasOwn(types2, kebabKey)) {
+    const camelKey2 = camelCase(kebabKey, { locale: "en-US" });
+    const explicit = opts3._context.explicitlySetKeys;
+    if (!explicit || explicit.has(camelKey2)) {
+      return { value: opts3._config[camelKey2] };
+    }
+    if (kebabKey in opts3.authConfig) {
+      return { value: opts3.authConfig[kebabKey] };
+    }
+    return { value: void 0 };
+  }
+  if (isIniConfigKey(key)) {
+    return { value: opts3.authConfig[key] };
+  }
+  const camelKey = camelCase(key, { locale: "en-US" });
+  const record = configToRecord(opts3._config, opts3._context.explicitlySetKeys);
+  if (Object.hasOwn(record, camelKey)) {
+    return { value: record[camelKey] };
+  }
+  return void 0;
+}
+function lookupByPropertyPath(opts3, propertyPath) {
+  const parsedPropertyPath = Array.from(parseConfigPropertyPath(propertyPath));
+  if (parsedPropertyPath.length === 0) {
+    return { value: configToRecord(opts3._config, opts3._context.explicitlySetKeys) };
+  }
+  const record = configToRecord(opts3._config, opts3._context.explicitlySetKeys);
+  return {
+    value: getObjectValueByPropertyPath(record, parsedPropertyPath)
+  };
+}
+function isPropertyPath(key) {

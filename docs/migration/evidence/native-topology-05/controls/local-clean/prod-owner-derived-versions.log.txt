@@ -1,0 +1,1 @@
+{"web":{"appVersion":"1.6.2712","buildTime":"2026-10-06 06:50"},"native":{"appVersion":"1.6.0","buildTime":"2026-10-06 06:50"}}

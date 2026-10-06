@@ -1,0 +1,9 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+
+ Test Files  1 passed (1)
+      Tests  43 passed (43)
+   Start at  05:11:30
+   Duration  12.65s (tests 100%)
+

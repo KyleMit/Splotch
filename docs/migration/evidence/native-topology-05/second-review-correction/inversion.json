@@ -1,0 +1,19 @@
+{
+  "scope": "Owned actual new regression controls: current source succeeds, exact prior production predicate fails after successful setup. No borrowed source mutation/install/build/browser/cloud",
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "ownedRoot": "/private/tmp/splotch-shared-name-inversion.artsjmm0",
+  "steps": [
+    {
+      "label": "current",
+      "exitCode": 0,
+      "log": "second-review-correction/controls/inversion-current.log.txt",
+      "sha256": "48cda1c29a3a3bf1e4eadfadceac06ff962aacf172e0d1cbb98180e0a0df421e"
+    },
+    {
+      "label": "old-predicate",
+      "exitCode": 1,
+      "log": "second-review-correction/controls/inversion-old-predicate.log.txt",
+      "sha256": "c73016b6fb14b795970f31522cd0536bddcb94deebfff440e0ea96ad4ef5d0e2"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "trackedDrift": false,
+  "repositoryLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "installedLockSha256": "e2b616dd875ba7a63e0393d8ec0faa553976a6259155de8335318e1d1acceb5b",
+  "buildSwitches": {
+    "PERF_MARKS": "absent; actual config false",
+    "PUBLIC_ENABLE_DEV_HARNESS": "absent; actual config false",
+    "CAPACITOR": "absent; actual config false"
+  },
+  "clientVersion": {
+    "version": "1.6.2716"
+  },
+  "serverVersion": {
+    "version": "1.6.2716"
+  },
+  "ownerDerivedMetadata": {
+    "web": {
+      "appVersion": "1.6.2716",
+      "buildTime": "2026-10-06 08:04"
+    },
+    "native": {
+      "appVersion": "1.6.0",
+      "buildTime": "2026-10-06 08:04"
+    }
+  },
+  "ssrStagingFiles": [
+    {
+      "path": "sveltekit-render.mjs",
+      "bytes": 56995,
+      "sha256": "ef1fe073c25e126735969a901d51fe18ef92e95eee48399b31e93cad80472561"
+    }
+  ],
+  "context": "Explicitly synthetic LOCAL branch-deploy observer inputs; no published ref/cloud install/deploy result."
+}

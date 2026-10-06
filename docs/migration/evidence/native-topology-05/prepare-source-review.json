@@ -1,0 +1,225 @@
+[
+  {
+    "key": "@expo/spawn-async@1.8.0",
+    "main": "./build/spawnAsync.js",
+    "exports": null,
+    "scripts": {
+      "build": "tsc",
+      "clean": "rm -rf build",
+      "prepare": "yarn clean && yarn build",
+      "start": "tsc --watch",
+      "test": "jest"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/build/spawnAsync.js",
+      "package/package.json",
+      "package/build/spawnAsync.js.map",
+      "package/README.md",
+      "package/build/spawnAsync.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "@react-native/codegen@0.86.3",
+    "main": null,
+    "exports": null,
+    "scripts": {
+      "build": "yarn clean && node scripts/build.js --verbose",
+      "clean": "rimraf lib",
+      "prepare": "yarn run build"
+    },
+    "mainPresent": false,
+    "publishedTopPaths": [
+      "package/lib/CodegenSchema.js.flow",
+      "package/lib/SchemaValidator.js.flow",
+      "package/lib/CodegenSchema.js",
+      "package/lib/SchemaValidator.js",
+      "package/package.json",
+      "package/README.md",
+      "package/lib/CodegenSchema.d.ts",
+      "package/lib/SchemaValidator.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "ci-info@3.9.0",
+    "main": "index.js",
+    "exports": null,
+    "scripts": {
+      "lint:fix": "standard --fix",
+      "test": "standard && node test.js",
+      "prepare": "husky install"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/index.js",
+      "package/package.json",
+      "package/vendors.json",
+      "package/CHANGELOG.md",
+      "package/README.md",
+      "package/index.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "content-type@2.1.0",
+    "main": "./dist/index.js",
+    "exports": "./dist/index.js",
+    "scripts": {
+      "bench": "vitest bench",
+      "build": "ts-scripts build",
+      "format": "ts-scripts format",
+      "prepare": "ts-scripts install && npm run build",
+      "specs": "ts-scripts specs",
+      "test": "ts-scripts test"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/dist/index.js",
+      "package/package.json",
+      "package/dist/index.js.map",
+      "package/README.md",
+      "package/dist/index.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "error-stack-parser@2.1.4",
+    "main": "./error-stack-parser.js",
+    "exports": null,
+    "scripts": {
+      "lint": "eslint --fix .",
+      "test": "karma start karma.conf.js --single-run",
+      "test-pr": "karma start karma.conf.js --single-run --browsers Firefox,Chrome_No_Sandbox",
+      "test-ci": "karma start karma.conf.ci.js --single-run",
+      "prepare": "cp error-stack-parser.js dist/ && uglifyjs node_modules/stackframe/stackframe.js error-stack-parser.js -o dist/error-stack-parser.min.js --compress --mangle --source-map \"url=error-stack-parser.min.js.map\""
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/dist/error-stack-parser.js",
+      "package/error-stack-parser.js",
+      "package/dist/error-stack-parser.min.js",
+      "package/package.json",
+      "package/dist/error-stack-parser.min.js.map",
+      "package/README.md",
+      "package/error-stack-parser.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "mime@1.6.0",
+    "main": "mime.js",
+    "exports": null,
+    "scripts": {
+      "prepare": "node src/build.js",
+      "changelog": "gren changelog --tags=all --generate --override",
+      "test": "node src/test.js"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/package.json",
+      "package/.npmignore",
+      "package/README.md",
+      "package/LICENSE",
+      "package/mime.js",
+      "package/cli.js",
+      "package/CHANGELOG.md",
+      "package/src/build.js",
+      "package/src/test.js",
+      "package/types.json"
+    ],
+    "helpers": {
+      "src/build.js": "#!/usr/bin/env node\n\n'use strict';\n\nconst fs = require('fs');\nconst path = require('path');\nconst mimeScore = require('mime-score');\n\nlet db = require('mime-db');\nlet chalk = require('chalk');\n\nconst STANDARD_FACET_SCORE = 900;\n\nconst byExtension = {};\n\n// Clear out any conflict extensions in mime-db\nfor (let type in db) {\n  let entry = db[type];\n  entry.type = type;\n\n  if (!entry.extensions) continue;\n\n  entry.extensions.forEach(ext => {\n    if (ext in byExtension) {\n      const e0 = entry;\n      const e1 = byExtension[ext];\n      e0.pri = mimeScore(e0.type, e0.source);\n      e1.pri = mimeScore(e1.type, e1.source);\n\n      let drop = e0.pri < e1.pri ? e0 : e1;\n      let keep = e0.pri >= e1.pri ? e0 : e1;\n      drop.extensions = drop.extensions.filter(e => e !== ext);\n\n      console.log(`${ext}: Keeping ${chalk.green(keep.type)} (${keep.pri}), dropping ${chalk.red(drop.type)} (${drop.pri})`);\n    }\n    byExtension[ext] = entry;\n  });\n}\n\nfunction writeTypesFile(types, path) {\n  fs.writeFileSync(path, JSON.stringify(types));\n}\n\n// Segregate into standard and non-standard types based on facet per\n// https://tools.ietf.org/html/rfc6838#section-3.1\nconst types = {};\n\nObject.keys(db).sort().forEach(k => {\n  const entry = db[k];\n  types[entry.type] = entry.extensions;\n});\n\nwriteTypesFile(types, path.join(__dirname, '..', 'types.json'));\n"
+    }
+  },
+  {
+    "key": "stackframe@1.3.4",
+    "main": "./stackframe.js",
+    "exports": null,
+    "scripts": {
+      "lint": "eslint",
+      "test": "karma start karma.conf.js --single-run",
+      "test-pr": "karma start karma.conf.js --single-run --browsers Firefox,Chrome_No_Sandbox",
+      "test-ci": "karma start karma.conf.ci.js --single-run",
+      "prepare": "cp stackframe.js dist/ && uglifyjs stackframe.js -o dist/stackframe.min.js --compress --mangle --source-map \"url=stackframe.min.js.map\""
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/dist/stackframe.js",
+      "package/stackframe.js",
+      "package/dist/stackframe.min.js",
+      "package/package.json",
+      "package/dist/stackframe.min.js.map",
+      "package/README.md",
+      "package/stackframe.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "structured-headers@0.4.1",
+    "main": "dist/index.js",
+    "exports": null,
+    "scripts": {
+      "test": "make test",
+      "prepare": "make build",
+      "build": "make build"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/dist/build",
+      "package/dist/index.js",
+      "package/dist/parser.js",
+      "package/dist/serializer.js",
+      "package/browser/structured-header.min.js",
+      "package/dist/token.js",
+      "package/dist/types.js",
+      "package/dist/util.js",
+      "package/package.json",
+      "package/dist/index.js.map",
+      "package/dist/parser.js.map",
+      "package/dist/serializer.js.map",
+      "package/browser/structured-header.min.js.map",
+      "package/dist/token.js.map",
+      "package/dist/types.js.map",
+      "package/dist/util.js.map",
+      "package/readme.md",
+      "package/dist/index.d.ts",
+      "package/src/index.ts",
+      "package/dist/parser.d.ts",
+      "package/src/parser.ts",
+      "package/dist/serializer.d.ts",
+      "package/src/serializer.ts",
+      "package/dist/token.d.ts"
+    ],
+    "helpers": {}
+  },
+  {
+    "key": "whatwg-fetch@3.6.20",
+    "main": "./dist/fetch.umd.js",
+    "exports": null,
+    "scripts": {
+      "karma": "karma start ./test/karma.config.js --no-single-run --auto-watch",
+      "prepare": "make dist/fetch.umd.js dist/fetch.umd.js.flow",
+      "pretest": "make",
+      "test": "karma start ./test/karma.config.js && karma start ./test/karma-worker.config.js",
+      "version": "auto-changelog -p && git add CHANGELOG.md"
+    },
+    "mainPresent": true,
+    "publishedTopPaths": [
+      "package/LICENSE",
+      "package/fetch.js.flow",
+      "package/dist/fetch.umd.js.flow",
+      "package/fetch.js",
+      "package/dist/fetch.umd.js",
+      "package/package.json",
+      "package/README.md"
+    ],
+    "helpers": {}
+  }
+]

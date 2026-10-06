@@ -1,0 +1,8 @@
+async function createStoreController(opts3) {
+  const storeDir = await getStorePath({
+    pkgRoot: opts3.workspaceDir ?? opts3.dir,
+    storePath: opts3.storeDir,
+    pnpmHomeDir: opts3.pnpmHomeDir
+  });
+  return createNewStoreController(Object.assign(opts3, {
+    storeDir

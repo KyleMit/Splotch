@@ -1,0 +1,68 @@
+{
+  "sourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "checkout": "/private/tmp/splotch-topology05-clean.2izk1qay/full",
+  "runtime": {
+    "nodeVersion": "v22.23.2",
+    "pnpmVersion": "11.22.0",
+    "warmStorePath": "/Users/kylemit/Library/pnpm/store/v11",
+    "nodeIdentity": "{\"version\":\"v22.23.2\",\"architecture\":\"arm64\",\"executable\":\"/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node\"}"
+  },
+  "steps": [
+    {
+      "step": "full-frozen-install",
+      "command": ["pnpm", "install", "--frozen-lockfile"],
+      "startedUTC": "2026-10-06T06:48:50.647626+00:00",
+      "durationSeconds": 4.539627624908462,
+      "exitCode": 0,
+      "log": "full-frozen-install.log.txt",
+      "logSha256": "728e82b7e5ac8ebb789ddbb1098078687e7861fa85b7f29c618dce26eb5ccacd"
+    },
+    {
+      "step": "full-native-topology",
+      "command": ["npm", "run", "check:migration:native-topology"],
+      "startedUTC": "2026-10-06T06:48:55.188423+00:00",
+      "durationSeconds": 6.48186308296863,
+      "exitCode": 0,
+      "log": "full-native-topology.log.txt",
+      "logSha256": "c85e5d0269604680e904b4f109518b0cc30c93d6016a1abad303bee5272bebf4"
+    },
+    {
+      "step": "full-production-classification",
+      "command": ["npm", "run", "lint:deps:prod"],
+      "startedUTC": "2026-10-06T06:49:01.670628+00:00",
+      "durationSeconds": 1.1166718329768628,
+      "exitCode": 1,
+      "log": "full-production-classification.log.txt",
+      "logSha256": "6d3c22563566a0546206a6417701681cf5325babd25c585fee6d00be6e0a03c5"
+    },
+    {
+      "step": "full-shipping-type-sync",
+      "command": ["node", "tools/run-web-tool.mjs", "svelte-kit", "sync"],
+      "startedUTC": "2026-10-06T06:49:46.923566+00:00",
+      "durationSeconds": 1.1887319999514148,
+      "exitCode": 0,
+      "log": "full-shipping-type-sync.log.txt",
+      "logSha256": "9efa25b18d2eacbbfa5c0dd898b66b75935fc34475ac3054ada2677add21f378"
+    },
+    {
+      "step": "full-production-classification-after-sync",
+      "command": ["npm", "run", "lint:deps:prod"],
+      "startedUTC": "2026-10-06T06:49:48.112719+00:00",
+      "durationSeconds": 0.4939060000469908,
+      "exitCode": 0,
+      "log": "full-production-classification-after-sync.log.txt",
+      "logSha256": "3de5716a289e6a255f2363d9d9167bfade636498247dbb8b5c11182a8d223dac"
+    },
+    {
+      "step": "full-shipping-static-build",
+      "command": ["npm", "run", "build:cap"],
+      "startedUTC": "2026-10-06T06:49:48.606895+00:00",
+      "durationSeconds": 4.324545457959175,
+      "exitCode": 0,
+      "log": "full-shipping-static-build.log.txt",
+      "logSha256": "b12c9fb1531cf5f84d6573a352a18b639f09987da3bacee6d88f2af950257582"
+    }
+  ],
+  "scope": "Local full tree. Static export only; no native compile/mount/performance/hosted claim.",
+  "cleanOrderCorrection": "Initial Knip production check failed on six existing platform aliases before generated SvelteKit config existed. Run the existing owning sync, as normal Quality type precheck does, then repeat unchanged Knip; no source/config/ignore/dependency mutation."
+}

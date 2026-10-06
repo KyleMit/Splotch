@@ -1,0 +1,6 @@
+Cloning into '/private/tmp/splotch-topology05-clean.2izk1qay/full'...
+done.
+HEAD is now at 6e29c1f4c Match production observer to the root Node floor
+Cloning into '/private/tmp/splotch-topology05-clean.2izk1qay/prod'...
+done.
+HEAD is now at 6e29c1f4c Match production observer to the root Node floor

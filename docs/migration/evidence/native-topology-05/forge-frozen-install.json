@@ -1,0 +1,22 @@
+{
+  "cwd": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+  "hostOS": "Darwin",
+  "hostArchitecture": "arm64",
+  "nodeArchitecture": "arm64",
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.22.0",
+  "branch": "codex/migration-05-native-topology",
+  "head": "d1402f6b2bedd2c30cbc88d30597466855b33874",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "command": ["pnpm", "install", "--frozen-lockfile"],
+  "cacheState": "existing installed graph/store retained; no cold-install claim",
+  "scope": "Parent-released pinned manager frozen registry install; no new build allowance",
+  "exitCode": 0,
+  "elapsedSeconds": 3.517,
+  "lockSha256After": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "lockUnchanged": true,
+  "installedLockPath": "node_modules/.pnpm/lock.yaml",
+  "installedLockEvidence": "forge-installed-lock.yaml.txt",
+  "installedLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "log": "controls/forge-frozen-install.log.txt"
+}

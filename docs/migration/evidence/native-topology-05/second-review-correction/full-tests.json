@@ -1,0 +1,35 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "started": "2026-10-06T07:56:39.542897+00:00",
+  "command": "SPLOTCH_E2E_PORT=5300 SMOKE_PORT=5400 npm test",
+  "portsPreflight": [5300, 5400],
+  "nodePath": "/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node",
+  "scope": "Complete required tier on second-review corrected source; no native/mount/performance/hosted claim",
+  "exitCode": 0,
+  "finished": "2026-10-06T08:03:08.322438+00:00",
+  "rawLogSha256": "35e99d5c17142f0928ea31a326d2474d748a20ae91fcfcc6a810f756952b99a3",
+  "rawLog": "second-review-correction/controls/full-tests.log.txt",
+  "tiers": [
+    {
+      "testFiles": 352,
+      "tests": 4463
+    },
+    {
+      "testFiles": 6,
+      "tests": 45
+    },
+    {
+      "testFiles": 33,
+      "tests": 298
+    },
+    {
+      "testFiles": 2,
+      "tests": 22
+    },
+    {
+      "testFiles": 317,
+      "tests": 7346
+    }
+  ],
+  "browserTests": 1170
+}

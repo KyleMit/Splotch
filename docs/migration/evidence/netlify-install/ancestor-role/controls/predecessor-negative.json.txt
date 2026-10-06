@@ -1,0 +1,17 @@
+{
+  "stage": "old-production-predicate-with-new-real-CLI-test",
+  "argv": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tests/netlify-home-store.test.mjs",
+    "-t",
+    "records the finite ancestor/link filesystem refusal before children",
+    "--maxWorkers=1"
+  ],
+  "exitCode": 1,
+  "log": "/private/tmp/splotch-netlify-home-ancestor-predecessor-negative.log.txt",
+  "sha256": "443efecbbfa9e5b8c9f30c2d9afe496ab8d0d7ba01541ecce938bf5ce3316a24",
+  "expected": "specific ancestor-versus-home assertion failure after valid zero-child setup"
+}

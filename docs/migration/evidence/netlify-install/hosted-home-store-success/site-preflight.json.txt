@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-10-06T11:35:46.129414+00:00",
+  "siteId": "8804b246-aa43-44dc-b997-4dc452079910",
+  "name": "splotchy",
+  "productionBranch": "main",
+  "repository": "KyleMit/Splotch",
+  "base": "",
+  "packageDirectory": "",
+  "configurationOverride": null,
+  "buildImage": "noble",
+  "buildsStopped": false,
+  "skipPullRequests": true,
+  "allowedBranches": [
+    "main",
+    "feature/*"
+  ],
+  "skipAutomaticBuilds": null,
+  "scope": "Sanitized read-only prepublication route metadata; no environment values retained"
+}

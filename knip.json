@@ -1,51 +1,59 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}",
-    "web/src/hooks*.ts",
-    "web/svelte.config.js",
-    "web/vite.config.ts",
-    "web/vitest.config.ts",
-    "web/vitest.webSsr.config.ts",
-    "web/vitest-setup.ts",
-    "web/defines.ts",
-    "web/playwright.config.ts",
-    "web/playwright.webkit-scratch.config.ts",
-    "web/tests/**/*.spec.ts",
-    "web/tests/global-setup.ts",
-    "web/src/**/*.test.ts",
-    "web/*.test.ts",
-    "netlify/**/*.ts",
-    "tools/*.mjs",
-    "tools/*/*.mjs",
-    "tools/perf/tests/fixtures/*.mjs",
-    "tools/centerline-tracing/*.mjs",
-    "tools/mobile/{android,ios}/*.mjs",
-    "tools/perf/{web,android,ios,split-capture}/*.mjs",
-    "tools/rival-agent/bench/*.mjs",
-    "tools/rival-agent/bench/seeds/*/repro.mjs",
-    "!tools/lib/*.mjs",
-    "tools/scrapbook/clear-sound-sheet/*.mjs",
-    "tools/*/tests/*.test.mjs",
-    "tools/mobile/{android,ios}/tests/*.test.mjs",
-    ".ruler/skills/*/*.mjs",
-    "tools/asset-gen/{coloring,style-covers,crayon-reference}/*.mjs",
-    "tools/vectorize/*.mjs",
-    "tools/vectorize/pilot/*.mjs",
-    "tools/asset-gen/tests/*.test.mjs"
-  ],
-  "project": [
-    "web/src/**/*.{ts,svelte}",
-    "web/tests/**/*.ts",
-    "web/*.ts",
-    "netlify/**/*.ts",
-    "tools/*.mjs",
-    "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,ci-mirror,code-map,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
-    "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
-    "tools/vectorize/**/*.mjs"
-  ],
-  "ignoreDependencies": [".*"],
-  "paths": {
-    "$lib/*": ["web/src/lib/*"]
+  "workspaces": {
+    ".": {
+      "entry": [
+        "web/src/routes/**/+{page,layout,server,error}*.{ts,svelte}",
+        "web/src/hooks*.ts",
+        "web/svelte.config.js",
+        "web/vite.config.ts",
+        "web/vitest.config.ts",
+        "web/vitest.webSsr.config.ts",
+        "web/vitest-setup.ts",
+        "web/defines.ts",
+        "web/playwright.config.ts",
+        "web/playwright.webkit-scratch.config.ts",
+        "web/tests/**/*.spec.ts",
+        "web/tests/global-setup.ts",
+        "web/src/**/*.test.ts",
+        "web/*.test.ts",
+        "netlify/**/*.ts",
+        "tools/*.mjs",
+        "tools/*/*.mjs",
+        "tools/perf/tests/fixtures/*.mjs",
+        "tools/centerline-tracing/*.mjs",
+        "tools/mobile/{android,ios}/*.mjs",
+        "tools/perf/{web,android,ios,split-capture}/*.mjs",
+        "tools/rival-agent/bench/*.mjs",
+        "tools/rival-agent/bench/seeds/*/repro.mjs",
+        "!tools/lib/*.mjs",
+        "tools/scrapbook/clear-sound-sheet/*.mjs",
+        "tools/*/tests/*.test.mjs",
+        "tools/mobile/{android,ios}/tests/*.test.mjs",
+        ".ruler/skills/*/*.mjs",
+        "tools/asset-gen/{coloring,style-covers,crayon-reference}/*.mjs",
+        "tools/vectorize/*.mjs",
+        "tools/vectorize/pilot/*.mjs",
+        "tools/asset-gen/tests/*.test.mjs"
+      ],
+      "project": [
+        "web/src/**/*.{ts,svelte}",
+        "web/tests/**/*.ts",
+        "web/*.ts",
+        "netlify/**/*.ts",
+        "tools/*.mjs",
+        "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,ci-mirror,code-map,e2e-tuning,elevenlabs,flaky-digest,git-housekeeping,github,icons,lib,marketing-assets,migration,mobile,model-eval,page-inventory,page-load,perf,redteam,release,rival-agent,ruler,scrapbook,sounds,tests,tokens}/**/*.mjs",
+        "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
+        "tools/vectorize/**/*.mjs"
+      ],
+      "ignoreDependencies": [".*"],
+      "paths": {
+        "$lib/*": ["web/src/lib/*"]
+      }
+    },
+    "experiments/native-architecture": {
+      "entry": ["scripts/check-transform.cjs"],
+      "project": ["src/**/*.{ts,tsx}", "*.cjs", "scripts/*.cjs"]
+    }
   }
 }

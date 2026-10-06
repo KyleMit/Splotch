@@ -1,0 +1,127 @@
+from pathlib import Path
+import datetime, hashlib, json, os, platform, shlex, subprocess, tempfile, time, tomllib
+
+SOURCE = Path('/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch')
+SOURCE_COMMIT = 'de3110af7687f236d9b7ed8a474d294de8a9e437'
+NODE = Path('/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node')
+MANAGER = Path('/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/bin/pnpm.cjs')
+PROOF_BRANCH = 'feature/netlify-migration-topology-05'
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def utc():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def write_json(path, value):
+    path.write_text(json.dumps(value, indent=2) + '\n')
+
+
+def output(command, cwd, env):
+    return subprocess.check_output(command, cwd=cwd, env=env, text=True).strip()
+
+
+def main():
+    assert output(['git', 'rev-parse', 'HEAD'], SOURCE, os.environ) == SOURCE_COMMIT
+    assert not output(['git', 'status', '--porcelain'], SOURCE, os.environ)
+    assert digest(MANAGER) == '67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad'
+    job = Path(tempfile.mkdtemp(prefix='splotch-topology05-review-correction-clean.', dir='/private/tmp')).resolve()
+    evidence = job / 'evidence'
+    evidence.mkdir()
+    runtime_bin = job / 'runtime-bin'
+    runtime_bin.mkdir()
+    wrapper = runtime_bin / 'pnpm'
+    wrapper.write_text('#!/bin/sh\nexec ' + shlex.quote(str(NODE)) + ' ' + shlex.quote(str(MANAGER)) + ' "$@"\n')
+    wrapper.chmod(0o755)
+    temporary = job / 'runtime-tmp'
+    temporary.mkdir()
+    env = {name: os.environ[name] for name in ['HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TZ'] if name in os.environ}
+    env.update(PATH=f'{NODE.parent}:{runtime_bin}:/usr/bin:/bin:/usr/sbin:/sbin', TMPDIR=str(temporary), COREPACK_ENABLE_NETWORK='0')
+    prep = {'sourceCommit': SOURCE_COMMIT, 'source': str(SOURCE), 'job': str(job), 'started': utc(), 'hostOS': platform.system(), 'hostArchitecture': platform.machine(), 'nodeExecutable': str(NODE), 'nodeVersion': output([str(NODE), '--version'], job, env), 'packageManagerVersion': output(['pnpm', '--version'], job, env), 'managerEntrySha256': digest(MANAGER), 'managerWrapperSha256': digest(wrapper), 'warmStorePath': output(['pnpm', 'store', 'path'], job, env), 'homePreserved': env.get('HOME') == os.environ.get('HOME'), 'scope': 'Fresh independent local full and production-only clones, existing warm store. No native compile/mount/performance/hosted claim.', 'clones': []}
+    current = Path('/private/tmp/splotch-topology05-review-correction-clean-current.json')
+    write_json(current, prep)
+    print(json.dumps({'job': str(job), 'sourceCommit': SOURCE_COMMIT}), flush=True)
+
+    def run_step(role, label, command, step_env=None, cwd=None):
+        start = time.monotonic()
+        started = utc()
+        log_path = evidence / f'{role}-{label}.log.txt'
+        target = job / role if cwd is None else cwd
+        with log_path.open('wb') as log:
+            result = subprocess.run(command, cwd=target, env=env if step_env is None else step_env, stdout=log, stderr=subprocess.STDOUT)
+        record = {'label': label, 'command': command, 'started': started, 'durationSeconds': time.monotonic()-start, 'exitCode': result.returncode, 'log': log_path.name, 'logSha256': digest(log_path)}
+        steps[role].append(record)
+        write_json(evidence / f'{role}-result.json', {'sourceCommit': SOURCE_COMMIT, 'checkout': str(job/role), 'scope': prep['scope'], 'steps': steps[role]})
+        print(json.dumps({'role': role, 'label': label, 'exitCode': result.returncode, 'durationSeconds': record['durationSeconds']}), flush=True)
+        if result.returncode:
+            raise RuntimeError(f'Failed {role}/{label}; see {log_path}')
+        return log_path
+
+    steps = {'full': [], 'prod': []}
+    for role in ['full', 'prod']:
+        clone = job / role
+        clone_log = evidence / f'{role}-clone.log.txt'
+        with clone_log.open('wb') as log:
+            subprocess.run(['git', 'clone', '--no-hardlinks', '--quiet', str(SOURCE), str(clone)], env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
+        head = output(['git', 'rev-parse', 'HEAD'], clone, env)
+        assert head == SOURCE_COMMIT
+        assert not (clone / 'node_modules').exists()
+        prep['clones'].append({'role': role, 'checkout': str(clone), 'head': head, 'origin': output(['git', 'remote', 'get-url', 'origin'], clone, env), 'describe': output(['git', 'describe', '--tags', '--match', 'v[0-9]*', '--always'], clone, env), 'cloneLogSha256': digest(clone_log), 'hadNodeModulesBeforeInstall': False})
+    write_json(evidence/'preparation.json', prep)
+    write_json(current, prep)
+
+    run_step('full', 'frozen-install', ['pnpm', 'install', '--frozen-lockfile'])
+    run_step('full', 'live-topology', ['npm', 'run', 'check:migration:native-topology'])
+    run_step('full', 'exact-proof-inputs', ['npm', 'run', 'check:migration:native-topology:evidence'])
+    run_step('full', 'shipping-type-sync', ['node', 'tools/run-web-tool.mjs', 'svelte-kit', 'sync'])
+    run_step('full', 'production-classification', ['npm', 'run', 'lint:deps:prod'])
+    run_step('full', 'shipping-static-build', ['npm', 'run', 'build:cap'])
+
+    prod_env = {**env, 'NETLIFY': 'true', 'CONTEXT': 'branch-deploy', 'BRANCH': PROOF_BRANCH, 'COMMIT_REF': SOURCE_COMMIT, 'PNPM_FLAGS': '--prod'}
+    run_step('prod', 'frozen-install', ['pnpm', 'install', '--prod', '--frozen-lockfile'])
+    witness_log = run_step('prod', 'installed-tree-witness', ['node', 'tools/netlify-topology-witness.mjs'], prod_env)
+    witness = json.loads(witness_log.read_text())
+    write_json(evidence/'prod-installed-tree-witness.json', witness)
+    config = tomllib.loads((job/'prod/netlify.toml').read_text())
+    run_step('prod', 'exact-netlify-command', ['/bin/sh', '-c', config['build']['command']], prod_env)
+    version_source = "import { buildMetadata } from './buildVersion.ts'; console.log(JSON.stringify({ web: buildMetadata({ isCapacitor: false }), native: buildMetadata({ isCapacitor: true }) }));"
+    version_log = run_step('prod', 'owner-derived-versions', ['node', '--experimental-strip-types', '--disable-warning=ExperimentalWarning', '--input-type=module', '-e', version_source], prod_env, job/'prod/web')
+    metadata = json.loads(version_log.read_text())
+
+    def inventory(root):
+        return [{'path': f.relative_to(root).as_posix(), 'bytes': f.stat().st_size, 'sha256': digest(f)} for f in sorted(root.rglob('*')) if f.is_file()]
+
+    for role in ['full', 'prod']:
+        clone = job/role
+        drift = output(['git', 'status', '--porcelain', '--untracked-files=no'], clone, env)
+        assert not drift, drift
+        lock = clone/'pnpm-lock.yaml'
+        installed = clone/'node_modules/.pnpm/lock.yaml'
+        (evidence/f'{role}-installed-lock.yaml.txt').write_bytes(installed.read_bytes())
+        identity = {'sourceCommit': SOURCE_COMMIT, 'trackedDrift': False, 'repositoryLockSha256': digest(lock), 'installedLockSha256': digest(installed), 'buildSwitches': {'PERF_MARKS': 'absent; actual config false', 'PUBLIC_ENABLE_DEV_HARNESS': 'absent; actual config false', 'CAPACITOR': 'build:cap owner true' if role=='full' else 'absent; actual config false'}}
+        if role == 'full':
+            identity['nativeStaticVersion'] = json.loads((clone/'web/build/version.json').read_text())
+            assert digest(lock) == digest(installed)
+        else:
+            identity['clientVersion'] = json.loads((clone/'web/.svelte-kit/output/client/version.json').read_text())
+            identity['serverVersion'] = json.loads((clone/'web/.svelte-kit/output/server/version.json').read_text())
+            identity['ownerDerivedMetadata'] = metadata
+            assert identity['clientVersion']['version'] == metadata['web']['appVersion'] == identity['serverVersion']['version']
+            left = inventory(clone/'web/.netlify/functions-internal')
+            right = inventory(clone/'.netlify/functions-internal')
+            assert left == right
+            identity['ssrStagingFiles'] = left
+            identity['context'] = 'Explicitly synthetic LOCAL branch-deploy observer inputs; no published ref/cloud install/deploy result.'
+        write_json(evidence/f'{role}-final-identity.json', identity)
+    prep['finished'] = utc()
+    prep['status'] = 'local-cases-passed'
+    write_json(evidence/'preparation.json', prep)
+    write_json(current, prep)
+    print(json.dumps({'status': prep['status'], 'job': str(job)}), flush=True)
+
+
+if __name__ == '__main__':
+    main()

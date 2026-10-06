@@ -1,0 +1,74 @@
+{
+  "scope": "Selected structured observations and verbatim bounded result lines from the rendered Netlify deploy log. Complete raw hosted log and full witness arrays were not retained. The rendered witness JSON stops after 32768 JSON characters.",
+  "deployId": "6ac4dd381d311b0008210aa1",
+  "buildId": "6ac4dd381d311b0008210a9f",
+  "commit": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+  "dashboardUrl": "https://app.netlify.com/projects/splotchy/deploys/6ac4dd381d311b0008210aa1",
+  "qualification": {
+    "stage": "second-production-install-qualified",
+    "ambient": {
+      "kind": "sole-netlify-home-store-setting",
+      "sha256": "a637b973cc45c68db2fbc739a5484cbf4dd457130e480ffade8163ffa4f64c0e",
+      "scalarForm": "plain"
+    },
+    "nodeVersion": "v22.23.3",
+    "settingCount": 42,
+    "residue": {
+      "path": "node_modules/filelist/node_modules/brace-expansion/package.json",
+      "present": true,
+      "name": "brace-expansion",
+      "version": "2.1.1"
+    }
+  },
+  "cleanInstall": {
+    "stage": "second-production-install-exit",
+    "argv": [
+      "ci",
+      "--prod"
+    ],
+    "startedAt": "2026-10-06T11:37:13.183Z",
+    "endedAt": "2026-10-06T11:37:16.338Z",
+    "durationMs": 3155.476752999999,
+    "exitCode": 0,
+    "signal": null,
+    "launchFailed": false
+  },
+  "accepted": {
+    "nodeLinker": "hoisted",
+    "included": {
+      "dependencies": true,
+      "devDependencies": false,
+      "optionalDependencies": true
+    },
+    "layoutVersion": 5,
+    "virtualStoreDir": ".pnpm",
+    "packageManager": "pnpm@11.22.0"
+  },
+  "witnessLeadingFields": {
+    "disposition": "production-installed-tree-passed",
+    "proofBranch": "feature/netlify-migration-topology-05",
+    "context": "branch-deploy",
+    "commit": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+    "nodeVersion": "v22.23.3",
+    "packageManager": "pnpm@11.22.0",
+    "productionFlags": "--prod",
+    "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+    "candidateExclusiveArtifactCount": 329,
+    "installedPackageCount": 444
+  },
+  "witnessInterpretation": "Audited tools/netlify-topology-witness.mjs emits this disposition only after validating the installed production closure, exclusion of candidate-exclusive packages, owner identities, and direct dependency resolution from all five contexts. Full arrays and a numeric hosted resolution count are not claimed as captured.",
+  "releaseLines": [
+    "7:37:27 AM: > splotch@1.6.0 postbuild",
+    "7:37:27 AM: > node tools/check-release-seams.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-build-version.mjs && node tools/check-pwa-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/check-static-bundle.mjs --web && node tools/check-bundle-budgets.mjs && node tools/check-eager-error-bundle.mjs",
+    "7:37:27 AM: [release-seams] release client contains no profiling seams or engine marks",
+    "7:37:27 AM: [build-version] client, server, and coloring manifest all carry 1.6.2722",
+    "7:37:27 AM: [pwa-precache] 276 unique entries / 6103477 bytes; 400 responsive derivatives use canonical offline fallbacks",
+    "7:37:28 AM: [check-static-bundle] web export omits 2 native-only marker(s)",
+    "7:37:28 AM: [bundle-budgets] startup JS/CSS 458840/525000 bytes (38 linked files plus 84638 inline CSS bytes; 38/38 modulepreloads); largest lazy JS 60772/75000 bytes (_app/immutable/chunks/D-mev1zb.js)",
+    "7:37:28 AM: [eager-error] linked and error startup union 487817/525000 bytes",
+    "7:37:28 AM: [eager-error] web root error adds 24 resources / 28977 bytes outside the index.html links; deferred owners remain lazy",
+    "7:37:28 AM: [stage-netlify-functions] /opt/build/repo/web/.netlify -> /opt/build/repo/.netlify",
+    "7:37:49 AM: Site is live ✨",
+    "7:37:57 AM: Finished processing build request in 1m29.696s"
+  ]
+}

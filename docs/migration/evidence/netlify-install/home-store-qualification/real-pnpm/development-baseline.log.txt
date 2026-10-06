@@ -1,0 +1,19 @@
+Scope: all 2 workspace projects
+? Verifying lockfile against supply-chain policies (1497 entries)...
+Lockfile is up to date, resolution step is skipped
+Packages: +1419
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 0, downloaded 1, added 0
+Packages are cloned from the content-addressable store to the virtual store.
+  Content-addressable store is at: /private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/home/.pnpm-store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 0, reused 0, downloaded 209, added 91
+Progress: resolved 0, reused 0, downloaded 498, added 133
+Progress: resolved 0, reused 0, downloaded 708, added 171
+Progress: resolved 0, reused 0, downloaded 1129, added 309
+✓ Lockfile passes supply-chain policies (1497 entries in 5.2s)
+Progress: resolved 0, reused 0, downloaded 1333, added 544
+Progress: resolved 0, reused 0, downloaded 1333, added 1053
+Progress: resolved 0, reused 0, downloaded 1333, added 1419, done
+
+Done in 7.8s using pnpm v11.22.0

@@ -1,0 +1,16 @@
+{
+  "command": "PATH=<qualified Node22 bin> npm run check:quality",
+  "exitCode": 0,
+  "checksPassed": 15,
+  "runtime": "Node22.23.2",
+  "sourceSelection": "Working-tree executable bytes subsequently sealed as de3110af7687f236d9b7ed8a474d294de8a9e437; Git HEAD was a190af1f5d6257024daaf47c4cdbd2b95490e133 during this pre-commit Quality run. Subsequent prose-only receipt amendments are separate.",
+  "rawLog": "review-correction/controls/quality.log.txt",
+  "rawLogSha256": "61a62fff866f0e62131ce1b2146793c1b454c1e6db4721f11789caba21d4fd2f",
+  "focused": {
+    "runtime": "Node24.16.0",
+    "testsPassed": 45,
+    "testFilesPassed": 4,
+    "rawLog": "review-correction/controls/focused.log.txt",
+    "scope": "Actual candidate/archive/CLI/main/CI/native-path controls; also included in committed-source Node22 full tools tier"
+  }
+}

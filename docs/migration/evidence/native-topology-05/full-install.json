@@ -1,0 +1,13 @@
+{
+  "command": ["pnpm", "install", "--frozen-lockfile"],
+  "exitCode": 0,
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.22.0",
+  "candidateLockSha256": "c24cba4feecf32cd00014aea127739618e5be88bc7a534225f39af524cbf5994",
+  "lockChanged": false,
+  "newBuildPermissions": [],
+  "log": "controls/full-install.log.txt",
+  "scope": "Full install with reviewed registry artifacts; no native generation, build or device result",
+  "manifestSha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+  "workspaceSha256": "93a7f3f84a35e2af9ae3e8764f5b7071391aee66fb5288b74790f1874d37e308"
+}

@@ -1,0 +1,153 @@
+{
+  "createdAt": "2026-10-06T10:48:12.505235+00:00",
+  "scope": "exact public image metadata and bounded source layers; cached pnpm source corroboration; no image execution",
+  "rowCount": 24,
+  "selectedLayerCompressedBytes": 18627,
+  "rows": [
+    {
+      "path": "REPORT.md",
+      "bytes": 5727,
+      "mode": "0644",
+      "sha256": "0eecc27a2617f435ecbb380dd6a123319777801e56751b45bd2e3cb46baa5b80"
+    },
+    {
+      "path": "amd64-build-entrypoint.sh.txt",
+      "bytes": 941,
+      "mode": "0644",
+      "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+    },
+    {
+      "path": "amd64-config.json",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286"
+    },
+    {
+      "path": "amd64-current-run-build-functions.sh.txt",
+      "bytes": 31256,
+      "mode": "0644",
+      "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+    },
+    {
+      "path": "amd64-layer-41.tar.gz",
+      "bytes": 713,
+      "mode": "0644",
+      "sha256": "d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29"
+    },
+    {
+      "path": "amd64-layer-43.tar.gz",
+      "bytes": 8325,
+      "mode": "0644",
+      "sha256": "bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d"
+    },
+    {
+      "path": "amd64-layer-44.tar.gz",
+      "bytes": 279,
+      "mode": "0644",
+      "sha256": "20c35d4b87bef8ef493af1841826826d04d1d521afb657742840b93b0913739f"
+    },
+    {
+      "path": "amd64-manifest.json",
+      "bytes": 9777,
+      "mode": "0644",
+      "sha256": "b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419"
+    },
+    {
+      "path": "amd64-relevant-history-map.json",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "281fe993bb3803ab4dcd5df8f56eae50872b39ab2c39f7ce4c8082e1069c5076"
+    },
+    {
+      "path": "arm64-build-entrypoint.sh.txt",
+      "bytes": 941,
+      "mode": "0644",
+      "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+    },
+    {
+      "path": "arm64-config.json",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46"
+    },
+    {
+      "path": "arm64-current-run-build-functions.sh.txt",
+      "bytes": 31256,
+      "mode": "0644",
+      "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+    },
+    {
+      "path": "arm64-layer-41.tar.gz",
+      "bytes": 712,
+      "mode": "0644",
+      "sha256": "5b398cb46995a4dd71d17f846beb2c057f76cd1040fe0d3ebcf96d899be469d4"
+    },
+    {
+      "path": "arm64-layer-43.tar.gz",
+      "bytes": 8318,
+      "mode": "0644",
+      "sha256": "e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3"
+    },
+    {
+      "path": "arm64-layer-44.tar.gz",
+      "bytes": 280,
+      "mode": "0644",
+      "sha256": "d2b0bdeac6e6b3e7575a2f11994a2655d0a0b19601abfa9387d950844aae0914"
+    },
+    {
+      "path": "arm64-manifest.json",
+      "bytes": 9770,
+      "mode": "0644",
+      "sha256": "8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731"
+    },
+    {
+      "path": "arm64-relevant-history-map.json",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "80e8cf246a2baed94c8c3fdce6d4d0ff473c0b0485002a6c950f6f0f2e661619"
+    },
+    {
+      "path": "index.json",
+      "bytes": 743,
+      "mode": "0644",
+      "sha256": "4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada"
+    },
+    {
+      "path": "pnpm-11.22.0-166419-166421.txt",
+      "bytes": 106,
+      "mode": "0644",
+      "sha256": "46720f08afa000e0f6cafb4011a8b343ac7c93bd39c672d45b6e7755d1e814f0"
+    },
+    {
+      "path": "pnpm-11.22.0-256736-256763.txt",
+      "bytes": 869,
+      "mode": "0644",
+      "sha256": "d8d5dc82d856befe6d9d9d4db28c5174f125645db8f74f730eee6f0ea274e119"
+    },
+    {
+      "path": "pnpm-11.22.0-256777-256825.txt",
+      "bytes": 2004,
+      "mode": "0644",
+      "sha256": "e729e13aff779b49c2dd1d2b351cabba3a01bb0c43461d2c7952b9cff6b0afc1"
+    },
+    {
+      "path": "pnpm-11.22.0-257071-257109.txt",
+      "bytes": 1093,
+      "mode": "0644",
+      "sha256": "047b44ffe2c896cbfc64ab9856f153777a37ed4f92add69dc2c0da5637348ec6"
+    },
+    {
+      "path": "pnpm-source-provenance.json",
+      "bytes": 1340,
+      "mode": "0644",
+      "sha256": "1ae559ed3b672a77b9933da0dde6d4f81360d450495605803616abc2410692aa"
+    },
+    {
+      "path": "retrieval.json",
+      "bytes": 9377,
+      "mode": "0644",
+      "sha256": "bc452cc10c9fca81c7ba270e7c01abcf0b48636d1cf15b4ed287af5a983fee95"
+    }
+  ],
+  "rowsDigest": "683670a2714b9e325646cfc7a70d7adafb0ac3cfae02450b469a4b64b7f9c5e1"
+}

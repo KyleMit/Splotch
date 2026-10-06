@@ -850,19 +850,24 @@ Non-`keep` rows first.
 The lockfile installs **1179 package entries** total (including the root); ~50 are direct, the rest
 transitive. Aggregate view (not per-package):
 
-### Active dependency-audit status and exceptions (checked 2026-10-04)
+### Active dependency-audit status and exceptions (checked 2026-10-06)
 
-`pnpm audit --audit-level=high` reports one high advisory, ignored under the single active exception
-below; there are no unexcepted high or critical advisories.
+The published dependency graph contains the high `braces` and `node-forge` advisories below.
+`pnpm audit --audit-level=high` skips those exact IDs under these active records; its configured
+result is not a clean unpatched graph. The `node-forge` record requires installed local-mitigation
+proof in `npm run check:migration:native-topology` before audit; failure blocks Quality.
 
 An exception requires an exact GHSA entry in `pnpm-workspace.yaml`'s `auditConfig.ignoreGhsas` and a
 record in this subsection in the same change. Each record must name the affected locked package
-paths, link upstream evidence that no patched resolution exists, explain why those paths are not
-exploitable in this repository, identify the approver and approval date, set a review-by date no
-more than 90 days later, and state the concrete removal trigger. The focused quality-policy test
-must require exact agreement between the configured GHSA set and the unexpired records. Expiry,
-availability of a patched resolution, or a changed reachability analysis removes the exception;
-severity-wide and dependency-class exclusions are never recorded here.
+paths and link upstream evidence that no patched resolution exists. Its basis is either evidence
+that the paths are not exploitable here, or a reviewed exact-version local patch proved by a named
+Quality guard over source, lock reachability, every installed copy and actual consumer controls. The
+local-patch basis states remaining reachability and forbids unsupported consumers; it does not claim
+a published fix or generic non-exploitability. Identify the approver and approval date, set a
+review-by date no more than 90 days later, and state the concrete removal trigger. The focused
+quality-policy test must require exact agreement between the configured GHSA set and the unexpired
+records. Expiry, availability of a patched resolution, or a changed reachability analysis removes
+the exception; severity-wide and dependency-class exclusions are never recorded here.
 
 Each record is a `#### GHSA-…` heading followed by the field bullets below; the quality-policy test
 in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
@@ -883,6 +888,36 @@ in `tools/ci-mirror/tests/run-quality-checks.test.mjs` parses them.
 * **Review by:** 2027-01-02
 * **Removal trigger:** a `braces` release `>=3.0.4` is published; resolve it and delete this record
   with its `ignoreGhsas` entry. Tracked by issue 2648.
+
+#### GHSA-86w9-cpqp-85rv
+
+* **Advisory:** `node-forge` <=1.4.0, RSA PKCS#1 v1.5 signature forgery through insufficient
+  DigestInfo validation (high). <https://github.com/advisories/GHSA-86w9-cpqp-85rv>
+* **Locked paths:** `node-forge@1.4.0`, reached only from the private native candidate through
+  `expo > @expo/cli > node-forge`,
+  `expo > @expo/cli > @expo/code-signing-certificates > node-forge`, and the same two paths beneath
+  `babel-preset-expo > expo`. Both parents declare `^1.3.3`.
+* **Upstream evidence:** the advisory lists no patched version; the registry ends at 1.4.0 and
+  `node-forge@1.4.1` does not exist. Open, unmerged contributor
+  [PR1152](https://github.com/digitalbazaar/forge/pull/1152) and
+  [PR1157](https://github.com/digitalbazaar/forge/pull/1157) supply the reviewed nested-count and
+  empty-NULL checks. Exact PR1157 lib/rsa.js source at 683ab3344899cc08a581e4d5675a33e87aff7b04 has
+  SHA256 `22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f`. Contributor code has no
+  maintainer approval; the accepted risk requires the short review below.
+* **Reachability:** excluded from the shipping production closure, but actual Expo helpers verify
+  externally supplied certificates/CSRs, so development placement does not prove non-exploitability.
+  The exact-version pnpm patch changes only `node-forge: lib/rsa.js`, rejecting the two observed
+  malformed classes; it does not enforce strict DER. `dist/forge.min.js` and `dist/forge.all.min.js`
+  remain unpatched and must stay unreachable. `tools/migration/check-native-topology.mjs` requires
+  the exact source/patch/lock, every installed forge copy, candidate-only dependency paths, no
+  unsupported `node-forge/` subpath consumers, and actual malformed/Expo compatibility controls
+  before the unchanged audit command. Any unsupported version/path/consumer fails the guard.
+* **Approved:** Codex (delegated owner), Claude (independent review), 2026-10-06
+* **Review by:** 2026-11-05
+* **Removal trigger:** review an official published fix or changed publisher guidance immediately;
+  replace the local mitigation only after source/installed/regression validation, then remove its
+  patch, guard-specific policy and this exact ignore/record. Also review at the deadline. Tracked by
+  [issue 2696](https://github.com/KyleMit/Splotch/issues/2696).
 
 ### Audit summary (checked 2026-07-17)
 

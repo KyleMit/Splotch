@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
 
 import { QUALITY_COMMANDS, runQualityChecks, summarize } from '../run-quality-checks.mjs';
 import { jobBlock, runCommandsIn, testWorkflow } from './workflow-job-steps.mjs';
@@ -187,6 +188,240 @@ describe('the audit-exception policy check', () => {
     const block = jobBlock(testWorkflow, 'quality');
     expect(block).toContain('name: Quality');
     expect(block).not.toContain('npm run test:e2e');
+  });
+});
+
+function hasForgeMitigationImport(ast) {
+  return ast.statements.some(
+    (node) =>
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === './lib/forge-mitigation.mjs' &&
+      node.importClause?.namedBindings &&
+      ts.isNamedImports(node.importClause.namedBindings) &&
+      node.importClause.namedBindings.elements.some(
+        (binding) =>
+          binding.name.text === 'verifyForgeMitigation' &&
+          (!binding.propertyName || binding.propertyName.text === 'verifyForgeMitigation')
+      )
+  );
+}
+
+function hasPrecedingTermination(statements) {
+  let returns = false;
+  function visit(node) {
+    if (ts.isFunctionLike(node) || ts.isClassDeclaration(node)) return;
+    if (ts.isReturnStatement(node)) returns = true;
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === 'process' &&
+      node.expression.name.text === 'exit'
+    )
+      returns = true;
+    ts.forEachChild(node, visit);
+  }
+  for (const statement of statements) visit(statement);
+  return returns;
+}
+
+function hasDirectForgeMitigationCall(ast) {
+  const owner = ast.statements.find(
+    (node) => ts.isFunctionDeclaration(node) && node.name?.text === 'checkNativeTopology'
+  );
+  if (!owner?.body || !owner.modifiers?.some((node) => node.kind === ts.SyntaxKind.AsyncKeyword))
+    return false;
+  const statements = owner.body.statements;
+  const index = statements.findIndex(
+    (node) =>
+      ts.isVariableStatement(node) &&
+      (node.declarationList.flags & ts.NodeFlags.Const) !== 0 &&
+      node.declarationList.declarations.some((declaration) => {
+        if (
+          !ts.isIdentifier(declaration.name) ||
+          declaration.name.text !== 'forgeMitigation' ||
+          !declaration.initializer ||
+          !ts.isAwaitExpression(declaration.initializer)
+        )
+          return false;
+        const call = declaration.initializer.expression;
+        return (
+          ts.isCallExpression(call) &&
+          ts.isIdentifier(call.expression) &&
+          call.expression.text === 'verifyForgeMitigation' &&
+          call.arguments.length === 3 &&
+          call.arguments.every(
+            (argument, position) =>
+              ts.isIdentifier(argument) && argument.text === ['root', 'lock', 'workspace'][position]
+          )
+        );
+      })
+  );
+  return index >= 0 && !hasPrecedingTermination(statements.slice(0, index));
+}
+
+function forgeMitigationWiringViolations(workspaceYaml, checker, commands) {
+  if (!configuredIgnoredGhsas(workspaceYaml).includes('GHSA-86w9-cpqp-85rv')) return [];
+  const ast = ts.createSourceFile(
+    'check-native-topology.mjs',
+    checker,
+    ts.ScriptTarget.Latest,
+    true
+  );
+  const failures = [];
+  if (ast.parseDiagnostics.length) failures.push('mitigation caller source is malformed');
+  if (!hasForgeMitigationImport(ast)) failures.push('installed mitigation import absent');
+  if (!hasDirectForgeMitigationCall(ast))
+    failures.push('mandatory installed mitigation call absent');
+  const guardIndex = commands.indexOf('npm run check:migration:native-topology');
+  if (guardIndex < 0 || guardIndex >= commands.indexOf(dependencyAuditCommand))
+    failures.push('mitigation is not before audit');
+  return failures;
+}
+
+function hasTopologyMainInvocation(ast) {
+  const index = ast.statements.findIndex(
+    (node) => ts.isIfStatement(node) && node.expression.getText(ast) === 'isMain(import.meta.url)'
+  );
+  if (index < 0 || hasPrecedingTermination(ast.statements.slice(0, index))) return false;
+  const main = ast.statements[index];
+  if (main.elseStatement || !ts.isExpressionStatement(main.thenStatement)) return false;
+  const call = main.thenStatement.expression;
+  if (
+    !ts.isCallExpression(call) ||
+    call.expression.getText(ast) !== 'runMain' ||
+    call.arguments.length !== 1
+  )
+    return false;
+  const callback = call.arguments[0];
+  if (
+    !ts.isArrowFunction(callback) ||
+    !callback.modifiers?.some((node) => node.kind === ts.SyntaxKind.AsyncKeyword) ||
+    !ts.isBlock(callback.body)
+  )
+    return false;
+  const statements = callback.body.statements;
+  return (
+    statements.length === 1 &&
+    ts.isExpressionStatement(statements[0]) &&
+    statements[0].getText(ast).replace(/\s+/g, '') ===
+      'console.log(JSON.stringify(awaitcheckNativeTopology(process.argv.slice(2)),null,2));'
+  );
+}
+
+function forgeInvocationWiringViolations(checker, scripts) {
+  const failures = [];
+  if (
+    scripts['check:migration:native-topology'] !== 'node tools/migration/check-native-topology.mjs'
+  )
+    failures.push('npm topology script does not invoke the guard');
+  const ast = ts.createSourceFile(
+    'check-native-topology.mjs',
+    checker,
+    ts.ScriptTarget.Latest,
+    true
+  );
+  if (ast.parseDiagnostics.length || !hasTopologyMainInvocation(ast))
+    failures.push('topology main does not await the guard');
+  return failures;
+}
+
+describe('the guard-qualified Forge advisory exception', () => {
+  const checker = readFileSync(join(repoRoot, 'tools/migration/check-native-topology.mjs'), 'utf8');
+  const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+
+  it('requires the actual installed guard before the unchanged Quality audit', () => {
+    expect(forgeMitigationWiringViolations(pnpmWorkspace, checker, QUALITY_COMMANDS)).toEqual([]);
+    expect(forgeInvocationWiringViolations(checker, scripts)).toEqual([]);
+  });
+
+  it('rejects commented imports/calls, dead or conditional calls and preceding returns', () => {
+    const call = 'const forgeMitigation = await verifyForgeMitigation(root, lock, workspace);';
+    const mitigationSpecifier = './lib/forge-mitigation.mjs';
+    const importDeclaration = `import { verifyForgeMitigation } from '${mitigationSpecifier}';`;
+    expect(
+      forgeMitigationWiringViolations(
+        pnpmWorkspace,
+        checker.replace(importDeclaration, `// ${importDeclaration}`),
+        QUALITY_COMMANDS
+      )
+    ).toContain('installed mitigation import absent');
+    for (const replacement of [
+      `// ${call}`,
+      `if (false) { ${call} }`,
+      `if (root) { ${call} }`,
+      'const forgeMitigation = root ? await verifyForgeMitigation(root, lock, workspace) : null;',
+      `return {}; ${call}`,
+      `if (root) return {}; ${call}`,
+      `process.exit(0); ${call}`,
+      `if (root) process.exit(0); ${call}`,
+    ])
+      expect(
+        forgeMitigationWiringViolations(
+          pnpmWorkspace,
+          checker.replace(call, replacement),
+          QUALITY_COMMANDS
+        )
+      ).toContain('mandatory installed mitigation call absent');
+  });
+
+  it('rejects no-op npm scripts, dead main callbacks and preceding process exits', () => {
+    expect(
+      forgeInvocationWiringViolations(checker, {
+        ...scripts,
+        'check:migration:native-topology': 'node -e 0',
+      })
+    ).toContain('npm topology script does not invoke the guard');
+    for (const changed of [
+      checker.replace('if (isMain(import.meta.url))', 'if (false)'),
+      checker.replace('runMain(async () => {', 'runMain(async () => { return;'),
+      checker.replace('await checkNativeTopology(process.argv.slice(2))', '{}'),
+      checker.replace(
+        'await checkNativeTopology(process.argv.slice(2))',
+        'checkNativeTopology(process.argv.slice(2))'
+      ),
+      checker.replace(
+        'if (isMain(import.meta.url))',
+        'process.exit(0); if (isMain(import.meta.url))'
+      ),
+    ])
+      expect(forgeInvocationWiringViolations(changed, scripts)).toContain(
+        'topology main does not await the guard'
+      );
+  });
+
+  it('rejects missing import, missing unconditional call and missing or reordered Quality step', () => {
+    expect(
+      forgeMitigationWiringViolations(
+        pnpmWorkspace,
+        checker.replace('import { verifyForgeMitigation }', 'import { absent }'),
+        QUALITY_COMMANDS
+      )
+    ).toContain('installed mitigation import absent');
+    expect(
+      forgeMitigationWiringViolations(
+        pnpmWorkspace,
+        checker.replace(
+          'const forgeMitigation = await verifyForgeMitigation',
+          'const forgeMitigation = absent'
+        ),
+        QUALITY_COMMANDS
+      )
+    ).toContain('mandatory installed mitigation call absent');
+    expect(
+      forgeMitigationWiringViolations(
+        pnpmWorkspace,
+        checker,
+        QUALITY_COMMANDS.filter((command) => command !== 'npm run check:migration:native-topology')
+      )
+    ).toContain('mitigation is not before audit');
+    expect(
+      forgeMitigationWiringViolations(pnpmWorkspace, checker, [
+        dependencyAuditCommand,
+        'npm run check:migration:native-topology',
+      ])
+    ).toContain('mitigation is not before audit');
   });
 });
 

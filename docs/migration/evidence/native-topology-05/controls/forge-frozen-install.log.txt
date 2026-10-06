@@ -1,0 +1,10 @@
+Scope: all 2 workspace projects
+? Verifying lockfile against supply-chain policies (1497 entries)...
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages: +1 -164
++-------------------------------------------------------------------------------
+Progress: resolved 0, reused 165, downloaded 0, added 1, done
+✓ Lockfile passes supply-chain policies (1497 entries in 3s)
+
+Done in 3.4s using pnpm v11.22.0

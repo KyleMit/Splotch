@@ -1,0 +1,11 @@
+{
+  "command": ["npm", "test"],
+  "selectors": {
+    "SPLOTCH_E2E_PORT": "5300",
+    "SMOKE_PORT": "5400"
+  },
+  "exitCode": 1,
+  "elapsedSeconds": 60.894,
+  "log": "controls/forge-full-tests.log.txt",
+  "scope": "Parent-authorized host-exclusive complete package.json test entry; no native/performance capture"
+}

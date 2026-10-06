@@ -1,0 +1,560 @@
+
+> splotch@1.6.0 prebuild
+> node tools/netlify-topology-witness.mjs && node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases
+
+{"disposition":"production-installed-tree-passed","proofBranch":"feature/netlify-migration-topology-05","context":"branch-deploy","commit":"863d97b0df6dfb45c06250feef77aecda6c08d9f","nodeVersion":"v22.23.2","packageManager":"pnpm@11.22.0","productionFlags":"--prod","lockSha256":"705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92","candidateExclusiveArtifactCount":329,"installedPackageCount":445,"installed":[{"key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"key":"@apideck/better-ajv-errors@0.3.7","path":"node_modules/@apideck/better-ajv-errors"},{"key":"@babel/code-frame@7.29.7","path":"node_modules/@babel/code-frame"},{"key":"@babel/compat-data@7.29.7","path":"node_modules/@babel/compat-data"},{"key":"@babel/core@7.29.7","path":"node_modules/@babel/core"},{"key":"@babel/generator@7.29.7","path":"node_modules/@babel/generator"},{"key":"@babel/helper-annotate-as-pure@7.29.7","path":"node_modules/@babel/helper-annotate-as-pure"},{"key":"@babel/helper-compilation-targets@7.29.7","path":"node_modules/@babel/helper-compilation-targets"},{"key":"@babel/helper-create-class-features-plugin@7.29.7","path":"node_modules/@babel/helper-create-class-features-plugin"},{"key":"@babel/helper-create-regexp-features-plugin@7.29.7","path":"node_modules/@babel/helper-create-regexp-features-plugin"},{"key":"@babel/helper-define-polyfill-provider@0.6.8","path":"node_modules/@babel/helper-define-polyfill-provider"},{"key":"@babel/helper-globals@7.29.7","path":"node_modules/@babel/helper-globals"},{"key":"@babel/helper-member-expression-to-functions@7.29.7","path":"node_modules/@babel/helper-member-expression-to-functions"},{"key":"@babel/helper-module-imports@7.29.7","path":"node_modules/@babel/helper-module-imports"},{"key":"@babel/helper-module-transforms@7.29.7","path":"node_modules/@babel/helper-module-transforms"},{"key":"@babel/helper-optimise-call-expression@7.29.7","path":"node_modules/@babel/helper-optimise-call-expression"},{"key":"@babel/helper-plugin-utils@7.29.7","path":"node_modules/@babel/helper-plugin-utils"},{"key":"@babel/helper-remap-async-to-generator@7.29.7","path":"node_modules/@babel/helper-remap-async-to-generator"},{"key":"@babel/helper-replace-supers@7.29.7","path":"node_modules/@babel/helper-replace-supers"},{"key":"@babel/helper-skip-transparent-expression-wrappers@7.29.7","path":"node_modules/@babel/helper-skip-transparent-expression-wrappers"},{"key":"@babel/helper-string-parser@7.29.7","path":"node_modules/@babel/helper-string-parser"},{"key":"@babel/helper-validator-identifier@7.29.7","path":"node_modules/@babel/helper-validator-identifier"},{"key":"@babel/helper-validator-option@7.29.7","path":"node_modules/@babel/helper-validator-option"},{"key":"@babel/helper-wrap-function@7.29.7","path":"node_modules/@babel/helper-wrap-function"},{"key":"@babel/helpers@7.29.7","path":"node_modules/@babel/helpers"},{"key":"@babel/parser@7.29.7","path":"node_modules/@babel/parser"},{"key":"@babel/plugin-bugfix-firefox-class-in-computed-class-key@7.29.7","path":"node_modules/@babel/plugin-bugfix-firefox-class-in-computed-class-key"},{"key":"@babel/plugin-bugfix-safari-class-field-initializer-scope@7.29.7","path":"node_modules/@babel/plugin-bugfix-safari-class-field-initializer-scope"},{"key":"@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression@7.29.7","path":"node_modules/@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression"},{"key":"@babel/plugin-bugfix-safari-rest-destructuring-rhs-array@7.29.7","path":"node_modules/@babel/plugin-bugfix-safari-rest-destructuring-rhs-array"},{"key":"@babel/plugin-bugfix-v8-spread-parameters-in-optional-chaining@7.29.7","path":"node_modules/@babel/plugin-bugfix-v8-spread-parameters-in-optional-chaining"},{"key":"@babel/plugin-bugfix-v8-static-class-fields-redefine-readonly@7.29.7","path":"node_modules/@babel/plugin-bugfix-v8-static-class-fields-redefine-readonly"},{"key":"@babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2","path":"node_modules/@babel/plugin-proposal-private-property-in-object"},{"key":"@babel/plugin-syntax-import-assertions@7.29.7","path":"node_modules/@babel/plugin-syntax-import-assertions"},{"key":"@babel/plugin-syntax-import-attributes@7.29.7","path":"node_modules/@babel/plugin-syntax-import-attributes"},{"key":"@babel/plugin-syntax-unicode-sets-regex@7.18.6","path":"node_modules/@babel/plugin-syntax-unicode-sets-regex"},{"key":"@babel/plugin-transform-arrow-functions@7.29.7","path":"node_modules/@babel/plugin-transform-arrow-functions"},{"key":"@babel/plugin-transform-async-generator-functions@7.29.7","path":"node_modules/@babel/plugin-transform-async-generator-functions"},{"key":"@babel/plugin-transform-async-to-generator@7.29.7","path":"node_modules/@babel/plugin-transform-async-to-generator"},{"key":"@babel/plugin-transform-block-scoped-functions@7.29.7","path":"node_modules/@babel/plugin-transform-block-scoped-functions"},{"key":"@babel/plugin-transform-block-scoping@7.29.7","path":"node_modules/@babel/plugin-transform-block-scoping"},{"key":"@babel/plugin-transform-class-properties@7.29.7","path":"node_modules/@babel/plugin-transform-class-properties"},{"key":"@babel/plugin-transform-class-static-block@7.29.7","path":"node_modules/@babel/plugin-transform-class-static-block"},{"key":"@babel/plugin-transform-classes@7.29.7","path":"node_modules/@babel/plugin-transform-classes"},{"key":"@babel/plugin-transform-computed-properties@7.29.7","path":"node_modules/@babel/plugin-transform-computed-properties"},{"key":"@babel/plugin-transform-destructuring@7.29.7","path":"node_modules/@babel/plugin-transform-destructuring"},{"key":"@babel/plugin-transform-dotall-regex@7.29.7","path":"node_modules/@babel/plugin-transform-dotall-regex"},{"key":"@babel/plugin-transform-duplicate-keys@7.29.7","path":"node_modules/@babel/plugin-transform-duplicate-keys"},{"key":"@babel/plugin-transform-duplicate-named-capturing-groups-regex@7.29.7","path":"node_modules/@babel/plugin-transform-duplicate-named-capturing-groups-regex"},{"key":"@babel/plugin-transform-dynamic-import@7.29.7","path":"node_modules/@babel/plugin-transform-dynamic-import"},{"key":"@babel/plugin-transform-explicit-resource-management@7.29.7","path":"node_modules/@babel/plugin-transform-explicit-resource-management"},{"key":"@babel/plugin-transform-exponentiation-operator@7.29.7","path":"node_modules/@babel/plugin-transform-exponentiation-operator"},{"key":"@babel/plugin-transform-export-namespace-from@7.29.7","path":"node_modules/@babel/plugin-transform-export-namespace-from"},{"key":"@babel/plugin-transform-for-of@7.29.7","path":"node_modules/@babel/plugin-transform-for-of"},{"key":"@babel/plugin-transform-function-name@7.29.7","path":"node_modules/@babel/plugin-transform-function-name"},{"key":"@babel/plugin-transform-json-strings@7.29.7","path":"node_modules/@babel/plugin-transform-json-strings"},{"key":"@babel/plugin-transform-literals@7.29.7","path":"node_modules/@babel/plugin-transform-literals"},{"key":"@babel/plugin-transform-logical-assignment-operators@7.29.7","path":"node_modules/@babel/plugin-transform-logical-assignment-operators"},{"key":"@babel/plugin-transform-member-expression-literals@7.29.7","path":"node_modules/@babel/plugin-transform-member-expression-literals"},{"key":"@babel/plugin-transform-modules-amd@7.29.7","path":"node_modules/@babel/plugin-transform-modules-amd"},{"key":"@babel/plugin-transform-modules-commonjs@7.29.7","path":"node_modules/@babel/plugin-transform-modules-commonjs"},{"key":"@babel/plugin-transform-modules-systemjs@7.29.7","path":"node_modules/@babel/plugin-transform-modules-systemjs"},{"key":"@babel/plugin-transform-modules-umd@7.29.7","path":"node_modules/@babel/plugin-transform-modules-umd"},{"key":"@babel/plugin-transform-named-capturing-groups-regex@7.29.7","path":"node_modules/@babel/plugin-transform-named-capturing-groups-regex"},{"key":"@babel/plugin-transform-new-target@7.29.7","path":"node_modules/@babel/plugin-transform-new-target"},{"key":"@babel/plugin-transform-nullish-coalescing-operator@7.29.7","path":"node_modules/@babel/plugin-transform-nullish-coalescing-operator"},{"key":"@babel/plugin-transform-numeric-separator@7.29.7","path":"node_modules/@babel/plugin-transform-numeric-separator"},{"key":"@babel/plugin-transform-object-rest-spread@7.29.7","path":"node_modules/@babel/plugin-transform-object-rest-spread"},{"key":"@babel/plugin-transform-object-super@7.29.7","path":"node_modules/@babel/plugin-transform-object-super"},{"key":"@babel/plugin-transform-optional-catch-binding@7.29.7","path":"node_modules/@babel/plugin-transform-optional-catch-binding"},{"key":"@babel/plugin-transform-optional-chaining@7.29.7","path":"node_modules/@babel/plugin-transform-optional-chaining"},{"key":"@babel/plugin-transform-parameters@7.29.7","path":"node_modules/@babel/plugin-transform-parameters"},{"key":"@babel/plugin-transform-private-methods@7.29.7","path":"node_modules/@babel/plugin-transform-private-methods"},{"key":"@babel/plugin-transform-private-property-in-object@7.29.7","path":"node_modules/@babel/plugin-transform-private-property-in-object"},{"key":"@babel/plugin-transform-property-literals@7.29.7","path":"node_modules/@babel/plugin-transform-property-literals"},{"key":"@babel/plugin-transform-regenerator@7.29.7","path":"node_modules/@babel/plugin-transform-regenerator"},{"key":"@babel/plugin-transform-regexp-modifiers@7.29.7","path":"node_modules/@babel/plugin-transform-regexp-modifiers"},{"key":"@babel/plugin-transform-reserved-words@7.29.7","path":"node_modules/@babel/plugin-transform-reserved-words"},{"key":"@babel/plugin-transform-shorthand-properties@7.29.7","path":"node_modules/@babel/plugin-transform-shorthand-properties"},{"key":"@babel/plugin-transform-spread@7.29.7","path":"node_modules/@babel/plugin-transform-spread"},{"key":"@babel/plugin-transform-sticky-regex@7.29.7","path":"node_modules/@babel/plugin-transform-sticky-regex"},{"key":"@babel/plugin-transform-template-literals@7.29.7","path":"node_modules/@babel/plugin-transform-template-literals"},{"key":"@babel/plugin-transform-typeof-symbol@7.29.7","path":"node_modules/@babel/plugin-transform-typeof-symbol"},{"key":"@babel/plugin-transform-unicode-escapes@7.29.7","path":"node_modules/@babel/plugin-transform-unicode-escapes"},{"key":"@babel/plugin-transform-unicode-property-regex@7.29.7","path":"node_modules/@babel/plugin-transform-unicode-property-regex"},{"key":"@babel/plugin-transform-unicode-regex@7.29.7","path":"node_modules/@babel/plugin-transform-unicode-regex"},{"key":"@babel/plugin-transform-unicode-sets-regex@7.29.7","path":"node_modules/@babel/plugin-transform-unicode-sets-regex"},{"key":"@babel/preset-env@7.29.7","path":"node_modules/@babel/preset-env"},{"key":"@babel/preset-modules@0.1.6-no-external-plugins","path":"node_modules/@babel/preset-modules"},{"key":"@babel/runtime@7.29.7","path":"node_modules/@babel/runtime"},{"key":"@babel/template@7.29.7","path":"node_modules/@babel/template"},{"key":"@babel/traverse@7.29.7","path":"node_modules/@babel/traverse"},{"key":"@babel/types@7.29.7","path":"node_modules/@babel/types"},{"key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"key":"@capacitor/android@8.5.2","path":"node_modules/@capacitor/android"},{"key":"@capacitor/app@8.1.1","path":"node_modules/@capacitor/app"},{"key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"key":"@capacitor/ios@8.5.2","path":"node_modules/@capacitor/ios"},{"key":"@capacitor/keyboard@8.0.5","path":"node_modules/@capacitor/keyboard"},{"key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"key":"@envelop/instrumentation@1.0.1","path":"node_modules/@envelop/instrumentation"},{"key":"@esbuild/darwin-arm64@0.25.12","path":"node_modules/@esbuild/darwin-arm64"},{"key":"@fastify/busboy@3.2.2","path":"node_modules/@fastify/busboy"},{"key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"key":"@iarna/toml@2.2.5","path":"node_modules/@iarna/toml"},{"key":"@img/colour@1.1.0","path":"node_modules/@img/colour"},{"key":"@img/sharp-darwin-arm64@0.35.5","path":"node_modules/@img/sharp-darwin-arm64"},{"key":"@img/sharp-libvips-darwin-arm64@1.3.4","path":"node_modules/@img/sharp-libvips-darwin-arm64"},{"key":"@isaacs/cliui@9.0.0","path":"node_modules/@isaacs/cliui"},{"key":"@jridgewell/gen-mapping@0.3.13","path":"node_modules/@jridgewell/gen-mapping"},{"key":"@jridgewell/remapping@2.3.5","path":"node_modules/@jridgewell/remapping"},{"key":"@jridgewell/resolve-uri@3.1.2","path":"node_modules/@jridgewell/resolve-uri"},{"key":"@jridgewell/source-map@0.3.11","path":"node_modules/@jridgewell/source-map"},{"key":"@jridgewell/sourcemap-codec@1.6.0","path":"node_modules/@jridgewell/sourcemap-codec"},{"key":"@jridgewell/trace-mapping@0.3.31","path":"node_modules/@jridgewell/trace-mapping"},{"key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"key":"@netlify/dev-utils@6.0.1","path":"node_modules/@netlify/dev-utils"},{"key":"semver@7.8.5","path":"node_modules/@netlify/dev-utils/node_modules/semver"},{"key":"@netlify/otel@7.0.2","path":"node_modules/@netlify/otel"},{"key":"@netlify/runtime-utils@3.0.0","path":"node_modules/@netlify/runtime-utils"},{"key":"@opentelemetry/api@1.9.1","path":"node_modules/@opentelemetry/api"},{"key":"@opentelemetry/api-logs@0.221.0","path":"node_modules/@opentelemetry/api-logs"},{"key":"@opentelemetry/context-async-hooks@2.10.0","path":"node_modules/@opentelemetry/context-async-hooks"},{"key":"@opentelemetry/core@2.10.0","path":"node_modules/@opentelemetry/core"},{"key":"@opentelemetry/instrumentation@0.221.0","path":"node_modules/@opentelemetry/instrumentation"},{"key":"@opentelemetry/resources@2.10.0","path":"node_modules/@opentelemetry/resources"},{"key":"@opentelemetry/sdk-trace@2.10.0","path":"node_modules/@opentelemetry/sdk-trace"},{"key":"@opentelemetry/sdk-trace-base@2.10.0","path":"node_modules/@opentelemetry/sdk-trace-base"},{"key":"@opentelemetry/sdk-trace-node@2.10.0","path":"node_modules/@opentelemetry/sdk-trace-node"},{"key":"@opentelemetry/semantic-conventions@1.43.0","path":"node_modules/@opentelemetry/semantic-conventions"},{"key":"@oxc-project/types@0.151.0","path":"node_modules/@oxc-project/types"},{"key":"@polka/url@1.0.0-next.29","path":"node_modules/@polka/url"},{"key":"@rolldown/binding-darwin-arm64@1.2.11","path":"node_modules/@rolldown/binding-darwin-arm64"},{"key":"@rolldown/pluginutils@1.0.1","path":"node_modules/@rolldown/pluginutils"},{"key":"@rollup/plugin-babel@6.1.0","path":"node_modules/@rollup/plugin-babel"},{"key":"@rollup/plugin-node-resolve@16.0.3","path":"node_modules/@rollup/plugin-node-resolve"},{"key":"@rollup/plugin-replace@6.0.3","path":"node_modules/@rollup/plugin-replace"},{"key":"@rollup/plugin-terser@1.0.0","path":"node_modules/@rollup/plugin-terser"},{"key":"@rollup/pluginutils@5.4.0","path":"node_modules/@rollup/pluginutils"},{"key":"@rollup/rollup-darwin-arm64@4.62.2","path":"node_modules/@rollup/rollup-darwin-arm64"},{"key":"@standard-schema/spec@1.1.0","path":"node_modules/@standard-schema/spec"},{"key":"@sveltejs/acorn-typescript@1.0.13","path":"node_modules/@sveltejs/acorn-typescript"},{"key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"key":"magic-string@1.2.3","path":"node_modules/@sveltejs/vite-plugin-svelte/node_modules/magic-string"},{"key":"@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1","path":"node_modules/@trickfilm400/rollup-plugin-off-main-thread"},{"key":"@types/cookie@0.6.0","path":"node_modules/@types/cookie"},{"key":"@types/estree@1.0.9","path":"node_modules/@types/estree"},{"key":"@types/node@22.20.4","path":"node_modules/@types/node"},{"key":"@types/resolve@1.20.2","path":"node_modules/@types/resolve"},{"key":"@types/trusted-types@2.0.7","path":"node_modules/@types/trusted-types"},{"key":"@typescript-eslint/types@8.71.0","path":"node_modules/@typescript-eslint/types"},{"key":"@whatwg-node/disposablestack@0.0.6","path":"node_modules/@whatwg-node/disposablestack"},{"key":"@whatwg-node/fetch@0.10.13","path":"node_modules/@whatwg-node/fetch"},{"key":"@whatwg-node/node-fetch@0.8.6","path":"node_modules/@whatwg-node/node-fetch"},{"key":"@whatwg-node/promise-helpers@1.3.2","path":"node_modules/@whatwg-node/promise-helpers"},{"key":"@whatwg-node/server@0.11.0","path":"node_modules/@whatwg-node/server"},{"key":"acorn@8.18.0","path":"node_modules/acorn"},{"key":"ajv@8.20.0","path":"node_modules/ajv"},{"key":"ansis@4.4.0","path":"node_modules/ansis"},{"key":"aria-query@5.3.1","path":"node_modules/aria-query"},{"key":"array-buffer-byte-length@1.0.2","path":"node_modules/array-buffer-byte-length"},{"key":"arraybuffer.prototype.slice@1.0.4","path":"node_modules/arraybuffer.prototype.slice"},{"key":"async@3.2.6","path":"node_modules/async"},{"key":"async-function@1.0.0","path":"node_modules/async-function"},{"key":"at-least-node@1.0.0","path":"node_modules/at-least-node"},{"key":"atomically@2.1.1","path":"node_modules/atomically"},{"key":"available-typed-arrays@1.0.7","path":"node_modules/available-typed-arrays"},{"key":"axobject-query@4.1.0","path":"node_modules/axobject-query"},{"key":"babel-plugin-polyfill-corejs2@0.4.17","path":"node_modules/babel-plugin-polyfill-corejs2"},{"key":"babel-plugin-polyfill-corejs3@0.14.2","path":"node_modules/babel-plugin-polyfill-corejs3"},{"key":"babel-plugin-polyfill-regenerator@0.6.8","path":"node_modules/babel-plugin-polyfill-regenerator"},{"key":"balanced-match@1.0.2","path":"node_modules/balanced-match"},{"key":"baseline-browser-mapping@2.11.26","path":"node_modules/baseline-browser-mapping"},{"key":"brace-expansion@2.1.7","path":"node_modules/brace-expansion"},{"key":"browserslist@4.29.2","path":"node_modules/browserslist"},{"key":"buffer-from@1.1.2","path":"node_modules/buffer-from"},{"key":"call-bind@1.0.9","path":"node_modules/call-bind"},{"key":"call-bind-apply-helpers@1.0.2","path":"node_modules/call-bind-apply-helpers"},{"key":"call-bound@1.0.4","path":"node_modules/call-bound"},{"key":"callsite@1.0.0","path":"node_modules/callsite"},{"key":"caniuse-lite@1.0.30001813","path":"node_modules/caniuse-lite"},{"key":"chokidar@5.0.0","path":"node_modules/chokidar"},{"key":"cjs-module-lexer@2.2.1","path":"node_modules/cjs-module-lexer"},{"key":"clsx@2.1.1","path":"node_modules/clsx"},{"key":"commander@2.20.3","path":"node_modules/commander"},{"key":"common-tags@1.8.2","path":"node_modules/common-tags"},{"key":"convert-source-map@2.0.0","path":"node_modules/convert-source-map"},{"key":"cookie@0.6.0","path":"node_modules/cookie"},{"key":"core-js-compat@3.49.0","path":"node_modules/core-js-compat"},{"key":"cross-spawn@7.0.6","path":"node_modules/cross-spawn"},{"key":"crypto-random-string@2.0.0","path":"node_modules/crypto-random-string"},{"key":"data-view-buffer@1.0.2","path":"node_modules/data-view-buffer"},{"key":"data-view-byte-length@1.0.2","path":"node_modules/data-view-byte-length"},{"key":"data-view-byte-offset@1.0.1","path":"node_modules/data-view-byte-offset"},{"key":"debug@4.4.3","path":"node_modules/debug"},{"key":"decache@4.6.2","path":"node_modules/decache"},{"key":"deepmerge@4.3.1","path":"node_modules/deepmerge"},{"key":"define-data-property@1.1.4","path":"node_modules/define-data-property"},{"key":"define-properties@1.2.1","path":"node_modules/define-properties"},{"key":"detect-libc@2.1.2","path":"node_modules/detect-libc"},{"key":"dettle@1.0.5","path":"node_modules/dettle"},{"key":"devalue@5.9.4","path":"node_modules/devalue"},{"key":"dot-prop@9.0.0","path":"node_modules/dot-prop"},{"key":"dunder-proto@1.0.1","path":"node_modules/dunder-proto"},{"key":"ejs@3.1.10","path":"node_modules/ejs"},{"key":"electron-to-chromium@1.5.440","path":"node_modules/electron-to-chromium"},{"key":"empathic@2.1.0","path":"node_modules/empathic"},{"key":"env-paths@3.0.0","path":"node_modules/env-paths"},{"key":"es-abstract@1.24.2","path":"node_modules/es-abstract"},{"key":"es-abstract-get@1.0.0","path":"node_modules/es-abstract-get"},{"key":"es-define-property@1.0.1","path":"node_modules/es-define-property"},{"key":"es-errors@1.3.0","path":"node_modules/es-errors"},{"key":"es-module-lexer@3.0.2","path":"node_modules/es-module-lexer"},{"key":"es-object-atoms@1.1.2","path":"node_modules/es-object-atoms"},{"key":"es-set-tostringtag@2.1.0","path":"node_modules/es-set-tostringtag"},{"key":"es-to-primitive@1.3.1","path":"node_modules/es-to-primitive"},{"key":"esbuild@0.25.12","path":"node_modules/esbuild"},{"key":"escalade@3.2.0","path":"node_modules/escalade"},{"key":"esm-env@1.2.2","path":"node_modules/esm-env"},{"key":"esrap@2.3.8","path":"node_modules/esrap"},{"key":"estree-walker@2.0.2","path":"node_modules/estree-walker"},{"key":"esutils@2.0.3","path":"node_modules/esutils"},{"key":"eta@4.6.0","path":"node_modules/eta"},{"key":"fast-deep-equal@3.1.3","path":"node_modules/fast-deep-equal"},{"key":"fast-json-stable-stringify@2.1.0","path":"node_modules/fast-json-stable-stringify"},{"key":"fast-uri@3.1.8","path":"node_modules/fast-uri"},{"key":"fdir@6.5.0","path":"node_modules/fdir"},{"key":"filelist@1.0.6","path":"node_modules/filelist"},{"key":"for-each@0.3.5","path":"node_modules/for-each"},{"key":"foreground-child@3.3.1","path":"node_modules/foreground-child"},{"key":"fs-extra@9.1.0","path":"node_modules/fs-extra"},{"key":"fsevents@2.3.3","path":"node_modules/fsevents"},{"key":"function-bind@1.1.2","path":"node_modules/function-bind"},{"key":"function.prototype.name@1.2.0","path":"node_modules/function.prototype.name"},{"key":"functions-have-names@1.2.3","path":"node_modules/functions-have-names"},{"key":"generator-function@2.0.1","path":"node_modules/generator-function"},{"key":"gensync@1.0.0-beta.2","path":"node_modules/gensync"},{"key":"get-intrinsic@1.3.0","path":"node_modules/get-intrinsic"},{"key":"get-own-enumerable-property-symbols@3.0.2","path":"node_modules/get-own-enumerable-property-symbols"},{"key":"get-proto@1.0.1","path":"node_modules/get-proto"},{"key":"get-symbol-description@1.1.0","path":"node_modules/get-symbol-description"},{"key":"glob@11.1.0","path":"node_modules/glob"},{"key":"balanced-match@4.0.4","path":"node_modules/glob/node_modules/balanced-match"},{"key":"brace-expansion@5.0.12","path":"node_modules/glob/node_modules/brace-expansion"},{"key":"minimatch@10.2.6","path":"node_modules/glob/node_modules/minimatch"},{"key":"globalthis@1.0.4","path":"node_modules/globalthis"},{"key":"gopd@1.2.0","path":"node_modules/gopd"},{"key":"graceful-fs@4.2.11","path":"node_modules/graceful-fs"},{"key":"has-bigints@1.1.0","path":"node_modules/has-bigints"},{"key":"has-property-descriptors@1.0.2","path":"node_modules/has-property-descriptors"},{"key":"has-proto@1.2.0","path":"node_modules/has-proto"},{"key":"has-symbols@1.1.0","path":"node_modules/has-symbols"},{"key":"has-tostringtag@1.0.2","path":"node_modules/has-tostringtag"},{"key":"hasown@2.0.4","path":"node_modules/hasown"},{"key":"idb@7.1.1","path":"node_modules/idb"},{"key":"import-in-the-middle@3.5.1","path":"node_modules/import-in-the-middle"},{"key":"internal-slot@1.1.0","path":"node_modules/internal-slot"},{"key":"is-array-buffer@3.0.5","path":"node_modules/is-array-buffer"},{"key":"is-async-function@2.1.1","path":"node_modules/is-async-function"},{"key":"is-bigint@1.1.0","path":"node_modules/is-bigint"},{"key":"is-boolean-object@1.2.2","path":"node_modules/is-boolean-object"},{"key":"is-callable@1.2.7","path":"node_modules/is-callable"},{"key":"is-core-module@2.16.2","path":"node_modules/is-core-module"},{"key":"is-data-view@1.0.2","path":"node_modules/is-data-view"},{"key":"is-date-object@1.1.0","path":"node_modules/is-date-object"},{"key":"is-document.all@1.0.0","path":"node_modules/is-document.all"},{"key":"is-finalizationregistry@1.1.1","path":"node_modules/is-finalizationregistry"},{"key":"is-generator-function@1.1.2","path":"node_modules/is-generator-function"},{"key":"is-map@2.0.3","path":"node_modules/is-map"},{"key":"is-module@1.0.0","path":"node_modules/is-module"},{"key":"is-negative-zero@2.0.3","path":"node_modules/is-negative-zero"},{"key":"is-number-object@1.1.1","path":"node_modules/is-number-object"},{"key":"is-obj@1.0.1","path":"node_modules/is-obj"},{"key":"is-reference@3.0.3","path":"node_modules/is-reference"},{"key":"is-regex@1.2.1","path":"node_modules/is-regex"},{"key":"is-regexp@1.0.0","path":"node_modules/is-regexp"},{"key":"is-set@2.0.3","path":"node_modules/is-set"},{"key":"is-shared-array-buffer@1.0.4","path":"node_modules/is-shared-array-buffer"},{"key":"is-stream@2.0.1","path":"node_modules/is-stream"},{"key":"is-string@1.1.1","path":"node_modules/is-string"},{"key":"is-symbol@1.1.1","path":"node_modules/is-symbol"},{"key":"is-typed-array@1.1.15","path":"node_modules/is-typed-array"},{"key":"is-weakmap@2.0.2","path":"node_modules/is-weakmap"},{"key":"is-weakref@1.1.1","path":"node_modules/is-weakref"},{"key":"is-weakset@2.0.4","path":"node_modules/is-weakset"},{"key":"isarray@2.0.5","path":"node_modules/isarray"},{"key":"isexe@2.0.0","path":"node_modules/isexe"},{"key":"jackspeak@4.2.3","path":"node_modules/jackspeak"},{"key":"jake@10.9.4","path":"node_modules/jake"},{"key":"jiti@2.7.0","path":"node_modules/jiti"},{"key":"js-tokens@4.0.0","path":"node_modules/js-tokens"},{"key":"jsesc@3.1.0","path":"node_modules/jsesc"},{"key":"json-schema-traverse@1.0.0","path":"node_modules/json-schema-traverse"},{"key":"json5@2.2.3","path":"node_modules/json5"},{"key":"jsonfile@6.2.1","path":"node_modules/jsonfile"},{"key":"jsonpointer@5.0.1","path":"node_modules/jsonpointer"},{"key":"kleur@4.1.5","path":"node_modules/kleur"},{"key":"leven@3.1.0","path":"node_modules/leven"},{"key":"lightningcss@1.33.0","path":"node_modules/lightningcss"},{"key":"lightningcss-darwin-arm64@1.33.0","path":"node_modules/lightningcss-darwin-arm64"},{"key":"locate-character@3.0.0","path":"node_modules/locate-character"},{"key":"lodash.debounce@4.0.8","path":"node_modules/lodash.debounce"},{"key":"lodash.sortby@4.7.0","path":"node_modules/lodash.sortby"},{"key":"lru-cache@5.1.1","path":"node_modules/lru-cache"},{"key":"magic-string@0.30.21","path":"node_modules/magic-string"},{"key":"math-intrinsics@1.1.0","path":"node_modules/math-intrinsics"},{"key":"minimatch@5.1.9","path":"node_modules/minimatch"},{"key":"minipass@7.1.3","path":"node_modules/minipass"},{"key":"module-details-from-path@1.0.4","path":"node_modules/module-details-from-path"},{"key":"mrmime@2.0.1","path":"node_modules/mrmime"},{"key":"ms@2.1.3","path":"node_modules/ms"},{"key":"nanoid@3.3.18","path":"node_modules/nanoid"},{"key":"node-releases@2.0.57","path":"node_modules/node-releases"},{"key":"object-inspect@1.13.4","path":"node_modules/object-inspect"},{"key":"object-keys@1.1.1","path":"node_modules/object-keys"},{"key":"object.assign@4.1.7","path":"node_modules/object.assign"},{"key":"obug@2.1.4","path":"node_modules/obug"},{"key":"openai@7.23.0","path":"node_modules/openai"},{"key":"own-keys@1.0.1","path":"node_modules/own-keys"},{"key":"package-json-from-dist@1.0.1","path":"node_modules/package-json-from-dist"},{"key":"parse-gitignore@2.0.0","path":"node_modules/parse-gitignore"},{"key":"path-key@3.1.1","path":"node_modules/path-key"},{"key":"path-parse@1.0.7","path":"node_modules/path-parse"},{"key":"path-scurry@2.0.2","path":"node_modules/path-scurry"},{"key":"lru-cache@11.5.1","path":"node_modules/path-scurry/node_modules/lru-cache"},{"key":"picocolors@1.1.1","path":"node_modules/picocolors"},{"key":"picomatch@4.0.7","path":"node_modules/picomatch"},{"key":"possible-typed-array-names@1.1.0","path":"node_modules/possible-typed-array-names"},{"key":"postcss@8.5.28","path":"node_modules/postcss"},{"key":"pretty-bytes@6.1.1","path":"node_modules/pretty-bytes"},{"key":"punycode@2.3.1","path":"node_modules/punycode"},{"key":"readdirp@5.1.1","path":"node_modules/readdirp"},{"key":"reflect.getprototypeof@1.0.10","path":"node_modules/reflect.getprototypeof"},{"key":"regenerate@1.4.2","path":"node_modules/regenerate"},{"key":"regenerate-unicode-properties@10.2.2","path":"node_modules/regenerate-unicode-properties"},{"key":"regexp.prototype.flags@1.5.4","path":"node_modules/regexp.prototype.flags"},{"key":"regexpu-core@6.4.0","path":"node_modules/regexpu-core"},{"key":"regjsgen@0.8.0","path":"node_modules/regjsgen"},{"key":"regjsparser@0.13.2","path":"node_modules/regjsparser"},{"key":"require-from-string@2.0.2","path":"node_modules/require-from-string"},{"key":"require-in-the-middle@8.0.1","path":"node_modules/require-in-the-middle"},{"key":"resolve@1.22.12","path":"node_modules/resolve"},{"key":"rolldown@1.2.11","path":"node_modules/rolldown"},{"key":"rollup@4.62.2","path":"node_modules/rollup"},{"key":"safe-array-concat@1.1.4","path":"node_modules/safe-array-concat"},{"key":"safe-push-apply@1.0.0","path":"node_modules/safe-push-apply"},{"key":"safe-regex-test@1.1.0","path":"node_modules/safe-regex-test"},{"key":"semver@6.3.1","path":"node_modules/semver"},{"key":"serialize-javascript@7.0.6","path":"node_modules/serialize-javascript"},{"key":"set-cookie-parser@3.1.2","path":"node_modules/set-cookie-parser"},{"key":"set-function-length@1.2.2","path":"node_modules/set-function-length"},{"key":"set-function-name@2.0.2","path":"node_modules/set-function-name"},{"key":"set-proto@1.0.0","path":"node_modules/set-proto"},{"key":"sharp@0.35.5","path":"node_modules/sharp"},{"key":"semver@7.8.5","path":"node_modules/sharp/node_modules/semver"},{"key":"shebang-command@2.0.0","path":"node_modules/shebang-command"},{"key":"shebang-regex@3.0.0","path":"node_modules/shebang-regex"},{"key":"side-channel@1.1.1","path":"node_modules/side-channel"},{"key":"side-channel-list@1.0.1","path":"node_modules/side-channel-list"},{"key":"side-channel-map@1.0.1","path":"node_modules/side-channel-map"},{"key":"side-channel-weakmap@1.0.2","path":"node_modules/side-channel-weakmap"},{"key":"signal-exit@4.1.0","path":"node_modules/signal-exit"},{"key":"sirv@3.0.2","path":"node_modules/sirv"},{"key":"smob@1.6.2","path":"node_modules/smob"},{"key":"source-map@0.6.1","path":"node_modules/source-map"},{"key":"source-map-js@1.2.2","path":"node_modules/source-map-js"},{"key":"source-map-support@0.5.21","path":"node_modules/source-map-support"},{"key":"stop-iteration-iterator@1.1.0","path":"node_modules/stop-iteration-iterator"},{"key":"string.prototype.matchall@4.0.12","path":"node_modules/string.prototype.matchall"},{"key":"string.prototype.trim@1.2.11","path":"node_modules/string.prototype.trim"},{"key":"string.prototype.trimend@1.0.10","path":"node_modules/string.prototype.trimend"},{"key":"string.prototype.trimstart@1.0.8","path":"node_modules/string.prototype.trimstart"},{"key":"stringify-object@3.3.0","path":"node_modules/stringify-object"},{"key":"strip-comments@2.0.1","path":"node_modules/strip-comments"},{"key":"stubborn-fs@2.0.0","path":"node_modules/stubborn-fs"},{"key":"stubborn-utils@1.0.2","path":"node_modules/stubborn-utils"},{"key":"supports-color@10.2.2","path":"node_modules/supports-color"},{"key":"supports-preserve-symlinks-flag@1.0.0","path":"node_modules/supports-preserve-symlinks-flag"},{"key":"svelte@5.57.1","path":"node_modules/svelte"},{"key":"temp-dir@2.0.0","path":"node_modules/temp-dir"},{"key":"tempy@0.6.0","path":"node_modules/tempy"},{"key":"type-fest@0.16.0","path":"node_modules/tempy/node_modules/type-fest"},{"key":"terser@5.48.0","path":"node_modules/terser"},{"key":"tinyglobby@0.2.17","path":"node_modules/tinyglobby"},{"key":"totalist@3.0.1","path":"node_modules/totalist"},{"key":"tr46@1.0.1","path":"node_modules/tr46"},{"key":"tslib@2.8.1","path":"node_modules/tslib"},{"key":"type-fest@4.41.0","path":"node_modules/type-fest"},{"key":"typed-array-buffer@1.0.3","path":"node_modules/typed-array-buffer"},{"key":"typed-array-byte-length@1.0.3","path":"node_modules/typed-array-byte-length"},{"key":"typed-array-byte-offset@1.0.4","path":"node_modules/typed-array-byte-offset"},{"key":"typed-array-length@1.0.8","path":"node_modules/typed-array-length"},{"key":"typescript@6.0.3","path":"node_modules/typescript"},{"key":"unbox-primitive@1.1.0","path":"node_modules/unbox-primitive"},{"key":"undici-types@6.21.0","path":"node_modules/undici-types"},{"key":"unicode-canonical-property-names-ecmascript@2.0.1","path":"node_modules/unicode-canonical-property-names-ecmascript"},{"key":"unicode-match-property-ecmascript@2.0.0","path":"node_modules/unicode-match-property-ecmascript"},{"key":"unicode-match-property-value-ecmascript@2.2.1","path":"node_modules/unicode-match-property-value-ecmascript"},{"key":"unicode-property-aliases-ecmascript@2.2.0","path":"node_modules/unicode-property-aliases-ecmascript"},{"key":"unique-string@2.0.0","path":"node_modules/unique-string"},{"key":"universalify@2.0.1","path":"node_modules/universalify"},{"key":"upath@1.2.0","path":"node_modules/upath"},{"key":"update-browserslist-db@1.3.3","path":"node_modules/update-browserslist-db"},{"key":"urlpattern-polyfill@10.1.0","path":"node_modules/urlpattern-polyfill"},{"key":"vite@8.3.1","path":"node_modules/vite"},{"key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"key":"vitefu@1.1.3","path":"node_modules/vitefu"},{"key":"webidl-conversions@4.0.2","path":"node_modules/webidl-conversions"},{"key":"whatwg-url@7.1.0","path":"node_modules/whatwg-url"},{"key":"when-exit@2.1.5","path":"node_modules/when-exit"},{"key":"which@2.0.2","path":"node_modules/which"},{"key":"which-boxed-primitive@1.1.1","path":"node_modules/which-boxed-primitive"},{"key":"which-builtin-type@1.2.1","path":"node_modules/which-builtin-type"},{"key":"which-collection@1.0.2","path":"node_modules/which-collection"},{"key":"which-typed-array@1.1.22","path":"node_modules/which-typed-array"},{"key":"workbox-background-sync@7.4.1","path":"node_modules/workbox-background-sync"},{"key":"workbox-broadcast-update@7.4.1","path":"node_modules/workbox-broadcast-update"},{"key":"workbox-build@7.4.1","path":"node_modules/workbox-build"},{"key":"pretty-bytes@5.6.0","path":"node_modules/workbox-build/node_modules/pretty-bytes"},{"key":"source-map@0.8.0-beta.0","path":"node_modules/workbox-build/node_modules/source-map"},{"key":"workbox-cacheable-response@7.4.1","path":"node_modules/workbox-cacheable-response"},{"key":"workbox-core@7.4.1","path":"node_modules/workbox-core"},{"key":"workbox-expiration@7.4.1","path":"node_modules/workbox-expiration"},{"key":"workbox-google-analytics@7.4.1","path":"node_modules/workbox-google-analytics"},{"key":"workbox-navigation-preload@7.4.1","path":"node_modules/workbox-navigation-preload"},{"key":"workbox-precaching@7.4.1","path":"node_modules/workbox-precaching"},{"key":"workbox-range-requests@7.4.1","path":"node_modules/workbox-range-requests"},{"key":"workbox-recipes@7.4.1","path":"node_modules/workbox-recipes"},{"key":"workbox-routing@7.4.1","path":"node_modules/workbox-routing"},{"key":"workbox-strategies@7.4.1","path":"node_modules/workbox-strategies"},{"key":"workbox-streams@7.4.1","path":"node_modules/workbox-streams"},{"key":"workbox-sw@7.4.1","path":"node_modules/workbox-sw"},{"key":"workbox-window@7.4.1","path":"node_modules/workbox-window"},{"key":"ws@8.21.3","path":"node_modules/ws"},{"key":"yallist@3.1.1","path":"node_modules/yallist"},{"key":"yaml@2.9.1","path":"node_modules/yaml"},{"key":"zimmerframe@1.1.5","path":"node_modules/zimmerframe"},{"key":"zod@4.6.5","path":"node_modules/zod"}],"resolutions":[{"context":".","key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"context":".","key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"context":".","key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"context":".","key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"context":".","key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"context":".","key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"context":".","key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"context":".","key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"context":".","key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"context":".","key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"context":".","key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"context":".","key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"context":".","key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"context":".","key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"context":".","key":"openai@7.23.0","path":"node_modules/openai"},{"context":".","key":"sharp@0.35.5","path":"node_modules/sharp"},{"context":".","key":"svelte@5.57.1","path":"node_modules/svelte"},{"context":".","key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"context":".","key":"vite@8.3.1","path":"node_modules/vite"},{"context":"experiments/native-architecture","key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"context":"experiments/native-architecture","key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"context":"experiments/native-architecture","key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"context":"experiments/native-architecture","key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"context":"experiments/native-architecture","key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"context":"experiments/native-architecture","key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"context":"experiments/native-architecture","key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"context":"experiments/native-architecture","key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"context":"experiments/native-architecture","key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"context":"experiments/native-architecture","key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"context":"experiments/native-architecture","key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"context":"experiments/native-architecture","key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"context":"experiments/native-architecture","key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"context":"experiments/native-architecture","key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"context":"experiments/native-architecture","key":"openai@7.23.0","path":"node_modules/openai"},{"context":"experiments/native-architecture","key":"sharp@0.35.5","path":"node_modules/sharp"},{"context":"experiments/native-architecture","key":"svelte@5.57.1","path":"node_modules/svelte"},{"context":"experiments/native-architecture","key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"context":"experiments/native-architecture","key":"vite@8.3.1","path":"node_modules/vite"},{"context":"web","key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"context":"web","key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"context":"web","key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"context":"web","key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"context":"web","key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"context":"web","key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"context":"web","key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"context":"web","key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"context":"web","key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"context":"web","key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"context":"web","key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"context":"web","key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"context":"web","key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"context":"web","key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"context":"web","key":"openai@7.23.0","path":"node_modules/openai"},{"context":"web","key":"sharp@0.35.5","path":"node_modules/sharp"},{"context":"web","key":"svelte@5.57.1","path":"node_modules/svelte"},{"context":"web","key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"context":"web","key":"vite@8.3.1","path":"node_modules/vite"},{"context":"netlify/functions","key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"context":"netlify/functions","key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"context":"netlify/functions","key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"context":"netlify/functions","key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"context":"netlify/functions","key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"context":"netlify/functions","key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"context":"netlify/functions","key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"context":"netlify/functions","key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"context":"netlify/functions","key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"context":"netlify/functions","key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"context":"netlify/functions","key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"context":"netlify/functions","key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"context":"netlify/functions","key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"context":"netlify/functions","key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"context":"netlify/functions","key":"openai@7.23.0","path":"node_modules/openai"},{"context":"netlify/functions","key":"sharp@0.35.5","path":"node_modules/sharp"},{"context":"netlify/functions","key":"svelte@5.57.1","path":"node_modules/svelte"},{"context":"netlify/functions","key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"context":"netlify/functions","key":"vite@8.3.1","path":"node_modules/vite"},{"context":"tools","key":"@aparajita/capacitor-secure-storage@8.0.1","path":"node_modules/@aparajita/capacitor-secure-storage"},{"context":"tools","key":"@capacitor-community/media@9.1.0","path":"node_modules/@capacitor-community/media"},{"context":"tools","key":"@capacitor/core@8.5.2","path":"node_modules/@capacitor/core"},{"context":"tools","key":"@capacitor/device@8.0.3","path":"node_modules/@capacitor/device"},{"context":"tools","key":"@capacitor/haptics@8.0.2","path":"node_modules/@capacitor/haptics"},{"context":"tools","key":"@capacitor/network@8.0.1","path":"node_modules/@capacitor/network"},{"context":"tools","key":"@capacitor/preferences@8.0.1","path":"node_modules/@capacitor/preferences"},{"context":"tools","key":"@capacitor/screen-orientation@8.0.1","path":"node_modules/@capacitor/screen-orientation"},{"context":"tools","key":"@fontsource-variable/quicksand@5.3.0","path":"node_modules/@fontsource-variable/quicksand"},{"context":"tools","key":"@netlify/blobs@11.1.1","path":"node_modules/@netlify/blobs"},{"context":"tools","key":"@sveltejs/adapter-netlify@6.0.4","path":"node_modules/@sveltejs/adapter-netlify"},{"context":"tools","key":"@sveltejs/adapter-static@3.0.10","path":"node_modules/@sveltejs/adapter-static"},{"context":"tools","key":"@sveltejs/kit@2.70.3","path":"node_modules/@sveltejs/kit"},{"context":"tools","key":"@sveltejs/vite-plugin-svelte@7.3.1","path":"node_modules/@sveltejs/vite-plugin-svelte"},{"context":"tools","key":"openai@7.23.0","path":"node_modules/openai"},{"context":"tools","key":"sharp@0.35.5","path":"node_modules/sharp"},{"context":"tools","key":"svelte@5.57.1","path":"node_modules/svelte"},{"context":"tools","key":"vite-plugin-pwa@1.3.0","path":"node_modules/vite-plugin-pwa"},{"context":"tools","key":"vite@8.3.1","path":"node_modules/vite"}],"scope":"Post-install tree and identity; cloud install/build/deploy logs remain separate evidence"}
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+> splotch@1.6.0 gen:icon-names
+> node tools/icons/gen-icon-names.mjs
+
+Wrote 95 icon names to web/src/lib/components/icon-names.d.ts
+
+> splotch@1.6.0 gen:releases
+> node tools/release/gen-release-notes.mjs
+
+Generating release notes from 8 release file(s)…
+  wrote web/src/lib/releaseHues.ts
+  wrote web/src/lib/releases.json
+  wrote web/src/lib/components/settings/CurrentReleaseNotes.svelte
+  wrote web/src/lib/components/page/ReleaseHistory.svelte
+  wrote fastlane/metadata/android/en-US/changelogs/8.txt
+  wrote fastlane/metadata/android/en-US/changelogs/7.txt
+  wrote fastlane/metadata/android/en-US/changelogs/6.txt
+  wrote fastlane/metadata/android/en-US/changelogs/5.txt
+  wrote fastlane/metadata/android/en-US/changelogs/4.txt
+  wrote fastlane/metadata/android/en-US/changelogs/3.txt
+  wrote fastlane/metadata/android/en-US/changelogs/2.txt
+  wrote fastlane/metadata/android/en-US/changelogs/1.txt
+  wrote fastlane/metadata/en-US/release_notes.txt
+Done.
+
+> splotch@1.6.0 build
+> node tools/run-web-tool.mjs vite build
+
+$ vite build
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.1 building ssr environment for production...
+transforming...
+✓ 865 modules transformed.
+rendering chunks...
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 856 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/client/version.json                                                             0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/client/_app/version.json                                                        0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/client/sw-page-cache-cleanup-09c341cd.js                                        0.09 kB
+.svelte-kit/output/client/_app/immutable/workers/magicSheet.worker-Cn2gl-rH.js                     2.65 kB
+.svelte-kit/output/client/_app/immutable/workers/pngEncoder.worker-CSFc3kKn.js                     4.43 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-vietnamese-wght-normal.ei70gACF.woff2    8.84 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-latin-ext-wght-normal.CrJ75Ewg.woff2    26.61 kB
+.svelte-kit/output/client/_app/immutable/assets/quicksand-latin-wght-normal.Buj9m_3d.woff2        28.24 kB
+.svelte-kit/output/client/.vite/manifest.json                                                     39.07 kB │ gzip:  5.16 kB
+.svelte-kit/output/client/_app/immutable/assets/splotchy.1qKHAmAF.svg                             88.46 kB │ gzip: 32.59 kB
+.svelte-kit/output/client/coloring/manifest-1.6.2716.json                                        185.33 kB │ gzip: 38.25 kB
+.svelte-kit/output/client/_app/immutable/assets/RuleLabel.Bzsf323h.css                             0.09 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/assets/SplotchyIcon.DToonNnk.css                          0.11 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/assets/Icon.DxktcHA6.css                                  0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/assets/11.4cgBeE3S.css                                    0.12 kB │ gzip:  0.11 kB
+.svelte-kit/output/client/_app/immutable/assets/CrayonStrip.OkSmoxDc.css                           0.22 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/assets/16.Ballmdm8.css                                    0.23 kB │ gzip:  0.17 kB
+.svelte-kit/output/client/_app/immutable/assets/ReleaseSectionHeading.KHS6j_Re.css                 0.23 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/assets/VisuallyHidden.B4I3Lgeg.css                        0.27 kB │ gzip:  0.20 kB
+.svelte-kit/output/client/_app/immutable/assets/13.BfWKU6r6.css                                    0.31 kB │ gzip:  0.20 kB
+.svelte-kit/output/client/_app/immutable/assets/RuleLabel.jzOqEo0R.css                             0.48 kB │ gzip:  0.25 kB
+.svelte-kit/output/client/_app/immutable/assets/1.bszPfC0u.css                                     0.57 kB │ gzip:  0.28 kB
+.svelte-kit/output/client/_app/immutable/assets/LiveSurface.A0Des9sS.css                           0.57 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/assets/StatusMessage.CfdGb-If.css                         0.69 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/assets/DialogHeader.Bl9mYHmM.css                          0.80 kB │ gzip:  0.37 kB
+.svelte-kit/output/client/_app/immutable/assets/ScrollCue.CGX-ZSW_.css                             0.88 kB │ gzip:  0.40 kB
+.svelte-kit/output/client/_app/immutable/assets/ExternalMark.fHWf2Kwa.css                          0.90 kB │ gzip:  0.37 kB
+.svelte-kit/output/client/_app/immutable/assets/Disclosure.yKJnrQxh.css                            0.91 kB │ gzip:  0.36 kB
+.svelte-kit/output/client/_app/immutable/assets/9.CiPL09xQ.css                                     0.91 kB │ gzip:  0.36 kB
+.svelte-kit/output/client/_app/immutable/assets/14.rlb1pzfV.css                                    1.16 kB │ gzip:  0.48 kB
+.svelte-kit/output/client/_app/immutable/assets/ErrorScreen.BAsnDDLh.css                           1.23 kB │ gzip:  0.60 kB
+.svelte-kit/output/client/_app/immutable/assets/15.76LP7-Y7.css                                    1.24 kB │ gzip:  0.48 kB
+.svelte-kit/output/client/_app/immutable/assets/BrandMark.-p6EwB-C.css                             1.91 kB │ gzip:  0.70 kB
+.svelte-kit/output/client/_app/immutable/assets/ReportFields.DTT_7ppm.css                          2.32 kB │ gzip:  0.70 kB
+.svelte-kit/output/client/_app/immutable/assets/17.BbYa6zEv.css                                    2.54 kB │ gzip:  0.83 kB
+.svelte-kit/output/client/_app/immutable/assets/TocDisclosure.CPVva9go.css                         2.63 kB │ gzip:  0.81 kB
+.svelte-kit/output/client/_app/immutable/assets/Button.B3-h6l4d.css                                2.80 kB │ gzip:  0.84 kB
+.svelte-kit/output/client/_app/immutable/assets/SidebarToc.DPspYCVM.css                            2.89 kB │ gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/assets/pages.2rQuXqf-.css                                 3.68 kB │ gzip:  1.08 kB
+.svelte-kit/output/client/_app/immutable/assets/ToggleRow.4qWpLRqz.css                             4.04 kB │ gzip:  1.13 kB
+.svelte-kit/output/client/_app/immutable/assets/19.CjBOOHgj.css                                    4.65 kB │ gzip:  1.26 kB
+.svelte-kit/output/client/_app/immutable/assets/SegmentedPicker.BhaaZrMr.css                       4.74 kB │ gzip:  1.17 kB
+.svelte-kit/output/client/_app/immutable/assets/12.Bp8zJrKO.css                                    5.06 kB │ gzip:  1.36 kB
+.svelte-kit/output/client/_app/immutable/assets/6.D-4vbXLF.css                                     5.52 kB │ gzip:  1.44 kB
+.svelte-kit/output/client/_app/immutable/assets/PageShell.BSeqhjSv.css                             7.08 kB │ gzip:  1.89 kB
+.svelte-kit/output/client/_app/immutable/assets/PrimitiveSections.DA3nEneX.css                     7.57 kB │ gzip:  1.64 kB
+.svelte-kit/output/client/_app/immutable/assets/ParentalGate.DWixTwpc.css                          7.87 kB │ gzip:  1.78 kB
+.svelte-kit/output/client/_app/immutable/assets/4.Dgjv5DtA.css                                     8.01 kB │ gzip:  1.75 kB
+.svelte-kit/output/client/_app/immutable/assets/7.CRFumrSE.css                                     8.31 kB │ gzip:  1.89 kB
+.svelte-kit/output/client/_app/immutable/assets/3.DEj4fa7E.css                                     9.69 kB │ gzip:  2.10 kB
+.svelte-kit/output/client/_app/immutable/assets/8.X40oUwBO.css                                    22.62 kB │ gzip:  4.21 kB
+.svelte-kit/output/client/_app/immutable/assets/SettingsModal.hIp16wYU.css                        23.69 kB │ gzip:  4.70 kB
+.svelte-kit/output/client/_app/immutable/assets/SettingsButton.DTC2ZtlV.css                       27.94 kB │ gzip:  4.83 kB
+.svelte-kit/output/client/_app/immutable/assets/overlayChunk.DUI8GlS9.css                         40.68 kB │ gzip:  7.86 kB
+.svelte-kit/output/client/_app/immutable/assets/0.C2FnH-ub.css                                    46.23 kB │ gzip: 16.94 kB
+.svelte-kit/output/client/_app/immutable/chunks/D5Zu0477.js                                        0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/client/_app/immutable/chunks/DUNUpTf8.js                                        0.03 kB │ gzip:  0.05 kB
+.svelte-kit/output/client/_app/immutable/chunks/CiLpQecW.js                                        0.04 kB │ gzip:  0.06 kB
+.svelte-kit/output/client/_app/immutable/chunks/D9Q9Q9T3.js                                        0.05 kB │ gzip:  0.07 kB
+.svelte-kit/output/client/_app/immutable/chunks/DcX5JijC.js                                        0.05 kB │ gzip:  0.07 kB
+.svelte-kit/output/client/_app/immutable/chunks/BpaeGJEw.js                                        0.06 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/chunks/xihTtKlq.js                                        0.06 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/chunks/wl2ohwfF.js                                        0.06 kB │ gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/entry/start.BgnGQbxd.js                                   0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/chunks/DxhPVHKV.js                                        0.08 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/DW0gP14h.js                                        0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/chunks/B9lps7Ri.js                                        0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/DCByc0N7.js                                        0.12 kB │ gzip:  0.11 kB
+.svelte-kit/output/client/_app/immutable/nodes/2.BbJt7Agu.js                                       0.17 kB │ gzip:  0.15 kB
+.svelte-kit/output/client/_app/immutable/chunks/CVzDiTR_.js                                        0.20 kB │ gzip:  0.17 kB
+.svelte-kit/output/client/_app/immutable/nodes/18.Do0kCUK0.js                                      0.21 kB │ gzip:  0.17 kB
+.svelte-kit/output/client/_app/immutable/nodes/5.DwUkhNMI.js                                       0.21 kB │ gzip:  0.17 kB
+.svelte-kit/output/client/_app/immutable/nodes/10.CrA0MCqZ.js                                      0.23 kB │ gzip:  0.19 kB
+.svelte-kit/output/client/_app/immutable/chunks/B6JMcVGu.js                                        0.29 kB │ gzip:  0.16 kB
+.svelte-kit/output/client/_app/immutable/chunks/BK0M8Ge8.js                                        0.32 kB │ gzip:  0.25 kB
+.svelte-kit/output/client/_app/immutable/chunks/CZCI2qGA.js                                        0.36 kB │ gzip:  0.26 kB
+.svelte-kit/output/client/_app/immutable/chunks/DKhcvZ_B.js                                        0.39 kB │ gzip:  0.28 kB
+.svelte-kit/output/client/_app/immutable/chunks/CxHNmFtb.js                                        0.46 kB │ gzip:  0.32 kB
+.svelte-kit/output/client/_app/immutable/chunks/DWvop_ll.js                                        0.48 kB │ gzip:  0.34 kB
+.svelte-kit/output/client/_app/immutable/chunks/B3gJ-t5K.js                                        0.51 kB │ gzip:  0.36 kB
+.svelte-kit/output/client/_app/immutable/chunks/rTotOTCs.js                                        0.54 kB │ gzip:  0.37 kB
+.svelte-kit/output/client/_app/immutable/chunks/XbqD8bYN.js                                        0.59 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/chunks/DeW0MInd.js                                        0.59 kB │ gzip:  0.39 kB
+.svelte-kit/output/client/_app/immutable/chunks/B69ocp_p.js                                        0.60 kB │ gzip:  0.40 kB
+.svelte-kit/output/client/_app/immutable/chunks/DBJ3qtlS.js                                        0.61 kB │ gzip:  0.40 kB
+.svelte-kit/output/client/_app/immutable/chunks/BuQfFw3R.js                                        0.61 kB │ gzip:  0.33 kB
+.svelte-kit/output/client/_app/immutable/chunks/Dt-HX3Vu.js                                        0.62 kB │ gzip:  0.38 kB
+.svelte-kit/output/client/_app/immutable/chunks/1hvJypEr.js                                        0.63 kB │ gzip:  0.40 kB
+.svelte-kit/output/client/_app/immutable/chunks/BCP8Ds94.js                                        0.63 kB │ gzip:  0.32 kB
+.svelte-kit/output/client/_app/immutable/chunks/CHcc3uX1.js                                        0.67 kB │ gzip:  0.39 kB
+.svelte-kit/output/client/_app/immutable/chunks/1_ZnQMWn.js                                        0.69 kB │ gzip:  0.44 kB
+.svelte-kit/output/client/_app/immutable/chunks/BtJzU5KT.js                                        0.79 kB │ gzip:  0.27 kB
+.svelte-kit/output/client/_app/immutable/chunks/D4_sq9Ro.js                                        0.80 kB │ gzip:  0.51 kB
+.svelte-kit/output/client/_app/immutable/chunks/Ci9ssbOB.js                                        0.84 kB │ gzip:  0.46 kB
+.svelte-kit/output/client/_app/immutable/chunks/CGvyOB2I.js                                        0.85 kB │ gzip:  0.53 kB
+.svelte-kit/output/client/_app/immutable/chunks/BtTmIdnM.js                                        0.90 kB │ gzip:  0.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/CPnMmZqb.js                                        0.91 kB │ gzip:  0.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/AikQkL0N.js                                        1.03 kB │ gzip:  0.59 kB
+.svelte-kit/output/client/_app/immutable/chunks/BiFX1zju.js                                        1.18 kB │ gzip:  0.58 kB
+.svelte-kit/output/client/_app/immutable/chunks/B9l0slTC.js                                        1.19 kB │ gzip:  0.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/uBIymjUX.js                                        1.23 kB │ gzip:  0.68 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bjy-W4x2.js                                        1.36 kB │ gzip:  0.65 kB
+.svelte-kit/output/client/_app/immutable/chunks/BdctqR6V.js                                        1.46 kB │ gzip:  0.68 kB
+.svelte-kit/output/client/_app/immutable/chunks/CPMQQdre.js                                        1.47 kB │ gzip:  0.69 kB
+.svelte-kit/output/client/_app/immutable/chunks/DVQzCYyu.js                                        1.53 kB │ gzip:  0.85 kB
+.svelte-kit/output/client/_app/immutable/chunks/CzYkrnRs.js                                        1.53 kB │ gzip:  0.60 kB
+.svelte-kit/output/client/_app/immutable/chunks/BV8Ty5xQ.js                                        1.55 kB │ gzip:  0.85 kB
+.svelte-kit/output/client/_app/immutable/nodes/16.iuASOcR3.js                                      1.60 kB │ gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/nodes/1.BHMKydWW.js                                       1.64 kB │ gzip:  0.80 kB
+.svelte-kit/output/client/_app/immutable/chunks/BP47YlX3.js                                        1.66 kB │ gzip:  0.83 kB
+.svelte-kit/output/client/_app/immutable/chunks/tqbgBAFk.js                                        1.66 kB │ gzip:  0.56 kB
+.svelte-kit/output/client/_app/immutable/nodes/0.CtO4C-o_.js                                       1.66 kB │ gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/chunks/CntH4_Dt.js                                        1.72 kB │ gzip:  0.87 kB
+.svelte-kit/output/client/_app/immutable/chunks/CB0xGnbI.js                                        1.75 kB │ gzip:  0.86 kB
+.svelte-kit/output/client/_app/immutable/nodes/13.WBloZ5XI.js                                      1.78 kB │ gzip:  0.95 kB
+.svelte-kit/output/client/_app/immutable/chunks/21ACieq7.js                                        1.90 kB │ gzip:  0.98 kB
+.svelte-kit/output/client/_app/immutable/chunks/1qI0rE3o.js                                        2.06 kB │ gzip:  1.11 kB
+.svelte-kit/output/client/_app/immutable/chunks/BuAyaesS.js                                        2.17 kB │ gzip:  0.98 kB
+.svelte-kit/output/client/_app/immutable/chunks/Bs4xy7CF.js                                        2.19 kB │ gzip:  0.97 kB
+.svelte-kit/output/client/_app/immutable/nodes/9.BVsUFjJC.js                                       2.19 kB │ gzip:  1.14 kB
+.svelte-kit/output/client/_app/immutable/nodes/15.CPyNlfpH.js                                      2.61 kB │ gzip:  1.21 kB
+.svelte-kit/output/client/_app/immutable/chunks/CBGObPcJ.js                                        2.62 kB │ gzip:  1.33 kB
+.svelte-kit/output/client/_app/immutable/chunks/BPsW4Vao.js                                        2.69 kB │ gzip:  1.20 kB
+.svelte-kit/output/client/_app/immutable/chunks/zsyDf859.js                                        2.97 kB │ gzip:  1.41 kB
+.svelte-kit/output/client/_app/immutable/chunks/BO2iSAdX.js                                        3.14 kB │ gzip:  1.35 kB
+.svelte-kit/output/client/_app/immutable/chunks/CvSjNugE.js                                        3.26 kB │ gzip:  1.34 kB
+.svelte-kit/output/client/_app/immutable/chunks/DZ-ixPxm.js                                        3.45 kB │ gzip:  1.51 kB
+.svelte-kit/output/client/_app/immutable/chunks/B27qu9UE.js                                        3.99 kB │ gzip:  1.79 kB
+.svelte-kit/output/client/_app/immutable/chunks/-ParAYmI.js                                        4.05 kB │ gzip:  1.91 kB
+.svelte-kit/output/client/_app/immutable/chunks/jv9sRQdE.js                                        4.23 kB │ gzip:  1.66 kB
+.svelte-kit/output/client/_app/immutable/nodes/17.I9dw6bPD.js                                      4.43 kB │ gzip:  2.01 kB
+.svelte-kit/output/client/_app/immutable/chunks/fh4XYjL5.js                                        4.94 kB │ gzip:  2.07 kB
+.svelte-kit/output/client/_app/immutable/chunks/lKesHRNY.js                                        5.08 kB │ gzip:  2.07 kB
+.svelte-kit/output/client/_app/immutable/nodes/11.7ayN8Tqr.js                                      5.44 kB │ gzip:  2.43 kB
+.svelte-kit/output/client/_app/immutable/chunks/B5vBji3A.js                                        5.74 kB │ gzip:  2.43 kB
+.svelte-kit/output/client/_app/immutable/chunks/rjdBmPZs.js                                        5.92 kB │ gzip:  2.53 kB
+.svelte-kit/output/client/_app/immutable/chunks/J7rpe7hI.js                                        5.94 kB │ gzip:  2.23 kB
+.svelte-kit/output/client/_app/immutable/chunks/Sq_HEVfM.js                                        6.01 kB │ gzip:  2.34 kB
+.svelte-kit/output/client/_app/immutable/chunks/BkYiLPPL.js                                        6.12 kB │ gzip:  2.17 kB
+.svelte-kit/output/client/_app/immutable/chunks/DnADpQYk.js                                        6.17 kB │ gzip:  2.59 kB
+.svelte-kit/output/client/_app/immutable/chunks/D4Ric4Bb.js                                        6.43 kB │ gzip:  2.48 kB
+.svelte-kit/output/client/_app/immutable/chunks/COUPn9Cm.js                                        6.51 kB │ gzip:  3.00 kB
+.svelte-kit/output/client/_app/immutable/chunks/CJicONP9.js                                        6.59 kB │ gzip:  2.52 kB
+.svelte-kit/output/client/_app/immutable/chunks/BmBt5Z4j.js                                        6.61 kB │ gzip:  3.06 kB
+.svelte-kit/output/client/_app/immutable/chunks/JELurPAR.js                                        6.94 kB │ gzip:  2.99 kB
+.svelte-kit/output/client/_app/immutable/nodes/12.Cy1ymPM0.js                                      9.78 kB │ gzip:  4.01 kB
+.svelte-kit/output/client/_app/immutable/chunks/CE-pyptm.js                                        9.95 kB │ gzip:  4.12 kB
+.svelte-kit/output/client/_app/immutable/entry/app.CtWQPPwX.js                                    10.08 kB │ gzip:  3.62 kB
+.svelte-kit/output/client/_app/immutable/chunks/Hs3Cgbdk.js                                       10.93 kB │ gzip:  4.58 kB
+.svelte-kit/output/client/_app/immutable/chunks/BTNoz5ab.js                                       11.64 kB │ gzip:  4.55 kB
+.svelte-kit/output/client/_app/immutable/nodes/14.fVR3Wn5n.js                                     12.26 kB │ gzip:  8.97 kB
+.svelte-kit/output/client/_app/immutable/nodes/6.fR3d8SzQ.js                                      14.95 kB │ gzip:  5.43 kB
+.svelte-kit/output/client/_app/immutable/nodes/7.Byfr5ii7.js                                      15.18 kB │ gzip:  5.45 kB
+.svelte-kit/output/client/_app/immutable/chunks/CN2T7OdA.js                                       15.90 kB │ gzip:  6.14 kB
+.svelte-kit/output/client/_app/immutable/nodes/4.DndgUjGc.js                                      16.21 kB │ gzip:  5.75 kB
+.svelte-kit/output/client/_app/immutable/chunks/B0VICMua.js                                       18.29 kB │ gzip:  5.70 kB
+.svelte-kit/output/client/_app/immutable/chunks/y68NVIkd.js                                       19.90 kB │ gzip:  6.95 kB
+.svelte-kit/output/client/_app/immutable/nodes/3.IEAbwc2r.js                                      22.78 kB │ gzip:  9.13 kB
+.svelte-kit/output/client/_app/immutable/nodes/19.BFu59qUT.js                                     24.51 kB │ gzip:  9.63 kB
+.svelte-kit/output/client/_app/immutable/chunks/BziOZfr3.js                                       36.39 kB │ gzip: 13.64 kB
+.svelte-kit/output/client/_app/immutable/chunks/CICaylMK.js                                       45.85 kB │ gzip: 16.71 kB
+.svelte-kit/output/client/_app/immutable/chunks/C4YzYhXg.js                                       47.94 kB │ gzip: 17.42 kB
+.svelte-kit/output/client/_app/immutable/nodes/8.B-bXA3M_.js                                      55.96 kB │ gzip: 18.15 kB
+.svelte-kit/output/client/_app/immutable/chunks/CVcqcjS2.js                                       57.89 kB │ gzip: 21.32 kB
+.svelte-kit/output/client/_app/immutable/chunks/B0-ouz6y.js                                       58.58 kB │ gzip: 20.48 kB
+.svelte-kit/output/client/_app/immutable/chunks/C2DOFEIn.js                                       60.60 kB │ gzip: 21.63 kB
+.svelte-kit/output/client/_app/immutable/chunks/DuJo0r5c.js                                       60.77 kB │ gzip: 20.16 kB
+.svelte-kit/output/client/_app/immutable/chunks/DcucUwKl.js                                       60.98 kB │ gzip: 23.22 kB
+
+✓ built in 643ms
+
+PWA v1.3.0
+mode      generateSW
+precache  283 entries (5602.27 KiB)
+files generated
+  .svelte-kit/output/client/sw.js
+  .svelte-kit/output/client/workbox-10e0918b.js
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+computing gzip size...
+.svelte-kit/output/server/version.json                                                             0.02 kB │ gzip:  0.04 kB
+.svelte-kit/output/server/sw-page-cache-cleanup-09c341cd.js                                        0.09 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-vietnamese-wght-normal.ei70gACF.woff2    8.84 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-latin-ext-wght-normal.CrJ75Ewg.woff2    26.61 kB
+.svelte-kit/output/server/_app/immutable/assets/quicksand-latin-wght-normal.Buj9m_3d.woff2        28.24 kB
+.svelte-kit/output/server/.vite/manifest.json                                                     51.70 kB │ gzip:  6.13 kB
+.svelte-kit/output/server/_app/immutable/assets/splotchy.1qKHAmAF.svg                             88.46 kB │ gzip: 32.59 kB
+.svelte-kit/output/server/coloring/manifest-1.6.2716.json                                        185.33 kB │ gzip: 38.25 kB
+.svelte-kit/output/server/_app/immutable/assets/RuleLabel.Bzsf323h.css                             0.09 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/_app/immutable/assets/SplotchyIcon.DToonNnk.css                          0.11 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/_app/immutable/assets/Icon.DxktcHA6.css                                  0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/_app/immutable/assets/WebPageIcon.BUyOcPRN.css                           0.11 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.4cgBeE3S.css                                 0.12 kB │ gzip:  0.11 kB
+.svelte-kit/output/server/_app/immutable/assets/VisuallyHidden.DIg8UxqZ.css                        0.16 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/_app/immutable/assets/CrayonStrip.OkSmoxDc.css                           0.22 kB │ gzip:  0.15 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.Ballmdm8.css                                 0.23 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/_app/immutable/assets/ReleaseSectionHeading.KHS6j_Re.css                 0.23 kB │ gzip:  0.15 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.BfWKU6r6.css                                 0.31 kB │ gzip:  0.20 kB
+.svelte-kit/output/server/_app/immutable/assets/RuleLabel.jzOqEo0R.css                             0.48 kB │ gzip:  0.25 kB
+.svelte-kit/output/server/_app/immutable/assets/_error.bszPfC0u.css                                0.57 kB │ gzip:  0.28 kB
+.svelte-kit/output/server/_app/immutable/assets/LiveSurface.A0Des9sS.css                           0.57 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/_app/immutable/assets/StatusMessage.CfdGb-If.css                         0.69 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/_app/immutable/assets/DialogHeader.Bl9mYHmM.css                          0.80 kB │ gzip:  0.37 kB
+.svelte-kit/output/server/_app/immutable/assets/ScrollCue.CGX-ZSW_.css                             0.88 kB │ gzip:  0.40 kB
+.svelte-kit/output/server/_app/immutable/assets/ExternalMark.fHWf2Kwa.css                          0.90 kB │ gzip:  0.37 kB
+.svelte-kit/output/server/_app/immutable/assets/Disclosure.yKJnrQxh.css                            0.91 kB │ gzip:  0.36 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.CiPL09xQ.css                                 0.91 kB │ gzip:  0.36 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.rlb1pzfV.css                                 1.16 kB │ gzip:  0.48 kB
+.svelte-kit/output/server/_app/immutable/assets/ErrorScreen.BAsnDDLh.css                           1.23 kB │ gzip:  0.60 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.76LP7-Y7.css                                 1.24 kB │ gzip:  0.48 kB
+.svelte-kit/output/server/_app/immutable/assets/BrandMark.-p6EwB-C.css                             1.91 kB │ gzip:  0.70 kB
+.svelte-kit/output/server/_app/immutable/assets/ReportFields.DTT_7ppm.css                          2.32 kB │ gzip:  0.70 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.BbYa6zEv.css                                 2.54 kB │ gzip:  0.83 kB
+.svelte-kit/output/server/_app/immutable/assets/TocDisclosure.CPVva9go.css                         2.63 kB │ gzip:  0.81 kB
+.svelte-kit/output/server/_app/immutable/assets/Button.B3-h6l4d.css                                2.80 kB │ gzip:  0.84 kB
+.svelte-kit/output/server/_app/immutable/assets/SidebarToc.DPspYCVM.css                            2.89 kB │ gzip:  0.93 kB
+.svelte-kit/output/server/_app/immutable/assets/FeatureGraphic.2rQuXqf-.css                        3.68 kB │ gzip:  1.08 kB
+.svelte-kit/output/server/_app/immutable/assets/ToggleRow.4qWpLRqz.css                             4.04 kB │ gzip:  1.13 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.CjBOOHgj.css                                 4.65 kB │ gzip:  1.26 kB
+.svelte-kit/output/server/_app/immutable/assets/SegmentedPicker.BhaaZrMr.css                       4.74 kB │ gzip:  1.17 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.Bp8zJrKO.css                                 5.06 kB │ gzip:  1.36 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.D-4vbXLF.css                                 5.52 kB │ gzip:  1.44 kB
+.svelte-kit/output/server/_app/immutable/assets/PageShell.BSeqhjSv.css                             7.08 kB │ gzip:  1.89 kB
+.svelte-kit/output/server/_app/immutable/assets/PrimitiveSections.DA3nEneX.css                     7.57 kB │ gzip:  1.64 kB
+.svelte-kit/output/server/_app/immutable/assets/ParentalGate.DWixTwpc.css                          7.87 kB │ gzip:  1.78 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.Dgjv5DtA.css                                 8.01 kB │ gzip:  1.75 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.CRFumrSE.css                                 8.31 kB │ gzip:  1.89 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.DEj4fa7E.css                                 9.69 kB │ gzip:  2.10 kB
+.svelte-kit/output/server/_app/immutable/assets/_page.X40oUwBO.css                                22.62 kB │ gzip:  4.21 kB
+.svelte-kit/output/server/_app/immutable/assets/SettingsModal.hIp16wYU.css                        23.69 kB │ gzip:  4.70 kB
+.svelte-kit/output/server/_app/immutable/assets/SettingsButton.DTC2ZtlV.css                       27.94 kB │ gzip:  4.83 kB
+.svelte-kit/output/server/_app/immutable/assets/overlayChunk.DUI8GlS9.css                         40.68 kB │ gzip:  7.86 kB
+.svelte-kit/output/server/_app/immutable/assets/_layout.C2FnH-ub.css                              46.23 kB │ gzip: 16.94 kB
+.svelte-kit/output/server/chunks/navigation.js                                                     0.03 kB │ gzip:  0.05 kB
+.svelte-kit/output/server/entries/pages/dev/engine/_page.ts.js                                     0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/chunks/ErrorScreen2.js                                                   0.08 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/entries/pages/_layout.ts.js                                              0.08 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/chunks/ParentalGate2.js                                                  0.09 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/entries/pages/beta/_page.ts.js                                           0.09 kB │ gzip:  0.09 kB
+.svelte-kit/output/server/chunks/SettingsModal2.js                                                 0.09 kB │ gzip:  0.08 kB
+.svelte-kit/output/server/chunks/coloringPacks.svelte.js                                           0.12 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/chunks/fonts.js                                                          0.12 kB │ gzip:  0.12 kB
+.svelte-kit/output/server/chunks/inviteLink.js                                                     0.13 kB │ gzip:  0.12 kB
+.svelte-kit/output/server/chunks/githubRepo.js                                                     0.13 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/persistedState2.js                                                0.13 kB │ gzip:  0.10 kB
+.svelte-kit/output/server/chunks/sleep.js                                                          0.14 kB │ gzip:  0.13 kB
+.svelte-kit/output/server/chunks/overlayChunkLoader.js                                             0.15 kB │ gzip:  0.12 kB
+.svelte-kit/output/server/chunks/usageRecord.js                                                    0.15 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/chunks/siteUrl.js                                                        0.17 kB │ gzip:  0.15 kB
+.svelte-kit/output/server/env.js                                                                   0.22 kB │ gzip:  0.14 kB
+.svelte-kit/output/server/chunks/releaseSections.js                                                0.22 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/entries/pages/dev/_layout.server.ts.js                                   0.23 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/chunks/adminForm.js                                                      0.24 kB │ gzip:  0.19 kB
+.svelte-kit/output/server/chunks/installationId.js                                                 0.24 kB │ gzip:  0.19 kB
+.svelte-kit/output/server/entries/pages/design/_page.ts.js                                         0.25 kB │ gzip:  0.18 kB
+.svelte-kit/output/server/entries/pages/ios-beta/_page.ts.js                                       0.26 kB │ gzip:  0.20 kB
+.svelte-kit/output/server/entries/pages/android-beta/_page.ts.js                                   0.27 kB │ gzip:  0.20 kB
+.svelte-kit/output/server/entries/fallbacks/layout.svelte.js                                       0.28 kB │ gzip:  0.21 kB
+.svelte-kit/output/server/chunks/env.js                                                            0.28 kB │ gzip:  0.17 kB
+.svelte-kit/output/server/chunks/app.js                                                            0.30 kB │ gzip:  0.20 kB
+.svelte-kit/output/server/chunks/folderSave.js                                                     0.32 kB │ gzip:  0.16 kB
+.svelte-kit/output/server/chunks/internal2.js                                                      0.36 kB │ gzip:  0.21 kB
+.svelte-kit/output/server/chunks/config.js                                                         0.36 kB │ gzip:  0.25 kB
+.svelte-kit/output/server/chunks/imageReport.js                                                    0.38 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/devHarness.js                                                     0.38 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/entries/endpoints/dev/store-frames/identity/_server.ts.js                0.38 kB │ gzip:  0.24 kB
+.svelte-kit/output/server/chunks/digestHex.js                                                      0.42 kB │ gzip:  0.28 kB
+.svelte-kit/output/server/chunks/RuleLabel2.js                                                     0.43 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/chunks/policy.js                                                         0.45 kB │ gzip:  0.25 kB
+.svelte-kit/output/server/entries/pages/dev/crash/_page.svelte.js                                  0.45 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/VisuallyHidden.js                                                 0.48 kB │ gzip:  0.29 kB
+.svelte-kit/output/server/chunks/iconTypes.js                                                      0.48 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/internal.js                                                              0.48 kB │ gzip:  0.21 kB
+.svelte-kit/output/server/chunks/supportEmail.js                                                   0.49 kB │ gzip:  0.35 kB
+.svelte-kit/output/server/entries/pages/dev/share-cards/_page.server.ts.js                         0.50 kB │ gzip:  0.32 kB
+.svelte-kit/output/server/chunks/apiHeaders.js                                                     0.52 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/chunks/breakpoints.js                                                    0.53 kB │ gzip:  0.32 kB
+.svelte-kit/output/server/chunks/generationResult.js                                               0.53 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/StatusMessage.js                                                  0.56 kB │ gzip:  0.33 kB
+.svelte-kit/output/server/chunks/server.js                                                         0.58 kB │ gzip:  0.29 kB
+.svelte-kit/output/server/chunks/limits.js                                                         0.59 kB │ gzip:  0.27 kB
+.svelte-kit/output/server/chunks/shared-server.js                                                  0.60 kB │ gzip:  0.26 kB
+.svelte-kit/output/server/chunks/SplotchyIcon.js                                                   0.61 kB │ gzip:  0.36 kB
+.svelte-kit/output/server/chunks/WebPageIcon.js                                                    0.61 kB │ gzip:  0.38 kB
+.svelte-kit/output/server/chunks/parentalGateLink.js                                               0.62 kB │ gzip:  0.33 kB
+.svelte-kit/output/server/chunks/Disclosure.js                                                     0.77 kB │ gzip:  0.43 kB
+.svelte-kit/output/server/chunks/dottie-stumped.js                                                 0.78 kB │ gzip:  0.42 kB
+.svelte-kit/output/server/chunks/external.js                                                       0.82 kB │ gzip:  0.36 kB
+.svelte-kit/output/server/chunks/ReleaseSectionHeading.js                                          0.83 kB │ gzip:  0.43 kB
+.svelte-kit/output/server/chunks/ExternalMark.js                                                   0.83 kB │ gzip:  0.43 kB
+.svelte-kit/output/server/chunks/RuleLabel.js                                                      0.84 kB │ gzip:  0.48 kB
+.svelte-kit/output/server/chunks/CrayonStrip.js                                                    0.85 kB │ gzip:  0.47 kB
+.svelte-kit/output/server/chunks/truncate.js                                                       0.89 kB │ gzip:  0.49 kB
+.svelte-kit/output/server/chunks/ErrorScreen.js                                                    0.92 kB │ gzip:  0.49 kB
+.svelte-kit/output/server/entries/pages/_layout.svelte.js                                          0.97 kB │ gzip:  0.39 kB
+.svelte-kit/output/server/chunks/forms.js                                                          0.97 kB │ gzip:  0.51 kB
+.svelte-kit/output/server/chunks/idb.js                                                            1.03 kB │ gzip:  0.43 kB
+.svelte-kit/output/server/chunks/singleFlight.js                                                   1.05 kB │ gzip:  0.57 kB
+.svelte-kit/output/server/chunks/logRedaction.js                                                   1.11 kB │ gzip:  0.59 kB
+.svelte-kit/output/server/chunks/releases.js                                                       1.15 kB │ gzip:  0.33 kB
+.svelte-kit/output/server/chunks/safeArea.js                                                       1.26 kB │ gzip:  0.62 kB
+.svelte-kit/output/server/chunks/coloringBook.svelte.js                                            1.28 kB │ gzip:  0.45 kB
+.svelte-kit/output/server/entries/pages/dev/engine/_page.svelte.js                                 1.33 kB │ gzip:  0.56 kB
+.svelte-kit/output/server/chunks/keyFormat.js                                                      1.35 kB │ gzip:  0.77 kB
+.svelte-kit/output/server/entries/endpoints/api/free-generation-grant/_server.ts.js                1.36 kB │ gzip:  0.56 kB
+.svelte-kit/output/server/chunks/ScrollCue.js                                                      1.38 kB │ gzip:  0.61 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/login/_server.ts.js                          1.38 kB │ gzip:  0.76 kB
+.svelte-kit/output/server/chunks/reducedMotion.js                                                  1.38 kB │ gzip:  0.55 kB
+.svelte-kit/output/server/chunks/persistedStateStatus.svelte.js                                    1.40 kB │ gzip:  0.52 kB
+.svelte-kit/output/server/chunks/imageSave.js                                                      1.40 kB │ gzip:  0.70 kB
+.svelte-kit/output/server/chunks/Button.js                                                         1.57 kB │ gzip:  0.75 kB
+.svelte-kit/output/server/entries/endpoints/api/verify-key/_server.ts.js                           1.65 kB │ gzip:  0.83 kB
+.svelte-kit/output/server/chunks/SocialCard2.js                                                    1.66 kB │ gzip:  0.60 kB
+.svelte-kit/output/server/chunks/socialCard.js                                                     1.66 kB │ gzip:  0.74 kB
+.svelte-kit/output/server/chunks/modalDialog.svelte.js                                             1.70 kB │ gzip:  0.81 kB
+.svelte-kit/output/server/entries/endpoints/dev/store-frames/assets/_...file_/_server.ts.js        1.70 kB │ gzip:  0.82 kB
+.svelte-kit/output/server/chunks/LiveSurface.js                                                    1.71 kB │ gzip:  0.69 kB
+.svelte-kit/output/server/entries/endpoints/api/report/_server.ts.js                               1.85 kB │ gzip:  0.96 kB
+.svelte-kit/output/server/chunks/persistedState.js                                                 2.01 kB │ gzip:  0.84 kB
+.svelte-kit/output/server/entries/pages/dev/notch/frame/_page.svelte.js                            2.04 kB │ gzip:  0.78 kB
+.svelte-kit/output/server/chunks/readonlyView.js                                                   2.04 kB │ gzip:  0.73 kB
+.svelte-kit/output/server/entries/endpoints/api/verify-access-code/_server.ts.js                   2.07 kB │ gzip:  0.96 kB
+.svelte-kit/output/server/entries/pages/dev/store-frames/render/_page.svelte.js                    2.15 kB │ gzip:  0.81 kB
+.svelte-kit/output/server/entries/pages/feedback/_page.server.ts.js                                2.21 kB │ gzip:  0.98 kB
+.svelte-kit/output/server/chunks/DialogHeader.js                                                   2.37 kB │ gzip:  0.94 kB
+.svelte-kit/output/server/chunks/coloringPacks2.svelte.js                                          2.41 kB │ gzip:  0.70 kB
+.svelte-kit/output/server/entries/pages/_error.svelte.js                                           2.42 kB │ gzip:  0.76 kB
+.svelte-kit/output/server/chunks/state.js                                                          2.43 kB │ gzip:  1.04 kB
+.svelte-kit/output/server/chunks/BrandMark.js                                                      2.52 kB │ gzip:  1.04 kB
+.svelte-kit/output/server/chunks/idbDatabase.js                                                    2.53 kB │ gzip:  0.73 kB
+.svelte-kit/output/server/chunks/generateImagePolicy.js                                            2.61 kB │ gzip:  1.28 kB
+.svelte-kit/output/server/chunks/admin.js                                                          2.62 kB │ gzip:  1.25 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/tokens/_server.ts.js                         2.66 kB │ gzip:  1.01 kB
+.svelte-kit/output/server/chunks/palette.js                                                        2.77 kB │ gzip:  1.34 kB
+.svelte-kit/output/server/entries/pages/dev/_page.svelte.js                                        2.78 kB │ gzip:  1.19 kB
+.svelte-kit/output/server/chunks/report.js                                                         2.82 kB │ gzip:  1.37 kB
+.svelte-kit/output/server/chunks/paths.js                                                          2.86 kB │ gzip:  1.25 kB
+.svelte-kit/output/server/chunks/theme.js                                                          2.88 kB │ gzip:  1.22 kB
+.svelte-kit/output/server/chunks/betaPlatform.js                                                   2.95 kB │ gzip:  1.52 kB
+.svelte-kit/output/server/chunks/github.js                                                         2.96 kB │ gzip:  1.57 kB
+.svelte-kit/output/server/chunks/notchBand.js                                                      3.36 kB │ gzip:  1.27 kB
+.svelte-kit/output/server/chunks/idle.js                                                           3.42 kB │ gzip:  1.03 kB
+.svelte-kit/output/server/entries/pages/dev/store-frames/_page.svelte.js                           3.50 kB │ gzip:  1.24 kB
+.svelte-kit/output/server/entries/pages/admin/_page.server.ts.js                                   3.56 kB │ gzip:  1.35 kB
+.svelte-kit/output/server/chunks/reportToken.js                                                    3.64 kB │ gzip:  1.17 kB
+.svelte-kit/output/server/chunks/TocDisclosure.js                                                  3.69 kB │ gzip:  1.41 kB
+.svelte-kit/output/server/chunks/aiGeneration.svelte.js                                            3.81 kB │ gzip:  1.18 kB
+.svelte-kit/output/server/chunks/report2.js                                                        3.86 kB │ gzip:  1.70 kB
+.svelte-kit/output/server/chunks/styles.js                                                         3.92 kB │ gzip:  1.77 kB
+.svelte-kit/output/server/entries/endpoints/api/csp-report/_server.ts.js                           3.94 kB │ gzip:  1.60 kB
+.svelte-kit/output/server/chunks/folderSave2.js                                                    4.11 kB │ gzip:  1.41 kB
+.svelte-kit/output/server/entries/endpoints/api/generation-result/_server.ts.js                    4.18 kB │ gzip:  1.54 kB
+.svelte-kit/output/server/chunks/client.js                                                         4.47 kB │ gzip:  1.62 kB
+.svelte-kit/output/server/chunks/SidebarToc.js                                                     4.70 kB │ gzip:  1.45 kB
+.svelte-kit/output/server/chunks/promiseWithResolvers.js                                           4.77 kB │ gzip:  1.67 kB
+.svelte-kit/output/server/chunks/ToggleRow.js                                                      4.79 kB │ gzip:  1.42 kB
+.svelte-kit/output/server/chunks/index-server.js                                                   4.84 kB │ gzip:  1.77 kB
+.svelte-kit/output/server/chunks/webBackHandler.js                                                 5.01 kB │ gzip:  1.59 kB
+.svelte-kit/output/server/chunks/manifest.js                                                       5.16 kB │ gzip:  1.69 kB
+.svelte-kit/output/server/chunks/flatBackgroundPunch.js                                            5.29 kB │ gzip:  1.85 kB
+.svelte-kit/output/server/chunks/PageShell.js                                                      5.30 kB │ gzip:  1.64 kB
+.svelte-kit/output/server/chunks/install.svelte.js                                                 5.53 kB │ gzip:  1.61 kB
+.svelte-kit/output/server/entries/pages/feedback/_page.svelte.js                                   6.11 kB │ gzip:  1.91 kB
+.svelte-kit/output/server/chunks/manager.js                                                        6.20 kB │ gzip:  1.76 kB
+.svelte-kit/output/server/chunks/SegmentedPicker.js                                                6.39 kB │ gzip:  2.29 kB
+.svelte-kit/output/server/chunks/saveFailure.svelte.js                                             7.17 kB │ gzip:  2.25 kB
+.svelte-kit/output/server/entries/hooks.server.js                                                  7.38 kB │ gzip:  2.98 kB
+.svelte-kit/output/server/chunks/appearance.svelte.js                                              7.47 kB │ gzip:  2.62 kB
+.svelte-kit/output/server/chunks/tokens2.js                                                        7.56 kB │ gzip:  2.82 kB
+.svelte-kit/output/server/chunks/sessionCounters.svelte.js                                         7.68 kB │ gzip:  2.30 kB
+.svelte-kit/output/server/chunks/platform.js                                                       8.15 kB │ gzip:  3.57 kB
+.svelte-kit/output/server/chunks/webStore.js                                                       8.41 kB │ gzip:  2.37 kB
+.svelte-kit/output/server/chunks/generationJobs.js                                                 8.96 kB │ gzip:  3.39 kB
+.svelte-kit/output/server/chunks/storage.js                                                        9.06 kB │ gzip:  3.08 kB
+.svelte-kit/output/server/chunks/ParentalGate.js                                                   9.65 kB │ gzip:  3.23 kB
+.svelte-kit/output/server/chunks/http.js                                                           9.80 kB │ gzip:  3.41 kB
+.svelte-kit/output/server/chunks/freeGenerationGrants.js                                          10.14 kB │ gzip:  2.71 kB
+.svelte-kit/output/server/chunks/wand-stars.js                                                    10.15 kB │ gzip:  4.21 kB
+.svelte-kit/output/server/chunks/books.js                                                         10.33 kB │ gzip:  3.28 kB
+.svelte-kit/output/server/chunks/shared.js                                                        10.60 kB │ gzip:  3.39 kB
+.svelte-kit/output/server/chunks/settings.svelte.js                                               10.95 kB │ gzip:  2.93 kB
+.svelte-kit/output/server/chunks/ReportFields.js                                                  11.44 kB │ gzip:  3.74 kB
+.svelte-kit/output/server/chunks/primitiveSections.js                                             11.71 kB │ gzip:  4.73 kB
+.svelte-kit/output/server/entries/endpoints/api/report-image/_server.ts.js                        11.93 kB │ gzip:  3.61 kB
+.svelte-kit/output/server/entries/pages/dev/notch/_page.svelte.js                                 12.42 kB │ gzip:  3.69 kB
+.svelte-kit/output/server/chunks/provider.js                                                      12.59 kB │ gzip:  4.95 kB
+.svelte-kit/output/server/entries/pages/dev/share-cards/_page.svelte.js                           12.94 kB │ gzip:  9.03 kB
+.svelte-kit/output/server/chunks/exportDrawing.js                                                 13.00 kB │ gzip:  3.48 kB
+.svelte-kit/output/server/chunks/tokens.js                                                        13.26 kB │ gzip:  4.47 kB
+.svelte-kit/output/server/chunks/exports.js                                                       13.62 kB │ gzip:  4.20 kB
+.svelte-kit/output/server/chunks/aiImage.js                                                       14.34 kB │ gzip:  4.65 kB
+.svelte-kit/output/server/entries/pages/changelog/_page.svelte.js                                 14.87 kB │ gzip:  3.77 kB
+.svelte-kit/output/server/chunks/parentalGate.svelte.js                                           15.44 kB │ gzip:  4.68 kB
+.svelte-kit/output/server/entries/endpoints/api/generate-image/_server.ts.js                      16.34 kB │ gzip:  5.00 kB
+.svelte-kit/output/server/entries/pages/_page.svelte.js                                           17.33 kB │ gzip:  5.00 kB
+.svelte-kit/output/server/entries/pages/admin/_page.svelte.js                                     21.39 kB │ gzip:  5.10 kB
+.svelte-kit/output/server/chunks/actionButtonLayout.js                                            21.45 kB │ gzip:  5.88 kB
+.svelte-kit/output/server/entries/pages/beta/_page.svelte.js                                      21.75 kB │ gzip:  6.09 kB
+.svelte-kit/output/server/chunks/FeatureGraphic.js                                                21.97 kB │ gzip:  6.20 kB
+.svelte-kit/output/server/chunks/diagnostics.js                                                   24.76 kB │ gzip:  6.36 kB
+.svelte-kit/output/server/chunks/PrimitiveSections2.js                                            25.15 kB │ gzip:  6.38 kB
+.svelte-kit/output/server/entries/pages/privacy/_page.svelte.js                                   25.77 kB │ gzip:  8.13 kB
+.svelte-kit/output/server/chunks/utils.js                                                         31.78 kB │ gzip:  9.35 kB
+.svelte-kit/output/server/chunks/SettingsButton.js                                                36.79 kB │ gzip:  9.12 kB
+.svelte-kit/output/server/chunks/internal.js                                                      51.14 kB │ gzip: 15.17 kB
+.svelte-kit/output/server/remote-entry.js                                                         54.55 kB │ gzip: 12.03 kB
+.svelte-kit/output/server/chunks/deferredIcons.js                                                 59.06 kB │ gzip: 21.19 kB
+.svelte-kit/output/server/chunks/overlayChunk.js                                                  59.42 kB │ gzip: 14.86 kB
+.svelte-kit/output/server/chunks/Icon.js                                                          63.81 kB │ gzip: 21.12 kB
+.svelte-kit/output/server/entries/pages/design/_page.svelte.js                                    68.98 kB │ gzip: 17.63 kB
+.svelte-kit/output/server/chunks/SettingsModal.js                                                 82.36 kB │ gzip: 19.76 kB
+.svelte-kit/output/server/chunks/server2.js                                                      123.41 kB │ gzip: 32.51 kB
+.svelte-kit/output/server/index.js                                                               124.25 kB │ gzip: 31.50 kB
+.svelte-kit/output/server/chunks/engine.js                                                       125.99 kB │ gzip: 31.61 kB
+
+✓ built in 3.39s
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-netlify
+  ✔ done
+[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 3.5s. The build took 3.4s. Callbacks such as `closeBundle` run after the build ends, so callback time can be more than build time.
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin vite-plugin-sveltekit-compile writeBundle (75%, 2.5s, 1 call)
+Additional callback time came from the callbacks below and from callbacks under 1s.
+3 callbacks are listed without a time. Their calls overlapped, so the time inside one call includes work from other calls. To find their cost, profile the build with `node --cpu-prof`:
+  - plugin vite-plugin-sveltekit-guard resolveId (2652 calls)
+  - plugin vite:asset load (96 calls)
+  - plugin vite:css transform (141 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
+
+> splotch@1.6.0 postbuild
+> node tools/check-release-seams.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-build-version.mjs && node tools/check-pwa-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/check-static-bundle.mjs --web && node tools/check-bundle-budgets.mjs && node tools/check-eager-error-bundle.mjs
+
+[release-seams] release client contains no profiling seams or engine marks
+[build-version] client, server, and coloring manifest all carry 1.6.2716
+[pwa-precache] 276 unique entries / 6103477 bytes; 400 responsive derivatives use canonical offline fallbacks
+[check-static-bundle] web export omits 2 native-only marker(s)
+[bundle-budgets] startup JS/CSS 458840/525000 bytes (38 linked files plus 84638 inline CSS bytes; 38/38 modulepreloads); largest lazy JS 60772/75000 bytes (_app/immutable/chunks/DuJo0r5c.js)
+[eager-error] linked and error startup union 487817/525000 bytes
+[eager-error] web root error adds 24 resources / 28977 bytes outside the index.html links; deferred owners remain lazy
+[stage-netlify-functions] /private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/prod/web/.netlify -> /private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/prod/.netlify

@@ -38,6 +38,13 @@ updates:
       eslint:
         patterns: ['eslint', '@eslint/*', 'typescript-eslint', '@typescript-eslint/*']
     ignore:
+      # SDK/template alignment is reviewed as one unit; these name rules cover the shared root graph.
+      - dependency-name: 'expo'
+      - dependency-name: 'react'
+      - dependency-name: 'react-native'
+      - dependency-name: '@types/react'
+      - dependency-name: 'babel-preset-expo'
+      - dependency-name: '@babel/core'
       # The @types/node major tracks the Node runtime major, which Dependabot
       # cannot see or bump. Pinned to the runtime's major until the upgrade
       # tracked by issue 1624 lands; remove this rule with that issue.

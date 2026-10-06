@@ -1,0 +1,1 @@
+{"outputs":["production-install-contract.json","candidate-exclusive-artifacts.json"],"scope":"Derived proof inputs only; archive review and executed proof remain separate"}

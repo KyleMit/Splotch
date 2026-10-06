@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-10-06 11:42:49 UTC",
+  "originalRegistration": "/private/tmp/splotch-netlify-home-ancestor-hosted-registration.json",
+  "originalCriterion": "Deployment API reports ready and actual publication time",
+  "correction": "Require exact registered branch/SHA/deploy/build identity, API ready, build done with no error, actual install/witness/release guard success, and matching live branch artifact. Preserve published_at as null; no non-null publication timestamp is required or invented.",
+  "reason": "The registration over-specified a timestamp field. Netlify's primary API guide states that ready means the deploy is live; installed OpenAPI schema provides no requiredness or semantic explanation for published_at. Its null value does not contradict the observed successful branch readiness. No reason for that null is inferred.",
+  "primarySource": "https://docs.netlify.com/api-and-cli-guides/api-guides/get-started-with-api/#poll-for-deploy-state",
+  "observation": "/private/tmp/splotch-netlify-home-ancestor-hosted-observed-20261006T113837143205Z.json",
+  "liveArtifact": "/private/tmp/splotch-netlify-home-ancestor-live-resource.json",
+  "renderedEvidence": "/private/tmp/splotch-netlify-home-ancestor-hosted-selected-visible-observations.json",
+  "scope": "Additive evidence criterion correction only. Original registration and all failed/successful captures remain unchanged. No source/admission predicate, install/witness/build gate, site setting, review ledger or deployment changes."
+}

@@ -1,0 +1,89 @@
+{
+  "sourceBase": "d9311502209cd90995399951c8b4b34484e7bf47",
+  "scope": "working-tree source overlay, not a new committed or hosted source identity",
+  "sourceInputs": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 6925,
+      "mode": "0644",
+      "sha256": "b32f866909b41e7cd4f0b1ac0ea244a7fdbbf8308c5003bd58122b47380853a9"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14391,
+      "mode": "0644",
+      "sha256": "a0fa5b402d653f87d85a8fef71ba35f10b8e2d01cd9283b61c640151e778d991"
+    },
+    {
+      "path": "tools/tests/netlify-production-install.test.mjs",
+      "bytes": 16702,
+      "mode": "0644",
+      "sha256": "eabf711341a50fcfae2c138f1e26bd496d73a1141835a7f6436a892c8a66d6c4"
+    },
+    {
+      "path": "tools/tests/fixtures/netlify-install.mjs",
+      "bytes": 5340,
+      "mode": "0644",
+      "sha256": "97414522d48f9e3ad9ecc4c60e3a1b78cee4d52e6c79682ebe106972bd89bdb4"
+    },
+    {
+      "path": "tools/tests/netlify-cache-config.test.mjs",
+      "bytes": 10486,
+      "mode": "0644",
+      "sha256": "0da096da0785f68a7752a173992f32a8c5f89574794b45562a9d07a4f065f6f4"
+    }
+  ],
+  "runtimeRootOwners": [
+    {
+      "path": "package.json",
+      "bytes": 121297,
+      "mode": "0644",
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "currentSourceAndFinalDisposableCopyEqual": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 518383,
+      "mode": "0644",
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "currentSourceAndFinalDisposableCopyEqual": true
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 4827,
+      "mode": "0644",
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "currentSourceAndFinalDisposableCopyEqual": true
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 288,
+      "mode": "0644",
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "currentSourceAndFinalDisposableCopyEqual": true
+    },
+    {
+      "path": "netlify.toml",
+      "bytes": 9780,
+      "mode": "0644",
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33",
+      "currentSourceAndFinalDisposableCopyEqual": true
+    }
+  ],
+  "realControl": {
+    "archiveBase": "d9311502209cd90995399951c8b4b34484e7bf47",
+    "productionOverlays": [
+      "tools/netlify-production-install.mjs",
+      "tools/lib/netlify-cache-config.mjs"
+    ],
+    "fixtureChange": "one fixed NETLIFY_CACHE_ROOT declaration replaced by canonical owned temporary cache path",
+    "fiveOwnerBeforeAfterAssertions": "executed in preserved script around warm ci and local release build",
+    "witnessContext": "synthetic selected-proof branch, HEAD and platform facts",
+    "releaseBuildNetlify": "false"
+  },
+  "limits": [
+    "local execution only",
+    "raw receipts preserve original temporary paths; capture-index supplies durable package counterparts",
+    "no current hosted success, native, performance or architecture acceptance"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "Codex independent candidate_entry subagent",
+  "reviewType": "Read-only source inspection; no tests/imports/edits/install/native execution",
+  "finding": "Helper package default-main and actual CLI helper dependency entry were not bound to the inspected source",
+  "disposition": "Closed by canonical before-execution entry assertions and specific main/exports/deeper-caller bridge negative controls",
+  "closure": "Reviewer independently inspected the repair; no additional actionable finding within the documented static/known-consumer scope",
+  "executionEvidenceOwner": "Native topology implementation agent; forge-repaired-focused.json and forge-repaired-topology.json",
+  "limits": "No arbitrary runtime reachability or general cryptographic proof; full final-head review remains pending"
+}

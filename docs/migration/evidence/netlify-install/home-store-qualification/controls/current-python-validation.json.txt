@@ -1,0 +1,37 @@
+[
+  {
+    "stage": "real-manager",
+    "argv": [
+      "/opt/homebrew/bin/python3",
+      "/private/tmp/splotch-netlify-home-store-real-controls.py"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 28.57099650008604,
+    "log": "/private/tmp/splotch-netlify-home-store-current-python-real-manager.log.txt",
+    "logSha256": "f7eeecab72921fdb01b1686c3c162c26f7ceee257ab5e1b17d148d2ab865dc80"
+  },
+  {
+    "stage": "full-tools",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 39.722521833959036,
+    "log": "/private/tmp/splotch-netlify-home-store-current-python-full-tools.log.txt",
+    "logSha256": "e7c9dd79289a4c9e298efb94377c07c7a58d519fd9c0ed9c90a6d6c8740057e5"
+  },
+  {
+    "stage": "quality",
+    "argv": [
+      "npm",
+      "run",
+      "check:quality"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 53.15161383303348,
+    "log": "/private/tmp/splotch-netlify-home-store-current-python-quality.log.txt",
+    "logSha256": "19526917d28d05fadfa9a757103461231bd83e96e4f8606fc133fa86ccc522bf"
+  }
+]

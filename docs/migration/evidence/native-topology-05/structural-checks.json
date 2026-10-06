@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "d1402f6b2bedd2c30cbc88d30597466855b33874",
+  "scope": "Uncommitted topology05 structural work only; no native compile, mounted UI, runtime, performance or upgrade claim",
+  "runtime": {
+    "node": "v24.16.0",
+    "pnpm": "11.22.0"
+  },
+  "lockSha256": "c24cba4feecf32cd00014aea127739618e5be88bc7a534225f39af524cbf5994",
+  "checks": [
+    {
+      "command": ["npm", "run", "check:migration:native-topology"],
+      "exitCode": 0,
+      "report": "topology-report.json"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "test:tools",
+        "--",
+        "migration/tests",
+        "tests/native-candidate-lint.test.mjs",
+        "tests/package-manager.test.mjs",
+        "tests/enumerated-build-paths.test.mjs",
+        "ci-mirror/tests/run-quality-checks.test.mjs"
+      ],
+      "exitCode": 0,
+      "files": 10,
+      "tests": 95,
+      "log": "controls/scoped-guards.log.txt"
+    },
+    {
+      "command": ["eslint", "changed topology guard sources and tests"],
+      "exitCode": 0,
+      "log": "controls/final-file-lint.log.txt"
+    },
+    {
+      "command": ["npm", "run", "check"],
+      "exitCode": 0,
+      "log": "controls/shipping-types.log.txt"
+    },
+    {
+      "command": ["npm", "run", "lint"],
+      "exitCode": 0,
+      "scope": "Passed before final guard repairs; final changed-file lint then passed"
+    },
+    {
+      "command": ["npm", "run", "lint:dead"],
+      "exitCode": 0,
+      "log": "controls/dead-code-knip.log.txt"
+    },
+    {
+      "command": ["npm", "run", "lint:deps:prod"],
+      "exitCode": 0,
+      "log": "controls/production-knip.log.txt"
+    },
+    {
+      "command": ["npm", "run", "ruler:apply"],
+      "exitCode": 0,
+      "log": "controls/ruler-generation.log.txt"
+    },
+    {
+      "command": ["node", "tools/netlify-topology-witness.mjs"],
+      "exitCode": 0,
+      "disposition": "not-the-selected-proof-ref",
+      "log": "controls/normal-witness-cli.log.txt"
+    },
+    {
+      "command": ["git", "diff", "--check"],
+      "exitCode": 0
+    }
+  ],
+  "baselineVerification": {
+    "command": ["git", "show", "d2e77431c4a06bcdea7fe33611a28edd43e8ada2:pnpm-lock.yaml"],
+    "baselineArtifactResolutions": "baseline-artifact-resolutions.json",
+    "sourceArtifacts": 1230,
+    "rawLockSha256": "9cc9e2efbb1efa0877e07ce548f78b1490cea9a225b0e2d235017788c33e1353",
+    "completeResolutionMappingMatchesSource": true
+  },
+  "pending": [
+    "Clean root full frozen install in clean dependency state",
+    "Clean root prod frozen install plus actual Netlify web build",
+    "Supported-Node CI and root full applicable tiers",
+    "Static Capacitor build and shipped bundle/config checks",
+    "First automatic named non-production Netlify proof-ref install/build/cache-state witness",
+    "Generated native template, native compile, physical presentation calibration, UI and upgrade results"
+  ],
+  "logNormalization": "Only trailing blank lines trimmed; command output otherwise preserved"
+}

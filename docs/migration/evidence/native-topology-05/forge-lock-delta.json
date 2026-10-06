@@ -1,0 +1,11 @@
+{
+  "changedSections": ["snapshots", "patchedDependencies"],
+  "patch": {
+    "node-forge@1.4.0": "2f0f3be76c7a0502b8579e71f32b7df98954a90a7e448084ac08dd86bd55286d"
+  },
+  "registryArtifactsUnchanged": true,
+  "importersUnchanged": true,
+  "snapshotsUnchangedExceptPatch": true,
+  "productionClosureUnchanged": true,
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+}

@@ -1,0 +1,9 @@
+function replaceEnvInSettings(settings, opts3) {
+  const newSettings = {};
+  for (const [key, value] of Object.entries(settings)) {
+    const newKey = (0, import_config10.envReplace)(key, process.env);
+    if (typeof value === "string") {
+      if (REQUEST_DESTINATION_SCALAR_KEYS.has(newKey) && !opts3.expandRequestDestinationEnv && hasEnvPlaceholder(value))
+        continue;
+      newSettings[newKey] = (0, import_config10.envReplace)(value, process.env);
+    } else if (newKey === "registries" || newKey === "namedRegistries") {

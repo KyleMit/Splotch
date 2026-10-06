@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "scope": "Local execution receipts bind this sealed source; current tree differs only by explicitly named data/log/prose bookkeeping outputs. No self-commit identity or hosted/byte-identical-build claim.",
+  "comparison": {
+    "allTrackedChangesAgainstSourceRestrictedToExplicitOutputs": true,
+    "untrackedPathsRestrictedToExplicitOutputs": true,
+    "protectedInputBytesEqualGitSource": true
+  },
+  "protectedInputs": [
+    {
+      "path": ".github/dependabot.yml",
+      "bytes": 2120,
+      "sha256": "c9abc80cafe36f641acd96f2563dd257de0dbbaa63bfdfc56141e8e1a13cb1f9"
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "bytes": 33715,
+      "sha256": "064e7ebd98710b0c31f8777900663d5c535578836c69533662ff30ee77b526ab"
+    },
+    {
+      "path": ".ruler/AGENTS.md",
+      "bytes": 1950,
+      "sha256": "39354303e5016f2f8f4c1136e08236e9b57c22da78e4569fd281b393fea51db8"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 55522,
+      "sha256": "f5e37dc76233dbc39a9696f81f0567bbc23460ee05b8f0abd79ee6f437240875"
+    },
+    {
+      "path": "CLAUDE.md",
+      "bytes": 55493,
+      "sha256": "6eae66654abd9ea0aefb63cbed56471ab2e068675cc510507063030996974206"
+    },
+    {
+      "path": "android/capacitor.settings.gradle",
+      "bytes": 1220,
+      "sha256": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195"
+    },
+    {
+      "path": "android/variables.gradle",
+      "bytes": 498,
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "capacitor.config.json",
+      "bytes": 296,
+      "sha256": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757"
+    },
+    {
+      "path": "docs/CODE-MAP.md",
+      "bytes": 13808,
+      "sha256": "6f7274a8a6d268e2fa7e9aeea4b3f535c61892a8b7fbe06f035e7ae24b6dd90b"
+    },
+    {
+      "path": "docs/CONTRIBUTING.md",
+      "bytes": 20284,
+      "sha256": "fb36e3ecfff13fa8548bddbb01a09215d29c8cab3510c0e33df6c2369831b0e0"
+    },
+    {
+      "path": "docs/DEPENDENCIES.md",
+      "bytes": 68174,
+      "sha256": "17b5f171fc893f95b12249925b596c414b86db78192bbf68687260ff120424ad"
+    },
+    {
+      "path": "docs/adrs/0031-linting-formatting-and-ci-quality-gates.md",
+      "bytes": 27445,
+      "sha256": "08bd580cbe559af1ed3cc0d0e39a9360ae835573ca15aa7daee79808c81508d4"
+    },
+    {
+      "path": "docs/adrs/0119-pnpm-as-package-manager.md",
+      "bytes": 10171,
+      "sha256": "126303e7cdd1ebc243c27bfdd8d5c508124970d25cba7eec5e00e0883f9b25ef"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-artifact-resolutions.json",
+      "bytes": 233987,
+      "sha256": "403d1a9ce7b5527c80a6cb8140ddbe2daaefb4058fede8bd955ee7320e566d37"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-production-artifacts.json",
+      "bytes": 19307,
+      "sha256": "b2f13b86cd54dd62ebcf83cc4a97eb96fca02e3bc49bc8a3bf00d273f20a3514"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/candidate-exclusive-artifacts.json",
+      "bytes": 35747,
+      "sha256": "25eace14fcfd607e6cffa6ef6d5e62bd7f721be0901a88a8f0aa2cc3b50a6ce6"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/production-install-contract.json",
+      "bytes": 104583,
+      "sha256": "2bb77eae13b3f7277273d68b8827f4c1a0c7f78dcb97b5d6306f480c066cd4e1"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/script-inventory.json",
+      "bytes": 246797,
+      "sha256": "c425e65eec49e6e6b1c35fe102faf386a524e3b60d00cd8ba1d3f96008258361"
+    },
+    {
+      "path": "eslint.config.js",
+      "bytes": 45878,
+      "sha256": "cc1f869ddcf6cac43087d67bc5cf2b68a22c86c9dcae65b20f60bf2eb85a8cce"
+    },
+    {
+      "path": "experiments/native-architecture/alignment.json",
+      "bytes": 890,
+      "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b"
+    },
+    {
+      "path": "experiments/native-architecture/app.json",
+      "bytes": 142,
+      "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8"
+    },
+    {
+      "path": "experiments/native-architecture/babel.config.cjs",
+      "bytes": 135,
+      "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62"
+    },
+    {
+      "path": "experiments/native-architecture/metro.config.cjs",
+      "bytes": 106,
+      "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c"
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 288,
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"
+    },
+    {
+      "path": "experiments/native-architecture/scripts/check-transform.cjs",
+      "bytes": 1552,
+      "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb"
+    },
+    {
+      "path": "experiments/native-architecture/src/ProbeApp.tsx",
+      "bytes": 159,
+      "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248"
+    },
+    {
+      "path": "experiments/native-architecture/src/index.ts",
+      "bytes": 119,
+      "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474"
+    },
+    {
+      "path": "experiments/native-architecture/tsconfig.json",
+      "bytes": 153,
+      "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+    },
+    {
+      "path": "ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 17304,
+      "sha256": "e51d24637aaa03ac468d87b1686ff80ed8b15859ee59bbcd87da6cca93b8351b"
+    },
+    {
+      "path": "ios/App/CapApp-SPM/Package.swift",
+      "bytes": 2067,
+      "sha256": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+    },
+    {
+      "path": "knip.json",
+      "bytes": 2233,
+      "sha256": "d4774f466523a7ba9c5efd2171bd3ab316f5ac8b9c2f2a1d176d1996dcda04b5"
+    },
+    {
+      "path": "knip.production.json",
+      "bytes": 1103,
+      "sha256": "9cc766d06b15640ace72bbe72cc9854c4c00b97192fbc76c0529d98f5ebf3f62"
+    },
+    {
+      "path": "netlify.toml",
+      "bytes": 9735,
+      "sha256": "46b8d2b23d84e5e648f8f5ee0101a1f7b540463ae69c9bb8319b176744c99888"
+    },
+    {
+      "path": "package.json",
+      "bytes": 120786,
+      "sha256": "d7a6b58d166315cc490dd6a9dd7f69a26dd7240683d3804a1f82277bd17a709f"
+    },
+    {
+      "path": "patches/node-forge@1.4.0.patch",
+      "bytes": 1119,
+      "sha256": "2f0f3be76c7a0502b8579e71f32b7df98954a90a7e448084ac08dd86bd55286d"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+    },
+    {
+      "path": "tools/.ruler/AGENTS.md",
+      "bytes": 16514,
+      "sha256": "beb4beea6550a905053cc3c308fe1512e816720e88b328231b6414876dc2ca0a"
+    },
+    {
+      "path": "tools/AGENTS.md",
+      "bytes": 16578,
+      "sha256": "7cfd2d10440fc427e1e3532c4d420cae9436b58c05c9dd0bf5e0c2950343a02e"
+    },
+    {
+      "path": "tools/CLAUDE.md",
+      "bytes": 16549,
+      "sha256": "b0aaa30ef5de8f7fc2f35c9b3012fbc14d4348328b28551aecd21e50fe7d5152"
+    },
+    {
+      "path": "tools/ci-mirror/run-quality-checks.mjs",
+      "bytes": 1134,
+      "sha256": "896e61f21e788940bc97067b228171dc0c2e2578109c41072f0d51095f14836c"
+    },
+    {
+      "path": "tools/ci-mirror/tests/run-quality-checks.test.mjs",
+      "bytes": 14344,
+      "sha256": "4705d8d63cc50fb71ddd1ee833eb813fd97ae248c2346eaecb9ec1433c3b7424"
+    },
+    {
+      "path": "tools/code-map/lib/code-map-rules.mjs",
+      "bytes": 16430,
+      "sha256": "22d6bbb3e527fe6d3b8a694589cbe546bd7c33f38aa8c3cbb05ce75f3a662a33"
+    },
+    {
+      "path": "tools/code-map/tests/code-map-rules.test.mjs",
+      "bytes": 6060,
+      "sha256": "aafc8c4459f1a063928a06a4f47c0108a4b6b4f3a70622694e36ce656b0c1359"
+    },
+    {
+      "path": "tools/lib/native-candidate.mjs",
+      "bytes": 70,
+      "sha256": "26f61d13f70340c980e2a23d9805cb7f4b7f8def6345548d9deeb970935ab063"
+    },
+    {
+      "path": "tools/migration/README.md",
+      "bytes": 1571,
+      "sha256": "eef4396ebe8c90dad6ccd4541a274335be74d6e8f1fa3aa024639e786f962b69"
+    },
+    {
+      "path": "tools/migration/check-native-topology.mjs",
+      "bytes": 4097,
+      "sha256": "253f0105206b18434d6e766784220cdabd1d68296a644bde9bcea6aa6cc67515"
+    },
+    {
+      "path": "tools/migration/gen-script-inventory.mjs",
+      "bytes": 2226,
+      "sha256": "c8d472cbba6a1d0e56a7436e5b3a6ed3d51db18709f1e4c60d981be16d04b62e"
+    },
+    {
+      "path": "tools/migration/inputs/forge-mitigation.json",
+      "bytes": 11797,
+      "sha256": "d9b082687498d8017f4f07289aeed49600c5606b0e9b60384d822996d4213bde"
+    },
+    {
+      "path": "tools/migration/lib/archive-inventory.mjs",
+      "bytes": 6181,
+      "sha256": "e8c17dffee2bd16baf5064bb8bec2b23e19584e032064472cfb6970563af4285"
+    },
+    {
+      "path": "tools/migration/lib/forge-controls.mjs",
+      "bytes": 10617,
+      "sha256": "46d7daf57c14554526f75297c88b1445a4f9a71a74eb154774b4e2dafd72266a"
+    },
+    {
+      "path": "tools/migration/lib/forge-installed.mjs",
+      "bytes": 7814,
+      "sha256": "7633b9f40c8605cd7df459dee71a592417d5ea3712fbc8b408465892d5ce9f80"
+    },
+    {
+      "path": "tools/migration/lib/forge-mitigation.mjs",
+      "bytes": 8423,
+      "sha256": "9fefb45c94f5f955aec38858f5fde403a49982e9b58ebd23d4d33e51bd881650"
+    },
+    {
+      "path": "tools/migration/lib/lock-artifacts.mjs",
+      "bytes": 5923,
+      "sha256": "80fe3fe7d550dfe45e1a7d48a941c877e78120960d5ff0f6f200f2bb66709be0"
+    },
+    {
+      "path": "tools/migration/lib/native-config.mjs",
+      "bytes": 8688,
+      "sha256": "dd75e715a636a0127256cf505fb02362962ae30e5fa09e63a8f2a437a433054e"
+    },
+    {
+      "path": "tools/migration/lib/native-identity.mjs",
+      "bytes": 7023,
+      "sha256": "2a591f2c8ca45be03a06c31a3c379ff74a87cb20195eddb4992ce52e58295825"
+    },
+    {
+      "path": "tools/migration/lib/production-install-contract.mjs",
+      "bytes": 2092,
+      "sha256": "418ac660361c6b3c6404b7048b4e3a13fb4c54ca7f732705332ef0a0b948fa48"
+    },
+    {
+      "path": "tools/migration/lib/topology-policy.mjs",
+      "bytes": 9616,
+      "sha256": "befada4da7f1c66ada37243a4420ee6765d79704b2f2045ecc95b435942a6a33"
+    },
+    {
+      "path": "tools/migration/tests/forge-controls.test.mjs",
+      "bytes": 3080,
+      "sha256": "24af82462e9e21aa98da6852528f08a9b0a9527bd642ae3e160cb31dec63c38e"
+    },
+    {
+      "path": "tools/migration/tests/forge-mitigation.test.mjs",
+      "bytes": 13628,
+      "sha256": "ed1f384720615b8bcc7abe95b18db25227ed22e0fe4ec8b9a8d4542ae7709d52"
+    },
+    {
+      "path": "tools/migration/tests/inventory.test.mjs",
+      "bytes": 12696,
+      "sha256": "e9ab61f9d53a9844bf649c701a04097cc31eed99e7c3ccc97e3e8318cf9c0dba"
+    },
+    {
+      "path": "tools/migration/tests/netlify-topology-witness.test.mjs",
+      "bytes": 11655,
+      "sha256": "53a95b9b047fef0e4b0ae90975dfbfb806e79f45c3269721cab9bb0c4f8673a6"
+    },
+    {
+      "path": "tools/migration/tests/ownership.test.mjs",
+      "bytes": 7781,
+      "sha256": "0c3e8398428cb4603933afcfd0296826529a8edbbaf6f580fba26ac88f0dd3ec"
+    },
+    {
+      "path": "tools/migration/tests/production-boundary.test.mjs",
+      "bytes": 2475,
+      "sha256": "9f7f9e9175b73e77306e34ae4290c20c41835caa38e3bc6ff98196cda91294fa"
+    },
+    {
+      "path": "tools/migration/tests/production-install-contract.test.mjs",
+      "bytes": 3051,
+      "sha256": "37e0e5bb8f70651810bab96d1f2752f57d7289e6b9087cecfc151993fa992b6a"
+    },
+    {
+      "path": "tools/migration/tests/scanner.test.mjs",
+      "bytes": 5911,
+      "sha256": "0188131bf4783a3d1628827fbbe67efb947eefb9172545d6ee32c40151ee3114"
+    },
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "bytes": 10807,
+      "sha256": "df0ec7f72bf302a182d00bef3ec023e0b723b7364a97b211fb5df83d7957d6e2"
+    },
+    {
+      "path": "tools/tests/enumerated-build-paths.test.mjs",
+      "bytes": 7197,
+      "sha256": "906bb130cde1d368d951f8954f3088c4910487afdd236c8c07653de9be21d64a"
+    },
+    {
+      "path": "tools/tests/native-candidate-lint.test.mjs",
+      "bytes": 2089,
+      "sha256": "645ac90ecc5fc9fe160c356ee24cc95a7a8796265da97af698eda39a7b1f7362"
+    },
+    {
+      "path": "tools/tests/package-manager.test.mjs",
+      "bytes": 4111,
+      "sha256": "360e2f9f355d794038b115c709658f48cafd0788639a28633412a5967e51c55e"
+    },
+    {
+      "path": "web/netlify.toml",
+      "bytes": 1912,
+      "sha256": "a373844590d0db2c0f95d08385b2686d06cb673381114a0007acec6925a3489e"
+    }
+  ],
+  "allowedBookkeepingOutputs": [
+    "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
+    "docs/migration/evidence/native-topology-05/README.md",
+    "docs/migration/evidence/native-topology-05/controls/corrected-source-full-tests.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-frozen-install.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-native-topology.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-production-classification-after-sync.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-production-classification.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-shipping-static-build.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/full-shipping-type-sync.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/preparation.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-exact-netlify-command.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-frozen-install.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-installed-tree-witness.log.txt",
+    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-owner-derived-versions.log.txt",
+    "docs/migration/evidence/native-topology-05/corrected-source-full-tests.json",
+    "docs/migration/evidence/native-topology-05/evidence-manifest.json",
+    "docs/migration/evidence/native-topology-05/final-source-binding.json",
+    "docs/migration/evidence/native-topology-05/forge-source-review.json",
+    "docs/migration/evidence/native-topology-05/local-clean-proof.json",
+    "docs/migration/evidence/native-topology-05/local-clean/full-final-identity.json",
+    "docs/migration/evidence/native-topology-05/local-clean/full-installed-lock.yaml.txt",
+    "docs/migration/evidence/native-topology-05/local-clean/full-lock-provenance.json",
+    "docs/migration/evidence/native-topology-05/local-clean/full-native-topology.json",
+    "docs/migration/evidence/native-topology-05/local-clean/full-result.json",
+    "docs/migration/evidence/native-topology-05/local-clean/preparation.json",
+    "docs/migration/evidence/native-topology-05/local-clean/prod-final-identity.json",
+    "docs/migration/evidence/native-topology-05/local-clean/prod-installed-lock.yaml.txt",
+    "docs/migration/evidence/native-topology-05/local-clean/prod-installed-tree-witness.json",
+    "docs/migration/evidence/native-topology-05/local-clean/prod-lock-provenance.json",
+    "docs/migration/evidence/native-topology-05/local-clean/prod-result.json"
+  ],
+  "localReceipts": ["corrected-source-full-tests.json", "local-clean-proof.json"],
+  "metadataLimit": "Later Git HEAD/build-time changes legitimately alter web version/timestamps; outputs remain bound to each actual observed commit."
+}

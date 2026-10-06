@@ -1,0 +1,44 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-production-install.test.mjs --maxWorkers=1 -t before any manager child
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+ ❯ tests/netlify-production-install.test.mjs (43 tests | 4 failed | 39 skipped) 3759ms
+   ❯ Netlify second production installer (43)
+     × refuses package.json preprepare before any manager child 1047ms
+     × refuses package.json postprepare before any manager child 896ms
+     × refuses experiments/native-architecture/package.json preprepare before any manager child 913ms
+     × refuses experiments/native-architecture/package.json postprepare before any manager child 903ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > refuses package.json preprepare before any manager child
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > refuses package.json postprepare before any manager child
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > refuses experiments/native-architecture/package.json preprepare before any manager child
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > refuses experiments/native-architecture/package.json postprepare before any manager child
+AssertionError: expected [Function run] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ tests/netlify-production-install.test.mjs:337:25
+    335|     const manifest = JSON.parse(readFileSync(join(context.root, path),…
+    336|     put(context.root, path, { ...manifest, scripts: { [stage]: 'unexpe…
+    337|     expect(context.run).toThrow('Workspace lifecycle scripts need a re…
+       |                         ^
+    338|     expect(context.calls()).toEqual([]);
+    339|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 39 skipped (43)
+   Start at  05:11:25
+   Duration  3.84s (tests 99%)
+

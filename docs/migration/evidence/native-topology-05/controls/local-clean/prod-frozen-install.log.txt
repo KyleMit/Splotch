@@ -1,0 +1,15 @@
+Scope: all 2 workspace projects
+✓ Lockfile passes supply-chain policies (verified 40m ago)
+Lockfile is up to date, resolution step is skipped
+Packages: +445
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages are cloned from the content-addressable store to the virtual store.
+  Content-addressable store is at: /Users/kylemit/Library/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 0, reused 444, downloaded 0, added 443
+Progress: resolved 0, reused 444, downloaded 0, added 445, done
+
+devDependencies: skipped
+
+Done in 1.4s using pnpm v11.22.0

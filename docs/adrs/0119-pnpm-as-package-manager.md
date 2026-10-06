@@ -74,8 +74,9 @@ fixed; what is given up is the guarantee against the *next* one.
   [ADR-0070](0070-netlify-build-minute-reduction.md) inverted `dependencies`/`devDependencies` split
   is unchanged and still halves the deploy install.
 * **From pnpm 11, settings live in `pnpm-workspace.yaml`, not a `pnpm` field in `package.json`.**
-  The file exists for that reason alone; there is deliberately no `packages:` key, because this is
-  still a single package.
+  The file also registers one private development-only member, `experiments/native-architecture`,
+  for the migration architecture check. Root continues owning shipped web and Capacitor. Additional
+  members require a reviewed decision.
 * **The `npm run` script graph is unchanged.** Both `npm run` and `pnpm run` execute this
   `package.json`'s scripts against a pnpm tree, pre/post hooks included, so
   [ADR-0019](0019-npm-script-naming-and-scripts-info.md)'s vocabulary and every `npm run …` in the
@@ -86,8 +87,9 @@ fixed; what is given up is the guarantee against the *next* one.
 
 Carried forward from ADR-0029, unchanged and still load-bearing:
 
-* **One root `package.json`, no workspaces**, serving both `web/` and the native trees (ADR-0024).
-  This is now the reason for `nodeLinker: hoisted` rather than a reason to avoid pnpm.
+* **One shipping root `package.json`**, serving both `web/` and the Capacitor native trees
+  (ADR-0024), plus the explicit private native architecture-check member. This is now the reason for
+  `nodeLinker: hoisted` rather than a reason to avoid pnpm.
 * The root `deno.lock` is **not** a package-manager choice — Netlify's Edge Functions bundler
   generates it. Leave it.
 
@@ -139,3 +141,17 @@ own convention, duplication that cannot be shared gets a drift guard rather than
 * The exit is still cheap and is unchanged from ADR-0029's reasoning in reverse: `package.json` is
   untouched by the manager choice. Regenerate `package-lock.json`, revert the config lines, and move
   the sharp and tar overrides that came from npm back out of `pnpm-workspace.yaml`.
+
+## Native architecture-check member amendment
+
+The migration candidate uses root pnpm/lock/hoisted settings and files all experimental app packages
+under its devDependencies. Netlify keeps its root production install. Clean frozen full/prod
+installs, actual hosted installed-tree evidence, declared imports and Capacitor realpaths must prove
+this boundary; directory/private labels alone do not. The candidate introduces no second JavaScript
+lock or shipping platform branch. Native Pod/Gem locks and the existing Edge deno.lock have their
+own owners.
+
+Expo/React/RN/types/Babel changes use deliberate SDK/template-alignment reviews. Dependabot ignores
+the six candidate names in its shared npm entry, a root-wide policy including future root callers.
+Security alerts and audit findings still require prompt reviewed alignment work. Remove or replace
+this policy when the candidate or final update owner changes.

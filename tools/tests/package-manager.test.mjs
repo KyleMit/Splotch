@@ -1,7 +1,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
+import { assertJavaScriptLocks } from '../migration/lib/topology-policy.mjs';
 
 // pnpm owns the dependency tree (ADR-0119), but only *installing* moved — the
 // `npm run <script>` graph works unchanged against a pnpm tree, so ADR-0019's
@@ -54,6 +56,19 @@ describe('package manager', () => {
   it('tracks pnpm-lock.yaml as the only lockfile', () => {
     expect(git(['ls-files', 'pnpm-lock.yaml'])).toBe('pnpm-lock.yaml');
     expect(git(['ls-files', 'package-lock.json'])).toBe('');
+  });
+
+  it('permits only the private native architecture workspace', () => {
+    const workspace = parse(readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8'));
+    expect(workspace.packages).toEqual(['experiments/native-architecture']);
+    expect(workspace.nodeLinker).toBe('hoisted');
+  });
+
+  it('rejects competing JavaScript locks throughout registered packages', () => {
+    expect(() => assertJavaScriptLocks(git(['ls-files']).split('\n'))).not.toThrow();
+    expect(() =>
+      assertJavaScriptLocks(['pnpm-lock.yaml', 'experiments/native-architecture/package-lock.json'])
+    ).toThrow('Competing JavaScript lockfile');
   });
 
   // The backstop for the mistake itself: an `npm install` someone runs by habit

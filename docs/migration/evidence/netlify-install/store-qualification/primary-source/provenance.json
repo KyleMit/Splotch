@@ -1,0 +1,126 @@
+{
+  "scope": "passive exact cached pnpm distribution read; no package import, execution, download or installation",
+  "version": "11.22.0",
+  "versionContext": "Corepack cache directory and retained actual released-pnpm-version control; no fresh registry/archive audit claimed",
+  "wholeDistribution": {
+    "path": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+    "bytes": 13635501,
+    "mode": "0644",
+    "sha256": "a8533087155540515892e6f022ba5c673bb2e62fcbcc124b36ba2e8938ccc3da",
+    "lineCount": 323057,
+    "retention": "whole-file identity measured; only the listed bounded verbatim slices are retained in this package"
+  },
+  "lineConvention": "one-based inclusive original ranges; slice bytes and line endings are unmodified; slices may begin/end within larger declarations and are not standalone runnable modules",
+  "excerpts": [
+    {
+      "path": "primary-source/pnpm-11.22.0-107249-107266.txt",
+      "role": "YAML manifest reader",
+      "firstOriginalLine": 107249,
+      "lastOriginalLine": 107266,
+      "lineCount": 18,
+      "startByte": 4182073,
+      "endByteExclusive": 4182665,
+      "bytes": 592,
+      "sha256": "7361c71335c2c675a62d2a1d2a3c261f3dc6b85bf15118ec5377539411cddc17"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-166010-166027.txt",
+      "role": "Absolute input path preserved",
+      "firstOriginalLine": 166010,
+      "lastOriginalLine": 166027,
+      "lineCount": 18,
+      "startByte": 6895865,
+      "endByteExclusive": 6896303,
+      "bytes": 438,
+      "sha256": "b2eb0fefa5656eccccf551c793c6d2a1c2e0685371ca0b6fa4f28cf4709cea2b"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-166224-166307.txt",
+      "role": "Global configuration key vocabulary",
+      "firstOriginalLine": 166224,
+      "lastOriginalLine": 166307,
+      "lineCount": 84,
+      "startByte": 6903099,
+      "endByteExclusive": 6905440,
+      "bytes": 2341,
+      "sha256": "220122647d0efd5a9a78e51d53df44bf8e7203d1e0eab4f47c6a6e5dd3383960"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-167182-167190.txt",
+      "role": "Setting environment substitution",
+      "firstOriginalLine": 167182,
+      "lastOriginalLine": 167190,
+      "lineCount": 9,
+      "startByte": 6936825,
+      "endByteExclusive": 6937358,
+      "bytes": 533,
+      "sha256": "95134dea58533459e4a1cb4b8e8472b0a638ad10dc949f857aeb77f21ae37006"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-168062-168085.txt",
+      "role": "Path-setting transformation",
+      "firstOriginalLine": 168062,
+      "lastOriginalLine": 168085,
+      "lineCount": 24,
+      "startByte": 6969516,
+      "endByteExclusive": 6970130,
+      "bytes": 614,
+      "sha256": "b484718268dade3b155d499e415e38a2b8d1d77dc499870afd5c067732a574b1"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-168562-168637.txt",
+      "role": "Global YAML reading and setting filter",
+      "firstOriginalLine": 168562,
+      "lastOriginalLine": 168637,
+      "lineCount": 76,
+      "startByte": 6988048,
+      "endByteExclusive": 6992484,
+      "bytes": 4436,
+      "sha256": "0de5440573aa8263bc1e7696764b8d1576023c981b539f37a21f3da823c24c5f"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-175742-175765.txt",
+      "role": "Modules metadata writer",
+      "firstOriginalLine": 175742,
+      "lastOriginalLine": 175765,
+      "lineCount": 24,
+      "startByte": 7261111,
+      "endByteExclusive": 7262211,
+      "bytes": 1100,
+      "sha256": "74ae8289484185e4be5dd8b5e849eedb245ddf21d0ce79affb143009769201c3"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-182644-182660.txt",
+      "role": "Versioned store path",
+      "firstOriginalLine": 182644,
+      "lastOriginalLine": 182660,
+      "lineCount": 17,
+      "startByte": 7506828,
+      "endByteExclusive": 7507499,
+      "bytes": 671,
+      "sha256": "8dace3b7b772cf4c956d990e63ec3d04dc0186c12de684c696b71095a6e71d93"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-182826-182833.txt",
+      "role": "Store controller input",
+      "firstOriginalLine": 182826,
+      "lastOriginalLine": 182833,
+      "lineCount": 8,
+      "startByte": 7513301,
+      "endByteExclusive": 7513575,
+      "bytes": 274,
+      "sha256": "b01b32b03745a83cc9c5518302581c8109d4df4decaf1d7b66571dd22b007ad7"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-256665-256715.txt",
+      "role": "Named config getter lookup",
+      "firstOriginalLine": 256665,
+      "lastOriginalLine": 256715,
+      "lineCount": 51,
+      "startByte": 10679921,
+      "endByteExclusive": 10681871,
+      "bytes": 1950,
+      "sha256": "592345e16fc3537b7d93d68431af3e26433875507155a97351616113978bc1ad"
+    }
+  ]
+}

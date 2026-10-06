@@ -1,0 +1,7 @@
+{
+  "command": ["npm", "run", "check:quality"],
+  "exitCode": 0,
+  "elapsedSeconds": 46.748,
+  "log": "controls/netlify-floor-owner-quality.log.txt",
+  "scope": "Root-approved two-file Node-floor observer repair after predecessor full-tier pass; no install/build/native execution"
+}

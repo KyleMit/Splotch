@@ -1,0 +1,49 @@
+async function configSet(opts3, key, valueParam) {
+  let isAuthSetting = isIniConfigKey(key);
+  if (!isAuthSetting) {
+    key = validateSimpleKey(key);
+    isAuthSetting = isIniConfigKey(key);
+  }
+  let value = valueParam;
+  if (valueParam != null && opts3.json) {
+    value = JSON.parse(valueParam);
+  }
+  if (isAuthSetting) {
+    const configPath2 = opts3.global ? path179.join(opts3.configDir, "auth.ini") : path179.join(opts3.dir, ".npmrc");
+    if (value != null && typeof value !== "string" && isStringOnlyIniKey(key)) {
+      throw new PnpmError("CONFIG_SET_AUTH_NON_STRING", `Cannot set ${key} to a non-string value (${JSON.stringify(value)})`);
+    }
+    const settings = await safeReadIniFile2(configPath2);
+    if (value == null) {
+      if (settings[key] == null)
+        return;
+      delete settings[key];
+    } else {
+      settings[key] = value;
+    }
+    await writeIniFile(configPath2, settings);
+    return;
+  }
+  const { configDir, configFileName } = getConfigFileInfo(key, opts3);
+  const configPath = path179.join(configDir, configFileName);
+  switch (configFileName) {
+    case GLOBAL_CONFIG_YAML_FILENAME:
+    case WORKSPACE_MANIFEST_FILENAME: {
+      const castValue = castField(value, (0, import_lodash6.default)(key));
+      const isRemoval = castValue == null;
+      if (configFileName === GLOBAL_CONFIG_YAML_FILENAME && !isRemoval) {
+        key = validateYamlConfigKey(key);
+      }
+      const writtenKey = isRemoval ? camelCase(key) : validateWorkspaceKey(key);
+      if (castValue != null && configFileName === WORKSPACE_MANIFEST_FILENAME && isProjectManifestSkippedKey(writtenKey)) {
+        throw new ConfigSetNotAProjectSettingError(writtenKey);
+      }
+      const updatedFields = {
+        [writtenKey]: castValue
+      };
+      if (isRemoval) {
+        updatedFields[key] = null;
+        updatedFields[(0, import_lodash6.default)(writtenKey)] = null;
+      }
+      await updateWorkspaceManifest(configDir, { fileName: configFileName, updatedFields });
+      break;

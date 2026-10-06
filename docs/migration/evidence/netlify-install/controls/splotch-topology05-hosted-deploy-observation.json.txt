@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-06T08:24:55.989537+00:00",
+  "matchingDeploys": [
+    {
+      "id": "6ac4b006e2ce39000805a7b9",
+      "build_id": "6ac4b006e2ce39000805a7b7",
+      "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+      "state": "error",
+      "created_at": "2026-10-06T08:23:34.232Z",
+      "updated_at": "2026-10-06T08:24:07.876Z",
+      "context": "branch-deploy",
+      "branch": "feature/netlify-migration-topology-05",
+      "commit_ref": "423769b486d81a8da0cdd1c1e6abfedc31bec757",
+      "skipped": null,
+      "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "published_at": null,
+      "title": null
+    }
+  ],
+  "rowsRead": 20,
+  "scope": "Fixed non-secret deployment metadata only; no settings, environment or logs retained"
+}

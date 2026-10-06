@@ -1,0 +1,261 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: phone-landscape-toolbar.spec.ts >> phone landscape interactions >> compact custom color centers its icon inside its color ring
+- Location: tests/phone-landscape-toolbar.spec.ts:164:3
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  locator('#color-picker')
+Expected: visible
+Received: hidden
+Timeout:  5000ms
+
+Call log:
+  - Expect "toBeVisible" locator('#color-picker') with timeout 5000ms
+  - waiting for locator('#color-picker')
+    7 × locator resolved to <dialog id="color-picker" aria-label="Color Picker" class="color-picker modal-dialog modal-fly-in svelte-13rslnh">…</dialog>
+      - unexpected value "hidden"
+
+```
+
+```yaml
+- main
+- button "Clear drawing"
+- button "Colors" [expanded]:
+  - img
+- group "Colors":
+  - button "Purple" [pressed]
+  - button "Blue"
+  - button "Teal"
+  - button "Mint"
+  - button "Green"
+  - button "Yellow"
+  - button "Orange"
+  - button "Brown"
+  - button "Red"
+  - button "Pink"
+  - button "Black"
+  - button "Custom Color":
+    - img
+- button "Expand controls":
+  - img
+- button "Settings":
+  - img "Settings":
+    - img
+```
+
+# Test source
+
+```ts
+  69  | 
+  70  |   test('enlarged buttons leave the fullscreen corner clear', async ({ page }) => {
+  71  |     await page.addInitScript(
+  72  |       (key) => localStorage.setItem(key, '130'),
+  73  |       STORAGE_KEYS.actionButtonScale
+  74  |     );
+  75  |     await gotoApp(page);
+  76  |     await openDrawer(page);
+  77  |     await settleToolbar(page);
+  78  |     await expect(page.locator('#colorButton')).toHaveCSS('width', '58.5px');
+  79  |     const color = await page.locator('#colorButton').boundingBox();
+  80  |     expect(color?.y).toBeGreaterThanOrEqual(56);
+  81  |   });
+  82  | 
+  83  |   test('draws in the reclaimed left strip and dismisses colors when drawing starts', async ({
+  84  |     page,
+  85  |   }) => {
+  86  |     await gotoApp(page);
+  87  |     await page.locator('#colorButton').click();
+  88  |     await drawCommittedStroke(page, [
+  89  |       { x: 12, y: 24 },
+  90  |       { x: 30, y: 30 },
+  91  |       { x: 50, y: 40 },
+  92  |     ]);
+  93  |     await expect(page.locator('.color-menu')).toBeHidden();
+  94  |     await openDrawer(page);
+  95  |     await expect(page.locator('#screenshotButton')).toBeEnabled();
+  96  |   });
+  97  | 
+  98  |   test('retains colors when every optional action is disabled', async ({ page }) => {
+  99  |     await page.addInitScript(
+  100 |       (keys) => {
+  101 |         for (const key of keys) localStorage.setItem(key, 'false');
+  102 |       },
+  103 |       [
+  104 |         STORAGE_KEYS.crayonEnabled,
+  105 |         STORAGE_KEYS.magicBrushEnabled,
+  106 |         STORAGE_KEYS.eraserEnabled,
+  107 |         STORAGE_KEYS.strokeWidthControl,
+  108 |         STORAGE_KEYS.coloringBookEnabled,
+  109 |         STORAGE_KEYS.screenshotEnabled,
+  110 |         STORAGE_KEYS.aiImageEnabled,
+  111 |         STORAGE_KEYS.undoButtonEnabled,
+  112 |       ]
+  113 |     );
+  114 |     await gotoApp(page);
+  115 |     await expect(page.locator('.drawer-toggle')).toBeHidden();
+  116 |     await page.locator('#colorButton').click();
+  117 |     await expect(page.locator('.color-menu')).toBeVisible();
+  118 |   });
+  119 | 
+  120 |   test('colors select ink, dismiss, and restore keyboard focus', async ({ page }) => {
+  121 |     await gotoApp(page);
+  122 |     await page.locator('#colorButton').click();
+  123 |     const menu = page.getByRole('group', { name: 'Colors', exact: true });
+  124 |     await expect(menu.getByRole('button')).toHaveCount(12);
+  125 |     await menu.getByRole('button', { name: 'Red', exact: true }).click();
+  126 |     await expect(menu).toBeHidden();
+  127 |     await expect(page.locator('#colorButton')).toBeFocused();
+  128 |     await expect(page.locator('#colorButton')).toHaveCSS('color', 'rgb(236, 83, 78)');
+  129 |     await page.locator('#colorButton').press('Enter');
+  130 |     await expect(menu).toBeVisible();
+  131 |     await menu.getByRole('button').first().focus();
+  132 |     await page.keyboard.press('Escape');
+  133 |     await expect(menu).toBeHidden();
+  134 |     await expect(page.locator('#colorButton')).toBeFocused();
+  135 |   });
+  136 | 
+  137 |   test('compact colors use the portrait palette swatch spacing', async ({ page }) => {
+  138 |     await gotoApp(page);
+  139 |     await page.locator('#colorButton').click();
+  140 |     const menu = page.locator('.color-menu');
+  141 |     const selected = menu.getByRole('button', { name: PALETTE_COLORS[0].label });
+  142 |     await expect(menu).toBeVisible();
+  143 |     await expect(menu).toHaveCSS('gap', `${PALETTE_ROW_GEOMETRY.gapPx}px`);
+  144 |     await expect(menu).toHaveCSS('padding-left', `${PALETTE_ROW_GEOMETRY.paddingPx / 2}px`);
+  145 |     await expect(selected).toHaveCSS('width', `${PALETTE_ROW_GEOMETRY.swatchPx}px`);
+  146 |   });
+  147 | 
+  148 |   test('compact selected color uses the palette selection ring', async ({ page }) => {
+  149 |     await gotoApp(page);
+  150 |     await page.locator('#colorButton').click();
+  151 |     const menu = page.locator('.color-menu');
+  152 |     const selected = menu.getByRole('button', { name: PALETTE_COLORS[0].label });
+  153 |     await expect(selected).toBeVisible();
+  154 |     await expect(selected).toHaveCSS('border-width', `${SELECTION_RING_GAP_PX}px`);
+  155 |     const selection = await selected.evaluate((button) => ({
+  156 |       border: getComputedStyle(button).borderColor,
+  157 |       ring: getComputedStyle(button).boxShadow,
+  158 |       surface: getComputedStyle(button.parentElement!).backgroundColor,
+  159 |     }));
+  160 |     expect(selection.border).toBe(selection.surface);
+  161 |     expect(selection.ring).toContain(cssRgb(getRingColor(PALETTE_COLORS[0].hex)));
+  162 |   });
+  163 | 
+  164 |   test('compact custom color centers its icon inside its color ring', async ({ page }) => {
+  165 |     await gotoApp(page);
+  166 |     await page.locator('#colorButton').click();
+  167 |     await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+  168 |     const dialog = page.locator('#color-picker');
+> 169 |     await expect(dialog).toBeVisible();
+      |                          ^ Error: expect(locator).toBeVisible() failed
+  170 |     await settleFlyIn(dialog);
+  171 |     await dialog.locator(`.grid.landscape .hexagon[data-color="${PICKER_GREEN}"]`).click();
+  172 |     await expect(dialog).not.toBeVisible();
+  173 |     await page.locator('#colorButton').click();
+  174 |     const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
+  175 |     await expect(custom).toHaveClass(/active/);
+  176 |     await settleToolbar(page);
+  177 |     expect(await custom.evaluate((button) => getComputedStyle(button).boxShadow)).toContain(
+  178 |       cssRgb(PICKER_GREEN)
+  179 |     );
+  180 |     const iconInsets = await custom.evaluate((button) => {
+  181 |       const buttonBox = button.getBoundingClientRect();
+  182 |       const iconBox = button.querySelector('span')!.getBoundingClientRect();
+  183 |       return [
+  184 |         iconBox.left - buttonBox.left,
+  185 |         buttonBox.right - iconBox.right,
+  186 |         iconBox.top - buttonBox.top,
+  187 |         buttonBox.bottom - iconBox.bottom,
+  188 |       ];
+  189 |     });
+  190 |     for (const inset of iconInsets) expect(inset).toBeCloseTo(SELECTION_RING_GAP_PX, 0);
+  191 |   });
+  192 | 
+  193 |   test('dismissing the first custom picker leaves its swatch unpressed', async ({ page }) => {
+  194 |     await gotoApp(page);
+  195 |     await page.locator('#colorButton').click();
+  196 |     await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+  197 |     const dialog = page.locator('#color-picker');
+  198 |     await expect(dialog).toBeVisible();
+  199 |     await page.keyboard.press('Escape');
+  200 |     await expect(dialog).not.toBeVisible();
+  201 |     await page.locator('#colorButton').click();
+  202 |     const custom = page.locator('.color-menu').getByRole('button', { name: 'Custom Color' });
+  203 |     await expect(custom).toHaveAttribute('aria-pressed', 'false');
+  204 |     await expect(custom).not.toHaveClass(/active/);
+  205 |   });
+  206 | 
+  207 |   test('flyout owners share one open menu and custom colors open the full picker', async ({
+  208 |     page,
+  209 |   }) => {
+  210 |     await gotoApp(page);
+  211 |     await openDrawer(page);
+  212 |     await page.locator('#colorButton').click();
+  213 |     await page.locator('#strokeWidthButton').click();
+  214 |     await expect(page.locator('.color-menu')).toBeHidden();
+  215 |     await expect(page.locator('.stroke-width-menu')).toBeVisible();
+  216 |     await settleToolbar(page);
+  217 |     const menuBox = await page.locator('.stroke-width-menu').boundingBox();
+  218 |     expect(menuBox?.x).toBe(64);
+  219 |     await page.locator('#colorButton').click();
+  220 |     await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  221 |     await page.locator('.color-menu').getByRole('button', { name: 'Custom Color' }).click();
+  222 |     await expect(page.locator('.color-menu')).toBeHidden();
+  223 |     await expect(page.locator('dialog[open]')).toBeVisible();
+  224 |   });
+  225 | 
+  226 |   test('brush and width flyout options receive taps without drawing underneath', async ({
+  227 |     page,
+  228 |   }) => {
+  229 |     await gotoApp(page);
+  230 |     await openDrawer(page);
+  231 |     await page.locator('#brushButton').click();
+  232 |     await page.locator('#crayonBrushButton').click();
+  233 |     await expect(page.locator('.brush-menu')).toBeHidden();
+  234 |     await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'crayon');
+  235 |     await page.locator('#strokeWidthButton').click();
+  236 |     await page.getByRole('button', { name: 'Size 5', exact: true }).click();
+  237 |     await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  238 |     await page.locator('#strokeWidthButton').click();
+  239 |     await expect(page.getByRole('button', { name: 'Size 5', exact: true })).toHaveAttribute(
+  240 |       'aria-pressed',
+  241 |       'true'
+  242 |     );
+  243 |     await expect(page.locator('#screenshotButton')).toBeDisabled();
+  244 |   });
+  245 | 
+  246 |   test('disabling every optional control centers colors despite a saved open drawer', async ({
+  247 |     page,
+  248 |   }) => {
+  249 |     await page.addInitScript(
+  250 |       ({ keys, drawer }) => {
+  251 |         for (const key of keys) localStorage.setItem(key, 'false');
+  252 |         localStorage.setItem(drawer, 'true');
+  253 |       },
+  254 |       {
+  255 |         keys: [
+  256 |           STORAGE_KEYS.screenshotEnabled,
+  257 |           STORAGE_KEYS.undoButtonEnabled,
+  258 |           STORAGE_KEYS.strokeWidthControl,
+  259 |           STORAGE_KEYS.crayonEnabled,
+  260 |           STORAGE_KEYS.magicBrushEnabled,
+  261 |           STORAGE_KEYS.eraserEnabled,
+  262 |           STORAGE_KEYS.coloringBookEnabled,
+  263 |           STORAGE_KEYS.aiImageEnabled,
+  264 |         ],
+  265 |         drawer: STORAGE_KEYS.drawerOpen,
+  266 |       }
+  267 |     );
+  268 |     await gotoApp(page);
+  269 |     await expect(page.locator('.drawer-toggle')).toBeHidden();
+```

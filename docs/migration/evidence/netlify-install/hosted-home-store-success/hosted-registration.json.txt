@@ -1,0 +1,77 @@
+{
+  "registeredAt": "2026-10-06T11:36:13.941400+00:00",
+  "sourceHead": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+  "sourceTree": "9aad2562ca5768206054af4fdf3202995890abad",
+  "sourceBase": "d70d6976a116100cec8cc169365e5dfd97130476",
+  "proofBranch": "feature/netlify-migration-topology-05",
+  "expectedProofHead": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "force": false,
+  "review": {
+    "round": 3,
+    "reviewedHead": "d70d6976a116100cec8cc169365e5dfd97130476",
+    "reviewId": 5427559050,
+    "verdict": "GO with one diagnostic nit",
+    "followUp": "Exact requested ancestor role and actual CLI predecessor-failure control; no fourth formal review or ledger reset"
+  },
+  "reviewThread": "PRRT_kwDOQ9lQis6pb-lj",
+  "reviewThreadResolved": true,
+  "ci": {
+    "path": "/private/tmp/splotch-netlify-home-ancestor-complete-ci.json",
+    "sha256": "169346b0f61d5fec336a7f6d9b15b16d4190249634439fda45314cc286538446"
+  },
+  "sitePreflight": {
+    "path": "/private/tmp/splotch-netlify-home-ancestor-site-preflight-before-ref.json",
+    "sha256": "b37a88e830439d83018d0a9daf46ceff54ebfdec9a1d6707c57831beb4d8e8e6"
+  },
+  "executedSourceRows": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 10066,
+      "mode": "0o644",
+      "sha256": "3c23e3f0f80e5c482a94076d7f961640df2045b9a495df0b2689d0547b0e7337"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14445,
+      "mode": "0o644",
+      "sha256": "03596b8e4ab56f2672a659088d0a71dda43b39188b9e5480aa22611e9d5d56ea"
+    },
+    {
+      "path": "tools/tests/netlify-home-store.test.mjs",
+      "bytes": 19278,
+      "mode": "0o644",
+      "sha256": "fc3a8e5deb7dadafcd9df5cc2895e3db39dad220e803916f5d2c06936e62d6b9"
+    }
+  ],
+  "runtimeOwners": {
+    "package.json": {
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "mode": "0o644"
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0o644"
+    },
+    "pnpm-workspace.yaml": {
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0o644"
+    },
+    "experiments/native-architecture/package.json": {
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "mode": "0o644"
+    },
+    "netlify.toml": {
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33",
+      "mode": "0o644"
+    }
+  },
+  "acceptance": [
+    "Automatic deploy identifies this exact SHA and branch",
+    "Actual admitted ambient family, manager version and qualified clean production install complete",
+    "Five-context physical dependency witness completes with unchanged owners and excluded candidate packages",
+    "Production release build and configured postbuild guards succeed",
+    "Deployment API reports ready and actual publication time"
+  ],
+  "onFailure": "Preserve actual finite refusal/build diagnostics and identity; do not widen or change site/cache settings speculatively",
+  "scope": "Acceptance-or-diagnostic; R3 reviewed d70 and exact requested diagnostic follow-up is independently verified on this head. No fourth formal review, hosted success, native/product/performance acceptance claimed."
+}

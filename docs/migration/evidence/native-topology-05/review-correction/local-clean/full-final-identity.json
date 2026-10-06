@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "de3110af7687f236d9b7ed8a474d294de8a9e437",
+  "trackedDrift": false,
+  "repositoryLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "installedLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "buildSwitches": {
+    "PERF_MARKS": "absent; actual config false",
+    "PUBLIC_ENABLE_DEV_HARNESS": "absent; actual config false",
+    "CAPACITOR": "build:cap owner true"
+  },
+  "nativeStaticVersion": {
+    "version": "1.6.0"
+  }
+}

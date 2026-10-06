@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "rows": [
+    {
+      "path": "README.md",
+      "bytes": 3237,
+      "mode": "0o644",
+      "sha256": "ee1334db7039fd92b63e509db16d953c11c4463b801d5f0e783c3835468dc729",
+      "original": null
+    },
+    {
+      "path": "branch-readiness-receipt.json.txt",
+      "bytes": 5184,
+      "mode": "0o644",
+      "sha256": "28395c739f32b0d2620f6ff1bad357788ac97db17888f648bab304ebbc42ab0f",
+      "original": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/receipt.json"
+    },
+    {
+      "path": "branch-readiness-review.md.txt",
+      "bytes": 6021,
+      "mode": "0o644",
+      "sha256": "caf1e275fe09ab946a0bbb4ee7dec41574022dfa63469281e25c0568edc64420",
+      "original": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/REVIEW.md"
+    },
+    {
+      "path": "building-observation.json.txt",
+      "bytes": 1195,
+      "mode": "0o644",
+      "sha256": "f2898855822a0bc71af61e2a5f7e40c2fdd632e1d40a9aa6ab1b7969b757f844",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-observed-20261006T113718091731Z.json"
+    },
+    {
+      "path": "current-head-ci.json.txt",
+      "bytes": 41146,
+      "mode": "0o644",
+      "sha256": "169346b0f61d5fec336a7f6d9b15b16d4190249634439fda45314cc286538446",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-complete-ci.json"
+    },
+    {
+      "path": "hosted-registration.json.txt",
+      "bytes": 3280,
+      "mode": "0o644",
+      "sha256": "cfc23953ec63a689dba9f73d2a0ed56d8f5d89502f4d70e98bd31fe9dee609b1",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-registration.json"
+    },
+    {
+      "path": "initial-deploy.json.txt",
+      "bytes": 3884,
+      "mode": "0o644",
+      "sha256": "95032edf925f713d742d5289be28f58382437c7d08e6e19b186edbd267fcb910",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-deploy-initial.json"
+    },
+    {
+      "path": "live-resource.json.txt",
+      "bytes": 763,
+      "mode": "0o644",
+      "sha256": "f6abf05a9b43b9e704a63d484aeb360a8a9325c266f548e840a5568abcef5966",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-live-resource.json"
+    },
+    {
+      "path": "pr2699-merge.json.txt",
+      "bytes": 266,
+      "mode": "0o644",
+      "sha256": "db22eab6400740eada9504bdd271b125089f8882e9b7e7723ce591d90d7e6392",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-pr2699-merge.json"
+    },
+    {
+      "path": "proof-ref-update.json.txt",
+      "bytes": 161,
+      "mode": "0o644",
+      "sha256": "0aad31566ba642e38c47f18ab55ad16470654eade0b74575427dd592d966998e",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-proof-ref-update.json"
+    },
+    {
+      "path": "readiness-correction.json.txt",
+      "bytes": 1521,
+      "mode": "0o644",
+      "sha256": "3847af0cadaaa699b76e17f4d1b27e61531406b15511d87e661d16f17dd5fa08",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-readiness-correction.json"
+    },
+    {
+      "path": "ready-observation.json.txt",
+      "bytes": 1191,
+      "mode": "0o644",
+      "sha256": "6300738794a9ab11ab53a77d46c0f0f326852a8843317f8a3453f9552744ca41",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-observed-20261006T113837143205Z.json"
+    },
+    {
+      "path": "schema-and-client-identity.json.txt",
+      "bytes": 1853,
+      "mode": "0o644",
+      "sha256": "0089c730398308a096b1ac065ce5798784045654b8057b305b3e35de354083cc",
+      "original": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/schema-and-client-identity.json"
+    },
+    {
+      "path": "selected-visible-observations.json.txt",
+      "bytes": 3909,
+      "mode": "0o644",
+      "sha256": "9b8ff5dec7f73830c9bde180bf4833ef343add9f002c168d83ccc6d3f8714ced",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-hosted-selected-visible-observations.json"
+    },
+    {
+      "path": "site-preflight.json.txt",
+      "bytes": 529,
+      "mode": "0o644",
+      "sha256": "b37a88e830439d83018d0a9daf46ceff54ebfdec9a1d6707c57831beb4d8e8e6",
+      "original": "/private/tmp/splotch-netlify-home-ancestor-site-preflight-before-ref.json"
+    },
+    {
+      "path": "source-binding.json",
+      "bytes": 1978,
+      "mode": "0o644",
+      "sha256": "b75d7118aeee0cb68d535d74dd3accdbea3d0d3662289b2fd0ff740f411b826f",
+      "original": null
+    },
+    {
+      "path": "source-excerpts.txt",
+      "bytes": 5954,
+      "mode": "0o644",
+      "sha256": "8fc39266d15c122bf66d3220dd7aabae5e7177b96ca97cfc7ee120d7cf75b753",
+      "original": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/source-excerpts.txt"
+    }
+  ]
+}

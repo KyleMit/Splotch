@@ -1,0 +1,39 @@
+# Branch readiness and nullable publication record
+
+This is a passive source/record review on 2026-10-06. The original registration is retained unchanged. Its final acceptance sentence over-specifies a timestamp that the observed API record does not supply. An additive correction can use the documented deploy readiness condition while preserving all other install, witness, build and review requirements. This report does not perform or certify a new hosted operation.
+
+## Exact observed record
+
+The bound observation at 2026-10-06T11:38:37.143205+00:00 identifies deploy 6ac4dd381d311b0008210aa1, build 6ac4dd381d311b0008210a9f, branch feature/netlify-migration-topology-05, context branch-deploy and commit 53135ad5e9fd93e4f0c4a65bd74108b7fda1690e. Deploy state is ready; build.done is true; the outer error value is null. Deploy/build IDs agree. The branch URL is https://feature-netlify-migration-topology-05--splotchy.netlify.app. published_at is null. created_at and updated_at are distinct recorded fields and are not substitutes for publication time.
+
+The record was supplied by root; I verified its bytes and field relationships passively. I did not make an authenticated API request or retrieve the live resource. Root separately owns the exact branch-resource check.
+
+## Official source evidence
+
+[Netlify's API polling documentation](https://docs.netlify.com/api-and-cli-guides/api-guides/get-started-with-api/#poll-for-deploy-state), retrieved through the web tool on 2026-10-06, lines454–472: “Once the state changes to `ready`, the deploy is live.” This supports readiness without requiring a publication timestamp.
+
+[Netlify's deploy definitions](https://docs.netlify.com/deploy/deploy-overview/#definitions), same retrieval date, lines291–303, distinguish the main-site published deploy from branch deployments served at branch-prefixed URLs. This describes the branch address in the observation. It does not document why this particular published_at value is null.
+
+The installed source actually found is netlify-cli 26.1.0, @netlify/api 14.0.19 and @netlify/open-api 2.55.0 in the Node 24.16.0 global tree. This corrects the task's initial CLI 24.0 identity assumption; no claim is made that another installed version cannot exist. The bound OpenAPI selections for listSiteDeploys, getSiteDeploy and getDeploy each describe published_at as a dateTime string, without property description or inclusion in a required list. This is an incomplete description of the observed null; it supplies no explanation for the value and no ready-state timestamp invariant.
+
+The actual client method returns parseResponse's result (methods/index.js22–27). The response reader parses the HTTP body and returns the parsed result on success (response.js27–37). These inspected owners do not normalize published_at or derive its meaning. Their bytes and the schema source are bound in receipt.json; no package imports or client calls ran.
+
+## Narrow correction proposed
+
+Preserve registration.original.json.txt byte-exact and add a correction identifying the old final acceptance sentence. Replace that sentence's timestamp requirement with:
+
+> The deployment/build record identifies the exact registered SHA and branch-deploy, deploy state is ready, build.done is true and no error is recorded. Preserve published_at exactly as supplied, including null; record observation times and UI event times separately. The corresponding branch resource check is recorded separately.
+
+This uses the provider's documented readiness condition. It does not supply a reason for null, promote created_at/updated_at/UI time into published_at, change the named proof context, alter site settings, introduce a manual deploy, weaken install/witness/build ownership, or create a fourth implementation-review round. The source/review/CI and successful production install, physical witness and all six configured postbuild requirements remain unchanged.
+
+## Actual log and witness limits
+
+Root reports the same deployment's UI log says Site is live at 11:37:49 and shows all six postbuild guard success lines. This is root-provided visible evidence, not a log independently fetched here; its time has no independent timezone or publication-field status in this report.
+
+Root also reports the actual rendered witness JSON is truncated at the 32768 UI limit. Its prefix contains production-installed-tree-passed, installedPackageCount 444 and candidateExclusiveArtifactCount 329. Complete installed/resolutions arrays are unavailable from that UI capture. A Copied UI action with an empty clipboard buffer did not preserve a raw export.
+
+The bound current witness and contract bytes equal their versions at the registered commit. inspectNetlifyProductionInstall validates all five input hashes142–146, defines the five contexts164–170, checks the installed rows173–180, and resolves/verifies each of the contract's 19 production direct entries from every context182–192 before returning the disposition193–207. Thus the audited source orders the observed success disposition after these assertions. This source inference is not a substitute for preserving every individual hosted array row; the truncation remains explicit. The witness's own scope207 separates post-install tree/identity from cloud install/build/deploy logs.
+
+## Limits and disposition
+
+No material source contradiction with ready branch availability was found. The registration timestamp clause is a record-contract defect, not evidence of an install or build failure. Whether every original hosted acceptance item is fully preserved is root's final integration/evidence decision. This review does not certify production main-site publication, native/product parity, performance, or architecture selection. Only public documentation, installed source bytes, already-recorded metadata and read-only git-show source binding were inspected. No tests, imports, builds, native tools, credential operations, deployments, site changes or repository edits ran.

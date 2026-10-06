@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 gen:code-map
+> node tools/code-map/gen-code-map.mjs
+
+Wrote docs/CODE-MAP.md from c20bb9f0665f439563268f31901f3fd8eae23c7a (2026-10-06): 470,744 LOC across 2873 files

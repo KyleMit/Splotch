@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "scope": "final executed source binding and local controls; hosted and final implementation review pending",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 5939,
+      "mode": "0644",
+      "sha256": "a0f08514971f8dd0d4731a6df9f1d7bd3f6bf5bc7b7f03176d2db55b2b6f4d4a",
+      "kind": "authored-package-metadata"
+    },
+    {
+      "path": "controls/current-python-validation.json.txt",
+      "bytes": 1065,
+      "mode": "0644",
+      "sha256": "59460e1283d4b94cfb29d3688ff474d435d4ffa25aad9c3fc261376ffe6e7e9f",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/initial-validation.json.txt",
+      "bytes": 1497,
+      "mode": "0644",
+      "sha256": "7a90df908829ff6b6233fec9accf2c9d7126ca242e5e5238a810d5a65e56b1e5",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-current-python-full-tools.log.txt",
+      "bytes": 4060,
+      "mode": "0644",
+      "sha256": "e7c9dd79289a4c9e298efb94377c07c7a58d519fd9c0ed9c90a6d6c8740057e5",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-current-python-quality.log.txt",
+      "bytes": 60088,
+      "mode": "0644",
+      "sha256": "19526917d28d05fadfa9a757103461231bd83e96e4f8606fc133fa86ccc522bf",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-current-python-real-manager.log.txt",
+      "bytes": 4132,
+      "mode": "0644",
+      "sha256": "f7eeecab72921fdb01b1686c3c162c26f7ceee257ab5e1b17d148d2ab865dc80",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-focused.log.txt",
+      "bytes": 402,
+      "mode": "0644",
+      "sha256": "fb1225a7f56a0bcbd3240ad0472e1735bf4a6929042ca603d2425623e1b30c8d",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-format.log.txt",
+      "bytes": 319,
+      "mode": "0644",
+      "sha256": "a5951eaaf830c1acd2725852199f406a93db4bf4bbacfbbe926f50b0e6baaa0a",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-store-real-manager.log.txt",
+      "bytes": 290,
+      "mode": "0644",
+      "sha256": "854850764dd02bca7920cd2bf5f793b2605334c37eec1fba498b4d0a5a98f47f",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "execution-binding.json",
+      "bytes": 3411,
+      "mode": "0644",
+      "sha256": "7471382d2066a883b327dd3eb20e39c862f9c38219db0485283095851070db24",
+      "kind": "authored-package-metadata"
+    },
+    {
+      "path": "planning-acceptance.json.txt",
+      "bytes": 1205,
+      "mode": "0644",
+      "sha256": "d89960b8713f5cc159f064dd4681c50dc623594500f3e2fb7475fc5a652ab1b1",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "planning-findings.json.txt",
+      "bytes": 5230,
+      "mode": "0644",
+      "sha256": "6ce02fc0983e671b831a379a3e15e8351e1e221340895bcf72758254e2242c2e",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "planning-question.md.txt",
+      "bytes": 33159,
+      "mode": "0644",
+      "sha256": "b94b2925425458c4727d584c303132fa71b4bdb5afc524140625bad5c0883824",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/development-baseline.log.txt",
+      "bytes": 1069,
+      "mode": "0644",
+      "sha256": "42831a47a278f4978c169d2ba4a8be59af94161b1e864fea52c79770e73e988b",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/protocol.py.txt",
+      "bytes": 6182,
+      "mode": "0644",
+      "sha256": "476436d8e5e15850331be0010d4f585918aff97d12992cc44798b4f92f4374cd",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-production-release-build.log.txt",
+      "bytes": 62483,
+      "mode": "0644",
+      "sha256": "41278028b64d196ea3adc5268d070930d231a03079666a71ef98c44b5fcef1a4",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-warm-ci-with-home-store.log.txt",
+      "bytes": 5704,
+      "mode": "0644",
+      "sha256": "45b0d455ab0cdf22999b87df3910facf5673b35a1b5a916594661dda0fa48af6",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-warm-selected-physical-witness.log.txt",
+      "bytes": 45862,
+      "mode": "0644",
+      "sha256": "23ec18f13bc3c5000048cc0140643f7e356b2246c0391f7e4b8b66728f73b267",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/receipt.json.txt",
+      "bytes": 6411,
+      "mode": "0644",
+      "sha256": "baa1769a30302fd90fb7f8d3bb8bc5d312673f42c736681e41a1531ffd02a94c",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-double-quoted.log.txt",
+      "bytes": 82,
+      "mode": "0644",
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-plain.log.txt",
+      "bytes": 82,
+      "mode": "0644",
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-single-quoted.log.txt",
+      "bytes": 82,
+      "mode": "0644",
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-global-store-writer.log.txt",
+      "bytes": 0,
+      "mode": "0644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-pnpm-version.log.txt",
+      "bytes": 8,
+      "mode": "0644",
+      "sha256": "a8608bace4e3de4e6d8c1f809759eab6c60aa908a62f739089cab67e9c4955c6",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "source-preparation-receipt.json.txt",
+      "bytes": 4197,
+      "mode": "0644",
+      "sha256": "672d9f162b1c10e075df7e060cf7eeb2ba083a974eb2411f38a079f11f5987b8",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "source-review-receipt.json.txt",
+      "bytes": 4773,
+      "mode": "0644",
+      "sha256": "e1ff1121eaaf926de5795148dab3aeb03248b20703e93afb4da9c0b7398eb6ab",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "source-review.md.txt",
+      "bytes": 6995,
+      "mode": "0644",
+      "sha256": "c2e9d2e5458503b4a028cd616256cd86ff591193ccfc217494b7f82b481f746a",
+      "kind": "original-byte-copy"
+    }
+  ]
+}

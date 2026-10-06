@@ -1,3 +1,5 @@
+import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
+
 // The counting rules behind docs/CODE-MAP.md. Every tracked path resolves to
 // exactly one exclusion class or exactly one measured area; within a measured
 // area it resolves to one sub-bucket, and within web/src to one functional
@@ -26,6 +28,7 @@ const MEASUREMENT_EXTENSIONS = new Set(['csv', 'json', 'jsonl', 'out', 'tsv']);
 // directory is treated the same way: recorded device captures and goldens.
 const EVIDENCE_ROOTS = [
   'docs/investigations/',
+  'docs/migration/evidence/',
   'docs/scratchpad/',
   'perf-profiles/',
   'scrapbook/',
@@ -126,6 +129,12 @@ const NATIVE_ROOTS = ['android/', 'ios/', 'fastlane/', '.maestro/'];
 // Areas are disjoint by construction; `areasFor` returns every match so the
 // coverage test can prove it rather than trust rule order.
 export const AREAS = [
+  {
+    label: `**${CANDIDATE_DIRECTORY}** — isolated native candidate`,
+    key: CANDIDATE_DIRECTORY,
+    matches: (path) => path.startsWith(`${CANDIDATE_DIRECTORY}/`),
+    bucket: subtreeBucket(`${CANDIDATE_DIRECTORY}/`),
+  },
   {
     label: '**web/src** — the app',
     key: 'web/src',

@@ -1,0 +1,28 @@
+    init_configToRecord();
+    init_parseConfigPropertyPath();
+  }
+});
+
+// ../config/commands/lib/configList.js
+async function configList(opts3) {
+  return JSON.stringify(configToRecord(opts3._config, opts3._context.explicitlySetKeys), void 0, 2);
+}
+var init_configList = __esm({
+  "../config/commands/lib/configList.js"() {
+    "use strict";
+    init_configToRecord();
+  }
+});
+
+// ../config/commands/lib/getConfigFileInfo.js
+function getConfigFileInfo(key, opts3) {
+  key = (0, import_lodash5.default)(key);
+  const configDir = opts3.global ? opts3.configDir : opts3.dir;
+  if (isIniConfigKey(key)) {
+    const configFileName = opts3.global ? "auth.ini" : ".npmrc";
+    return { configDir, configFileName };
+  } else {
+    const configFileName = opts3.global ? GLOBAL_CONFIG_YAML_FILENAME : WORKSPACE_MANIFEST_FILENAME;
+    return { configDir, configFileName };
+  }
+}

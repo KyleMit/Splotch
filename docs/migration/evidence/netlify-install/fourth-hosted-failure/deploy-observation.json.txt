@@ -1,0 +1,71 @@
+{
+  "observedAt": "2026-10-06T10:46:49.337993+00:00",
+  "matchingDeploys": [
+    {
+      "id": "6ac4d14846ad180008db3fdc",
+      "build_id": "6ac4d14846ad180008db3fd9",
+      "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+      "state": "error",
+      "created_at": "2026-10-06T10:45:28.470Z",
+      "updated_at": "2026-10-06T10:45:59.212Z",
+      "context": "branch-deploy",
+      "branch": "feature/netlify-migration-topology-05",
+      "commit_ref": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+      "skipped": null,
+      "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "published_at": null,
+      "title": "Qualify Netlify cache store configuration before clean installs"
+    },
+    {
+      "id": "6ac4c5c2cea46a0008807901",
+      "build_id": "6ac4c5c2cea46a00088078ff",
+      "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+      "state": "error",
+      "created_at": "2026-10-06T09:56:18.547Z",
+      "updated_at": "2026-10-06T09:56:50.520Z",
+      "context": "branch-deploy",
+      "branch": "feature/netlify-migration-topology-05",
+      "commit_ref": "d9311502209cd90995399951c8b4b34484e7bf47",
+      "skipped": null,
+      "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "published_at": null,
+      "title": "chore(netlify): observe refused ambient settings without values"
+    },
+    {
+      "id": "6ac4c159358b9f0008ae72d9",
+      "build_id": "6ac4c159358b9f0008ae72d7",
+      "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+      "state": "error",
+      "created_at": "2026-10-06T09:37:29.768Z",
+      "updated_at": "2026-10-06T09:37:59.966Z",
+      "context": "branch-deploy",
+      "branch": "feature/netlify-migration-topology-05",
+      "commit_ref": "c4372771edd370afe2d92b7b4eea7eab29356d90",
+      "skipped": null,
+      "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "published_at": null,
+      "title": "fix(netlify): reconstruct cached production workspace before build"
+    },
+    {
+      "id": "6ac4b006e2ce39000805a7b9",
+      "build_id": "6ac4b006e2ce39000805a7b7",
+      "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+      "state": "error",
+      "created_at": "2026-10-06T08:23:34.232Z",
+      "updated_at": "2026-10-06T08:24:07.876Z",
+      "context": "branch-deploy",
+      "branch": "feature/netlify-migration-topology-05",
+      "commit_ref": "423769b486d81a8da0cdd1c1e6abfedc31bec757",
+      "skipped": null,
+      "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+      "published_at": null,
+      "title": null
+    }
+  ],
+  "rowsRead": 20,
+  "scope": "Fixed non-secret deployment metadata only; no settings, environment or logs retained"
+}

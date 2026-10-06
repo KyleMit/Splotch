@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "disposition": "passed-clean-local-full-and-independent-production-cases",
+  "host": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "runtime": {
+      "nodeVersion": "v22.23.2",
+      "pnpmVersion": "11.22.0",
+      "warmStorePath": "/Users/kylemit/Library/pnpm/store/v11",
+      "nodeIdentity": "{\"version\":\"v22.23.2\",\"architecture\":\"arm64\",\"executable\":\"/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node\"}"
+    }
+  },
+  "isolation": "Independent full-history local clones with no ancestor node_modules; separate production clone never full-installed. Existing shared pnpm store warm, zero registry downloads observed. Not cold-fetch proof.",
+  "preparation": "local-clean/preparation.json",
+  "full": "local-clean/full-result.json",
+  "fullIdentity": "local-clean/full-final-identity.json",
+  "production": "local-clean/prod-result.json",
+  "productionIdentity": "local-clean/prod-final-identity.json",
+  "productionWitness": "local-clean/prod-installed-tree-witness.json",
+  "productionInstalledPackageCount": 445,
+  "candidateExclusiveArtifactCount": 329,
+  "observedFailures": [
+    {
+      "step": "initial preparation",
+      "exitCode": 1,
+      "reason": "Existing cached pnpm.cjs entry is not executable; direct temporary symlink raised PermissionError before any installation. Replaced only owned temporary symlink with fixed node launcher. Shared files unchanged."
+    },
+    {
+      "step": "full-production-classification before sync",
+      "exitCode": 1,
+      "reason": "Six real existing platform aliases were unresolved before the generated SvelteKit owner config existed. Existing owning sync then unchanged Knip passed. Original failure log retained."
+    }
+  ],
+  "syntheticLocalContext": {
+    "NETLIFY": "true",
+    "CONTEXT": "branch-deploy",
+    "BRANCH": "feature/netlify-migration-topology-05",
+    "COMMIT_REF": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+    "PNPM_FLAGS": "--prod"
+  },
+  "cloudStatus": "PENDING; no ref published or hosted install/build observed",
+  "nativeStatus": "Static Svelte/Capacitor export only; native compile/mount/performance/upgrade pending."
+}

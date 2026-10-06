@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "command": ["npm", "test"],
+  "selectors": {
+    "SPLOTCH_E2E_PORT": "5300",
+    "SMOKE_PORT": "5400"
+  },
+  "head": "f40dba5ff3c695a885cb9bdf17bf295ed2c946f1",
+  "exitCode": 0,
+  "executionOwner": "Root host-exclusive session12028",
+  "completionSource": "Parent terminal completion report; exact raw log retained",
+  "log": "controls/predecessor-f40-full-tests.log.txt",
+  "logSha256": "3702a21554360229a4eb66bb379686026632f08ef4e0c411993a7fe4d49a93b4",
+  "scope": "Full tier passed before the reviewed Node-floor observer correction; predecessor evidence only, not corrected-head acceptance"
+}

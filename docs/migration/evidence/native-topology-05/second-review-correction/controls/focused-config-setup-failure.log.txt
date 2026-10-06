@@ -1,0 +1,22 @@
+failed to load config from /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/vitest.tools.config.ts
+
+⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+Error: Build failed with 1 error:
+
+[31m[UNRESOLVED_ENTRY] [0mCannot resolve entry module vitest.tools.config.ts.
+
+    at aggregateBindingErrorsIntoJsError (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/rolldown/dist/shared/error-C7pxws0W.mjs:48:18)
+    at unwrapBindingResult (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/rolldown/dist/shared/error-C7pxws0W.mjs:18:128)
+    at #build (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/rolldown/dist/shared/rolldown-CgWItHdG.mjs:133:34)
+    at async bundleConfigFile (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vite/dist/node/chunks/node.js:37813:12)
+    at async bundleAndLoadConfigFile (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vite/dist/node/chunks/node.js:37709:18)
+    at async loadConfigFromFile (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vite/dist/node/chunks/node.js:37670:42)
+    at async resolveConfig (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vite/dist/node/chunks/node.js:37271:22)
+    at async resolveConfig$1 (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vitest/dist/chunks/index.C-uw7tH9.js:14778:25)
+    at async createVitest (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vitest/dist/chunks/cli-api.DL4Bd7Vh.js:26:17)
+    at async prepareVitest (file:///Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/vitest/dist/chunks/cli-api.DL4Bd7Vh.js:421:14) {
+  errors: [Getter/Setter]
+}
+
+
+

@@ -1,0 +1,60 @@
+{
+  "sourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "checkout": "/private/tmp/splotch-topology05-clean.2izk1qay/prod",
+  "runtime": {
+    "nodeVersion": "v22.23.2",
+    "pnpmVersion": "11.22.0",
+    "warmStorePath": "/Users/kylemit/Library/pnpm/store/v11",
+    "nodeIdentity": "{\"version\":\"v22.23.2\",\"architecture\":\"arm64\",\"executable\":\"/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node\"}"
+  },
+  "steps": [
+    {
+      "step": "prod-frozen-install",
+      "command": ["pnpm", "install", "--prod", "--frozen-lockfile"],
+      "startedUTC": "2026-10-06T06:50:45.395792+00:00",
+      "durationSeconds": 1.5014555000234395,
+      "exitCode": 0,
+      "log": "prod-frozen-install.log.txt",
+      "logSha256": "5d48c8df895645e1a2ece47b273b4f4e9177e1d11a4d6cb53d57745fef72cca2"
+    },
+    {
+      "step": "prod-installed-tree-witness",
+      "command": ["node", "tools/netlify-topology-witness.mjs"],
+      "startedUTC": "2026-10-06T06:50:46.898228+00:00",
+      "durationSeconds": 0.2312979589914903,
+      "exitCode": 0,
+      "log": "prod-installed-tree-witness.log.txt",
+      "logSha256": "6e2b50b45466a29b337bafb08b49b7d90db1a8cc84a897c98f2b2a2ad03bfdfa"
+    },
+    {
+      "step": "prod-exact-netlify-command",
+      "command": [
+        "/bin/sh",
+        "-c",
+        "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
+      ],
+      "startedUTC": "2026-10-06T06:50:47.129819+00:00",
+      "durationSeconds": 6.65207733400166,
+      "exitCode": 0,
+      "log": "prod-exact-netlify-command.log.txt",
+      "logSha256": "72bb947a9afa0a2d8f871aaf4fcbf94345a474b61760ef1479bac4da97ea0506"
+    },
+    {
+      "step": "prod-owner-derived-versions",
+      "command": [
+        "node",
+        "--experimental-strip-types",
+        "--disable-warning=ExperimentalWarning",
+        "--input-type=module",
+        "-e",
+        "import { buildMetadata } from './buildVersion.ts'; console.log(JSON.stringify({ web: buildMetadata({ isCapacitor: false }), native: buildMetadata({ isCapacitor: true }) }));"
+      ],
+      "startedUTC": "2026-10-06T06:50:53.782190+00:00",
+      "durationSeconds": 0.056487832916900516,
+      "exitCode": 0,
+      "log": "prod-owner-derived-versions.log.txt",
+      "logSha256": "d2b68472df02b5319d1934ceb5fcbc9499c24d36848b40ad101a352a820131ae"
+    }
+  ],
+  "context": "Explicitly synthetic LOCAL NETLIFY=true/branch-deploy proof inputs; no published ref/cloud/hosting result."
+}

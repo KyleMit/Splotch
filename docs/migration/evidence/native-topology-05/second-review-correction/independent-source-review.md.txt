@@ -1,0 +1,56 @@
+# Topology shared-name correction — independent source review
+
+Reviewed read-only at f135321682a38bb2833d971b1481bbe60fc892a0 in
+/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch. I did not author these four changes.
+No candidate import, test, build, install or Git/source mutation was performed. Material findings:0.
+This accepts the bounded source design; new-head execution/CI/hosted proof remains pending.
+
+## Actual finding and correction
+
+Claude's second exact review finding is valid: old live production closure used artifact/version
+keys against a historical production-key baseline, so an ordinary shared ms version bump falsely
+became a candidate leak. The correlated shipping-import fence also took artifact-exclusive rows'
+names, so split versions of a legitimate shared package could become falsely forbidden imports.
+
+* lock-artifacts.mjs:21–37 extracts artifactIdentity without relaxing its existing canonical package
+  identity/integrity/source checks. candidateOnlyPackageNames:99–110 compares canonical candidate
+  names with canonical current production names, retaining only genuinely candidate-only names.
+* topology-policy.mjs:65–84 derives historical baseline production names, then rejects current
+  production keys whose canonical name is in the candidate closure and absent from that baseline.
+  A shared package's new version is permitted. A new candidate-only name entering production still
+  fails, including when its production version differs from the candidate's. The returned artifact
+  counts retain their existing exact-key meaning; they are not redefined as name counts.
+* check-native-topology.mjs:53–62 keeps candidate archive review before production/import checks and
+  passes the new name-only set to the real shipping-import scanner. New candidate/shared archive
+  bytes still require the exact reviewed integrity/source/hook row. The artifact-exclusive function
+  remains unchanged for exact production-install/exclusive records and their proof consumers.
+* production-closure.test.mjs sets up both scoped and unscoped shared-version bumps, checks closure
+  acceptance, proves new shared archive bytes fail without their row and pass with it, rejects a
+  candidate-only production name at both equal/different versions, and drives the actual shipping
+  source scanner with a shared split-version import followed by an illegal candidate-only import.
+  Fixture paths and required scanner inputs exist before assertions; the negative cases target the
+  intended predicate rather than a missing setup/import. These are source-inspected, unexecuted tests.
+
+No mandatory mitigation call, live/proof separation, archive policy, production witness or source
+scanner coverage was weakened by this delta. Static scanner/computed/subprocess limitations remain
+those already declared in its scope; this repair does not claim arbitrary runtime reachability.
+
+## Exact binding and unchanged boundaries
+
+Machine record: /private/tmp/splotch-topology-shared-name-independent-source-review.json.
+The four sorted source rows digest is
+d8ace5b04dd9b6b361670b526a49ebe7b73ee42753c60751c633156657e22b8c.
+
+* check-native-topology.mjs:46739540cb14a5b60c34e8cf607d5f9e7625065f64a1a289db3aae76f0e06f07
+* lib/lock-artifacts.mjs:a5010a2388e886551b8e320cbd6d3669872542c9c2d131b693a550fb02a159b1
+* lib/topology-policy.mjs:2bb756eefcbe895680e6f980c3aae7c0ece7314a72d6e55b87b97865e8a316b7
+* tests/production-closure.test.mjs:4ee5413893b7cb4995398ecaa5fa2fd27df2e4738609da333c22771ec844f97f
+
+Readback independently proved the root manifest/lock/workspace, production witness and contract
+helper, baseline production/resolution records, script inventory and exact exclusive/production
+contract JSON all equal this actual HEAD's bytes. Their hashes are in the machine record; no
+historical proof input was regenerated in these four edits.
+
+Root owns focused regression execution and an owned old-predicate inversion with successful setup,
+unchanged live/evidence checks, Quality/full required tiers, new-head clean full/prod cases and the
+third exact Claude review. Browser source remains quiescent under its separate28-row packet.

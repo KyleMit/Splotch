@@ -391,7 +391,7 @@ export default tseslint.config(
     // empirically: candidate rules were run over the real repo and only kept where the code
     // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
     // here without new evidence.
-    files: ['**/*.{ts,mts,mjs,js,svelte}'],
+    files: ['**/*.{ts,mts,mjs,js,svelte}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
     plugins: { [DISABLE_DIRECTIVES_PLUGIN_NAME]: disableDirectivesPlugin },
     rules: {
       // A suppression names its rules and says why, and one that suppresses nothing fails —
@@ -457,7 +457,7 @@ export default tseslint.config(
     // never-reassigned (hundreds of false positives), so .svelte / .svelte.ts / .svelte.js get
     // the rune-aware svelte/prefer-const in the svelte-files block instead. This split is what
     // makes the rule adoptable at all.
-    files: ['**/*.{ts,mts,mjs,js}'],
+    files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
     ignores: ['**/*.svelte.ts', '**/*.svelte.js'],
     rules: { 'prefer-const': 'error' },
   },
@@ -601,7 +601,12 @@ export default tseslint.config(
     // measure.mjs reads this block as the one default scope, so tools/ shares it rather than taking
     // its own. Excluded: generated pointer-instruction data, the frozen ideas-exploration archive,
     // and the one-epic person-present session driver.
-    files: ['web/src/**', 'web/tests/**', 'tools/**/*.{mjs,js,ts}'],
+    files: [
+      'web/src/**',
+      'web/tests/**',
+      'tools/**/*.{mjs,js,ts}',
+      'experiments/native-architecture/**/*.{ts,tsx,cjs}',
+    ],
     ignores: [
       'tools/store-drawings/generated/**',
       'tools/asset-gen/ideas-exploration/**',
@@ -650,7 +655,11 @@ export default tseslint.config(
     // refactor campaigns pay down to. A function over 100 whose code does not separate cleanly
     // gets a per-file cap below at its length + 25, with the WHY, rather than a counter-driven
     // split. Tests are excluded because they are mostly describe() callbacks.
-    files: ['web/src/**/*.ts', 'web/src/**/*.svelte'],
+    files: [
+      'web/src/**/*.ts',
+      'web/src/**/*.svelte',
+      'experiments/native-architecture/src/**/*.{ts,tsx}',
+    ],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'max-lines-per-function': [
@@ -889,6 +898,17 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
+  {
+    // Released Metro/Babel configuration and the Node transform witness use CommonJS loaders.
+    files: ['experiments/native-architecture/**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
+    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': ['error', NAMED_EXPORTS_ONLY],
     },
   },
   prettier

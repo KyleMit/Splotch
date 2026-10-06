@@ -1,0 +1,283 @@
+{
+  "scope": "Exact raw captures and verbatim primary-source ranges; original receipts/script and source slice bytes are not rewritten",
+  "captures": [
+    {
+      "path": "controls/final-format.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-clean-exclusion-format.log.txt",
+      "classification": "passing final source",
+      "bytes": 273,
+      "sha256": "61ac20558c9d6a872818c2c9429f5c8d43f8f3c5e5a5a3d8e2bfbcd8f2f370dc"
+    },
+    {
+      "path": "controls/final-focused.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-clean-exclusion-focused.log.txt",
+      "classification": "passing final source",
+      "bytes": 366,
+      "sha256": "d4d44c5771e00d40edfaaf141628aa097a5adb840b22b2b1dedfc2880ec3010a"
+    },
+    {
+      "path": "controls/final-full-tools.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-clean-exclusion-full-tools.log.txt",
+      "classification": "passing final source",
+      "bytes": 4060,
+      "sha256": "5140e9db64d1ccf6395e3dec233f3eb0bf84e72bae1260866253f2111e5b7f93"
+    },
+    {
+      "path": "controls/final-quality.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-clean-exclusion-quality.log.txt",
+      "classification": "passing final source",
+      "bytes": 60088,
+      "sha256": "19526917d28d05fadfa9a757103461231bd83e96e4f8606fc133fa86ccc522bf"
+    },
+    {
+      "path": "controls/final-validation.json.txt",
+      "original": "/private/tmp/splotch-netlify-store-clean-exclusion-validation.json",
+      "classification": "passing final source",
+      "bytes": 1726,
+      "sha256": "ec016842e7adc6ed38677f9eb1a34a0713be665b70464309ffd68df1ef511988"
+    },
+    {
+      "path": "controls/historical-initial-format.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-initial-format.log.txt",
+      "classification": "historical before fixture/suite split",
+      "bytes": 134,
+      "sha256": "b97a9a3842022acb292689db22ce20825b677449430ec6baf969ac7ff0f1432e"
+    },
+    {
+      "path": "controls/historical-initial-focused.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-initial-focused.log.txt",
+      "classification": "historical before fixture/suite split",
+      "bytes": 330,
+      "sha256": "7d8281fc6d8e5461f550346b31f22c51c1fdc14f252f229ae99590bcb2093002"
+    },
+    {
+      "path": "controls/historical-initial-check.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-initial-check.log.txt",
+      "classification": "historical before fixture/suite split",
+      "bytes": 2296,
+      "sha256": "6860dffb02c10a65cacd94358e813a839029f55740ad8b1c32ed22f0f1a20a03"
+    },
+    {
+      "path": "controls/historical-initial-lint.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-initial-lint.log.txt",
+      "classification": "historical before fixture/suite split",
+      "bytes": 978,
+      "sha256": "9a60fc2af0410ea5e87a3aa45fa7c7ab90bfe3784ba10ba729d9ed4883990176"
+    },
+    {
+      "path": "controls/historical-initial-validation.json.txt",
+      "original": "/private/tmp/splotch-netlify-store-initial-validation.json",
+      "classification": "historical before fixture/suite split",
+      "bytes": 1519,
+      "sha256": "dff2bfbdf2b9d256b25464f8bdf6ecde1c486d3fd0fad6dbfd665df4e676216e"
+    },
+    {
+      "path": "controls/historical-split-format.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-final-format.log.txt",
+      "classification": "historical failed timeout import after split",
+      "bytes": 249,
+      "sha256": "d58e6bc55924ac68cf74c7f0980293255eb1daeb2156fd86795ea4176faa5926"
+    },
+    {
+      "path": "controls/historical-split-focused.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-final-focused.log.txt",
+      "classification": "historical failed timeout import after split",
+      "bytes": 1758,
+      "sha256": "fc0c513515ebdd46470303bf25560895455d89ac8db2b5f01a0d2e4eb3e7bfb2"
+    },
+    {
+      "path": "controls/historical-split-validation.json.txt",
+      "original": "/private/tmp/splotch-netlify-store-final-validation.json",
+      "classification": "historical failed timeout import after split",
+      "bytes": 1047,
+      "sha256": "f2d4d1fb82d83c2010eb6d690a53944386a7dd9f4c63c508b775afc8924f06e6"
+    },
+    {
+      "path": "controls/real-released-pnpm-version.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/released-pnpm-version.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 8,
+      "sha256": "a8608bace4e3de4e6d8c1f809759eab6c60aa908a62f739089cab67e9c4955c6"
+    },
+    {
+      "path": "controls/real-released-getter-plain.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/released-getter-plain.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 72,
+      "sha256": "6db6228f167848d575cb73b5d18694fef9cc4ce3db49d52667aadad8b13d6212"
+    },
+    {
+      "path": "controls/real-released-getter-single-quoted.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/released-getter-single-quoted.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 72,
+      "sha256": "6db6228f167848d575cb73b5d18694fef9cc4ce3db49d52667aadad8b13d6212"
+    },
+    {
+      "path": "controls/real-released-getter-double-quoted.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/released-getter-double-quoted.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 72,
+      "sha256": "6db6228f167848d575cb73b5d18694fef9cc4ce3db49d52667aadad8b13d6212"
+    },
+    {
+      "path": "controls/real-released-getter-trailing-slash.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/released-getter-trailing-slash.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 73,
+      "sha256": "b8ad654df032887bc68d77cc32c1b5a79068fe61af1aba3f4f71162aaeec428b"
+    },
+    {
+      "path": "controls/real-development-baseline.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/development-baseline.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 985,
+      "sha256": "6d99f706039063862d5f0e055de2926f4c959579a5356de411b70dd54523bf69"
+    },
+    {
+      "path": "controls/real-qualified-warm-ci-with-literal-store.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/qualified-warm-ci-with-literal-store.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 5677,
+      "sha256": "d550fac2dc7571b65e5571d8d20bc857cd844ecb0e8e617e4e17ddb60ddbab84"
+    },
+    {
+      "path": "controls/real-qualified-warm-selected-physical-witness.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/qualified-warm-selected-physical-witness.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 45862,
+      "sha256": "5852c16b84cfdc390458bdd08c83051891034c066cc0e6e290d6505212e4eefd"
+    },
+    {
+      "path": "controls/real-qualified-production-release-build.log.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-tladt9ay/qualified-production-release-build.log.txt",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 62483,
+      "sha256": "1e8183baa5626e3c59e10f4613bd7aee9d5c70f92c10602b93e1491252a4e75f"
+    },
+    {
+      "path": "controls/real-controls-receipt.json.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls-receipt.json",
+      "classification": "actual released pnpm, local synthetic cache namespace",
+      "bytes": 5558,
+      "sha256": "34e2fb996e5cc03541ccd2cbaa8290f1ff146e156f74850a486f385872d8d948"
+    },
+    {
+      "path": "controls/real-controls-script.py.txt",
+      "original": "/private/tmp/splotch-netlify-store-real-controls.py",
+      "classification": "exact executed local control script; preserved text",
+      "bytes": 5981,
+      "sha256": "81ede3304eadb9bff217acf417bbac2130e8f80d7a0751697e71a2eccf89a78b"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-107249-107266.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 107249,
+        "last": 107266
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 592,
+      "sha256": "7361c71335c2c675a62d2a1d2a3c261f3dc6b85bf15118ec5377539411cddc17"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-166010-166027.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 166010,
+        "last": 166027
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 438,
+      "sha256": "b2eb0fefa5656eccccf551c793c6d2a1c2e0685371ca0b6fa4f28cf4709cea2b"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-166224-166307.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 166224,
+        "last": 166307
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 2341,
+      "sha256": "220122647d0efd5a9a78e51d53df44bf8e7203d1e0eab4f47c6a6e5dd3383960"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-167182-167190.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 167182,
+        "last": 167190
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 533,
+      "sha256": "95134dea58533459e4a1cb4b8e8472b0a638ad10dc949f857aeb77f21ae37006"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-168062-168085.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 168062,
+        "last": 168085
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 614,
+      "sha256": "b484718268dade3b155d499e415e38a2b8d1d77dc499870afd5c067732a574b1"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-168562-168637.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 168562,
+        "last": 168637
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 4436,
+      "sha256": "0de5440573aa8263bc1e7696764b8d1576023c981b539f37a21f3da823c24c5f"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-175742-175765.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 175742,
+        "last": 175765
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 1100,
+      "sha256": "74ae8289484185e4be5dd8b5e849eedb245ddf21d0ce79affb143009769201c3"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-182644-182660.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 182644,
+        "last": 182660
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 671,
+      "sha256": "8dace3b7b772cf4c956d990e63ec3d04dc0186c12de684c696b71095a6e71d93"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-182826-182833.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 182826,
+        "last": 182833
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 274,
+      "sha256": "b01b32b03745a83cc9c5518302581c8109d4df4decaf1d7b66571dd22b007ad7"
+    },
+    {
+      "path": "primary-source/pnpm-11.22.0-256665-256715.txt",
+      "original": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+      "originalLines": {
+        "first": 256665,
+        "last": 256715
+      },
+      "classification": "verbatim cached released pnpm primary-source slice; not executed",
+      "bytes": 1950,
+      "sha256": "592345e16fc3537b7d93d68431af3e26433875507155a97351616113978bc1ad"
+    }
+  ]
+}
