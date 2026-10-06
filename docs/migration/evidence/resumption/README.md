@@ -20,11 +20,31 @@ technical metadata/findings. Its scope includes continuation and the proposed F1
 an acceptance review of the retained/native source. Four blocking F1 plan amendments remain bound to
 the new focused implementation unit and do not reopen PR 2697 or invalidate the preservation
 payload. Metro runtime resolution was unverified and is outside the reproduced guard/typecheck
-claim. The unverified live preservation/PR state was independently checked by Codex/native GitHub
-receipts before integration.
+claim. The original GitHub receipt is the 14:51 pre-review observation, not an at-merge receipt. The
+unverified live-state item was closed by subsequent native GitHub operations. A post-integration
+recheck in `preservation-post-integration-github-state.json.txt` retains merged/head/base and
+published review state; Git also verifies aa507 parents dc08/63c5 and tree equality with63c5.
 
 PR 2700 merged unchanged into `codex/native-migration` at aa507a74963adac35baed84c7ab2e13cdc12a946,
 with preservation review
 [5430346342](https://github.com/KyleMit/Splotch/pull/2700#pullrequestreview-5430346342). That review
 separates accepted record preservation from every unfinished implementation. Original raw
 conversations, provider state and credentials remain host-local and are absent here.
+
+The original report index maps to committed copies as follows: `verify.py` →
+`preservation-verify.py`; `verification.json` → `preservation-verification.json.txt`;
+`native-intake.json` → `preservation-native-intake.json`; `github-state.json` →
+`preservation-github-state.json`; `extraction.json` → `preservation-extraction.json`. The `.txt`
+suffix preserves machine receipt bytes without formatter rewriting. The report's original local
+filenames remain historical.
+
+The original native-intake summary remains unchanged. Executed `recheck-native-intake.py` and its
+complete `native-intake-recheck.json.txt` independently bind all70 live row bytes, modes, manifest
+hash, worktree HEAD and observation time. It checks preservation only.
+
+`unit-source-snapshot.json.txt` binds the retained committed source/tree and pending F1 file/diff
+hashes. Retained Quality, Browserless, E2E and release metadata copies are named
+`retained-*.json.txt`; complete logs and artifacts are durably mirrored under
+`/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/retained` and belong to its PR2702
+acceptance unit. These records identify executed source; they do not accept that implementation or
+make its unperformed public calls/review/CI pass.

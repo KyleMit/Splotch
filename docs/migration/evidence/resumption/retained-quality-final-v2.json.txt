@@ -1,0 +1,12 @@
+{
+  "label": "quality-final-v2",
+  "argv": [
+    "npm",
+    "run",
+    "check:quality"
+  ],
+  "started": "2026-10-06T15:06:33.273801+00:00",
+  "seconds": 52.440681291976944,
+  "exitCode": 0,
+  "log": "/private/tmp/splotch-resume-01a111b0/retained/quality-final-v2.log.txt"
+}
