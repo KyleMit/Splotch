@@ -2,6 +2,7 @@ import { dev } from '$app/environment';
 import {
   committedBrushMode,
   getDrawingWorkDebug,
+  getMagicWorkDebug,
   getLiveSurfaceTopology,
   getUndoDebug,
   replayHarnessStroke,
@@ -131,7 +132,12 @@ export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrok
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
-  window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
+  window.__drawingDebug = {
+    getDrawingWorkDebug,
+    getMagicWorkDebug,
+    getLiveSurfaceTopology,
+    getUndoDebug,
+  };
   window.__aiGenerate = generateAiImage;
   if (dev || __DEV_HARNESS__) window.__prepareRefusedAiKeyForget = prepareRefusedAiKeyForget;
   if (dev || __DEV_HARNESS__) window.__replayStroke = replayStoreDrawingStroke;

@@ -1,13 +1,9 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { ROOT } from '../../lib/proc.mjs';
 import { summarizeActionGroup } from '../lib/action-stats.mjs';
 import { DUAL_FRAME_STAMP_EPOCH } from '../lib/frame-stamps.mjs';
-
-const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
+import { ACTION_PROBE, installVsyncClock } from './fixtures/action-probe-fixture.mjs';
 
 function visualEffectEvent(type, details) {
   const event = new Event(type, { bubbles: true });
@@ -17,38 +13,14 @@ function visualEffectEvent(type, details) {
   return event;
 }
 
-// A vsync grid the test owns on both clocks: each tick hands the pending rAF
-// callbacks the next scheduled stamp, and `performance.now()` inside them
-// answers that stamp plus however late the callback is said to have run.
-// `vsyncs` advances the stamp by more than one period, as a skipped frame does.
-function installVsyncClock({ intervalMs = 16.7 } = {}) {
-  let callbacks = [];
-  let vsync = 0;
-  let now = 0;
-  const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
-  vi.stubGlobal('requestAnimationFrame', (callback) => callbacks.push(callback));
-  return {
-    nowSpy,
-    tick(lateMs = 0, { vsyncs = 1 } = {}) {
-      vsync += intervalMs * vsyncs;
-      now = vsync + lateMs;
-      const pending = callbacks;
-      callbacks = [];
-      nowSpy.mockClear();
-      for (const callback of pending) callback(vsync);
-      return nowSpy.mock.calls.length;
-    },
-    at(ms) {
-      now = ms;
-    },
-  };
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.replaceChildren();
   delete window.__actionProbe;
+  delete window.__drawingDebug;
+  performance.clearMeasures();
+  performance.clearMarks();
 });
 
 describe('action probe visual-effect attribution', () => {

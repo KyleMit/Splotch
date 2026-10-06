@@ -23,6 +23,9 @@ export const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/drawing/tiledUndoPatches.ts',
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
+  'web/src/lib/drawing/magicBrush.ts',
+  'web/src/lib/drawing/magicSheetRasterClient.ts',
+  'web/src/lib/drawing/magicWorkWitness.ts',
   'web/src/lib/storeCapture.ts',
 ];
 const RELEASE_ONLY_DEBUG_PROPERTIES = [
@@ -32,6 +35,60 @@ const RELEASE_ONLY_DEBUG_PROPERTIES = [
   'inputOps',
   'liveSurfaceElements',
   'liveRasters',
+  'magicBrushState',
+  'magicBrushWorkerRequests',
+  'magicDeferredFill',
+  'magicEngineFacts',
+  'magicEnsureOutcomes',
+  'magicFillUrl',
+  'magicGradientSelections',
+  'magicHeldGradient',
+  'magicInitialPosts',
+  'magicMainAttempts',
+  'magicMainCauses',
+  'magicMainOrigins',
+  'magicMainOutcomes',
+  'magicMainPaints',
+  'magicMainStaleAttempts',
+  'magicOrphanedReplyDisposals',
+  'magicPaperSize',
+  'magicPendingFillRaster',
+  'magicPendingGradientRaster',
+  'magicPendingLoad',
+  'magicPoolBuilds',
+  'magicPoolExists',
+  'magicRecodeChanges',
+  'magicRecodeCompletedDelegations',
+  'magicRecodeInvocations',
+  'magicRecodeNoChanges',
+  'magicRecodeNoContext',
+  'magicRecodeNoSnapshot',
+  'magicRecodeThrows',
+  'magicRecodes',
+  'magicRejectedRequests',
+  'magicResolvedRequests',
+  'magicRetryPosts',
+  'magicSheetBounds',
+  'magicSheetGeometryStale',
+  'magicSheetOrigin',
+  'magicSheetReady',
+  'magicSheetSourceUrl',
+  'magicSourceKind',
+  'magicSupersededDisposals',
+  'magicWitnessRevision',
+  'magicWorkCounts',
+  'magicWorkerAcquisitions',
+  'magicWorkerConstructed',
+  'magicWorkerConstructionAttempts',
+  'magicWorkerExists',
+  'magicWorkerFailures',
+  'magicWorkerNextRequestId',
+  'magicWorkerPending',
+  'magicWorkerPublications',
+  'magicWorkerRequests',
+  'magicWorkerRetirements',
+  'magicWorkerState',
+  'magicWorkerSupported',
   'maxLiveBackingBytes',
   'maxSurfaceVisitsPerOp',
   'pendingCommands',
@@ -43,6 +100,7 @@ const RELEASE_ONLY_DEBUG_PROPERTIES = [
 
 const DEV_GATED_ENGINE_EXPORTS = [
   'getDrawingWorkDebug',
+  'getMagicWorkDebug',
   'getUndoDebug',
   'setCrayonParams',
   'replayHarnessStroke',
@@ -72,6 +130,16 @@ export function engineMeasureNames(source) {
   ].map((match) => match[1]);
 }
 
+export function magicWitnessMeasureNames(source) {
+  const live = source.replace(
+    /(["'`])(?:\\[\s\S]|(?!\1)[^\\])*\1|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+    (token) => (token.startsWith('/') ? '' : token)
+  );
+  return [
+    ...live.matchAll(/performance\.(?:mark|measure)\(\s*(['"`])(magicWitness\.[^'"`]*?)\1/g),
+  ].map((match) => match[2]);
+}
+
 export const RELEASE_ONLY_TOKENS = [
   ...new Set(
     RELEASE_ONLY_DEBUG_PROPERTIES.concat(
@@ -82,6 +150,7 @@ export const RELEASE_ONLY_TOKENS = [
             (match) => match[1]
           ),
           ...engineMeasureNames(source),
+          ...magicWitnessMeasureNames(source),
         ];
       })
     )

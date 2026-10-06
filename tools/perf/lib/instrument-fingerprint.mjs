@@ -72,6 +72,8 @@ const ACTION_SWEEP_DISPATCH = [
   // transport captures before the scored ones.
   'tools/perf/lib/action-stats.mjs',
   SHARED_ACTION_PROBE,
+  'tools/perf/probes/magic-action-witness.js',
+  'tools/perf/lib/action-probe-source.mjs',
 ];
 
 // The first file of each list is the command's entry script.
