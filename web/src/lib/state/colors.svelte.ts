@@ -1,5 +1,5 @@
 import { colorLuminance } from '$lib/design/colorContrast';
-import { BLACK_INK, PALETTE_COLORS, TRIM_ORDER } from '../palette';
+import { BLACK_INK, DEFAULT_STROKE_COLOR, PALETTE_COLORS, TRIM_ORDER } from '../palette';
 
 export { BLACK_INK, PALETTE_COLORS, TRIM_ORDER };
 
@@ -16,8 +16,6 @@ export const BLACK_SWATCH_FILL = 'var(--black-swatch-ink)';
 export function swatchFill(hex: string): string {
   return hex === BLACK_INK ? BLACK_SWATCH_FILL : hex;
 }
-
-export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
 
 export const CUSTOM_SWATCH = 'custom';
 
