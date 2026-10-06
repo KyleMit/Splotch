@@ -1,0 +1,56 @@
+{
+  "observedAtUtc": "2026-10-06T16:34:58.124Z",
+  "sourceHead": "74c4cc5fc945ecac4e6d6492e389d30f5d4f1ce8",
+  "nodeVersion": "v24.16.0",
+  "releaseMetadataTag": "v1.4.0",
+  "rows": [
+    {
+      "assetId": 492744078,
+      "name": "app-release.aab",
+      "bytes": 44430280,
+      "sha256": "2c65d4ca791721f967a5528a2022963b7378faae6bc4b8379eddcea497d69ea8",
+      "actualEmbeddedVersion": {
+        "versionName": "1.4.0",
+        "versionCode": "6"
+      },
+      "releaseTagMatchesVersion": true,
+      "rejectingControl": {
+        "mutatedEocdSignatures": 1,
+        "error": "not a zip archive (no end-of-central-directory record)"
+      },
+      "restoredPositive": true,
+      "downloadedSourceUnchanged": true
+    },
+    {
+      "assetId": 492744077,
+      "name": "App.ipa",
+      "bytes": 44565743,
+      "sha256": "fe3fe919a44de0c20288a092e0d7b550216c6fd5893bdd33b5cd08582ae98c82",
+      "actualEmbeddedVersion": {
+        "versionName": "1.4.0",
+        "versionCode": "6"
+      },
+      "releaseTagMatchesVersion": true,
+      "rejectingControl": {
+        "mutatedEocdSignatures": 1,
+        "error": "not a zip archive (no end-of-central-directory record)"
+      },
+      "restoredPositive": true,
+      "downloadedSourceUnchanged": true
+    }
+  ],
+  "sourceBefore": {
+    "tools/release/lib/artifact-version.mjs": "0bf50f616bab90efedf775f079dab77833939466093e72cb4a8bcba6304ecba3",
+    "tools/release/lib/zip.mjs": "ad8247d24adb97c188af83de112619d75b730a80f75cab93b1786ab1891a14f4"
+  },
+  "sourceAfter": {
+    "tools/release/lib/artifact-version.mjs": "0bf50f616bab90efedf775f079dab77833939466093e72cb4a8bcba6304ecba3",
+    "tools/release/lib/zip.mjs": "ad8247d24adb97c188af83de112619d75b730a80f75cab93b1786ab1891a14f4"
+  },
+  "claimLimits": [
+    "Exact authenticated published bytes and embedded versions only",
+    "No tag-code association from a version string alone",
+    "No signing/channel/install/runtime or upgrade acceptance",
+    "Tag source remains a supported conservative fixture until distribution inventory resolves it"
+  ]
+}

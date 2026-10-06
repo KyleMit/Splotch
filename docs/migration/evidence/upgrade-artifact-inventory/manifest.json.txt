@@ -1,0 +1,2614 @@
+{
+  "parentBase": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "capsule": {
+    "path": "tag-owners.tar.gz",
+    "bytes": 2000579,
+    "sha256": "d1a5057f565da7893d396d8d20146477f69d12c8a978956d098edc1648e9d674",
+    "members": 385,
+    "selectedGitBlobs": 364,
+    "selectedGitBlobBytes": 6374883,
+    "everyMemberReopenedVerified": true,
+    "everySelectedBlobComparedWithGit": true
+  },
+  "memberManifest": [
+    {
+      "path": "REPORT.md",
+      "bytes": 12462,
+      "mode": "0o644",
+      "sha256": "36e21dad4310c8d1936d5e780beebf000d8a2376d910e63ba46e86381da2093a"
+    },
+    {
+      "path": "execution.log.txt",
+      "bytes": 1018,
+      "mode": "0o644",
+      "sha256": "9454333a46c1cc63c3c7e0875db1866c5bd771f0543cfb988301289d84bf2a16"
+    },
+    {
+      "path": "identity-and-locks.json",
+      "bytes": 36034,
+      "mode": "0o644",
+      "sha256": "81a6b6ed6df7cff59d63d1466e7b65db4103a96948b4c9d9ab6c57910fa8ede4"
+    },
+    {
+      "path": "identity-locks.log.txt",
+      "bytes": 587,
+      "mode": "0o644",
+      "sha256": "63dc5661563ec457b7bbf094053b855c41d08695bbcf3d1d7f71dc2c083dfa79"
+    },
+    {
+      "path": "identity-locks.py",
+      "bytes": 3699,
+      "mode": "0o644",
+      "sha256": "5c7a4b7a95fe7f6d21298328295013e30518286f788c775625ab2b59109d65a2"
+    },
+    {
+      "path": "inputs/live-release-inventory.json",
+      "bytes": 5614,
+      "mode": "0o644",
+      "sha256": "0fd4bf5a0e734babebfe7cb4bbc83b9fd0cc7930b2ced72b10bbd9d9779ea17d"
+    },
+    {
+      "path": "inputs/live-tag-association.json",
+      "bytes": 3307,
+      "mode": "0o644",
+      "sha256": "ad12187547b95de219a39e7dd1133a1370972253ff8904b7378dfa68d5f0155b"
+    },
+    {
+      "path": "inputs/live-tags-native-complete.json",
+      "bytes": 6310,
+      "mode": "0o644",
+      "sha256": "df88df024711ddec26435143ebf9a99d23b7e7a34ae68a6e4ed7f364057b413b"
+    },
+    {
+      "path": "inputs/supported-artifact-qualification.json",
+      "bytes": 9509,
+      "mode": "0o644",
+      "sha256": "3a860cdb43744a3779eeed459b12d0661424d973191a18ea81f040c00f15ce45"
+    },
+    {
+      "path": "inventory.py",
+      "bytes": 18328,
+      "mode": "0o644",
+      "sha256": "23460d1c014c27ea2cad1adbbb0a6e7eab5be8a50ba194fe459b0d6c5588c305"
+    },
+    {
+      "path": "invocations.json",
+      "bytes": 2071,
+      "mode": "0o644",
+      "sha256": "74f3b5a1b2f07c9cee127d738d8eaa861c60632e2121200cccd51d01984efdb5"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 494651,
+      "mode": "0o644",
+      "sha256": "6dd1f0d484768db0e01c0b4f0b98787cae1f55a7c8b0978344631f594812b325"
+    },
+    {
+      "path": "metadata-and-source-controls.json",
+      "bytes": 4628,
+      "mode": "0o644",
+      "sha256": "3c319d636798c1e1a4c3c6628a3a83f6f44fa6d9a42f84c83b5982134c8aee6f"
+    },
+    {
+      "path": "mirror.py",
+      "bytes": 3033,
+      "mode": "0o644",
+      "sha256": "40c546520cae55bd99634323dabf0a31057883e188b4c0858247840858ac4c8e"
+    },
+    {
+      "path": "oldest-collapse.json",
+      "bytes": 9559,
+      "mode": "0o644",
+      "sha256": "b3d0e845453a41ca4b0280c0003176d1c3a9bcfd0c8977dac7efc940b1de9d5a"
+    },
+    {
+      "path": "qualification.log.txt",
+      "bytes": 794,
+      "mode": "0o644",
+      "sha256": "3a5f2c95f3d3e2a3713daf473c3ba0d2db7123acefc05bf67da62f7741ec47cf"
+    },
+    {
+      "path": "qualify.py",
+      "bytes": 4289,
+      "mode": "0o644",
+      "sha256": "7ee62c6fe0ab91493e4e73d541ba9d4e5abf1ad64aa694d7151c37a843e65e91"
+    },
+    {
+      "path": "search-predicates.json",
+      "bytes": 2691,
+      "mode": "0o644",
+      "sha256": "d4d45cf38671015cf16a0eaba9baf62df3b636277968e96a3dcca1b3eea350d1"
+    },
+    {
+      "path": "semantic-signals.json",
+      "bytes": 85271,
+      "mode": "0o644",
+      "sha256": "7d5617b3876504f5cf9f2c4eb64f8a5d105bbea2b224acfebedfec0f110d0c15"
+    },
+    {
+      "path": "sources/v1.0.0/android/app/build.gradle",
+      "bytes": 3092,
+      "mode": "0o644",
+      "sha256": "d1cb3f935f534d221243c57fb7c427d3a07347cb81e4423f293d882041607d27"
+    },
+    {
+      "path": "sources/v1.0.0/android/app/capacitor.build.gradle",
+      "bytes": 646,
+      "mode": "0o644",
+      "sha256": "e55d9df331f4c3ed5e2faee328b00753d0ebdbf5b3cdca1feae498f411042f2d"
+    },
+    {
+      "path": "sources/v1.0.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2038,
+      "mode": "0o644",
+      "sha256": "5219809cfa3412d595f2933c53e1f1b0e9bb95450205093e1f8e5487001ba4a9"
+    },
+    {
+      "path": "sources/v1.0.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2006,
+      "mode": "0o644",
+      "sha256": "a4ceba0aadcd0da49cb1cd79cfb57e5c06d0b6c4065c54d5cdefa0327d7ad7f5"
+    },
+    {
+      "path": "sources/v1.0.0/android/build.gradle",
+      "bytes": 637,
+      "mode": "0o644",
+      "sha256": "46ade7db7afeb8049ccea59fce83095dca736ceb8c9acd79cc944e988c3357d9"
+    },
+    {
+      "path": "sources/v1.0.0/android/capacitor.settings.gradle",
+      "bytes": 943,
+      "mode": "0o644",
+      "sha256": "a4cd869c42161db259ec28e5014046c904ea5e3c629449512a6340ef5b01ad2c"
+    },
+    {
+      "path": "sources/v1.0.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.0.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.0.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.0.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.0.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.0.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.0.0/capacitor.config.json",
+      "bytes": 258,
+      "mode": "0o644",
+      "sha256": "df3e15481cf433a9df0a6aad6352bcc3881bef3f55b11fc28b4c02346bad8c10"
+    },
+    {
+      "path": "sources/v1.0.0/package-lock.json",
+      "bytes": 576572,
+      "mode": "0o644",
+      "sha256": "261901879836c40d8c1106e78cc5a6ea9e259be72d3c28d59be80eaecff5110a"
+    },
+    {
+      "path": "sources/v1.0.0/package.json",
+      "bytes": 2655,
+      "mode": "0o644",
+      "sha256": "658acbfccf43d7a43c01f9ee9b9f1def90cb93052639f260f3529d2439a95537"
+    },
+    {
+      "path": "sources/v1.0.0/patches/@capacitor+cli+8.3.4.patch",
+      "bytes": 3513,
+      "mode": "0o644",
+      "sha256": "31db1be0fe4d9fbb54d9729343f6a48fad7cd0e911fc079882ffb5ab15464eca"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/components/AiImageResult.svelte",
+      "bytes": 23283,
+      "mode": "0o644",
+      "sha256": "35e26f0345a70c240863592a0a4ff2f3d894416fa124537c21cd414ae5864799"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/components/ParentCenter.svelte",
+      "bytes": 42584,
+      "mode": "0o644",
+      "sha256": "b7853f9d29879c0557e90c9408f1847681d520c6e7bb6eab44b5ceaa8293bc81"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/drawing/aiImage.js",
+      "bytes": 3194,
+      "mode": "0o644",
+      "sha256": "4d0aa9cbe643476148a480543ac354cf7f3b4b90ed06fa7c5b6b551876ea9350"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/drawing/saveOnDelete.js",
+      "bytes": 860,
+      "mode": "0o644",
+      "sha256": "cd0be418a7149692116efc8cf1d9e7250a6a829ee163ecfd6c638d18a82e1bbf"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/drawing/screenshot.js",
+      "bytes": 4385,
+      "mode": "0o644",
+      "sha256": "341afde32590ca79ab1a1d1f265cc974f34dcac474e5900c97bdd03fd9fea11e"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/platform.js",
+      "bytes": 679,
+      "mode": "0o644",
+      "sha256": "24bc184c1f6404877561cd3260edf21ab4292ed065f6b769057b33d55256c6b8"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/secureStorage.js",
+      "bytes": 4768,
+      "mode": "0o644",
+      "sha256": "28eb11a5dd60f7a4a83cddbe7a2a0317c1acef1df489e9fc18ef0fc3bd011be2"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/state/settings.svelte.js",
+      "bytes": 7396,
+      "mode": "0o644",
+      "sha256": "e3712380dc83e763af665d0bcac831a773184c9d676312ff551eac1123f96026"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/state/strokeWidth.svelte.js",
+      "bytes": 2124,
+      "mode": "0o644",
+      "sha256": "f8801f36d6bbbfaf164de10043b133de9e79389251102e83760cd0d2c9aba388"
+    },
+    {
+      "path": "sources/v1.0.0/src/lib/storage.js",
+      "bytes": 4245,
+      "mode": "0o644",
+      "sha256": "d02ef6cafa5dd253ba1f935d1b0983c94325fc3dc03d61277792c19083723a41"
+    },
+    {
+      "path": "sources/v1.0.0/src/routes/+page.svelte",
+      "bytes": 3195,
+      "mode": "0o644",
+      "sha256": "b0c8f8df577d4968192b9deab77930f5f5547e7e3091e34f45388c96717a0fcc"
+    },
+    {
+      "path": "sources/v1.0.1/android/app/build.gradle",
+      "bytes": 3092,
+      "mode": "0o644",
+      "sha256": "5d7e4fc36677949ae970c229bfbe69ab7ae812562f29ceb56081c4d3bf087ffb"
+    },
+    {
+      "path": "sources/v1.0.1/android/app/capacitor.build.gradle",
+      "bytes": 646,
+      "mode": "0o644",
+      "sha256": "e55d9df331f4c3ed5e2faee328b00753d0ebdbf5b3cdca1feae498f411042f2d"
+    },
+    {
+      "path": "sources/v1.0.1/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2038,
+      "mode": "0o644",
+      "sha256": "5219809cfa3412d595f2933c53e1f1b0e9bb95450205093e1f8e5487001ba4a9"
+    },
+    {
+      "path": "sources/v1.0.1/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2006,
+      "mode": "0o644",
+      "sha256": "a4ceba0aadcd0da49cb1cd79cfb57e5c06d0b6c4065c54d5cdefa0327d7ad7f5"
+    },
+    {
+      "path": "sources/v1.0.1/android/build.gradle",
+      "bytes": 637,
+      "mode": "0o644",
+      "sha256": "46ade7db7afeb8049ccea59fce83095dca736ceb8c9acd79cc944e988c3357d9"
+    },
+    {
+      "path": "sources/v1.0.1/android/capacitor.settings.gradle",
+      "bytes": 943,
+      "mode": "0o644",
+      "sha256": "a4cd869c42161db259ec28e5014046c904ea5e3c629449512a6340ef5b01ad2c"
+    },
+    {
+      "path": "sources/v1.0.1/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.0.1/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.0.1/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.0.1/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.0.1/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.0.1/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.0.1/capacitor.config.json",
+      "bytes": 258,
+      "mode": "0o644",
+      "sha256": "df3e15481cf433a9df0a6aad6352bcc3881bef3f55b11fc28b4c02346bad8c10"
+    },
+    {
+      "path": "sources/v1.0.1/package-lock.json",
+      "bytes": 576572,
+      "mode": "0o644",
+      "sha256": "17b1e63a7224f9a3d4cce3d11d8fdba28184dd1e45acd68632d43e35f0c7eb2f"
+    },
+    {
+      "path": "sources/v1.0.1/package.json",
+      "bytes": 2695,
+      "mode": "0o644",
+      "sha256": "89a39d5696e6706b638d1e9df7e79243ba44eec39eca6d1ace049ad7802bdfd2"
+    },
+    {
+      "path": "sources/v1.0.1/patches/@capacitor+cli+8.3.4.patch",
+      "bytes": 3513,
+      "mode": "0o644",
+      "sha256": "31db1be0fe4d9fbb54d9729343f6a48fad7cd0e911fc079882ffb5ab15464eca"
+    },
+    {
+      "path": "sources/v1.0.1/scripts/strip-native-assets.mjs",
+      "bytes": 1884,
+      "mode": "0o644",
+      "sha256": "bd8d2d6cf0c7999aad562fdf9532d07adc6792d3bfe8d7dc2415ad4ca7449dd3"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/components/AiImageResult.svelte",
+      "bytes": 23283,
+      "mode": "0o644",
+      "sha256": "35e26f0345a70c240863592a0a4ff2f3d894416fa124537c21cd414ae5864799"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/components/ParentCenter.svelte",
+      "bytes": 42584,
+      "mode": "0o644",
+      "sha256": "b7853f9d29879c0557e90c9408f1847681d520c6e7bb6eab44b5ceaa8293bc81"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/drawing/aiImage.js",
+      "bytes": 3194,
+      "mode": "0o644",
+      "sha256": "4d0aa9cbe643476148a480543ac354cf7f3b4b90ed06fa7c5b6b551876ea9350"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/drawing/saveOnDelete.js",
+      "bytes": 860,
+      "mode": "0o644",
+      "sha256": "cd0be418a7149692116efc8cf1d9e7250a6a829ee163ecfd6c638d18a82e1bbf"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/drawing/screenshot.js",
+      "bytes": 4385,
+      "mode": "0o644",
+      "sha256": "341afde32590ca79ab1a1d1f265cc974f34dcac474e5900c97bdd03fd9fea11e"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/platform.js",
+      "bytes": 679,
+      "mode": "0o644",
+      "sha256": "24bc184c1f6404877561cd3260edf21ab4292ed065f6b769057b33d55256c6b8"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/secureStorage.js",
+      "bytes": 4768,
+      "mode": "0o644",
+      "sha256": "28eb11a5dd60f7a4a83cddbe7a2a0317c1acef1df489e9fc18ef0fc3bd011be2"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/state/settings.svelte.js",
+      "bytes": 7396,
+      "mode": "0o644",
+      "sha256": "e3712380dc83e763af665d0bcac831a773184c9d676312ff551eac1123f96026"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/state/strokeWidth.svelte.js",
+      "bytes": 2124,
+      "mode": "0o644",
+      "sha256": "f8801f36d6bbbfaf164de10043b133de9e79389251102e83760cd0d2c9aba388"
+    },
+    {
+      "path": "sources/v1.0.1/src/lib/storage.js",
+      "bytes": 4245,
+      "mode": "0o644",
+      "sha256": "d02ef6cafa5dd253ba1f935d1b0983c94325fc3dc03d61277792c19083723a41"
+    },
+    {
+      "path": "sources/v1.0.1/src/routes/+page.svelte",
+      "bytes": 3195,
+      "mode": "0o644",
+      "sha256": "b0c8f8df577d4968192b9deab77930f5f5547e7e3091e34f45388c96717a0fcc"
+    },
+    {
+      "path": "sources/v1.1.0/android/app/build.gradle",
+      "bytes": 3092,
+      "mode": "0o644",
+      "sha256": "517c646785daec728783295ec73832b6bc4f8ef3bc448577e18c0d1b46a7f2f8"
+    },
+    {
+      "path": "sources/v1.1.0/android/app/capacitor.build.gradle",
+      "bytes": 646,
+      "mode": "0o644",
+      "sha256": "e55d9df331f4c3ed5e2faee328b00753d0ebdbf5b3cdca1feae498f411042f2d"
+    },
+    {
+      "path": "sources/v1.1.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2038,
+      "mode": "0o644",
+      "sha256": "5219809cfa3412d595f2933c53e1f1b0e9bb95450205093e1f8e5487001ba4a9"
+    },
+    {
+      "path": "sources/v1.1.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2006,
+      "mode": "0o644",
+      "sha256": "a4ceba0aadcd0da49cb1cd79cfb57e5c06d0b6c4065c54d5cdefa0327d7ad7f5"
+    },
+    {
+      "path": "sources/v1.1.0/android/build.gradle",
+      "bytes": 637,
+      "mode": "0o644",
+      "sha256": "46ade7db7afeb8049ccea59fce83095dca736ceb8c9acd79cc944e988c3357d9"
+    },
+    {
+      "path": "sources/v1.1.0/android/capacitor.settings.gradle",
+      "bytes": 943,
+      "mode": "0o644",
+      "sha256": "a4cd869c42161db259ec28e5014046c904ea5e3c629449512a6340ef5b01ad2c"
+    },
+    {
+      "path": "sources/v1.1.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.1.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.1.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.1.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.1.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.1.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.1.0/capacitor.config.json",
+      "bytes": 258,
+      "mode": "0o644",
+      "sha256": "df3e15481cf433a9df0a6aad6352bcc3881bef3f55b11fc28b4c02346bad8c10"
+    },
+    {
+      "path": "sources/v1.1.0/package-lock.json",
+      "bytes": 636111,
+      "mode": "0o644",
+      "sha256": "62903c9b8385f72f0e1ebc026b830042ea1ed37a6e7aa9b38828dab6675c631e"
+    },
+    {
+      "path": "sources/v1.1.0/package.json",
+      "bytes": 3099,
+      "mode": "0o644",
+      "sha256": "ca22c37bf16e6a3ff75e171d84239711e95f2cfddee3a015f58051f546822e39"
+    },
+    {
+      "path": "sources/v1.1.0/patches/@capacitor+cli+8.3.4.patch",
+      "bytes": 3513,
+      "mode": "0o644",
+      "sha256": "31db1be0fe4d9fbb54d9729343f6a48fad7cd0e911fc079882ffb5ab15464eca"
+    },
+    {
+      "path": "sources/v1.1.0/scripts/strip-native-assets.mjs",
+      "bytes": 2046,
+      "mode": "0o644",
+      "sha256": "5b2d0c04412e0e1a32936f0b64be2059879dc8312046d7ea82d8f9fb4965ccad"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/components/AiImageResult.svelte",
+      "bytes": 22512,
+      "mode": "0o644",
+      "sha256": "4ff4a2ee9ca8f97ae39a17ac247139766b220d805406c7f2c875cf8275a472ba"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/drawing/aiImage.ts",
+      "bytes": 3277,
+      "mode": "0o644",
+      "sha256": "7fd3b22077d09b009964f913133b0788a8f5307cd9581306947b79deafdd4dc8"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/drawing/saveOnDelete.ts",
+      "bytes": 859,
+      "mode": "0o644",
+      "sha256": "8f5fe857931fa60480f98f8d82a4b620761907866eb69f6a4df9b0941812037f"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/drawing/screenshot.ts",
+      "bytes": 4734,
+      "mode": "0o644",
+      "sha256": "9d153aae4c573862874aa1e2a4d2b9671f22a1ecdb49d795383838429e80d142"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/platform.ts",
+      "bytes": 730,
+      "mode": "0o644",
+      "sha256": "af9c9cc41a5f962194b7d4dedd56bc7918551ea02bc4050d84cfbd645e6e3167"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/secureStorage.ts",
+      "bytes": 5078,
+      "mode": "0o644",
+      "sha256": "104a054ad2635868e59cad15f907b8752bc719e141fe251f5926741be00eae06"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/state/settings.svelte.ts",
+      "bytes": 8267,
+      "mode": "0o644",
+      "sha256": "d29439edb90c28138df81b66d2739fab8eae017c30f9bc3296983d1a73c658e8"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 2182,
+      "mode": "0o644",
+      "sha256": "1d43a79a9783e9518ff5c4febb529490b62b7557b0f38c85eb611ac550a69a79"
+    },
+    {
+      "path": "sources/v1.1.0/src/lib/storage.ts",
+      "bytes": 5652,
+      "mode": "0o644",
+      "sha256": "a734c0540e4a00f02ad4ff3c2c2f10841e9bf5cb03d0b113e77d4ac3051387c6"
+    },
+    {
+      "path": "sources/v1.1.0/src/routes/+page.svelte",
+      "bytes": 3483,
+      "mode": "0o644",
+      "sha256": "22819e2d05b44f55123e678200b33b9fb28e86e5e1091753bc62d9dec31d5d96"
+    },
+    {
+      "path": "sources/v1.2.0/android/app/build.gradle",
+      "bytes": 3092,
+      "mode": "0o644",
+      "sha256": "e0578b24493c537c70b62778953c41605ca43a24a050c4d656e84684e3a73b7c"
+    },
+    {
+      "path": "sources/v1.2.0/android/app/capacitor.build.gradle",
+      "bytes": 646,
+      "mode": "0o644",
+      "sha256": "e55d9df331f4c3ed5e2faee328b00753d0ebdbf5b3cdca1feae498f411042f2d"
+    },
+    {
+      "path": "sources/v1.2.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2038,
+      "mode": "0o644",
+      "sha256": "5219809cfa3412d595f2933c53e1f1b0e9bb95450205093e1f8e5487001ba4a9"
+    },
+    {
+      "path": "sources/v1.2.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2006,
+      "mode": "0o644",
+      "sha256": "a4ceba0aadcd0da49cb1cd79cfb57e5c06d0b6c4065c54d5cdefa0327d7ad7f5"
+    },
+    {
+      "path": "sources/v1.2.0/android/build.gradle",
+      "bytes": 637,
+      "mode": "0o644",
+      "sha256": "46ade7db7afeb8049ccea59fce83095dca736ceb8c9acd79cc944e988c3357d9"
+    },
+    {
+      "path": "sources/v1.2.0/android/capacitor.settings.gradle",
+      "bytes": 943,
+      "mode": "0o644",
+      "sha256": "a4cd869c42161db259ec28e5014046c904ea5e3c629449512a6340ef5b01ad2c"
+    },
+    {
+      "path": "sources/v1.2.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.2.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.2.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.2.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.2.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.2.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.2.0/capacitor.config.json",
+      "bytes": 258,
+      "mode": "0o644",
+      "sha256": "df3e15481cf433a9df0a6aad6352bcc3881bef3f55b11fc28b4c02346bad8c10"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/App/AppDelegate.swift",
+      "bytes": 3031,
+      "mode": "0o644",
+      "sha256": "5963d47ceba89e0d5694376ebf0bca630284db3de794bdf8666ea3093fe38a2f"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/App/Info.plist",
+      "bytes": 1864,
+      "mode": "0o644",
+      "sha256": "5606b6623ba34aa542bfcb06b9a87c4ae7b34621d4ef78cc08e48703d75cb316"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 14485,
+      "mode": "0o644",
+      "sha256": "2a755d56a608f00943ecaa01ff8055ade7e8b9c65729b1c0e773853dd42ad41f"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "bytes": 238,
+      "mode": "0o644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "bytes": 1243,
+      "mode": "0o644",
+      "sha256": "b08bbb6b4bd88ce0cb9dabfc260f0cc8491fe2480c242cdcf541f6525e3e56eb"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/CapApp-SPM/Package.swift",
+      "bytes": 1692,
+      "mode": "0o644",
+      "sha256": "4ebc42ddbd6550168940b583c02faab4eb0ea3be3c829b0a59c6fa1a2d244854"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "bytes": 33,
+      "mode": "0o644",
+      "sha256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9"
+    },
+    {
+      "path": "sources/v1.2.0/ios/App/ExportOptions.plist",
+      "bytes": 524,
+      "mode": "0o644",
+      "sha256": "d5ef7219d26a591ca3b24d45b90a744451345a38489e5d6da3025807a2cb6cf4"
+    },
+    {
+      "path": "sources/v1.2.0/ios/debug.xcconfig",
+      "bytes": 140,
+      "mode": "0o644",
+      "sha256": "68df460bf24acd33f2ef7532412f97c97f639d31b6017442b9c4de1838cd9e02"
+    },
+    {
+      "path": "sources/v1.2.0/package-lock.json",
+      "bytes": 613551,
+      "mode": "0o644",
+      "sha256": "5fa6e7ab18f2f5ee4b85502f3afc3a774bb25443b401df7cb134ccf3a9209c57"
+    },
+    {
+      "path": "sources/v1.2.0/package.json",
+      "bytes": 11857,
+      "mode": "0o644",
+      "sha256": "8fdf9b396b9be00f678c2adf07fa05190f52df4ced95c4260fc325b0bd036991"
+    },
+    {
+      "path": "sources/v1.2.0/patches/@capacitor+cli+8.3.4.patch",
+      "bytes": 3513,
+      "mode": "0o644",
+      "sha256": "31db1be0fe4d9fbb54d9729343f6a48fad7cd0e911fc079882ffb5ab15464eca"
+    },
+    {
+      "path": "sources/v1.2.0/scripts/strip-native-assets.mjs",
+      "bytes": 1853,
+      "mode": "0o644",
+      "sha256": "ba89ce1208e903184171722b2d6e4ea45dde6a5b14fc20b3ac60fe9f16fef0b1"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/components/AiImageResult.svelte",
+      "bytes": 12373,
+      "mode": "0o644",
+      "sha256": "7c7b0edb97b62a4ef030fa791193e57d1d7db439eb74b155ac79844deeb5000a"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/drawing/aiImage.ts",
+      "bytes": 4013,
+      "mode": "0o644",
+      "sha256": "9f540ce5cd8d6bf0efb9a5afa24fc6737964d8ca3fd692fa96edb211bb3c4ad7"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/platform.ts",
+      "bytes": 730,
+      "mode": "0o644",
+      "sha256": "af9c9cc41a5f962194b7d4dedd56bc7918551ea02bc4050d84cfbd645e6e3167"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/secureStorage.ts",
+      "bytes": 5947,
+      "mode": "0o644",
+      "sha256": "d7abb671ce07605ca133a9f241baebcc1781213d2906be2c07c4e2f978bfc144"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/state/settings.svelte.ts",
+      "bytes": 8859,
+      "mode": "0o644",
+      "sha256": "fda80ca5d61b13982ff1df9f2b271d766e02a5f7f355e1eb41d71b9a40f0235e"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 2182,
+      "mode": "0o644",
+      "sha256": "1d43a79a9783e9518ff5c4febb529490b62b7557b0f38c85eb611ac550a69a79"
+    },
+    {
+      "path": "sources/v1.2.0/src/lib/storage.ts",
+      "bytes": 5652,
+      "mode": "0o644",
+      "sha256": "a734c0540e4a00f02ad4ff3c2c2f10841e9bf5cb03d0b113e77d4ac3051387c6"
+    },
+    {
+      "path": "sources/v1.2.0/src/routes/+page.svelte",
+      "bytes": 3483,
+      "mode": "0o644",
+      "sha256": "22819e2d05b44f55123e678200b33b9fb28e86e5e1091753bc62d9dec31d5d96"
+    },
+    {
+      "path": "sources/v1.3.0/android/app/build.gradle",
+      "bytes": 3092,
+      "mode": "0o644",
+      "sha256": "59b28b133eaf0e773ab349e0cda21344f4321d224ebeb5629e05e338b6549213"
+    },
+    {
+      "path": "sources/v1.3.0/android/app/capacitor.build.gradle",
+      "bytes": 807,
+      "mode": "0o644",
+      "sha256": "04b7aa6cb36fa8197726bd252974905f01961d9dcb6f015f7708d8fd1ffa8444"
+    },
+    {
+      "path": "sources/v1.3.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2038,
+      "mode": "0o644",
+      "sha256": "5219809cfa3412d595f2933c53e1f1b0e9bb95450205093e1f8e5487001ba4a9"
+    },
+    {
+      "path": "sources/v1.3.0/android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java",
+      "bytes": 1037,
+      "mode": "0o644",
+      "sha256": "1d286e36bd3568ffa739b62dba9dbd18d6ca3d4ea22b1a35db0525af8a6082ec"
+    },
+    {
+      "path": "sources/v1.3.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2853,
+      "mode": "0o644",
+      "sha256": "ba3645b5befe9d2ee69b1b8d3afb04d7b0185eaf3d26c9327a3853353e7507ce"
+    },
+    {
+      "path": "sources/v1.3.0/android/build.gradle",
+      "bytes": 637,
+      "mode": "0o644",
+      "sha256": "46ade7db7afeb8049ccea59fce83095dca736ceb8c9acd79cc944e988c3357d9"
+    },
+    {
+      "path": "sources/v1.3.0/android/capacitor.settings.gradle",
+      "bytes": 1369,
+      "mode": "0o644",
+      "sha256": "01833181282ead52367d791d09b18c41bcf59449c84dd7064be1b008435e5acd"
+    },
+    {
+      "path": "sources/v1.3.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.3.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.3.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.3.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.3.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.3.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.3.0/capacitor.config.json",
+      "bytes": 262,
+      "mode": "0o644",
+      "sha256": "d0a05525c530a7186c8b8ae63ddc08abfa11a3799d4fa4560350a59542b97eac"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App/AppDelegate.swift",
+      "bytes": 3820,
+      "mode": "0o644",
+      "sha256": "c6c00035d4ce6afbc1c63e23d94680475432086bccb9dcc77c551eb5d163397a"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App/DeviceLockPlugin.swift",
+      "bytes": 1206,
+      "mode": "0o644",
+      "sha256": "1e3bac63c271c60f5c05bf0f3f1fed91f37929a07b3154b0551b68382e5f9f54"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App/Info.plist",
+      "bytes": 1864,
+      "mode": "0o644",
+      "sha256": "5606b6623ba34aa542bfcb06b9a87c4ae7b34621d4ef78cc08e48703d75cb316"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App/MainViewController.swift",
+      "bytes": 1007,
+      "mode": "0o644",
+      "sha256": "1ca08422ab642bb2158c251d25a07c6197f4dfa3e86830944c2e2d31c4dcca17"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App/PencilEraserPlugin.swift",
+      "bytes": 1564,
+      "mode": "0o644",
+      "sha256": "db577af3cbff45ba0a1d06146768ac371ffe892f60918b3e84e31ff23e009eaf"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 15907,
+      "mode": "0o644",
+      "sha256": "6723ae71ac67cbb7fa06a200248b3bb6e3692a1b31b0afe7ab0322f2fab4f85d"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "bytes": 238,
+      "mode": "0o644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "bytes": 1243,
+      "mode": "0o644",
+      "sha256": "d05b33c43b578ff19c9009d042bf50aaeddfed65f65ecf402f971d115c4b4ba5"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/CapApp-SPM/Package.swift",
+      "bytes": 2267,
+      "mode": "0o644",
+      "sha256": "b4c547e3b2026e321d96abc29db2e536869714d035525245cc3b963564992cc8"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "bytes": 33,
+      "mode": "0o644",
+      "sha256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9"
+    },
+    {
+      "path": "sources/v1.3.0/ios/App/ExportOptions.plist",
+      "bytes": 524,
+      "mode": "0o644",
+      "sha256": "d5ef7219d26a591ca3b24d45b90a744451345a38489e5d6da3025807a2cb6cf4"
+    },
+    {
+      "path": "sources/v1.3.0/ios/debug.xcconfig",
+      "bytes": 140,
+      "mode": "0o644",
+      "sha256": "68df460bf24acd33f2ef7532412f97c97f639d31b6017442b9c4de1838cd9e02"
+    },
+    {
+      "path": "sources/v1.3.0/package-lock.json",
+      "bytes": 593781,
+      "mode": "0o644",
+      "sha256": "bc2a44876ba73b8c7a1ce90a21105fd804698614a422b48f0549479bb69cccd8"
+    },
+    {
+      "path": "sources/v1.3.0/package.json",
+      "bytes": 21254,
+      "mode": "0o644",
+      "sha256": "3a0591bd12304251061e01231ed80c2c514221c22f4170c43016dba295703d61"
+    },
+    {
+      "path": "sources/v1.3.0/patches/@capacitor+cli+8.4.1.patch",
+      "bytes": 3513,
+      "mode": "0o644",
+      "sha256": "31db1be0fe4d9fbb54d9729343f6a48fad7cd0e911fc079882ffb5ab15464eca"
+    },
+    {
+      "path": "sources/v1.3.0/scripts/strip-native-assets.mjs",
+      "bytes": 1864,
+      "mode": "0o644",
+      "sha256": "0622f7b6461b00b5616cb003bbfab7635c709a0b357a95d1733ddee96d0d0c58"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/components/AiImageResult.svelte",
+      "bytes": 12727,
+      "mode": "0o644",
+      "sha256": "3d92e71ae1784a79b7e85696053ccf7547fd5044ac6a02b089b73b4f72821686"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/drawing/aiImage.ts",
+      "bytes": 4016,
+      "mode": "0o644",
+      "sha256": "24287c351a7e846eeeb28b449a374041d836dd67b7938309f432fcf0b92b32be"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/drawing/folderSave.ts",
+      "bytes": 7337,
+      "mode": "0o644",
+      "sha256": "ed79425fdf44173211e1d9b4be904a5cc2b5a186a2b224d47c843775d18df229"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/idb.ts",
+      "bytes": 739,
+      "mode": "0o644",
+      "sha256": "583977d3df0e1b263040d2f74fa457348bd7dd27989f023b037a910bb5de7559"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/nativePlugin.ts",
+      "bytes": 1453,
+      "mode": "0o644",
+      "sha256": "043860a363707707fc08a218b70954393a9c9a9c6f0b66f8d35195dfd33dadff"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/platform.ts",
+      "bytes": 3853,
+      "mode": "0o644",
+      "sha256": "e42821b60b4a769554121142104c630f86e4389f706b032b3e025837c00223da"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/secureStorage.ts",
+      "bytes": 6177,
+      "mode": "0o644",
+      "sha256": "dfbf8cef34b98c527f011b49cf8826ddb84458f107dab746f23c75aab0b26c4e"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/state/install.svelte.ts",
+      "bytes": 6538,
+      "mode": "0o644",
+      "sha256": "ec02bd87af22069ce84aec527a5811b87b9b545bb11a43942cf750cfdf0127c9"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/state/settings.svelte.ts",
+      "bytes": 13068,
+      "mode": "0o644",
+      "sha256": "f6ba6003bed024c5cb7dab8dff9c9ab3a651062c64f673d80fabf658b46f0c4d"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 2184,
+      "mode": "0o644",
+      "sha256": "8cfd16b8a373e25fff9b6aece35ee38893ea927b28b556d8b081b434bb11dc2b"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/lib/storage.ts",
+      "bytes": 6253,
+      "mode": "0o644",
+      "sha256": "3d6066477ac8279442ecd0a5097657c21c2d2bb8ed69ed56bd915b3b5d24ca9d"
+    },
+    {
+      "path": "sources/v1.3.0/web/src/routes/+page.svelte",
+      "bytes": 4401,
+      "mode": "0o644",
+      "sha256": "e2d4384f7a988f809b70e30660a505aeaf9de886e70f7a3613209da464a7307b"
+    },
+    {
+      "path": "sources/v1.4.0/android/app/build.gradle",
+      "bytes": 2701,
+      "mode": "0o644",
+      "sha256": "e5c26ff29f9cd1e63b75443017956b699695590a96dfc5ab1f56d807566c5e84"
+    },
+    {
+      "path": "sources/v1.4.0/android/app/capacitor.build.gradle",
+      "bytes": 855,
+      "mode": "0o644",
+      "sha256": "c1f90f37ece17dbbe519cafec843e4861ed6002ec135f63cb0d209a947a88814"
+    },
+    {
+      "path": "sources/v1.4.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2355,
+      "mode": "0o644",
+      "sha256": "3136651744d29618a5f619786c55aca2006a2e57788c11f351972969ffde4946"
+    },
+    {
+      "path": "sources/v1.4.0/android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java",
+      "bytes": 1037,
+      "mode": "0o644",
+      "sha256": "1d286e36bd3568ffa739b62dba9dbd18d6ca3d4ea22b1a35db0525af8a6082ec"
+    },
+    {
+      "path": "sources/v1.4.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 2853,
+      "mode": "0o644",
+      "sha256": "ba3645b5befe9d2ee69b1b8d3afb04d7b0185eaf3d26c9327a3853353e7507ce"
+    },
+    {
+      "path": "sources/v1.4.0/android/build.gradle",
+      "bytes": 580,
+      "mode": "0o644",
+      "sha256": "722db4caea489f17373bcb6838946d5d8e02d1b24a6d1a90afa8e3f523fcc6ea"
+    },
+    {
+      "path": "sources/v1.4.0/android/capacitor.settings.gradle",
+      "bytes": 1494,
+      "mode": "0o644",
+      "sha256": "5a032c34f89cb74d3cb4b9aa6f6f6c4e3767c63b174e0e3d8e82e35df5bf11e8"
+    },
+    {
+      "path": "sources/v1.4.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.4.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.4.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.4.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.4.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.4.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.4.0/capacitor.config.json",
+      "bytes": 262,
+      "mode": "0o644",
+      "sha256": "d0a05525c530a7186c8b8ae63ddc08abfa11a3799d4fa4560350a59542b97eac"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App/AppDelegate.swift",
+      "bytes": 2152,
+      "mode": "0o644",
+      "sha256": "fae3c33555f9f1bfb46f184c5514defff342cd586f64453930f74a583631aa9e"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App/DeviceLockPlugin.swift",
+      "bytes": 1206,
+      "mode": "0o644",
+      "sha256": "1e3bac63c271c60f5c05bf0f3f1fed91f37929a07b3154b0551b68382e5f9f54"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App/Info.plist",
+      "bytes": 1864,
+      "mode": "0o644",
+      "sha256": "cc92d4883943017d403f7b6deff4f4c9528f86785a6fdc4f990ea422484d01e0"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App/MainViewController.swift",
+      "bytes": 1007,
+      "mode": "0o644",
+      "sha256": "1ca08422ab642bb2158c251d25a07c6197f4dfa3e86830944c2e2d31c4dcca17"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App/PencilEraserPlugin.swift",
+      "bytes": 1504,
+      "mode": "0o644",
+      "sha256": "385bff0ff3521f51f9ba5bf741bfc67d7d67fcfea4f60049a3ce51ade04ef293"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 15886,
+      "mode": "0o644",
+      "sha256": "c776ef3882c29a94ab92ba42f4889b32939ac2f23a5622a0338a7db26ad0e795"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "bytes": 238,
+      "mode": "0o644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "bytes": 1243,
+      "mode": "0o644",
+      "sha256": "d05b33c43b578ff19c9009d042bf50aaeddfed65f65ecf402f971d115c4b4ba5"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/CapApp-SPM/Package.swift",
+      "bytes": 2438,
+      "mode": "0o644",
+      "sha256": "f589ef80263a6a7b587372da977d2ddceb7d021c53481ce5e7685ed8854a2ce2"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "bytes": 33,
+      "mode": "0o644",
+      "sha256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9"
+    },
+    {
+      "path": "sources/v1.4.0/ios/App/ExportOptions.plist",
+      "bytes": 651,
+      "mode": "0o644",
+      "sha256": "afe0043826b710a3af854a91b326e4baa97b5cc63a62b222cebc4cc405e590ca"
+    },
+    {
+      "path": "sources/v1.4.0/ios/debug.xcconfig",
+      "bytes": 236,
+      "mode": "0o644",
+      "sha256": "69d7b9c4f4faa0751ae5f6c02db3849dddf7f5c576745f00cd410cd0b3806f77"
+    },
+    {
+      "path": "sources/v1.4.0/package-lock.json",
+      "bytes": 543481,
+      "mode": "0o644",
+      "sha256": "37b29d95da9c649601a3ebfeadc0ae6e2eb3a9ac30745d668d2dfeb8fece8247"
+    },
+    {
+      "path": "sources/v1.4.0/package.json",
+      "bytes": 35549,
+      "mode": "0o644",
+      "sha256": "b2fa903d504e20e17834f836c0561cfb424ef9c6dd8d976aae798d9c72124ec1"
+    },
+    {
+      "path": "sources/v1.4.0/scripts/strip-native-assets.mjs",
+      "bytes": 1903,
+      "mode": "0o644",
+      "sha256": "23900f97d90fdec87de73250c950484dfdd74c1b2f9021e3794201ebcb267c2a"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/boot/persistedState.ts",
+      "bytes": 1595,
+      "mode": "0o644",
+      "sha256": "c89b8b21640390ecc38152bd5a4d9a666ad5d33d99df0c374d6004f3773d0297"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/deviceInfo.ts",
+      "bytes": 3019,
+      "mode": "0o644",
+      "sha256": "cfecf825f62cbd99307c1fc267b0f89d31695b77a01c841e04327f83c59441a6"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/drawing/earlyBoot.ts",
+      "bytes": 2284,
+      "mode": "0o644",
+      "sha256": "785426b0f00ee4d49ef10e9067cc93a544d9e185485c76758b2de698423c7eb5"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/drawing/folderSave.ts",
+      "bytes": 7698,
+      "mode": "0o644",
+      "sha256": "085a5fd8a19b91b9d41cde8028277e511a69f263d9a26dcf328eb7e81d5cd406"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/drawing/screenshot.ts",
+      "bytes": 5446,
+      "mode": "0o644",
+      "sha256": "63b4dac8226d6089224f9e44effc22d704b0ffc250f79617e9af37e9b070c8a0"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/idb.ts",
+      "bytes": 2327,
+      "mode": "0o644",
+      "sha256": "8bf943952f9994132697ec2227c937bf045927f5f5fbddd93515675aa8f48041"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/nativePlugin.ts",
+      "bytes": 1453,
+      "mode": "0o644",
+      "sha256": "043860a363707707fc08a218b70954393a9c9a9c6f0b66f8d35195dfd33dadff"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/platform.ts",
+      "bytes": 5458,
+      "mode": "0o644",
+      "sha256": "55a5c18590a4db0c5e3d96ddea3f5bec65f7e9d5899c46c4ef15c4517af1fc09"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/secureStorage.ts",
+      "bytes": 8018,
+      "mode": "0o644",
+      "sha256": "5dc916c3d82e8d02905f2ace84b6fb3a3743a0d48a78cff8ce1272c3ed28cce7"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/server/github.ts",
+      "bytes": 3288,
+      "mode": "0o644",
+      "sha256": "1557a0360d99e9a51130e9df9e8f36dca83549635277ea42f5db0e699852eb73"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/state/aiKey.svelte.ts",
+      "bytes": 2303,
+      "mode": "0o644",
+      "sha256": "bbbb18eb462f66224a2b9e7560725b789afc1e35b92e78b9cc0ec802377fd9cb"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/state/install.svelte.ts",
+      "bytes": 6688,
+      "mode": "0o644",
+      "sha256": "8bb34ea573d227dd1e03b6c4f92eecbf04ab898b9e64b390e197a2087ab9bf75"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/state/settings.svelte.ts",
+      "bytes": 11031,
+      "mode": "0o644",
+      "sha256": "a83a3253cb513d9f160b481a477f50df6b20a0c7f051c1bfb83714d5f94130e9"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 3178,
+      "mode": "0o644",
+      "sha256": "726674dd96b3c83a47c9fbdb0c63c46031c98ec4c06a88d5b94bb6df48901866"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/state/tool.svelte.ts",
+      "bytes": 4689,
+      "mode": "0o644",
+      "sha256": "74abf2bef5aa79b20c6074c198f9d7508f94f0af2db28e538655874e7ae0b227"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/storage.ts",
+      "bytes": 8220,
+      "mode": "0o644",
+      "sha256": "2e327b8fedf625f11c6108c9b89a0035110cbd87bdb3d357f52b812a00611420"
+    },
+    {
+      "path": "sources/v1.4.0/web/src/lib/storageKeys.ts",
+      "bytes": 1418,
+      "mode": "0o644",
+      "sha256": "beda308515b640cd900efb69f0e3404d148c7c44bd39637e7ad830190b02fda9"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/build.gradle",
+      "bytes": 2756,
+      "mode": "0o644",
+      "sha256": "1d3bc46585623b346feda2d9fc161225a41fa65f0892ca9e94ca0da43d20db83"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/capacitor.build.gradle",
+      "bytes": 803,
+      "mode": "0o644",
+      "sha256": "92a6cc50c7f35e7c9abf69ab4bd053bbb9331d499016451804d965694d209ac7"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2360,
+      "mode": "0o644",
+      "sha256": "f425ab09bb574e5223ec1095180d42b57980cfe4a18619d188989b42fdf52ce3"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/src/main/java/art/splotch/app/ColoringPackWorker.java",
+      "bytes": 7706,
+      "mode": "0o644",
+      "sha256": "02214a08eb7f345be0f3c441b18416ff5f25ece259fd7f07e88ab960f1945a6a"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java",
+      "bytes": 8689,
+      "mode": "0o644",
+      "sha256": "c157365828f51b5543f85c641a6e8c705cac60fa719acd333759fc7ff9581f05"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java",
+      "bytes": 1028,
+      "mode": "0o644",
+      "sha256": "52827063c1c8ae9838509f339de38e79c8ab4f6d8f5e676694ee974783bc0254"
+    },
+    {
+      "path": "sources/v1.5.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 3453,
+      "mode": "0o644",
+      "sha256": "a43bc43c360d11f95b3f7db80bdb667a89ed1170a92823d0253182021e3369b4"
+    },
+    {
+      "path": "sources/v1.5.0/android/build.gradle",
+      "bytes": 580,
+      "mode": "0o644",
+      "sha256": "722db4caea489f17373bcb6838946d5d8e02d1b24a6d1a90afa8e3f523fcc6ea"
+    },
+    {
+      "path": "sources/v1.5.0/android/capacitor.settings.gradle",
+      "bytes": 1357,
+      "mode": "0o644",
+      "sha256": "29ef9ca62c4d1bd37fd32ab75337d590d55bb37c59f22df00dd7c8835bd13e4c"
+    },
+    {
+      "path": "sources/v1.5.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.5.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.5.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.5.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.5.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.5.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.5.0/capacitor.config.json",
+      "bytes": 175,
+      "mode": "0o644",
+      "sha256": "21325fd869bbe3dcf29612de2193fab944655c5d6acee75acb9836318c15b093"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/AppDelegate.swift",
+      "bytes": 2489,
+      "mode": "0o644",
+      "sha256": "6f5054a289e06c2e7d0c969a4ee5085ae0ec673855f287a4990b8b71d9ba839f"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/ColoringPacksPlugin.swift",
+      "bytes": 16260,
+      "mode": "0o644",
+      "sha256": "50e16046d76fe1ba6f27813d04bd648119c1c76f1b8efd2d854c7a350b00a11e"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/DeviceLockPlugin.swift",
+      "bytes": 1197,
+      "mode": "0o644",
+      "sha256": "3edb1de9d79306000cf92a3f000881c3b3e913703b4493a548f0d4234296e019"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/Info.plist",
+      "bytes": 1843,
+      "mode": "0o644",
+      "sha256": "7427dcb0f49a0e5e75f5e35bc8329c8cbbbbfe4876201e74d9bf9fc42fa354cb"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/MainViewController.swift",
+      "bytes": 1445,
+      "mode": "0o644",
+      "sha256": "002fbf9fb5612b7a959e2661e605e2b248b0fdb732751bedba072db1034845ba"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App/PencilEraserPlugin.swift",
+      "bytes": 1504,
+      "mode": "0o644",
+      "sha256": "385bff0ff3521f51f9ba5bf741bfc67d7d67fcfea4f60049a3ce51ade04ef293"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 16832,
+      "mode": "0o644",
+      "sha256": "0e2c7683ad7f3e6fdbee1e7cc1a6e70fd588a8630159bc5b85cc9ebd6629de51"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "bytes": 238,
+      "mode": "0o644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "bytes": 1243,
+      "mode": "0o644",
+      "sha256": "d05b33c43b578ff19c9009d042bf50aaeddfed65f65ecf402f971d115c4b4ba5"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/CapApp-SPM/Package.swift",
+      "bytes": 2251,
+      "mode": "0o644",
+      "sha256": "75f6971b944bd641604a353beabece99e88d17affc8923220d466bd57ab14ebb"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "bytes": 33,
+      "mode": "0o644",
+      "sha256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9"
+    },
+    {
+      "path": "sources/v1.5.0/ios/App/ExportOptions.plist",
+      "bytes": 642,
+      "mode": "0o644",
+      "sha256": "bd00feee6853e9b0c2d87f63b7cc1b1750791339e217f0a7733cc9bc9e404ae7"
+    },
+    {
+      "path": "sources/v1.5.0/ios/debug.xcconfig",
+      "bytes": 236,
+      "mode": "0o644",
+      "sha256": "69d7b9c4f4faa0751ae5f6c02db3849dddf7f5c576745f00cd410cd0b3806f77"
+    },
+    {
+      "path": "sources/v1.5.0/package-lock.json",
+      "bytes": 572784,
+      "mode": "0o644",
+      "sha256": "182a62fcba6a55cd161fa55b2b2c901f3ac66c44e87c2de7b222a14608e48a71"
+    },
+    {
+      "path": "sources/v1.5.0/package.json",
+      "bytes": 57536,
+      "mode": "0o644",
+      "sha256": "5c328f01920311c75b161fa067e4f73dc4403a745a2fbabc34d08e1ad7d74856"
+    },
+    {
+      "path": "sources/v1.5.0/tools/native/strip-native-assets.mjs",
+      "bytes": 7075,
+      "mode": "0o644",
+      "sha256": "75678de4e83d34f8d0a5b65553905e7af014a8c391d577085f49b09a1648bb50"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/ai/credentials.ts",
+      "bytes": 1015,
+      "mode": "0o644",
+      "sha256": "8c84495a1b1d95d59c9eaf2f3ad0bb60490feea2c0e7536d227df0a223496488"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/boot/persistedState.ts",
+      "bytes": 1793,
+      "mode": "0o644",
+      "sha256": "1e762ae77a89bf2f9aa9902dbcd1eed52c67ce5fc0fa98ba0a7536abe02a0340"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/assetResolver.ts",
+      "bytes": 672,
+      "mode": "0o644",
+      "sha256": "c9b37400b57f3fafa9eea329f8d260635b7672b7ca2237b815f831ff2108b158"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/cacheKeys.ts",
+      "bytes": 584,
+      "mode": "0o644",
+      "sha256": "f8caede0d29ce7de19e44ca202ae1a93048a34a15e99fc1d7ce044f08da2e12e"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/manager.ts",
+      "bytes": 6595,
+      "mode": "0o644",
+      "sha256": "3c5235cf5c59ec28dbe4ce0d27d8b993db72e7f673ccdebbb2858c5b1c75b027"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/manifest.ts",
+      "bytes": 5206,
+      "mode": "0o644",
+      "sha256": "bab973bdec58792ad3ddee20cab47074d12223c0e7762b9c6ba6678caa5d0c37"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/nativeStore.ts",
+      "bytes": 1873,
+      "mode": "0o644",
+      "sha256": "5d2895d38ba5eb45f3d234916d38414c7dfbbb450905823f00700fe36f2c6926"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/policy.ts",
+      "bytes": 308,
+      "mode": "0o644",
+      "sha256": "aace34e9d6a90eb327710b37ef6a773efe60041421e8df2281f29cadf2365912"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/resolution.ts",
+      "bytes": 1507,
+      "mode": "0o644",
+      "sha256": "e48dbaddeb320a3b2b893db429f9c2d844142753b183a69990cab3f7ac93dc4f"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/store.ts",
+      "bytes": 649,
+      "mode": "0o644",
+      "sha256": "9cd7ff9e00d071c744fdfdf1124f052fb4097ddebdccef039d8cf346b20b1cfb"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/coloringPacks/webStore.ts",
+      "bytes": 3965,
+      "mode": "0o644",
+      "sha256": "16e6d047149f8d4e08cd82396965532738f92911634e5f1381e7b579c201e712"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/components/androidBeta/androidBeta.ts",
+      "bytes": 1840,
+      "mode": "0o644",
+      "sha256": "9b195e357a059060659abd78b8880d0ff886dcef5b260168f45888fc72bafbd3"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/components/styleguide/RecipeSections.svelte",
+      "bytes": 8196,
+      "mode": "0o644",
+      "sha256": "8f0d6aaa50df9e3a4946086a3a92456f008f409b089d99a6f346317a72c67a40"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/drawing/earlyBoot.ts",
+      "bytes": 2846,
+      "mode": "0o644",
+      "sha256": "fb652b6b0510978e8c34dc2a5464cd865a9a7148dd5bbb7319efabd51e8dbcc0"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/drawing/folderSave.ts",
+      "bytes": 7927,
+      "mode": "0o644",
+      "sha256": "b61a36b216c0dc3165abda369785a97d373f1621c203759ccf75434db65bae62"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/idb.ts",
+      "bytes": 2330,
+      "mode": "0o644",
+      "sha256": "f60c7c39a06b9fdc432b378331e96ea114ef4cb66795b770b48be366e9168451"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/nativePlugin.ts",
+      "bytes": 1739,
+      "mode": "0o644",
+      "sha256": "ee1b07e21bc841d1ce13395faf7033061252ca7d84b5ed9940ac195bc50f1238"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/deviceInfo.ts",
+      "bytes": 3004,
+      "mode": "0o644",
+      "sha256": "bb1d331d519a39743078ea2275cbf5c45eb3a046a2a7f46bf40e0be6668566b9"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/deviceReport.ts",
+      "bytes": 2466,
+      "mode": "0o644",
+      "sha256": "6d657ba9e04af56b287bb8424f06782c3b872b6132c2e6dc630af7ad8711a231"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/haptics.ts",
+      "bytes": 1709,
+      "mode": "0o644",
+      "sha256": "924fbfb240dc37f7e93a676c292c286df2b8980baacfa218cf50c29558ae718e"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/index.ts",
+      "bytes": 5436,
+      "mode": "0o644",
+      "sha256": "ed56e85d8bd6a0557eb0ceaad9064109bdbd048c405efa94a223393b058a2e27"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/notchBand.ts",
+      "bytes": 7223,
+      "mode": "0o644",
+      "sha256": "b26f8ffd46f1f73725a42ba35d84507d3bac2b8bd24542d8db9257a53841dbb7"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/orientation.ts",
+      "bytes": 2374,
+      "mode": "0o644",
+      "sha256": "1b6b214c60e587797c412108317def532a44111c9a804e140e9acb25cac5e0ae"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/platform/safeArea.ts",
+      "bytes": 1525,
+      "mode": "0o644",
+      "sha256": "3fe4437fbfed00dd2143c9f0a68df481560896010671cf497d337d4c84a656b6"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/saveNaming.ts",
+      "bytes": 787,
+      "mode": "0o644",
+      "sha256": "dce95ff36b7f39a30eca8c09e9f80effef29f48b96e51944c9cd6b5dc0a28710"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/secureStorage.ts",
+      "bytes": 7809,
+      "mode": "0o644",
+      "sha256": "54f5708a4dca7e338293615ba4bd54c505acbb49a1dac2d0f4c319755846c2ba"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/config.ts",
+      "bytes": 589,
+      "mode": "0o644",
+      "sha256": "3eae83dd0c70c1979a744ea433f97b3492bcfabc5e6c306a6787fb3964f1046b"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/freeGenerationGrants.ts",
+      "bytes": 14289,
+      "mode": "0o644",
+      "sha256": "d797410b94511cced13171519125463dcc98a63b679fbb8691a971b9190b3ff5"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/generationAuthorization.ts",
+      "bytes": 3641,
+      "mode": "0o644",
+      "sha256": "171e8710241df541db1953b93ff414520d079258277f075027f376d607ccc805"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/github.ts",
+      "bytes": 3131,
+      "mode": "0o644",
+      "sha256": "edfffc78068adfb669421c82a4d35b6ab824e1823273de2d7dbcfc866b4099ff"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/imageReportAuthorization.ts",
+      "bytes": 4092,
+      "mode": "0o644",
+      "sha256": "72bd6ffcb79d8849f30c8c4ec33654a99001d9022d17cd96ffbd6d0425ee589b"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/server/reportToken.ts",
+      "bytes": 2519,
+      "mode": "0o644",
+      "sha256": "7af6a7ea02f8c63d8b7e9dcb1dc15a304444e4ba0351618fd63c11c12512cc4b"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/aiKey.ts",
+      "bytes": 2602,
+      "mode": "0o644",
+      "sha256": "2c02020d6613ef6e7df10524adca302a34ace5061bbcd398ac64580d42ae871c"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/freeGenerations.svelte.ts",
+      "bytes": 3478,
+      "mode": "0o644",
+      "sha256": "aa716a652acc5be41417bbd6a7d2fe9757212418acece50cd02dd050d860d690"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/install.svelte.ts",
+      "bytes": 7684,
+      "mode": "0o644",
+      "sha256": "edbc9e6a99f12ce4e7dfc26c189646d2552c4de085ccdb12ae3595a7f4725c8f"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/parentalGate.svelte.ts",
+      "bytes": 10965,
+      "mode": "0o644",
+      "sha256": "c409c9abf5e8f92b31948e6916f1d5bbed1db6a66d0e6c47b14e42a5581dbb3a"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/settings.svelte.ts",
+      "bytes": 12655,
+      "mode": "0o644",
+      "sha256": "3ddf3bf343679a06702eb4a918d5deada07ede938d4369aa0c1fe5659c7cab69"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 3687,
+      "mode": "0o644",
+      "sha256": "16e61f506bb79aa4f0087e2a4fd0c2d9c7ba216d106d66c8c4beae60d0a291c0"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/state/tool.svelte.ts",
+      "bytes": 5956,
+      "mode": "0o644",
+      "sha256": "384c79ebc3952b2402efb6eec6fb6d5b163e85de35919547a7df86d89214a61c"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/storage.ts",
+      "bytes": 8608,
+      "mode": "0o644",
+      "sha256": "b54ee143a4db66197f5a633990abcc519839e52d6922ed060abf0660d7f9385f"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/lib/storageKeys.ts",
+      "bytes": 2003,
+      "mode": "0o644",
+      "sha256": "b67ea2c4bc9d023d2e4faa2ed2ae0a128c93abb36ceac7676b180552b0387e8a"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/routes/api/free-generation-grant/+server.ts",
+      "bytes": 1552,
+      "mode": "0o644",
+      "sha256": "20e9b5ba4c507d9ef2df48a5efa7a2c8340e5d18bd16ae225cc6b0d800d91f70"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/routes/api/generate-image/+server.ts",
+      "bytes": 10610,
+      "mode": "0o644",
+      "sha256": "026f9c51133293d28eda97b7d3e5142563ebccbd006b862546b0329090c46803"
+    },
+    {
+      "path": "sources/v1.5.0/web/src/routes/api/report-image/+server.ts",
+      "bytes": 2675,
+      "mode": "0o644",
+      "sha256": "73908574ddab9b8b595c9a53c3643dd2b747e05176203a6ca4564f4da1d139e4"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/build.gradle",
+      "bytes": 2756,
+      "mode": "0o644",
+      "sha256": "60aa7728cc7f708aee4bea75a7b100be6a213c98944f19bb86c559ef1a204479"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/capacitor.build.gradle",
+      "bytes": 803,
+      "mode": "0o644",
+      "sha256": "92a6cc50c7f35e7c9abf69ab4bd053bbb9331d499016451804d965694d209ac7"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/src/main/AndroidManifest.xml",
+      "bytes": 2360,
+      "mode": "0o644",
+      "sha256": "f425ab09bb574e5223ec1095180d42b57980cfe4a18619d188989b42fdf52ce3"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/src/main/java/art/splotch/app/ColoringPackWorker.java",
+      "bytes": 7706,
+      "mode": "0o644",
+      "sha256": "02214a08eb7f345be0f3c441b18416ff5f25ece259fd7f07e88ab960f1945a6a"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java",
+      "bytes": 8689,
+      "mode": "0o644",
+      "sha256": "c157365828f51b5543f85c641a6e8c705cac60fa719acd333759fc7ff9581f05"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java",
+      "bytes": 1028,
+      "mode": "0o644",
+      "sha256": "52827063c1c8ae9838509f339de38e79c8ab4f6d8f5e676694ee974783bc0254"
+    },
+    {
+      "path": "sources/v1.6.0/android/app/src/main/java/art/splotch/app/MainActivity.java",
+      "bytes": 3453,
+      "mode": "0o644",
+      "sha256": "a43bc43c360d11f95b3f7db80bdb667a89ed1170a92823d0253182021e3369b4"
+    },
+    {
+      "path": "sources/v1.6.0/android/build.gradle",
+      "bytes": 580,
+      "mode": "0o644",
+      "sha256": "722db4caea489f17373bcb6838946d5d8e02d1b24a6d1a90afa8e3f523fcc6ea"
+    },
+    {
+      "path": "sources/v1.6.0/android/capacitor.settings.gradle",
+      "bytes": 1357,
+      "mode": "0o644",
+      "sha256": "29ef9ca62c4d1bd37fd32ab75337d590d55bb37c59f22df00dd7c8835bd13e4c"
+    },
+    {
+      "path": "sources/v1.6.0/android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43764,
+      "mode": "0o644",
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172"
+    },
+    {
+      "path": "sources/v1.6.0/android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 253,
+      "mode": "0o644",
+      "sha256": "9a479a85aa879bb55284fc16d0de5b81a745c3854f4e2d88c42e7debaf007435"
+    },
+    {
+      "path": "sources/v1.6.0/android/gradle.properties",
+      "bytes": 1186,
+      "mode": "0o644",
+      "sha256": "cd40e054cbb3658dbcc70522761e3a8bb6c8e78e860f4bffb76b489741442384"
+    },
+    {
+      "path": "sources/v1.6.0/android/gradlew",
+      "bytes": 8733,
+      "mode": "0o755",
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409"
+    },
+    {
+      "path": "sources/v1.6.0/android/settings.gradle",
+      "bytes": 208,
+      "mode": "0o644",
+      "sha256": "6ce098d15ebd69b44c4ecd786bca1bdc366340d2459b2af4d7bb0ab317aa9669"
+    },
+    {
+      "path": "sources/v1.6.0/android/variables.gradle",
+      "bytes": 498,
+      "mode": "0o644",
+      "sha256": "83d502c9ed8fcf1dd4791482067abeedbebae49fafe9cd14a8a1f5891deb0d88"
+    },
+    {
+      "path": "sources/v1.6.0/capacitor.config.json",
+      "bytes": 175,
+      "mode": "0o644",
+      "sha256": "21325fd869bbe3dcf29612de2193fab944655c5d6acee75acb9836318c15b093"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/AppDelegate.swift",
+      "bytes": 2489,
+      "mode": "0o644",
+      "sha256": "6f5054a289e06c2e7d0c969a4ee5085ae0ec673855f287a4990b8b71d9ba839f"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/ColoringPacksPlugin.swift",
+      "bytes": 16260,
+      "mode": "0o644",
+      "sha256": "50e16046d76fe1ba6f27813d04bd648119c1c76f1b8efd2d854c7a350b00a11e"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/DeviceLockPlugin.swift",
+      "bytes": 1197,
+      "mode": "0o644",
+      "sha256": "3edb1de9d79306000cf92a3f000881c3b3e913703b4493a548f0d4234296e019"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/Info.plist",
+      "bytes": 1843,
+      "mode": "0o644",
+      "sha256": "7427dcb0f49a0e5e75f5e35bc8329c8cbbbbfe4876201e74d9bf9fc42fa354cb"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/MainViewController.swift",
+      "bytes": 1445,
+      "mode": "0o644",
+      "sha256": "002fbf9fb5612b7a959e2661e605e2b248b0fdb732751bedba072db1034845ba"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App/PencilEraserPlugin.swift",
+      "bytes": 1504,
+      "mode": "0o644",
+      "sha256": "385bff0ff3521f51f9ba5bf741bfc67d7d67fcfea4f60049a3ce51ade04ef293"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App.xcodeproj/project.pbxproj",
+      "bytes": 16832,
+      "mode": "0o644",
+      "sha256": "c82c8295a2307d4f90eafcecf918bd3ed8e2cd426c8103bbb6460ceffd18e846"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "bytes": 238,
+      "mode": "0o644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "bytes": 957,
+      "mode": "0o644",
+      "sha256": "5f0d8941227d1e5b13b585bc2caf93f1be8f6f6dbabfc58acd612d8e94aa763d"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/CapApp-SPM/Package.swift",
+      "bytes": 2251,
+      "mode": "0o644",
+      "sha256": "d8f1e6214b140bfb65fdab430d58fa969099936c541bf959a5c253c962999741"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "bytes": 33,
+      "mode": "0o644",
+      "sha256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9"
+    },
+    {
+      "path": "sources/v1.6.0/ios/App/ExportOptions.plist",
+      "bytes": 642,
+      "mode": "0o644",
+      "sha256": "bd00feee6853e9b0c2d87f63b7cc1b1750791339e217f0a7733cc9bc9e404ae7"
+    },
+    {
+      "path": "sources/v1.6.0/ios/debug.xcconfig",
+      "bytes": 236,
+      "mode": "0o644",
+      "sha256": "69d7b9c4f4faa0751ae5f6c02db3849dddf7f5c576745f00cd410cd0b3806f77"
+    },
+    {
+      "path": "sources/v1.6.0/package.json",
+      "bytes": 101278,
+      "mode": "0o644",
+      "sha256": "cb381722f6ca63b2b2b1c931c05f26c12d298b96e780172b6595b695acf4524b"
+    },
+    {
+      "path": "sources/v1.6.0/pnpm-lock.yaml",
+      "bytes": 390039,
+      "mode": "0o644",
+      "sha256": "d72af5545b5e9a0bf90eeb0359ae01ff994a634bb00a5b77c75aac0b12bb0063"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/ai/credentials.ts",
+      "bytes": 1015,
+      "mode": "0o644",
+      "sha256": "8c84495a1b1d95d59c9eaf2f3ad0bb60490feea2c0e7536d227df0a223496488"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/boot/devHarnessSeam.ts",
+      "bytes": 6235,
+      "mode": "0o644",
+      "sha256": "d4abb525683c0cc6ed63828ca4181f13e7fe2e0fc062c9c7445f60cd7e398e66"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/boot/persistedState.ts",
+      "bytes": 2214,
+      "mode": "0o644",
+      "sha256": "5772219d1ede8ceedb9da7488a44a20d76bad96f04a4b9ff74c482efdbb5373e"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/assetResolver.ts",
+      "bytes": 672,
+      "mode": "0o644",
+      "sha256": "c9b37400b57f3fafa9eea329f8d260635b7672b7ca2237b815f831ff2108b158"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/cacheKeys.ts",
+      "bytes": 866,
+      "mode": "0o644",
+      "sha256": "750f21214bcc3f120e9fcede200bc22948e3da7659e5d437bae16b8a7f0f3bd0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/manager.ts",
+      "bytes": 6595,
+      "mode": "0o644",
+      "sha256": "3c5235cf5c59ec28dbe4ce0d27d8b993db72e7f673ccdebbb2858c5b1c75b027"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/manifest.ts",
+      "bytes": 6169,
+      "mode": "0o644",
+      "sha256": "53d49bdd5a8cc74705dabe1b37e2ebae863ab2376d05e1b4444a24e71d515a7d"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/nativeStore.ts",
+      "bytes": 1873,
+      "mode": "0o644",
+      "sha256": "5d2895d38ba5eb45f3d234916d38414c7dfbbb450905823f00700fe36f2c6926"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/policy.ts",
+      "bytes": 308,
+      "mode": "0o644",
+      "sha256": "aace34e9d6a90eb327710b37ef6a773efe60041421e8df2281f29cadf2365912"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/resolution.ts",
+      "bytes": 1507,
+      "mode": "0o644",
+      "sha256": "e48dbaddeb320a3b2b893db429f9c2d844142753b183a69990cab3f7ac93dc4f"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/store.ts",
+      "bytes": 649,
+      "mode": "0o644",
+      "sha256": "9cd7ff9e00d071c744fdfdf1124f052fb4097ddebdccef039d8cf346b20b1cfb"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/coloringPacks/webStore.ts",
+      "bytes": 5418,
+      "mode": "0o644",
+      "sha256": "1e8bad8706697dd8ffbb7db73d4cdde29235372db4b398e17ee52337e6703c5f"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/components/beta/androidBeta.ts",
+      "bytes": 1831,
+      "mode": "0o644",
+      "sha256": "5bde34a8fa7d3a4232c1299be27fe85ee32cbc3944e61b66949e79db3f4f3c54"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/components/styleguide/FocusSpecimens.svelte",
+      "bytes": 3411,
+      "mode": "0o644",
+      "sha256": "498d84871ef1dcf05983724b9e46bd0e7a2d0a752f914d3d9b069ee7a6ad6723"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/components/styleguide/RecipeSections.svelte",
+      "bytes": 10391,
+      "mode": "0o644",
+      "sha256": "fb19908bf88616ebd2c1c99c644c4d6ac7c4da6a94682ceff851d2f723418531"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/drawing/earlyBoot.ts",
+      "bytes": 2846,
+      "mode": "0o644",
+      "sha256": "fb652b6b0510978e8c34dc2a5464cd865a9a7148dd5bbb7319efabd51e8dbcc0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/drawing/folderSave.ts",
+      "bytes": 8164,
+      "mode": "0o644",
+      "sha256": "406f49c20b7bc25e2de26852b442cce953be5a43696305fa160c1d3e0f570ade"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/idb.ts",
+      "bytes": 2330,
+      "mode": "0o644",
+      "sha256": "f60c7c39a06b9fdc432b378331e96ea114ef4cb66795b770b48be366e9168451"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/nativePlugin.ts",
+      "bytes": 1739,
+      "mode": "0o644",
+      "sha256": "ee1b07e21bc841d1ce13395faf7033061252ca7d84b5ed9940ac195bc50f1238"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/deviceInfo.ts",
+      "bytes": 3004,
+      "mode": "0o644",
+      "sha256": "bb1d331d519a39743078ea2275cbf5c45eb3a046a2a7f46bf40e0be6668566b9"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/deviceReport.ts",
+      "bytes": 2466,
+      "mode": "0o644",
+      "sha256": "6d657ba9e04af56b287bb8424f06782c3b872b6132c2e6dc630af7ad8711a231"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/haptics.ts",
+      "bytes": 1709,
+      "mode": "0o644",
+      "sha256": "924fbfb240dc37f7e93a676c292c286df2b8980baacfa218cf50c29558ae718e"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/index.ts",
+      "bytes": 5436,
+      "mode": "0o644",
+      "sha256": "ed56e85d8bd6a0557eb0ceaad9064109bdbd048c405efa94a223393b058a2e27"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/notchBand.ts",
+      "bytes": 9464,
+      "mode": "0o644",
+      "sha256": "d3be1dfb48b9f54abe4a4b9a679d1dd2198e8fbb4a2d61b12350c230c4aafc4b"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/orientation.ts",
+      "bytes": 2374,
+      "mode": "0o644",
+      "sha256": "1b6b214c60e587797c412108317def532a44111c9a804e140e9acb25cac5e0ae"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/platform/safeArea.ts",
+      "bytes": 2613,
+      "mode": "0o644",
+      "sha256": "608a51a828ae03307bfc33279efaf722fca45b6011c98d826a04267a703d4bd5"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/saveNaming.ts",
+      "bytes": 787,
+      "mode": "0o644",
+      "sha256": "dce95ff36b7f39a30eca8c09e9f80effef29f48b96e51944c9cd6b5dc0a28710"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/secureStorage.ts",
+      "bytes": 8619,
+      "mode": "0o644",
+      "sha256": "eb67ff4f8218fc1486cd7b2639ec13fd100535d717d0dfbf01ddad14bc93f1c9"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/config.ts",
+      "bytes": 589,
+      "mode": "0o644",
+      "sha256": "276abd6cddfa26f40da64c782aabaf9118bb2b09d773e0859a73c66a8d1bd06a"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/freeGenerationGrants.ts",
+      "bytes": 15044,
+      "mode": "0o644",
+      "sha256": "6357a9387e22fd30045644cf9e5d4b4576b62b3513f6894bc17c9278b8c104c0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/generationAuthorization.ts",
+      "bytes": 3637,
+      "mode": "0o644",
+      "sha256": "2c164a479a821fc91b96616d2bc29877b4038e5931780559f15210b26e8cd251"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/generationJobs.ts",
+      "bytes": 10622,
+      "mode": "0o644",
+      "sha256": "202cac7942db1f28462f48494d7a5c4c3c1643f4b306a2579fd3d4ac1151f1c7"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/generationStart.ts",
+      "bytes": 6468,
+      "mode": "0o644",
+      "sha256": "8c86aab8389d1601d2298b6231b0940030ebb63a6b11047b4132a6447452b60e"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/github.ts",
+      "bytes": 3131,
+      "mode": "0o644",
+      "sha256": "edfffc78068adfb669421c82a4d35b6ab824e1823273de2d7dbcfc866b4099ff"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/imageReportAuthorization.ts",
+      "bytes": 4421,
+      "mode": "0o644",
+      "sha256": "a63fe21451335aa3f18d20ffac624587ca3b0fc6c1fab8f032853f86fb658f37"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/reportToken.ts",
+      "bytes": 5468,
+      "mode": "0o644",
+      "sha256": "678d39e8ef10598cf73df97c1b42595e6cf12d7d8d1065a239719dbfe97355f0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/server/usage.ts",
+      "bytes": 6157,
+      "mode": "0o644",
+      "sha256": "b4581f4d25df97dd98e91a28372c8d1a902b0bced49b459719cff3476dd6457a"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/aiAccessToken.ts",
+      "bytes": 2075,
+      "mode": "0o644",
+      "sha256": "d888b101bf1d7660bec7f85e481fdee1bd699b5b23e17a9063e23d63934fb930"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/aiKey.ts",
+      "bytes": 2908,
+      "mode": "0o644",
+      "sha256": "1e57cb3cc9ce4987c8eec510624e3a7a1b445f43c20b39af09eafaf62d42e3e3"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/freeGenerations.svelte.ts",
+      "bytes": 3609,
+      "mode": "0o644",
+      "sha256": "e8b8a513efb158f095f9fd703c9e55ae6be589d2778a0ae9f82565c979433028"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/install.svelte.ts",
+      "bytes": 9905,
+      "mode": "0o644",
+      "sha256": "9e1cc59e6d3c1aff7a084425bfa6157da4aa491b9642dbb68770d368bba487de"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/parentalGate.svelte.ts",
+      "bytes": 11937,
+      "mode": "0o644",
+      "sha256": "1816275f5f72117ecccc23b8473e9011a0c5b7f4264fba4d756ed3dcc6d1686c"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/sectionsSeen.svelte.ts",
+      "bytes": 1559,
+      "mode": "0o644",
+      "sha256": "793c538f4a4001092197da3518c54b1baa1c27c5e2a533af296fa72ce7834ed8"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/sessionCounters.svelte.ts",
+      "bytes": 2150,
+      "mode": "0o644",
+      "sha256": "3b4ab6694f3bda002585229653b6ec7364af0607044dc1e1256488c70025eab3"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/settings.svelte.ts",
+      "bytes": 12216,
+      "mode": "0o644",
+      "sha256": "f4348a5febff8c90eda99ac1c0d1acc4bad1911ece2465cd3abed216087625b0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/strokeWidth.svelte.ts",
+      "bytes": 3687,
+      "mode": "0o644",
+      "sha256": "16e61f506bb79aa4f0087e2a4fd0c2d9c7ba216d106d66c8c4beae60d0a291c0"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/state/tool.svelte.ts",
+      "bytes": 5956,
+      "mode": "0o644",
+      "sha256": "384c79ebc3952b2402efb6eec6fb6d5b163e85de35919547a7df86d89214a61c"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/storage.ts",
+      "bytes": 9204,
+      "mode": "0o644",
+      "sha256": "dd67996a12cfa398539b8e8e7d253be070ef28f7a079d13da9ed2c05e4762bc7"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/lib/storageKeys.ts",
+      "bytes": 2379,
+      "mode": "0o644",
+      "sha256": "3bb7007d7477b68ecc194ce2af82901a69b4b42b1adbfbd6d3f699c36f3a952a"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/routes/api/free-generation-grant/+server.ts",
+      "bytes": 1552,
+      "mode": "0o644",
+      "sha256": "682f3387de2b8362cd560e9b677c3443d56f69b500983e029f4325c59537c933"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/routes/api/generate-image/+server.ts",
+      "bytes": 13636,
+      "mode": "0o644",
+      "sha256": "a10b81b6543689320424627d57a2483e81d0c30f5739cdfecc19dfd1824e6c90"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/routes/api/generation-result/+server.ts",
+      "bytes": 6387,
+      "mode": "0o644",
+      "sha256": "d5838bcc4f7dfc127c52c869c9b56cac66bbdb7eed805ecee017592625328195"
+    },
+    {
+      "path": "sources/v1.6.0/web/src/routes/api/report-image/+server.ts",
+      "bytes": 2742,
+      "mode": "0o644",
+      "sha256": "54be4884e6c42b343619cc8f3d4f53515e1e21557d5b6acb07f223e87e6212b8"
+    },
+    {
+      "path": "file-manifest.json",
+      "bytes": 78774,
+      "mode": "0o644",
+      "sha256": "8ed88ff75ffaa1c4302d77d3f55dcaf4370fa740ab2c3341d148073bb77f2622"
+    },
+    {
+      "path": "durable-copy.json",
+      "bytes": 130378,
+      "mode": "0o644",
+      "sha256": "e35c45cebee9982a634be4758ea423ff578bb5859ebebd894dfbfd24aeac7de6"
+    }
+  ],
+  "claimLimits": [
+    "Capsule contains finite frozen source/technical receipts only; no published AAB/IPA, credentials or original conversations",
+    "Public binary bytes remain preserved in the durable host-local artifact root and identified by exact asset ID/digest/size receipts",
+    "Source, artifact, reader-execution and integration identities remain distinct; no source-to-binary/channel/runtime acceptance"
+  ],
+  "originalComposer": {
+    "observedAtUtc": "2026-10-06T17:03:18.518531+00:00",
+    "producerSha256": "89cdde25dd88d70137649e30e5f27bc6ba4934415dbf840b76cf20de0409a987",
+    "scope": "Original capsule/member manifest and only the following 15 technical files",
+    "files": [
+      "unit-owner.json.txt",
+      "live-releases-native-complete.json.txt",
+      "live-release-inventory.json.txt",
+      "live-tags-native-complete.json.txt",
+      "live-tag-association.json.txt",
+      "v140-probe-predicate.json.txt",
+      "v140-artifact-qualification.json.txt",
+      "supported-artifacts-download.json.txt",
+      "supported-download-release.json.txt",
+      "supported-artifact-qualification.json.txt",
+      "qualify-supported-artifacts.mjs.txt",
+      "download-supported-artifacts.py.txt",
+      "upgrade-inventory-disposition.md.txt",
+      "compose-upgrade-evidence.py.txt",
+      "tag-owner-report.md.txt"
+    ]
+  },
+  "amendments": [
+    {
+      "id": "manual-before-first-review",
+      "latestKnownPublishedAtUtc": "2026-10-06T17:23:37Z",
+      "sourceCommit": "bc17d8f4ae2c774ab9704c5a8821ea5d2f005d28",
+      "inputManifestSha256": "0b77796f15b195d1782de3427d919fd2298df964141af5bfc9d364e6b3de7560",
+      "scope": "Eleven later parent-composed rows; their embedded invocation times and sources retain their own scope; not outputs of the original composer",
+      "files": [
+        "qualify-reader-controls-final.mjs.txt",
+        "reader-controls-final.json.txt",
+        "live-records-pr-native.json.txt",
+        "live-records-quality-native.json.txt",
+        "live-records-tests-native.json.txt",
+        "live-records-adr-native.json.txt",
+        "live-records-ci-attribution.json.txt",
+        "record-gates-final.json.txt",
+        "live-records-accepted-integration.json.txt",
+        "f1-final-head-ci-e4e9.json.txt",
+        "f1-quality-e4e9-complete.log.txt.gz"
+      ]
+    },
+    {
+      "id": "round1-repairs",
+      "observedAtUtc": "2026-10-06T17:34:47.222588+00:00",
+      "producer": "repair-upgrade-round1.py.txt",
+      "producerSha256": "82b27762518cec60f38ccd29b669869974fa363a41d0ee4487702039b56885dd",
+      "inputManifestSha256": "0b77796f15b195d1782de3427d919fd2298df964141af5bfc9d364e6b3de7560",
+      "receipt": "round1-repairs.json.txt",
+      "scope": "Current file envelope after exact representation/linkage repairs and source-owner amendment"
+    }
+  ],
+  "files": [
+    {
+      "path": "unit-owner.json.txt",
+      "originalPath": "unit-owner.json",
+      "bytes": 1000,
+      "sha256": "39e98eed6f677b57a2a1e979bdd073b51458ff9574c8e7d2547e9ba2c3efbaf1",
+      "preservedExact": true
+    },
+    {
+      "path": "live-releases-native-complete.json.txt",
+      "originalPath": "live-releases-native-complete.json",
+      "bytes": 69316,
+      "sha256": "071e5f52a34298613bb41e5986d1c5480f9d3100f75f3ed0e0427ba710ed8ff1",
+      "preservedExact": true
+    },
+    {
+      "path": "live-release-inventory.json.txt",
+      "originalPath": "live-release-inventory.json",
+      "bytes": 5614,
+      "sha256": "0fd4bf5a0e734babebfe7cb4bbc83b9fd0cc7930b2ced72b10bbd9d9779ea17d",
+      "preservedExact": true
+    },
+    {
+      "path": "live-tags-native-complete.json.txt",
+      "originalPath": "live-tags-native-complete.json",
+      "bytes": 6310,
+      "sha256": "df88df024711ddec26435143ebf9a99d23b7e7a34ae68a6e4ed7f364057b413b",
+      "preservedExact": true
+    },
+    {
+      "path": "live-tag-association.json.txt",
+      "originalPath": "live-tag-association.json",
+      "bytes": 3307,
+      "sha256": "ad12187547b95de219a39e7dd1133a1370972253ff8904b7378dfa68d5f0155b",
+      "preservedExact": true
+    },
+    {
+      "path": "v140-probe-predicate.json.txt",
+      "originalPath": "v140-probe-predicate.json",
+      "bytes": 2323,
+      "sha256": "c5ed7e6b7e95d62bfef7df3944fc8adabc5eece1e0e14f9916e095a491e2284f",
+      "preservedExact": true
+    },
+    {
+      "path": "v140-artifact-qualification.json.txt",
+      "originalPath": "v140-artifact-qualification.json",
+      "bytes": 2060,
+      "sha256": "17b49ef9e72c35f4e09df53f629243efe0fd9d62be8521141774d434d7cbdafc",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-artifacts-download.json.txt",
+      "originalPath": "supported-artifacts-download.json",
+      "bytes": 6826,
+      "sha256": "7ecff9f8109be929de662e705c8abefe53e256716236ba8a9d52712ac4fa4e58",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-download-release.json.txt",
+      "originalPath": "supported-download-release.json",
+      "bytes": 374,
+      "sha256": "c19383937e3e9a5ca94869c911870e05cfc34a6a61482b1289037a3bcc9458de",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-artifact-qualification.json.txt",
+      "originalPath": "supported-artifact-qualification.json",
+      "bytes": 9509,
+      "sha256": "3a860cdb43744a3779eeed459b12d0661424d973191a18ea81f040c00f15ce45",
+      "preservedExact": true
+    },
+    {
+      "path": "qualify-supported-artifacts.mjs.txt",
+      "originalPath": "qualify-supported-artifacts.mjs",
+      "bytes": 4617,
+      "sha256": "caf45a42f95ba5dec984211e29722058e7a3006aceae3df033643814970472f2",
+      "preservedExact": true
+    },
+    {
+      "path": "download-supported-artifacts.py.txt",
+      "originalPath": "download-supported-artifacts.py",
+      "bytes": 4552,
+      "sha256": "7a32e8fe485358938895e72fbd5ba5b774a40fd8fda3b55391da80948447d07d",
+      "preservedExact": true
+    },
+    {
+      "path": "upgrade-inventory-disposition.md.txt",
+      "originalPath": "upgrade-inventory-disposition.md",
+      "bytes": 2577,
+      "sha256": "9aa1f21c61ef273196a0fd0791e8e84ecfaec15e4ce3a5bffad95a4c061370b1",
+      "preservedExact": true
+    },
+    {
+      "path": "compose-upgrade-evidence.py.txt",
+      "bytes": 5285,
+      "sha256": "89cdde25dd88d70137649e30e5f27bc6ba4934415dbf840b76cf20de0409a987",
+      "preservedExact": true
+    },
+    {
+      "path": "tag-owner-report.md.txt",
+      "originalPath": "tag-owners/REPORT.md",
+      "bytes": 12462,
+      "sha256": "36e21dad4310c8d1936d5e780beebf000d8a2376d910e63ba46e86381da2093a",
+      "preservedExact": true
+    },
+    {
+      "path": "qualify-reader-controls-final.mjs.txt",
+      "originalPath": "qualify-reader-controls-final.mjs",
+      "bytes": 4497,
+      "sha256": "a70e1a1a2c3b813297a75878074c89cf91fff6a4b5f41671ae9e4da6bbb73ba8",
+      "preservedExact": true
+    },
+    {
+      "path": "reader-controls-final.json.txt",
+      "originalPath": "reader-controls-final.json",
+      "bytes": 3235,
+      "sha256": "1443c31e67bdcee96b7807a8e902f77c87c0452698d8b9893e1c3c4de97b596b",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-pr-native.json.txt",
+      "originalPath": "live-frontier/final-ci/merged-pr-native-complete.json",
+      "bytes": 2925,
+      "sha256": "aeb57a3f81c8760c48155d224a20a985477239759ee38a86cb4204ed3ac58460",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-quality-native.json.txt.gz",
+      "originalPath": "live-frontier/final-ci/quality-native-complete.json",
+      "bytes": 23215,
+      "sha256": "a45078452eb416600f48ec773c82eae806cb2b9f8a6e15fd662ea03129058912",
+      "preservedExact": true,
+      "uncompressedBytes": 138667,
+      "uncompressedSha256": "2ca5888f7c15c67f96629ccb755308a4f1b3e14032767e4ff1829ba2b8bd1d93",
+      "representation": "Standard gzip of the complete original native JSON; exact decoded nested log remains unchanged"
+    },
+    {
+      "path": "live-records-tests-native.json.txt",
+      "originalPath": "live-frontier/final-ci/metadata-0.json",
+      "bytes": 33393,
+      "sha256": "118f09c129ead8d2fcbeb1e3e5dc82d2680825737ae5408b5db5542d4db7d7ba",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-pr-before-integration-native.json.txt",
+      "originalPath": "live-frontier/final-ci/metadata-1.json",
+      "bytes": 2246,
+      "sha256": "c00e33f7e9bbe3565e5cfc9e7b2b730d3467500a6659b3aecd1068568cc7c46b",
+      "preservedExact": true,
+      "representation": "Original payload is a pre-integration PR2705 snapshot; it is not ADR metadata"
+    },
+    {
+      "path": "live-records-ci-attribution.json.txt",
+      "originalPath": "live-frontier/final-ci/source-attribution.json",
+      "bytes": 1196,
+      "sha256": "9cc445fad85a18151930288735a23768b682a0b6688f9c2aba3606577af0b0eb",
+      "preservedExact": true
+    },
+    {
+      "path": "record-gates-final.json.txt",
+      "originalPath": "continuity-intake/record-gates-final/receipt.json",
+      "bytes": 3214,
+      "sha256": "c8fa140167480e2bf5459eb8f568820d6838be1a3fbdf2ecb776108218f52aad",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-accepted-integration.json.txt",
+      "bytes": 1431,
+      "sha256": "bac0ca787c9ebbc2f6b0fdc33cbfe7f58b4df016d2eeed36d41c33de183f6a7d",
+      "producer": "repair-upgrade-round1.py.txt",
+      "preservedExact": false,
+      "representation": "Current integration-linkage amendment; prior bytes remain at the reviewed Git commit"
+    },
+    {
+      "path": "f1-final-head-ci-e4e9.json.txt",
+      "originalPath": "import-boundary/final-v8-durable/f1-final-head-ci-e4e9.json.txt",
+      "bytes": 73685,
+      "sha256": "3231cbc9bf184b0e92914a38f958d07e83335e41142ef5093a7169bc2ef49f62",
+      "preservedExact": true
+    },
+    {
+      "path": "f1-quality-e4e9-complete.log.txt.gz",
+      "originalPath": "import-boundary/final-v8-durable/f1-quality-e4e9-complete.log.txt",
+      "bytes": 23636,
+      "sha256": "614115a2683ad8a0098b77ae3cb1e7d8f9e7ee3017135d565a51a9b4534e7e78",
+      "preservedExact": true,
+      "uncompressedBytes": 135370,
+      "uncompressedSha256": "1b7a5886b560d7f5f6c7da83dbc1b340add0412cddca633a16a4b29680e4387a",
+      "representation": "Standard gzip preserves original complete decoded log bytes; original receipt logPath remains its original producer-relative name"
+    },
+    {
+      "path": "live-records-adr-native.json.txt",
+      "bytes": 25636,
+      "sha256": "c487fe6094d4d1f470ea412e80e60256b605ac6c3250357e3841847d88c88c35",
+      "producer": "repair-upgrade-round1.py.txt",
+      "originalPath": "ci-first/requested-adr-native-complete.json.txt",
+      "preservedExact": true
+    },
+    {
+      "path": "ios-launch-owner-amendment.json.txt",
+      "bytes": 9138,
+      "sha256": "59fc6d288389f56a11f66d8380c4961a8a50224ffeefe9cce9b8c6d1a3050f89",
+      "producer": "repair-upgrade-round1.py.txt",
+      "originalPath": null,
+      "preservedExact": false
+    },
+    {
+      "path": "tag-owner-amendment.md.txt",
+      "bytes": 1481,
+      "sha256": "ff2414a73d462f1be57c6b14765bf0208b95b6544cd229a2683a77288948e018",
+      "producer": "repair-upgrade-round1.py.txt",
+      "originalPath": null,
+      "preservedExact": false
+    },
+    {
+      "path": "repair-upgrade-round1.py.txt",
+      "bytes": 11366,
+      "sha256": "82b27762518cec60f38ccd29b669869974fa363a41d0ee4487702039b56885dd",
+      "producer": "repair-upgrade-round1.py.txt",
+      "originalPath": null,
+      "preservedExact": true
+    },
+    {
+      "path": "round1-repairs.json.txt",
+      "bytes": 8169,
+      "sha256": "c79654956612076381d41a190335ca7aff8196eb57eb27c77b31598b942688b3",
+      "producer": "repair-upgrade-round1.py.txt",
+      "originalPath": null,
+      "preservedExact": false
+    }
+  ]
+}

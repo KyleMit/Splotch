@@ -1,0 +1,212 @@
+{
+  "observedAtUtc": "2026-10-06T17:34:47.222588+00:00",
+  "reviewedHead": "bc17d8f4ae2c774ab9704c5a8821ea5d2f005d28",
+  "originalClaudeConversation": "7816bd4e-769a-44d4-8755-6c9ff2cc3bb9",
+  "reviewId": 5432293756,
+  "roundsUsed": 1,
+  "roundsRemainingBeforeNextReview": 2,
+  "inputManifest": {
+    "gitBlob": "d2e7dc10b7d70571d7e60a8b1f28fc74676f7172",
+    "bytes": 86792,
+    "sha256": "0b77796f15b195d1782de3427d919fd2298df964141af5bfc9d364e6b3de7560"
+  },
+  "producer": {
+    "path": "repair-upgrade-round1.py.txt",
+    "sha256": "82b27762518cec60f38ccd29b669869974fa363a41d0ee4487702039b56885dd"
+  },
+  "findings": [
+    "Exact Quality JSON compressed without content edits; no guard exception",
+    "Actual complete native ADR response added; old PR response renamed with original bytes",
+    "Original 15-file composer scope separated from 11 later manual rows and this repair invocation",
+    "Released iOS launch-time namespace deletion qualified against exact source and added to required preservation order"
+  ],
+  "previousPublishedManifestFiles": [
+    {
+      "path": "unit-owner.json.txt",
+      "originalPath": "unit-owner.json",
+      "bytes": 1000,
+      "sha256": "39e98eed6f677b57a2a1e979bdd073b51458ff9574c8e7d2547e9ba2c3efbaf1",
+      "preservedExact": true
+    },
+    {
+      "path": "live-releases-native-complete.json.txt",
+      "originalPath": "live-releases-native-complete.json",
+      "bytes": 69316,
+      "sha256": "071e5f52a34298613bb41e5986d1c5480f9d3100f75f3ed0e0427ba710ed8ff1",
+      "preservedExact": true
+    },
+    {
+      "path": "live-release-inventory.json.txt",
+      "originalPath": "live-release-inventory.json",
+      "bytes": 5614,
+      "sha256": "0fd4bf5a0e734babebfe7cb4bbc83b9fd0cc7930b2ced72b10bbd9d9779ea17d",
+      "preservedExact": true
+    },
+    {
+      "path": "live-tags-native-complete.json.txt",
+      "originalPath": "live-tags-native-complete.json",
+      "bytes": 6310,
+      "sha256": "df88df024711ddec26435143ebf9a99d23b7e7a34ae68a6e4ed7f364057b413b",
+      "preservedExact": true
+    },
+    {
+      "path": "live-tag-association.json.txt",
+      "originalPath": "live-tag-association.json",
+      "bytes": 3307,
+      "sha256": "ad12187547b95de219a39e7dd1133a1370972253ff8904b7378dfa68d5f0155b",
+      "preservedExact": true
+    },
+    {
+      "path": "v140-probe-predicate.json.txt",
+      "originalPath": "v140-probe-predicate.json",
+      "bytes": 2323,
+      "sha256": "c5ed7e6b7e95d62bfef7df3944fc8adabc5eece1e0e14f9916e095a491e2284f",
+      "preservedExact": true
+    },
+    {
+      "path": "v140-artifact-qualification.json.txt",
+      "originalPath": "v140-artifact-qualification.json",
+      "bytes": 2060,
+      "sha256": "17b49ef9e72c35f4e09df53f629243efe0fd9d62be8521141774d434d7cbdafc",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-artifacts-download.json.txt",
+      "originalPath": "supported-artifacts-download.json",
+      "bytes": 6826,
+      "sha256": "7ecff9f8109be929de662e705c8abefe53e256716236ba8a9d52712ac4fa4e58",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-download-release.json.txt",
+      "originalPath": "supported-download-release.json",
+      "bytes": 374,
+      "sha256": "c19383937e3e9a5ca94869c911870e05cfc34a6a61482b1289037a3bcc9458de",
+      "preservedExact": true
+    },
+    {
+      "path": "supported-artifact-qualification.json.txt",
+      "originalPath": "supported-artifact-qualification.json",
+      "bytes": 9509,
+      "sha256": "3a860cdb43744a3779eeed459b12d0661424d973191a18ea81f040c00f15ce45",
+      "preservedExact": true
+    },
+    {
+      "path": "qualify-supported-artifacts.mjs.txt",
+      "originalPath": "qualify-supported-artifacts.mjs",
+      "bytes": 4617,
+      "sha256": "caf45a42f95ba5dec984211e29722058e7a3006aceae3df033643814970472f2",
+      "preservedExact": true
+    },
+    {
+      "path": "download-supported-artifacts.py.txt",
+      "originalPath": "download-supported-artifacts.py",
+      "bytes": 4552,
+      "sha256": "7a32e8fe485358938895e72fbd5ba5b774a40fd8fda3b55391da80948447d07d",
+      "preservedExact": true
+    },
+    {
+      "path": "upgrade-inventory-disposition.md.txt",
+      "originalPath": "upgrade-inventory-disposition.md",
+      "bytes": 2577,
+      "sha256": "9aa1f21c61ef273196a0fd0791e8e84ecfaec15e4ce3a5bffad95a4c061370b1",
+      "preservedExact": true
+    },
+    {
+      "path": "compose-upgrade-evidence.py.txt",
+      "bytes": 5285,
+      "sha256": "89cdde25dd88d70137649e30e5f27bc6ba4934415dbf840b76cf20de0409a987",
+      "preservedExact": true
+    },
+    {
+      "path": "tag-owner-report.md.txt",
+      "originalPath": "tag-owners/REPORT.md",
+      "bytes": 12462,
+      "sha256": "36e21dad4310c8d1936d5e780beebf000d8a2376d910e63ba46e86381da2093a",
+      "preservedExact": true
+    },
+    {
+      "path": "qualify-reader-controls-final.mjs.txt",
+      "originalPath": "qualify-reader-controls-final.mjs",
+      "bytes": 4497,
+      "sha256": "a70e1a1a2c3b813297a75878074c89cf91fff6a4b5f41671ae9e4da6bbb73ba8",
+      "preservedExact": true
+    },
+    {
+      "path": "reader-controls-final.json.txt",
+      "originalPath": "reader-controls-final.json",
+      "bytes": 3235,
+      "sha256": "1443c31e67bdcee96b7807a8e902f77c87c0452698d8b9893e1c3c4de97b596b",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-pr-native.json.txt",
+      "originalPath": "live-frontier/final-ci/merged-pr-native-complete.json",
+      "bytes": 2925,
+      "sha256": "aeb57a3f81c8760c48155d224a20a985477239759ee38a86cb4204ed3ac58460",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-quality-native.json.txt",
+      "originalPath": "live-frontier/final-ci/quality-native-complete.json",
+      "bytes": 138667,
+      "sha256": "2ca5888f7c15c67f96629ccb755308a4f1b3e14032767e4ff1829ba2b8bd1d93",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-tests-native.json.txt",
+      "originalPath": "live-frontier/final-ci/metadata-0.json",
+      "bytes": 33393,
+      "sha256": "118f09c129ead8d2fcbeb1e3e5dc82d2680825737ae5408b5db5542d4db7d7ba",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-adr-native.json.txt",
+      "originalPath": "live-frontier/final-ci/metadata-1.json",
+      "bytes": 2246,
+      "sha256": "c00e33f7e9bbe3565e5cfc9e7b2b730d3467500a6659b3aecd1068568cc7c46b",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-ci-attribution.json.txt",
+      "originalPath": "live-frontier/final-ci/source-attribution.json",
+      "bytes": 1196,
+      "sha256": "9cc445fad85a18151930288735a23768b682a0b6688f9c2aba3606577af0b0eb",
+      "preservedExact": true
+    },
+    {
+      "path": "record-gates-final.json.txt",
+      "originalPath": "continuity-intake/record-gates-final/receipt.json",
+      "bytes": 3214,
+      "sha256": "c8fa140167480e2bf5459eb8f568820d6838be1a3fbdf2ecb776108218f52aad",
+      "preservedExact": true
+    },
+    {
+      "path": "live-records-accepted-integration.json.txt",
+      "bytes": 1133,
+      "sha256": "0804fb5de2d30a84db873c4406943ee51fe80cea84667e204c27780d5e6bee90"
+    },
+    {
+      "path": "f1-final-head-ci-e4e9.json.txt",
+      "originalPath": "import-boundary/final-v8-durable/f1-final-head-ci-e4e9.json.txt",
+      "bytes": 73685,
+      "sha256": "3231cbc9bf184b0e92914a38f958d07e83335e41142ef5093a7169bc2ef49f62",
+      "preservedExact": true
+    },
+    {
+      "path": "f1-quality-e4e9-complete.log.txt.gz",
+      "originalPath": "import-boundary/final-v8-durable/f1-quality-e4e9-complete.log.txt",
+      "bytes": 23636,
+      "sha256": "614115a2683ad8a0098b77ae3cb1e7d8f9e7ee3017135d565a51a9b4534e7e78",
+      "preservedExact": true,
+      "uncompressedBytes": 135370,
+      "uncompressedSha256": "1b7a5886b560d7f5f6c7da83dbc1b340add0412cddca633a16a4b29680e4387a",
+      "representation": "Standard gzip preserves original complete decoded log bytes; original receipt logPath remains its original producer-relative name"
+    }
+  ],
+  "claimLimits": [
+    "Records repair only; no F1 review-budget change",
+    "No app/build/runtime/dependency mutation or native execution",
+    "Later final gates and review remain required"
+  ]
+}
