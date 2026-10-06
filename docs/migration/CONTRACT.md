@@ -2,11 +2,13 @@
 
 ## Scope and decision status
 
-Replace the drawing product UI and client behavior across web, Android, and iOS with the
-architecture selected by the Codex/Claude pair. Preserve the complete product, existing-user data,
-hosted API contracts, and visual character. Keep the current product runnable until each target is
-ready. Retain SvelteKit/Netlify for hosted APIs, admin, and informational routes unless a concrete
-requirement warrants a separately reviewed change; see
+Select the drawing product architecture across web, Android, and iOS through the Codex/Claude pair,
+and replace UI and client behavior where the selected design requires it. The registered no-residual
+outcome may retain the current Svelte/Capacitor product; report that as retention rather than a
+completed UI replacement. Preserve the complete product, existing-user data, hosted API contracts,
+and visual character. Keep the current product runnable until each target is ready. Retain
+SvelteKit/Netlify for hosted APIs, admin, and informational routes unless a concrete requirement
+warrants a separately reviewed change; see
 [ADR-0001](../adrs/0001-sveltekit-dual-adapter-strategy.md).
 
 The architecture review at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 reached conditional agreement:
@@ -62,6 +64,17 @@ as proof that a target has no valid baseline.
 
 ## Phase 1 exit: selected architecture with its expensive assumptions tested
 
+Review and run the checks below in independently reviewed units. Begin bounded shipping-app
+attribution and behavior-preserving remedies before investing in complete native paper. Diagnostic
+suppressions may deliberately omit output or readiness and cannot qualify as product candidates.
+Costs removed in place remain regression workloads but no longer count as architectural failure
+elimination. Keep this work bounded rather than reopening an indefinite web-tuning campaign.
+
+Candidate package topology, minimum native templates and static graphics can proceed while physical
+controls are unavailable. Simulator/emulator checks establish mechanics and structural feasibility.
+Validated observers, fresh physical controls and registered thresholds are prerequisites for
+comparative timing, not for independent compilation.
+
 Review and run bounded checks for:
 
 * A React Native native graphics path: chosen released versions compile on both OSes; input,
@@ -70,9 +83,12 @@ Review and run bounded checks for:
   upstream `main` or make Skia's newest backend mandatory for every RN design.
 * Matched mechanism checks for both React Native UI/native paper and retained Svelte UI/native
   paper: exercise the motivating action families identified by current Phase 0 controls, including
-  representative controls and transitions over a live paper surface. Use equivalent visible state,
-  validated observables, and preregistered thresholds. Diagnose whether each arm removes the
-  attributed surface or surrounding-UI cost; compile and feature feasibility alone cannot select RN.
+  the complete applicable drawing-screen state and declared prior journey over live paper. Record
+  visible/retained content, geometry, images, layers, surfaces and views; missing workload
+  invalidates timing, while legitimate topology differences remain part of the mechanism. Use
+  equivalent visible state, validated observables, and preregistered thresholds. Diagnose whether
+  each arm removes the attributed surface or surrounding-UI cost; compile and feature feasibility
+  alone cannot select RN.
 * Native drawing inside Capacitor: test the strongest mechanism by which it could remove the
   identified surface/transition cost, while retaining the Svelte UI. Compare using the same
   validated instrument where possible. A structural inability to preserve a required interaction is
@@ -85,18 +101,51 @@ Review and run bounded checks for:
   lifecycle identities have a preservation or reconciliation path.
 
 Apply the same mechanism and fidelity bar to both native candidates, and allow bounded tuning before
-interpreting early timing. A candidate is eligible only when its matched checks remove the
-motivating cost and satisfy fidelity, continuity, and applicable web contracts. Among eligible
-candidates, prefer native paper inside Capacitor when its host/input/layer glue has the lower
-recurring burden, unless RN demonstrates an additional mechanism benefit that exceeds a
-preregistered materiality threshold and justifies the additional burden. Select RN when it has the
-lower demonstrated burden or meets that exception; otherwise select the viable hybrid. If neither
-removes the motivating cost, continue causal investigation before selecting a foundation. Define
-materiality from current-control variability, the owning action budgets, visible readiness, and the
-cost of the extra ownership before seeing candidate results. For example, residual
-surrounding-WebView cost can justify RN only when its matched improvement crosses that registered
-threshold. A failed required contract must be repaired or the candidate yields. These checks select
-a foundation; the integrated, tuned application's final performance verdict remains a later gate.
+interpreting early timing. Where fresh controls retain motivating costs, a candidate is eligible
+only when its matched checks remove the motivating cost and satisfy fidelity, continuity, and
+applicable web contracts. Among eligible candidates, prefer native paper inside Capacitor when its
+host/input/layer glue has the lower recurring burden, unless RN demonstrates an additional mechanism
+benefit that exceeds a preregistered materiality threshold and justifies the additional burden.
+Select RN when it has the lower demonstrated burden or meets that exception; otherwise select the
+viable hybrid. If neither removes the motivating cost, continue causal investigation before
+selecting a foundation. Define materiality from current-control variability, the owning action
+budgets, visible readiness, and the cost of the extra ownership before seeing candidate results. For
+example, residual surrounding-WebView cost can justify RN only when its matched improvement crosses
+that registered threshold. A failed required contract must be repaired or the candidate yields.
+These checks select a foundation; the integrated, tuned application's final performance verdict
+remains a later gate.
+
+A same-backend RN/native-paper island inside Capacitor can isolate the surrounding UI's cost without
+becoming the intended production hybrid. Judge recurring burden on viable production designs,
+separating initial migration work, toolchain/dependency ownership, bridge/lifecycle maintenance and
+runtime cost. Prototype only uncertain estimates that could change the choice. The causal island
+neither proves strict burden dominance nor forces the hybrid to retain every experimental
+dependency.
+
+A production hybrid inherits paper-level evidence only when it retains the same input collector,
+paint backend and paper-consumer semantics. Host glue still needs its own interaction and coherence
+checks. A changed backend or consumer needs bounded output, crayon/Magic, ordering and mechanism
+checks before eligibility; cost estimates cannot substitute for that evidence. Record measured and
+estimated burden entries for both arms.
+
+The matched RN drawing screen uses the native build of the selected shared vocabulary, or separately
+measures every surviving vocabulary. Register it in the scenario manifest; a raw-RN fixture cannot
+certify the theme/style costs of a production RSD screen.
+
+If fresh controls show no current motivating failures, including after bounded in-place remedies,
+select among structurally viable, faithful and continuous designs satisfying applicable web
+contracts by recurring burden, including the current Svelte/Capacitor architecture as an explicit
+outcome. Claim no additional architecture performance benefit without a separately preregistered
+comparison. Passing remedied workloads remain regression obligations.
+
+For each OS, attempt a calibrated system-trace observer and a calibrated display observer in at most
+two reviewed implementation cycles per family. Hardware unavailability does not count as failed
+calibration. If neither can observe the registered outcome, record comparison as unproved and a
+scoped provisional structural/burden ADR permitting independent candidate foundation work. This is
+not Phase 1 exit, final architecture selection or product cutover. Where motivating costs remain,
+final selection still requires the measured eligibility above. Retain the shipping target until its
+pre-cutover performance gate is proved. Do not expand observer research indefinitely or waive final
+evidence.
 
 Evaluate Flutter or separate platform UI plans in more depth if a leading path fails a structural
 requirement or its recurring burden dominates. Select the architecture in an ADR with alternatives,
@@ -111,6 +160,16 @@ The [profiling mechanics](../PROFILING-MECHANICS.md) and
 has no DOM pointer/rAF pipeline. Define equivalents for delivered input, engine work, render
 submission, frame scheduling, visible output, action readiness, undo, and presentation where
 observable. A callback clock is not automatically compositor presentation evidence.
+
+Before comparative timing, define the same activation, first-visible-response, required-motion
+continuity and first coherent usable-result predicates within each OS. Calibrate actual observers on
+the shipping app and extend their coverage to the native paper producer. Browser scheduled-rAF gates
+retain their original diagnostic meaning; they cannot score a native producer hidden behind a
+responsive WebView. Window render/issue metrics and a single drawable's presentation time are not
+whole-screen content evidence. Validate system traces and any display recording/observer, including
+clock joins, missed coverage and observer cost; unavailable evidence remains pending. Negative
+controls must expose stale paper, delayed content/readiness and incoherent scenes while other
+callbacks remain responsive.
 
 Use matched devices, workload geometry, input cadence, brush semantics, resolution, themes,
 orientation, prior state, and canonical action sequence. Retain failed first-valid samples and
@@ -138,10 +197,12 @@ commit owner requires a reviewed equivalent workload and observable, with missin
 rather than reported as zero, before signed artifacts are published.
 
 Early measurements diagnose mechanisms and feasibility. Overall performance is judged after the
-complete UI is integrated and tuned. Require repeatable improvement in the identified primary native
-problems, no unexplained regression in passing workloads, and complete-app startup, memory, thermal,
-long-session, lifecycle, input-to-visible-result, and action-readiness evidence. Define success
-thresholds for each causal comparison before inspecting its results.
+complete UI is integrated and tuned. Require repeatable improvement in primary native problems
+remaining in fresh controls; otherwise apply the registered no-residual rule without claiming an
+additional architecture performance benefit. Every outcome requires no unexplained regression in
+passing workloads and complete-app startup, memory, thermal, long-session, lifecycle,
+input-to-visible-result and action-readiness evidence. Define success thresholds for each causal
+comparison before inspecting its results.
 
 Account for app-attributable renderer and GPU resources as well as the application process. The
 Capacitor reference includes its Android WebView renderer or iOS WebContent processes; a native
@@ -150,6 +211,11 @@ states, and report process breakdowns and attributable graphics allocations with
 shared GPU/system processes. Where attribution is unavailable, report the limitation and comparable
 whole-device observations separately; an app-process-only footprint cannot establish a memory win.
 Apply the same ownership and matched-condition discipline to energy and thermal comparisons.
+
+Intermediate architecture comparisons require no new unexplained regression in the matched passing
+workloads and retain existing failures as outstanding work. That parity floor cannot approve cutover
+or complete the migration. An inherited release-row red still needs a faithful recapture or a scoped
+verified disposition under the final policy.
 
 Physical web/native iPad and Android rows approve release; simulators/emulators provide diagnosis
 and build coverage. Preserve the completion policy in
@@ -160,11 +226,11 @@ verified evidence; an unavailable instrument does not establish product success.
 
 ## Incremental implementation and target cutover
 
-After architecture selection, establish isolated candidate entries and runnable builds before moving
-product ownership. Share portable TypeScript behavior, assets, and tokens where selected; keep
-render surfaces, native services, and web semantics behind explicit adapters. A setting or DOM
-subtree has one active owner. Do not make the current Svelte facade a native dependency: it imports
-SvelteKit/rune state and owns browser canvas objects.
+Establish isolated candidate entries and runnable builds during Phase 1. After final architecture
+selection, move product ownership in bounded increments. Share portable TypeScript behavior, assets,
+and tokens where selected; keep render surfaces, native services, and web semantics behind explicit
+adapters. A setting or DOM subtree has one active owner. Do not make the current Svelte facade a
+native dependency: it imports SvelteKit/rune state and owns browser canvas objects.
 
 For each bounded increment, the lead writes an implementation plan with alternatives and done-when
 evidence; Claude reviews it. Implement, run appropriate checks and real-app validation, then open
@@ -183,24 +249,28 @@ on them.
 
 ## Migration completion
 
-The migration is complete only when all of the following have evidence at the reviewed cutover:
+The campaign is complete only when all of the following have evidence at the reviewed cutover or
+retention decision:
 
-1. The selected product UI is the shipping implementation on every target; retained hosted/server
-   responsibilities are explicit. Every applicable acceptance scenario maps to passing replacement
-   tests or reproducible physical/manual evidence. No feature is silently deferred.
+1. The selected product UI is the shipping implementation on every target; retained UI and
+   hosted/server responsibilities are explicit. Every applicable acceptance scenario maps to passing
+   tests of that implementation or reproducible physical/manual evidence. Retained UI is not
+   reported as replaced. No feature is silently deferred.
 2. Both same-identity native upgrade paths preserve the upgrade inventory. Offline, rejected
    permissions, failed saves, interrupted work, and lifecycle recovery pass. Floor-device behavior
    and all introduced dependencies/permissions are accounted for.
 3. Full integrated and tuned performance satisfies the measurement contract, including fresh
-   physical release-gate evidence and improvements in the primary native problems. Current passing
-   behavior and visual semantics are preserved.
+   physical release-gate evidence and improvements where primary native problems remain in fresh
+   controls. A no-residual outcome follows its registered rule and claims no unproved architecture
+   benefit. Current passing behavior and visual semantics are preserved.
 4. Applicable CI/build/security/asset gates pass, signed native artifacts are version-verified,
    deployment smokes pass, and release/store metadata and dependency/privacy records reflect the
    actual product. Store publication and external approval state are recorded separately from
    artifact/build evidence; a pending store approval cannot be described as a completed release.
-5. Each target's cutover is reviewed, the final integration is merged to `main`, hosted deployment
-   is verified, and retired UI/code/test owners are removed or explicitly retained for a concrete
-   supported-client responsibility. Architecture and agent instructions describe the shipped code.
+5. Each target's cutover or retention decision is reviewed, the final integration is merged to
+   `main`, hosted deployment is verified, and retired UI/code/test owners are removed or explicitly
+   retained for the selected product or a concrete supported-client responsibility. Architecture and
+   agent instructions describe the shipped code.
 6. Codex and Claude independently assess the complete evidence inventory and agree that there is no
    remaining required work. Their final review names the exact commits/artifacts and any external
    publication state. Agreement without the preceding evidence cannot close the campaign.

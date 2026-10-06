@@ -234,6 +234,31 @@ native runtime. Preserve
 [the reviewed privacy inventory](../../tools/mobile/privacy-permission-inventory.json) and
 [compliance decisions](../MOBILE/compliance.md) when selecting replacement dependencies.
 
+## Early local continuity feasibility
+
+After the minimum native template, prove read feasibility with a disposable prior-source fixture
+updated in place to the candidate under the same app ID and local signing scope. Use that release's
+real setters/parsers and native locks to seed applicable settings and secure entries. Read the
+WebView at its actual effective origin/profile, localStorage as the live copy, independent
+Preferences and the released secure namespaces. A retained narrow WebView reader is acceptable; raw
+database parsing and destructive source changes are not. This check may reject an unreadable design
+before full renderer investment.
+
+Record source/candidate versions, identity/entitlements, origin/profile, fixture format and observed
+values without exposing secrets. Follow the existing identity/version owners. Before foundation
+selection, also seed held-picture records with the same app ID from a current-main source that
+actually contains that store. Read its real IndexedDB bytes, metadata and missing/stale hints
+through the retained reader; record this as unreleased source feasibility. For the applicable
+released fixture, enumerate coloring-pack files, verification markers, job identities and
+background-session ownership, and document the preservation/reconciliation path without deleting or
+restarting source work. A scheme handler/profile configuration must demonstrably reach the legacy
+WebView origin.
+
+This local check does not establish physical lock/accessibility behavior, Play/TestFlight lineage,
+transactional import, later source formats or the full source matrix below. Retaining the hybrid
+WebView eases continuity only when its effective origin/profile and native namespaces actually
+remain compatible. All full signed acceptance results remain pending.
+
 ## Same-ID signed upgrade evidence
 
 Candidate artifacts come from an exact reviewed codex/native-migration integration commit after
