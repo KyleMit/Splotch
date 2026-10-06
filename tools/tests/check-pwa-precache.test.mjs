@@ -28,6 +28,18 @@ const coloringManifest = {
   books: [{ id: 'farm', variants: { full: { files: [] } } }],
 };
 
+it('enables type stripping for the shipping postbuild PWA checker', () => {
+  const { scripts } = JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
+  );
+  const command = scripts.postbuild
+    .split(' && ')
+    .find((step) => step.includes('tools/check-pwa-precache.mjs'));
+  expect(command).toBe(
+    'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-pwa-precache.mjs'
+  );
+});
+
 it('registers the responsive coloring route before the canonical pack route', () => {
   const viteConfig = readFileSync(new URL('../../web/vite.config.ts', import.meta.url), 'utf8');
   const runtimeCaching = viteConfig.slice(viteConfig.indexOf('runtimeCaching:'));
