@@ -35,5 +35,10 @@ After a native static build, generated SvelteKit aliases select native modules. 
 check/sync restores the web aliases before dead-code lint. That sequence passed; no web stub or lint
 exception was removed to hide a target-configuration mismatch.
 
-The unit PR records independent Claude review, final-head CI and the applicable full test tier.
-Local structural checks cannot substitute for physical migration acceptance.
+The first full test run rejected stale share-card source provenance after the palette module
+changed. The real live-Svelte generator regenerated all four cards; their PNGs and content hashes
+remained byte-identical, and only the producer-input digest changed. The guard remains intact.
+
+[PR 2693](https://github.com/KyleMit/Splotch/pull/2693) records independent Claude review,
+final-head CI and the applicable full test tier. Local structural checks cannot substitute for
+physical migration acceptance.
