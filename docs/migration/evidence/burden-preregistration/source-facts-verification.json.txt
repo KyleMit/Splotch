@@ -1,0 +1,152 @@
+{
+  "head": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "firstParentCommits": 1246,
+  "defaultRepository": "current working directory",
+  "executedCallers": [
+    {
+      "repo": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "original": null,
+      "exitCode": 0
+    },
+    {
+      "repo": "/Users/kylemit/Code/Splotch",
+      "original": "/private/tmp/splotch-resume-01a111b0/burden-facts.json",
+      "exitCode": 0
+    },
+    {
+      "repo": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "original": null,
+      "scriptDirectoryRawReceiptPresent": false,
+      "exitCode": 0
+    }
+  ],
+  "defaultOptionalRawAndAbsentRawFactsByteIdentical": true,
+  "defaultOptionalRawAndAbsentRawDispositionByteIdentical": true,
+  "boundaryChecks": [
+    {
+      "category": "UI and behavior",
+      "path": "web/src/routes/api/generate-image/+server.ts",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/routes/admin/+page.svelte",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/lib/components/admin/AdminConsole.svelte",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/lib/components/DrawingCanvas.svelte",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/secureStorage.ts",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/installationId.ts",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/plugins/systemBack.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "web/securityPolicy.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "web/src/lib/pwa/updates.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "netlify.toml",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "web/src/lib/drawing/exportDrawing.test.ts",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/mobile/android/tests/run-smoke-test.test.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/tests/native-smoke-flow.test.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/release/cut-release.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "fastlane/metadata/en-US/release_notes.txt",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "releases/1.6.0.md",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": ".maestro/smoke.yaml",
+      "matches": true
+    },
+    {
+      "category": "dependency and toolchain",
+      "path": "tools/bootstrap-worktree.mjs",
+      "matches": true
+    },
+    {
+      "category": "dependency and toolchain",
+      "path": "tools/install-nonowner.mjs",
+      "matches": false
+    }
+  ],
+  "originalOverwriteRejectingControl": {
+    "exitCode": 1,
+    "expectedReason": "Outputs must be distinct and cannot overwrite original receipt or script"
+  },
+  "wrongRawRejectingControl": {
+    "exitCode": 1,
+    "expectedReason": "Original immutable receipt identity differs"
+  },
+  "rawReceiptVerification": {
+    "explicitCallerExecuted": true,
+    "completeCommitPathRowsMatch": true,
+    "bytes": 2307408,
+    "sha256": "820a082c920cbe59e14d01ba126c106346d37ebe9b638d973255cf74f5954076",
+    "unchangedAfterCalls": true
+  },
+  "initialHistoryPreserved": "/private/tmp/splotch-resume-01a111b0/burden-v2-initial",
+  "files": {
+    "burden-facts-v2.py": {
+      "bytes": 13641,
+      "sha256": "9efb3522965ce64ac4b9460f8f81f15b609ef1be4e6612a18633aacd222f7145"
+    },
+    "burden-facts-v2.json": {
+      "bytes": 14309,
+      "sha256": "3d319c9437e9231d19f83a69dce39843ee91034ce37cea151d3ac2142d3e8f80"
+    },
+    "burden-facts-v2-disposition.json": {
+      "bytes": 9457,
+      "sha256": "930867186944bd1bca6d91d31120725552c7ea4cc615f888d4b6a659e7211fe3"
+    }
+  }
+}

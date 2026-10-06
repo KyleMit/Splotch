@@ -1,0 +1,330 @@
+{
+  "schema": "splotch-pinned-source-change-subsets-v2",
+  "scope": "Overlapping first-parent source-change frequency for finite named path subsets; not complete maintenance incidents, measured effort, future cadence or projected savings.",
+  "head": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "startInclusive": "2026-07-08T00:00:00Z",
+  "endInclusive": "2026-10-06T15:00:00Z",
+  "firstParentCommits": 1246,
+  "firstParentCommitSetSha256": "9d0f8b6faf9d8566baf6f25309c29cd68f085a2d87bac37f4041abe3e9be4df8",
+  "method": {
+    "gitArguments": [
+      "log",
+      "--first-parent",
+      "--since=2026-07-08T00:00:00Z",
+      "--until=2026-10-06T15:00:00Z",
+      "--format=%x1e%H%x1f%cI%x1f%s",
+      "--name-only",
+      "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4"
+    ],
+    "pathBasis": "Exactly the nonempty path lines emitted by git log --name-only; includes features, tests, metadata and historical deleted/renamed paths. Default merge/path semantics retained from the original receipt; an empty merge path list contributes only to the total.",
+    "matching": "Python re.search; match any include and no exclude. A commit counts once within each category and may count in several categories. Subsets are deliberately not exhaustive.",
+    "setHash": "SHA256 of unique full identifiers sorted lexicographically, each followed by LF, UTF-8; empty set hashes empty bytes.",
+    "examples": "Most recent three matching commits in the returned Git log order; matched paths only, no unrelated full commit-path dump.",
+    "reproduction": "Pinned head, time window, expected commit-set hash, old counts and category definitions are fixed. The local repository defaults to the current directory; only local repository/input/output paths are configurable. No raw receipt is required. An explicit --original additionally verifies all raw commit/path rows without changing the compact result. No network, checkout, installation or source mutation.",
+    "scriptSha256": "fc0366c669d81e40ca84c1ce33fe21ed3a8795fa5f12bd2abd1af34f3fb85aaf"
+  },
+  "categories": {
+    "UI and behavior": {
+      "includePathPatterns": [
+        "^web/src/lib/(components|state|drawing)/",
+        "^web/src/routes/"
+      ],
+      "excludePathPatterns": [
+        "^web/src/routes/(api|admin)(/|$)",
+        "^web/src/lib/components/admin/"
+      ],
+      "trackedOwnersAtAnchor": [
+        "web/src/lib/components/",
+        "web/src/lib/state/",
+        "web/src/lib/drawing/",
+        "web/src/routes/"
+      ],
+      "touchedFirstParentCommits": 467,
+      "commitSetSha256": "4a8e1b03b32dbc20185df4f98ac6164bc12e3af173dd2b875f13fc42a8f2987c",
+      "distinctMatchedPaths": 560,
+      "matchedPathSetSha256": "482800b12808c8caaa44a6f64d7b34e7d53ef00bbee12347296690ff2247a48a",
+      "recentExamples": [
+        {
+          "sha": "ddb9ee5a30f25c923e1e34dea1a7fc80c24e966e",
+          "committedAt": "2026-10-03T22:35:31-04:00",
+          "subject": "Merge pull request #2631 from KyleMit/codex/ship-overnight-product-fixes",
+          "matchedPaths": [
+            "web/src/lib/components/ColorPalette.firstPaint.test.ts",
+            "web/src/lib/components/ColorPalette.svelte",
+            "web/src/lib/components/DrawingCanvas.svelte",
+            "web/src/lib/components/page/shareCardInputs.json",
+            "web/src/lib/drawing/engine.ts",
+            "web/src/lib/drawing/exportDrawing.test.ts",
+            "web/src/lib/drawing/exportDrawing.ts",
+            "web/src/lib/drawing/folderSave.callers.test.ts",
+            "web/src/lib/drawing/folderSave.test.ts",
+            "web/src/lib/drawing/folderSave.ts",
+            "web/src/lib/drawing/overlay.test.ts",
+            "web/src/lib/drawing/overlay.ts",
+            "web/src/lib/drawing/tiledMagicRecode.test.ts",
+            "web/src/lib/drawing/tiledMagicRecode.ts",
+            "web/src/lib/drawing/tiledRenderer.ts"
+          ]
+        },
+        {
+          "sha": "86248cc9e6501d7dfdd66230a2cf9e7e3c0ca91c",
+          "committedAt": "2026-10-01T18:05:56-04:00",
+          "subject": "Merge pull request #2614 from KyleMit/codex/issue-2604-touch-target-floor",
+          "matchedPaths": [
+            "web/src/lib/components/ActivePageChip.svelte",
+            "web/src/lib/components/AiImageResult.svelte",
+            "web/src/lib/components/AiResultFooter.svelte",
+            "web/src/lib/components/design/Button.svelte",
+            "web/src/lib/components/design/SegmentedPicker.svelte",
+            "web/src/lib/components/page/PageShell.svelte",
+            "web/src/lib/components/page/shareCardInputs.json",
+            "web/src/lib/components/settings/ParentCenterSection.svelte",
+            "web/src/lib/components/settings/SavingSection.svelte",
+            "web/src/lib/components/settings/ToggleSwitch.svelte",
+            "web/src/lib/components/styleguide/PrimitiveSections.svelte",
+            "web/src/lib/components/styleguide/StyleguideHeader.svelte"
+          ]
+        },
+        {
+          "sha": "8fdae75591417be824649a540dc5d6fd93e91e55",
+          "committedAt": "2026-10-01T15:14:06-04:00",
+          "subject": "Merge pull request #2612 from KyleMit/claude/decision-review-small-fixes",
+          "matchedPaths": [
+            "web/src/lib/state/aiKey.ts"
+          ]
+        }
+      ]
+    },
+    "dependency and toolchain": {
+      "includePathPatterns": [
+        "^(package\\.json|pnpm-lock\\.yaml|pnpm-workspace\\.yaml)$",
+        "^web/(svelte\\.config\\.js|vite\\.config\\.ts)$",
+        "^tools/(bootstrap-worktree|check-netlify-cli|run-web-tool)\\.mjs$",
+        "^\\.github/actions/setup-pnpm/action\\.yml$",
+        "^\\.codex/cloud/(setup|maintenance)\\.sh$",
+        "^\\.claude/hooks/session-start\\.sh$"
+      ],
+      "excludePathPatterns": [],
+      "trackedOwnersAtAnchor": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "web/svelte.config.js",
+        "web/vite.config.ts",
+        "tools/bootstrap-worktree.mjs",
+        "tools/check-netlify-cli.mjs",
+        "tools/run-web-tool.mjs",
+        ".github/actions/setup-pnpm/action.yml",
+        ".codex/cloud/setup.sh",
+        ".codex/cloud/maintenance.sh",
+        ".claude/hooks/session-start.sh"
+      ],
+      "touchedFirstParentCommits": 341,
+      "commitSetSha256": "f42ced1acf4b1ec3d435accfc43d6d42bdd14410ac11e6a36a32d5b9331023fc",
+      "distinctMatchedPaths": 12,
+      "matchedPathSetSha256": "e9fa6eba2f513af911245165a8c5ff9235dd8971e5eebf68be0b2c93b9753d59",
+      "recentExamples": [
+        {
+          "sha": "e49c2f733f751f807b65b6bea55631b610958ab5",
+          "committedAt": "2026-10-04T21:30:51-04:00",
+          "subject": "Merge pull request #2686 from KyleMit/smell/docs-guides-r1-1",
+          "matchedPaths": [
+            ".claude/hooks/session-start.sh",
+            "package.json"
+          ]
+        },
+        {
+          "sha": "78736978f468f4ffc066ecae44de929362d1ffbf",
+          "committedAt": "2026-10-03T22:20:44-04:00",
+          "subject": "Merge pull request #2634 from KyleMit/feat/sharp-0.35.5",
+          "matchedPaths": [
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml"
+          ]
+        },
+        {
+          "sha": "e11fc190a9e2261b7d98319a6ddbd617ab23210c",
+          "committedAt": "2026-10-03T21:23:44-04:00",
+          "subject": "Merge pull request #2625 from KyleMit/dependabot/npm_and_yarn/vite-8.3.1",
+          "matchedPaths": [
+            "package.json",
+            "pnpm-lock.yaml"
+          ]
+        }
+      ]
+    },
+    "native binding and lifecycle": {
+      "includePathPatterns": [
+        "^(android/|ios/|tools/mobile/)",
+        "^capacitor\\.config\\.json$",
+        "^web/src/lib/(nativePlugin|secureStorage|installationId)(\\.[^/]+)?\\.ts$",
+        "^web/src/lib/(plugins|platform)/"
+      ],
+      "excludePathPatterns": [],
+      "trackedOwnersAtAnchor": [
+        "android/",
+        "ios/",
+        "tools/mobile/",
+        "capacitor.config.json",
+        "web/src/lib/nativePlugin.ts",
+        "web/src/lib/secureStorage.ts",
+        "web/src/lib/installationId.ts",
+        "web/src/lib/plugins/",
+        "web/src/lib/platform/"
+      ],
+      "touchedFirstParentCommits": 118,
+      "commitSetSha256": "b2f0386c48375aa03a00025642ec1aee6229f96435fe200f85fc50d967092b6e",
+      "distinctMatchedPaths": 126,
+      "matchedPathSetSha256": "b06b148ab7afce911aa408ece811f43a1b3fac53fb42edc4c7ef90c1cec5d333",
+      "recentExamples": [
+        {
+          "sha": "69ab65edc5b1436d9fdeb6378e9e743f3694f127",
+          "committedAt": "2026-10-04T21:29:38-04:00",
+          "subject": "Merge pull request #2682 from KyleMit/smell/native-release-r1-3",
+          "matchedPaths": [
+            "tools/mobile/android/run-smoke-test.mjs",
+            "tools/mobile/android/tests/run-smoke-test.test.mjs",
+            "tools/mobile/lib/mobile-smoke-test.mjs"
+          ]
+        },
+        {
+          "sha": "4c9394e8f283f4358aed6169415eeb440bd66ea9",
+          "committedAt": "2026-10-01T15:33:19-04:00",
+          "subject": "Merge pull request #2610 from KyleMit/codex/issue-2603-android-monochrome",
+          "matchedPaths": [
+            "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+            "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+            "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+            "tools/mobile/android/README.md",
+            "tools/mobile/android/gen-monochrome-icon.mjs",
+            "tools/mobile/android/tests/monochrome-icon.test.mjs"
+          ]
+        },
+        {
+          "sha": "206b8633b6a9926b10fb80ca7450eb29537f58ff",
+          "committedAt": "2026-10-01T14:21:12-04:00",
+          "subject": "Merge pull request #2609 from KyleMit/claude/truncate-without-lone-surrogate",
+          "matchedPaths": [
+            "web/src/lib/platform/deviceReport.test.ts",
+            "web/src/lib/platform/deviceReport.ts"
+          ]
+        }
+      ]
+    },
+    "web security PWA and host": {
+      "includePathPatterns": [
+        "^web/src/(service-worker|hooks|app\\.html)",
+        "^web/(netlify\\.toml|svelte\\.config\\.js|vite\\.config\\.ts)$",
+        "^web/securityPolicy(\\.[^/]+)?\\.ts$",
+        "^web/src/lib/pwa/",
+        "^netlify\\.toml$",
+        "^netlify/"
+      ],
+      "excludePathPatterns": [],
+      "trackedOwnersAtAnchor": [
+        "web/src/hooks.server.ts",
+        "web/src/app.html",
+        "web/netlify.toml",
+        "web/svelte.config.js",
+        "web/vite.config.ts",
+        "web/securityPolicy.ts",
+        "web/src/lib/pwa/",
+        "netlify.toml",
+        "netlify/"
+      ],
+      "touchedFirstParentCommits": 97,
+      "commitSetSha256": "bb2106cce5896ee5366c5c8ef223de990371596c6d048193372b57ed0919dd75",
+      "distinctMatchedPaths": 35,
+      "matchedPathSetSha256": "a84d1c01b91631f30e3558ec66756a8adbf1cff276664defd0c897b7bf6e22be",
+      "recentExamples": [
+        {
+          "sha": "419c4d66161e54ff2386a50f5f2266efbdc5cd19",
+          "committedAt": "2026-10-04T06:09:26-04:00",
+          "subject": "Merge pull request #2671 from KyleMit/smell/ci-config-r1-3",
+          "matchedPaths": [
+            "netlify.toml"
+          ]
+        },
+        {
+          "sha": "f72bd69828595d622cc70e0a7f3044c3c7e421f8",
+          "committedAt": "2026-10-01T01:05:46-04:00",
+          "subject": "Merge pull request #2576 from KyleMit/codex/issue-2558-install-preview",
+          "matchedPaths": [
+            "web/src/app.html.test.ts"
+          ]
+        },
+        {
+          "sha": "c7baeeedd0ed8a97da97cd52a9d4d1afacf79ef6",
+          "committedAt": "2026-10-01T00:22:43-04:00",
+          "subject": "Merge pull request #2575 from KyleMit/codex/issue-2560-page-share-cards",
+          "matchedPaths": [
+            "web/vite.config.ts"
+          ]
+        }
+      ]
+    },
+    "validation physical and release": {
+      "includePathPatterns": [
+        "^(tools/(perf/|release/|ci-mirror/)|web/tests/|\\.github/workflows/)",
+        "^web/.*\\.(test|spec)\\.[^/]+$",
+        "^tools/(?:[^/]+/)*tests/",
+        "^tools/.*\\.(test|spec)\\.[^/]+$",
+        "^(fastlane/|releases/|\\.maestro/)"
+      ],
+      "excludePathPatterns": [],
+      "trackedOwnersAtAnchor": [
+        "tools/perf/",
+        "tools/release/",
+        "tools/ci-mirror/",
+        "web/tests/",
+        ".github/workflows/",
+        "tools/tests/",
+        "fastlane/",
+        "releases/",
+        ".maestro/"
+      ],
+      "touchedFirstParentCommits": 880,
+      "commitSetSha256": "7e4c1037e2ca9478b230f97d97165d8cbe6bac6d386e1af8ef49a59e07311049",
+      "distinctMatchedPaths": 1249,
+      "matchedPathSetSha256": "1efb7ff06f654450e5b9d551ddd3004313af9895ebcda9af5c7ea178eef3f312",
+      "recentExamples": [
+        {
+          "sha": "dd6b86a2343d400bb654bc664020c09768e6c7f5",
+          "committedAt": "2026-10-04T21:31:05-04:00",
+          "subject": "Merge pull request #2687 from KyleMit/smell/asset-gen-pipeline-r1-1",
+          "matchedPaths": [
+            "tools/asset-gen/tests/book-proof-sheet-cli.test.mjs",
+            "tools/asset-gen/tests/data-uri.test.mjs",
+            "tools/asset-gen/tests/image-stats.test.mjs"
+          ]
+        },
+        {
+          "sha": "e49c2f733f751f807b65b6bea55631b610958ab5",
+          "committedAt": "2026-10-04T21:30:51-04:00",
+          "subject": "Merge pull request #2686 from KyleMit/smell/docs-guides-r1-1",
+          "matchedPaths": [
+            "tools/tests/instruction-file-names.test.mjs"
+          ]
+        },
+        {
+          "sha": "4bf739c4b5aeb8c57edc8935f7c7fd986ae3f928",
+          "committedAt": "2026-10-04T21:30:38-04:00",
+          "subject": "Merge pull request #2685 from KyleMit/smell/native-release-r1-1",
+          "matchedPaths": [
+            "releases/README.md",
+            "tools/release/README.md",
+            "tools/release/cut-release.mjs",
+            "tools/release/gen-release-notes.mjs",
+            "tools/release/lib/native-version.mjs",
+            "tools/release/lib/release-frontmatter.mjs",
+            "tools/release/tests/cut-release.test.mjs",
+            "tools/release/tests/gen-release-notes.test.mjs",
+            "tools/release/tests/native-version.test.mjs",
+            "tools/release/tests/release-frontmatter.test.mjs"
+          ]
+        }
+      ]
+    }
+  }
+}
