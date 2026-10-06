@@ -15,6 +15,7 @@ const SERVER_DIRS = {
   web: join(ROOT, 'web/.netlify/server'),
   native: join(ROOT, 'web/.svelte-kit/output/server'),
 };
+const KIT_VERSION_JSON_PATH = '_app/version.json';
 const COLORING_MANIFEST_PATTERN = /^coloring\/manifest-.*\.json$/;
 const PRECACHE_URL_PATTERN = /\burl:"([^"]+)"/g;
 
@@ -35,6 +36,15 @@ function onlyExpectedUrl(urls, expected) {
 
 function readVersion(versionJsonPath) {
   return JSON.parse(readFileSync(versionJsonPath, 'utf8')).version;
+}
+
+function kitVersionProblems(clientDir, version) {
+  const path = join(clientDir, KIT_VERSION_JSON_PATH);
+  if (!existsSync(path)) return [`Client ${KIT_VERSION_JSON_PATH} is missing`];
+  const kitVersion = readVersion(path);
+  return kitVersion === version
+    ? []
+    : [`Client ${KIT_VERSION_JSON_PATH} carries ${kitVersion}, not ${version}`];
 }
 
 function bundleVersionProblems(bundleDir, label, version) {
@@ -78,6 +88,7 @@ export function buildVersionProblems({ clientDir, serverDir, native }) {
   if (!existsSync(clientVersionJson)) return [`Client ${VERSION_JSON_FILENAME} does not exist`];
   const version = readVersion(clientVersionJson);
   return [
+    ...kitVersionProblems(clientDir, version),
     ...bundleVersionProblems(clientDir, 'Client', version),
     ...bundleVersionProblems(serverDir, 'Server', version),
     ...serviceWorkerProblems(clientDir, version, native),
@@ -90,7 +101,7 @@ export async function checkBuildVersion({ native = false, log = console.log } = 
   const problems = buildVersionProblems({ clientDir, serverDir, native });
   if (problems.length) throw new Error(problems.join('\n'));
   const version = readVersion(join(clientDir, VERSION_JSON_FILENAME));
-  log(`[build-version] client, server, and coloring manifest all carry ${version}`);
+  log(`[build-version] client, Kit, server, and coloring manifest all carry ${version}`);
 }
 
 if (isMain(import.meta.url)) {
