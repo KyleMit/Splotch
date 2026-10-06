@@ -1,0 +1,94 @@
+
+ RUN  v5.0.2 /private/tmp/splotch-shared-name-inversion.artsjmm0/tools
+
+ ❯ migration/tests/production-closure.test.mjs (5 tests | 3 failed) 13ms
+   ❯ live production package-name boundary (5)
+     × allows reviewed shared shared version updates 4ms
+     × allows reviewed shared @scope/shared version updates 1ms
+     × rejects a candidate-only name entering production at 3.0.0 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  migration/tests/production-closure.test.mjs > live production package-name boundary > allows reviewed shared shared version updates
+AssertionError: Candidate artifacts entered the shipping production graph: shared@1.1.0
++ actual - expected
+
++ [
++   'shared@1.1.0'
++ ]
+- []
+
+
+- Expected
++ Received
+
+- []
++ [
++   "shared@1.1.0",
++ ]
+
+ ❯ assertProductionClosure migration/lib/topology-policy.mjs:69:10
+     67|   const candidate = getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY,…
+     68|   const leaks = [...candidate].filter((key) => production.has(key) && …
+     69|   assert.deepEqual(
+       |          ^
+     70|     leaks,
+     71|     [],
+ ❯ migration/tests/production-closure.test.mjs:78:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  migration/tests/production-closure.test.mjs > live production package-name boundary > allows reviewed shared @scope/shared version updates
+AssertionError: Candidate artifacts entered the shipping production graph: @scope/shared@1.1.0
++ actual - expected
+
++ [
++   '@scope/shared@1.1.0'
++ ]
+- []
+
+
+- Expected
++ Received
+
+- []
++ [
++   "@scope/shared@1.1.0",
++ ]
+
+ ❯ assertProductionClosure migration/lib/topology-policy.mjs:69:10
+     67|   const candidate = getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY,…
+     68|   const leaks = [...candidate].filter((key) => production.has(key) && …
+     69|   assert.deepEqual(
+       |          ^
+     70|     leaks,
+     71|     [],
+ ❯ migration/tests/production-closure.test.mjs:78:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  migration/tests/production-closure.test.mjs > live production package-name boundary > rejects a candidate-only name entering production at 3.0.0
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ migration/tests/production-closure.test.mjs:114:69
+    112|       lock.snapshots[`probe@${version}`] ??= {};
+    113|       lock.importers['.'].dependencies.probe = { version };
+    114|       expect(() => assertProductionClosure(lock, ['shared@1.0.0'])).to…
+       |                                                                     ^
+    115|         `Candidate artifacts entered the shipping production graph: pr…
+    116|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 2 passed (5)
+   Start at  03:55:45
+   Duration  235ms (import 72%, transform 21%, tests 7%, worker 1%)
+

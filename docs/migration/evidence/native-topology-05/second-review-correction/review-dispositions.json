@@ -1,0 +1,15 @@
+{
+  "reviewedHead": "f135321682a38bb2833d971b1481bbe60fc892a0",
+  "reviewId": 5425354521,
+  "reviewUrl": "https://github.com/KyleMit/Splotch/pull/2697#pullrequestreview-5425354521",
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "findingsAccepted": 1,
+  "correction": "Production closure fences candidate-only package names absent from the historical shipping name baseline. Shared-version upgrades pass; new candidate-only names at equal or differing versions fail. The shipping import fence uses genuinely candidate-only current names. Exact artifact archive review and exclusive hosted receipts remain unchanged.",
+  "tests": "Scoped and unscoped shared-version changes, exact reviewed shared archive rows, equal/different candidate-only versions, real import scanner and owned old-predicate inversion.",
+  "remaining": [
+    "Third exact PR Claude review",
+    "New-tip CI",
+    "First automatic hosted proof installation/build",
+    "Native compile/mount and whole migration delivery"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "source": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+  "job": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy",
+  "started": "2026-10-06T08:03:40.493702+00:00",
+  "hostOS": "Darwin",
+  "hostArchitecture": "arm64",
+  "nodeExecutable": "/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node",
+  "nodeVersion": "v22.23.2",
+  "packageManagerVersion": "11.22.0",
+  "managerEntrySha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad",
+  "managerWrapperSha256": "36421c09780e26ab75aebe4b87414d5bf3a8abceeb3ebf84c894acb6fd816de1",
+  "warmStorePath": "/Users/kylemit/Library/pnpm/store/v11",
+  "homePreserved": true,
+  "scope": "Fresh independent local full and production-only clones, existing warm store. No native compile/mount/performance/hosted claim.",
+  "clones": [
+    {
+      "role": "full",
+      "checkout": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full",
+      "head": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+      "origin": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+      "describe": "v1.6.0-2716-g863d97b0d",
+      "cloneLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hadNodeModulesBeforeInstall": false
+    },
+    {
+      "role": "prod",
+      "checkout": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/prod",
+      "head": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+      "origin": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+      "describe": "v1.6.0-2716-g863d97b0d",
+      "cloneLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hadNodeModulesBeforeInstall": false
+    }
+  ],
+  "finished": "2026-10-06T08:04:13.230861+00:00",
+  "status": "local-cases-passed"
+}

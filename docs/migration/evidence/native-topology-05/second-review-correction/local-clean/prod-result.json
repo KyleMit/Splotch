@@ -1,0 +1,54 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "checkout": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/prod",
+  "scope": "Fresh independent local full and production-only clones, existing warm store. No native compile/mount/performance/hosted claim.",
+  "steps": [
+    {
+      "label": "frozen-install",
+      "command": ["pnpm", "install", "--prod", "--frozen-lockfile"],
+      "started": "2026-10-06T08:04:04.058555+00:00",
+      "durationSeconds": 1.50167791696731,
+      "exitCode": 0,
+      "log": "../controls/prod-frozen-install.log.txt",
+      "logSha256": "06e9e8d0b2b459d86f5f304ecfc7c62c245ff29c9dad021089ada56c55a9a4d9"
+    },
+    {
+      "label": "installed-tree-witness",
+      "command": ["node", "tools/netlify-topology-witness.mjs"],
+      "started": "2026-10-06T08:04:05.560561+00:00",
+      "durationSeconds": 0.2303158340509981,
+      "exitCode": 0,
+      "log": "../controls/prod-installed-tree-witness.log.txt",
+      "logSha256": "74b89472c2a81501550c91830c0491215c8279680ec305b15e3c4810e4bcd94a"
+    },
+    {
+      "label": "exact-netlify-command",
+      "command": [
+        "/bin/sh",
+        "-c",
+        "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
+      ],
+      "started": "2026-10-06T08:04:05.792183+00:00",
+      "durationSeconds": 6.430527666932903,
+      "exitCode": 0,
+      "log": "../controls/prod-exact-netlify-command.log.txt",
+      "logSha256": "70738a0784dfce22002b2575b28518db79578f3e488daec1833df14e6c6de57e"
+    },
+    {
+      "label": "owner-derived-versions",
+      "command": [
+        "node",
+        "--experimental-strip-types",
+        "--disable-warning=ExperimentalWarning",
+        "--input-type=module",
+        "-e",
+        "import { buildMetadata } from './buildVersion.ts'; console.log(JSON.stringify({ web: buildMetadata({ isCapacitor: false }), native: buildMetadata({ isCapacitor: true }) }));"
+      ],
+      "started": "2026-10-06T08:04:12.223019+00:00",
+      "durationSeconds": 0.055065250024199486,
+      "exitCode": 0,
+      "log": "../controls/prod-owner-derived-versions.log.txt",
+      "logSha256": "7eb60fc7c288ce4f8b278833b561dc2338c8fe61a0bbe13b6f518a5d6fccb95a"
+    }
+  ]
+}

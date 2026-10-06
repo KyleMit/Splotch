@@ -1,0 +1,20 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "scope": "New fresh installs produced these actual bytes. Reuse prior retained identical snapshots to avoid duplicating whole lock data.",
+  "files": [
+    {
+      "role": "full",
+      "rawSnapshot": "review-correction/local-clean/full-installed-lock.yaml.txt",
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "bytes": 518383,
+      "equalToNewObservedBytes": true
+    },
+    {
+      "role": "prod",
+      "rawSnapshot": "review-correction/local-clean/prod-installed-lock.yaml.txt",
+      "sha256": "e2b616dd875ba7a63e0393d8ec0faa553976a6259155de8335318e1d1acceb5b",
+      "bytes": 198091,
+      "equalToNewObservedBytes": true
+    }
+  ]
+}

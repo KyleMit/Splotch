@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration tools/ci-mirror/tests/run-quality-checks.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/tools
+
+
+ Test Files  11 passed (11)
+      Tests  106 passed (106)
+   Start at  03:52:52
+   Duration  1.28s (import 48%, tests 42%, transform 10%)
+

@@ -1,0 +1,9 @@
+
+ RUN  v5.0.2 /private/tmp/splotch-shared-name-inversion.artsjmm0/tools
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  03:55:45
+   Duration  225ms (import 73%, transform 21%, tests 5%, worker 1%)
+

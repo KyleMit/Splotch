@@ -5,10 +5,11 @@ complete required test tier, and independent clean local full and production ins
 passed on executable source 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5. These are historical receipts.
 The first exact PR review completed and CI passed on evidence tip
 a190af1f5d6257024daaf47c4cdbd2b95490e133; Claude required topology-check corrections. Their complete
-local validation is recorded below; second review, new-tip CI and actual hosted production-install
-observation remain pending. Earlier install and structural observations below use the unpatched lock
-and remain historical evidence. The lock-bound policy inputs use the repair lock; registry artifacts
-and lifecycle verdicts are unchanged.
+local validation is recorded below. The second exact review required the shared-name correction
+recorded at the end; third exact review, new-tip CI and actual hosted production-install observation
+remain pending. Earlier install and structural observations below use the unpatched lock and remain
+historical evidence. The lock-bound policy inputs use the repair lock; registry artifacts and
+lifecycle verdicts are unchanged.
 
 The lock-only sentinel resolved a reviewed local tarball with four root hooks and one
 third-party-shaped postinstall without running any hook or creating node_modules. The actual
@@ -161,6 +162,31 @@ All raw exits, log hashes, runtime identities and the bounded local runner are r
 review-correction. The production observer context is explicitly synthetic LOCAL input.
 [The review dispositions](review-correction/review-dispositions.json) distinguish the completed
 first review and corrections from pending second review, new-tip CI and actual hosted proof.
-Historical6e29/a190 receipts remain unchanged. The active source binding binds this corrected source
-and these new local receipts independently from the later evidence-only review tip. No native or
-full migration completion follows from this dependency/topology result.
+Historical6e29/a190 receipts remain unchanged. The de311 source binding and these receipts remain
+historical under historical-source-binding-de311.json; the active binding follows the separately
+validated second-review correction below. No native or full migration completion follows from this
+dependency/topology result.
+
+## Validated second-review shared-name correction
+
+The executable correction source is 863d97b0df6dfb45c06250feef77aecda6c08d9f. The live production
+closure uses candidate and historical shipping package names, allowing legitimate shared-version
+upgrades while rejecting a candidate-only name entering production at either the same or a different
+version. The shipping import fence permits shared split-version names. Changed candidate archive
+bytes still require a reviewed exact artifact row; the historical baseline, lock, manifests, archive
+verdicts, hosted witness and lifecycle policy remain unchanged.
+
+[The full tier](second-review-correction/full-tests.json) passed 4,463 app,45 SSR,298 asset,22 store
+and7,346 tools tests, then all1,170 browser tests. [Quality](second-review-correction/quality.json)
+passed all15 owners, and the106 focused controls pass. The real regression fixture passes under the
+new predicate and fails specifically under the exact prior predicate after successful setup; its raw
+exits and logs are retained in [the inversion](second-review-correction/inversion.json).
+
+The new fresh full and production-only clones passed their complete install/build cases using the
+qualified Node22.23.2/pnpm11.22.0 and existing warm store. Each actual source, command, exit and raw
+log is retained under second-review-correction. Their installed-lock snapshots were independently
+compared byte for byte to the prior retained snapshots;
+[the identity record](second-review-correction/local-clean/installed-lock-identities.json) records
+that reuse. No old execution receipt is presented as new execution. The production observer inputs
+remain explicitly synthetic LOCAL inputs. Third exact Claude review, new-tip CI and first automatic
+hosted proof remain pending; native and full migration acceptance remain separate obligations.

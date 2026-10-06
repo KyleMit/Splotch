@@ -1,0 +1,88 @@
+{
+  "status": "independent-read-only-source-review-no-execution",
+  "sourceRoot": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+  "head": "f135321682a38bb2833d971b1481bbe60fc892a0",
+  "sourceRowsSha256": "d8ace5b04dd9b6b361670b526a49ebe7b73ee42753c60751c633156657e22b8c",
+  "sourceRows": [
+    {
+      "path": "tools/migration/check-native-topology.mjs",
+      "bytes": 3625,
+      "sha256": "46739540cb14a5b60c34e8cf607d5f9e7625065f64a1a289db3aae76f0e06f07"
+    },
+    {
+      "path": "tools/migration/lib/lock-artifacts.mjs",
+      "bytes": 6431,
+      "sha256": "a5010a2388e886551b8e320cbd6d3669872542c9c2d131b693a550fb02a159b1"
+    },
+    {
+      "path": "tools/migration/lib/topology-policy.mjs",
+      "bytes": 11971,
+      "sha256": "2bb756eefcbe895680e6f980c3aae7c0ece7314a72d6e55b87b97865e8a316b7"
+    },
+    {
+      "path": "tools/migration/tests/production-closure.test.mjs",
+      "bytes": 4963,
+      "sha256": "4ee5413893b7cb4995398ecaa5fa2fd27df2e4738609da333c22771ec844f97f"
+    }
+  ],
+  "protectedInputs": [
+    {
+      "path": "package.json",
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "sha256": "df0ec7f72bf302a182d00bef3ec023e0b723b7364a97b211fb5df83d7957d6e2",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "tools/migration/lib/production-install-contract.mjs",
+      "sha256": "418ac660361c6b3c6404b7048b4e3a13fb4c54ca7f732705332ef0a0b948fa48",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-production-artifacts.json",
+      "sha256": "b2f13b86cd54dd62ebcf83cc4a97eb96fca02e3bc49bc8a3bf00d273f20a3514",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-artifact-resolutions.json",
+      "sha256": "403d1a9ce7b5527c80a6cb8140ddbe2daaefb4058fede8bd955ee7320e566d37",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/script-inventory.json",
+      "sha256": "c425e65eec49e6e6b1c35fe102faf386a524e3b60d00cd8ba1d3f96008258361",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/candidate-exclusive-artifacts.json",
+      "sha256": "25eace14fcfd607e6cffa6ef6d5e62bd7f721be0901a88a8f0aa2cc3b50a6ce6",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/production-install-contract.json",
+      "sha256": "fbac33c767ebc8db04db91779bfeb5ffe3c19c8fd06f064eae1fdf87fbc7737e",
+      "unchangedFromHead": true
+    }
+  ],
+  "findings": [],
+  "pending": [
+    "focused/new regression fixtures execution",
+    "unchanged live/evidence topology guards",
+    "Quality and required full tiers",
+    "new-head clean full/prod cases",
+    "third exact Claude review and CI/hosted proof"
+  ]
+}

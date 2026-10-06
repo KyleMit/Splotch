@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "command": "PATH=<qualified Node22 bin> npm run check:quality",
+  "exitCode": 0,
+  "checksPassed": 15,
+  "runtime": "Node22.23.2",
+  "sourceSelection": "Working-tree executable bytes subsequently sealed as 863d97b0df6dfb45c06250feef77aecda6c08d9f; Git HEAD was f135321682a38bb2833d971b1481bbe60fc892a0 during this pre-commit Quality run. No subsequent executable change.",
+  "rawLog": "second-review-correction/controls/quality.log.txt",
+  "rawLogSha256": "61a62fff866f0e62131ce1b2146793c1b454c1e6db4721f11789caba21d4fd2f",
+  "focused": {
+    "command": "npm run test:tools -- tools/migration tools/ci-mirror/tests/run-quality-checks.test.mjs",
+    "exitCode": 0,
+    "runtime": "Node22.23.2",
+    "testFilesPassed": 11,
+    "testsPassed": 106,
+    "rawLog": "second-review-correction/controls/focused.log.txt",
+    "rawLogSha256": "24320873a8bdfec459f98346f38e49192559813d842dd3098516a63099e8b54c"
+  },
+  "setupFailure": {
+    "command": "Direct Vitest caller with nonexistent guessed vitest.tools.config.ts",
+    "exitCode": 1,
+    "testsExecuted": false,
+    "rawLog": "second-review-correction/controls/focused-config-setup-failure.log.txt",
+    "disposition": "Corrected caller to the actual package entry tools/vitest.config.mjs; no test or source waiver."
+  }
+}

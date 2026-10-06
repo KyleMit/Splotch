@@ -1,0 +1,61 @@
+{
+  "sourceCommit": "863d97b0df6dfb45c06250feef77aecda6c08d9f",
+  "checkout": "/private/tmp/splotch-topology05-shared-name-clean.10pi8_wy/full",
+  "scope": "Fresh independent local full and production-only clones, existing warm store. No native compile/mount/performance/hosted claim.",
+  "steps": [
+    {
+      "label": "frozen-install",
+      "command": ["pnpm", "install", "--frozen-lockfile"],
+      "started": "2026-10-06T08:03:46.314950+00:00",
+      "durationSeconds": 4.591561250039376,
+      "exitCode": 0,
+      "log": "../controls/full-frozen-install.log.txt",
+      "logSha256": "c673bce922c8854a44d26638967ab2e41d1f2876af6ff43b4b19e6ef8f0c8641"
+    },
+    {
+      "label": "live-topology",
+      "command": ["npm", "run", "check:migration:native-topology"],
+      "started": "2026-10-06T08:03:50.906821+00:00",
+      "durationSeconds": 6.348266707966104,
+      "exitCode": 0,
+      "log": "../controls/full-live-topology.log.txt",
+      "logSha256": "708e4910d1d1930be3e5b73511ec6573f7893ffd052ca1403caff76b61d56d97"
+    },
+    {
+      "label": "exact-proof-inputs",
+      "command": ["npm", "run", "check:migration:native-topology:evidence"],
+      "started": "2026-10-06T08:03:57.255383+00:00",
+      "durationSeconds": 0.3425952079705894,
+      "exitCode": 0,
+      "log": "../controls/full-exact-proof-inputs.log.txt",
+      "logSha256": "2d6fe328efadfef7da38cb9ecbdcaa17299227b4fbaed8763d00bd4ea6631cfc"
+    },
+    {
+      "label": "shipping-type-sync",
+      "command": ["node", "tools/run-web-tool.mjs", "svelte-kit", "sync"],
+      "started": "2026-10-06T08:03:57.598276+00:00",
+      "durationSeconds": 1.0956594579620287,
+      "exitCode": 0,
+      "log": "../controls/full-shipping-type-sync.log.txt",
+      "logSha256": "acb2c5863d4de162f0e26beff7bad8e2dd1bb6154d9f0f0203a34e97a4762cfd"
+    },
+    {
+      "label": "production-classification",
+      "command": ["npm", "run", "lint:deps:prod"],
+      "started": "2026-10-06T08:03:58.694238+00:00",
+      "durationSeconds": 0.9318503750255331,
+      "exitCode": 0,
+      "log": "../controls/full-production-classification.log.txt",
+      "logSha256": "3de5716a289e6a255f2363d9d9167bfade636498247dbb8b5c11182a8d223dac"
+    },
+    {
+      "label": "shipping-static-build",
+      "command": ["npm", "run", "build:cap"],
+      "started": "2026-10-06T08:03:59.626424+00:00",
+      "durationSeconds": 4.431774334050715,
+      "exitCode": 0,
+      "log": "../controls/full-shipping-static-build.log.txt",
+      "logSha256": "e17759b25df96e875aad80f964528a47b7f44fcdef845f5590c116c276545e95"
+    }
+  ]
+}

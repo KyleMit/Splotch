@@ -1,0 +1,25 @@
+from pathlib import Path
+import tempfile, shutil, subprocess, os, json, hashlib
+root=Path('/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch');node=Path('/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node')
+owned=Path(tempfile.mkdtemp(prefix='splotch-shared-name-inversion.',dir='/private/tmp'))
+paths=['tools/vitest.config.mjs','tools/lib/native-candidate.mjs','tools/migration/lib/lock-artifacts.mjs','tools/migration/lib/topology-policy.mjs','tools/migration/lib/native-identity.mjs','tools/migration/tests/production-closure.test.mjs']
+for name in paths:
+ target=owned/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(root/name,target)
+(owned/'package.json').write_text('{"private":true,"type":"module"}\n')
+(owned/'node_modules').symlink_to(root/'node_modules',target_is_directory=True)
+env={**os.environ,'PATH':str(node.parent)+':'+os.environ['PATH']}
+records=[]
+for label in ['current','old-predicate']:
+ if label=='old-predicate':
+  prior=subprocess.check_output(['git','show','f135321682a38bb2833d971b1481bbe60fc892a0:tools/migration/lib/topology-policy.mjs'],cwd=root)
+  (owned/'tools/migration/lib/topology-policy.mjs').write_bytes(prior)
+ log=Path('/private/tmp/splotch-topology05-shared-name-inversion-'+label+'.log.txt')
+ with log.open('wb') as stream:r=subprocess.run([str(node),str(root/'node_modules/vitest/vitest.mjs'),'run','--config',str(owned/'tools/vitest.config.mjs'),'production-closure'],cwd=owned,env=env,stdout=stream,stderr=subprocess.STDOUT)
+ records.append({'label':label,'exitCode':r.returncode,'log':str(log),'sha256':hashlib.sha256(log.read_bytes()).hexdigest()})
+ if label=='current':assert r.returncode==0,log
+ else:
+  assert r.returncode==1,log
+  text=log.read_text();assert '3 failed | 2 passed' in text and 'Candidate artifacts entered the shipping production graph' in text,text
+record={'scope':'Owned actual new regression controls: current source succeeds, exact prior production predicate fails after successful setup. No borrowed source mutation/install/build/browser/cloud','sourceCommit':'863d97b0df6dfb45c06250feef77aecda6c08d9f','ownedRoot':str(owned),'steps':records}
+Path('/private/tmp/splotch-topology05-shared-name-inversion.json').write_text(json.dumps(record,indent=2)+'\n')
+print(json.dumps(record),flush=True)
