@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "npm",
+    "run",
+    "test:e2e",
+    "--",
+    "tests/phone-landscape-toolbar.spec.ts",
+    "--workers=1",
+    "--grep",
+    "compact custom color centers its icon inside its color ring",
+    "--repeat-each=5"
+  ],
+  "exitCode": 0,
+  "port": 5300,
+  "log": "/private/tmp/splotch-netlify-install-picker-recheck.log.txt",
+  "bytes": 13550,
+  "sha256": "b1131aa55b90ad9d8f8c9269373e225305257b14f0040b804fbc0327354e571b",
+  "firstFullFailurePreserved": true
+}

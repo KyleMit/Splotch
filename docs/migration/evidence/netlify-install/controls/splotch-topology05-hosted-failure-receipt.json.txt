@@ -1,0 +1,42 @@
+{
+  "observedAt": "2026-10-06T08:30:46.035624+00:00",
+  "status": "hosted-proof-failed-during-first-prebuild-observer",
+  "head": "423769b486d81a8da0cdd1c1e6abfedc31bec757",
+  "buildId": "6ac4b006e2ce39000805a7b7",
+  "deployId": "6ac4b006e2ce39000805a7b9",
+  "context": "branch-deploy",
+  "branch": "feature/netlify-migration-topology-05",
+  "error": "Installed package outside production graph: brace-expansion@2.1.1 at node_modules/filelist/node_modules/brace-expansion",
+  "logs": "Exact fixed excerpt transcribed from actual visible public Netlify dashboard AX output. No full raw log retained.",
+  "runtimeGateInference": "Actual source verifies named NETLIFY/CONTEXT/ref, all5input hashes, --prod configured/effective flags, Node major/floor and exact pnpm before the failing installed-tree predicate. Those predicates reached the graph inspection, but no successful witness result or fullgraph inventory was emitted.",
+  "cacheProvenance": "Actual restore observed; prior source/context of the cache remains unknown.",
+  "sourceAndCI": "Executable863d97 and evidence-only423769 reviewed; all4currentCIworkflowssuccess; earlier ENOTEMPTY rerun labelled in PR body.",
+  "records": [
+    {
+      "path": "/private/tmp/splotch-topology05-hosted-proof-registration.json",
+      "bytes": 1536,
+      "sha256": "4f3ed151ae680cbf03325237f62fc1104a28602984fbe1ad93b7a26b6cd7d871"
+    },
+    {
+      "path": "/private/tmp/splotch-topology05-third-tip-site-preflight.json",
+      "bytes": 529,
+      "sha256": "2d10708519f65f9a43a88e8d8e0e36690565fcad02f7a012e9dd14f0d5df09d5"
+    },
+    {
+      "path": "/private/tmp/splotch-topology05-hosted-deploy-observation.json",
+      "bytes": 886,
+      "sha256": "d8774fbfea3af3c781dfc1a81c70af0519be2f8ac80b6ee014ce947733483abd"
+    },
+    {
+      "path": "/private/tmp/splotch-topology05-hosted-build-record.json",
+      "bytes": 650,
+      "sha256": "20ba94471b4f1b06e9a535d13ef8bc1693bc09d2f62bc1e58849f33beba4ee01"
+    },
+    {
+      "path": "/private/tmp/splotch-topology05-hosted-failure-excerpt.log.txt",
+      "bytes": 1323,
+      "sha256": "1e0d5c00e27596f45e216f749a00c1b4db2b50bc0c32fb9662866a1718f77588"
+    }
+  ],
+  "next": "Independently review concrete cached pnpm hoisted-install boundary and real old/cache-layout controls. Do not weaken graph, mutate/prune in witness, bypass settings/ignore, trigger sameSHA/cold cache, or claim hosted success."
+}

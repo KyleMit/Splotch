@@ -1,0 +1,30 @@
+{"stage":"second-production-install-qualified","launcher":{"path":"/Users/kylemit/.nvm/versions/node/v24.16.0/bin/pnpm","resolvedPath":"/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/corepack/dist/pnpm.js","sha256":"7c2a67995976b5b592b611d8b236e3b0633bd654fb49aedd96c6eb7ce04c9cbb"},"node":{"path":"/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node","version":"v22.23.2"},"settings":[{"key":"modules-dir","disposition":"pnpm-11.22-source-default"},{"key":"virtual-store-dir","disposition":"pnpm-11.22-source-default"},{"key":"enable-global-virtual-store","disposition":"pnpm-11.22-source-default"},{"key":"force","disposition":"pnpm-11.22-source-default"},{"key":"lockfile","disposition":"pnpm-11.22-source-default"},{"key":"package-lock","disposition":"pnpm-11.22-source-default"},{"key":"ignore-scripts","disposition":"pnpm-11.22-source-default"},{"key":"production","disposition":"pnpm-11.22-source-default"},{"key":"dev","disposition":"pnpm-11.22-source-default"},{"key":"optional","disposition":"pnpm-11.22-source-default"},{"key":"only","disposition":"pnpm-11.22-source-default"},{"key":"omit","disposition":"pnpm-11.22-source-default"},{"key":"shamefully-hoist","disposition":"pnpm-11.22-source-default"},{"key":"recursive-install","disposition":"pnpm-11.22-source-default"},{"key":"shared-workspace-lockfile","disposition":"pnpm-11.22-source-default"},{"key":"global","disposition":"pnpm-11.22-source-default"},{"key":"ignore-workspace","disposition":"pnpm-11.22-source-default"},{"key":"dir","disposition":"pnpm-11.22-source-default"},{"key":"lockfile-dir","disposition":"pnpm-11.22-source-default"},{"key":"workspace-root","disposition":"pnpm-11.22-source-default"},{"key":"workspace-packages","disposition":"pnpm-11.22-source-default"},{"key":"filter","disposition":"pnpm-11.22-source-default"},{"key":"filter-prod","disposition":"pnpm-11.22-source-default"},{"key":"enable-modules-dir","disposition":"pnpm-11.22-source-default"},{"key":"virtual-store-only","disposition":"pnpm-11.22-source-default"},{"key":"lockfile-only","disposition":"pnpm-11.22-source-default"},{"key":"dry-run","disposition":"pnpm-11.22-source-default"},{"key":"resolution-only","disposition":"pnpm-11.22-source-default"},{"key":"git-branch-lockfile","disposition":"pnpm-11.22-source-default"},{"key":"merge-git-branch-lockfiles","disposition":"pnpm-11.22-source-default"},{"key":"merge-git-branch-lockfiles-branch-pattern","disposition":"pnpm-11.22-source-default"},{"key":"pnpr-server","disposition":"pnpm-11.22-source-default"},{"key":"strict-dep-builds","disposition":"pnpm-11.22-source-default"},{"key":"dangerously-allow-all-builds","disposition":"pnpm-11.22-source-default"},{"key":"pnpmfile","disposition":"pnpm-11.22-source-default"},{"key":"global-pnpmfile","disposition":"pnpm-11.22-source-default"},{"key":"configDependencies","disposition":"pnpm-11.22-source-default"},{"key":"ignore-pnpmfile","disposition":"pnpm-11.22-source-default"},{"key":"node-linker","value":"hoisted"},{"key":"packages","value":["experiments/native-architecture"]},{"key":"allowBuilds","value":{"@google/genai":false,"esbuild":false,"dprint":false,"protobufjs":false}}],"owners":[{"path":"package.json","mode":420,"sha256":"cd9bbf1beb49a44b0055004b65a3ae750a460f1d70562a95fdec2bed12b54780"},{"path":"pnpm-lock.yaml","mode":420,"sha256":"705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"},{"path":"pnpm-workspace.yaml","mode":420,"sha256":"eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"},{"path":"experiments/native-architecture/package.json","mode":420,"sha256":"6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"},{"path":"netlify.toml","mode":420,"sha256":"6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33"}],"residue":{"path":"node_modules/filelist/node_modules/brace-expansion/package.json","present":false},"scope":"Workspace reconstruction; initial platform install/cache logs are separate evidence"}
+{"stage":"second-production-install-start","cwd":"/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout","argv":["ci","--prod"],"startedAt":"2026-10-06T09:09:42.440Z"}
+Removing node_modules
+✓ Lockfile passes supply-chain policies (verified 2h ago)
+[ERR_PNPM_OUTDATED_LOCKFILE] Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/package.json
+
+Note that in CI environments this setting is true by default. If you still need to run install in such cases, use "pnpm install --no-frozen-lockfile"
+
+  Failure reason:
+  specifiers in the lockfile don't match specifiers in package.json:
+* 1 dependencies were added: splotch-intentional-lock-mismatch@1.0.0
+
+{"stage":"second-production-install-exit","argv":["ci","--prod"],"startedAt":"2026-10-06T09:09:42.440Z","endedAt":"2026-10-06T09:09:43.366Z","durationMs":925.550542,"exitCode":1,"signal":null,"launchFailed":false}
+AssertionError [ERR_ASSERTION]: Second production install failed
+    at installStage (file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/netlify-production-install.mjs:327:10)
+    at installNetlifyProductionDependencies (file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/netlify-production-install.mjs:376:18)
+    at runNetlifyProductionInstall (file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/netlify-production-install.mjs:390:10)
+    at file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/netlify-production-install.mjs:399:23
+    at runMain (file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/lib/proc.mjs:32:3)
+    at file:///private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout/tools/netlify-production-install.mjs:399:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}

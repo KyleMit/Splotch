@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "scope": "Immutable local controls, two full-tier failures with actual isolated picker rechecks, final Quality and preserved failed automatic cloud observation; later hosted acceptance separate",
+  "files": [
+    {
+      "path": "controls/cached-platform-like-prod.log.txt",
+      "bytes": 534,
+      "sha256": "4d0974ea5a9d4095672264cd4a40d5ae2dda32211fc8cd00b9a509ed2958df89"
+    },
+    {
+      "path": "controls/cached-production-witness-refusal.log.txt",
+      "bytes": 624,
+      "sha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "path": "controls/development-baseline.log.txt",
+      "bytes": 776,
+      "sha256": "04ac90b9215590cffe97b6f1bd360acddf64be5bc98a730bc2f1c8fb55026b5e"
+    },
+    {
+      "path": "controls/explicit-string-undefined-refusal.log.txt",
+      "bytes": 1278,
+      "sha256": "725823d2701222fd1e717ce86cf17df75edd0c8ad86a13f7e3368e6bf33abcda"
+    },
+    {
+      "path": "controls/failed-frozen-install-no-build.log.txt",
+      "bytes": 6145,
+      "sha256": "6a7f679100fafb8920860204c383830ea265d72cf99a54f62a6172c76d209bbb"
+    },
+    {
+      "path": "controls/final-quality-log.txt",
+      "bytes": 60106,
+      "sha256": "89a6ca3ae64bc822398ec8ec6e2f19fc7ec011e18afb9605775cea54d0fff3a4"
+    },
+    {
+      "path": "controls/first-full-tier-log.txt",
+      "bytes": 26095,
+      "sha256": "1de4f0b2334738565e64c2c055a18c53d8ef86394a64eb6fabc6355fcde6e08f"
+    },
+    {
+      "path": "controls/first-full-tier-receipt.json.txt",
+      "bytes": 364,
+      "sha256": "ffe399f994421982127f19e580a9f38af3e4a173b1011b5a292698a26dba43f6"
+    },
+    {
+      "path": "controls/force-prod-control.log.txt",
+      "bytes": 146,
+      "sha256": "7701e7ab6f003a70ea7fd395cc7803a71685ca025ab317b9d8a38d4583cac1d8"
+    },
+    {
+      "path": "controls/force-production-witness-refusal.log.txt",
+      "bytes": 624,
+      "sha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "path": "controls/local-controls-receipt.json.txt",
+      "bytes": 18322,
+      "sha256": "8e6b4f89818bdfcd5fc62ccd3e1b1fc82cca586b087ff577b1e2a9558f4546fc"
+    },
+    {
+      "path": "controls/module-root-alias-refusal.log.txt",
+      "bytes": 1406,
+      "sha256": "47ed580fa1c7e37c9e41d5fdeed68929916c985b41a89bf0c1489f841e2079f3"
+    },
+    {
+      "path": "controls/nonworkspace-ci-netlify-functions.log.txt",
+      "bytes": 5334,
+      "sha256": "379379f55189398355267af0613f0985ed718e062a649427a872e4a2290478bf"
+    },
+    {
+      "path": "controls/nonworkspace-ci-tools.log.txt",
+      "bytes": 5335,
+      "sha256": "6d12aded8fdc85368be2d58a976eeca5d79d6096f7062dd2fa2dfeafe7020d1d"
+    },
+    {
+      "path": "controls/nonworkspace-ci-web.log.txt",
+      "bytes": 5328,
+      "sha256": "caa5cab719a5da81435b31d16f468e95ba7cbd55eb7b910a60bc1527cfc268af"
+    },
+    {
+      "path": "controls/nonworkspace-refusal-netlify-functions.log.txt",
+      "bytes": 648,
+      "sha256": "e2ab83ff5d60b37f6d356d2ce99dc6be331e7ff86c0e4b9b75339cc93572b8e5"
+    },
+    {
+      "path": "controls/nonworkspace-refusal-tools.log.txt",
+      "bytes": 636,
+      "sha256": "8e905acdeb70896cf759e5a3e249699d98f8a081d0d89a6bd0729e64b516725f"
+    },
+    {
+      "path": "controls/nonworkspace-refusal-web.log.txt",
+      "bytes": 634,
+      "sha256": "a7af3e9ed8a993a5bbe891cb7781bfbb9537afee44315588b4083cabe555c4ab"
+    },
+    {
+      "path": "controls/picker-isolated-recheck-log.txt",
+      "bytes": 13550,
+      "sha256": "b1131aa55b90ad9d8f8c9269373e225305257b14f0040b804fbc0327354e571b"
+    },
+    {
+      "path": "controls/picker-isolated-recheck-receipt.json.txt",
+      "bytes": 475,
+      "sha256": "739d9ea34a1ae00010311e2817857f2c53cf89c2126a9b45ee94907fbb52cdd2"
+    },
+    {
+      "path": "controls/prune-prod-control.log.txt",
+      "bytes": 51,
+      "sha256": "dac71778ab47fca188188762269890470f12fa571a1bca05ca0dd9e45743caa7"
+    },
+    {
+      "path": "controls/prune-production-witness-refusal.log.txt",
+      "bytes": 624,
+      "sha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "path": "controls/qualified-cold-ci.log.txt",
+      "bytes": 5313,
+      "sha256": "542fc55d9fb07e8a96651c189232b81d0bdfb0eefcf9e6dbe380b853e88b33c3"
+    },
+    {
+      "path": "controls/qualified-cold-full-witness.log.txt",
+      "bytes": 45862,
+      "sha256": "45626bcea5a15ec96965cf5b799e7d0fc08dba2cf5114411d99005cceb889cbb"
+    },
+    {
+      "path": "controls/qualified-production-release-build.log.txt",
+      "bytes": 62483,
+      "sha256": "952eeb00412b39e6337fa051496dbe965e03bb96e1a7f9f0eb868e297183c257"
+    },
+    {
+      "path": "controls/qualified-warm-ci.log.txt",
+      "bytes": 5424,
+      "sha256": "9277a39dfa4be2c3d98af7c483b84d6b674e8865af2e83a610bde31c25f9c206"
+    },
+    {
+      "path": "controls/qualified-warm-full-witness.log.txt",
+      "bytes": 45862,
+      "sha256": "45626bcea5a15ec96965cf5b799e7d0fc08dba2cf5114411d99005cceb889cbb"
+    },
+    {
+      "path": "controls/second-full-tier-log.txt",
+      "bytes": 253823,
+      "sha256": "9dbcf6ecd7f17b4e9291dbec283a3210a5ad56db6e00269c047877e37bfd8412"
+    },
+    {
+      "path": "controls/second-full-tier-picker-error-context.md.txt",
+      "bytes": 11542,
+      "sha256": "2ea4aa5ad1da0b13da68b11a0e6148ce23d805354fc42e15dbd84b8b5917f8e2"
+    },
+    {
+      "path": "controls/second-full-tier-receipt.json.txt",
+      "bytes": 365,
+      "sha256": "1e7aba29b6912e53c0effe06d2aaf252471b7ee41701113a4b5d4591e304ac63"
+    },
+    {
+      "path": "controls/shared-production-version-positive.log.txt",
+      "bytes": 45993,
+      "sha256": "3c515a205fc21b8df5f5552c6d0f12a034dd65a926f5eca3ee3c4fe242055d68"
+    },
+    {
+      "path": "controls/splotch-netlify-install-evidence.log.txt",
+      "bytes": 3659,
+      "sha256": "3d81105415bcfbd80e3385bf23538c1a1ae6e350f5bdabc8bc4a8428e3074cef"
+    },
+    {
+      "path": "controls/splotch-netlify-install-focused.log.txt",
+      "bytes": 432,
+      "sha256": "847a737cf9cd4de1b80b6af8a844f759d79effacbefdbdde6345ddc498a1e046"
+    },
+    {
+      "path": "controls/splotch-netlify-install-inversion-actual-old-netlify-command.log.txt",
+      "bytes": 1673,
+      "sha256": "d4ad1ff5b9e6df7cd652fe87335f0788255c88eabbeec41072df35514e52fa4c"
+    },
+    {
+      "path": "controls/splotch-netlify-install-inversion-missing-modules-dir-qualification.log.txt",
+      "bytes": 1437,
+      "sha256": "a2f757767a2935aa9439a4543b178419c54719ea69998a947ddd3edfe141f00b"
+    },
+    {
+      "path": "controls/splotch-netlify-install-inversion-missing-project-prepare-stages.log.txt",
+      "bytes": 2153,
+      "sha256": "b7138a3be0183c92f6356f54c71696e5aaf3543cc70bbc645b917d79225b67ac"
+    },
+    {
+      "path": "controls/splotch-netlify-install-inversions-receipt.json.txt",
+      "bytes": 1485,
+      "sha256": "bf3be236f21e7ce00d8806dcf1359c5921b5d9c4e98120e1be29b497bc53929b"
+    },
+    {
+      "path": "controls/splotch-netlify-install-inversions.py",
+      "bytes": 2762,
+      "sha256": "aec534885db70e3cb3b30838aae5d8314d7d6784889bbda060cfbbd42bb71094"
+    },
+    {
+      "path": "controls/splotch-netlify-install-live.log.txt",
+      "bytes": 53872,
+      "sha256": "728e10fa6a88a7c6e56b6645d06d49ceab60a49d593970bd890abb759bd641eb"
+    },
+    {
+      "path": "controls/splotch-netlify-install-node24-focused.log.txt",
+      "bytes": 198,
+      "sha256": "5db45cbc0117e0f58eb9a4b25618e9aa565c8a7d09274adf4bd920348b72f110"
+    },
+    {
+      "path": "controls/splotch-netlify-install-quality.log.txt",
+      "bytes": 60440,
+      "sha256": "e179228e72c02473e6c27c2ffea2876d706107ff9d00db03fd68399dc43baac6"
+    },
+    {
+      "path": "controls/splotch-netlify-install-real-controls.py",
+      "bytes": 8729,
+      "sha256": "2b4906570afa7137054b0a85e962468e07ab5f08d67ff90486f092ae8de2c4d2"
+    },
+    {
+      "path": "controls/splotch-topology05-hosted-build-record.json.txt",
+      "bytes": 650,
+      "sha256": "20ba94471b4f1b06e9a535d13ef8bc1693bc09d2f62bc1e58849f33beba4ee01"
+    },
+    {
+      "path": "controls/splotch-topology05-hosted-deploy-observation.json.txt",
+      "bytes": 886,
+      "sha256": "d8774fbfea3af3c781dfc1a81c70af0519be2f8ac80b6ee014ce947733483abd"
+    },
+    {
+      "path": "controls/splotch-topology05-hosted-failure-excerpt.log.txt",
+      "bytes": 1323,
+      "sha256": "1e0d5c00e27596f45e216f749a00c1b4db2b50bc0c32fb9662866a1718f77588"
+    },
+    {
+      "path": "controls/splotch-topology05-hosted-failure-receipt.json.txt",
+      "bytes": 2407,
+      "sha256": "d05a652c9b1ef01484368e60f015f472b72b3f41db8329e1b4c31d5f04d514da"
+    },
+    {
+      "path": "controls/splotch-topology05-third-tip-site-preflight.json.txt",
+      "bytes": 529,
+      "sha256": "2d10708519f65f9a43a88e8d8e0e36690565fcad02f7a012e9dd14f0d5df09d5"
+    }
+  ]
+}

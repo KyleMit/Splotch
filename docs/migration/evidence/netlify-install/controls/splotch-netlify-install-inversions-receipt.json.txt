@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "actualSourcesRestored": true,
+  "inversions": [
+    {
+      "inversion": "actual-old-netlify-command",
+      "changedPath": "netlify.toml",
+      "selectedTitle": "gates the actual Netlify",
+      "exitCode": 1,
+      "durationSeconds": 0.31757020798977464,
+      "log": "/private/tmp/splotch-netlify-install-inversion-actual-old-netlify-command.log.txt",
+      "logSha256": "d4ad1ff5b9e6df7cd652fe87335f0788255c88eabbeec41072df35514e52fa4c",
+      "specificTestAssertionFailed": true
+    },
+    {
+      "inversion": "missing-project-prepare-stages",
+      "changedPath": "tools/netlify-production-install.mjs",
+      "selectedTitle": "before any manager child",
+      "exitCode": 1,
+      "durationSeconds": 4.033536790986545,
+      "log": "/private/tmp/splotch-netlify-install-inversion-missing-project-prepare-stages.log.txt",
+      "logSha256": "b7138a3be0183c92f6356f54c71696e5aaf3543cc70bbc645b917d79225b67ac",
+      "specificTestAssertionFailed": true
+    },
+    {
+      "inversion": "missing-modules-dir-qualification",
+      "changedPath": "tools/netlify-production-install.mjs",
+      "selectedTitle": "explicit JSON string undefined",
+      "exitCode": 1,
+      "durationSeconds": 1.1771524170180783,
+      "log": "/private/tmp/splotch-netlify-install-inversion-missing-modules-dir-qualification.log.txt",
+      "logSha256": "a2f757767a2935aa9439a4543b178419c54719ea69998a947ddd3edfe141f00b",
+      "specificTestAssertionFailed": true
+    }
+  ]
+}

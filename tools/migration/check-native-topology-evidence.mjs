@@ -4,6 +4,7 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
+import { PRODUCTION_INSTALL_CONTRACT } from '../netlify-topology-witness.mjs';
 import { artifactMap, readLockFile } from './lib/lock-artifacts.mjs';
 import { readJson } from './lib/native-identity.mjs';
 import { assertShippingConfigEvidence, inspectShippingPluginPaths } from './lib/native-config.mjs';
@@ -23,11 +24,7 @@ export function checkNativeTopologyEvidence(argv) {
     lock,
     lockSha256
   );
-  assertProductionInstallContract(
-    readJson(join(evidence, 'production-install-contract.json')),
-    root,
-    lock
-  );
+  assertProductionInstallContract(readJson(join(root, PRODUCTION_INSTALL_CONTRACT)), root, lock);
   const inventory = assertArtifactInventory(
     readJson(join(evidence, 'script-inventory.json')),
     artifactMap(lock),

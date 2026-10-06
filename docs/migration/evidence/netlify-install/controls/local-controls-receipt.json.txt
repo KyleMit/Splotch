@@ -1,0 +1,360 @@
+{
+  "status": "passed",
+  "root": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/checkout",
+  "packet": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3",
+  "sourceBase": "423769b486d81a8da0cdd1c1e6abfedc31bec757",
+  "sourceRows": [
+    {
+      "path": "netlify.toml",
+      "bytes": 9780,
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33"
+    },
+    {
+      "path": "knip.production.json",
+      "bytes": 1148,
+      "sha256": "f33eb72546618a734f2a323ec406f51b6e72b1b6de44002269a69da25c26f865"
+    },
+    {
+      "path": ".github/workflows/native-topology-proof.yml",
+      "bytes": 958,
+      "sha256": "b20661eb8cdf23d3fd9d72e315a3c15ba3a49e4597e0e71eb32a6fe3e1ca28a6"
+    },
+    {
+      "path": "tools/lib/netlify-runtime.mjs",
+      "bytes": 1578,
+      "sha256": "235770108da0ff3358666a111a40fcba02c37947e1350c1adc84a57ca14d043a"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 13396,
+      "sha256": "b3ac3610bba52ff5ac34c539025ef38b0c98f7784e81b6a713ad2620c102b52e"
+    },
+    {
+      "path": "tools/tests/netlify-production-install.test.mjs",
+      "bytes": 16856,
+      "sha256": "07a4fca0ff4d6975ec0238ef30c2e1d782de8c0fa62086e0e6d7571d0efe2728"
+    },
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "bytes": 9428,
+      "sha256": "cc3aac54e8ee253d8f3907ac2cb3a2206d392a7775f9c1b181314c4908e244f3"
+    },
+    {
+      "path": "tools/migration/gen-topology-proof-inputs.mjs",
+      "bytes": 2486,
+      "sha256": "142d67451dba749e27bcdd27686e7cc50aae7cc16272fdbf20dd7ae95c69df0b"
+    },
+    {
+      "path": "tools/migration/check-native-topology-evidence.mjs",
+      "bytes": 2145,
+      "sha256": "c157379e1cc241304ca696dac74d5915c3b662290c717e8a6a276a0a0f3a2979"
+    },
+    {
+      "path": "docs/migration/evidence/netlify-install/production-install-contract.json",
+      "bytes": 104583,
+      "sha256": "8eb060c717ec84e62028b9ee88fa38fb67dc040240426d7bb94bdd6f9d9b08f7"
+    }
+  ],
+  "scope": "Local controlled source archive plus current overlays; synthetic named-proof facts are not actual Netlify evidence",
+  "steps": [
+    {
+      "step": "development-baseline",
+      "argv": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 4.5572935830568895,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/development-baseline.log.txt",
+      "logBytes": 776,
+      "logSha256": "04ac90b9215590cffe97b6f1bd360acddf64be5bc98a730bc2f1c8fb55026b5e"
+    },
+    {
+      "step": "cached-platform-like-prod",
+      "argv": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--prod"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 2.498417666996829,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/cached-platform-like-prod.log.txt",
+      "logBytes": 534,
+      "logSha256": "4d0974ea5a9d4095672264cd4a40d5ae2dda32211fc8cd00b9a509ed2958df89"
+    },
+    {
+      "step": "cached-production-witness-refusal",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.05626012501306832,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/cached-production-witness-refusal.log.txt",
+      "logBytes": 624,
+      "logSha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "step": "force-prod-control",
+      "argv": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--prod",
+        "--force"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.17972954199649394,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/force-prod-control.log.txt",
+      "logBytes": 146,
+      "logSha256": "7701e7ab6f003a70ea7fd395cc7803a71685ca025ab317b9d8a38d4583cac1d8"
+    },
+    {
+      "step": "force-production-witness-refusal",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.05412554100621492,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/force-production-witness-refusal.log.txt",
+      "logBytes": 624,
+      "logSha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "step": "prune-prod-control",
+      "argv": [
+        "pnpm",
+        "prune",
+        "--prod"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.17686466593295336,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/prune-prod-control.log.txt",
+      "logBytes": 51,
+      "logSha256": "dac71778ab47fca188188762269890470f12fa571a1bca05ca0dd9e45743caa7"
+    },
+    {
+      "step": "prune-production-witness-refusal",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.054334791959263384,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/prune-production-witness-refusal.log.txt",
+      "logBytes": 624,
+      "logSha256": "8fe54585ab040fafce5126704fd66e28ddac1f2bd5e5242f60de3615f74d7bcc"
+    },
+    {
+      "step": "qualified-warm-ci",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 9.464228415978141,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/qualified-warm-ci.log.txt",
+      "logBytes": 5424,
+      "logSha256": "9277a39dfa4be2c3d98af7c483b84d6b674e8865af2e83a610bde31c25f9c206"
+    },
+    {
+      "step": "qualified-warm-full-witness",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.05897216696757823,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/qualified-warm-full-witness.log.txt",
+      "logBytes": 45862,
+      "logSha256": "45626bcea5a15ec96965cf5b799e7d0fc08dba2cf5114411d99005cceb889cbb"
+    },
+    {
+      "step": "nonworkspace-ci-web",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 9.391147832968272,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-ci-web.log.txt",
+      "logBytes": 5328,
+      "logSha256": "caa5cab719a5da81435b31d16f468e95ba7cbd55eb7b910a60bc1527cfc268af"
+    },
+    {
+      "step": "nonworkspace-refusal-web",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.05528079206123948,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-refusal-web.log.txt",
+      "logBytes": 634,
+      "logSha256": "a7af3e9ed8a993a5bbe891cb7781bfbb9537afee44315588b4083cabe555c4ab"
+    },
+    {
+      "step": "nonworkspace-ci-netlify-functions",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 9.377631209092215,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-ci-netlify-functions.log.txt",
+      "logBytes": 5334,
+      "logSha256": "379379f55189398355267af0613f0985ed718e062a649427a872e4a2290478bf"
+    },
+    {
+      "step": "nonworkspace-refusal-netlify-functions",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.05348420806694776,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-refusal-netlify-functions.log.txt",
+      "logBytes": 648,
+      "logSha256": "e2ab83ff5d60b37f6d356d2ce99dc6be331e7ff86c0e4b9b75339cc93572b8e5"
+    },
+    {
+      "step": "nonworkspace-ci-tools",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 9.40735020802822,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-ci-tools.log.txt",
+      "logBytes": 5335,
+      "logSha256": "6d12aded8fdc85368be2d58a976eeca5d79d6096f7062dd2fa2dfeafe7020d1d"
+    },
+    {
+      "step": "nonworkspace-refusal-tools",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.05398704099934548,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/nonworkspace-refusal-tools.log.txt",
+      "logBytes": 636,
+      "logSha256": "8e905acdeb70896cf759e5a3e249699d98f8a081d0d89a6bd0729e64b516725f"
+    },
+    {
+      "step": "shared-production-version-positive",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.05948345805518329,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/shared-production-version-positive.log.txt",
+      "logBytes": 45993,
+      "logSha256": "3c515a205fc21b8df5f5552c6d0f12a034dd65a926f5eca3ee3c4fe242055d68"
+    },
+    {
+      "step": "explicit-string-undefined-refusal",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.363955624983646,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/explicit-string-undefined-refusal.log.txt",
+      "logBytes": 1278,
+      "logSha256": "725823d2701222fd1e717ce86cf17df75edd0c8ad86a13f7e3368e6bf33abcda"
+    },
+    {
+      "step": "module-root-alias-refusal",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 0.02450687496457249,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/module-root-alias-refusal.log.txt",
+      "logBytes": 1406,
+      "logSha256": "47ed580fa1c7e37c9e41d5fdeed68929916c985b41a89bf0c1489f841e2079f3"
+    },
+    {
+      "step": "qualified-cold-ci",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 8.768699583015405,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/qualified-cold-ci.log.txt",
+      "logBytes": 5313,
+      "logSha256": "542fc55d9fb07e8a96651c189232b81d0bdfb0eefcf9e6dbe380b853e88b33c3"
+    },
+    {
+      "step": "qualified-cold-full-witness",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"423769b486d81a8da0cdd1c1e6abfedc31bec757\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.05921179195865989,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/qualified-cold-full-witness.log.txt",
+      "logBytes": 45862,
+      "logSha256": "45626bcea5a15ec96965cf5b799e7d0fc08dba2cf5114411d99005cceb889cbb"
+    },
+    {
+      "step": "qualified-production-release-build",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 6.408064124989323,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/qualified-production-release-build.log.txt",
+      "logBytes": 62483,
+      "logSha256": "952eeb00412b39e6337fa051496dbe965e03bb96e1a7f9f0eb868e297183c257"
+    },
+    {
+      "step": "failed-frozen-install-no-build",
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "node tools/netlify-production-install.mjs && node -e 'require(\"node:fs\").writeFileSync(\"build-continuation\",\"ran\")'"
+      ],
+      "exitCode": 1,
+      "durationSeconds": 8.10036287503317,
+      "log": "/private/tmp/splotch-netlify-install-real-controls-_3hyfdc3/failed-frozen-install-no-build.log.txt",
+      "logBytes": 6145,
+      "logSha256": "6a7f679100fafb8920860204c383830ea265d72cf99a54f62a6172c76d209bbb"
+    }
+  ],
+  "sharedPositiveArtifact": {
+    "key": "babel-plugin-polyfill-corejs3@0.14.2",
+    "name": "babel-plugin-polyfill-corejs3",
+    "version": "0.14.2"
+  },
+  "outsideSentinelUnchanged": true,
+  "sourceOwnersUnchanged": true,
+  "knownLimit": "pnpm clean empties module trees before a failed frozen install; rollback is not claimed"
+}
