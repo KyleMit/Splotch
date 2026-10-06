@@ -23,6 +23,7 @@ vi.mock('$app/environment', () => ({
 vi.mock('$lib/drawing/engine', () => ({
   committedBrushMode: () => ctrl.mode,
   getDrawingWorkDebug: () => ({ lastCommand: { rasterizedOps: ctrl.rasterizedOps } }),
+  getMagicWorkDebug: () => ({ magicWitnessRevision: 1 }),
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
   getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
   replayHarnessStroke,
@@ -177,6 +178,7 @@ it('publishes the read-only profiling seams in an instrumented physical build', 
   installDevHarnessSeam();
   expect(window.__committedBrushMode?.()).toBe('pen');
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
+  expect(window.__drawingDebug?.getMagicWorkDebug()).toEqual({ magicWitnessRevision: 1 });
   expect(window.__aiGenerate).toBe(generateAiImage);
   expect(window.__prepareRefusedAiKeyForget).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
