@@ -1,7 +1,8 @@
 # Dependency health during migration
 
-Status: the external dependency repair passes local validation. Claude's implementation review and
-PR CI remain pending. This maintenance unit does not establish product parity, select an
+Status: the external dependency graph is patched.
+[PR 2692](https://github.com/KyleMit/Splotch/pull/2692) owns the independent implementation-review
+and exact-head CI records. This maintenance unit does not establish product parity, select an
 architecture, or provide candidate performance evidence.
 
 ## External source-map-js repair
@@ -47,6 +48,10 @@ does not exercise the dangerous embedded indexed-map path described below.
 This lock repair does not rewrite code embedded in published dependencies. Embedded
 source-map-family code is outside this unit's scope; magicast is the specifically inspected
 `source-map-js` residual, not a complete inventory of every bundled source-map implementation.
+Sibling Mozilla `source-map` implementations, both external and vendored, also contain unchecked
+indexed-map offset handling in the inspected tree. This advisory does not cover that lineage, and
+this inspection does not establish equivalent exploitability or consumer exposure. A green audit
+does not certify those implementations; their actual caller/map boundaries need separate evaluation.
 
 `magicast@0.5.4` embeds `source-map-js@1.2.1` in its published build. The installed artifact's
 `inlinedDependencies` metadata and consumer code retain the pre-patch offset handling. A lock
