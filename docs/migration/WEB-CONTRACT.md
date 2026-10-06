@@ -15,6 +15,13 @@ surfaces does not establish a mobile rendering benefit and increases the simulta
 surface. The drawing route remains a static, CDN-served document unless a reviewed decision replaces
 that contract with measured equivalent behavior.
 
+After product cutover, retained Svelte/SvelteKit code still owns those hosted routes and server
+contracts. The architecture check chooses whether the shared product UI is embedded in a SvelteKit
+route or served by a separate build on the same origin. Record the remaining module and runtime
+responsibilities for that choice: an embedded route retains a scoped host shell; a separate build
+owns its product document and integrates with the retained hosted routes. Retire the duplicated
+Svelte product implementation rather than treating all retained hosting code as obsolete.
+
 The API must continue serving installed clients, including older Capacitor builds. Preserve the
 [wire contracts](../API.md), [API headers](../../web/src/lib/apiHeaders.ts),
 [CORS and cache hooks](../../web/src/hooks.server.ts), and legacy trusted origins in
@@ -97,8 +104,11 @@ Evidence: [policy owner](../../web/securityPolicy.ts), [CSP checks](../../web/te
 ### Browser Back and dialog lifecycle
 
 Back closes the top dialog before ordinary navigation. Repeated openings, explicit closes, unmounts,
-refreshes, and return navigation leave no stray history layers. Preserve the Android browser and
-standalone-PWA drawing guard while ordinary desktop tabs retain normal navigation.
+refreshes, and return navigation leave no stray history layers. Preserve the drawing guard in
+standalone display mode or coarse-pointer browsers, including iPhone and iPad Safari touch tabs.
+Include an iOS-Safari-shaped coarse-pointer scenario: Back closes the dialog, consumes the drawing
+guard once, then resumes ordinary navigation. Fine-pointer tabs outside standalone mode retain
+normal navigation.
 
 Evidence: [history owner](../../web/src/lib/boot/webBackHandler.ts),
 [dialog dismissal](../../web/src/lib/boot/dialogBack.ts), and
@@ -120,14 +130,23 @@ and [test-tier boundaries](../TESTING.md).
 1. Render a representative shared control/dialog and retained drawing surface through each viable
    web vocabulary. Prove prerendering, CSP compatibility, theme seeding, canvas ownership, and
    browser history on Safari and Chromium before extrapolating from native primitives.
-2. Inventory necessary web adapters for HTML semantics, CSS media queries/variables, dialog focus,
+2. Exercise every surviving UI arm in its chosen realistic host: embedded in the retained SvelteKit
+   route, or a separate product build deployed with the retained routes on the same origin. A
+   standalone harness pass is insufficient. Prove prerendering and hash/nonce CSP, pre-paint seeds
+   through route transitions, one browser history coordinator, and one service worker
+   registration/activation owner covering the deployed assets and navigation scope. Verify matching
+   shell/chunk precaches, app-shell fallback, active-ink-safe updates, and admin cache bypass across
+   that host boundary. Measure the full startup graph, including any retained Svelte runtime,
+   against the budget owners; identify which Svelte modules remain responsible after cutover.
+   Document the host choice and demonstrated costs before selecting the foundation.
+3. Inventory necessary web adapters for HTML semantics, CSS media queries/variables, dialog focus,
    text enlargement, and PWA lifecycle. Judge their recurring maintenance cost against the intended
    shared UI benefit; visual similarity alone is insufficient.
-3. Separate portable behavior from browser rendering. The
+4. Separate portable behavior from browser rendering. The
    [engine facade](../../web/src/lib/drawing/engine.ts) imports SvelteKit and rune state and owns
    DOM/Canvas2D objects; its imperative API does not make it a drop-in native module. Keep its tuned
    renderer behind an explicit web adapter.
-4. Demonstrate build boundaries: native dependencies absent from web startup, server modules absent
+5. Demonstrate build boundaries: native dependencies absent from web startup, server modules absent
    from clients, correct deploy watched paths, compatible asset staging, and profiling markers
    stripped from release artifacts. Preserve deliberate token startup boundaries documented in
    [ADR-0071](../adrs/0071-design-token-single-source.md).

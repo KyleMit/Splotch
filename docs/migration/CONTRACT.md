@@ -68,6 +68,11 @@ Review and run bounded checks for:
   representative drawing appearance, geometry, export, native audio, and service bindings have a
   feasible ownership model. Dependency and OS-floor choices are explicit. Do not infer a floor from
   upstream `main` or make Skia's newest backend mandatory for every RN design.
+* Matched mechanism checks for both React Native UI/native paper and retained Svelte UI/native
+  paper: exercise the motivating action families identified by current Phase 0 controls, including
+  representative controls and transitions over a live paper surface. Use equivalent visible state,
+  validated observables, and preregistered thresholds. Diagnose whether each arm removes the
+  attributed surface or surrounding-UI cost; compile and feature feasibility alone cannot select RN.
 * Native drawing inside Capacitor: test the strongest mechanism by which it could remove the
   identified surface/transition cost, while retaining the Svelte UI. Compare using the same
   validated instrument where possible. A structural inability to preserve a required interaction is
@@ -78,6 +83,17 @@ Review and run bounded checks for:
 * Native continuity: legacy secure entries and preferences are readable without destructive writes;
   installation identity and entitlements match; pending WebView pictures can be recovered; download
   lifecycle identities have a preservation or reconciliation path.
+
+Apply the same mechanism and fidelity bar to both native candidates, and allow bounded tuning before
+interpreting early timing. If native paper removes the dominant reproducible costs while retaining
+Svelte, prefer that path when its host/input/layer glue has the lower recurring burden. Select full
+RN when its matched checks demonstrate removal of the motivating cost and it offers a material
+additional mechanism benefit or a lower demonstrated integration/recurring burden, and the shared
+web and upgrade contracts hold. If surrounding WebView costs remain material in the hybrid, that is
+a reason to prefer full native UI; if RN fails required fidelity, continuity, or web-sharing checks,
+it must be repaired or yield to the viable alternative. Record thresholds and ownership comparisons
+before seeing candidate results. These checks select a foundation; the integrated, tuned
+application's final performance verdict remains a later gate.
 
 Evaluate Flutter or separate platform UI plans in more depth if a leading path fails a structural
 requirement or its recurring burden dominates. Select the architecture in an ADR with alternatives,
@@ -111,11 +127,26 @@ witness dispositions do not automatically transfer to a native renderer. A chang
 or budget requires a reviewed decision and evidence, never a weakened test to make a candidate
 green.
 
+Retain the physical iPad per-release stroke-commit obligation in
+[ADR-0173](../adrs/0173-physical-ipad-holds-the-commit-contract.md), owned by
+[commit reduction](../../tools/perf/lib/commit-contract.mjs). Its two deposition arms run in the web
+engine harness; the `glaze-direct` arm does not prove installed-native performance. A replacement
+commit owner requires a reviewed equivalent workload and observable, with missing samples refused
+rather than reported as zero, before signed artifacts are published.
+
 Early measurements diagnose mechanisms and feasibility. Overall performance is judged after the
 complete UI is integrated and tuned. Require repeatable improvement in the identified primary native
 problems, no unexplained regression in passing workloads, and complete-app startup, memory, thermal,
 long-session, lifecycle, input-to-visible-result, and action-readiness evidence. Define success
 thresholds for each causal comparison before inspecting its results.
+
+Account for app-attributable renderer and GPU resources as well as the application process. The
+Capacitor reference includes its Android WebView renderer or iOS WebContent processes; a native
+candidate can move those costs into its app process. Name the instruments, capture the same session
+states, and report process breakdowns and attributable graphics allocations without double-counting
+shared GPU/system processes. Where attribution is unavailable, report the limitation and comparable
+whole-device observations separately; an app-process-only footprint cannot establish a memory win.
+Apply the same ownership and matched-condition discipline to energy and thermal comparisons.
 
 Physical web/native iPad and Android rows approve release; simulators/emulators provide diagnosis
 and build coverage. Preserve the completion policy in
@@ -139,10 +170,13 @@ exact head's applicable CI, and merge into the integration branch. Review the ph
 adding the next foundation. Preserve a durable work ledger and all rejected assumptions.
 
 Web, Android, and iOS have independent readiness gates. Keep a shipping reference and staged
-candidate until that target earns parity and measured readiness. Validate upgrades from previous
-signed artifacts with the same app identity, not solely clean installs or different-ID development
-apps. Inventory evolving main features and migrate them before declaring parity. Keep old hosted
-API/CORS/download contracts working while supported installed clients still depend on them.
+candidate until that target earns parity and measured readiness. Validate upgrades from the
+supported signed source-artifact matrix in [UPGRADES.md](UPGRADES.md) with the same app identity,
+not solely clean installs or different-ID development apps. Record each distribution channel's
+signing proof and allocate candidate build numbers through the existing release owner alongside
+main's release train. Inventory evolving main features and migrate them before declaring parity.
+Keep old hosted API/CORS/download contracts working while supported installed clients still depend
+on them.
 
 ## Migration completion
 

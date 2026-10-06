@@ -24,52 +24,135 @@ workflows belong to [the Android guide](../MOBILE/android.md) and [the iOS guide
 Preserve those owners rather than maintaining a second release version or application-ID registry in
 the new application.
 
+## Supported upgrade sources
+
+The source set includes skipped releases, not only the immediately preceding build. The
+[published release inventory](https://api.github.com/repos/KyleMit/Splotch/releases?per_page=100)
+was read on 2026-10-06: the first attached Android artifact is
+[v1.0.0](https://github.com/KyleMit/Splotch/releases/tag/v1.0.0), the first attached iOS artifact is
+[v1.4.0](https://github.com/KyleMit/Splotch/releases/tag/v1.4.0), and the latest published tag with
+both artifacts is [v1.6.0](https://github.com/KyleMit/Splotch/releases/tag/v1.6.0).
+[Android distribution notes](../MOBILE/android.md) confirm Closed testing as of 2026-09-09;
+[the iOS checklist](../MOBILE/ios.md) does not establish a completed TestFlight/App Store release. A
+GitHub asset is published-artifact evidence, not proof of a store rollout.
+
+Conservatively support every Android release tag from v1.0.0 and every iOS-containing release tag
+from v1.2.0 through the latest release at cutover. The iOS tree first appears in v1.2.0; its and
+v1.3.0's store distribution, and v1.2.0's missing attached native artifacts, require channel
+inventory. Do not infer that no user installed them. Freeze the oldest actual store build, latest
+actual store build, artifact digests/embedded versions, effective origins, native dependency locks,
+and distribution/signing history before accepting upgrade evidence.
+
+| Source class                           | Supported targets and artifact evidence                                                                | Persisted formats to seed and inspect                                                                                                                                                    | Acceptance                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| v1.0.0 / v1.0.1                        | Android; attached AABs                                                                                 | Dual-layer strings/booleans/integers, legacy plaintext access code/API key, native gemini-api-key vault; inline keys in src/lib/state/settings.svelte.js and strokeWidth.svelte.js       | Pending                                        |
+| v1.1.0                                 | Android; attached AAB                                                                                  | TypeScript settings/secure/storage owners under src/lib; API-key vault and plaintext access code; no coloring-pack jobs or held-picture IDB                                              | Pending                                        |
+| v1.2.0                                 | Android and iOS source; no attached native artifact                                                    | src/lib storage/secure/settings, sound-volume choices; iOS default non-sync accessibleWhenUnlocked items                                                                                 | Pending; distribution/artifact recovery        |
+| v1.3.0                                 | Android AAB; iOS source                                                                                | web/src/lib storage/secure/settings, Pencil and installation preferences; iOS default Keychain class                                                                                     | Pending; iOS distribution/artifact recovery    |
+| v1.4.0                                 | Android AAB and first attached iOS IPA                                                                 | Central storageKeys.ts including theme/brush and splotch-advanced-controls; API-key vault; no native pack jobs                                                                           | Pending                                        |
+| v1.5.0                                 | Android AAB and iOS IPA                                                                                | Parental policy/legacy gate keys, optional brushes, native pack directories/jobs/sessions, device-derived installation grant; managed access code remains plaintext                      | Pending                                        |
+| v1.6.0                                 | Android AAB and iOS IPA; latest published tag at this audit                                            | Managed-access-code vault plus API-key vault, per-source sounds/session hints, pack jobs; iOS accessibleWhenUnlocked; no pending-removal list, vault-absence marker, or held-picture IDB | Pending                                        |
+| Post-v1.6.0 main / campaign candidates | Unreleased source at this audit; add every distributed candidate and every main release before cutover | Pending durable removals, held-picture IDB/hint, per-write device-only iOS policy, changed drawer key and newer formats only where that source actually writes them                      | Pending; applicability depends on distribution |
+
+Freeze each tag's own source manifest rather than projecting HEAD's storageKeys.ts backward. For
+early tags inspect the inline key declarations and their readers/writers; later tags own their
+central registry. Native and web-only records are distinct: the free-generation installation string
+already existed on the v1.6.0 web path before its registry move, but native identity uses Device ID.
+Obsolete settings such as splotch-advanced-controls need an explicit reviewed semantic mapping to
+the replacement's drawer policy; absence from HEAD's registry is not permission to drop the choice.
+
+Run each source class's applicable same-ID scenarios. Only v1.0.0/v1.0.1 are provisionally collapsed
+for persistent-data fixtures: storage.js, secureStorage.js, settings/stroke-width/platform modules,
+Capacitor config, native manifest/MainActivity, and resolved dependency lock are identical apart
+from the root release version. Their attached AAB digests also match; verify embedded-version/source
+association rather than treating a tag label as proof. Do not extend this collapse to other tags
+without comparing keys, parsers, namespaces, accessibility, deletion/hydration, identity, jobs, and
+native dependency formats. UI/service changes still need their applicable checks.
+
+Any main release or distributed integration candidate during the campaign joins this matrix with its
+exact commit/artifact/channel and format differences. Earlier readers must remain available until
+every supported source class is accepted; “HEAD works” cannot retire legacy access.
+
 ## Persistent data inventory
 
-| Data                                 | Legacy location and format                                                                                                                                                                                         | Replacement obligation                                                                                                       |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Parent settings and policy           | [STORAGE_KEYS](../../web/src/lib/storageKeys.ts) and [dual-layer storage](../../web/src/lib/storage.ts): localStorage plus native Preferences                                                                      | Recover recognized settings without resetting parent gates or overwriting newer mutations.                                   |
-| Durable settings on Android          | Preferences' SharedPreferences file `CapacitorStorage`, with bare Splotch keys and string values                                                                                                                   | Read the existing file or migrate it transactionally into a chosen durable backend.                                          |
-| Durable settings on iOS              | Preferences' `UserDefaults.standard` keys prefixed `CapacitorStorage.`, with string values                                                                                                                         | Read the prefixed keys; a different UserDefaults suite is not the legacy store.                                              |
-| Pending removals                     | `STORAGE_KEYS.pendingDurableRemovals` contains a JSON key list                                                                                                                                                     | Complete recorded removals before treating surviving durable values as credentials or settings to restore.                   |
-| BYO API key and managed code         | [secureStorage.ts](../../web/src/lib/secureStorage.ts): logical names `gemini-api-key` and `managed-access-code`                                                                                                   | Preserve historical addresses, confidentiality, and confirmed-absence versus read-failure behavior.                          |
-| Secure plugin keys                   | Plugin prefix `capacitor-storage_` followed by the logical name; plugin payload is a JSON-encoded string                                                                                                           | A reader must decode the existing payload before returning the secret to application state.                                  |
-| Android encrypted secrets            | SharedPreferences file `WSSecureStorageSharedPreferences`; matching prefixed AndroidKeyStore alias; AES/GCM ciphertext followed by U+0010 and IV, both Base64 without padding or wrapping; plaintext is UTF-8 JSON | Rebind the existing implementation or verify an equivalent reader; replacing the package alone does not recover old entries. |
-| iOS secure secrets                   | KeychainSwift-backed items under the prefixed keys, with synchronization disabled and device-only accessibility selected by the application                                                                        | Preserve accessible keychain scope and device-only writes; verify reads against the previous signed artifact.                |
-| Failed-save pictures                 | [unsavedPictureStore.ts](../../web/src/lib/drawing/unsavedPictureStore.ts): WebView IndexedDB database `splotch-unsaved-pictures`, store `held`, key `pictures`                                                    | Import exact bytes, MIME type, base name, failure outcome, and signature before retiring legacy storage access.              |
-| Failed-save hint                     | `STORAGE_KEYS.unsavedPicturesHeld` is mirrored to Preferences; the hint contains no picture bytes                                                                                                                  | Do not equate reading the hint with recovering the pictures.                                                                 |
-| Coloring books and pending downloads | Native directories, markers, and jobs described below                                                                                                                                                              | Keep verified installed content and reconcile background work across the upgrade.                                            |
+| Data                       | Source location and format                                                                                                                                                    | Replacement obligation                                                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Native live settings       | The old WebView's localStorage at its frozen effective origin; source-specific key names and string serialization from its [storage owners](../../web/src/lib/storageKeys.ts) | Export the live snapshot before replacing WebView access; present local values win over stale Preferences.                         |
+| Android settings fallback  | Preferences SharedPreferences file CapacitorStorage, with bare application keys                                                                                               | Recover evicted/missing local values using the source's reconciliation rules; do not read this mirror as the only settings source. |
+| iOS settings fallback      | UserDefaults.standard with CapacitorStorage. prepended to each key                                                                                                            | Preserve exact names and recover only after reconciling the live local snapshot.                                                   |
+| Pending durable deletions  | Post-v1.6.0 splotch-pending-durable-removals, JSON array of supported native storage keys, mirrored to Preferences                                                            | Union the source's valid local/durable lists; a present live local value supersedes its pending removal.                           |
+| Secure logical keys        | gemini-api-key; managed-access-code only in source versions that write it                                                                                                     | Native plugin prefix capacitor-storage_ and JSON-encoded string payload; validate the decoded string.                              |
+| Android encrypted secrets  | WSSecureStorageSharedPreferences; matching prefixed AndroidKeyStore alias; AES/GCM ciphertext then U+0010 then IV, both Base64 without padding/wrapping; UTF-8 JSON plaintext | Rebind or verify an equivalent reader; package replacement alone does not recover entries.                                         |
+| Shipped iOS secure secrets | Non-sync KeychainSwift items under the prefixed keys; released native setters through v1.6.0 omit access and use accessibleWhenUnlocked                                       | Read with the existing team/access-group scope; harden only through the transactional policy below.                                |
+| Post-v1.6.0 iOS writes     | Same namespaces/payload, synchronization off, whenUnlockedThisDeviceOnly on each new save                                                                                     | Also read earlier accessibleWhenUnlocked items; a changed default never rewrites an existing item automatically.                   |
+| Held failed-save pictures  | Post-v1.6.0 WebView IndexedDB database splotch-unsaved-pictures, store held, key pictures                                                                                     | Import exact bytes, MIME/base name, failure outcome and signature only for sources that contain this store.                        |
+| Failed-save hint           | Post-v1.6.0 STORAGE_KEYS.unsavedPicturesHeld in the settings layers; no picture bytes                                                                                         | Probe actual IDB records even when the hint is missing or stale.                                                                   |
+| Coloring books/downloads   | Source-version native directories, markers and jobs below                                                                                                                     | Preserve completed content and reconcile background ownership from that source's format.                                           |
 
-Preferences and secure-plugin details describe the installed legacy implementation. Freeze the
-previous artifact's dependency lock and inspect its actual implementation when writing the import
-adapter; matching logical key names alone does not establish namespace, encoding, or keychain
-compatibility. [pnpm-lock.yaml](../../pnpm-lock.yaml) identifies the repository's resolved tree.
+These rows distinguish released and unreleased source formats. Freeze the installed artifact's
+resolved dependencies, including its pnpm-lock.yaml or earlier package-lock.json and iOS native
+package lock. HEAD's [pnpm-lock.yaml](../../pnpm-lock.yaml) identifies HEAD, not every installed
+version. Matching logical names alone does not prove namespace, encoding or accessibility.
 
-[ADR-0005](../adrs/0005-dual-layer-storage.md) defines durable recovery. Credential hydration
-follows durable recovery so a legacy plaintext credential surviving only in Preferences can migrate
-before both plaintext copies are scrubbed.
-[Persisted-state boot](../../web/src/lib/boot/persistedState.ts) and the credential coordinators
-preserve that order. Import failure must keep its recoverable source and remain retryable; it must
-not mark an unreadable vault empty or silently change an active gate.
+### Legacy WebView settings and picture bridge
 
-### Legacy WebView picture bridge
+Retain a narrowly scoped reader of the old WebView's persistent profile/origin until settings and
+applicable held pictures are reconciled. Export the source-specific localStorage snapshot, including
+its pending-removal list when present, and read Preferences independently. A failed local read is
+not proof of absence. Do not parse undocumented browser database files or silently switch origins.
 
-The replacement must retain a narrowly scoped route to the old WebView's persistent data store and
-origin until pending pictures have been recovered. Freeze the previous artifact's effective origin
-and storage configuration. A legacy reader exports the validated IndexedDB record to the
-replacement's durable picture store. Avoid directly parsing undocumented browser database files. The
-destination acknowledges a complete durable write before the source is cleared.
+[storage.ts](../../web/src/lib/storage.ts) writes localStorage synchronously and mirrors Preferences
+without awaiting it. Its reconcileStorageValues restores durable only when local is absent, backs up
+local when durable is absent, and leaves local authoritative when both exist. Import that effective
+live state. Resolve it before credential hydration or visible parent policies, following
+[ADR-0005](../adrs/0005-dual-layer-storage.md) and
+[persisted-state boot](../../web/src/lib/boot/persistedState.ts).
 
-The import is idempotent across interruption, process death, and repeated boot. It cannot overwrite
-pictures captured by the replacement while an earlier read is settling. Missing records, failed
-reads, invalid records, and successful imports have distinct outcomes. Keep source bytes on any
-failed import. Bound transfers and run them away from the input/render hot path.
+For sources with pending removals, union both valid lists before restoration. If the live local
+value is present, a newer write superseded removal: retain that value and settle only its tombstone.
+If local is absent and removal is pending, suppress durable restoration and retry durable deletion;
+clear its tombstone only after acknowledged deletion. Settlements must re-read live pending state,
+so a concurrent write/removal cannot be overwritten by a stale import snapshot.
 
-[Save-failure state](../../web/src/lib/state/saveFailure.svelte.ts) owns retention, deduplication,
-and retry behavior. A parent returning from device Settings must be able to retry the original
-failed picture even if the canvas was cleared or the operating system terminated the application.
-Retire the bridge only after upgrade evidence demonstrates recovery or confirmed absence for
-supported legacy states; the exact retirement policy remains an implementation decision.
+Released sources through v1.6.0 have no tombstone. Local absence plus a durable value can mean
+eviction or an unacknowledged intentional deletion; the snapshot cannot distinguish them. Preserve
+the source's historical recovery rule and secure-vault precedence, and review explicit ambiguous
+credential/removal cases before implementing import. Do not invent HEAD markers for those sources or
+promise to infer an unrecorded removal. Successful vault reads take precedence over residual
+plaintext; unreadable vaults are retryable failures, not confirmed empty vaults.
+
+For held pictures, the validated IDB record transfers to the replacement's durable picture store. A
+complete durable acknowledgement precedes clearing the source. Import is idempotent across
+interruption/process death and cannot overwrite new replacement pictures while an older read
+settles. Missing, failed, invalid and successfully imported records have distinct outcomes; keep
+source bytes on failure. Bound transfers away from drawing hot paths.
+[unsavedPictureStore.ts](../../web/src/lib/drawing/unsavedPictureStore.ts) and
+[save-failure state](../../web/src/lib/state/saveFailure.svelte.ts) own
+retention/deduplication/retry. Retire the reader only after evidence covers supported sources and
+confirms recovery or absence.
+
+### iOS Keychain accessibility transition
+
+Released
+[v1.6.0 secure setters](https://github.com/KyleMit/Splotch/blob/v1.6.0/web/src/lib/secureStorage.ts)
+call SecureStorage.set without an access option. Its
+[native lock](https://github.com/KyleMit/Splotch/blob/v1.6.0/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved)
+pins KeychainSwift; the default is accessibleWhenUnlocked, synchronization off. HEAD's
+[explicit device-only writer](../../web/src/lib/secureStorage.ts) changes future saves, not old
+items.
+
+Choose transactional hardening after a successful validated legacy read: update that same non-sync
+item to whenUnlockedThisDeviceOnly in the same accessible account/service/access-group namespace,
+then verify its value and accessibility. Use an atomic SecItemUpdate path that retains the old item
+on failure; the legacy KeychainSwift set deletes before adding, so calling it again is insufficient.
+Do not remove/recreate the old item before the durable update succeeds. Locked-device, read, update,
+or verification failures retain recoverable data and a retryable state; they never write an
+empty-vault marker or discard plaintext before successful secure persistence. New writes use
+device-only access. Test with an item written by the released setter, not a HEAD-seeded item.
+
+[KeychainSwift defaults/set behavior](https://github.com/evgenyneu/keychain-swift/blob/21.0.0/Sources/KeychainSwift.swift),
+[accessibility defaults](https://github.com/evgenyneu/keychain-swift/blob/21.0.0/Sources/KeychainSwiftAccessOptions.swift),
+[SecItemUpdate](https://developer.apple.com/documentation/security/secitemupdate(_:_:)).
 
 ## Installation allowance identity
 
@@ -152,21 +235,54 @@ native runtime. Preserve
 
 ## Same-ID signed upgrade evidence
 
-Record previous/candidate commit, artifact digest, signing relationship, OS/device, execution mode,
-seeded state, observed result, and artifact links for each scenario. Read-only fixtures supplement
-these runs; they do not replace installing the previous signed artifact and updating it in place.
+Candidate artifacts come from an exact reviewed codex/native-migration integration commit after
+their unit PRs are merged into that branch. Unreviewed unit heads cannot produce store-track upgrade
+evidence. Record source/candidate commit, artifact digest and embedded versions, signing
+certificate/ team and keychain entitlements, channel, OS/device, seeded state, observed result and
+artifact links. Read-only fixtures supplement in-place previous-artifact upgrades; they do not
+replace them.
 
-| Scenario                                | Acceptance                                                                                                                                                | Status  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Existing settings and parent gates      | All recognized values survive; pending deletions do not resurrect; no default-state flash bypasses a gate.                                                | Pending |
-| Secure and legacy plaintext credentials | Existing secrets load, successful migration removes plaintext, failed migration preserves recoverable data, and removal stays removed after relaunch.     | Pending |
-| Partly spent installation grant         | Pseudonym is identical and the server retains the existing allowance.                                                                                     | Pending |
-| Held failed-save pictures               | Upgrade, interruption, Settings return, and repeated launch preserve exact bytes and retry behavior without duplication.                                  | Pending |
-| Installed and partial coloring books    | Airplane-mode upgrade retains complete books; interrupted/corrupt books stay hidden; unchanged content is not redownloaded.                               | Pending |
-| Background pack work during upgrade     | Both scheduling policies resume or reconcile safely; disabling/removing cancels work without stale callbacks restoring content.                           | Pending |
-| Native services and lifecycle           | Back, gates, Pencil, photo permissions, orientation, audio, connectivity, and background/rotation recovery retain product behavior.                       | Pending |
-| Supported floor and optimized release   | Candidate installs and exercises its required behavior on declared floors and physical release targets, with release configuration and truthful evidence. | Pending |
+| Channel                                                                                                                        | What it proves                                                                    | Remaining requirement                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Android tag-built previous APK and integration candidate APK, both signed with the same local upload key and production app ID | Native data/Keystore/WebView continuity across the implementation change          | Matching local upload keys does not establish matching the Play-held app-signing key or prove a Play-installed app can update. |
+| Android existing Play install to a reviewed candidate on a Play testing track under the existing app                           | Actual Play signing lineage, server allowance and store-installed data continuity | Verify existing certificate/lineage and track history; internal app sharing re-signs with another key and is not this proof.   |
+| iOS tag-built previous and integration candidate, same registered app ID/team/access groups and compatible device provisioning | Data, Keychain and WebView continuity across the implementation change            | Does not establish App Store/TestFlight distribution; confirm the oldest actual distributed source separately.                 |
+| iOS existing distributed install to candidate through TestFlight under the existing App Store Connect record                   | Actual distribution/app/keychain continuity                                       | Verify distribution history, signing entitlements and in-place update; installability/review status is separate evidence.      |
 
-Physical-device access, signing success, dependency toolchain compatibility, and the native audio
-implementation are unverified. Current host tool availability is not acceptance evidence. Resolve
-these through the canonical mobile/capture workflows while independent implementation work proceeds.
+[Play App Signing](https://developer.android.com/studio/publish/app-signing),
+[internal sharing signing](https://support.google.com/googleplay/android-developer/answer/9844679),
+[TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
+Signing and distribution-channel validation remain pending; a local upload-key fixture is useful
+continuity evidence but cannot be relabeled a store-lineage pass.
+
+Before any candidate upload, reconcile the latest main release values, consumed values in both store
+consoles and all campaign reservations. Reserve a unique monotonic value above that shared maximum
+in the canonical release/version record through
+[cut-release's version-code policy](../../tools/release/cut-release.mjs) and
+[native-version.mjs](../../tools/release/lib/native-version.mjs); the existing owner must write both
+native targets, including reviewed candidate path support when needed. Publish the reservation to
+the shared release train before uploading so main's next release advances beyond it. No manual
+Gradle/Xcode bumps, separate candidate counter, reused failed-upload number, or simultaneous
+main/candidate reservation is allowed. Inspect embedded versions before upload and record the
+consumed reservation even if distribution or review fails. The current writer only compares local
+files; remote channel/reservation reconciliation is a required preceding step, not a capability it
+already implements. Marketing-version/channel rules require the corresponding store inventory.
+
+| Scenario                          | Acceptance                                                                                                                                                                               | Status  |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Source matrix and artifacts       | Each applicable source class upgrades; any collapse has format evidence; store history, digests and embedded versions are verified.                                                      | Pending |
+| Conflicting live/durable settings | Newer local choices win; missing local values recover from Preferences; stale/missing mirror and interrupted local export do not bypass gates.                                           | Pending |
+| Pending/superseded removals       | Applicable source tombstones union; a newer local write survives; absent local/pending deletion cannot restore stale durable data; concurrent settlements preserve later requests.       | Pending |
+| Untombstoned removal ambiguity    | Released absent-local/present-durable cases follow reviewed source recovery/vault precedence; evidence states what cannot be inferred.                                                   | Pending |
+| Secure/plaintext credentials      | Released iOS accessibility loads and hardens atomically; update/read failures retain recovery; successful secure persistence precedes plaintext scrub; source-specific removals survive. | Pending |
+| Partly spent installation grant   | Source/replacement pseudonyms match and the server retains spent allowance in the tested signing channel.                                                                                | Pending |
+| Held failed-save pictures         | Applicable sources retain exact bytes through upgrade/interruption/Settings return/repeated launch without loss or duplication.                                                          | Pending |
+| Installed/partial coloring books  | Applicable sources keep complete offline books; corrupt/incomplete books stay hidden; unchanged content is retained.                                                                     | Pending |
+| Background work during upgrade    | Source scheduling/session identifiers resume or reconcile safely; disabling/removing cancels work without stale restoration callbacks.                                                   | Pending |
+| Services/lifecycle and floors     | Back, gates, Pencil, photo denial/recovery, orientation, audio, connectivity and background/rotation behavior pass on declared floors and optimized physical release targets.            | Pending |
+| Channel/version reservation       | Local continuity and actual store lineage are separately verified; reviewed integration artifacts consume reserved monotonically increasing native versions.                             | Pending |
+
+Physical access, signing/channel history, native dependency compatibility, legacy artifact recovery
+and the replacement audio implementation are unverified. Host tool availability and published
+artifacts do not establish their acceptance. Resolve these through canonical mobile/ capture/release
+workflows while independent implementation work proceeds.
