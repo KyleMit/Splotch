@@ -63,7 +63,8 @@ function discoverCandidateFiles(candidate) {
       } else if (
         SOURCE_EXTENSION.test(entry.name) ||
         /^tsconfig.*\.json$/.test(entry.name) ||
-        /^(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(entry.name) ||
+        (candidateConfigurationKind(relative(candidate, path)) &&
+          /^(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(entry.name)) ||
         ['app.json', 'app.config.json'].includes(relative(candidate, path))
       ) {
         const physical = realpathSync(path);
@@ -212,6 +213,6 @@ export function assertDeclaredCandidateImports(candidate, manifest) {
     scope:
       'All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references',
     nonCoverage:
-      'Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned',
+      'Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned',
   };
 }

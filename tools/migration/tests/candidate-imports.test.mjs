@@ -24,6 +24,8 @@ describe('candidate source import ownership', () => {
     expect(result.generatedSubpathExclusions).not.toContain('android');
     expect(result.generatedSubpathExclusions).not.toContain('ios');
     expect(result.nonCoverage).toContain('Podfile/Gradle provider-context');
+    expect(result.nonCoverage).toContain('Metro string module references');
+    expect(result.nonCoverage).toContain('alternate config lookup');
   });
 
   it('accepts maintained platform, extension, dotfile, rename and Node-role positives', () => {
@@ -306,6 +308,41 @@ describe('candidate source import ownership', () => {
     expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
       'excluded candidate output'
     );
+  });
+
+  it.each([
+    '/** @jsxImportSource yaml */\nexport const probe=<>probe</>;',
+    '// @jsxImportSource yaml\nexport const probe=<>probe</>;',
+    "import {Fragment} from 'react';\n/** @jsxImportSource yaml */\nexport const probe=<>probe</>;",
+    'export const probe=<>probe</>;\n/** @jsxImportSource yaml */',
+    'export const probe=<>probe</>;\n// @jsxImportSource yaml',
+    '/** @jsxImportSource yaml extra */\nexport const probe=<>probe</>;',
+    'export const probe=<>{/* @jsxImportSource yaml */}</>;',
+    'export function noop(){/* @jsxImportSource yaml */}\nexport const probe=<>probe</>;',
+    'export const text=`value ${/* @jsxImportSource yaml */ 1}`;\nexport const probe=<>probe</>;',
+    '/** @jsxImportSource react */\nexport const probe=<>probe</>;',
+  ])('visibly refuses per-file JSX import-source pragmas: %s', (source) => {
+    const target = fixture();
+    write(target, 'src/PragmaHelper.tsx', 'export const probe=<>probe</>;');
+    write(target, 'src/index.ts', candidateImport('./PragmaHelper'));
+    expectRejectedMutationAndRestore(
+      target,
+      'src/PragmaHelper.tsx',
+      source,
+      'unsupported per-file JSX import source'
+    );
+  });
+
+  it.each([
+    'export const probe=<>probe</>;',
+    "export const text='/** @jsxImportSource yaml */';\nexport const probe=<>probe</>;",
+    'export const text=`/** @jsxImportSource yaml */`;\nexport const probe=<>probe</>;',
+    'export const probe=<>/** @jsxImportSource yaml */</>;',
+    'export const pattern=/@jsxImportSource yaml/;\nexport const probe=<>probe</>;',
+  ])('preserves ordinary JSX content and automatic React runtime: %s', (source) => {
+    const target = fixture();
+    write(target, 'src/PragmaHelper.tsx', source);
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
 
   it('leaves maintained native provider commands to their visible native qualification owner', () => {

@@ -62,8 +62,8 @@ function babelSpecifier(specifier, vocabulary, file) {
 }
 
 export function candidateConfigurationKind(file) {
-  if (/(?:^|\/)(?:babel\.config\.|\.babelrc(?:\.|$))/.test(file)) return 'babel';
-  if (/(?:^|\/)app\.config\./.test(file) || file === 'app.json') return 'expo';
+  if (/^(?:babel\.config\.|\.babelrc(?:\.|$))/.test(file)) return 'babel';
+  if (/^app\.config\./.test(file) || file === 'app.json') return 'expo';
   return null;
 }
 
@@ -82,6 +82,14 @@ function configurationReferences(node, file, kind) {
   );
   const references = [];
   for (const element of node.initializer.elements) {
+    if (babel && ts.isArrayLiteralExpression(element)) {
+      assert.ok(element.elements.length <= 2, `${file} uses unsupported extra Babel tuple members`);
+      const options = element.elements[1];
+      assert.ok(
+        !options || (ts.isObjectLiteralExpression(options) && options.properties.length === 0),
+        `${file} uses unsupported Babel options; only literal empty objects are qualified`
+      );
+    }
     const target = ts.isArrayLiteralExpression(element) ? element.elements[0] : element;
     if (ts.isCallExpression(target) && requireResolve(target.expression)) continue;
     assert.ok(target && ts.isStringLiteralLike(target), `${file} uses unsupported ${name} entry`);
@@ -122,8 +130,9 @@ function configurationProperties(node, file) {
   });
 }
 
-function configurationObjectReferences(node, file, kind) {
+function configurationObjectReferences(node, file, kind, objects) {
   assert.ok(ts.isObjectLiteralExpression(node), `${file} uses unsupported opaque configuration`);
+  objects.add(node);
   let properties = configurationProperties(node, file);
   if (kind === 'expo') {
     const expo = properties.find(({ name }) => name === 'expo')?.property;
@@ -132,6 +141,7 @@ function configurationObjectReferences(node, file, kind) {
         ts.isPropertyAssignment(expo) && ts.isObjectLiteralExpression(expo.initializer),
         `${file} uses unsupported opaque Expo configuration`
       );
+      objects.add(expo.initializer);
       properties = configurationProperties(expo.initializer, file);
     }
   }
@@ -147,13 +157,14 @@ function configurationObjectReferences(node, file, kind) {
   return references;
 }
 
-function configurationExportReferences(expression, file, kind) {
+function configurationExportReferences(expression, file, kind, objects) {
   const value = unwrapExpression(expression);
-  if (ts.isObjectLiteralExpression(value)) return configurationObjectReferences(value, file, kind);
+  if (ts.isObjectLiteralExpression(value))
+    return configurationObjectReferences(value, file, kind, objects);
   assert.ok(ts.isFunctionLike(value), `${file} uses unsupported opaque configuration export`);
   assert.ok(value.body, `${file} has no supported configuration body`);
   if (!ts.isBlock(value.body))
-    return configurationObjectReferences(unwrapExpression(value.body), file, kind);
+    return configurationObjectReferences(unwrapExpression(value.body), file, kind, objects);
   const references = [];
   let returns = 0;
   function visit(node) {
@@ -162,7 +173,7 @@ function configurationExportReferences(expression, file, kind) {
       returns++;
       assert.ok(node.expression, `${file} uses unsupported empty configuration return`);
       references.push(
-        ...configurationObjectReferences(unwrapExpression(node.expression), file, kind)
+        ...configurationObjectReferences(unwrapExpression(node.expression), file, kind, objects)
       );
     }
     ts.forEachChild(node, visit);
@@ -194,7 +205,8 @@ function assertFiniteConfigurationSyntax(node, file, kind) {
       assert.ok(
         ts.isBinaryExpression(node.parent) &&
           node.parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-          node.parent.left === node,
+          node.parent.left === node &&
+          ts.isExpressionStatement(node.parent.parent),
         `${file} uses unsupported configuration export alias`
       );
   }
@@ -206,6 +218,7 @@ function assertFiniteConfigurationSyntax(node, file, kind) {
 
 function sourceConfigurationReferences(ast, file, kind) {
   const references = [];
+  const objects = new Set();
   let exports = 0;
   function visit(node) {
     ts.forEachChild(node, visit);
@@ -220,12 +233,72 @@ function sourceConfigurationReferences(ast, file, kind) {
       value = node;
     if (value) {
       exports++;
-      references.push(...configurationExportReferences(value, file, kind));
+      references.push(...configurationExportReferences(value, file, kind, objects));
     }
   }
   visit(ast);
   assert.ok(exports, `${file} has no supported literal configuration export`);
+  function assertOwnedVocabulary(node) {
+    const vocabulary = kind === 'babel' ? ['plugins', 'presets'] : ['plugins', 'expo'];
+    if (ts.isBindingElement(node) && ts.isObjectBindingPattern(node.parent)) {
+      const property = node.propertyName ?? node.name;
+      const name = ts.isComputedPropertyName(property) ? property.expression : property;
+      assert.ok(
+        !vocabulary.includes(name.text),
+        `${file} uses unsupported configuration vocabulary binding`
+      );
+    }
+    if (ts.isObjectLiteralExpression(node) && !objects.has(node))
+      for (const property of node.properties)
+        assert.ok(
+          !vocabulary.includes(configurationPropertyName(property, file)),
+          `${file} uses unsupported foreign configuration vocabulary`
+        );
+    ts.forEachChild(node, assertOwnedVocabulary);
+  }
+  assertOwnedVocabulary(ast);
   return references;
+}
+
+function hasJsxImportSourcePragma(ast, source) {
+  if (ast.pragmas.has('jsximportsource')) return true;
+  const literals = [];
+  function visit(node) {
+    if (
+      ts.isStringLiteralLike(node) ||
+      ts.isRegularExpressionLiteral(node) ||
+      ts.isJsxText(node) ||
+      [
+        ts.SyntaxKind.TemplateHead,
+        ts.SyntaxKind.TemplateMiddle,
+        ts.SyntaxKind.TemplateTail,
+      ].includes(node.kind)
+    )
+      literals.push({ start: node.getStart(ast), end: node.end });
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  literals.sort((left, right) => left.start - right.start);
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false);
+  function gap(start, end) {
+    scanner.setText(source, start, end - start);
+    for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan())
+      if (
+        token === ts.SyntaxKind.SingleLineCommentTrivia ||
+        token === ts.SyntaxKind.MultiLineCommentTrivia
+      ) {
+        const suffix = token === ts.SyntaxKind.MultiLineCommentTrivia ? 2 : 0;
+        const comment = source.slice(scanner.getTokenPos() + 2, scanner.getTextPos() - suffix);
+        if (/^\s*(?:\*\s*)?@jsxImportSource\s+(\S+)\s*$/m.test(comment)) return true;
+      }
+    return false;
+  }
+  let start = 0;
+  for (const literal of literals) {
+    if (gap(start, literal.start)) return true;
+    start = literal.end;
+  }
+  return gap(start, source.length);
 }
 
 function assertNoResolutionAlias(node, file) {
@@ -266,6 +339,10 @@ export function candidateSourceReferences(source, file) {
     SCRIPT_KINDS[extname(file)]
   );
   assert.equal(ast.parseDiagnostics.length, 0, `${file} has invalid source syntax`);
+  assert.ok(
+    !hasJsxImportSourcePragma(ast, source),
+    `${file} uses unsupported per-file JSX import source`
+  );
   const references = [
     ...ast.referencedFiles.map(({ fileName }) => ({ specifier: fileName, kind: 'local' })),
     ...ast.typeReferenceDirectives.map(({ fileName }) => ({ specifier: fileName, kind: 'types' })),
@@ -365,7 +442,7 @@ export function readCandidateJsonConfig(source, file) {
     config && typeof config === 'object' && !Array.isArray(config),
     `${file} has invalid JSON configuration`
   );
-  const babel = /(?:^|\/)(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(file);
+  const babel = /^(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(file);
   if (babel)
     for (const name of Object.keys(config))
       assert.ok(
@@ -390,6 +467,17 @@ export function readCandidateJsonConfig(source, file) {
       `${file} ${vocabulary} configuration must be a literal array`
     );
     for (const entry of entries) {
+      if (babel && Array.isArray(entry)) {
+        assert.ok(entry.length <= 2, `${file} uses unsupported extra Babel tuple members`);
+        assert.ok(
+          entry.length < 2 ||
+            (entry[1] &&
+              typeof entry[1] === 'object' &&
+              !Array.isArray(entry[1]) &&
+              Object.keys(entry[1]).length === 0),
+          `${file} uses unsupported Babel options; only literal empty objects are qualified`
+        );
+      }
       const target = Array.isArray(entry) ? entry[0] : entry;
       assert.equal(typeof target, 'string', `${file} has unsupported ${vocabulary} entry`);
       references.push({

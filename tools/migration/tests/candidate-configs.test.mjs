@@ -2,7 +2,7 @@ import { mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { assertDeclaredCandidateImports, dependencySpecifiers } from '../lib/native-identity.mjs';
-import { createCandidateFixtures } from './candidate-fixtures.mjs';
+import { candidateImport, createCandidateFixtures } from './candidate-fixtures.mjs';
 
 const { candidate, manifest, fixture, write, expectRejectedMutationAndRestore, cleanup } =
   createCandidateFixtures();
@@ -20,6 +20,41 @@ describe('candidate configuration dependency ownership', () => {
   });
 
   it.each([
+    [
+      'babel.config.cjs',
+      "module.exports={presets:[[require.resolve('babel-preset-expo'),{jsxImportSource:'yaml'}]]};",
+      'unsupported Babel options',
+    ],
+    [
+      'babel.config.cjs',
+      "module.exports={presets:[[require.resolve('babel-preset-expo'),{native:{jsxImportSource:'yaml'}}]]};",
+      'unsupported Babel options',
+    ],
+    [
+      'babel.config.cjs',
+      "module.exports={presets:[[require.resolve('babel-preset-expo'),JSON.parse('{}')]]};",
+      'unsupported Babel options',
+    ],
+    [
+      'babel.config.cjs',
+      "module.exports={plugins:[[require.resolve('expo'),{},'extra']]};",
+      'unsupported extra Babel tuple members',
+    ],
+    [
+      'babel.config.cjs',
+      "module.exports={plugins:[['module:expo',{arbitrary:true}]]};",
+      'unsupported Babel options',
+    ],
+    [
+      'babel.config.cjs',
+      "const cfg=(module.exports={presets:[require.resolve('babel-preset-expo')]}); Object.assign(cfg,{plugins:['babel-plugin-react-compiler']});",
+      'unsupported configuration export alias',
+    ],
+    [
+      'babel.config.cjs',
+      "const {plugins}=(module.exports={presets:[require.resolve('babel-preset-expo')],plugins:[]}); plugins.push('babel-plugin-react-compiler');",
+      'unsupported configuration export alias',
+    ],
     ['tsconfig.json', '{"extends":"yaml"}', 'imports undeclared yaml'],
     ['tsconfig.json', '{"compilerOptions":{"types":["node"]}}', 'imports undeclared @types/node'],
     ['tsconfig.json', '{"compilerOptions":{"jsxImportSource":"yaml"}}', 'imports undeclared yaml'],
@@ -60,6 +95,33 @@ describe('candidate configuration dependency ownership', () => {
   ])('rejects %s configuration for its stated reason', (path, source, reason) => {
     const target = fixture();
     expectRejectedMutationAndRestore(target, path, source, reason);
+  });
+
+  it.each(['presets', 'plugins'])('qualifies default and literal-empty Babel %s options', (key) => {
+    const target = fixture();
+    write(target, 'babel.config.cjs', `module.exports={${key}:[[require.resolve('expo'),{}]]};`);
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    write(target, '.babelrc', JSON.stringify({ [key]: [['module:expo', {}]] }));
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    expectRejectedMutationAndRestore(
+      target,
+      '.babelrc',
+      JSON.stringify({ [key]: [['module:expo', { jsxImportSource: 'yaml' }]] }),
+      'unsupported Babel options'
+    );
+    expectRejectedMutationAndRestore(
+      target,
+      '.babelrc',
+      JSON.stringify({ [key]: [['module:expo', {}, 'extra']] }),
+      'unsupported extra Babel tuple members'
+    );
+  });
+
+  it('preserves Expo plugin option handling under its own consumer', () => {
+    const target = fixture();
+    write(target, 'app.config.cjs', "module.exports={plugins:[['expo',{arbitrary:true}]]};");
+    write(target, 'app.json', '{"expo":{"plugins":[["expo",{"arbitrary":true}]]}}');
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
 
   it('rejects dotfile Babel JSON and triple-slash undeclared type references', () => {
@@ -167,6 +229,57 @@ describe('candidate configuration dependency ownership', () => {
     write(target, path, 'module.exports={plugins:[]};');
     expectRejectedMutationAndRestore(target, path, source, reason);
   });
+
+  it.each([
+    ['const {plugins}={};', 'unsupported configuration vocabulary binding'],
+    ['const {presets:list}={};', 'unsupported configuration vocabulary binding'],
+    ["const {['plugins']:list}={};", 'unsupported configuration vocabulary binding'],
+    ['const extra={plugins:[]};', 'unsupported foreign configuration vocabulary'],
+    ['const extra={presets:[]};', 'unsupported foreign configuration vocabulary'],
+  ])('refuses unowned Babel vocabulary: %s', (prefix, reason) => {
+    const target = fixture();
+    expectRejectedMutationAndRestore(
+      target,
+      'babel.config.cjs',
+      `${prefix} module.exports={presets:['babel-preset-expo']};`,
+      reason
+    );
+  });
+
+  it.each([
+    ['const {expo}={};', 'unsupported configuration vocabulary binding'],
+    ['const extra={expo:{plugins:[]}};', 'unsupported foreign configuration vocabulary'],
+  ])('refuses unowned Expo vocabulary: %s', (prefix, reason) => {
+    const target = fixture();
+    write(target, 'app.config.cjs', 'module.exports={plugins:[]};');
+    expectRejectedMutationAndRestore(
+      target,
+      'app.config.cjs',
+      `${prefix} module.exports={plugins:[]};`,
+      reason
+    );
+  });
+
+  it.each(['app.config.ts', 'babel.config.ts', '.babelrc.ts'])(
+    'accepts nested ordinary app modules named %s',
+    (name) => {
+      const target = fixture();
+      write(target, `src/config/${name}`, "export const apiBase='https://example.invalid';\n");
+      expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+    }
+  );
+
+  it.each(['app.config.json', 'babel.config.json', '.babelrc.json'])(
+    'accepts nested ordinary JSON modules named %s',
+    (name) => {
+      const target = fixture();
+      const path = `src/config/${name}`;
+      write(target, path, '{"apiBase":"https://example.invalid"}');
+      write(target, 'src/JsonProbe.ts', candidateImport(`./config/${name}`));
+      const result = assertDeclaredCandidateImports(target, manifest);
+      expect(result.scannedCandidateFiles).not.toContain(path);
+    }
+  );
 
   it.each([
     [

@@ -20,11 +20,20 @@ arguments, loader aliases, `createRequire`, `import.meta.resolve` and JS provide
 fail visibly. Babel aliases and computed plugin/preset configuration require an explicit reviewed
 owner. Supported JS configs export a literal object or a function returning literal objects;
 plugin/preset entries are literal arrays using full package names or `require.resolve`. Expo uses
-its `expo` wrapper when present and otherwise the flat object; both static JSON filenames are
-discovered. Config spreads, member reads/mutations, opaque exports, computed names and Babel
+its own plugin-option handling. Babel tuples permit only the module and an optional literal empty
+options object; nonempty/opaque options and extra tuple members require a reviewed consumer owner.
+The current Babel owner supplies no options. Options can generate module imports, as the released
+Expo preset's `jsxImportSource` does; the native/Metro installed graph qualification owns generated
+dependencies beyond this finite declaration grammar. Expo uses its `expo` wrapper when present and
+otherwise the flat object; both static JSON filenames are discovered. CommonJS config assignments
+must be standalone statements; configuration vocabulary bindings and foreign object keys are
+refused. Config spreads, member reads/mutations, opaque exports, computed names and Babel
 `env`/`overrides`/`extends`, duplicate configuration keys and prototype shapes are refused visibly
 rather than executed. TypeScript path aliases, custom type roots, base URLs and merged root
-directories also require such an owner. The shared shipping/Forge parser keeps its existing scope.
+directories also require such an owner. Per-file JSX import-source pragmas are unsupported: the
+TypeScript leading pragma and Babel comment rules differ. String, template, regex and JSX-text
+lookalikes remain ordinary content. The default automatic React runtime remains supported. The
+shared shipping/Forge parser keeps its existing scope.
 
 Root Node configs and `scripts/` can use actual Node builtins; app source cannot. App source also
 refuses local edges and discovered app aliases into Node-owned configs/scripts; internal aliases
@@ -35,7 +44,10 @@ directories. Declared bare builtin-name polyfill packages remain package imports
 remain builtins. Bare packages must be candidate declarations with canonical package syntax. Hoisted
 declared packages may live outside the candidate; only local/discovered targets receive
 lexical/physical ownership checks. Unresolved local module resolution stays with TypeScript/Metro.
-Podfile/Gradle and native provider-context commands remain the separate PHASE-1
+Expo and Babel configuration grammar applies to project-root files; nested app modules with those
+filenames stay app source. Metro string module references, including `babelTransformerPath` and
+`minifierPath`, and alternate configuration lookup require a separate owner and are emitted as
+noncoverage. Podfile/Gradle and native provider-context commands remain the separate PHASE-1
 source/materialization/toolchain obligation; this scanner emits that non-coverage and supplies no
 native execution result.
 
