@@ -1,6 +1,6 @@
 # Dependency health during migration
 
-Status: the external dependency graph is patched.
+Status: the external `source-map-js` graph is patched against GHSA-68fv-2mgg-jv7q.
 [PR 2692](https://github.com/KyleMit/Splotch/pull/2692) owns the independent implementation-review
 and exact-head CI records. This maintenance unit does not establish product parity, select an
 architecture, or provide candidate performance evidence.
