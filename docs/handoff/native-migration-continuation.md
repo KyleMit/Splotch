@@ -1,7 +1,8 @@
 # Handoff — native migration continuation
 
-> 2026-10-06 · branch `codex/migration-continuation-records` · Preserve the paused migration for the
-> next authorized session.
+> 2026-10-06 · branch `codex/migration-continuation-records` · PR
+> [2700](https://github.com/KyleMit/Splotch/pull/2700) · Preserve the paused migration for the next
+> authorized session.
 
 ## Objective & non-goals
 
@@ -25,13 +26,14 @@ The persistent integration branch is `codex/native-migration`, accepted at
 dc08a90abc67b53124146bf288c80de0f9ffd1dd. This checkpoint branch starts at that commit and adds
 records and data capsules only. Its source changes are the migration README, progress checklist,
 this packet and `docs/migration/evidence/continuation/`. It does not integrate either unfinished
-unit. The checkpoint is committed locally. Remote publication awaits explicit human approval after
-automatic approval review rejected exporting the source/evidence payload to KyleMit/Splotch. Until
-publication succeeds, this packet and its capsules are available on this host only; another machine
-cannot fetch them. Verify the branch's actual upstream and remote head before treating it as
-portable. The [work ledger](../migration/README.md#work-ledger) lists all eight accepted PRs and
-merge commits. The epic had no API-enumerated sub-issues at the latest check; this checklist is the
-current scope inventory, not an existing GitHub child-issue backlog.
+unit. The maintainer explicitly approved publication, and the checkpoint branch is pushed to
+KyleMit/Splotch. [Draft PR 2700](https://github.com/KyleMit/Splotch/pull/2700) targets the
+integration branch; its independent unit acceptance and merge remain pending. Verify the actual
+upstream and remote head before using the records. The earlier push rejection is historical and
+superseded by explicit human approval and successful publication. The
+[work ledger](../migration/README.md#work-ledger) lists all eight accepted PRs and merge commits.
+The epic had no API-enumerated sub-issues at the latest check; this checklist is the current scope
+inventory, not an existing GitHub child-issue backlog.
 
 | Recoverable work            | Exact state                                                                                                                                   | Storage                                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -124,7 +126,8 @@ archive member hashes/modes and both Git-bundle prerequisites. No prepared sourc
 executed while making this checkpoint. The migration worktrees were left unchanged. The preservation
 validation receipt records formatting/reference checks and the final integrity review; inspect that
 receipt for the checkpoint's own validation rather than attributing old app checks to this docs-only
-commit. A remote checkpoint PR has not been opened while publication approval is pending.
+commit. The checkpoint PR remains draft; source/evidence preservation is distinct from
+migration-unit acceptance.
 
 ## Risks & next 3 steps
 

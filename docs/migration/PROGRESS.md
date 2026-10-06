@@ -37,9 +37,10 @@ mounting, simulator mechanics, physical performance and release acceptance are d
 
 The [continuation packet](../handoff/native-migration-continuation.md) and
 [preservation manifest](evidence/continuation/manifest.json) record exact recovery and review
-identities. The local checkpoint data capsules preserve the partial work without accepting it.
-Remote publication awaits human approval. These partial rows cannot be marked accepted from a
-worktree snapshot, source receipt or planned test alone.
+identities. The pushed checkpoint data capsules preserve the partial work without accepting it.
+[Draft PR 2700](https://github.com/KyleMit/Splotch/pull/2700) carries the records; its merge is
+pending. These partial rows cannot be marked accepted from a worktree snapshot, source receipt or
+planned test alone.
 
 ## Remaining architecture-check exits
 

@@ -60,10 +60,15 @@
     "No app/npm test repetition on this docs-only checkpoint; historical acceptance remains exact-source scoped"
   ],
   "publication": {
-    "status": "blocked-pending-human-approval",
+    "status": "pushed",
     "destination": "KyleMit/Splotch",
     "branch": "codex/migration-continuation-records",
-    "reason": "Automatic approval review rejected exporting source snapshots, browser evidence and derived records without explicit authorization for this payload and destination",
-    "remoteWritePerformed": false
+    "humanAuthorization": "User explicitly instructed: Yeah push the checkpoint",
+    "firstPublishedHead": "460855511baa497b2cf8966551f0876725d18b9c",
+    "pushExitCode": 0,
+    "checkpointPr": "https://github.com/KyleMit/Splotch/pull/2700",
+    "checkpointPrStatus": "draft; unit acceptance and merge pending",
+    "earlierRejection": "Initial automatic review rejected export without explicit payload/destination approval; no remote write occurred before the user authorized it",
+    "observedAt": "2026-10-06T14:29:57.578944+00:00"
   }
 }

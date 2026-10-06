@@ -7,11 +7,11 @@ dc08a90abc67b53124146bf288c80de0f9ffd1dd. These capsules preserve unfinished wor
 evidence as data; they do not add candidate code to the application or accept an implementation.
 Implementation remains paused until the maintainer authorizes it.
 
-The checkpoint is committed locally on `codex/migration-continuation-records`. Automatic approval
-review rejected its initial push because explicit authorization was missing for exporting this
-source/evidence payload to KyleMit/Splotch. Publication awaits human approval. Until a push
-succeeds, all capsules and this packet are host-local; verify the actual upstream before relying on
-another machine to recover them.
+The maintainer explicitly approved publication of this source/evidence payload to KyleMit/Splotch,
+and `codex/migration-continuation-records` is pushed.
+[Draft PR 2700](https://github.com/KyleMit/Splotch/pull/2700) targets the accepted integration
+branch; review/integration remain pending. The initial automatic approval rejection is historical
+and was superseded by explicit approval. Verify the current remote head before recovery.
 
 ## Stored records
 
