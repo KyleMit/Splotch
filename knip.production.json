@@ -7,6 +7,7 @@
     "web/svelte.config.js!",
     "web/vite.config.ts!",
     "netlify/functions/*.ts!",
+    "tools/netlify-production-install.mjs!",
     "tools/netlify-topology-witness.mjs!",
     "tools/run-web-tool.mjs!",
     "tools/icons/gen-icon-names.mjs!",

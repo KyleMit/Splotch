@@ -1,0 +1,44 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-production-install.test.mjs tests/netlify-cache-config.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+ ❯ tests/netlify-production-install.test.mjs (52 tests | 2 failed) 10630ms
+   ❯ Netlify second production installer (52)
+     × propagates real CLI installer failure before a build continuation 2ms
+     × permits the same real build continuation after accepted metadata 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > propagates real CLI installer failure before a build continuation
+ReferenceError: CHILD_TIMEOUT_MS is not defined
+ ❯ tests/netlify-production-install.test.mjs:369:18
+    367|         env: context.env,
+    368|         encoding: 'utf8',
+    369|         timeout: CHILD_TIMEOUT_MS,
+       |                  ^
+    370|       }
+    371|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > permits the same real build continuation after accepted metadata
+ReferenceError: CHILD_TIMEOUT_MS is not defined
+ ❯ tests/netlify-production-install.test.mjs:391:18
+    389|         env: context.env,
+    390|         encoding: 'utf8',
+    391|         timeout: CHILD_TIMEOUT_MS,
+       |                  ^
+    392|       }
+    393|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 87 passed (89)
+   Start at  06:14:08
+   Duration  26.40s (tests 100%)
+

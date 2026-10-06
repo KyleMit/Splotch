@@ -1,0 +1,18 @@
+async function readWorkspaceManifest(dir, cfgFileName = WORKSPACE_MANIFEST_FILENAME) {
+  const manifest = await readManifestRaw(dir, cfgFileName);
+  validateWorkspaceManifest(manifest);
+  return manifest;
+}
+async function readManifestRaw(dir, cfgFileName) {
+  try {
+    return await readYamlFile(path35.join(dir, cfgFileName));
+  } catch (err2) {
+    if (util9.types.isNativeError(err2) && "code" in err2 && err2.code === "ENOENT") {
+      return void 0;
+    }
+    throw err2;
+  }
+}
+function validateWorkspaceManifest(manifest) {
+  if (manifest === void 0 || manifest === null) {
+    return;

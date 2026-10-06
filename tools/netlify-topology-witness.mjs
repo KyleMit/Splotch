@@ -6,10 +6,11 @@ import { createRequire } from 'node:module';
 import { dirname, join, relative, sep } from 'node:path';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 import { CANDIDATE_DIRECTORY } from './lib/native-candidate.mjs';
+import { verifyNetlifyRuntime } from './lib/netlify-runtime.mjs';
 
 export const TOPOLOGY_PROOF_BRANCH = 'feature/netlify-migration-topology-05';
 export const PRODUCTION_INSTALL_CONTRACT =
-  'docs/migration/evidence/native-topology-05/production-install-contract.json';
+  'docs/migration/evidence/netlify-install/production-install-contract.json';
 const PROCESS_TIMEOUT_MS = 30_000;
 const MAX_PROCESS_OUTPUT_BYTES = 1024 * 1024;
 
@@ -52,36 +53,6 @@ function artifactSet(rows, label) {
   assert.equal(new Set(keys).size, keys.length, `Duplicate ${label} artifact`);
   assert.deepEqual(keys, [...keys].sort(), `Unsorted ${label} artifacts`);
   return new Set(keys);
-}
-
-function configValue(source, name) {
-  const matches = [...source.matchAll(new RegExp(`^\\s*${name}\\s*=\\s*"([^"]*)"\\s*$`, 'gm'))];
-  assert.equal(matches.length, 1, `Ambiguous configured ${name}`);
-  return matches[0][1];
-}
-
-function verifyRuntime(root, manifest, facts) {
-  const config = readFileSync(join(root, 'netlify.toml'), 'utf8');
-  const flags = configValue(config, 'PNPM_FLAGS');
-  assert.equal(flags, '--prod', 'Proof requires the reviewed production-only install flags');
-  assert.equal(facts.env.PNPM_FLAGS, flags, 'Actual production install flags differ');
-  const configuredMajor = configValue(config, 'NODE_VERSION');
-  const runtime = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(facts.nodeVersion);
-  const floor = /^>=(\d+)\.(\d+)(?:\.(\d+))?$/.exec(manifest.engines?.node ?? '');
-  assert.ok(runtime && floor, 'Node runtime/floor is not recorded in the reviewed format');
-  assert.equal(runtime[1], configuredMajor, 'Actual Node major differs from the configured owner');
-  const actual = runtime.slice(1).map(Number);
-  const minimum = floor.slice(1).map((part) => Number(part ?? '0'));
-  const firstDifference = actual.findIndex((part, index) => part !== minimum[index]);
-  assert.ok(
-    firstDifference < 0 || actual[firstDifference] > minimum[firstDifference],
-    'Node is below the root floor'
-  );
-  assert.equal(
-    manifest.packageManager,
-    `pnpm@${facts.packageManagerVersion}`,
-    'Actual package manager differs'
-  );
 }
 
 function installedPackages(root, candidate, contexts) {
@@ -177,7 +148,7 @@ export function inspectNetlifyProductionInstall(rootDirectory, contract, facts) 
   const candidateManifest = json(join(candidate, 'package.json'));
   assert.equal(candidateManifest.private, true, 'Candidate workspace must remain private');
   assert.equal(manifest.packageManager, contract.packageManager);
-  verifyRuntime(root, manifest, facts);
+  verifyNetlifyRuntime(root, manifest, facts);
   const production = artifactSet(contract.productionArtifacts, 'production');
   const direct = artifactSet(contract.productionDirect, 'direct production');
   const exclusive = artifactSet(contract.candidateExclusiveArtifacts, 'candidate-exclusive');

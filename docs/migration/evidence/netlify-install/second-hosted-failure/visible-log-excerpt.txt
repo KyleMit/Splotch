@@ -1,0 +1,21 @@
+Second actual Netlify deploy: 6ac4c159358b9f0008ae72d9
+Dashboard: https://app.netlify.com/projects/splotchy/deploys/6ac4c159358b9f0008ae72d9
+Source: c4372771edd370afe2d92b7b4eea7eab29356d90
+Branch: feature/netlify-migration-topology-05
+
+Selected visible log lines transcribed from the expanded Netlify dashboard; this is an excerpt, not the full raw build log.
+L1 5:37:31 AM: build-image version: febd7789d222253fdaba9b87eacf08dcdf49fe9d (noble-new-builds)
+L4 5:37:31 AM: Starting to download cache of 1.1GB (Last modified: 2026-10-05 01:32:56 +0000 UTC)
+L27 5:37:45 AM: v22.23.3 is already installed.
+L31 5:37:47 AM: Installing npm packages using pnpm version 11.22.0
+L32 5:37:47 AM: Scope: all 2 workspace projects
+L44 5:37:55 AM: ✓ Lockfile passes supply-chain policies (1497 entries in 7.5s)
+L45 5:37:55 AM: devDependencies: skipped
+L46 5:37:55 AM: Done in 8.3s using pnpm v11.22.0
+L78 5:37:59 AM: $ git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs
+L84 5:37:59 AM: AssertionError [ERR_ASSERTION]: Ambient pnpm settings need separate review
+L100 5:37:59 AM: +    size: 37,
+L103 5:37:59 AM: at qualifyNoPreloads (file:///opt/build/repo/tools/netlify-production-install.mjs:122:10)
+L104 5:37:59 AM: at installNetlifyProductionDependencies (file:///opt/build/repo/tools/netlify-production-install.mjs:341:3)
+L212 5:37:59 AM: Failing build: Failed to build site
+L213 5:38:00 AM: Finished processing build request in 28.957s

@@ -1,0 +1,198 @@
+[
+  {
+    "historyIndex": 3,
+    "layerIndex": 0,
+    "layerBytes": 29764422,
+    "layerDigest": "sha256:a60ef8ec184edb5ed91f5983f00261359fb2fe20f603e8d488b9477d32fcad70",
+    "createdBy": "/bin/sh -c #(nop) ADD file:6c214fc3c3c22122c7eb68f7fb32783df308e60b1eaeb9baf7e4d0cc961d448d in / "
+  },
+  {
+    "historyIndex": 8,
+    "layerIndex": 3,
+    "layerBytes": 38709971,
+    "layerDigest": "sha256:2d5b523d50dd4c64776a326118241b746eb3fdd2936bd0f45f632ae284068ec2",
+    "createdBy": "RUN /bin/sh -c add-apt-repository -y ppa:ondrej/php &&     add-apt-repository -y ppa:rabbitmq/rabbitmq-erlang # buildkit"
+  },
+  {
+    "historyIndex": 31,
+    "layerIndex": 13,
+    "layerBytes": 1445,
+    "layerDigest": "sha256:59e8eb3e3011d6331fc9da28a05cb25c2a3034c2ef79f4b99101b3bfe2a01d11",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c adduser --system --disabled-password --uid 2500 --group --quiet buildbot --home /opt/buildhome # buildkit"
+  },
+  {
+    "historyIndex": 36,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 43,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 48,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 51,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "ENV PNPM_VERSION=10.30.3"
+  },
+  {
+    "historyIndex": 53,
+    "layerIndex": 19,
+    "layerBytes": 67148928,
+    "layerDigest": "sha256:c124c3f01bc3e7371c48689f5d965d66cc972885ba70d6f852197f241ed6a146",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c /bin/bash -c \". ~/.nvm/nvm.sh &&     nvm install --no-progress ${NETLIFY_NODE_VERSION} &&     nvm alias default node &&     bash /usr/local/bin/yarn-installer.sh --version ${YARN_VERSION} &&     nvm cache clear &&     corepack enable &&     corepack prepare yarn@${YARN_VERSION} --activate &&     corepack prepare pnpm@${PNPM_VERSION} --activate\" # buildkit"
+  },
+  {
+    "historyIndex": 57,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 62,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 65,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 68,
+    "layerIndex": 23,
+    "layerBytes": 51903150,
+    "layerDigest": "sha256:a043435ec80c23e18212bee0e30bcd74fb48a79599fbd8194da9e38a1c4336a6",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c mise use -g python@${PYTHON_VERSION} &&     pip install --no-cache-dir setuptools==${PYTHON_SETUPTOOLS_VERSION} # buildkit"
+  },
+  {
+    "historyIndex": 72,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 74,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 82,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 86,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 92,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 97,
+    "layerIndex": 33,
+    "layerBytes": 141,
+    "layerDigest": "sha256:75d1d0474b9dfc2471a418295de75223047661437cf48ea818e08e2480f3fd6f",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c mkdir -p /home/linuxbrew/.linuxbrew && chown -R buildbot /home/linuxbrew/ # buildkit"
+  },
+  {
+    "historyIndex": 98,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 104,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "ENV HOMEBREW_CACHE=/opt/buildhome/.homebrew-cache"
+  },
+  {
+    "historyIndex": 105,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 108,
+    "layerIndex": 35,
+    "layerBytes": 374,
+    "layerDigest": "sha256:14f10b9c92d69967241034039229ef9c747e8d94bed07d043b85fa1f3b1d3a6a",
+    "createdBy": "COPY scripts/install-runtimes.sh /opt/buildhome/setup/install-runtimes.sh # buildkit"
+  },
+  {
+    "historyIndex": 114,
+    "layerIndex": 39,
+    "layerBytes": 7890,
+    "layerDigest": "sha256:fb04825cba193ed46dc3ec27f2cca7e43764c4cbe34c6ca6bd186c46f3e193f4",
+    "createdBy": "COPY run-build-functions.sh /opt/build-bin/run-build-functions.sh # buildkit"
+  },
+  {
+    "historyIndex": 115,
+    "layerIndex": 40,
+    "layerBytes": 8290,
+    "layerDigest": "sha256:9b8cc6e02c7fd56b26847e3bea872cbe57c07cca94add419d00e2c699b4ca4b7",
+    "createdBy": "COPY run-build-functions-new-builds.sh /opt/build-bin/run-build-functions-new-builds.sh # buildkit"
+  },
+  {
+    "historyIndex": 116,
+    "layerIndex": 41,
+    "layerBytes": 713,
+    "layerDigest": "sha256:d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29",
+    "createdBy": "COPY run-build.sh /opt/build-bin/build # buildkit"
+  },
+  {
+    "historyIndex": 117,
+    "layerIndex": 42,
+    "layerBytes": 204,
+    "layerDigest": "sha256:b0b4d1788f2999b912657306f5f3a5187c417d338ae33d89db2f0e22779deffb",
+    "createdBy": "COPY buildbot-git-config /root/.gitconfig # buildkit"
+  },
+  {
+    "historyIndex": 118,
+    "layerIndex": 43,
+    "layerBytes": 8325,
+    "layerDigest": "sha256:bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d",
+    "createdBy": "RUN |4 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds NEW_BUILDS_ARCHITECTURE=true /bin/sh -c if [ \"$NEW_BUILDS_ARCHITECTURE\" = \"true\" ]; then       mv /opt/build-bin/run-build-functions-new-builds.sh /opt/build-bin/run-build-functions.sh;     fi # buildkit"
+  },
+  {
+    "historyIndex": 120,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  }
+]

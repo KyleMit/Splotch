@@ -1,0 +1,820 @@
+# Review the next Netlify store-qualification plan before implementation
+
+This is a planning question, not a third implementation review. PR 2699 has used
+two implementation rounds. Its third round remains reserved for the resulting
+implementation. The checkout is pinned to
+6bac65f02b605b6efb0a0545eeda5e6cdc40a76a. The user explicitly authorized the full
+migration and wants alternatives assessed and reviewed before coding.
+
+The registered fourth automatic hosted run failed before any pnpm child. It
+observed a regular 37-byte configuration with one plain absolute `storeDir`
+outside `/opt/build/cache`. That classification does not reveal the scalar.
+All current-head CI passed and the second Claude review permitted this diagnostic
+run. The first failure was stale cached hoisted dependency residue; the subsequent
+refusals and local failures remain preserved separately.
+
+Independent inspection of the exact current public Noble new-builds image found
+the active `run_pnpm` function setting `store-dir` to `$HOME/.pnpm-store`. Both
+architecture variants have identical source. Image history creates buildbot with
+home `/opt/buildhome`. The fourth dashboard displays the same image/buildbot
+revision. This establishes a source owner, not the actual hosted HOME, setter
+success, architecture, digest or scalar. The attached original report/receipt
+describe the bounded OCI retrieval and its limits.
+
+Proposed minimal change:
+
+1. Keep the existing cache family unchanged. Add one private fixed owner,
+   `NETLIFY_HOME_ROOT = '/opt/buildhome'`, and derive `.pnpm-store` from it.
+2. Admit only a complete, sole supported literal equal to that exact derived
+   home-store path, and only with `NETLIFY === 'true'` and process
+   `os.homedir() === NETLIFY_HOME_ROOT`. No home descendants, sibling stores,
+   trailing slash, versioned alias, dot/empty segments, interpolation or path
+   normalization enters this new family. The existing plain/simple quoted
+   grammar remains unchanged.
+3. Require the fixed home itself to exist as a regular canonical directory.
+   Reuse the physical store ancestor proof from `/`; store/version descendants
+   may be absent. Preserve the exact raw scalar and released pnpm's `v11` owner.
+4. Preserve bounded global-file descriptor/identity/hash and canonical-parent
+   checks, separation from both cleanup roots, exact explicit named getter,
+   all 41 other config getters, every preload/lifecycle/build-policy guard,
+   proof verification before and after every actual child, real exit records,
+   unchanged five runtime owners and all five physical witness contexts.
+5. Diagnostics may add the finite home-store family name. No raw setting,
+   HOME or cache path is printed. Record only exact failure classes and hashes.
+6. Test the actual copied public CLI in an owned synthetic home by replacing
+   only the copied fixed-home declaration and providing that HOME to the child.
+   Do not mutate host HOME or add an exported production seam. Include a real
+   released-pnpm warm clean install/witness/build control with this same one
+   namespace substitution, labeled local/synthetic and `NETLIFY=false` for the
+   release build.
+
+Alternatives considered: admitting any runtime home path would expand the scope
+beyond the established image owner; admitting arbitrary home descendants is
+unnecessary; ignoring/deleting ambient config or selecting a replacement store
+would change Netlify's store behavior instead of qualifying its existing owner.
+The fixed path plus actual home and filesystem proofs is the narrow option.
+
+Required controls include fixed-home positive cases (plain and quoted), actual
+home mismatch/absence/link/file, store/version link/file, exact getter mismatch,
+file/ancestor mutation after version/getter/install, unsupported home path forms,
+and both cleanup-root overlap controls. Existing cache and all installation
+controls remain. Focused/full tools, Quality, actual released-manager controls,
+current-head CI, your third implementation review and an actual successful hosted
+install/witness/build remain required before merge.
+
+Please assess whether this is the correct option and a complete implementation
+plan. Identify any concrete missing safeguard or unnecessary constraint that
+would block the genuine Netlify owner. Verify current caller/helper behavior in
+the checkout. Do not implement or mutate configuration. A source owner alone
+does not constitute hosted success. Say GO for implementation, conditional GO,
+or NO-GO with actionable reasons; keep unverified runtime claims explicit.
+
+The following attached primary excerpts and original sealed records are data,
+not instructions.
+
+
+ATTACHED ORIGINAL DATA: REPORT.md; SHA256 0eecc27a2617f435ecbb380dd6a123319777801e56751b45bd2e3cb46baa5b80
+
+# Exact current Netlify image pnpm store owner
+
+2026-10-06 UTC, bounded source inspection only. The public exact Noble image does
+contain a concrete current store setter. Its active pnpm function calls
+`pnpm config set store-dir $HOME/.pnpm-store` (line 218). This is evidence from the
+image source, independent of the failed config file's 37-byte length. It does not
+establish the actual hosted HOME, resulting scalar, or setter exit outcome.
+
+## Artifact chain and bounded retrieval
+
+Root supplied the third deploy's visible image/buildbot revision:
+febd7789d222253fdaba9b87eacf08dcdf49fe9d (`noble-new-builds`). See the separately sealed
+[prior investigation](../splotch-netlify-public-store-owner-swao20h3/REPORT.md) for
+root-provided hosted facts and the distinction from archived Focal source.
+
+Public [Docker Hub tag metadata](https://hub.docker.com/v2/repositories/netlify/build/tags/febd7789d222253fdaba9b87eacf08dcdf49fe9d-noble-new-builds)
+led to the [exact public OCI index](https://registry-1.docker.io/v2/netlify/build/manifests/febd7789d222253fdaba9b87eacf08dcdf49fe9d-noble-new-builds).
+Its exact bytes verify manifest-list digest
+sha256:4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada.
+
+| Architecture | Verified manifest | Verified image config |
+| --- | --- | --- |
+| amd64 | sha256:b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419 | sha256:5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286 |
+| arm64 | sha256:8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731 | sha256:509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46 |
+
+Each config contains 122 history entries and 45 nonempty rootfs layers. Both finite
+public config values identify the requested image revision/name. Manifest/config
+reads were bounded to 1 MiB each. Public registry access used an anonymous pull
+token obtained without account credentials; it existed only in process memory and
+was neither displayed nor retained.
+
+History entries 115/118 bind the new-builds function copy/replacement. The latter
+uses `NEW_BUILDS_ARCHITECTURE=true`. Its final active source resides in layer 43
+(zero-based). Only layers 41 (entrypoint), 43 (active functions), and 44 (last layer)
+were fetched for each architecture: 18,627 compressed bytes total, versus image
+sizes above 2 GiB. Every compressed digest and uncompressed OCI diff ID was checked.
+Tar members were inspected in memory; only exact regular source members were read.
+No tar member was extracted to an image filesystem and no source was executed.
+
+| Architecture | Layer 41: entrypoint | Layer 43: final active functions | Layer 44: final cleanup |
+| --- | --- | --- | --- |
+| amd64 | sha256:d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29; 713 bytes | sha256:bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d; 8325 bytes | sha256:20c35d4b87bef8ef493af1841826826d04d1d521afb657742840b93b0913739f; 279 bytes |
+| arm64 | sha256:5b398cb46995a4dd71d17f846beb2c057f76cd1040fe0d3ebcf96d899be469d4; 712 bytes | sha256:e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3; 8318 bytes | sha256:d2b0bdeac6e6b3e7575a2f11994a2655d0a0b19601abfa9387d950844aae0914; 280 bytes |
+
+Layer 43 contains the active regular file and the old-name whiteout. Layer 44 has
+only `/tmp` directory/whiteout members, so it does not overwrite the retained
+functions or entrypoint. Both architectures have identical source bytes:
+
+- `current-run-build-functions.sh.txt`: 31,256 bytes, SHA256
+  7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24.
+- `build-entrypoint.sh.txt`: 941 bytes, SHA256
+  f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b.
+
+Each retained filename carries its architecture prefix. Original tar member mode
+is 0775; retained `.txt` files are data, not executable copies.
+
+## Concrete owner anchors and limits
+
+The active functions' lines 194–247 restore the home pnpm cache, select pnpm,
+set its home-side store, handle setter failure through legacy config/environment,
+and install dependencies. Lines 10–13 define the default cache/base names;
+993–1001 define restore/no-op save behavior. The entrypoint sources that functions
+file (line 14) and calls dependency installation (line 32). Image history entry 31
+creates buildbot with home `/opt/buildhome`, but this does not prove hosted HOME.
+
+The exact locally cached released pnpm 11.22.0 source, whole SHA256
+a8533087155540515892e6f022ba5c673bb2e62fcbcc124b36ba2e8938ccc3da,
+is read-only corroboration: LF lines 257071–257109 default config operations to
+global absent a location/global CLI override; 256736–256763 select global YAML
+for non-auth settings; 256777–256825 update that YAML. Four exact bounded slices
+and `pnpm-source-provenance.json` are retained. No fresh pnpm archive audit or
+execution is claimed.
+
+The source supplies a plausible direct owner of the observed setting. It does
+not prove this exact function ran, that setter succeeded, or that no runtime
+wrapper/config replacement intervened. Public image revision matches the root's
+visible revision string; actual hosted architecture/digest were not observed.
+The independently inspected current source differs materially from archived
+Focal: current source contains the setter, while the earlier archived function
+did not. Neither default home nor cache naming establishes the failed scalar.
+
+No caller/config/site/repository changes, whole-image pull, image/package imports,
+account credentials, tests/builds/native tools or runtime verification occurred.
+`retrieval.json` binds URLs, dates, metadata/layer hashes, diff IDs, and tar member
+provenance; `report-receipt.json` binds every retained byte and this report.
+
+
+ATTACHED ORIGINAL DATA: report-receipt.json; SHA256 55dcce3af7404abe4d152c8b1a33b237a92c7cb22192ebbaaf813c9e6804a757
+
+{
+  "createdAt": "2026-10-06T10:48:12.505235+00:00",
+  "scope": "exact public image metadata and bounded source layers; cached pnpm source corroboration; no image execution",
+  "rowCount": 24,
+  "selectedLayerCompressedBytes": 18627,
+  "rows": [
+    {
+      "path": "REPORT.md",
+      "bytes": 5727,
+      "mode": "0644",
+      "sha256": "0eecc27a2617f435ecbb380dd6a123319777801e56751b45bd2e3cb46baa5b80"
+    },
+    {
+      "path": "amd64-build-entrypoint.sh.txt",
+      "bytes": 941,
+      "mode": "0644",
+      "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+    },
+    {
+      "path": "amd64-config.json",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286"
+    },
+    {
+      "path": "amd64-current-run-build-functions.sh.txt",
+      "bytes": 31256,
+      "mode": "0644",
+      "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+    },
+    {
+      "path": "amd64-layer-41.tar.gz",
+      "bytes": 713,
+      "mode": "0644",
+      "sha256": "d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29"
+    },
+    {
+      "path": "amd64-layer-43.tar.gz",
+      "bytes": 8325,
+      "mode": "0644",
+      "sha256": "bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d"
+    },
+    {
+      "path": "amd64-layer-44.tar.gz",
+      "bytes": 279,
+      "mode": "0644",
+      "sha256": "20c35d4b87bef8ef493af1841826826d04d1d521afb657742840b93b0913739f"
+    },
+    {
+      "path": "amd64-manifest.json",
+      "bytes": 9777,
+      "mode": "0644",
+      "sha256": "b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419"
+    },
+    {
+      "path": "amd64-relevant-history-map.json",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "281fe993bb3803ab4dcd5df8f56eae50872b39ab2c39f7ce4c8082e1069c5076"
+    },
+    {
+      "path": "arm64-build-entrypoint.sh.txt",
+      "bytes": 941,
+      "mode": "0644",
+      "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+    },
+    {
+      "path": "arm64-config.json",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46"
+    },
+    {
+      "path": "arm64-current-run-build-functions.sh.txt",
+      "bytes": 31256,
+      "mode": "0644",
+      "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+    },
+    {
+      "path": "arm64-layer-41.tar.gz",
+      "bytes": 712,
+      "mode": "0644",
+      "sha256": "5b398cb46995a4dd71d17f846beb2c057f76cd1040fe0d3ebcf96d899be469d4"
+    },
+    {
+      "path": "arm64-layer-43.tar.gz",
+      "bytes": 8318,
+      "mode": "0644",
+      "sha256": "e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3"
+    },
+    {
+      "path": "arm64-layer-44.tar.gz",
+      "bytes": 280,
+      "mode": "0644",
+      "sha256": "d2b0bdeac6e6b3e7575a2f11994a2655d0a0b19601abfa9387d950844aae0914"
+    },
+    {
+      "path": "arm64-manifest.json",
+      "bytes": 9770,
+      "mode": "0644",
+      "sha256": "8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731"
+    },
+    {
+      "path": "arm64-relevant-history-map.json",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "80e8cf246a2baed94c8c3fdce6d4d0ff473c0b0485002a6c950f6f0f2e661619"
+    },
+    {
+      "path": "index.json",
+      "bytes": 743,
+      "mode": "0644",
+      "sha256": "4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada"
+    },
+    {
+      "path": "pnpm-11.22.0-166419-166421.txt",
+      "bytes": 106,
+      "mode": "0644",
+      "sha256": "46720f08afa000e0f6cafb4011a8b343ac7c93bd39c672d45b6e7755d1e814f0"
+    },
+    {
+      "path": "pnpm-11.22.0-256736-256763.txt",
+      "bytes": 869,
+      "mode": "0644",
+      "sha256": "d8d5dc82d856befe6d9d9d4db28c5174f125645db8f74f730eee6f0ea274e119"
+    },
+    {
+      "path": "pnpm-11.22.0-256777-256825.txt",
+      "bytes": 2004,
+      "mode": "0644",
+      "sha256": "e729e13aff779b49c2dd1d2b351cabba3a01bb0c43461d2c7952b9cff6b0afc1"
+    },
+    {
+      "path": "pnpm-11.22.0-257071-257109.txt",
+      "bytes": 1093,
+      "mode": "0644",
+      "sha256": "047b44ffe2c896cbfc64ab9856f153777a37ed4f92add69dc2c0da5637348ec6"
+    },
+    {
+      "path": "pnpm-source-provenance.json",
+      "bytes": 1340,
+      "mode": "0644",
+      "sha256": "1ae559ed3b672a77b9933da0dde6d4f81360d450495605803616abc2410692aa"
+    },
+    {
+      "path": "retrieval.json",
+      "bytes": 9377,
+      "mode": "0644",
+      "sha256": "bc452cc10c9fca81c7ba270e7c01abcf0b48636d1cf15b4ed287af5a983fee95"
+    }
+  ],
+  "rowsDigest": "683670a2714b9e325646cfc7a70d7adafb0ac3cfae02450b469a4b64b7f9c5e1"
+}
+
+
+ATTACHED ORIGINAL DATA: pnpm-source-provenance.json; SHA256 1ae559ed3b672a77b9933da0dde6d4f81360d450495605803616abc2410692aa
+
+{
+  "scope": "read-only local cached exact released distribution; source bytes only; no fresh archive audit",
+  "sourcePath": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/dist/pnpm.mjs",
+  "wholeBytes": 13635501,
+  "wholeSha256": "a8533087155540515892e6f022ba5c673bb2e62fcbcc124b36ba2e8938ccc3da",
+  "lineConvention": "one-based inclusive LF-delimited original source ranges",
+  "excerpts": [
+    {
+      "path": "pnpm-11.22.0-166419-166421.txt",
+      "firstOriginalLine": 166419,
+      "lastOriginalLine": 166421,
+      "bytes": 106,
+      "sha256": "46720f08afa000e0f6cafb4011a8b343ac7c93bd39c672d45b6e7755d1e814f0"
+    },
+    {
+      "path": "pnpm-11.22.0-256736-256763.txt",
+      "firstOriginalLine": 256736,
+      "lastOriginalLine": 256763,
+      "bytes": 869,
+      "sha256": "d8d5dc82d856befe6d9d9d4db28c5174f125645db8f74f730eee6f0ea274e119"
+    },
+    {
+      "path": "pnpm-11.22.0-256777-256825.txt",
+      "firstOriginalLine": 256777,
+      "lastOriginalLine": 256825,
+      "bytes": 2004,
+      "sha256": "e729e13aff779b49c2dd1d2b351cabba3a01bb0c43461d2c7952b9cff6b0afc1"
+    },
+    {
+      "path": "pnpm-11.22.0-257071-257109.txt",
+      "firstOriginalLine": 257071,
+      "lastOriginalLine": 257109,
+      "bytes": 1093,
+      "sha256": "047b44ffe2c896cbfc64ab9856f153777a37ed4f92add69dc2c0da5637348ec6"
+    }
+  ]
+}
+
+
+ATTACHED ORIGINAL DATA: pnpm-11.22.0-257071-257109.txt; SHA256 047b44ffe2c896cbfc64ab9856f153777a37ed4f92add69dc2c0da5637348ec6
+
+async function handler18(opts3, params) {
+  if (params.length === 0) {
+    throw new PnpmError("CONFIG_NO_SUBCOMMAND", "Please specify the subcommand", {
+      hint: help18()
+    });
+  }
+  if (opts3.location) {
+    opts3.global = opts3.location === "global";
+  } else if (opts3.cliOptions["global"] == null) {
+    opts3.global = true;
+  }
+  switch (params[0]) {
+    case "set":
+    case "delete": {
+      if (!params[1]) {
+        throw new PnpmError("CONFIG_NO_PARAMS", `\`pnpm config ${params[0]}\` requires the config key`);
+      }
+      if (params[0] === "set") {
+        let [key, value] = params.slice(1);
+        if (value == null) {
+          const parts = key.split("=");
+          key = parts.shift();
+          value = parts.join("=");
+        }
+        return configSet(opts3, key, value ?? "");
+      } else {
+        return configSet(opts3, params[1], null);
+      }
+    }
+    case "get": {
+      if (params[1]) {
+        return configGet(opts3, params[1]);
+      } else {
+        return configList(opts3);
+      }
+    }
+    case "list": {
+      return configList(opts3);
+    }
+
+
+ATTACHED ORIGINAL DATA: pnpm-11.22.0-256736-256763.txt; SHA256 d8d5dc82d856befe6d9d9d4db28c5174f125645db8f74f730eee6f0ea274e119
+
+    init_configToRecord();
+    init_parseConfigPropertyPath();
+  }
+});
+
+// ../config/commands/lib/configList.js
+async function configList(opts3) {
+  return JSON.stringify(configToRecord(opts3._config, opts3._context.explicitlySetKeys), void 0, 2);
+}
+var init_configList = __esm({
+  "../config/commands/lib/configList.js"() {
+    "use strict";
+    init_configToRecord();
+  }
+});
+
+// ../config/commands/lib/getConfigFileInfo.js
+function getConfigFileInfo(key, opts3) {
+  key = (0, import_lodash5.default)(key);
+  const configDir = opts3.global ? opts3.configDir : opts3.dir;
+  if (isIniConfigKey(key)) {
+    const configFileName = opts3.global ? "auth.ini" : ".npmrc";
+    return { configDir, configFileName };
+  } else {
+    const configFileName = opts3.global ? GLOBAL_CONFIG_YAML_FILENAME : WORKSPACE_MANIFEST_FILENAME;
+    return { configDir, configFileName };
+  }
+}
+
+
+ATTACHED ORIGINAL DATA: pnpm-11.22.0-256777-256825.txt; SHA256 e729e13aff779b49c2dd1d2b351cabba3a01bb0c43461d2c7952b9cff6b0afc1
+
+async function configSet(opts3, key, valueParam) {
+  let isAuthSetting = isIniConfigKey(key);
+  if (!isAuthSetting) {
+    key = validateSimpleKey(key);
+    isAuthSetting = isIniConfigKey(key);
+  }
+  let value = valueParam;
+  if (valueParam != null && opts3.json) {
+    value = JSON.parse(valueParam);
+  }
+  if (isAuthSetting) {
+    const configPath2 = opts3.global ? path179.join(opts3.configDir, "auth.ini") : path179.join(opts3.dir, ".npmrc");
+    if (value != null && typeof value !== "string" && isStringOnlyIniKey(key)) {
+      throw new PnpmError("CONFIG_SET_AUTH_NON_STRING", `Cannot set ${key} to a non-string value (${JSON.stringify(value)})`);
+    }
+    const settings = await safeReadIniFile2(configPath2);
+    if (value == null) {
+      if (settings[key] == null)
+        return;
+      delete settings[key];
+    } else {
+      settings[key] = value;
+    }
+    await writeIniFile(configPath2, settings);
+    return;
+  }
+  const { configDir, configFileName } = getConfigFileInfo(key, opts3);
+  const configPath = path179.join(configDir, configFileName);
+  switch (configFileName) {
+    case GLOBAL_CONFIG_YAML_FILENAME:
+    case WORKSPACE_MANIFEST_FILENAME: {
+      const castValue = castField(value, (0, import_lodash6.default)(key));
+      const isRemoval = castValue == null;
+      if (configFileName === GLOBAL_CONFIG_YAML_FILENAME && !isRemoval) {
+        key = validateYamlConfigKey(key);
+      }
+      const writtenKey = isRemoval ? camelCase(key) : validateWorkspaceKey(key);
+      if (castValue != null && configFileName === WORKSPACE_MANIFEST_FILENAME && isProjectManifestSkippedKey(writtenKey)) {
+        throw new ConfigSetNotAProjectSettingError(writtenKey);
+      }
+      const updatedFields = {
+        [writtenKey]: castValue
+      };
+      if (isRemoval) {
+        updatedFields[key] = null;
+        updatedFields[(0, import_lodash6.default)(writtenKey)] = null;
+      }
+      await updateWorkspaceManifest(configDir, { fileName: configFileName, updatedFields });
+      break;
+
+
+PRIMARY IMAGE SOURCE: amd64-current-run-build-functions.sh.txt, original LF lines 194-247; whole SHA256 7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24
+
+run_pnpm() {
+  featureFlags=$1
+  restore_home_cache ".pnpm-store" "pnpm cache"
+
+  if ! [ $(which corepack) ]
+  then
+    echo "Error while installing pnpm $PNPM_VERSION"
+    echo "We cannot install the expected version of pnpm ($PNPM_VERSION) as your required Node.js version $NODE_VERSION does not allow that"
+    echo "Please ensure that you use at least Node.js version 14.19.0 or greater than 16.9.0"
+
+    exit 1
+  fi
+
+  # only run the activation of the pnpm version if it is set via the environment variable PNPM_VERSION
+  # if set via the `packageManger` field inside the `package.json` corepack will automatically enable it.
+  if [ -n "$PNPM_VERSION" ] && [ "$(pnpm --version)" != "$PNPM_VERSION" ]
+  then
+    echo "Found pnpm version ($(pnpm --version)) that doesn't match expected ($PNPM_VERSION)"
+    corepack prepare pnpm@$PNPM_VERSION --activate
+  fi
+
+  # tell pnpm to store the cache under the home directory which we restored previously
+  # supress error messages with 2>/dev/null
+  set +e  # Disable exit on error
+  pnpm config set store-dir $HOME/.pnpm-store 2>/dev/null
+  exit_status=$?
+  set -e  # Re-enable exit on error
+  # if the pnpm config set was failing it's not supported and fall back to setting the environment variable
+  # for older pnpm versions that does not support the store-dir config
+  if [ "$exit_status" -ne "0" ]
+  then
+    major_version=$(pnpm --version | cut -d'.' -f1)
+    if [ "$major_version" -gt 6 ]
+    then
+      # in PNPM version 7.0.0 it's not working with set store-dir only in higher pnpm versions like 7.14.x
+      echo "store-dir = \"$HOME/.pnpm-store\"" >> "$HOME/.npmrc"
+    else
+      # older versions like 6 and below use the environment variable
+      export PNPM_STORE_DIR="$HOME/.pnpm-store"
+    fi
+  fi
+
+  restore_node_modules "pnpm"
+  echo "Installing npm packages using pnpm version $(pnpm --version)"
+  if pnpm install ${PNPM_FLAGS:+$PNPM_FLAGS}
+  then
+    echo "npm packages installed using pnpm"
+  else
+    echo "Error during pnpm install"
+    exit 1
+  fi
+
+  export PATH=$PATH:$(pnpm bin)
+}
+
+
+PRIMARY IMAGE ENTRYPOINT: whole SHA256 f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b
+
+#!/bin/bash
+
+dir="$(dirname "$0")"
+: "${NETLIFY_REPO_URL="/opt/repo"}"
+NETLIFY_BUILD_BASE="/opt/buildhome"
+
+cmd=$*
+
+BUILD_COMMAND_PARSER=$(cat <<EOF
+$cmd
+EOF
+)
+
+. "$dir/run-build-functions.sh"
+
+if [[ ! -d $NETLIFY_REPO_DIR ]]; then
+  git clone $NETLIFY_REPO_URL $NETLIFY_REPO_DIR
+fi
+
+# Installing build-info to mimic the behaviour of buildbot on retrieving the build information
+# this is needed to collect packageManager + js workspace info
+cd "$NETLIFY_BUILD_BASE" || exit
+source ~/.nvm/nvm.sh
+
+# cd into the repo + the base directory
+cd "$NETLIFY_REPO_DIR/$NETLIFY_PACKAGE_DIR" || exit
+
+# If `BUILD_INFO` is not provided, default it to empty object
+: "${BUILD_INFO="{}"}"
+
+echo "Installing dependencies"
+install_dependencies "$NODE_VERSION" "$RUBY_VERSION" "$YARN_VERSION" "$PNPM_VERSION" "$GO_VERSION" "$PYTHON_VERSION" "$BUILD_INFO" "$FEATURE_FLAGS"
+
+echo "Executing user command: $cmd"
+eval "$cmd"
+CODE=$?
+
+cache_artifacts
+
+exit $CODE
+
+
+ORIGINAL IMAGE HISTORY DATA: SHA256 281fe993bb3803ab4dcd5df8f56eae50872b39ab2c39f7ce4c8082e1069c5076
+
+[
+  {
+    "historyIndex": 3,
+    "layerIndex": 0,
+    "layerBytes": 29764422,
+    "layerDigest": "sha256:a60ef8ec184edb5ed91f5983f00261359fb2fe20f603e8d488b9477d32fcad70",
+    "createdBy": "/bin/sh -c #(nop) ADD file:6c214fc3c3c22122c7eb68f7fb32783df308e60b1eaeb9baf7e4d0cc961d448d in / "
+  },
+  {
+    "historyIndex": 8,
+    "layerIndex": 3,
+    "layerBytes": 38709971,
+    "layerDigest": "sha256:2d5b523d50dd4c64776a326118241b746eb3fdd2936bd0f45f632ae284068ec2",
+    "createdBy": "RUN /bin/sh -c add-apt-repository -y ppa:ondrej/php &&     add-apt-repository -y ppa:rabbitmq/rabbitmq-erlang # buildkit"
+  },
+  {
+    "historyIndex": 31,
+    "layerIndex": 13,
+    "layerBytes": 1445,
+    "layerDigest": "sha256:59e8eb3e3011d6331fc9da28a05cb25c2a3034c2ef79f4b99101b3bfe2a01d11",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c adduser --system --disabled-password --uid 2500 --group --quiet buildbot --home /opt/buildhome # buildkit"
+  },
+  {
+    "historyIndex": 36,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 43,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 48,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 51,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "ENV PNPM_VERSION=10.30.3"
+  },
+  {
+    "historyIndex": 53,
+    "layerIndex": 19,
+    "layerBytes": 67148928,
+    "layerDigest": "sha256:c124c3f01bc3e7371c48689f5d965d66cc972885ba70d6f852197f241ed6a146",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c /bin/bash -c \". ~/.nvm/nvm.sh &&     nvm install --no-progress ${NETLIFY_NODE_VERSION} &&     nvm alias default node &&     bash /usr/local/bin/yarn-installer.sh --version ${YARN_VERSION} &&     nvm cache clear &&     corepack enable &&     corepack prepare yarn@${YARN_VERSION} --activate &&     corepack prepare pnpm@${PNPM_VERSION} --activate\" # buildkit"
+  },
+  {
+    "historyIndex": 57,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 62,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 65,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 68,
+    "layerIndex": 23,
+    "layerBytes": 51903150,
+    "layerDigest": "sha256:a043435ec80c23e18212bee0e30bcd74fb48a79599fbd8194da9e38a1c4336a6",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c mise use -g python@${PYTHON_VERSION} &&     pip install --no-cache-dir setuptools==${PYTHON_SETUPTOOLS_VERSION} # buildkit"
+  },
+  {
+    "historyIndex": 72,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 74,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 82,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 86,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 92,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 97,
+    "layerIndex": 33,
+    "layerBytes": 141,
+    "layerDigest": "sha256:75d1d0474b9dfc2471a418295de75223047661437cf48ea818e08e2480f3fd6f",
+    "createdBy": "RUN |3 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds /bin/sh -c mkdir -p /home/linuxbrew/.linuxbrew && chown -R buildbot /home/linuxbrew/ # buildkit"
+  },
+  {
+    "historyIndex": 98,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 104,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "ENV HOMEBREW_CACHE=/opt/buildhome/.homebrew-cache"
+  },
+  {
+    "historyIndex": 105,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  },
+  {
+    "historyIndex": 108,
+    "layerIndex": 35,
+    "layerBytes": 374,
+    "layerDigest": "sha256:14f10b9c92d69967241034039229ef9c747e8d94bed07d043b85fa1f3b1d3a6a",
+    "createdBy": "COPY scripts/install-runtimes.sh /opt/buildhome/setup/install-runtimes.sh # buildkit"
+  },
+  {
+    "historyIndex": 114,
+    "layerIndex": 39,
+    "layerBytes": 7890,
+    "layerDigest": "sha256:fb04825cba193ed46dc3ec27f2cca7e43764c4cbe34c6ca6bd186c46f3e193f4",
+    "createdBy": "COPY run-build-functions.sh /opt/build-bin/run-build-functions.sh # buildkit"
+  },
+  {
+    "historyIndex": 115,
+    "layerIndex": 40,
+    "layerBytes": 8290,
+    "layerDigest": "sha256:9b8cc6e02c7fd56b26847e3bea872cbe57c07cca94add419d00e2c699b4ca4b7",
+    "createdBy": "COPY run-build-functions-new-builds.sh /opt/build-bin/run-build-functions-new-builds.sh # buildkit"
+  },
+  {
+    "historyIndex": 116,
+    "layerIndex": 41,
+    "layerBytes": 713,
+    "layerDigest": "sha256:d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29",
+    "createdBy": "COPY run-build.sh /opt/build-bin/build # buildkit"
+  },
+  {
+    "historyIndex": 117,
+    "layerIndex": 42,
+    "layerBytes": 204,
+    "layerDigest": "sha256:b0b4d1788f2999b912657306f5f3a5187c417d338ae33d89db2f0e22779deffb",
+    "createdBy": "COPY buildbot-git-config /root/.gitconfig # buildkit"
+  },
+  {
+    "historyIndex": 118,
+    "layerIndex": 43,
+    "layerBytes": 8325,
+    "layerDigest": "sha256:bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d",
+    "createdBy": "RUN |4 TARGETARCH=amd64 NF_IMAGE_VERSION=febd7789d222253fdaba9b87eacf08dcdf49fe9d NF_IMAGE_NAME=noble-new-builds NEW_BUILDS_ARCHITECTURE=true /bin/sh -c if [ \"$NEW_BUILDS_ARCHITECTURE\" = \"true\" ]; then       mv /opt/build-bin/run-build-functions-new-builds.sh /opt/build-bin/run-build-functions.sh;     fi # buildkit"
+  },
+  {
+    "historyIndex": 120,
+    "layerIndex": null,
+    "layerBytes": null,
+    "layerDigest": null,
+    "createdBy": "USER buildbot"
+  }
+]
+
+
+ACTUAL FOURTH HOSTED VISIBLE EXCERPT: SHA256 ea6dc812974ca91d6629299bdb1ada09ae14409a9ac5877f8ec2112b53d47a16
+
+Fourth actual Netlify deploy: 6ac4d14846ad180008db3fdc
+Dashboard: https://app.netlify.com/projects/splotchy/deploys/6ac4d14846ad180008db3fdc
+Source: 6bac65f02b605b6efb0a0545eeda5e6cdc40a76a
+Branch: feature/netlify-migration-topology-05
+
+Selected visible log lines transcribed from the expanded dashboard on 2026-10-06 at 10:46 UTC. This is an excerpt, not the full raw log.
+L63 6:45:58 AM: buildId: 6ac4d14846ad180008db3fd9
+L64 6:45:58 AM: deployId: 6ac4d14846ad180008db3fdc
+L67 6:45:58 AM: /opt/build/repo
+L73 6:45:58 AM: branch-deploy
+L78 6:45:58 AM: $ git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs
+L84 6:45:58 AM: {"stage":"ambient-pnpm-config-refused","kind":"regular-file","sizeBytes":37,"namedKeys":["storeDir"],"unlistedKeyCount":0,"storeDirValueClass":"other-absolute-path","soleStoreDirForm":"plain"}
+L85 6:45:58 AM: AssertionError [ERR_ASSERTION]: Ambient pnpm settings need separate review
+L86 6:45:58 AM: at qualifyAmbientPnpmConfig (file:///opt/build/repo/tools/lib/netlify-cache-config.mjs:155:12)
+L87 6:45:58 AM: at qualifyNoPreloads (file:///opt/build/repo/tools/netlify-production-install.mjs:123:19)
+L88 6:45:58 AM: at installNetlifyProductionDependencies (file:///opt/build/repo/tools/netlify-production-install.mjs:351:19)
+L53 6:45:59 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2
+L196 6:45:59 AM: Failing build: Failed to build site
+L197 6:45:59 AM: Finished processing build request in 29.587s
+L1 6:45:30 AM: build-image version: febd7789d222253fdaba9b87eacf08dcdf49fe9d (noble-new-builds)
+L2 6:45:30 AM: buildbot version: febd7789d222253fdaba9b87eacf08dcdf49fe9d
+L28 6:45:45 AM: Now using node v22.23.3 (npm v10.9.9)
+L31 6:45:46 AM: Installing npm packages using pnpm version 11.22.0
+L46 6:45:54 AM: Done in 8s using pnpm v11.22.0

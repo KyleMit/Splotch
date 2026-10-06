@@ -1,0 +1,38 @@
+{
+  "source": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "deployId": "6ac4d14846ad180008db3fdc",
+  "buildId": "6ac4d14846ad180008db3fd9",
+  "disposition": "actual-hosted-refusal-before-manager-child",
+  "observedClass": "other-absolute-path",
+  "observedForm": "plain",
+  "actualScalar": "unobserved",
+  "files": [
+    {
+      "path": "registration.json.txt",
+      "bytes": 2029,
+      "sha256": "ff8fdbbed4220393bfaadeffc7bd0af23ac89f0f882ed24646fc0b7b2e148115"
+    },
+    {
+      "path": "deploy-observation.json.txt",
+      "bytes": 3133,
+      "sha256": "9af6b9bea344d8fbc9cf33002a973343de89515bde79aca5279af2a57fca1cea"
+    },
+    {
+      "path": "build-record.json.txt",
+      "bytes": 650,
+      "sha256": "4f82c73fb3c323084e98817ff64d219dc2d39bbf433a16f83c8d4afd1ebec2e2"
+    },
+    {
+      "path": "visible-log-excerpt.txt",
+      "bytes": 1882,
+      "sha256": "ea6dc812974ca91d6629299bdb1ada09ae14409a9ac5877f8ec2112b53d47a16"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1109,
+      "mode": "0644",
+      "sha256": "2a8d18ca8425591c869d02ed6ac18d3ff8ada7e3b50741479e22615583c3b639",
+      "kind": "authored-package-metadata"
+    }
+  ]
+}

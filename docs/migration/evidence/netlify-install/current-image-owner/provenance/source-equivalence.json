@@ -1,0 +1,32 @@
+{
+  "scope": "recorded exact source equality from both verified public architecture layers; no image runtime evidence",
+  "activeSource": {
+    "retainedPath": "source/run-build-functions.sh.txt",
+    "originalMember": "opt/build-bin/run-build-functions.sh",
+    "originalMemberMode": "0775",
+    "originalNames": [
+      "amd64-current-run-build-functions.sh.txt",
+      "arm64-current-run-build-functions.sh.txt"
+    ],
+    "bytes": 31256,
+    "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24",
+    "sourceLayers": [
+      "oci/source-layers/amd64-layer-43.tar.gz",
+      "oci/source-layers/arm64-layer-43.tar.gz"
+    ]
+  },
+  "entrypoint": {
+    "retainedPath": "source/build-entrypoint.sh.txt",
+    "originalMember": "opt/build-bin/build",
+    "originalMemberMode": "0775",
+    "originalNames": ["amd64-build-entrypoint.sh.txt", "arm64-build-entrypoint.sh.txt"],
+    "bytes": 941,
+    "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b",
+    "limits": "entrypoint compressed layers omitted; their URL/digest/diff ID/member observations retained in original retrieval provenance"
+  },
+  "finalLayer": {
+    "layerIndex": 44,
+    "limits": "compressed final layers omitted; only /tmp directory/whiteout members observed in original retrieval provenance; independent re-verification can retrieve listed immutable public URLs"
+  },
+  "originalInspectionRowsDigest": "683670a2714b9e325646cfc7a70d7adafb0ac3cfae02450b469a4b64b7f9c5e1"
+}

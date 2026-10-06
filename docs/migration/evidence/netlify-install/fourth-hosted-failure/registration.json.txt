@@ -1,0 +1,42 @@
+{
+  "registeredAt": "2026-10-06T10:45:03.849039+00:00",
+  "repository": "KyleMit/Splotch",
+  "head": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "tree": "242c297756387178edf1a56f80d343a812109b7e",
+  "proofBranch": "feature/netlify-migration-topology-05",
+  "expectedProofHead": "d9311502209cd90995399951c8b4b34484e7bf47",
+  "siteId": "8804b246-aa43-44dc-b997-4dc452079910",
+  "purpose": "Acceptance-or-diagnostic automatic hosted run; not a presumed acceptance",
+  "review": "https://github.com/KyleMit/Splotch/pull/2699#pullrequestreview-5427153072",
+  "outcomes": {
+    "acceptance": "Only an actual automatic deploy of this head with qualified install, unchanged five owners, five-context witness and release build passing establishes hosted acceptance.",
+    "diagnostic": "Preserve actual refusal and finite setting class/form without printing values. A plain other-absolute-path does not identify its spelling. No cache or settings changes and no speculative widening."
+  },
+  "bindingRecords": [
+    {
+      "path": "/private/tmp/splotch-netlify-store-amendment-site-preflight-before-ref.json",
+      "bytes": 529,
+      "sha256": "db9b88883aa540e84dc614ae53cf6b30b0acacc35b9c0e5241b8f8a1798a0cdf"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-store-amendment-complete-ci.json",
+      "bytes": 32392,
+      "sha256": "f33e7fb07d4849df7545a076cfe066f2109bd4ffc4a65febaa8bc15469d6e53e"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-store-claude-r2-posted.json",
+      "bytes": 172,
+      "sha256": "0f475f75df6f67a8e02b400a13787d1a35771683c79c9a109be6417f297154f6"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-store-amendment-publication.json",
+      "bytes": 12489,
+      "sha256": "a5baf3e4b6e673c63e0b994a6b8917e8219e1aa609b63c472e54ebaa2e7631cb"
+    }
+  ],
+  "evidenceManifest": {
+    "path": "docs/migration/evidence/netlify-install/store-qualification/manifest.json",
+    "sha256": "0dc446a9d65253e6b8d9426f34aff5331d688348c775069349385b212cef7ea6"
+  },
+  "deployment": "pending"
+}

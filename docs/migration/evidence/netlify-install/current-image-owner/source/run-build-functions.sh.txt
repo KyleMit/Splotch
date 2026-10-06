@@ -1,0 +1,1099 @@
+#!/bin/bash
+# helper to check if we need to install deps
+# install_deps configuration_file version shasum_file
+
+if [ $NETLIFY_VERBOSE ]
+then
+  set -x
+fi
+
+: ${NETLIFY_BUILD_BASE="/opt/buildhome"}
+NETLIFY_CACHE_DIR="$NETLIFY_BUILD_BASE/cache"
+NETLIFY_REPO_DIR="$NETLIFY_BUILD_BASE/repo"
+ENV_STORE="$NETLIFY_BUILD_BASE/env_store/.env"
+
+# Internal yarn config
+# We use an "internal" yarn v1 executable as to not be impacted by corepack yarn selection
+INTERNAL_YARN_PATH="$HOME/.yarn/bin"
+
+# pwd caches
+NETLIFY_JS_WORKSPACES_CACHE_DIR="$NETLIFY_CACHE_DIR/js-workspaces"
+
+export NVM_DIR="$HOME/.nvm"
+
+# Swift configuration
+DEFAULT_SWIFT_VERSION="5.4"
+export SWIFTENV_ROOT="${SWIFTENV_ROOT:-${HOME}/.swiftenv}"
+
+# renovate: datasource=npm depName=corepack
+COREPACK_FOR_NODE_25_AND_HIGHER_VERSION=0.34.7
+
+# prevent corepack from updating the `packageManager` field when it detects that `package.json` doesn't list it
+export COREPACK_ENABLE_AUTO_PIN=0
+# do not prompt for pnpm version installation
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+# language versions
+mkdir -p $NETLIFY_CACHE_DIR/node_version
+mkdir -p $NETLIFY_CACHE_DIR/swift_version
+
+mkdir -p $NETLIFY_JS_WORKSPACES_CACHE_DIR
+mkdir -p $NETLIFY_CACHE_DIR/node_modules
+mkdir -p $NETLIFY_CACHE_DIR/.bundle
+mkdir -p $NETLIFY_CACHE_DIR/bower_components
+mkdir -p $NETLIFY_CACHE_DIR/.venv
+mkdir -p $NETLIFY_CACHE_DIR/.build
+# .netlify/ needs to exist because we may try to copy the Rust functions cache
+# to .netlify/rust-functions-cache
+mkdir -p $NETLIFY_CACHE_DIR/.netlify
+mkdir -p $NETLIFY_CACHE_DIR/.netlify/plugins
+
+# HOME caches
+mkdir -p $NETLIFY_CACHE_DIR/.yarn_cache
+mkdir -p $NETLIFY_CACHE_DIR/.node/corepack
+mkdir -p $NETLIFY_CACHE_DIR/.cache/pip
+mkdir -p $NETLIFY_CACHE_DIR/.cask
+mkdir -p $NETLIFY_CACHE_DIR/.emacs.d
+mkdir -p $NETLIFY_CACHE_DIR/.m2
+mkdir -p $NETLIFY_CACHE_DIR/.boot
+mkdir -p $NETLIFY_CACHE_DIR/.composer
+mkdir -p $NETLIFY_CACHE_DIR/.homebrew-cache
+mkdir -p $NETLIFY_CACHE_DIR/.cargo
+
+# PERF: Skip security audit step, funding info lookup, and `package-lock.json` write to disk
+: ${NPM_FLAGS="--no-audit --no-fund --save=false --prefer-offline"}
+: ${PNPM_FLAGS=""}
+: ${BUNDLER_FLAGS=""}
+
+# Feature flags are a comma-separated list.
+# The following logic relies on the fact that feature flags cannot currently
+# have escaped commas in their value. Otherwise, parsing the list as an array,
+# e.g. using `IFS="," read -ra <<<"$1"` would be needed.
+has_feature_flag() {
+  if [[ "${1}," == *"${2},"* ]]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
+install_deps() {
+  [ -f $1 ] || return 0
+  [ -f $3 ] || return 0
+
+  SHA1="$(shasum $1)-$2"
+  SHA2="$(cat $3)"
+  if [ "$SHA1" == "$SHA2" ]
+  then
+    return 1
+  else
+    return 0
+  fi
+}
+
+restore_node_modules() {
+  local installer=$1
+
+  local workspaces=($(echo "$buildInfo" | jq -r '.jsWorkspaces.packages[]?.path'))
+
+  if [ "$workspaces" ]
+  then
+    echo "$installer workspaces detected"
+    restore_js_workspaces_cache "${workspaces[@]}"
+  else
+    echo "No $installer workspaces detected"
+    restore_cwd_cache node_modules "node modules"
+  fi
+}
+
+run_yarn() {
+  featureFlags=$1
+  restore_home_cache ".yarn_cache" "yarn cache"
+
+  if ! [ $(which corepack) ]
+  then
+    # We manually add our internal yarn version to our path as a fallback, as this means the customer won't have a default
+    # yarn version installed
+    export PATH=$INTERNAL_YARN_PATH:$PATH
+    if [ -d $NETLIFY_CACHE_DIR/yarn ]
+    then
+      export PATH=$NETLIFY_CACHE_DIR/yarn/bin:$PATH
+    fi
+
+    if [ $(which yarn) ] && [ -n "$YARN_VERSION" ] && [ "$(yarn --version)" != "$YARN_VERSION" ]
+    then
+      echo "Found Yarn version ($(yarn --version)) that doesn't match expected ($YARN_VERSION)"
+      rm -rf $NETLIFY_CACHE_DIR/yarn $HOME/.yarn
+      npm uninstall yarn -g
+    fi
+
+    if ! [ $(which yarn) ]
+    then
+      echo "Installing Yarn version $YARN_VERSION"
+      rm -rf $HOME/.yarn
+      bash /usr/local/bin/yarn-installer.sh --version $YARN_VERSION
+      mv $HOME/.yarn $NETLIFY_CACHE_DIR/yarn
+      export PATH=$NETLIFY_CACHE_DIR/yarn/bin:$PATH
+    fi
+  else
+    # only run the activation of the yarn version if it is set via the environment variable YARN_VERSION
+    # if set via the `packageManager` field inside the `package.json` corepack will automatically enable it.
+    if [ -n "$YARN_VERSION" ] && [ "$(yarn --version)" != "$YARN_VERSION" ]
+    then
+      echo "Installing Yarn version $YARN_VERSION"
+      corepack prepare yarn@$YARN_VERSION --activate
+    fi
+  fi
+
+  restore_node_modules "yarn"
+
+  echo "Installing npm packages using Yarn version $(yarn --version)"
+
+  # use the customer's cache if they provide one in their repo
+  if [[ -d $NETLIFY_REPO_DIR/.yarn/cache ]]
+  then
+    export YARN_CACHE_FOLDER="$NETLIFY_REPO_DIR/.yarn/cache"
+  else
+    export YARN_CACHE_FOLDER="$HOME/.yarn_cache"
+  fi
+
+  if [[ "$(yarn --version)" == 1.* ]]
+  then
+    # PERF: Avoid unnecessry `yarn.lock` write to disk on install
+    : ${YARN_FLAGS="--pure-lockfile"}
+
+    # Remove the cache-folder flag if the user set any.
+    # We want to control where to put the cache
+    # to be able to store it internally after the build.
+    local yarn_local="${YARN_FLAGS/--cache-folder * /}"
+    # The previous pattern doesn't match the end of the string.
+    # This removes the flag from the end of the string.
+    yarn_local="${yarn_local%--cache-folder *}"
+
+    if yarn install --cache-folder "$YARN_CACHE_FOLDER" ${yarn_local:+$yarn_local}
+    then
+      echo "npm packages installed using Yarn"
+    else
+      echo "Error during Yarn install"
+      exit 1
+    fi
+  # yarn berry (2+)
+  else
+    if yarn install ${YARN_FLAGS}
+    then
+      echo "npm packages installed using Yarn"
+    else
+      echo "Error during Yarn install"
+      exit 1
+    fi
+  fi
+  export PATH="$PATH:$(npm root)/.bin"
+}
+
+run_pnpm() {
+  featureFlags=$1
+  restore_home_cache ".pnpm-store" "pnpm cache"
+
+  if ! [ $(which corepack) ]
+  then
+    echo "Error while installing pnpm $PNPM_VERSION"
+    echo "We cannot install the expected version of pnpm ($PNPM_VERSION) as your required Node.js version $NODE_VERSION does not allow that"
+    echo "Please ensure that you use at least Node.js version 14.19.0 or greater than 16.9.0"
+
+    exit 1
+  fi
+
+  # only run the activation of the pnpm version if it is set via the environment variable PNPM_VERSION
+  # if set via the `packageManger` field inside the `package.json` corepack will automatically enable it.
+  if [ -n "$PNPM_VERSION" ] && [ "$(pnpm --version)" != "$PNPM_VERSION" ]
+  then
+    echo "Found pnpm version ($(pnpm --version)) that doesn't match expected ($PNPM_VERSION)"
+    corepack prepare pnpm@$PNPM_VERSION --activate
+  fi
+
+  # tell pnpm to store the cache under the home directory which we restored previously
+  # supress error messages with 2>/dev/null
+  set +e  # Disable exit on error
+  pnpm config set store-dir $HOME/.pnpm-store 2>/dev/null
+  exit_status=$?
+  set -e  # Re-enable exit on error
+  # if the pnpm config set was failing it's not supported and fall back to setting the environment variable
+  # for older pnpm versions that does not support the store-dir config
+  if [ "$exit_status" -ne "0" ]
+  then
+    major_version=$(pnpm --version | cut -d'.' -f1)
+    if [ "$major_version" -gt 6 ]
+    then
+      # in PNPM version 7.0.0 it's not working with set store-dir only in higher pnpm versions like 7.14.x
+      echo "store-dir = \"$HOME/.pnpm-store\"" >> "$HOME/.npmrc"
+    else
+      # older versions like 6 and below use the environment variable
+      export PNPM_STORE_DIR="$HOME/.pnpm-store"
+    fi
+  fi
+
+  restore_node_modules "pnpm"
+  echo "Installing npm packages using pnpm version $(pnpm --version)"
+  if pnpm install ${PNPM_FLAGS:+$PNPM_FLAGS}
+  then
+    echo "npm packages installed using pnpm"
+  else
+    echo "Error during pnpm install"
+    exit 1
+  fi
+
+  export PATH=$PATH:$(pnpm bin)
+}
+
+run_bun() {
+  local featureFlags="$1"
+
+  install_bun
+
+  restore_home_cache ".bun/install/cache" "bun global cache"
+  # we're currently not restoring the `node_modules` because of
+  # https://github.com/oven-sh/bun/issues/6448
+
+  echo "Installing npm packages using bun version $(bun --version)"
+  if bun install ${BUN_FLAGS:+$BUN_FLAGS}
+  then
+    echo "npm packages installed using bun"
+  else
+    echo "Error during bun install"
+    exit 1
+  fi
+
+  export PATH=$PATH:$(bun pm bin)
+}
+
+run_npm() {
+  restore_node_modules "npm"
+  local featureFlags="$1"
+
+  if [ -n "$NPM_VERSION" ]
+  then
+    if [ "$(npm --version)" != "$NPM_VERSION" ]
+    then
+      echo "Found npm version ($(npm --version)) that doesn't match expected ($NPM_VERSION)"
+      echo "Installing using npm version $NPM_VERSION"
+      if npx -p npm@$NPM_VERSION npm install ${NPM_FLAGS:+$NPM_FLAGS}
+      then
+        echo "npm packages installed"
+        export PATH="$PATH:$(npm root)/.bin"
+        return 0
+      else
+        echo "Error during npm install"
+        exit 1
+      fi
+    fi
+  fi
+  echo "Installing npm packages using npm version $(npm --version)"
+  if npm install ${NPM_FLAGS:+$NPM_FLAGS}
+  then
+    echo "npm packages installed"
+  else
+    echo "Error during npm install"
+    exit 1
+  fi
+  export PATH="$PATH:$(npm root)/.bin"
+}
+
+install_node() {
+  local defaultNodeVersion=$1
+  local featureFlags=$2
+
+  source $NVM_DIR/nvm.sh
+  echo "source $NVM_DIR/nvm.sh" >> $ENV_STORE
+
+  # Set the node version
+  : ${NODE_VERSION="$defaultNodeVersion"}
+  if [ -f ".nvmrc" ]
+  then
+    read_node_version_file ".nvmrc"
+  elif [ -f ".node-version" ]
+  then
+    read_node_version_file ".node-version"
+  fi
+
+  # Cleanup existing directory if needed
+  local normalized_node_version="${NODE_VERSION#v}"
+  local target_node_dir="$NVM_DIR/versions/node/v$normalized_node_version"
+  if [ -d "$target_node_dir" ] && [ ! -x "$target_node_dir/bin/node" ];
+  then
+    echo "Cleaning up existing Node.js version $normalized_node_version"
+    rm -rf "$target_node_dir"
+  fi
+
+  # Ensure the correct node version is installed
+  if nvm install --no-progress $NODE_VERSION
+  then
+    NODE_VERSION=$(nvm current)
+    # no echo needed because nvm does that for us
+    export NODE_VERSION=$NODE_VERSION
+    echo "export NODE_VERSION=$NODE_VERSION" >> $ENV_STORE
+
+    export PATH="$NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH"
+
+    if [ "$NODE_VERSION" == "none" ]
+    then
+      nvm debug
+      env
+    fi
+  else
+    echo "Failed to install Node.js version '$NODE_VERSION'"
+    exit 1
+  fi
+
+  NODE_MAJOR_VERSION=$(node -v | cut -d'.' -f1 | tr -d 'v')
+
+  if [ "$NODE_MAJOR_VERSION" -ge 25 ] && (! [ $(which corepack) ] || [ "$(corepack --version)" != "$COREPACK_FOR_NODE_25_AND_HIGHER_VERSION" ])
+  then
+    # Corepack is no longer automatically included in Node.js distribution starting with Node 25
+    # so we install it if it's not already available or if the version doesn't match
+    echo "Installing corepack@$COREPACK_FOR_NODE_25_AND_HIGHER_VERSION"
+    npm install --global --save-exact corepack@$COREPACK_FOR_NODE_25_AND_HIGHER_VERSION
+  fi
+
+  # if Node.js Corepack is available enable it
+  if [ $(which corepack) ]
+  then
+    echo "Enabling Node.js Corepack"
+    corepack enable
+  fi
+
+  if [ -n "$NPM_RC" ]
+  then
+    echo "$NPM_RC" > .npmrc
+    echo ".npmrc file written from NPM_RC environment variable."
+  elif [ -n "$NPM_TOKEN" ]
+  then
+    if [ ! -f .npmrc ]
+    then
+      echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > .npmrc
+    fi
+  fi
+}
+
+read_node_version_file() {
+  local nodeVersionFile="$1"
+  NODE_VERSION="$(cat "$nodeVersionFile")"
+  echo "Attempting Node.js version '$NODE_VERSION' from $nodeVersionFile"
+}
+
+install_all() {
+  local defaultNodeVersion=$1
+  local featureFlags=$2
+  local defaultYarnVersion=$3
+  local defaultPnpmVersion=$4
+  local buildInfoFile=$5
+
+  install_python
+  install_ruby
+  install_go
+  install_java
+  install_swift
+  install_brew
+  install_php
+  install_hugo
+  install_zola
+  install_cask
+  install_rust
+  install_node_and_deps "$defaultNodeVersion" "$featureFlags" "$defaultYarnVersion" "$defaultPnpmVersion" "$buildInfoFile"
+}
+
+install_node_and_deps() {
+  # order defined at bot/stage_install_dependencies.go#L70
+  local defaultNodeVersion=$1
+  local featureFlags=$2
+  local buildInfoFile=$3
+  local buildInfo=$(cat $buildInfoFile)
+
+  echo "export FEATURE_FLAGS=\"$featureFlags\"" >> $ENV_STORE
+
+  install_node "$defaultNodeVersion" "$featureFlags"
+
+  # Automatically installed Build plugins
+  if [ ! -d "$PWD/.netlify" ]
+  then
+    # It might be a file or a broken symlink, so let's remove it before creating it
+    rm -rf "$PWD/.netlify"
+    mkdir "$PWD/.netlify"
+  fi
+  restore_cwd_cache ".netlify/plugins" "build plugins"
+
+  if [ -f package.json ];then
+    if [ "$NODE_ENV" == "production" ];then
+      warn "The environment variable 'NODE_ENV' is set to 'production'. Any 'devDependencies' in package.json will not be installed"
+    fi
+
+    restore_home_cache ".node/corepack" "corepack dependencies"
+
+    # Allows sites to migrate to the noble image without upgrading their sharp package version
+    # - For Gatsby, can be removed when all gatsby usage on our platform uses version >=5.14.5
+    # or when all sites using gatsby < 5.14.5 do not generate SSR/DSG functions
+    # Extra context: https://github.com/gatsbyjs/gatsby/pull/39317
+    # - For Next Runtime V4, can be removed when all sites use the v5 runtime or have upgraded
+    # their sharp version to one compatible with the version of the build image
+    export SHARP_IGNORE_GLOBAL_LIBVIPS=TRUE
+
+    local pkgManager=$(echo "$buildInfo" | jq -r '.packageManager.name')
+    case $pkgManager in
+      "yarn")
+        run_yarn "$featureFlags"
+        ;;
+      "pnpm")
+        run_pnpm "$featureFlags"
+        ;;
+      "bun")
+        run_bun "$featureFlags"
+        ;;
+      *)
+        run_npm "$featureFlags"
+        ;;
+    esac
+  fi
+
+  # PATH is modified in run_* functions
+  echo "export PATH=\"$PATH\"" >> $ENV_STORE
+
+  : ${CYPRESS_CACHE_FOLDER="./node_modules/.cache/CypressBinary"}
+
+  export CYPRESS_CACHE_FOLDER
+  echo "export CYPRESS_CACHE_FOLDER=$CYPRESS_CACHE_FOLDER" >> $ENV_STORE
+
+  # Bower Dependencies
+  if [ -f bower.json ];then
+    if ! [ $(which bower) ]
+    then
+      if [ "$NETLIFY_USE_YARN" = "true" ] || ([ "$NETLIFY_USE_YARN" != "false" ] && [ -f yarn.lock ])
+      then
+        echo "Installing Bower with Yarn"
+        yarn add bower
+      else
+        echo "Installing Bower with npm"
+        npm install bower
+      fi
+      export PATH="$(npm root)/.bin:$PATH"
+      echo "export PATH=\"$PATH\"" >> $ENV_STORE
+    fi
+    restore_cwd_cache bower_components "bower components"
+    echo "Installing Bower packages"
+    if bower install --config.interactive=false
+    then
+      echo "Bower packages installed"
+    else
+      echo "Error installing Bower packages"
+      exit 1
+    fi
+  fi
+}
+
+install_python() {
+  # Set python version
+  if [ -f runtime.txt ]
+  then
+    PYTHON_VERSION=$(cat runtime.txt)
+  fi
+
+  if [ -n "$PYTHON_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/python" "python cache"
+
+    # Ensure required python version is installed
+    if mise use -g python@$PYTHON_VERSION > /dev/null
+    then
+      echo "mise use -g python@$PYTHON_VERSION > /dev/null" >> $ENV_STORE
+      echo "Python version set to ${PYTHON_VERSION}"
+    else
+      echo "Error setting python version from $1"
+      exit 1
+    fi
+  else
+    # Restore cache only from the default python version (if it exists)
+    mise use -g python
+    restore_home_cache ".local/share/mise/installs/python/$(mise current python)" "python cache"
+  fi
+
+  # Adds discoverability for packages such as `poetry`
+  local python_executable=$(mise which python)
+  local python_bin_dir=$(dirname "$python_executable")
+  export PATH="$python_bin_dir:$PATH"
+
+  # Install PIP dependencies from requirements.txt or Pipfile
+  if [ -f requirements.txt ]
+  then
+    echo "Installing pip dependencies from requirements.txt"
+    restore_home_cache ".cache/pip" "pip cache"
+    if pip install -r requirements.txt
+    then
+      echo "Pip dependencies installed"
+    else
+      echo "Error installing pip dependencies"
+      exit 1
+    fi
+  elif [ -f Pipfile ]
+  then
+    echo "Found Pipfile, restoring Pipenv virtualenv"
+    restore_cwd_cache ".venv" "python virtualenv"
+
+    echo "Installing pipenv"
+    pip install pipenv
+
+    echo "Installing dependencies from Pipfile"
+    if pipenv install
+    then
+      echo "Pipenv dependencies installed"
+      if source $(pipenv --venv)/bin/activate
+      then
+        echo "source $(pipenv --venv)/bin/activate" >> $ENV_STORE
+        echo "Activated Pipenv virtual environment"
+        echo "Python version set to $(python -V)"
+      else
+        echo "Error activating Pipenv environment"
+        exit 1
+      fi
+    else
+      echo "Error installing Pipenv dependencies"
+      exit 1
+    fi
+  fi
+}
+
+install_ruby() {
+  # Set ruby version
+  if [ -f .ruby-version ]
+  then
+    RUBY_VERSION=$(cat .ruby-version)
+    echo "Attempting Ruby version ${RUBY_VERSION}, read from .ruby-version file"
+  fi
+
+  if [ -n "$RUBY_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/ruby" "ruby cache"
+
+    # Ensure required ruby version is installed
+    if mise use -g ruby@$RUBY_VERSION > /dev/null
+    then
+      echo "mise use -g ruby@$RUBY_VERSION > /dev/null" >> $ENV_STORE
+      echo "Ruby version set to ${RUBY_VERSION}"
+    else
+      echo "Error setting ruby version"
+      exit 1
+    fi
+  else
+    # Restore cache only from the default ruby version (if it exists)
+    mise use -g ruby
+    restore_home_cache ".local/share/mise/installs/ruby/$(mise current ruby)" "ruby cache"
+  fi
+
+  # Ensure gem is in the path
+  local ruby_executable=$(mise which ruby)
+  local ruby_bin_dir=$(dirname "$ruby_executable")
+  export PATH="$ruby_bin_dir:$PATH"
+
+  # Install Ruby Bundler
+  local bundler_version
+  if [ -f Gemfile.lock ]
+  then
+    bundler_version="$(cat Gemfile.lock | grep -C1 '^BUNDLED WITH$' | tail -n1 | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//' | tr -d \\n)"
+  fi
+
+  if [ -n "$bundler_version" ]
+  then
+    echo "Using Bundler version $bundler_version from Gemfile.lock"
+  fi
+
+  if ! gem list -i "^bundler$" -v "$bundler_version" > /dev/null 2>&1
+  then
+    local bundler_gem_name
+    if [ -z "$bundler_version" ]
+    then
+      bundler_gem_name=bundler
+    else
+      bundler_gem_name="bundler:$bundler_version"
+    fi
+    if ! gem install "$bundler_gem_name" --no-document
+    then
+      echo "Error installing Bundler"
+      exit 1
+    fi
+  fi
+
+  # Ruby Gems
+
+  if [ -f Gemfile ]
+  then
+    restore_cwd_cache ".bundle" "ruby gems"
+    if install_deps Gemfile.lock $RUBY_VERSION $NETLIFY_CACHE_DIR/gemfile-sha || [ ! -d .bundle ]
+    then
+      local bundle_command
+      if [ -z "$bundler_version" ]
+      then
+        bundle_command="bundle"
+      else
+        bundle_command="bundle _${bundler_version}_"
+      fi
+
+      echo "Installing gem bundle"
+      bundle config set --local path $NETLIFY_CACHE_DIR/bundle
+      if $bundle_command install --binstubs=$NETLIFY_CACHE_DIR/binstubs ${BUNDLER_FLAGS:+"$BUNDLER_FLAGS"}
+      then
+        echo "export PATH=\"$NETLIFY_CACHE_DIR/binstubs:$PATH\"" >> $ENV_STORE
+        export PATH="$NETLIFY_CACHE_DIR/binstubs:$PATH"
+        echo "Gem bundle installed"
+      else
+        echo "Error during gem install"
+        exit 1
+      fi
+      echo "$(shasum Gemfile.lock)-$RUBY_VERSION" > $NETLIFY_CACHE_DIR/gemfile-sha
+    else
+      echo "export PATH=\"$NETLIFY_CACHE_DIR/binstubs:$PATH\"" >> $ENV_STORE
+      export PATH="$NETLIFY_CACHE_DIR/binstubs:$PATH"
+    fi
+  fi
+}
+
+install_java() {
+  # Java version
+  export JAVA_VERSION=default_sdk
+
+  # Leiningen
+  if [ -f project.clj ]
+  then
+    restore_home_cache ".m2" "maven dependencies"
+    if install_deps project.clj $JAVA_VERSION $NETLIFY_CACHE_DIR/project-clj-sha
+    then
+      echo "Installing Leiningen dependencies"
+      if lein deps
+      then
+        echo "Leiningen dependencies installed"
+      else
+        echo "Error during Leiningen install"
+        exit 1
+      fi
+      echo "$(shasum project.clj)-$JAVA_VERSION" > $NETLIFY_CACHE_DIR/project-clj-sha
+    else
+      echo "Leiningen dependencies found in cache"
+    fi
+  fi
+
+  # Boot
+  if [ -f build.boot ]
+  then
+    restore_home_cache ".m2" "maven dependencies"
+    restore_home_cache ".boot" "boot dependencies"
+    if install_deps build.boot $JAVA_VERSION $NETLIFY_CACHE_DIR/project-boot-sha
+    then
+      echo "Installing Boot dependencies"
+      if boot pom jar install
+      then
+        echo "Boot dependencies installed"
+      else
+        echo "Error during Boot install"
+        exit 1
+      fi
+      echo "$(shasum build.boot)-$JAVA_VERSION" > $NETLIFY_CACHE_DIR/project-boot-sha
+    else
+      echo "Boot dependencies found in cache"
+    fi
+  fi
+}
+
+install_swift() {
+  # Swift Version
+  if [ -f .swift-version ]
+  then
+    SWIFT_VERSION=$(cat .swift-version)
+    echo "Attempting Swift version '$SWIFT_VERSION' from .swift-version"
+  fi
+
+  # If Package.swift is present and no Swift version is set, use a default
+  if [ -f Package.swift ]
+  then
+    : ${SWIFT_VERSION="$DEFAULT_SWIFT_VERSION"}
+    echo "export SWIFT_VERSION=$SWIFT_VERSION" >> $ENV_STORE
+  fi
+
+  if [ -n "$SWIFT_VERSION" ]
+  then
+    if [ -d $NETLIFY_CACHE_DIR/swift_version/$SWIFT_VERSION ]
+    then
+      echo "Started restoring cached Swift version"
+      mkdir -p "$SWIFTENV_ROOT/versions"
+      cp -p -r "$NETLIFY_CACHE_DIR/swift_version/$SWIFT_VERSION/" "$SWIFTENV_ROOT/versions/"
+      swiftenv rehash
+      echo "Finished restoring cached Swift version"
+    fi
+
+    # swiftenv expects the following environment variables to refer to
+    # swiftenv internals
+    if PLATFORM='' URL='' VERSION='' swiftenv install -s $SWIFT_VERSION
+    then
+      echo "Using Swift version $SWIFT_VERSION"
+    else
+      echo "Failed to install Swift version '$SWIFT_VERSION'"
+      exit 1
+    fi
+  fi
+
+  # SPM dependencies
+  if [ -f Package.swift ]
+  then
+    echo "Building Swift package"
+    restore_cwd_cache ".build" "swift build"
+    if swift build
+    then
+      echo "Swift package built"
+    else
+      echo "Error building Swift package"
+      exit 1
+    fi
+  fi
+}
+
+install_brew() {
+  # Homebrew from Brewfile
+  if [ -f Brewfile.netlify ] || [ ! -z "$HOMEBREW_BUNDLE_FILE" ]
+  then
+    : ${HOMEBREW_BUNDLE_FILE:="Brewfile.netlify"}
+    export HOMEBREW_BUNDLE_FILE
+    echo "Installing Homebrew dependencies from ${HOMEBREW_BUNDLE_FILE}"
+    brew bundle
+  fi
+}
+
+install_php() {
+  if [ ! -z $PHP_VERSION ]
+  then
+    if [ -f /usr/bin/php$PHP_VERSION ]
+    then
+      if ln -sf /usr/bin/php$PHP_VERSION $HOME/.php/php
+      then
+        echo "Using PHP version $PHP_VERSION"
+      else
+        echo "Failed to switch to PHP version $PHP_VERSION"
+        exit 1
+      fi
+    else
+      echo "PHP version $PHP_VERSION does not exist"
+      exit 1
+    fi
+  fi
+
+  # PHP Composer dependencies
+  if [ -f composer.json ]
+  then
+    restore_home_cache ".composer" "composer dependencies"
+    composer install --ignore-platform-req=ext-bcmath
+  fi
+}
+
+install_hugo() {
+  if [ -n "$HUGO_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/hugo" "hugo cache"
+
+    if mise use -g -y hugo-extended@$HUGO_VERSION > /dev/null
+    then
+      echo "mise use -g -y hugo-extended@$HUGO_VERSION > /dev/null" >> $ENV_STORE
+      echo "Hugo version set to ${HUGO_VERSION}"
+    else
+      echo "Error during Hugo $HUGO_VERSION install"
+      exit 1
+    fi
+  fi
+}
+
+install_bun() {
+  if [ -n "$BUN_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/bun" "bun cache"
+
+    if mise use -g -y bun@$BUN_VERSION > /dev/null
+    then
+      echo "mise use -g -y bun@$BUN_VERSION > /dev/null" >> $ENV_STORE
+      echo "Bun version set to ${BUN_VERSION}"
+    else
+      echo "Error during Bun $BUN_VERSION install"
+      exit 1
+    fi
+  else
+    # Restore cache only from the default bun version (if it exists)
+    mise use -g bun
+    restore_home_cache ".local/share/mise/installs/bun/$(mise current bun)" "bun cache"
+  fi
+}
+
+install_zola() {
+  if [ -n "$ZOLA_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/zola" "zola cache"
+
+    if mise use -g -y zola@$ZOLA_VERSION > /dev/null
+    then
+      echo "mise use -g -y zola@$ZOLA_VERSION > /dev/null" >> $ENV_STORE
+      echo "Zola version set to ${ZOLA_VERSION}"
+    else
+      echo "Error during Zola $ZOLA_VERSION install"
+      exit 1
+    fi
+  fi
+}
+
+install_cask() {
+  if [ -f Cask ]
+  then
+    restore_home_cache ".cask" "emacs cask dependencies"
+    restore_home_cache ".emacs.d" "emacs cache"
+    if cask install
+    then
+      echo "Emacs packages installed"
+    fi
+  fi
+}
+
+install_rust() {
+  if [ -f Cargo.toml ] || [ -f Cargo.lock ]
+  then
+    restore_home_cache ".rustup" "rust rustup cache"
+    restore_home_cache ".cargo/registry" "rust cargo registry cache"
+    restore_home_cache ".cargo/bin" "rust cargo bin cache"
+    restore_cwd_cache "target" "rust compile output"
+    echo "source $HOME/.cargo/env" >> $ENV_STORE
+  fi
+  restore_cwd_cache ".netlify/rust-functions-cache" "Rust functions"
+}
+
+install_go() {
+  # Set go version
+  if [ -f .go-version ]
+  then
+    GO_VERSION=$(cat .go-version)
+  fi
+
+
+  if [ -n "$GO_VERSION" ]
+  then
+    restore_home_cache ".local/share/mise/installs/go" "go cache"
+
+    # Backwards compatability - drop ".x" suffix from version (i.e. 1.9.x -> 1.9)
+    GO_VERSION=${GO_VERSION%.x}
+
+    if mise use -g go@${GO_VERSION} > /dev/null
+    then
+      echo "mise use -g go@${GO_VERSION} > /dev/null" >> $ENV_STORE
+      echo "Go version set to ${GO_VERSION}"
+    else
+      echo "Error setting Go version to ${GO_VERSION}"
+      exit 1
+    fi
+
+  else
+    # Restore cache only from the default go version (if it exists)
+    mise use -g go
+    restore_home_cache ".local/share/mise/installs/go/$(mise current go)" "go cache"
+  fi
+}
+
+#
+# Take things installed during the build and cache them
+#
+cache_artifacts() {
+  load_env
+  echo "Caching artifacts"
+
+  cache_node_modules
+
+  cache_cwd_directory ".venv" "python virtualenv"
+  cache_cwd_directory ".netlify/plugins" "build plugins"
+  cache_cwd_directory ".netlify/rust-functions-cache" "Rust functions"
+
+  cache_home_directory ".node/corepack" "corepack cache"
+  cache_home_directory ".pnpm-store" "pnpm cache"
+  cache_home_directory ".yarn_cache" "yarn cache"
+  cache_home_directory ".bun/install/cache" "bun global cache"
+  cache_home_directory ".cache/pip" "pip cache"
+
+  if [ -f Gemfile ]
+  then
+    cache_cwd_directory ".bundle" "ruby gems"
+    rm -rf $NETLIFY_CACHE_DIR/.local/share/mise/installs/ruby
+    mkdir -p $NETLIFY_CACHE_DIR/.local/share/mise/installs
+    fast_copy_cache "$HOME/.local/share/mise/installs/ruby" "$NETLIFY_CACHE_DIR/.local/share/mise/installs/ruby" "saving ruby cache"
+  fi
+
+  if [ -f bower.json ]
+  then
+    cache_cwd_directory "bower_components" "bower components"
+  fi
+
+  if [ -f composer.json ]
+  then
+    cache_home_directory ".composer" "composer dependencies"
+  fi
+
+  if [ -f Package.swift ]
+  then
+    cache_cwd_directory ".build" "swift build"
+  fi
+
+  if [ -f Cargo.toml ] || [ -f Cargo.lock ]
+  then
+    cache_cwd_directory_fast_copy "target" "rust compile output"
+    cache_home_directory ".cargo/registry" "rust cargo registry cache"
+    cache_home_directory ".cargo/bin" "rust cargo bin cache"
+    cache_home_directory ".rustup" "rust rustup cache"
+  fi
+
+  if [ -f build.boot ] || [ -f project.clj ]
+  then
+    cache_home_directory ".m2" "maven dependencies"
+    cache_home_directory ".boot" "boot dependencies"
+  fi
+
+  if [ -f Cask ]
+  then
+    cache_home_directory ".emacs.d" "emacs cache"
+    cache_home_directory ".cask" "emacs cask dependencies"
+  fi
+}
+
+move_cache() {
+  local src=$1
+  local dst=$2
+  if [ -d "$src" ]
+  then
+    # check if the src is empty
+    if [ -z "$(ls -A $src 2>/dev/null)" ]
+    then
+      return
+    fi
+
+    echo "Started $3"
+    rm -rf "$dst"
+    # recreate the dst folder if it's a nested one otherwise mv will fail
+    mkdir -p "$(dirname $dst)"
+    mv "$src" "$dst"
+    echo "Finished $3"
+  fi
+}
+
+fast_copy_cache() {
+  local src=$1
+  local dst=$2
+  if [ -d $src ]
+  then
+    echo "Started $3"
+    cp -r --reflink=auto $src $dst
+    echo "Finished $3"
+  fi
+}
+
+restore_home_cache() {
+  if [ -z "$SKIP_CACHE_RESTORE" ]; then
+    move_cache "$NETLIFY_CACHE_DIR/$1" "$HOME/$1" "restoring cached $2"
+  fi
+}
+
+cache_home_directory() {
+  noop
+}
+
+restore_cwd_cache() {
+  if [ -z "$SKIP_CACHE_RESTORE" ]; then
+    move_cache "$NETLIFY_CACHE_DIR/$1" "$PWD/$1" "restoring cached $2"
+  fi
+}
+
+# Restores node_modules dirs cached for js workspaces
+# See https://github.com/netlify/pod-workflow/issues/139/ for more context
+#
+# Expects:
+# $@ each argument should be a package location relative to the repo's root
+restore_js_workspaces_cache() {
+  # Keep a record of the workspaces in the project in order to cache them later
+  NETLIFY_JS_WORKSPACE_LOCATIONS=("$@")
+
+  echo "export STORED_JS_WORKSPACE_LOCATIONS=\"${NETLIFY_JS_WORKSPACE_LOCATIONS[@]}\"" >> $ENV_STORE
+
+  if [ -z "$SKIP_CACHE_RESTORE" ]; then
+    # Retrieve each workspace node_modules
+    for location in "${NETLIFY_JS_WORKSPACE_LOCATIONS[@]}"; do
+      move_cache "$NETLIFY_JS_WORKSPACES_CACHE_DIR/$location/node_modules" \
+        "$NETLIFY_REPO_DIR/$location/node_modules" \
+        "restoring workspace $location node modules"
+    done
+    # Retrieve hoisted node_modules
+    move_cache "$NETLIFY_JS_WORKSPACES_CACHE_DIR/node_modules" "$NETLIFY_REPO_DIR/node_modules" "restoring workspace root node modules"
+  fi
+}
+
+#
+# Caches node_modules dirs for a js project. Either detects the presence of js workspaces
+# via the `NETLIFY_JS_WORKSPACE_LOCATIONS` variable, or looks at the node_modules in the cwd.
+#
+cache_node_modules() {
+  # do nothing - node_modules now remains in cwd which is cached entirely
+  noop
+}
+
+#
+# Caches node_modules dirs from js workspaces. It acts based on the presence of a
+# `NETLIFY_JS_WORKSPACE_LOCATIONS` variable previously set in `restore_js_workspaces_cache()`
+#
+cache_js_workspaces() {
+  # load stored -- in the env store -- workspace locations into an array
+  IFS=' ' declare -a "JS_WORKSPACE_LOCATIONS=($STORED_JS_WORKSPACE_LOCATIONS)"
+
+  for location in "${JS_WORKSPACE_LOCATIONS[@]}"; do
+    mkdir -p "$NETLIFY_JS_WORKSPACES_CACHE_DIR/$location"
+    move_cache "$NETLIFY_REPO_DIR/$location/node_modules" \
+      "$NETLIFY_JS_WORKSPACES_CACHE_DIR/$location/node_modules" \
+      "saving workspace $location node modules"
+  done
+  # Retrieve hoisted node_modules
+  move_cache "$NETLIFY_REPO_DIR/node_modules" "$NETLIFY_JS_WORKSPACES_CACHE_DIR/node_modules" "saving workspace root node modules"
+}
+
+cache_cwd_directory() {
+  # do nothing - cwd is cached entirely
+  noop
+}
+
+cache_cwd_directory_fast_copy() {
+  fast_copy_cache "$PWD/$1" "$NETLIFY_CACHE_DIR/$1" "saving $2"
+}
+
+warn() {
+  echo "WARNING: $1"
+}
+
+load_env() {
+  if [ -f $ENV_STORE ]
+  then
+    if [ -z "$SKIP_CACHE_RESTORE" ]; then
+      . $ENV_STORE
+    fi
+  else
+    mkdir -p "$NETLIFY_BUILD_BASE/env_store"
+    touch "$ENV_STORE"
+
+    echo "export NVM_DIR=$HOME/.nvm" >> $ENV_STORE
+    echo "export SWIFTENV_ROOT=${SWIFTENV_ROOT:-${HOME}/.swiftenv}" >> $ENV_STORE
+  fi
+}
+
+# get_node_version returns NODE_VERSION from the environment
+get_node_version() {
+  echo "$NODE_VERSION"
+}
+
+# noop is invoked when sourcing this script
+noop() {
+  :
+}
+
+load_env
+
+"$@"

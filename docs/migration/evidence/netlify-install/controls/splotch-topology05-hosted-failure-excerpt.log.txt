@@ -1,0 +1,18 @@
+Sanitized visible-dashboard excerpt, selected initialization/install/witness lines only. Raw full log and environment collections were not retained.
+Source: https://app.netlify.com/projects/splotchy/deploys/6ac4b006e2ce39000805a7b9
+4:23:36 AM: build-image version: febd7789d222253fdaba9b87eacf08dcdf49fe9d (noble-new-builds)
+4:23:37 AM: Fetching cached dependencies
+4:23:37 AM: Starting to download cache of 1.1GB (Last modified: 2026-10-05 01:32:56 +0000 UTC)
+4:23:39 AM: Downloaded cache in 2.605s
+4:23:44 AM: Extracted cache in 4.994s
+4:23:44 AM: Fetched cache in 7.77s
+4:23:45 AM: Preparing Git Reference refs/heads/feature/netlify-migration-topology-05
+4:23:52 AM: Now using node v22.23.3 (npm v10.9.9)
+4:23:54 AM: pnpm workspaces detected
+4:23:54 AM: Installing npm packages using pnpm version 11.22.0
+4:23:55 AM: Scope: all 2 workspace projects
+4:23:55 AM: Lockfile is up to date, resolution step is skipped
+4:24:03 AM: Done in 8.6s using pnpm v11.22.0
+4:24:04 AM: Successfully installed dependencies
+4:24:06 AM: > node tools/netlify-topology-witness.mjs && node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases
+4:24:07 AM: AssertionError [ERR_ASSERTION]: Installed package outside production graph: brace-expansion@2.1.1 at node_modules/filelist/node_modules/brace-expansion

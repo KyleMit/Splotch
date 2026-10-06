@@ -1,0 +1,17 @@
+function getStorePath({ pkgRoot, storePath, pnpmHomeDir }) {
+  if (!storePath) {
+    if (!pnpmHomeDir) {
+      throw new PnpmError("NO_PNPM_HOME_DIR", "The pnpm home directory is unknown. Cannot calculate the store directory location.");
+    }
+    return storePathRelativeToHome(pkgRoot, "store", pnpmHomeDir);
+  }
+  if (isHomepath2(storePath)) {
+    const homedir = getHomedir2();
+    return storePathRelativeToHome(pkgRoot, storePath.substring(2), homedir);
+  }
+  const storeBasePath = pathAbsolute(storePath, pkgRoot);
+  if (storeBasePath.endsWith(`${path99.sep}${STORE_VERSION}`)) {
+    return storeBasePath;
+  }
+  return path99.join(storeBasePath, STORE_VERSION);
+}

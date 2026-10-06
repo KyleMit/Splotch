@@ -1,0 +1,272 @@
+{
+  "retrievedAt": "2026-10-06T10:45:10.566793+00:00",
+  "anonymousPublicRegistryToken": "ephemeral-memory-only; no account credentials; not retained",
+  "metadataByteLimit": 1048576,
+  "files": [
+    {
+      "path": "index.json",
+      "url": "https://registry-1.docker.io/v2/netlify/build/manifests/febd7789d222253fdaba9b87eacf08dcdf49fe9d-noble-new-builds",
+      "bytes": 743,
+      "sha256": "4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada",
+      "contentType": "application/vnd.docker.distribution.manifest.list.v2+json",
+      "dockerContentDigest": "sha256:4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada"
+    },
+    {
+      "path": "amd64-manifest.json",
+      "url": "https://registry-1.docker.io/v2/netlify/build/manifests/sha256:b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419",
+      "bytes": 9777,
+      "sha256": "b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419",
+      "contentType": "application/vnd.docker.distribution.manifest.v2+json",
+      "dockerContentDigest": "sha256:b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419"
+    },
+    {
+      "path": "amd64-config.json",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286",
+      "bytes": 36591,
+      "sha256": "5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286",
+      "contentType": "application/octet-stream",
+      "dockerContentDigest": null
+    },
+    {
+      "path": "arm64-manifest.json",
+      "url": "https://registry-1.docker.io/v2/netlify/build/manifests/sha256:8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731",
+      "bytes": 9770,
+      "sha256": "8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731",
+      "contentType": "application/vnd.docker.distribution.manifest.v2+json",
+      "dockerContentDigest": "sha256:8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731"
+    },
+    {
+      "path": "arm64-config.json",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46",
+      "bytes": 36591,
+      "sha256": "509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46",
+      "contentType": "application/octet-stream",
+      "dockerContentDigest": null
+    },
+    {
+      "path": "amd64-layer-41.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29",
+      "bytes": 713,
+      "sha256": "d37a9293c74f5e2c59b125ce6045a5cd3a26c39297039e99743103f34f04be29",
+      "uncompressedBytes": 3584,
+      "verifiedDiffId": "sha256:7d44e3ba1e5c07e162cb7df0475b8d9d3ec5452384563107ffb930d1bfcfbf7c",
+      "layerIndex": 41,
+      "architecture": "amd64",
+      "members": [
+        {
+          "path": "opt",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin/build",
+          "size": 941,
+          "mode": "0o775",
+          "type": "0",
+          "retainedPath": "amd64-build-entrypoint.sh.txt",
+          "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+        }
+      ]
+    },
+    {
+      "path": "amd64-layer-43.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d",
+      "bytes": 8325,
+      "sha256": "bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d",
+      "uncompressedBytes": 34816,
+      "verifiedDiffId": "sha256:b07890ebb47f80ad76382c2457a510c8f70e99bd4b3e57f542933d2cf34cbfde",
+      "layerIndex": 43,
+      "architecture": "amd64",
+      "members": [
+        {
+          "path": "opt",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin/.wh.run-build-functions-new-builds.sh",
+          "size": 0,
+          "mode": "0o600",
+          "type": "0"
+        },
+        {
+          "path": "opt/build-bin/run-build-functions.sh",
+          "size": 31256,
+          "mode": "0o775",
+          "type": "0",
+          "retainedPath": "amd64-current-run-build-functions.sh.txt",
+          "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+        }
+      ]
+    },
+    {
+      "path": "arm64-layer-41.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:5b398cb46995a4dd71d17f846beb2c057f76cd1040fe0d3ebcf96d899be469d4",
+      "bytes": 712,
+      "sha256": "5b398cb46995a4dd71d17f846beb2c057f76cd1040fe0d3ebcf96d899be469d4",
+      "uncompressedBytes": 3584,
+      "verifiedDiffId": "sha256:d056f67fa318386d5c8bb67609593636a1f0ee926ffd04bfd45b32a440ec413e",
+      "layerIndex": 41,
+      "architecture": "arm64",
+      "members": [
+        {
+          "path": "opt",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin/build",
+          "size": 941,
+          "mode": "0o775",
+          "type": "0",
+          "retainedPath": "arm64-build-entrypoint.sh.txt",
+          "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+        }
+      ]
+    },
+    {
+      "path": "arm64-layer-43.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3",
+      "bytes": 8318,
+      "sha256": "e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3",
+      "uncompressedBytes": 34816,
+      "verifiedDiffId": "sha256:c79f0d6a47ac900e4cc741eb18af6bac1f8028fce2542bada2e4e22648948c05",
+      "layerIndex": 43,
+      "architecture": "arm64",
+      "members": [
+        {
+          "path": "opt",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin",
+          "size": 0,
+          "mode": "0o755",
+          "type": "5"
+        },
+        {
+          "path": "opt/build-bin/.wh.run-build-functions-new-builds.sh",
+          "size": 0,
+          "mode": "0o600",
+          "type": "0"
+        },
+        {
+          "path": "opt/build-bin/run-build-functions.sh",
+          "size": 31256,
+          "mode": "0o775",
+          "type": "0",
+          "retainedPath": "arm64-current-run-build-functions.sh.txt",
+          "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+        }
+      ]
+    },
+    {
+      "path": "amd64-layer-44.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:20c35d4b87bef8ef493af1841826826d04d1d521afb657742840b93b0913739f",
+      "bytes": 279,
+      "sha256": "20c35d4b87bef8ef493af1841826826d04d1d521afb657742840b93b0913739f",
+      "uncompressedBytes": 4096,
+      "verifiedDiffId": "sha256:73e5fe0243f20bdc1e3d4523d91f9caea9fb3e32669faa913bc69291f9d1ba6b",
+      "layerIndex": 44,
+      "architecture": "amd64",
+      "members": [
+        {
+          "path": "tmp",
+          "size": 0,
+          "type": "5"
+        },
+        {
+          "path": "tmp/.wh.030f6983-8ae7-4e93-9222-8a1a441e7867",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.4c6c6f02-9284-4d46-b0a4-043b7f03dae7",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.4de9056b-00c0-4f6f-a21d-125df3a6e735",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.hsperfdata_buildbot",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.node-compile-cache",
+          "size": 0,
+          "type": "0"
+        }
+      ]
+    },
+    {
+      "path": "arm64-layer-44.tar.gz",
+      "url": "https://registry-1.docker.io/v2/netlify/build/blobs/sha256:d2b0bdeac6e6b3e7575a2f11994a2655d0a0b19601abfa9387d950844aae0914",
+      "bytes": 280,
+      "sha256": "d2b0bdeac6e6b3e7575a2f11994a2655d0a0b19601abfa9387d950844aae0914",
+      "uncompressedBytes": 4096,
+      "verifiedDiffId": "sha256:4ac534df4ee8f8686c6ca5894df54ef984a3489c4b04fba23776a9f950d32096",
+      "layerIndex": 44,
+      "architecture": "arm64",
+      "members": [
+        {
+          "path": "tmp",
+          "size": 0,
+          "type": "5"
+        },
+        {
+          "path": "tmp/.wh.36f8b3a8-b884-4e33-a9ef-858c7a283d76",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.bf7ef042-e163-4b7e-a729-de50f2d158ba",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.d703cbd8-ee56-4e21-b808-8e1e9cfd045f",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.hsperfdata_buildbot",
+          "size": 0,
+          "type": "0"
+        },
+        {
+          "path": "tmp/.wh.node-compile-cache",
+          "size": 0,
+          "type": "0"
+        }
+      ]
+    }
+  ],
+  "lastRetrievedAt": "2026-10-06T10:47:19.641943+00:00"
+}

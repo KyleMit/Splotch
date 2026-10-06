@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { realpathSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { PRODUCTION_INSTALL_CONTRACT } from '../netlify-topology-witness.mjs';
 import { candidateExclusiveArtifacts, readLockFile } from './lib/lock-artifacts.mjs';
 import { readJson } from './lib/native-identity.mjs';
 import { deriveProductionInstallContract } from './lib/production-install-contract.mjs';
@@ -20,6 +21,12 @@ if (isMain(import.meta.url))
       evidence,
       'Proof inputs cannot be written through an alias'
     );
+    const contractDirectory = dirname(join(root, PRODUCTION_INSTALL_CONTRACT));
+    assert.equal(
+      realpathSync(contractDirectory),
+      contractDirectory,
+      'Current production contract cannot be written through an alias'
+    );
     const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
     assertCandidateArchiveInventory(
       readJson(join(evidence, 'script-inventory.json')),
@@ -35,15 +42,15 @@ if (isMain(import.meta.url))
       .map(({ key, name, version }) => ({ key, name, version }))
       .sort((left, right) => (left.key < right.key ? -1 : left.key > right.key ? 1 : 0));
     const outputs = {
-      'production-install-contract.json': contract,
-      'candidate-exclusive-artifacts.json': {
+      [PRODUCTION_INSTALL_CONTRACT]: contract,
+      'docs/migration/evidence/native-topology-05/candidate-exclusive-artifacts.json': {
         schemaVersion: 1,
         lockSha256: contract.lockSha256,
         artifacts,
       },
     };
     for (const [path, record] of Object.entries(outputs))
-      writeFileSync(join(evidence, path), JSON.stringify(record, null, 2) + '\n');
+      writeFileSync(join(root, path), JSON.stringify(record, null, 2) + '\n');
     console.log(
       JSON.stringify({
         outputs: Object.keys(outputs),

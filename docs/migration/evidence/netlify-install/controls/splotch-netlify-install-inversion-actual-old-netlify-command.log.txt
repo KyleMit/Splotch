@@ -1,0 +1,35 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-production-install.test.mjs --maxWorkers=1 -t gates the actual Netlify
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+ ❯ tests/netlify-production-install.test.mjs (43 tests | 1 failed | 42 skipped) 4ms
+   ❯ Netlify second production installer (43)
+     × gates the actual Netlify build and staging command on the installer 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > gates the actual Netlify build and staging command on the installer
+AssertionError: expected 'git fetch --tags --force || true; npm…' to be 'git fetch --tags --force || true; nod…' // Object.is equality
+
+Expected: "git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs"
+Received: "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
+
+ ❯ tests/netlify-production-install.test.mjs:159:28
+    157|     const commands = [...build.matchAll(/^\s*command\s*=\s*"([^"]*)"\s…
+    158|     expect(commands).toHaveLength(1);
+    159|     expect(commands[0][1]).toBe(
+       |                            ^
+    160|       'git fetch --tags --force || true; node tools/netlify-production…
+    161|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 42 skipped (43)
+   Start at  05:11:25
+   Duration  80ms (transform 55%, import 27%, tests 13%, worker 5%)
+

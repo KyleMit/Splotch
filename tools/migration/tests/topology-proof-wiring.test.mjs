@@ -17,14 +17,15 @@ function proofWorkflowViolations(source) {
   const parsed = document.toJS();
   const failures = [];
   if (
-    JSON.stringify(parsed.on?.pull_request?.branches) !== JSON.stringify(['codex/native-migration'])
+    JSON.stringify(parsed.on?.pull_request?.branches) !==
+    JSON.stringify(['codex/native-migration', 'codex/migration-05-native-topology'])
   )
     failures.push('migration PR trigger absent');
   if (JSON.stringify(parsed.on?.push?.branches) !== JSON.stringify([TOPOLOGY_PROOF_BRANCH]))
     failures.push('proof-ref trigger absent');
   if (parsed.defaults?.run?.shell !== 'bash') failures.push('proof shell changed');
   const job = parsed.jobs?.['topology-proof'];
-  const expectedCondition = `github.head_ref == 'codex/migration-05-native-topology' || github.ref_name == '${TOPOLOGY_PROOF_BRANCH}'`;
+  const expectedCondition = `github.head_ref == 'codex/migration-05-native-topology' || github.head_ref == 'codex/migration-netlify-install' || github.ref_name == '${TOPOLOGY_PROOF_BRANCH}'`;
   if (job?.if !== expectedCondition) failures.push('proof scope changed');
   if (job?.['continue-on-error']) failures.push('proof job failures ignored');
   const steps = job?.steps ?? [];
@@ -42,7 +43,7 @@ function proofWorkflowViolations(source) {
 }
 
 describe('topology proof CI ownership', () => {
-  it('runs exact evidence on the topology PR and selected proof ref while Quality keeps live invariants', () => {
+  it('runs exact evidence on topology and repair PRs and the proof ref while Quality keeps live invariants', () => {
     expect(proofWorkflowViolations(workflow)).toEqual([]);
     expect(manifest.scripts['check:migration:native-topology:evidence']).toBe(
       'node tools/migration/check-native-topology-evidence.mjs'
@@ -68,11 +69,19 @@ describe('topology proof CI ownership', () => {
         )
       )
     ).toContain(`proof command not mandatory: ${evidenceCommand}`);
+    for (const head of ['codex/migration-05-native-topology', 'codex/migration-netlify-install']) {
+      expect(
+        proofWorkflowViolations(workflow.replace(`github.head_ref == '${head}'`, 'false'))
+      ).toContain('proof scope changed');
+    }
     expect(
       proofWorkflowViolations(
-        workflow.replace("github.head_ref == 'codex/migration-05-native-topology'", 'false')
+        workflow.replace(
+          'branches: [codex/native-migration, codex/migration-05-native-topology]',
+          'branches: [codex/native-migration]'
+        )
       )
-    ).toContain('proof scope changed');
+    ).toContain('migration PR trigger absent');
     expect(
       proofWorkflowViolations(
         workflow.replace(`branches: [${TOPOLOGY_PROOF_BRANCH}]`, 'branches: [main]')

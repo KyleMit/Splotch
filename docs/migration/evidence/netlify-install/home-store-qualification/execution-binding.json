@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "status": "local-actual-controls-passed-hosted-and-final-implementation-review-pending",
+  "sourceBase": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "executedSourceRows": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 9976,
+      "mode": "0o644",
+      "sha256": "8c806fbc3381b615ebdbe7847119a004c99e37a62217723b6c8bf579c708fa6d"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14445,
+      "mode": "0o644",
+      "sha256": "03596b8e4ab56f2672a659088d0a71dda43b39188b9e5480aa22611e9d5d56ea"
+    },
+    {
+      "path": "tools/tests/netlify-home-store.test.mjs",
+      "bytes": 18092,
+      "mode": "0o644",
+      "sha256": "387eaf9fc509610e1eb992e0b3e9e83b92e01a06bfb47240d456ff2d52b73c87"
+    }
+  ],
+  "runtimeOwners": {
+    "package.json": {
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "mode": "0o644"
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0o644"
+    },
+    "pnpm-workspace.yaml": {
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0o644"
+    },
+    "experiments/native-architecture/package.json": {
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "mode": "0o644"
+    },
+    "netlify.toml": {
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33",
+      "mode": "0o644"
+    }
+  },
+  "focused": {
+    "files": 3,
+    "tests": 150
+  },
+  "fullTools": {
+    "files": 320,
+    "tests": 7504
+  },
+  "quality": {
+    "checks": 15
+  },
+  "realPnpm": {
+    "steps": 9,
+    "scope": "Actual released pnpm11.22 and actual installer with one fixed-home declaration substitution into a canonical owned synthetic namespace; not actual Netlify evidence"
+  },
+  "originalValidationFailure": "Apple Python archive-extraction setup failure before any manager child; corrected by selecting current Python, with no source change",
+  "rawCaptures": [
+    "controls/splotch-netlify-home-store-format.log.txt",
+    "controls/splotch-netlify-home-store-focused.log.txt",
+    "controls/splotch-netlify-home-store-real-manager.log.txt",
+    "controls/splotch-netlify-home-store-current-python-real-manager.log.txt",
+    "controls/splotch-netlify-home-store-current-python-full-tools.log.txt",
+    "controls/splotch-netlify-home-store-current-python-quality.log.txt",
+    "real-pnpm/released-pnpm-version.log.txt",
+    "real-pnpm/released-global-store-writer.log.txt",
+    "real-pnpm/released-getter-plain.log.txt",
+    "real-pnpm/released-getter-single-quoted.log.txt",
+    "real-pnpm/released-getter-double-quoted.log.txt",
+    "real-pnpm/development-baseline.log.txt",
+    "real-pnpm/qualified-warm-ci-with-home-store.log.txt",
+    "real-pnpm/qualified-warm-selected-physical-witness.log.txt",
+    "real-pnpm/qualified-production-release-build.log.txt",
+    "controls/initial-validation.json.txt",
+    "controls/current-python-validation.json.txt",
+    "real-pnpm/receipt.json.txt",
+    "real-pnpm/protocol.py.txt",
+    "source-review.md.txt",
+    "source-review-receipt.json.txt",
+    "planning-question.md.txt",
+    "planning-findings.json.txt"
+  ],
+  "pending": [
+    "Final resumed implementation review",
+    "Current-head CI",
+    "Automatic hosted install/witness/build"
+  ]
+}

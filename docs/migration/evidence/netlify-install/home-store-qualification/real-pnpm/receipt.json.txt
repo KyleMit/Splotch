@@ -1,0 +1,171 @@
+{
+  "status": "passed",
+  "packet": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k",
+  "sourceBase": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "sourceRows": [
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14445,
+      "sha256": "03596b8e4ab56f2672a659088d0a71dda43b39188b9e5480aa22611e9d5d56ea"
+    },
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 9976,
+      "sha256": "8c806fbc3381b615ebdbe7847119a004c99e37a62217723b6c8bf579c708fa6d"
+    },
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "disposition": "only fixed home-root declaration changed in disposable caller",
+      "fixtureSha256": "e5307d1e0940374cfc05ec169fbf264987fb100d9bd98ba4c56aebee79eada40"
+    }
+  ],
+  "sourceOwners": {
+    "package.json": {
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "mode": "0o644"
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0o644"
+    },
+    "pnpm-workspace.yaml": {
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0o644"
+    },
+    "experiments/native-architecture/package.json": {
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "mode": "0o644"
+    },
+    "netlify.toml": {
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33",
+      "mode": "0o644"
+    }
+  },
+  "steps": [
+    {
+      "step": "released-pnpm-version",
+      "argv": [
+        "pnpm",
+        "--version"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.17002041602972895,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/released-pnpm-version.log.txt",
+      "bytes": 8,
+      "sha256": "a8608bace4e3de4e6d8c1f809759eab6c60aa908a62f739089cab67e9c4955c6"
+    },
+    {
+      "step": "released-global-store-writer",
+      "argv": [
+        "pnpm",
+        "config",
+        "set",
+        "store-dir",
+        "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/home/.pnpm-store"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.17601491697132587,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/released-global-store-writer.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "step": "released-getter-plain",
+      "argv": [
+        "pnpm",
+        "config",
+        "get",
+        "--json",
+        "store-dir"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.16386516601778567,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/released-getter-plain.log.txt",
+      "bytes": 82,
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771"
+    },
+    {
+      "step": "released-getter-single-quoted",
+      "argv": [
+        "pnpm",
+        "config",
+        "get",
+        "--json",
+        "store-dir"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.1583952500950545,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/released-getter-single-quoted.log.txt",
+      "bytes": 82,
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771"
+    },
+    {
+      "step": "released-getter-double-quoted",
+      "argv": [
+        "pnpm",
+        "config",
+        "get",
+        "--json",
+        "store-dir"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.16045462503097951,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/released-getter-double-quoted.log.txt",
+      "bytes": 82,
+      "sha256": "0cefb93e32c68e5e19b34d92add0b475cca427ed5e5c4742f6ec858dc3394771"
+    },
+    {
+      "step": "development-baseline",
+      "argv": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 7.870745416963473,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/development-baseline.log.txt",
+      "bytes": 1069,
+      "sha256": "42831a47a278f4978c169d2ba4a8be59af94161b1e864fea52c79770e73e988b"
+    },
+    {
+      "step": "qualified-warm-ci-with-home-store",
+      "argv": [
+        "node",
+        "tools/netlify-production-install.mjs"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 11.143872458022088,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/qualified-warm-ci-with-home-store.log.txt",
+      "bytes": 5704,
+      "sha256": "45b0d455ab0cdf22999b87df3910facf5673b35a1b5a916594661dda0fa48af6"
+    },
+    {
+      "step": "qualified-warm-selected-physical-witness",
+      "argv": [
+        "node",
+        "--input-type=module",
+        "--eval",
+        "import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:\"6bac65f02b605b6efb0a0545eeda5e6cdc40a76a\",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 0.05770787503570318,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/qualified-warm-selected-physical-witness.log.txt",
+      "bytes": 45862,
+      "sha256": "23ec18f13bc3c5000048cc0140643f7e356b2246c0391f7e4b8b66728f73b267"
+    },
+    {
+      "step": "qualified-production-release-build",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 6.618320290930569,
+      "log": "/private/tmp/splotch-netlify-home-store-real-controls-mrg0wf5k/qualified-production-release-build.log.txt",
+      "bytes": 62483,
+      "sha256": "41278028b64d196ea3adc5268d070930d231a03079666a71ef98c44b5fcef1a4"
+    }
+  ],
+  "scope": "Actual released pnpm11.22 and actual installer with one fixed-home declaration substitution into a canonical owned synthetic namespace; not actual Netlify evidence"
+}

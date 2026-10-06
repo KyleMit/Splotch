@@ -1,0 +1,24 @@
+async function writeModulesManifest(modulesDir, modules) {
+  const modulesYamlPath = path73.join(modulesDir, MODULES_FILENAME);
+  const saveModules = { ...modules, ignoredBuilds: modules.ignoredBuilds ? Array.from(modules.ignoredBuilds) : void 0 };
+  if (saveModules.skipped)
+    saveModules.skipped.sort();
+  if (saveModules.hoistPattern == null || saveModules.hoistPattern === "") {
+    delete saveModules.hoistPattern;
+  }
+  if (saveModules.publicHoistPattern == null) {
+    delete saveModules.publicHoistPattern;
+  }
+  if (!saveModules.virtualStoreOnly) {
+    delete saveModules.virtualStoreOnly;
+  }
+  if (saveModules.hoistedAliases == null || saveModules.hoistPattern == null && saveModules.publicHoistPattern == null) {
+    delete saveModules.hoistedAliases;
+  }
+  if (!(0, import_is_windows7.default)()) {
+    saveModules.virtualStoreDir = path73.relative(modulesDir, saveModules.virtualStoreDir);
+  }
+  await lib_default.mkdir(modulesDir, { recursive: true });
+  await lib_default.writeFile(modulesYamlPath, JSON.stringify(saveModules, null, 2));
+}
+var import_is_windows7, MODULES_FILENAME;

@@ -1,0 +1,38 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-production-install.test.mjs --maxWorkers=1 -t explicit JSON string undefined
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+ ❯ tests/netlify-production-install.test.mjs (43 tests | 1 failed | 42 skipped) 900ms
+   ❯ Netlify second production installer (43)
+     × rejects the explicit JSON string undefined before any destructive install 900ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/netlify-production-install.test.mjs > Netlify second production installer > rejects the explicit JSON string undefined before any destructive install
+AssertionError: expected [Function run] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ tests/netlify-production-install.test.mjs:206:25
+    204|     const context = fixture();
+    205|     setSetting(context, 'modules-dir', 'undefined');
+    206|     expect(context.run).toThrow('Unsupported explicit pnpm setting mod…
+       |                         ^
+    207|     expect(context.calls()).toEqual([['--version'], ['config', 'get', …
+    208|     expect(context.records).toEqual([]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 42 skipped (43)
+   Start at  05:11:29
+   Duration  980ms (tests 97%, transform 2%, import 1%)
+

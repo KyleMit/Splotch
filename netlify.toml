@@ -13,7 +13,7 @@
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
-  command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
+  command = "git fetch --tags --force || true; node tools/netlify-production-install.mjs && npm run build && node tools/stage-netlify-functions.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # reads. The paths on the `ignore` line below are the whole watched set. Its
   # tools/ capability folders are enumerated rather than watching all of tools/,

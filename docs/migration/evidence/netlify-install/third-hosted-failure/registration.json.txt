@@ -1,0 +1,15 @@
+{
+  "source": "d9311502209cd90995399951c8b4b34484e7bf47",
+  "priorRef": "c4372771edd370afe2d92b7b4eea7eab29356d90",
+  "branch": "feature/netlify-migration-topology-05",
+  "registeredAt": "2026-10-06 09:56:15 UTC",
+  "refFastForwardSucceeded": true,
+  "diagnosticOnly": true,
+  "alwaysRefusesPresentGlobalConfig": true,
+  "sourceTreeEqualToClaudeSnapshot": "d100530363c13c144a76d21333a6fd44d53b4095",
+  "claudeQuestionGO": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/06cdc947-91e4-44a0-a5b7-57a79f73da5f/findings.json",
+  "applicableLocalValidation": "/private/tmp/splotch-netlify-global-config-diagnostic-final-validation.json",
+  "sourceReview": "/private/tmp/splotch-global-config-migration-evidence-review-atjadka9/REVIEW.md",
+  "status": "awaiting-actual-observation",
+  "currentHeadCI": "in-progress-merge-not-proposed"
+}
