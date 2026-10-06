@@ -1,0 +1,77 @@
+import { fileInventory } from './web-host-files.mjs';
+import { assertPinnedBuildMetadata } from './web-host-metadata.mjs';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  WEB_HOST_COPY_ROLES,
+  WEB_HOST_INPUTS,
+  WEB_HOST_MARKER,
+  WEB_HOST_RESULT,
+  WEB_HOST_OUTPUT_PATHS,
+  webHostArtifact,
+  assertWebHostVariant,
+} from '../../../migration/probes/web-host/host/contract.ts';
+import { assertOwnedArtifact, ownedPath, pathInside } from './web-host-ownership.mjs';
+import { assertFinalInputBindings } from './web-host-inputs.mjs';
+import { sha256 } from './web-host-source.mjs';
+
+export function readWebHostArtifact(requestedRoot) {
+  if (typeof requestedRoot !== 'string' || !requestedRoot)
+    throw new Error('An actual --artifact-root is required');
+  const root = realpathSync(requestedRoot);
+  const marker = JSON.parse(readFileSync(join(root, WEB_HOST_MARKER), 'utf8'));
+  if (typeof marker.token !== 'string' || !marker.token)
+    throw new Error('Artifact marker has no ownership token');
+  const owned = { root, token: marker.token };
+  assertOwnedArtifact(owned);
+  const inputBytes = readFileSync(ownedPath(owned, WEB_HOST_INPUTS));
+  const inputs = JSON.parse(inputBytes.toString('utf8'));
+  const result = JSON.parse(readFileSync(ownedPath(owned, WEB_HOST_RESULT), 'utf8'));
+  const artifact = webHostArtifact(inputs.artifact);
+  assertWebHostVariant(inputs.variant);
+  assertPinnedBuildMetadata(inputs.pinned);
+  if (
+    result.inputsSha256 !== sha256(inputBytes) ||
+    result.status !== 'structural-build-only' ||
+    result.artifact !== artifact ||
+    result.sourceSha !== inputs.snapshot.sha ||
+    result.topologySha !== inputs.snapshot.topologySha ||
+    result.evidence?.control?.version?.version !== inputs.pinned.metadata.appVersion
+  ) {
+    throw new Error(
+      'Only a completed, source-bound structural build artifact can be checked/served'
+    );
+  }
+  assertFinalInputBindings(owned, inputs.bindings);
+  for (const role of WEB_HOST_COPY_ROLES) {
+    const copyRoot = realpathSync(inputs.copies[role]);
+    if (
+      copyRoot !== join(root, role) ||
+      !pathInside(root, copyRoot) ||
+      lstatSync(inputs.copies[role]).isSymbolicLink()
+    )
+      throw new Error(`${role} copy is outside its owned artifact`);
+    if (sha256(readFileSync(join(copyRoot, 'pnpm-lock.yaml'))) !== inputs.snapshot.lockSha256)
+      throw new Error(`${role} lock changed after its build`);
+    assertOwnedOutputIntegrity(owned, copyRoot, result.evidence[role]?.outputs, role);
+  }
+  const copyRoot = inputs.copies.control;
+  return { owned, inputs, result, artifact, copyRoot };
+}
+
+export function assertOwnedOutputIntegrity(owned, copyRoot, expected, role) {
+  if (!WEB_HOST_COPY_ROLES.includes(role) || copyRoot !== join(owned.root, role))
+    throw new Error('Output inventory requires its actual owned copy role');
+  if (
+    !expected ||
+    Object.keys(expected).sort().join() !== [...WEB_HOST_OUTPUT_PATHS].sort().join()
+  ) {
+    throw new Error('Artifact omitted its complete emitted output inventory');
+  }
+  for (const path of WEB_HOST_OUTPUT_PATHS) {
+    ownedPath(owned, join(role, path));
+    if (JSON.stringify(fileInventory(join(copyRoot, path))) !== JSON.stringify(expected[path])) {
+      throw new Error(`Built ${role} output changed after capture: ${path}`);
+    }
+  }
+}

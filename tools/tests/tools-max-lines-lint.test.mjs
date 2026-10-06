@@ -22,7 +22,7 @@ const maxLinesMessages = async (fixture, lineCount) => {
 
 // Each fixture sits beside one of the excluded paths or in a tree with its own file shape, and
 // none exists on disk: ESLint reads the path only to pick the config blocks that match it.
-describe('max-lines covers every tools/ script at the web default cap', () => {
+describe('max-lines covers tools and retained web host sources at the web default cap', () => {
   it.each([
     'tools/perf/probe.mjs',
     'tools/perf/probes/probe.js',
@@ -31,6 +31,8 @@ describe('max-lines covers every tools/ script at the web default cap', () => {
     'tools/asset-gen/probe.mjs',
     'tools/asset-gen/lib/probe.ts',
     'tools/store-drawings/lib/probe.mjs',
+    'migration/probes/web-host/host/probe.ts',
+    'migration/probes/web-host/tests/probe.spec.ts',
   ])('rejects %s one line over the cap and accepts it at the cap', async (fixture) => {
     expect(await maxLinesMessages(fixture, defaultCap)).toEqual([]);
     expect(await maxLinesMessages(fixture, defaultCap + 1)).toEqual([
