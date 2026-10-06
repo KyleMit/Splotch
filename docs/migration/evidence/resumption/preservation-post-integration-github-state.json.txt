@@ -1,0 +1,77 @@
+{
+  "observedAt": "2026-10-06 15:15:24 UTC",
+  "scope": "Post-integration native GitHub recheck; original 14:51 receipt remains immutable, not an at-merge observation.",
+  "pullRequest": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Action completed."
+      }
+    ],
+    "structuredContent": {
+      "url": "https://github.com/KyleMit/Splotch/pull/2700",
+      "number": 2700,
+      "state": "closed",
+      "merged": true,
+      "mergeable": false,
+      "draft": false,
+      "body": "Preserves the migration's accepted/pending frontier and recoverable work for a fresh session. Adds a continuation packet, progress checklist, updated accepted-unit ledger, and hash-bound data capsules carrying source history, actual control evidence, native/React preparation, and the separate advisory audits.\n\nThis is a documentation and preservation checkpoint. The retained control, native source, and future dependency/toolchain plans keep their unaccepted states; migration execution remains paused for the next authorized session. The maintainer explicitly approved publishing this source/evidence payload to KyleMit/Splotch.\n\nValidation: whole-checkout formatting, tracked documentation references and ADR integrity passed. An independent read-only Codex preservation review verified all six artifact identities, all 616 archive members, both Git-bundle heads/prerequisites, all 70 native intake rows, and unchanged migration worktrees. Historical application checks retain their original source/scope; no candidate execution is attributed to this checkpoint.\n\nDraft for review and integration into the long-lived migration branch. Refs #2690.",
+      "title": "docs: Preserve paused migration continuation checkpoint",
+      "base": "codex/native-migration",
+      "base_sha": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+      "head": "codex/migration-continuation-records",
+      "head_sha": "63c5f2f45a463774f50455041174f075abaa4af2",
+      "head_repo_id": 1138315402,
+      "head_repo_full_name": "KyleMit/Splotch",
+      "merge_commit_sha": "aa507a74963adac35baed84c7ab2e13cdc12a946",
+      "user": {
+        "login": "KyleMit",
+        "name": "KyleMit",
+        "email": null,
+        "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+        "id": 4307307
+      },
+      "requested_reviewers": null,
+      "requested_team_reviewers": null,
+      "diff": null,
+      "comments": null,
+      "created_at": "2026-10-06T14:29:28Z",
+      "updated_at": "2026-10-06T14:59:03Z",
+      "closed_at": "2026-10-06T14:59:00Z",
+      "merged_at": "2026-10-06T14:59:00Z",
+      "commits": 3,
+      "changed_files": 12,
+      "additions": 5661,
+      "deletions": 21,
+      "display_url": "https://github.com/KyleMit/Splotch/pull/2700",
+      "display_title": "docs: Preserve paused migration continuation checkpoint"
+    },
+    "isError": false
+  },
+  "reviews": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Action completed."
+      }
+    ],
+    "structuredContent": {
+      "reviews": [
+        {
+          "id": "PRR_kwDOQ9lQis8AAAABQ6yCZg",
+          "state": "COMMENTED",
+          "body": "Preservation acceptance at 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd: the independent Codex verifier matched all six artifact identities, all 616 safe archive-member occurrences, both bundle heads/prerequisites, every original local source copy and all 70 live native intake rows. Applicable final-head Tests and ADR checks pass; predicate-inapplicable topology/commit jobs remain skipped. Retained/topology source worktrees retain their recorded identities.\n\nIndependent Claude continuation/plan challenge (conversation bbe89d5b-644f-4d4f-9366-e5156cebf4ea, wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4, round one) also executed the six-artifact/616-member verifier and both bundle checks, and confirmed the diff from the integration base changes only docs/evidence. Its disposition permits this verified checkpoint to integrate unchanged after live head/base/CI verification. Its unverified live-state item is satisfied by the native GitHub checks and independent verifier above. The broader F1 import-boundary findings remain implementation work in a separate new unit; this merge accepts none of the retained/native/React preparation or performance claims.\n\nThe maintainer explicitly resumed the full campaign in this session. The first live-register commit will supersede present-tense pause wording while keeping capsule/validation bytes immutable. No migration implementation, architecture choice, native runtime, signed upgrade or final release gate is accepted by this preservation merge.",
+          "submitted_at": "2026-10-06T14:58:47Z",
+          "author": {
+            "login": "KyleMit",
+            "name": "KyleMit",
+            "email": null,
+            "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+            "id": null
+          }
+        }
+      ]
+    },
+    "isError": false
+  }
+}

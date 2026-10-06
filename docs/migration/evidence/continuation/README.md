@@ -1,5 +1,10 @@
 # Paused migration preservation
 
+The maintainer resumed the full campaign on 2026-10-06, and PR 2700 merged unchanged at
+aa507a74963adac35baed84c7ab2e13cdc12a946. The [live register](../../CAMPAIGN.md) owns current
+status. Pause wording below describes the historical checkpoint; capsule and validation bytes remain
+immutable.
+
 This is a portable checkpoint for the 2026-10-06 pause. The
 [handoff](../../../handoff/native-migration-continuation.md) owns immediate continuation, and the
 [progress checklist](../../PROGRESS.md) owns scope. The accepted integration head is
