@@ -1,0 +1,21 @@
+# Released iOS launch-owner amendment
+
+This dated amendment corrects the incomplete destructive-owner description in the immutable
+tag-owner-report.md.txt. Its original bytes, capsule and producer remain unchanged.
+
+Both released v1.5.0 and v1.6.0 AppDelegate launch hooks invoke resumePendingDownload before
+JavaScript can enumerate data. The coordinator reads the persisted job; when its appVersion
+differs from the running bundle version, it removes the entire versionDirectory(job.version),
+removes the job file and cancels tasks. This can include completed books in that namespace.
+The six exact source/commit/tree/blob/full-file and line-range identities are in
+ios-launch-owner-amendment.json.txt. The accepted f149 coordinator removes the job file at
+the mismatch boundary but does not remove the old version directory there.
+
+This historical path joins the Android/iOS status-time cleanup owners. Fixtures created
+through an old upgrade chain must distinguish data already removed by that released launch
+behavior. Any reused launch coordinator must defer destructive reconciliation until actual
+non-destructive enumeration and preservation complete. Avoiding status alone is insufficient.
+Malformed-job cleanup and task cancellation also remain ordered reconciliation obligations.
+
+These source facts do not prove execution in an attached artifact or installed app, historical
+data loss on a device, successful migration, signed-channel continuity or runtime acceptance.

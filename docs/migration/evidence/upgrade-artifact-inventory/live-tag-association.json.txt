@@ -1,0 +1,90 @@
+[
+  {
+    "ref": "refs/tags/v1.0.0",
+    "liveObject": {
+      "sha": "06f5bf94f367a9a0e697e49306a13eb053474dc5",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/06f5bf94f367a9a0e697e49306a13eb053474dc5"
+    },
+    "localObject": "06f5bf94f367a9a0e697e49306a13eb053474dc5",
+    "localCommit": "06f5bf94f367a9a0e697e49306a13eb053474dc5",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.0.1",
+    "liveObject": {
+      "sha": "c7091f351243fef6288b9ffdc70b1cc6112ee774",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/c7091f351243fef6288b9ffdc70b1cc6112ee774"
+    },
+    "localObject": "c7091f351243fef6288b9ffdc70b1cc6112ee774",
+    "localCommit": "c7091f351243fef6288b9ffdc70b1cc6112ee774",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.1.0",
+    "liveObject": {
+      "sha": "2966e81dce4183e64dab8b9c1138b1bf1a99b224",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/2966e81dce4183e64dab8b9c1138b1bf1a99b224"
+    },
+    "localObject": "2966e81dce4183e64dab8b9c1138b1bf1a99b224",
+    "localCommit": "2966e81dce4183e64dab8b9c1138b1bf1a99b224",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.2.0",
+    "liveObject": {
+      "sha": "aaf24315dcef143e38ae2418bbfdb4a4d418eb4a",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/aaf24315dcef143e38ae2418bbfdb4a4d418eb4a"
+    },
+    "localObject": "aaf24315dcef143e38ae2418bbfdb4a4d418eb4a",
+    "localCommit": "aaf24315dcef143e38ae2418bbfdb4a4d418eb4a",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.3.0",
+    "liveObject": {
+      "sha": "1a7113d0fdb38923d9283555190030ac866e2c53",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/1a7113d0fdb38923d9283555190030ac866e2c53"
+    },
+    "localObject": "1a7113d0fdb38923d9283555190030ac866e2c53",
+    "localCommit": "1a7113d0fdb38923d9283555190030ac866e2c53",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.4.0",
+    "liveObject": {
+      "sha": "4756b058f75d22e12d43fac7be5af70236c8be5c",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/4756b058f75d22e12d43fac7be5af70236c8be5c"
+    },
+    "localObject": "4756b058f75d22e12d43fac7be5af70236c8be5c",
+    "localCommit": "4756b058f75d22e12d43fac7be5af70236c8be5c",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.5.0",
+    "liveObject": {
+      "sha": "ad3702e44d384a2a7acc6dd497dc791df848c06a",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/ad3702e44d384a2a7acc6dd497dc791df848c06a"
+    },
+    "localObject": "ad3702e44d384a2a7acc6dd497dc791df848c06a",
+    "localCommit": "ad3702e44d384a2a7acc6dd497dc791df848c06a",
+    "sameRefObject": true
+  },
+  {
+    "ref": "refs/tags/v1.6.0",
+    "liveObject": {
+      "sha": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+      "type": "commit",
+      "url": "https://api.github.com/repos/KyleMit/Splotch/git/commits/d8b86469f63c57a06a9de45664a42eea15b99eb0"
+    },
+    "localObject": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+    "localCommit": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+    "sameRefObject": true
+  }
+]

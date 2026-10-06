@@ -1,0 +1,83 @@
+{
+  "observedAtUtc": "2026-10-06T17:12:12.679249+00:00",
+  "producerSha256": "7dd3152ec691ca48c3d870ea12f1e4730a7f634e1aa87655e596f7b1bbb40159",
+  "sourceBefore": {
+    "head": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+    "indexTree": "7a27284ea535f78d8652c76be61f71c6661f9fbe",
+    "markdown": {
+      "docs/migration/UPGRADES.md": "b5356af20073fff3e0e0193f20be8984fb4e20e1eaba77376ca084e431c0a966",
+      "docs/migration/CAMPAIGN.md": "d820b578dd893b5c6812ef195cc60f9ae01a158d31031c20eb4d174012324ac6",
+      "docs/migration/evidence/upgrade-artifact-inventory/README.md": "cbe2be50dd0529e780affad435f3154b586fc821ceae553859d54b0147ba59b4"
+    }
+  },
+  "sourceAfter": {
+    "head": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+    "indexTree": "7a27284ea535f78d8652c76be61f71c6661f9fbe",
+    "markdown": {
+      "docs/migration/UPGRADES.md": "b5356af20073fff3e0e0193f20be8984fb4e20e1eaba77376ca084e431c0a966",
+      "docs/migration/CAMPAIGN.md": "d820b578dd893b5c6812ef195cc60f9ae01a158d31031c20eb4d174012324ac6",
+      "docs/migration/evidence/upgrade-artifact-inventory/README.md": "cbe2be50dd0529e780affad435f3154b586fc821ceae553859d54b0147ba59b4"
+    }
+  },
+  "calls": [
+    {
+      "name": "format",
+      "command": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "startedAtUtc": "2026-10-06T17:11:58.594099+00:00",
+      "elapsedSeconds": 13.823204915970564,
+      "exitCode": 0,
+      "stdoutBytes": 289,
+      "stderrBytes": 0,
+      "stdoutSha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "docrefs",
+      "command": [
+        "npm",
+        "run",
+        "check:doc-refs"
+      ],
+      "startedAtUtc": "2026-10-06T17:12:12.417393+00:00",
+      "elapsedSeconds": 0.22887545893900096,
+      "exitCode": 0,
+      "stdoutBytes": 131,
+      "stderrBytes": 0,
+      "stdoutSha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--cached"
+      ],
+      "startedAtUtc": "2026-10-06T17:12:12.646281+00:00",
+      "elapsedSeconds": 0.01236029202118516,
+      "exitCode": 0,
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "earlierAccidentalFailures": [
+    {
+      "command": "check:doc-refs",
+      "reason": "Runtime coloring/jobs/current.json was classified as a missing repository path; copy clarified to job basename/directory; no guard exemption added",
+      "count": 2
+    },
+    {
+      "command": "task-local exact-text patch",
+      "reason": "dprint wrapping changed expected paragraph; assertions stopped without writing; token replacement corrected",
+      "count": 1
+    }
+  ],
+  "scope": "Final documentation/technical-evidence formatting and reference gates only; no app or continuity runtime pass"
+}

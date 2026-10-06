@@ -1,0 +1,47 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "url": "https://github.com/KyleMit/Splotch/pull/2705",
+    "number": 2705,
+    "state": "open",
+    "merged": false,
+    "mergeable": true,
+    "draft": true,
+    "body": "Update the one live campaign register after accepted preregistration PR2704 and its final-head CI. Preserve exact observed source/index identities, original rival round budgets and the unintended retained/native qualification failures without accepting pending implementation.\n\nDocument the paired build-nonce owner's retirement obligations and the shared shipping PWA reader. Burden formulas and ranges remain unchanged. Formatting and tracked-file documentation references pass; the first documentation invocation before new receipts were staged rejected those untracked links, then passed with the complete staged set.\n\nThis draft is a live records increment. F1 changed-source acceptance, retained final public calls/review/CI, native compile/runtime, physical calibration and all product/release gates remain pending.",
+    "title": "docs(migration): record accepted burden and current halted gates",
+    "base": "codex/native-migration",
+    "base_sha": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+    "head": "codex/migration-live-frontier",
+    "head_sha": "45a01d182b602f18e66bfc3fffdd0c4edf7339c6",
+    "head_repo_id": 1138315402,
+    "head_repo_full_name": "KyleMit/Splotch",
+    "merge_commit_sha": "f152df156386fdaafd17f66cfc8df849715ce6ad",
+    "user": {
+      "login": "KyleMit",
+      "name": "KyleMit",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+      "id": 4307307
+    },
+    "requested_reviewers": null,
+    "requested_team_reviewers": null,
+    "diff": null,
+    "comments": null,
+    "created_at": "2026-10-06T16:32:07Z",
+    "updated_at": "2026-10-06T16:44:02Z",
+    "closed_at": null,
+    "merged_at": null,
+    "commits": 2,
+    "changed_files": 5,
+    "additions": 1648,
+    "deletions": 44,
+    "display_url": "https://github.com/KyleMit/Splotch/pull/2705",
+    "display_title": "docs(migration): record accepted burden and current halted gates"
+  },
+  "isError": false
+}

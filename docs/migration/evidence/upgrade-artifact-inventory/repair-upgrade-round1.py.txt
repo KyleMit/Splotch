@@ -1,0 +1,172 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import gzip
+import hashlib
+import json
+import subprocess
+
+repo = Path('/Users/kylemit/Code/Splotch')
+output = repo / 'docs/migration/evidence/upgrade-artifact-inventory'
+scratch = Path('/private/tmp/splotch-resume-01a111b0/continuity-intake')
+reviewed = 'bc17d8f4ae2c774ab9704c5a8821ea5d2f005d28'
+git = lambda *args: subprocess.check_output(['git', *args], cwd=repo)
+digest = lambda raw: hashlib.sha256(raw).hexdigest()
+assert git('rev-parse', 'HEAD').decode().strip() == reviewed
+assert not git('status', '--porcelain')
+prior_raw = (output / 'manifest.json.txt').read_bytes()
+prior = json.loads(prior_raw)
+assert len(prior['files']) == 26
+for row in prior['files']:
+    raw = (output / row['path']).read_bytes()
+    assert len(raw) == row['bytes'] and digest(raw) == row['sha256']
+at = datetime.now(timezone.utc).isoformat()
+original_paths = [
+    'unit-owner.json', 'live-releases-native-complete.json', 'live-release-inventory.json',
+    'live-tags-native-complete.json', 'live-tag-association.json',
+    'v140-probe-predicate.json', 'v140-artifact-qualification.json',
+    'supported-artifacts-download.json', 'supported-download-release.json',
+    'supported-artifact-qualification.json', 'qualify-supported-artifacts.mjs',
+    'download-supported-artifacts.py', 'upgrade-inventory-disposition.md',
+]
+original_names = [name + '.txt' for name in original_paths]
+original_names += ['compose-upgrade-evidence.py.txt', 'tag-owner-report.md.txt']
+assert len(original_names) == 15 and set(original_names) <= {r['path'] for r in prior['files']}
+
+old_adr = output / 'live-records-adr-native.json.txt'
+assert json.loads(old_adr.read_bytes())['structuredContent']['number'] == 2705
+renamed = output / 'live-records-pr-before-integration-native.json.txt'
+assert not renamed.exists()
+old_adr.rename(renamed)
+adr_raw = (scratch / 'ci-first/requested-adr-native-complete.json.txt').read_bytes()
+adr = json.loads(json.loads(adr_raw)['structuredContent']['content'])
+assert (adr['id'], adr['name'], adr['conclusion'], adr['head_sha']) == (
+    37497449897, 'ADR Integrity', 'success', '45a01d182b602f18e66bfc3fffdd0c4edf7339c6')
+old_adr.write_bytes(adr_raw)
+
+quality = output / 'live-records-quality-native.json.txt'
+quality_raw = quality.read_bytes()
+compressed_quality = output / (quality.name + '.gz')
+assert not compressed_quality.exists()
+compressed_quality.write_bytes(gzip.compress(quality_raw, mtime=0))
+assert gzip.decompress(compressed_quality.read_bytes()) == quality_raw
+quality.unlink()
+
+anchors = []
+for source in ['v1.5.0', 'v1.6.0', 'f14966ee98563e3c569fbcb90beea6d9c684614a']:
+    for path in ['ios/App/App/AppDelegate.swift', 'ios/App/App/ColoringPacksPlugin.swift']:
+        raw = git('show', source + ':' + path)
+        lines = raw.decode().splitlines(keepends=True)
+        marker = 'func application(_ application: UIApplication, didFinishLaunchingWithOptions' if path.endswith('AppDelegate.swift') else 'func resumePendingDownload()'
+        positions = [i for i, line in enumerate(lines) if marker in line]
+        assert len(positions) == 1
+        start = positions[0]
+        end = start + (4 if path.endswith('AppDelegate.swift') else 33)
+        selected = ''.join(lines[start:end])
+        if path.endswith('AppDelegate.swift'):
+            assert 'ColoringPackDownloadCoordinator.shared.resumePendingDownload()' in selected
+        else:
+            assert 'guard job.appVersion == appVersion else' in selected
+            if source.startswith('v'):
+                assert 'removeItem(at: Self.versionDirectory(job.version))' in selected
+            else:
+                assert 'removeItem(at: Self.versionDirectory(job.version))' not in selected
+            assert 'removeItem(at: Self.jobURL)' in selected
+        tree_line = git('ls-tree', source, '--', path).decode().strip()
+        mode, kind, blob = tree_line.split('\t')[0].split()
+        assert kind == 'blob' and git('cat-file', 'blob', blob) == raw
+        anchors.append({'source': source, 'commit': git('rev-parse', source + '^{commit}').decode().strip(),
+            'tree': git('rev-parse', source + '^{tree}').decode().strip(), 'path': path,
+            'gitBlob': blob, 'gitMode': mode, 'bytes': len(raw), 'sha256': digest(raw),
+            'startLine': start + 1, 'endLine': end, 'selectedText': selected,
+            'selectedSha256': digest(selected.encode()),
+            'claimLimit': 'Actual source-object/launch-path qualification; no compiled-source or native execution claim'})
+anchor_path = output / 'ios-launch-owner-amendment.json.txt'
+anchor_path.write_text(json.dumps({'observedAtUtc': at, 'producer': Path(__file__).name + '.txt', 'owners': anchors}, indent=2) + '\n')
+amendment = '''# Released iOS launch-owner amendment
+
+This dated amendment corrects the incomplete destructive-owner description in the immutable
+tag-owner-report.md.txt. Its original bytes, capsule and producer remain unchanged.
+
+Both released v1.5.0 and v1.6.0 AppDelegate launch hooks invoke resumePendingDownload before
+JavaScript can enumerate data. The coordinator reads the persisted job; when its appVersion
+differs from the running bundle version, it removes the entire versionDirectory(job.version),
+removes the job file and cancels tasks. This can include completed books in that namespace.
+The six exact source/commit/tree/blob/full-file and line-range identities are in
+ios-launch-owner-amendment.json.txt. The accepted f149 coordinator removes the job file at
+the mismatch boundary but does not remove the old version directory there.
+
+This historical path joins the Android/iOS status-time cleanup owners. Fixtures created
+through an old upgrade chain must distinguish data already removed by that released launch
+behavior. Any reused launch coordinator must defer destructive reconciliation until actual
+non-destructive enumeration and preservation complete. Avoiding status alone is insufficient.
+Malformed-job cleanup and task cancellation also remain ordered reconciliation obligations.
+
+These source facts do not prove execution in an attached artifact or installed app, historical
+data loss on a device, successful migration, signed-channel continuity or runtime acceptance.
+'''
+(output / 'tag-owner-amendment.md.txt').write_text(amendment)
+
+integration_path = output / 'live-records-accepted-integration.json.txt'
+integration = json.loads(integration_path.read_bytes())
+integration['adrMetadata'] = old_adr.name
+integration['qualityMetadata'] = compressed_quality.name
+integration['amendedAtUtc'] = at
+integration['amendmentScope'] = 'Correct metadata linkage and representation only; original accepted records identities remain unchanged'
+integration_path.write_text(json.dumps(integration, indent=2) + '\n')
+
+producer_name = Path(__file__).name + '.txt'
+(output / producer_name).write_bytes(Path(__file__).read_bytes())
+repairs_name = 'round1-repairs.json.txt'
+repairs = {'observedAtUtc': at, 'reviewedHead': reviewed, 'originalClaudeConversation': '7816bd4e-769a-44d4-8755-6c9ff2cc3bb9',
+    'reviewId': 5432293756, 'roundsUsed': 1, 'roundsRemainingBeforeNextReview': 2,
+    'inputManifest': {'gitBlob': git('rev-parse', reviewed + ':docs/migration/evidence/upgrade-artifact-inventory/manifest.json.txt').decode().strip(), 'bytes': len(prior_raw), 'sha256': digest(prior_raw)},
+    'producer': {'path': producer_name, 'sha256': digest(Path(__file__).read_bytes())},
+    'findings': ['Exact Quality JSON compressed without content edits; no guard exception',
+        'Actual complete native ADR response added; old PR response renamed with original bytes',
+        'Original 15-file composer scope separated from 11 later manual rows and this repair invocation',
+        'Released iOS launch-time namespace deletion qualified against exact source and added to required preservation order'],
+    'previousPublishedManifestFiles': prior['files'],
+    'claimLimits': ['Records repair only; no F1 review-budget change', 'No app/build/runtime/dependency mutation or native execution', 'Later final gates and review remain required']}
+(output / repairs_name).write_text(json.dumps(repairs, indent=2) + '\n')
+
+manifest = {key: value for key, value in prior.items() if key not in ['observedAtUtc', 'producerSha256', 'files']}
+manifest['originalComposer'] = {'observedAtUtc': prior['observedAtUtc'], 'producerSha256': prior['producerSha256'],
+    'scope': 'Original capsule/member manifest and only the following 15 technical files', 'files': original_names}
+manifest['amendments'] = [
+    {'id': 'manual-before-first-review', 'latestKnownPublishedAtUtc': '2026-10-06T17:23:37Z',
+     'sourceCommit': reviewed, 'inputManifestSha256': digest(prior_raw),
+     'scope': 'Eleven later parent-composed rows; their embedded invocation times and sources retain their own scope; not outputs of the original composer',
+     'files': [row['path'] for row in prior['files'] if row['path'] not in original_names]},
+    {'id': 'round1-repairs', 'observedAtUtc': at, 'producer': producer_name,
+     'producerSha256': digest(Path(__file__).read_bytes()), 'inputManifestSha256': digest(prior_raw),
+     'receipt': repairs_name, 'scope': 'Current file envelope after exact representation/linkage repairs and source-owner amendment'}]
+files = []
+for row in prior['files']:
+    current = dict(row)
+    if row['path'] == quality.name:
+        current.update(path=compressed_quality.name, uncompressedBytes=len(quality_raw), uncompressedSha256=digest(quality_raw),
+            representation='Standard gzip of the complete original native JSON; exact decoded nested log remains unchanged')
+    if row['path'] == old_adr.name:
+        current.update(path=renamed.name, representation='Original payload is a pre-integration PR2705 snapshot; it is not ADR metadata')
+    if row['path'] == integration_path.name:
+        current.update(producer=producer_name, preservedExact=False, representation='Current integration-linkage amendment; prior bytes remain at the reviewed Git commit')
+    raw = (output / current['path']).read_bytes()
+    current.update(bytes=len(raw), sha256=digest(raw))
+    files.append(current)
+for name in [old_adr.name, anchor_path.name, 'tag-owner-amendment.md.txt', producer_name, repairs_name]:
+    raw = (output / name).read_bytes()
+    files.append({'path': name, 'bytes': len(raw), 'sha256': digest(raw), 'producer': producer_name,
+        'originalPath': 'ci-first/requested-adr-native-complete.json.txt' if name == old_adr.name else None,
+        'preservedExact': name in [old_adr.name, producer_name]})
+manifest['files'] = files
+(output / 'manifest.json.txt').write_text(json.dumps(manifest, indent=2) + '\n')
+for row in files:
+    raw = (output / row['path']).read_bytes()
+    assert len(raw) == row['bytes'] and digest(raw) == row['sha256']
+    if 'uncompressedBytes' in row:
+        decoded = gzip.decompress(raw)
+        assert len(decoded) == row['uncompressedBytes'] and digest(decoded) == row['uncompressedSha256']
+print(json.dumps({'technicalFiles': len(files), 'originalComposerFiles': len(original_names),
+    'originalManualRows': len(prior['files']) - len(original_names), 'sourceAnchors': len(anchors),
+    'compressedQualityBytes': compressed_quality.stat().st_size, 'priorQualityBytes': len(quality_raw),
+    'amendedManifestSha256': digest((output / 'manifest.json.txt').read_bytes())}))

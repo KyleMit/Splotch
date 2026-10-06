@@ -1,0 +1,43 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import assert from 'node:assert/strict';
+import { readAabVersion, readIpaVersion } from '/Users/kylemit/Code/Splotch/tools/release/lib/artifact-version.mjs';
+import { readAndroidVersion } from '/Users/kylemit/Code/Splotch/tools/release/lib/native-version.mjs';
+
+const ROOT = '/private/tmp/splotch-resume-01a111b0/continuity-intake';
+const REPO = '/Users/kylemit/Code/Splotch';
+const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const owners = ['tools/release/lib/artifact-version.mjs', 'tools/release/lib/zip.mjs', 'tools/release/lib/native-version.mjs'];
+const source = () => Object.fromEntries(owners.map((path) => [path, sha(readFileSync(join(REPO, path)))]));
+const before = source();
+const releaseBytes = readFileSync(join(ROOT, 'live-release-inventory.json'));
+const tagBytes = readFileSync(join(ROOT, 'live-tag-association.json'));
+const releases = JSON.parse(releaseBytes).rows;
+const tags = JSON.parse(tagBytes);
+const results = [];
+for (const release of releases) {
+  const tag = tags.find((entry) => entry.ref === 'refs/tags/' + release.tag);
+  assert.ok(tag?.sameRefObject);
+  const gradle = execFileSync('git', ['-C', REPO, 'show', tag.localCommit + ':android/app/build.gradle']);
+  const sourceVersion = readAndroidVersion(gradle.toString('utf8'));
+  const row = { tag: release.tag, taggedCommit: tag.localCommit, taggedGradleSha256: sha(gradle), taggedAndroidVersion: sourceVersion, assets: [] };
+  for (const asset of release.assets) {
+    assert.ok(['app-release.aab', 'App.ipa'].includes(asset.name));
+    const path = join(ROOT, 'artifacts', release.tag, asset.name);
+    const raw = readFileSync(path);
+    const digest = sha(raw);
+    assert.equal(raw.length, asset.bytes);
+    assert.equal('sha256:' + digest, asset.digest);
+    const actual = asset.name.endsWith('.aab') ? readAabVersion(path) : readIpaVersion(path);
+    row.assets.push({ assetId: asset.id, name: asset.name, bytes: raw.length, sha256: digest, actualEmbeddedVersion: actual, releaseTagMatchesEmbeddedVersion: actual.versionName === release.tag.slice(1), taggedAndroidVersionMatchesEmbeddedVersion: actual.versionName === sourceVersion.versionName && String(actual.versionCode) === String(sourceVersion.versionCode), sourceUnchanged: sha(readFileSync(path)) === digest });
+  }
+  if (!release.assets.length) row.missingPublishedBinary = true;
+  results.push(row);
+}
+const after = source();
+assert.deepEqual(after, before);
+const receipt = { observedAtUtc: new Date().toISOString(), nodeVersion: process.version, producerSha256: sha(readFileSync(new URL(import.meta.url))), rootSourceHead: execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), inputs: { releaseInventorySha256: sha(releaseBytes), liveTagAssociationSha256: sha(tagBytes) }, sourceBefore: before, sourceAfter: after, results, controls: { existingRealV140RejectingAndRestoredReceipt: 'v140-artifact-qualification.json', sha256: sha(readFileSync(join(ROOT, 'v140-artifact-qualification.json'))), limit: 'Rejecting control reuse is for the unchanged two artifact-reader owners; no new signed/install/upgrade claim' }, claimLimits: ['Actual public published bytes and embedded versions; no installation, entitlement, signing lineage or store-channel acceptance', 'Android source version comparison uses actual tagged Gradle bytes and the current released version reader', 'iOS embedded version compared to shared tag/Android numbers only; iOS tagged project version, entitlements and source provenance need separate qualification', 'Matching embedded version never proves the binary was compiled from that tagged commit', 'Mismatched tag metadata is preserved rather than counted as an invalid-reader negative control', 'v1.2.0 has no published binary assets; conservative source/channel applicability remains pending'] };
+writeFileSync(join(ROOT, 'supported-artifact-qualification.json'), JSON.stringify(receipt, null, 2) + '\n');
+process.stdout.write(JSON.stringify({ results: results.map((row) => ({ tag: row.tag, taggedCommit: row.taggedCommit, sourceVersion: row.taggedAndroidVersion, missingPublishedBinary: row.missingPublishedBinary ?? false, assets: row.assets.map((asset) => ({ name: asset.name, actual: asset.actualEmbeddedVersion, releaseTagMatches: asset.releaseTagMatchesEmbeddedVersion, sourceVersionMatches: asset.taggedAndroidVersionMatchesEmbeddedVersion })) })), sourceBeforeEqualsAfter: true }, null, 2) + '\n');

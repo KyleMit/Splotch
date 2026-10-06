@@ -1,0 +1,83 @@
+from pathlib import Path
+import gzip
+import hashlib
+import io
+import json
+import os
+import stat
+import subprocess
+import tarfile
+from datetime import datetime, timezone
+
+scratch = Path('/private/tmp/splotch-resume-01a111b0')
+intake = scratch / 'continuity-intake'
+tags = intake / 'tag-owners'
+repo = Path('/Users/kylemit/Code/Splotch')
+output = repo / 'docs/migration/evidence/upgrade-artifact-inventory'
+assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip() == 'f14966ee98563e3c569fbcb90beea6d9c684614a'
+output.mkdir(parents=True, exist_ok=False)
+digest = lambda data: hashlib.sha256(data).hexdigest()
+manifest = json.loads((tags / 'file-manifest.json').read_bytes())
+tag_manifest = json.loads((tags / 'manifest.json').read_bytes())
+rows = list(manifest['files'])
+for name in manifest['excludedEnvelopeFiles']:
+    path = tags / name
+    rows.append({'path': name, 'bytes': path.stat().st_size, 'mode': oct(stat.S_IMODE(path.stat().st_mode)), 'sha256': digest(path.read_bytes())})
+actual = {str(path.relative_to(tags)) for path in tags.rglob('*') if path.is_file()}
+assert actual == {row['path'] for row in rows}
+for record in tag_manifest['tags']:
+    for selected in record['selection']:
+        frozen = tags / 'sources' / record['tag'] / selected['path']
+        raw = frozen.read_bytes()
+        git_raw = subprocess.check_output(['git', 'cat-file', 'blob', selected['gitBlob']], cwd=repo)
+        assert raw == git_raw and len(raw) == selected['bytes'] and digest(raw) == selected['sha256']
+        assert stat.S_IMODE(frozen.stat().st_mode) == int(selected['mode'][-3:], 8)
+
+capsule = output / 'tag-owners.tar.gz'
+with capsule.open('xb') as file:
+    with gzip.GzipFile(filename='', mode='wb', fileobj=file, mtime=0) as compressed:
+        with tarfile.open(mode='w|', fileobj=compressed, format=tarfile.USTAR_FORMAT) as archive:
+            for row in sorted(rows, key=lambda row: row['path']):
+                path = tags / row['path']
+                raw = path.read_bytes()
+                assert path.is_file() and not path.is_symlink()
+                assert len(raw) == row['bytes'] and digest(raw) == row['sha256']
+                assert stat.S_IMODE(path.stat().st_mode) == int(row['mode'], 8)
+                member = tarfile.TarInfo(row['path'])
+                member.size = len(raw)
+                member.mode = int(row['mode'], 8)
+                member.mtime = 0
+                archive.addfile(member, io.BytesIO(raw))
+with tarfile.open(capsule, 'r:gz') as archive:
+    members = archive.getmembers()
+    assert len(members) == len(rows)
+    by_path = {row['path']: row for row in rows}
+    assert {member.name for member in members} == set(by_path)
+    for member in members:
+        row = by_path[member.name]
+        assert member.isfile() and member.size == row['bytes'] and member.mode == int(row['mode'], 8)
+        assert digest(archive.extractfile(member).read()) == row['sha256']
+
+copies = [
+ 'unit-owner.json', 'live-releases-native-complete.json', 'live-release-inventory.json',
+ 'live-tags-native-complete.json', 'live-tag-association.json',
+ 'v140-probe-predicate.json', 'v140-artifact-qualification.json',
+ 'supported-artifacts-download.json', 'supported-download-release.json',
+ 'supported-artifact-qualification.json', 'qualify-supported-artifacts.mjs',
+ 'download-supported-artifacts.py', 'upgrade-inventory-disposition.md',
+]
+files = []
+for name in copies:
+    raw = (intake / name).read_bytes()
+    target = output / (name + '.txt')
+    target.write_bytes(raw)
+    files.append({'path': target.name, 'originalPath': name, 'bytes': len(raw), 'sha256': digest(raw), 'preservedExact': True})
+producer = Path(__file__).read_bytes()
+(output / (Path(__file__).name + '.txt')).write_bytes(producer)
+files.append({'path': Path(__file__).name + '.txt', 'bytes': len(producer), 'sha256': digest(producer), 'preservedExact': True})
+report = (tags / 'REPORT.md').read_bytes()
+(output / 'tag-owner-report.md.txt').write_bytes(report)
+files.append({'path': 'tag-owner-report.md.txt', 'originalPath': 'tag-owners/REPORT.md', 'bytes': len(report), 'sha256': digest(report), 'preservedExact': True})
+receipt = {'observedAtUtc': datetime.now(timezone.utc).isoformat(), 'parentBase': 'f14966ee98563e3c569fbcb90beea6d9c684614a', 'producerSha256': digest(producer), 'capsule': {'path': capsule.name, 'bytes': capsule.stat().st_size, 'sha256': digest(capsule.read_bytes()), 'members': len(rows), 'selectedGitBlobs': sum(len(row['selection']) for row in tag_manifest['tags']), 'selectedGitBlobBytes': tag_manifest['positive']['totalBytes'], 'everyMemberReopenedVerified': True, 'everySelectedBlobComparedWithGit': True}, 'memberManifest': rows, 'files': files, 'claimLimits': ['Capsule contains finite frozen source/technical receipts only; no published AAB/IPA, credentials or original conversations', 'Public binary bytes remain preserved in the durable host-local artifact root and identified by exact asset ID/digest/size receipts', 'Source, artifact, reader-execution and integration identities remain distinct; no source-to-binary/channel/runtime acceptance']}
+(output / 'manifest.json.txt').write_text(json.dumps(receipt, indent=2) + '\n')
+print(json.dumps({'capsule': receipt['capsule'], 'technicalFiles': len(files)}))
