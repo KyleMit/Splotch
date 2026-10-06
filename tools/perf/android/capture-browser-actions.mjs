@@ -1,11 +1,11 @@
+import { actionProbeSource } from '../lib/action-probe-source.mjs';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { ADB } from '../../mobile/android/lib/android-toolchain.mjs';
 import {
   POSITIVE_INTEGER,
-  ROOT,
   TCP_PORT,
   fail,
   isMain,
@@ -49,7 +49,6 @@ import {
 } from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
-const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
 const SESSION_ID = 'android-web-cdp';
 const DEFAULT_CDP_PORT = 9_224;
 const CDP_READY_TIMEOUT_MS = 20_000;
@@ -425,7 +424,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       logColoringPreparation(sweepDocument);
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
-      await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
+      await page.evaluate(actionProbeSource());
       await waitForStableFrames(page);
       console.log(`\nAndroid web action sweep ${repeat}/${repeats}`);
       const sweep = await runActionSweep({

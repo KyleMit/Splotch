@@ -9,6 +9,7 @@ import {
   devGateProblems,
   drawingWorkHotPathProblems,
   engineMeasureNames,
+  magicWitnessMeasureNames,
   RELEASE_ONLY_TOKENS,
   RELEASE_SEAM_SOURCE_FILES,
   releaseSeamProblems,
@@ -71,6 +72,65 @@ it('derives every current window seam and engine measure family', () => {
     'inputOps',
     'liveRasters',
     'liveSurfaceElements',
+    'magicBrushState',
+    'magicBrushWorkerRequests',
+    'magicDeferredFill',
+    'magicEngineFacts',
+    'magicEnsureOutcomes',
+    'magicFillUrl',
+    'magicGradientSelections',
+    'magicHeldGradient',
+    'magicInitialPosts',
+    'magicMainAttempts',
+    'magicMainCauses',
+    'magicMainOrigins',
+    'magicMainOutcomes',
+    'magicMainPaints',
+    'magicMainStaleAttempts',
+    'magicPaperSize',
+    'magicPendingFillRaster',
+    'magicPendingGradientRaster',
+    'magicPendingLoad',
+    'magicPoolBuilds',
+    'magicPoolExists',
+    'magicRecodeChanges',
+    'magicRecodeCompletedDelegations',
+    'magicRecodeInvocations',
+    'magicRecodeNoChanges',
+    'magicRecodeNoContext',
+    'magicRecodeNoSnapshot',
+    'magicRecodeThrows',
+    'magicRecodes',
+    'magicRejectedRequests',
+    'magicResolvedRequests',
+    'magicRetryPosts',
+    'magicSheetBounds',
+    'magicSheetGeometryStale',
+    'magicSheetOrigin',
+    'magicSheetReady',
+    'magicSheetSourceUrl',
+    'magicSourceKind',
+    'magicSupersededDisposals',
+    'magicWitness.ensure',
+    'magicWitness.mainRaster',
+    'magicWitness.publish',
+    'magicWitness.recode',
+    'magicWitness.workerCreate',
+    'magicWitness.workerRequest',
+    'magicWitnessRevision',
+    'magicWorkCounts',
+    'magicWorkerAcquisitions',
+    'magicWorkerConstructed',
+    'magicWorkerConstructionAttempts',
+    'magicWorkerExists',
+    'magicWorkerFailures',
+    'magicWorkerNextRequestId',
+    'magicWorkerPending',
+    'magicWorkerPublications',
+    'magicWorkerRequests',
+    'magicWorkerRetirements',
+    'magicWorkerState',
+    'magicWorkerSupported',
     'maxLiveBackingBytes',
     'maxSurfaceVisitsPerOp',
     'pendingCommands',
@@ -96,7 +156,10 @@ function sourceFilesEmittingEngineMeasures(dir) {
     if (entry.isDirectory()) return sourceFilesEmittingEngineMeasures(path);
     if (!CLIENT_SOURCE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) return [];
     if (entry.name.includes('.test.')) return [];
-    return engineMeasureNames(readFileSync(path, 'utf8')).length > 0 ? [path] : [];
+    const source = readFileSync(path, 'utf8');
+    return engineMeasureNames(source).length + magicWitnessMeasureNames(source).length > 0
+      ? [path]
+      : [];
   });
 }
 
@@ -200,4 +263,51 @@ it('reports a missing release client directory', async () => {
   await expect(checkReleaseSeams({ dir: missing, env: {}, log: vi.fn() })).rejects.toThrow(
     `Client bundle directory does not exist: ${missing}`
   );
+});
+
+it('lexes wrapped Magic witness emitters and rejects inline and block comments', () => {
+  expect(
+    magicWitnessMeasureNames("performance.measure(\n 'magicWitness.ensure', { start });")
+  ).toEqual(['magicWitness.ensure']);
+  expect(
+    magicWitnessMeasureNames(
+      "const done = true; // performance.measure('magicWitness.recode', { start });"
+    )
+  ).toEqual([]);
+  expect(
+    magicWitnessMeasureNames("/* performance.measure('magicWitness.publish', { start }); */")
+  ).toEqual([]);
+});
+
+it('accepts retained Magic host and private decision plumbing in release output', () => {
+  const dir = fixture();
+  const retained = [
+    'magicActive',
+    'fill-direct',
+    'unsupported',
+    'no-bounds',
+    'source-unavailable',
+    'worker-failed',
+    'ensure',
+    'eager-resize',
+    'fill-load',
+    'fill-load-error',
+    'remove-fill',
+    'worker-rejection',
+    'no-context',
+    'no-snapshot',
+    'apply-fill',
+    'host-repaint',
+  ];
+  writeFileSync(join(dir, 'magic.js'), JSON.stringify(retained));
+  expect(releaseSeamProblems(dir)).toEqual([]);
+});
+
+it('retains the whole Magic namespace name for invalid extra emitters', () => {
+  expect(
+    magicWitnessMeasureNames(`performance.measure("magicWitness.extra2.nested", { start });`)
+  ).toEqual(['magicWitness.extra2.nested']);
+  expect(magicWitnessMeasureNames("performance.measure('magicWitness.', { start });")).toEqual([
+    'magicWitness.',
+  ]);
 });

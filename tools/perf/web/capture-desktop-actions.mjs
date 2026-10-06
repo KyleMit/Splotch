@@ -1,5 +1,6 @@
+import { actionProbeSource } from '../lib/action-probe-source.mjs';
 import { chromium, firefox, webkit } from '@playwright/test';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
@@ -27,7 +28,6 @@ import { assertServedBuildIsFresh, buildAndPreview } from '../lib/profile-previe
 import {
   POSITIVE_INTEGER,
   POSITIVE_NUMBER,
-  ROOT,
   fail,
   isMain,
   parseOrFail,
@@ -43,7 +43,6 @@ import {
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
 
-const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
 const PROFILE_DIR_PREFIX = 'splotch-desktop-actions-';
 // The runtime this transport is judged as (tools/perf/lib/input-fidelity.mjs
 // vocabulary, and the mac-* targets' declared `captureRuntime`). One runtime
@@ -235,7 +234,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       logColoringPreparation(sweepDocument);
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
-      await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
+      await page.evaluate(actionProbeSource());
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nDesktop action sweep ${repeat}/${repeats}`);
       const sweep = await runActionSweep({

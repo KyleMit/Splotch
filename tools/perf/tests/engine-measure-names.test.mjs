@@ -18,6 +18,7 @@ const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const EMITTER_DIR = 'web/src/lib/drawing';
 const CONSUMER_DIR = 'tools';
 const SKIPPED_DIRS = new Set(['node_modules', 'tests', 'fixtures']);
+const MAGIC_WITNESS_NAME = /^magicWitness\..+$/;
 const ENGINE_NAME = /^engine\.[A-Za-z][A-Za-z.]*(?::(?:start|end))?$/;
 
 // Names no current build emits, kept by analyze-web-inspector.mjs so Web
@@ -61,11 +62,11 @@ function emitted() {
   return found;
 }
 
-function consumed() {
+function consumed(pattern = ENGINE_NAME) {
   const readers = new Map();
   for (const path of sourceFiles(CONSUMER_DIR, (name) => /\.m?js$/.test(name))) {
     for (const node of syntaxNodes(path)) {
-      if (!isStaticString(node) || !ENGINE_NAME.test(node.text)) continue;
+      if (!isStaticString(node) || !pattern.test(node.text)) continue;
       const files = readers.get(node.text) ?? new Set();
       readers.set(node.text, files.add(relative(CONSUMER_DIR, path)));
     }
@@ -111,5 +112,17 @@ describe('engine measure names the perf tools consume', () => {
     expect([...readers.keys()].map(baseName)).toContain(name);
     expect(measures).not.toContain(name);
     expect(marks).not.toContain(`${name}:start`);
+  });
+});
+
+describe('Magic witness names are a separate diagnostic channel', () => {
+  it('has exactly the six measure names read by the action probe', () => {
+    const measures = [...emitted().measure].filter((name) => name.startsWith('magicWitness.'));
+    const readers = consumed(MAGIC_WITNESS_NAME);
+    expect(measures.sort()).toEqual([...readers.keys()].sort());
+    expect(measures).toHaveLength(6);
+    expect(new Set([...readers.values()].flatMap((files) => [...files]))).toEqual(
+      new Set(['perf/probes/action-probe.js'])
+    );
   });
 });

@@ -25,6 +25,11 @@
 // all three — see ADR-0043).
 
 import { magicSheetWorkerSupported, rasterizeMagicSheetInWorker } from './magicSheetRasterClient';
+import { magicWorkCounters, type MagicMainCause, type MagicRasterOrigin } from './magicWorkDebug';
+import { PERF_MARKS } from './perf';
+
+type RasterDecision = 'started' | 'unsupported' | 'no-bounds';
+type MagicSourceKind = 'none' | 'fill' | 'gradient';
 import {
   createRainbowGradient,
   MAGIC_GRADIENT_COUNT,
@@ -132,20 +137,25 @@ function publishWorkerSheet(
   bounds: { x: number; y: number; width: number; height: number },
   sourceUrl: string | null
 ) {
-  sheetCanvas = bitmap;
-  sheetOriginX = bounds.x;
-  sheetOriginY = bounds.y;
-  sheetReady = true;
-  sheetGeometryStale = false;
-  sheetSnapshot = {
-    canvas: sheetCanvas,
-    originX: sheetOriginX,
-    originY: sheetOriginY,
-    sourceUrl,
-  };
-  host?.repaint();
+  const start = PERF_MARKS ? performance.now() : 0;
+  try {
+    sheetCanvas = bitmap;
+    sheetOriginX = bounds.x;
+    sheetOriginY = bounds.y;
+    sheetReady = true;
+    sheetGeometryStale = false;
+    sheetSnapshot = {
+      canvas: sheetCanvas,
+      originX: sheetOriginX,
+      originY: sheetOriginY,
+      sourceUrl,
+    };
+    if (PERF_MARKS) magicWorkCounters?.recordWorkerPublication();
+    host?.repaint();
+  } finally {
+    if (PERF_MARKS) performance.measure('magicWitness.publish', { start });
+  }
 }
-
 function rasterizeFillOffThread(
   image: HTMLImageElement,
   imageUrl: string,
@@ -175,16 +185,18 @@ function rasterizeFillOffThread(
   });
 }
 
-function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
-  if (!magicSheetWorkerSupported()) return false;
+function beginFillRaster(image: HTMLImageElement, imageUrl: string): RasterDecision {
+  if (!magicSheetWorkerSupported()) return 'unsupported';
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
-  if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return false;
+  if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return 'no-bounds';
   pendingFillRaster = image;
+  if (PERF_MARKS) magicWorkCounters?.recordBrushWorkerRequest();
   void rasterizeFillOffThread(image, imageUrl, paper, bounds)
     .then((bitmap) => {
       if (pendingFillRaster !== image || fillImage !== image) {
         bitmap.close();
+        if (PERF_MARKS) magicWorkCounters?.recordSupersededDisposal();
         return;
       }
       pendingFillRaster = null;
@@ -193,19 +205,20 @@ function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
     .catch(() => {
       if (pendingFillRaster !== image || fillImage !== image) return;
       pendingFillRaster = null;
-      rasterizeSheet();
+      rasterizeSheet('worker-failed', 'worker-rejection');
       host?.repaint();
     });
-  return true;
+  return 'started';
 }
 
-function beginGradientRaster(gradient: RainbowGradient) {
-  if (!magicSheetWorkerSupported()) return false;
+function beginGradientRaster(gradient: RainbowGradient): RasterDecision {
+  if (!magicSheetWorkerSupported()) return 'unsupported';
   const bounds = host?.sheetBounds();
-  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return 'no-bounds';
   const request = { gradient };
   pendingGradientRaster = request;
   releaseAndInvalidateSheet();
+  if (PERF_MARKS) magicWorkCounters?.recordBrushWorkerRequest();
   void rasterizeMagicSheetInWorker({
     gradient,
     width: bounds.width,
@@ -214,6 +227,7 @@ function beginGradientRaster(gradient: RainbowGradient) {
     .then((bitmap) => {
       if (pendingGradientRaster !== request || activeGradient !== gradient || fillUrl) {
         bitmap.close();
+        if (PERF_MARKS) magicWorkCounters?.recordSupersededDisposal();
         return;
       }
       pendingGradientRaster = null;
@@ -222,16 +236,21 @@ function beginGradientRaster(gradient: RainbowGradient) {
     .catch(() => {
       if (pendingGradientRaster !== request || activeGradient !== gradient || fillUrl) return;
       pendingGradientRaster = null;
-      rasterizeSheet();
+      rasterizeSheet('worker-failed', 'worker-rejection');
       host?.repaint();
     });
-  return true;
+  return 'started';
 }
 
-function rasterizeActiveSheet() {
+function rasterizeActiveSheet(origin: MagicRasterOrigin) {
   const source = activeSource();
-  if (source?.kind === 'gradient' && beginGradientRaster(source.gradient)) return;
-  rasterizeSheet();
+  let cause: MagicMainCause = source?.kind === 'fill' ? 'fill-direct' : 'source-unavailable';
+  if (source?.kind === 'gradient') {
+    const decision = beginGradientRaster(source.gradient);
+    if (decision === 'started') return;
+    cause = decision;
+  }
+  rasterizeSheet(cause, origin);
 }
 
 export function initMagicBrush(h: MagicBrushHost) {
@@ -239,6 +258,7 @@ export function initMagicBrush(h: MagicBrushHost) {
 }
 
 function buildGradientPool(): RainbowGradient[] {
+  if (PERF_MARKS) magicWorkCounters?.recordPoolBuild();
   return Array.from({ length: MAGIC_GRADIENT_COUNT }, () => createRainbowGradient());
 }
 
@@ -260,44 +280,60 @@ function activeSource(): SheetSource | null {
 // sheet covers `sheetBounds` in paper coordinates. The fill is drawn contain-fit
 // within the paper, matching the overlay image, then its edge colours extend
 // through the fill's own letterbox margins; a gradient fills the whole sheet.
-function rasterizeSheet() {
-  releaseAndInvalidateSheet();
-  const paper = host?.paperSize();
-  const bounds = host?.sheetBounds();
-  if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
-  const source = activeSource();
-  if (!source) return;
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  if (!context) return;
-  canvas.width = bounds.width;
-  canvas.height = bounds.height;
-  sheetCanvas = canvas;
-  sheetOriginX = bounds.x;
-  sheetOriginY = bounds.y;
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  if (source.kind === 'fill') {
-    const iw = source.image.naturalWidth;
-    const ih = source.image.naturalHeight;
-    const scale = Math.min(paper.width / iw, paper.height / ih);
-    const dw = iw * scale;
-    const dh = ih * scale;
-    // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
-    const ox = (paper.width - dw) / 2 - sheetOriginX;
-    const oy = (paper.height - dh) / 2 - sheetOriginY;
-    context.drawImage(source.image, ox, oy, dw, dh);
-    extendSheetEdges(context, source.image, canvas.width, canvas.height, ox, oy, dw, dh);
-  } else {
-    paintRainbowGradient(context, canvas.width, canvas.height, source.gradient);
+function rasterizeSheet(cause: MagicMainCause, origin: MagicRasterOrigin) {
+  const start = PERF_MARKS ? performance.now() : 0;
+  if (PERF_MARKS) magicWorkCounters?.recordMainAttempt(cause, origin, sheetGeometryStale);
+  try {
+    releaseAndInvalidateSheet();
+    const paper = host?.paperSize();
+    const bounds = host?.sheetBounds();
+    if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) {
+      if (PERF_MARKS) magicWorkCounters?.recordMainOutcome('no-bounds');
+      return;
+    }
+    const source = activeSource();
+    if (!source) {
+      if (PERF_MARKS) magicWorkCounters?.recordMainOutcome('no-source');
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) {
+      if (PERF_MARKS) magicWorkCounters?.recordMainOutcome('no-context');
+      return;
+    }
+    canvas.width = bounds.width;
+    canvas.height = bounds.height;
+    sheetCanvas = canvas;
+    sheetOriginX = bounds.x;
+    sheetOriginY = bounds.y;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (source.kind === 'fill') {
+      const iw = source.image.naturalWidth;
+      const ih = source.image.naturalHeight;
+      const scale = Math.min(paper.width / iw, paper.height / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
+      // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
+      const ox = (paper.width - dw) / 2 - sheetOriginX;
+      const oy = (paper.height - dh) / 2 - sheetOriginY;
+      context.drawImage(source.image, ox, oy, dw, dh);
+      extendSheetEdges(context, source.image, canvas.width, canvas.height, ox, oy, dw, dh);
+    } else {
+      paintRainbowGradient(context, canvas.width, canvas.height, source.gradient);
+    }
+    sheetReady = true;
+    sheetGeometryStale = false;
+    sheetSnapshot = {
+      canvas: sheetCanvas,
+      originX: sheetOriginX,
+      originY: sheetOriginY,
+      sourceUrl: source.kind === 'fill' ? fillUrl : null,
+    };
+    if (PERF_MARKS) magicWorkCounters?.recordMainOutcome(source.kind);
+  } finally {
+    if (PERF_MARKS) performance.measure('magicWitness.mainRaster', { start });
   }
-  sheetReady = true;
-  sheetGeometryStale = false;
-  sheetSnapshot = {
-    canvas: sheetCanvas,
-    originX: sheetOriginX,
-    originY: sheetOriginY,
-    sourceUrl: source.kind === 'fill' ? fillUrl : null,
-  };
 }
 
 // Preserve captured sheets for history, but defer allocating replacement full-screen
@@ -305,7 +341,7 @@ function rasterizeSheet() {
 export function resizeMagicSheet(eager: boolean) {
   pendingFillRaster = null;
   pendingGradientRaster = null;
-  if (eager) rasterizeActiveSheet();
+  if (eager) rasterizeActiveSheet('eager-resize');
   else sheetGeometryStale = true;
 }
 
@@ -389,8 +425,9 @@ function loadSheetImage(url: string) {
     if (pendingLoad !== img) return;
     pendingLoad = null;
     fillImage = img;
-    if (beginFillRaster(img, url)) return;
-    rasterizeSheet();
+    const decision = beginFillRaster(img, url);
+    if (decision === 'started') return;
+    rasterizeSheet(decision, 'fill-load');
     host?.repaint();
   };
   img.onerror = () => {
@@ -399,7 +436,7 @@ function loadSheetImage(url: string) {
     fillUrl = null;
     fillImage = null;
     holdRandomGradient();
-    rasterizeActiveSheet();
+    rasterizeActiveSheet('fill-load-error');
     host?.repaint();
   };
   img.src = url;
@@ -432,7 +469,7 @@ export function setColorSheet(colorUrl: string | null) {
   fillImage = null;
   if (!colorUrl) {
     if (host?.magicActive() || host?.hasRetainedOps()) {
-      rasterizeActiveSheet();
+      rasterizeActiveSheet('remove-fill');
       host?.repaint();
     } else {
       releaseAndInvalidateSheet();
@@ -468,6 +505,7 @@ function holdRandomGradient() {
   if (activeGradient) return;
   if (!gradientPool) gradientPool = buildGradientPool();
   activeGradient = gradientPool[Math.floor(Math.random() * gradientPool.length)];
+  if (PERF_MARKS) magicWorkCounters?.recordGradientSelection();
 }
 
 // Ensure the brush has something to reveal when it's selected. A coloring page's
@@ -475,10 +513,22 @@ function holdRandomGradient() {
 // once a gradient is already active, so re-selecting the brush (or toggling
 // pen↔magic) neither re-rolls the rainbow nor re-rasterizes.
 export function ensureMagicSheet() {
-  if (sheetReady && !sheetGeometryStale) return;
-  if (pendingFillRaster || pendingGradientRaster) return;
-  if (!fillUrl) holdRandomGradient();
-  rasterizeActiveSheet();
+  const start = PERF_MARKS ? performance.now() : 0;
+  try {
+    if (sheetReady && !sheetGeometryStale) {
+      if (PERF_MARKS) magicWorkCounters?.recordEnsure('ready');
+      return;
+    }
+    if (pendingFillRaster || pendingGradientRaster) {
+      if (PERF_MARKS) magicWorkCounters?.recordEnsure('pending');
+      return;
+    }
+    if (PERF_MARKS) magicWorkCounters?.recordEnsure('prepare');
+    if (!fillUrl) holdRandomGradient();
+    rasterizeActiveSheet('ensure');
+  } finally {
+    if (PERF_MARKS) performance.measure('magicWitness.ensure', { start });
+  }
 }
 
 // Drop the held gradient so the next brush use picks a fresh one. Called when the
@@ -489,4 +539,27 @@ export function clearMagicGradient() {
   if (!fillUrl) {
     releaseAndInvalidateSheet();
   }
+}
+
+export function getMagicBrushState() {
+  if (!PERF_MARKS) return null;
+  const paper = host?.paperSize();
+  const bounds = host?.sheetBounds();
+  const magicSourceKind: MagicSourceKind = activeSource()?.kind ?? 'none';
+  return {
+    magicSourceKind,
+    magicPoolExists: gradientPool !== null,
+    magicHeldGradient: activeGradient !== null,
+    magicSheetReady: sheetReady,
+    magicSheetGeometryStale: sheetGeometryStale,
+    magicPendingLoad: pendingLoad !== null,
+    magicPendingFillRaster: pendingFillRaster !== null,
+    magicPendingGradientRaster: pendingGradientRaster !== null,
+    magicDeferredFill: deferredFillTimer !== null,
+    magicFillUrl: fillUrl,
+    magicSheetSourceUrl: sheetSnapshot?.sourceUrl ?? null,
+    magicPaperSize: paper ? { ...paper } : null,
+    magicSheetBounds: bounds ? { ...bounds } : null,
+    magicSheetOrigin: { x: sheetOriginX, y: sheetOriginY },
+  };
 }

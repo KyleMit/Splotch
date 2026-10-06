@@ -29,6 +29,8 @@ unproved comparison evidence is recorded honestly and cannot complete unmet fina
   verification boundaries.
 * [Dependency health](DEPENDENCY-HEALTH.md): the external audit repair and separately bounded
   embedded-code residual.
+* [Magic work witness](MAGIC-WITNESS.md): causal observation, action-read boundaries and the
+  diagnostic-only observer epoch.
 
 These documents define pending requirements, not claims that a candidate already passes. Existing
 tests and ADRs remain authoritative until a reviewed change replaces or amends them. Keep evidence
@@ -71,6 +73,7 @@ candidate acceptance, and new physical-control results remain pending.
 | Phase 0: migration contract   | Baseline inventoried   | Product, web, native, upgrade and acceptance boundaries are reviewed; BASELINE.md records banked provenance. Current physical controls, measurement mapping and remaining implementation plans are pending before the phase exits.                                    |
 | Dependency health maintenance | source-map-js patched  | Targeted lock repair passes frozen-install, audit, Quality, release-build, and full-test checks locally. PR 2692 records independent review and exact-head CI. The embedded magicast residual is separately bounded.                                                  |
 | Portable drawing defaults     | Plain owners extracted | Shared engine/state/Node values, release budgets and scoped verification are recorded in RENDERER-DEFAULTS.md. [PR 2693](https://github.com/KyleMit/Splotch/pull/2693) merged after two Claude rounds, full tests and green final-head CI.                            |
+| Magic work observation        | Observer implemented   | PERF-only brush/worker/recode counters, six diagnostic spans and contained action reads preserve scored activity. MAGIC-WITNESS.md records contracts and limits; physical attribution and any A1 change remain separate reviewed exits.                               |
 | Phase 1: architecture checks  | In progress            | Two complete Claude plan reviews refine the execution sequence. Portable drawing defaults are extracted; candidate structural proofs and physical comparison remain pending.                                                                                          |
 | Phase 2: foundation           | Pending                | Runnable isolated candidate builds, shared behavior boundaries, native bindings, test/capture entry points, and CI.                                                                                                                                                   |
 | Phase 3: drawing              | Pending                | Complete renderer/input/history/export/audio behaviors behind the selected platform boundary.                                                                                                                                                                         |

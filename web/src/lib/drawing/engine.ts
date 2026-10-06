@@ -92,6 +92,7 @@ import {
 import { registerDrawingEngineListeners, createResizeListener } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
+import { magicWorkWitness, traceMagicRecode, type MagicRecodeOutcome } from './magicWorkWitness';
 import {
   adoptTiledRenderer,
   applyTiledView,
@@ -1177,7 +1178,7 @@ export function applyColoringFill(fillUrl: string | null) {
   if (readySheet) magicExportAppearances.commit(readySheet);
   if (!fillUrl && hasRetainedTiledMagicOps()) {
     ensureCurrentMagicSheet();
-    recodeMagicOpsToCurrentSheet();
+    traceMagicRecode('apply-fill', recodeMagicOpsToCurrentSheet);
   }
 }
 
@@ -1228,6 +1229,11 @@ export function getUndoDebug(): HistoryDebug {
 export function getLiveSurfaceTopology() {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
   return tiledSurfaceTopologyDebug();
+}
+
+export function getMagicWorkDebug() {
+  if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
+  return magicWorkWitness({ brush, engineLive, paperSized: paperIsSized() });
 }
 
 export function getDrawingWorkDebug(): DrawingWorkDebug | null {
@@ -1316,13 +1322,17 @@ function paperIsSized(): boolean {
   return paper.pxW > 0 && paper.pxH > 0;
 }
 
-function recodeMagicOpsToCurrentSheet() {
-  if (!ctx) return;
+function recodeMagicOpsToCurrentSheet(): MagicRecodeOutcome {
+  if (!ctx) return 'no-context';
   const snapshot = captureMagicSheet();
-  if (!snapshot) return;
+  if (!snapshot) return 'no-snapshot';
   magicExportAppearances.register(snapshot);
-  recodeTiledMagicOps(snapshot, snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null);
+  const changed = recodeTiledMagicOps(
+    snapshot,
+    snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null
+  );
   if (emptyScanAwaitsMagicReveal) idleEmptyScan.schedule();
+  return changed;
 }
 
 function wireMagicBrushHost(): void {
@@ -1334,7 +1344,7 @@ function wireMagicBrushHost(): void {
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     hasRetainedOps: hasRetainedTiledMagicOps,
     magicActive: () => brush === 'magic',
-    repaint: recodeMagicOpsToCurrentSheet,
+    repaint: () => traceMagicRecode('host-repaint', recodeMagicOpsToCurrentSheet),
   });
 }
 

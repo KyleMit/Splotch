@@ -1,4 +1,4 @@
-(() => {
+export function installActionProbe(magicWitness) {
   const frames = [];
   const canvasDescriptors = {
     width: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width'),
@@ -251,8 +251,16 @@
     action.listeners.length = 0;
   }
 
+  const MAGIC_MEASURE_NAMES = [
+    'magicWitness.ensure',
+    'magicWitness.workerCreate',
+    'magicWitness.workerRequest',
+    'magicWitness.mainRaster',
+    'magicWitness.publish',
+    'magicWitness.recode',
+  ];
   function newAction(label) {
-    return {
+    const action = {
       label,
       traceName: `action:${label}:${++actionSequence}`,
       armedAt: performance.now(),
@@ -267,6 +275,8 @@
       mutationObserver: null,
       listeners: [],
     };
+    action.magicBefore = magicWitness.read();
+    return action;
   }
 
   function begin(label, selector, eventTypes = ['pointerup', 'click']) {
@@ -379,6 +389,15 @@
     const finishedAt = performance.now();
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
     performance.measure(action.traceName, `${action.traceName}:start`);
+    const collectedMeasures = performance
+      .getEntriesByType('measure')
+      .slice(action.measureCount)
+      .map(({ name, startTime, duration }) => ({
+        name,
+        startFromActionMs: startTime - actionAt,
+        duration,
+      }));
+    const magicAfter = magicWitness.read();
     // The onset rows (ADR-0163), which postActionFrames starts after: the frame
     // stamped before the action, which under rAF-aligned input runs after it
     // and renders it, and the first frame stamped at or after it, which
@@ -431,14 +450,18 @@
         ...mutation,
         atFromActionMs: at - actionAt,
       })),
-      measures: performance
-        .getEntriesByType('measure')
-        .slice(action.measureCount)
-        .map(({ name, startTime, duration }) => ({
-          name,
-          startFromActionMs: startTime - actionAt,
-          duration,
-        })),
+      measures: collectedMeasures.filter(({ name }) => !name.startsWith('magicWitness.')),
+      magicMeasures: collectedMeasures.filter(({ name }) => name.startsWith('magicWitness.')),
+      magicMeasureProblems: collectedMeasures
+        .filter(
+          ({ name }) => name.startsWith('magicWitness.') && !MAGIC_MEASURE_NAMES.includes(name)
+        )
+        .map(({ name }) => name),
+      magicWork: {
+        before: magicWitness.metadata(action.magicBefore),
+        after: magicWitness.metadata(magicAfter),
+        comparison: magicWitness.compare(action.magicBefore, magicAfter),
+      },
     };
   }
 
@@ -450,4 +473,4 @@
     frameStampEpoch: FRAME_STAMP_EPOCH,
   };
   requestAnimationFrame(frame);
-})();
+}

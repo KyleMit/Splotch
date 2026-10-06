@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { actionProbeSource } from '../lib/action-probe-source.mjs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   POSITIVE_INTEGER,
@@ -95,7 +96,6 @@ import {
 } from '../lib/action-applicability.mjs';
 
 const APP_PATH = '/';
-const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
 const ACTION_PANEL_STATE_TARGET = `(document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement)`;
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
@@ -1230,7 +1230,7 @@ async function addTrustedStroke(client, sessionId, execute) {
 }
 
 async function installActionProbe(execute) {
-  await execute(readFileSync(ACTION_PROBE_FILE, 'utf8'));
+  await execute(actionProbeSource());
 }
 
 async function ensureActionProbe(execute) {
