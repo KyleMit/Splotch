@@ -12,7 +12,7 @@ it. Native drawing inside Capacitor and retention of the current Svelte/Capacito
 explicit outcomes. React Native Web and React Strict DOM are candidates for the shared web
 vocabulary; neither is selected. Flutter and separate native UIs remain conditional alternatives. A
 complete React DOM rewrite is not a prerequisite to native work. Retention with unresolved costs or
-comparison evidence is recorded honestly and cannot complete unmet final gates.
+unproved comparison evidence is recorded honestly and cannot complete unmet final gates.
 
 ## Campaign records
 

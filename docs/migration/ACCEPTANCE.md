@@ -192,9 +192,9 @@ Architecture plans define primary metrics and reproducible session fixtures befo
 Final comparison preserves equivalent visible behavior and explains regressions. Where fresh
 controls retain motivating native problems, a migration requires repeatable improvement in the
 registered metrics. Where fresh controls show no motivating failures, the contract's no-residual
-rule applies without an unproved architecture benefit. Retention with unresolved costs or comparison
-evidence leaves release work pending and the campaign incomplete. Frame-gate success alone does not
-establish end-to-end readiness, lower memory or better startup.
+rule applies without an unproved architecture benefit. Retention with unresolved costs or unproved
+comparison evidence leaves release work pending and the campaign incomplete. Frame-gate success
+alone does not establish end-to-end readiness, lower memory or better startup.
 
 ## Evidence ledger for each migrated area
 
