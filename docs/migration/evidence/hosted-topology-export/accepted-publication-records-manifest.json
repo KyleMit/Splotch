@@ -1,0 +1,165 @@
+{
+  "recordedAtUtc": "2026-10-06T22:29:14.345810+00:00",
+  "scope": "Complete selected technical originalfinalreview/CI/publicGit/source-attribution/integration records; excludes rawprovider conversations/auth/cache/physicalpayload. Records acceptance only; original hosted implementation review/head remains unchanged.",
+  "archive": "accepted-publication-records.tar.gz",
+  "archiveBytes": 48979,
+  "archiveSha256": "7f2f7fdd138c27ad10c0ca5e93cd7e9ca5052d27a44af3a19f464bb430b65923",
+  "members": [
+    {
+      "path": "accepted-hosted/final-head-ci/retained-job-112517565587.log.txt",
+      "bytes": 58592,
+      "sha256": "1381f694eddc16c9a6736da1e91c492c73cf21cbf44c6d2b750b593dbcc74b3d",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/retained-native-response.json",
+      "bytes": 59926,
+      "sha256": "39d95ed94130be7f58a6c548db7771c78c853d7d5f6e644dc11885405a883dcf",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/check-runs.json",
+      "bytes": 81019,
+      "sha256": "8b792ec29c5c961dcab86719d06fa34521304ee263819de4c361a11a0505a780",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/checked-git-commit.json",
+      "bytes": 2589,
+      "sha256": "f5a80326cdb76298368fc62463fe7bd8e46101dcc86b0e355d6f2815bc02bcfc",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/retained-source-qualification-34dc.json.txt",
+      "bytes": 12856,
+      "sha256": "2d0a493bd05ab4a150991ffec0d32f01a074bfea4697eacde22f364fa0d4c8a3",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/accepted-integration-78d.json.txt",
+      "bytes": 4514,
+      "sha256": "e60260cdbd6e36f3e7ff661370bb9afad4eef5904869030b983ee183c5f4a8f5",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/pr-before-merge.json",
+      "bytes": 17867,
+      "sha256": "c9baa282540cc5207f3b75c19ee23b79b2a45e26667d1af0d062037926d0ec65",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/merge-result.json",
+      "bytes": 110,
+      "sha256": "9665f7197035de4e5293fe452fe5874a4d77d164e6e2de3b2e6c322a7e7a876a",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/pr-after-merge.json",
+      "bytes": 18821,
+      "sha256": "30e1e7d0dcc3c690901aa9ad737fe7610696e383f534d10666d1cb8fc5314a9e",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/git-commit-after-merge.json",
+      "bytes": 2671,
+      "sha256": "fbb0981898d0667213720316309951d1ad359f75d5b902f67e3ca7bdab19fe0b",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/git-ref-after-merge.json",
+      "bytes": 392,
+      "sha256": "d602410c8ae6edb118a473def350cf67d23154f07d9ea85bdfad799ea6cb7bf4",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/rulesets.json",
+      "bytes": 875,
+      "sha256": "0829f42670bb7d548c6d0dfc7a91dc178e12e7b4f804b1fecfeeefb056f10df5",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/ruleset-main.json",
+      "bytes": 605,
+      "sha256": "aecf613e1991e6fb0ab944132d1cea7561278ec07712ec84545a1680163fa9d6",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/ruleset-pr-assets.json",
+      "bytes": 637,
+      "sha256": "025e9fa8ef107bf2a85afa6d139a8717dfd5058747027f013298b7b5db61bca9",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/qualify-accepted-integration.py",
+      "bytes": 5545,
+      "sha256": "3b2095d5ec4e0cdb891527b53eb64f9112ad6c669e6a8a39c3355615a035f6df",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/final-head-ci/mirror-manifest.json",
+      "bytes": 6584,
+      "sha256": "ee2dbbc0a70ba8086c8fdae97436d5dbeaff1fc8c97569ba0547ad4eec0187ec",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/session.json",
+      "bytes": 827,
+      "sha256": "7b108b063b5ce0eadaf32da75deb5c500e6aeb06d0dba5bb989faf9274a5030e",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/done.json",
+      "bytes": 1639,
+      "sha256": "7a41578a00bcc7c6b1ba81a94430439b7b013a8dcffbe6377df99a8c725a6f6c",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/findings.json",
+      "bytes": 5314,
+      "sha256": "a8ab444b4d6e6f88b3b9b3c633b0c623b3445833f7c26d209edf936ed9d6b593",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/release.json",
+      "bytes": 4573,
+      "sha256": "ace5b37b7a72ca3ced6d060d929798c15548c4674d918b8b0be4f3962096259a",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/launcher.stdout.json",
+      "bytes": 1639,
+      "sha256": "7a41578a00bcc7c6b1ba81a94430439b7b013a8dcffbe6377df99a8c725a6f6c",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/launcher.stderr.log.txt",
+      "bytes": 3214,
+      "sha256": "11b84e54f9d90a4c24055c097eaf9c59e8978e2485189086f41a9d320ff646a7",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/poster.stdout.json",
+      "bytes": 172,
+      "sha256": "aebef38c15e4496fae08b3d755311971ea1c7c4c1aecfff82482bbda328ea098",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/poster.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/poster-identity.json",
+      "bytes": 248,
+      "sha256": "70089d6731152f680d9bb05e198c7776414b9e74b8180056dc56a44c4db8fcb2",
+      "mode": "0444"
+    },
+    {
+      "path": "accepted-hosted/review-round3-execution/mirror-manifest.json",
+      "bytes": 4052,
+      "sha256": "40b289cc750b9ddc085d8276604b0705b7d38718a51e6c2ed5615f974ed1458b",
+      "mode": "0444"
+    }
+  ]
+}
