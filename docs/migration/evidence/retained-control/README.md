@@ -1,10 +1,12 @@
 # Retained control acceptance
 
-Status: original Claude round two completed; all seven repaired-source public calls and source-bound
-local Quality/Browserless gates passed at 85c8c926829602e07ab508e9ec150593aa890f21. Original round
-three and final PR-head CI remain pending. This unit accepts only the retained SvelteKit control
-harness. It does not accept a React host, native candidate, architecture choice, deployment or
-physical performance.
+Status: original Claude round three genuinely resumed and reported one blocking Node-floor defect at
+81f84eebaf71c3d178186137d9c2bb07f7e85209. The exact prescribed flag correction, meaningful script
+guard and touched full postbuild now pass on actual Node 22.13.0. New source-bound Quality,
+Browserless and all seven public calls passed at 5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118. Final
+evidence-head CI and parent acceptance remain required. This unit covers the retained SvelteKit
+control harness; it supplies no React host, native candidate, architecture selection, deployed PWA
+or physical-performance acceptance.
 
 ## Source and preserved evidence
 
@@ -64,7 +66,7 @@ environment or frozen input changes invalidate receipts that depend on those inp
 final-head CI and complete supported artifact/log export precede integration. Root retains merger
 and cross-unit acceptance ownership.
 
-The [exact-source local receipt](local-controls.json) records all seven exits, the named
+The [historical exact-source local receipt](local-controls.json) records all seven exits, the named
 2,100-second cumulative deadline, 906.007 seconds actual wall time, complete per-call source/index
 and installed-graph bindings, invocation evidence and owned release. Both actual release and
 mechanism comparisons covered all 3,095 emitted files in each copy with zero output normalizations.
@@ -86,8 +88,9 @@ conversations and authentication state are excluded.
 The later accepted f14966ee98563e3c569fbcb90beea6d9c684614a documentation merge changed only five
 documentation paths. Its composed source be7164243515bd4f43b96edb0ba8964b71d45b7e has identical
 runtime/build/checker/package/lock owners to the executed local source; its metadata remains a
-separate CI scope. This evidence/status amendment also requires fresh final-head CI before the
-original final review. Unchanged local executions retain their exact 85c8 source scope.
+separate CI scope. That historical evidence/status amendment required fresh final-head CI before the
+now-completed original final review. Unchanged local executions retain their exact 85c8 source
+scope.
 
 The original substantive review is Claude conversation b5bb0824-3f7a-4ad7-9e05-4e8e9af77333, round
 one against d1402f6b2bedd2c30cbc88d30597466855b33874 and 63b9b4d19c630b576d13159b49003488454c5071.
@@ -95,14 +98,75 @@ It reported six findings and no unverified items. The separate accepted Kit vers
 retained source address those findings. Original conversation round two actually resumed and
 accepted all six source dispositions, then required three corrections to the nonce repair plan.
 [Published review 5431123113](https://github.com/KyleMit/Splotch/pull/2702#pullrequestreview-5431123113)
-records the ownership refusal, strict comparator and receipt/readback obligations. Final executed
-acceptance remains required. One substantive round remains.
+records the ownership refusal, strict comparator and receipt/readback obligations. The original
+conversation then actually resumed round three at 81f84eebaf71c3d178186137d9c2bb07f7e85209 and
+reconfirmed those three corrections and the original six dispositions.
+[Published review 5432590230](https://github.com/KyleMit/Splotch/pull/2702#pullrequestreview-5432590230)
+withheld acceptance because the shipping PWA postbuild imported TypeScript without enabling it on
+Node 22.13–22.17. Its exact condition was: “With that flag added, and a re-run of the touched
+postbuild path, I see no remaining reason to withhold acceptance of this retained-control scope.”
 
-Use the preserved provenance/adoption template to seed only a new actual PR-keyed ledger, keeping
-the unrelated branch ledger and original conversation intact. The successful wrapper must record
-round three, resumed=true and the original conversation identity. A fallback fresh review cannot
-satisfy continuation or reset the budget. Halt dependent acceptance for invalid provenance, a
-material unresolved finding, unintended rejecting-control failure, stale input or incomplete export.
+The actual replacement-worktree PR ledger 100b3a821ccec9187ef90bfc40baba95 records that original
+conversation, resumed=true, three rounds used and zero remaining. The unrelated ledger stayed
+unchanged. No fresh, reset or fourth review ran. Fulfillment of the recorded narrow condition is
+additive evidence; it does not rewrite the original blocking verdict or claim another independent
+review of changed source. Halt dependent acceptance for invalid provenance, material new findings,
+unintended rejecting-control failures, stale inputs or incomplete exports.
+
+## Actual Node-floor condition and corrected executions
+
+The [additive conditional receipt](node-floor-condition.json) binds the exact two-file repair
+3ae80bcef662c9aa141d7a3277ec9dde1e92268e and its composed source
+5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118, tree 2c64a3869e9c1faf7df1e9adbfc01d9713f8215a, over
+accepted documentation base 794448fbf76276b76a910c167b5c2e0c4e1ea538. The PWA step now uses the
+review-prescribed `--experimental-strip-types --disable-warning=ExperimentalWarning` flags; one
+guard reads and pins that real postbuild command. Removing only the strip flag makes its exact drift
+assertion fail, and restoring the original bytes passes. Fixture materialization and scratch
+report-validator failures remain separate invalid setup receipts.
+
+The official Node 22.13.0 Darwin arm64 archive was qualified against its complete published SHA-256
+source, all 5,929 safe members and 4,811 decoded runtime entries. Actual 22.13.0 ran the baseline
+PWA checker successfully, rejected the current unflagged checker with `ERR_UNKNOWN_FILE_EXTENSION`
+naming the new TypeScript nonce owner, and passed the exact flagged restoration. The shipping
+ambient-pin rejection and restored ordinary context also passed for their intended ownership
+reasons. The later full `npm run postbuild` passed all six checks on the fresh 5434 release
+reference using that actual Node/npm runtime, exact copied-build context and two-key pin. Complete
+runtime, artifact, source and installed readbacks remained unchanged; owned groups were absent at
+release. Its 46.396-second supervisor duration includes those readbacks and stays within the
+120-second bound.
+
+Both fresh release and mechanism comparisons cover all 3,095 emitted files in each role with zero
+output normalizations; only the explicit owned-copy path-prefix allowance remains. All seven public
+calls exited zero in 746.637 seconds within the named 2,100-second deadline. Their three concrete
+browser invocation UUIDs are distinct, and the second mechanism invocation preserved the first
+invocation's screenshot, report and last-run bytes and modes. Complete source/index and installed
+inventories bind every call. All 25 recorded controller, caller and nested builder/browser groups
+were absent and port 5300 could be rebound. These durations measure harness cost, not app latency.
+
+The [new complete technical capsule](node-floor-execution.tar.xz) preserves the original selected
+structured receipts, complete graphs, logs, actual controls, browser evidence, floor qualification,
+setup failures, and original round-three metadata/findings. Its
+[member manifest](node-floor-execution-manifest.json.txt) and
+[compression verification](node-floor-compression-lease.json.txt) bind all original bytes/modes and
+complete decoded members. Apply the same safe recovery rules as the historical capsule above. Full
+fresh emitted-product byte copies and the qualified official runtime archive remain durably
+host-local; complete inventories, official source URL/digest and modes remain in this capsule.
+Physical source, dependency, fixture and cache trees, authentication state and raw conversations are
+excluded.
+
+Earlier 81/85 executions and the tested 22e43b1e2448eca0876836d2ed4d455585df2d1e CI merge retain
+their immutable historical scopes. The legitimate root-package flag change invalidates the package
+hash in the separate historical selected hosted topology/install contract; the historical selected
+hosted proofs cannot qualify a current installed topology. This unit retains that historical
+contract and requires fresh applicable final-head CI. It does not regenerate another unit's hosted
+proof owner.
+
+The successful corrected-source hosted scope at 5434 consists of Tests run 37511591443, Native
+compile run 37511591343 and retained job 112433839593. All 23 registered checks completed: 18
+succeeded and five skipped, including the exact-topology input job. The retained job took 1,279
+seconds from start through post-job stages, within the 35-minute deadline. That completed source
+scope and its recorded metadata and complete retained-job log remain distinct from the forthcoming
+evidence-head CI; the skipped topology job supplies no current hosted topology/install proof.
 
 ## Nonce diagnosis and input changes
 
