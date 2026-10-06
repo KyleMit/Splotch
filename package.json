@@ -273,6 +273,8 @@
     "branches:gather": "node tools/git-housekeeping/gather-remote-branches.mjs",
     "gen:android:assets": "capacitor-assets generate --android && node tools/mobile/android/gen-monochrome-icon.mjs",
     "check:migration:native-topology": "node tools/migration/check-native-topology.mjs",
+    "check:migration:native-topology:evidence": "node tools/migration/check-native-topology-evidence.mjs",
+    "gen:migration:topology-proof-inputs": "node tools/migration/gen-topology-proof-inputs.mjs",
     "gen:migration:script-inventory": "node tools/migration/gen-script-inventory.mjs"
   },
   "scripts-info": {
@@ -530,7 +532,9 @@
     "check:device-identifiers": "Fail when any tracked file contains a physical-device identifier (Apple hardware UDID or rig Android serial shapes), or any tracked file under perf-profiles/evidence/ carries a capture-host address (a private IPv4 or an mDNS .local name) — promoted evidence must carry [redacted] for a device and lan-host / rig-mac.local for a host, and tests the FAKE_* constants from tools/perf/lib/device-identifiers.mjs; output masks matched values (issues 1645 and 2221). Also run as a test by tools/perf/tests/device-identifier-guard.test.mjs in the CI tools tier",
     "perf:campaign:status": "How far along is a campaign, and what is left. Exists because both obvious ways to read this off ledger.tsv are wrong: it is an append-only log with skip and retry rows, so `wc -l` is not a cell count, and a resumed run records `already-valid` rather than `valid-json`, so grepping the latter undercounts a finished target. Completion is decided by the RUNNER'S OWN artifact inspection — matching runtime AND the fidelity verdict where the transport writes one — so status cannot call a structurally rejected measurement complete, and a ledger row cannot certify a cell whose artifact was deleted or replaced. Physical-device status includes the same drift-reference queue the runner executes. The ledger supplies attempts spent and is reported when it disagrees with disk. Flags: --target= (required), --modes=, --items=, --output-root=, --ledger=",
     "gen:android:assets": "Regenerate Android launcher icons and splash with Capacitor assets, then restore the app-designed monochrome drawable and both adaptive references from assets/icon-monochrome.xml",
-    "check:migration:native-topology": "Verify the isolated native candidate declarations, SDK alignment, resolution, Metro/autolinking and typed entry without generating or building native projects",
+    "check:migration:native-topology": "Verify live candidate archive, production, SDK, installed Forge and native-resolution boundaries without building native projects",
+    "check:migration:native-topology:evidence": "Verify the exact lock, manifest, archive-selection and Capacitor bytes captured for topology05 proof",
+    "gen:migration:topology-proof-inputs": "Derive exact production and candidate proof records after the live archive and production guards pass; does not regenerate archive review",
     "gen:migration:script-inventory": "Inspect all new lock artifacts against registry/archive integrity before allowing a native candidate dependency install"
   },
   "devDependencies": {

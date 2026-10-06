@@ -1,0 +1,35 @@
+name: Native topology proof
+
+on:
+  pull_request:
+    branches: [codex/native-migration]
+  push:
+    branches: [feature/netlify-migration-topology-05]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  topology-proof:
+    name: Exact topology proof inputs
+    if: >-
+      github.head_ref == 'codex/migration-05-native-topology' ||
+      github.ref_name == 'feature/netlify-migration-topology-05'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Verify live native topology invariants
+        run: npm run check:migration:native-topology
+
+      - name: Verify exact proof input bytes
+        run: npm run check:migration:native-topology:evidence

@@ -2,10 +2,13 @@
 
 The guarded Forge repair is documented in [FORGE-MITIGATION.md](FORGE-MITIGATION.md). Quality, the
 complete required test tier, and independent clean local full and production install/build cases
-passed on executable source 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5. Independent final review, CI
-and the actual hosted production-install observation remain pending. Earlier install and structural
-observations below use the unpatched lock and remain historical evidence. The lock-bound policy
-inputs use the repair lock; registry artifacts and lifecycle verdicts are unchanged.
+passed on executable source 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5. These are historical receipts.
+The first exact PR review completed and CI passed on evidence tip
+a190af1f5d6257024daaf47c4cdbd2b95490e133; Claude required topology-check corrections. Their full
+validation, second review and actual hosted production-install observation remain pending. Earlier
+install and structural observations below use the unpatched lock and remain historical evidence. The
+lock-bound policy inputs use the repair lock; registry artifacts and lifecycle verdicts are
+unchanged.
 
 The lock-only sentinel resolved a reviewed local tarball with four root hooks and one
 third-party-shaped postinstall without running any hook or creating node_modules. The actual
@@ -64,8 +67,10 @@ pinned manager source against its published integrity and records the registry/g
 `candidate-exclusive-artifacts.json` is the exact sorted candidate closure minus the shipping
 production closure, bound to the lock hash and recomputed by the owner checker. Shared production
 transitives are permitted. The baseline production artifact record is anchored to the integration
-revision before this dependency unit. The pre-install inventory is a reviewed lock-bound gate;
-changing selected packages requires a new complete inventory and source review.
+revision before this dependency unit. The live gate derives the complete current candidate closure
+and requires reviewed archive identities and verdicts for each new or changed candidate artifact.
+Unrelated root-only artifact changes do not freeze the live gate. The separate exact evidence
+checker binds the historical whole-lock selected set and the proof-specific input bytes.
 `baseline-artifact-resolutions.json` retains every original package resolution, verified against
 `git show` of its source revision and raw lock SHA256. The checker derives the expected new/changed
 set from that independent baseline, so removing rows and their selection together fails.
@@ -108,7 +113,28 @@ exception, guard waiver, lifecycle allowance, cache clearing or lock/source chan
 production observer inputs explicitly simulate a local branch-deploy context. No proof ref or hosted
 install/build was produced by these commands.
 
-[The source binding](final-source-binding.json) keeps local executed artifact source distinct from
-the later evidence-only review tip. The hosted proof must observe the first automatic build of its
-reviewed nonproduction ref and remains pending. Native compilation, mounts, integrated performance
-and product/upgrade parity remain later migration obligations.
+[The historical source binding](historical-source-binding-a190.json) keeps the earlier local
+executed artifact source distinct from its evidence-only review tip.
+[The current binding record](final-source-binding.json) explicitly marks that comparison historical
+until corrected-source validation is sealed. The hosted proof must observe the first automatic build
+of its reviewed nonproduction ref and remains pending. Native compilation, mounts, integrated
+performance and product/upgrade parity remain later migration obligations.
+
+## First-review topology corrections
+
+Live Quality keeps candidate archive, production closure, installed Forge, package identity,
+shipping-import and canonical flat native plugin-path invariants. Frozen root manifest, lock,
+workspace, Netlify, selected-artifact and shipping-config bytes are checked separately by
+`check:migration:native-topology:evidence`. The named topology05 PR and nonproduction proof ref run
+both commands in mandatory dedicated CI; later migration PRs use the live guard.
+
+`gen:migration:topology-proof-inputs` derives only the production-install contract and
+candidate-exclusive artifact inputs after validating the live archive and production owners. It does
+not renew archive verdicts, source bindings or executed build evidence. Actual regeneration changed
+only the root-manifest hash; the lock and artifact closures are unchanged.
+
+The actual npm entry and awaited CLI main now join the installed Forge invocation wiring controls; a
+no-op, unreachable or preceding process exit fails. Abbreviated registry metadata remains
+informational; actual archive lifecycle capability controls include omitted metadata. Existing real
+flat plugin directories pass while foreign and content-addressed pnpm paths fail. Forty-five focused
+tests pass; full corrected-source checks and clean installs/builds remain pending.

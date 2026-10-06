@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
-  "scope": "Historical local receipt binding verified at a190af1f5d6257024daaf47c4cdbd2b95490e133. The subsequent topology review correction source supersedes its current-tree comparison; historical receipts remain bound to their original source, not the corrected tree. A corrected-source binding is pending.",
+  "scope": "Local execution receipts bind this sealed source; current tree differs only by explicitly named data/log/prose bookkeeping outputs. No self-commit identity or hosted/byte-identical-build claim.",
   "comparison": {
     "allTrackedChangesAgainstSourceRestrictedToExplicitOutputs": true,
     "untrackedPathsRestrictedToExplicitOutputs": true,
@@ -397,6 +397,5 @@
     "docs/migration/evidence/native-topology-05/local-clean/prod-result.json"
   ],
   "localReceipts": ["corrected-source-full-tests.json", "local-clean-proof.json"],
-  "metadataLimit": "Later Git HEAD/build-time changes legitimately alter web version/timestamps; outputs remain bound to each actual observed commit.",
-  "historicalReviewTip": "a190af1f5d6257024daaf47c4cdbd2b95490e133"
+  "metadataLimit": "Later Git HEAD/build-time changes legitimately alter web version/timestamps; outputs remain bound to each actual observed commit."
 }

@@ -18,6 +18,7 @@ import {
 import {
   assertArtifactInventory,
   assertCandidateArtifactRecord,
+  assertCandidateArchiveInventory,
   assertProductionClosure,
 } from '../lib/topology-policy.mjs';
 
@@ -87,6 +88,69 @@ async function archiveFixture(manifest, bindingGyp = false, rootHook = null) {
   return Buffer.concat(chunks);
 }
 
+async function registryArchiveFixture(manifest, bindingGyp = false, rootHook = null) {
+  const bytes = await archiveFixture(manifest, bindingGyp, rootHook);
+  const integrity = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
+  const tarball = 'https://registry.npmjs.org/probe/-/probe-2.0.0.tgz';
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ versions: { '2.0.0': { dist: { integrity, tarball } } } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () =>
+          bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      })
+  );
+  return inspectRegistryArtifact({
+    key: 'probe@2.0.0',
+    name: 'probe',
+    version: '2.0.0',
+    integrity,
+  });
+}
+
+function inventoryFromRow(row) {
+  const lock = lockFixture();
+  lock.packages[row.key].resolution.integrity = row.integrity;
+  return {
+    lock,
+    inventory: {
+      schemaVersion: 1,
+      complete: true,
+      candidateLockSha256: 'lock',
+      baselineLockSha256: 'baseline-lock',
+      inspectedArtifacts: 1,
+      selectedArtifacts: [{ key: row.key, integrity: row.integrity }],
+      rows: [row],
+    },
+  };
+}
+
+function candidateInventoryFixture() {
+  return inventoryFromRow({
+    key: 'probe@2.0.0',
+    name: 'probe',
+    version: '2.0.0',
+    integrity: 'sha512-probe',
+    tarball: 'https://registry.npmjs.org/probe/-/probe-2.0.0.tgz',
+    hooks: {},
+    rootBindingGyp: false,
+    rootHookFiles: [],
+    archiveIntegrityVerified: true,
+    disposition: 'no-install-hooks',
+  });
+}
+
+function addArtifact(lock, name) {
+  lock.packages[`${name}@1.0.0`] = { resolution: { integrity: `sha512-${name}` } };
+  lock.snapshots[`${name}@1.0.0`] = {};
+}
+
 describe('lock artifact trust and graph boundaries', () => {
   it('follows alias/peer snapshots and optional dependencies without making dev packages production', () => {
     const lock = lockFixture();
@@ -153,105 +217,86 @@ describe('lock artifact trust and graph boundaries', () => {
 });
 
 describe('all-archive lifecycle inventory', () => {
-  it('detects default node-gyp capability even when metadata claims no install script', async () => {
-    const bytes = await archiveFixture({ name: 'probe', version: '2.0.0' }, true);
-    const archive = await inspectArchive(bytes);
-    expect(archive.rootBindingGyp).toBe(true);
-    const inventory = {
-      complete: true,
-      candidateLockSha256: 'lock',
-      baselineLockSha256: 'baseline-lock',
-      inspectedArtifacts: 1,
-      selectedArtifacts: [{ key: 'probe@2.0.0', integrity: 'sha512-probe' }],
-      rows: [
-        {
-          key: 'probe@2.0.0',
-          integrity: 'sha512-probe',
-          hasInstallScript: false,
-          archiveIntegrityVerified: true,
-          disposition: 'no-install-hooks',
-          ...archive,
-        },
-      ],
-    };
-    expect(() =>
-      assertArtifactInventory(inventory, artifactMap(lockFixture()), 'lock', baselineFixture())
-    ).toThrow();
-  });
+  it.each([
+    { hooks: {}, bindingGyp: true, rootHook: null, error: 'Unreviewed default install' },
+    {
+      hooks: { install: 'node install.cjs' },
+      bindingGyp: false,
+      rootHook: null,
+      error: 'Unreviewed install hook',
+    },
+    { hooks: {}, bindingGyp: false, rootHook: 'node hook.cjs', error: 'Unreviewed root .hooks' },
+  ])(
+    'reviews archive capability with omitted abbreviated metadata: $error',
+    async ({ hooks, bindingGyp, rootHook, error }) => {
+      const plain = await registryArchiveFixture({ name: 'probe', version: '2.0.0' });
+      expect(plain.hasInstallScript).toBeNull();
+      expect(plain.metadataHooks).toEqual({});
+      expect(plain).not.toHaveProperty('metadataContradiction');
+      expect(plain.disposition).toBe('no-install-hooks');
+      const positive = inventoryFromRow(plain);
+      expect(() =>
+        assertCandidateArchiveInventory(positive.inventory, positive.lock, baselineFixture())
+      ).not.toThrow();
+      const row = await registryArchiveFixture(
+        { name: 'probe', version: '2.0.0', scripts: hooks },
+        bindingGyp,
+        rootHook
+      );
+      expect(row.archiveIntegrityVerified).toBe(true);
+      expect(row.hasInstallScript).toBeNull();
+      expect(row.hooks).toEqual(hooks);
+      expect(row.rootBindingGyp).toBe(bindingGyp);
+      expect(row.rootHookFiles).toEqual(rootHook ? ['.hooks/install'] : []);
+      expect(row.disposition).toBe('review-required');
+      const negative = inventoryFromRow(row);
+      expect(() =>
+        assertCandidateArchiveInventory(negative.inventory, negative.lock, baselineFixture())
+      ).toThrow(error);
+      expect(() =>
+        assertArtifactInventory(
+          negative.inventory,
+          artifactMap(negative.lock),
+          'lock',
+          baselineFixture()
+        )
+      ).toThrow(error);
+    }
+  );
 
-  it('surfaces metadata-false default install capability after verifying actual archive bytes', async () => {
-    const bytes = await archiveFixture({ name: 'probe', version: '2.0.0' }, true);
-    const integrity = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
-    const tarball = 'https://registry.npmjs.org/probe/-/probe-2.0.0.tgz';
-    const metadata = {
-      versions: { '2.0.0': { hasInstallScript: false, dist: { integrity, tarball } } },
-    };
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce({ ok: true, json: async () => metadata })
-        .mockResolvedValueOnce({
-          ok: true,
-          arrayBuffer: async () =>
-            bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        })
-    );
-    const row = await inspectRegistryArtifact({
-      key: 'probe@2.0.0',
+  it('requires publisher prepare review when abbreviated metadata omits scripts', async () => {
+    const row = await registryArchiveFixture({
       name: 'probe',
       version: '2.0.0',
-      integrity,
+      scripts: { prepare: 'node publish.cjs' },
     });
-    expect(row.archiveIntegrityVerified).toBe(true);
-    expect(row.metadataContradiction).toBe(true);
+    expect(row.metadataHooks).toEqual({});
+    expect(row.hooks).toEqual({ prepare: 'node publish.cjs' });
     expect(row.disposition).toBe('review-required');
-    await expect(
-      inspectArchive(await archiveFixture({ name: 'probe', version: '2.0.0' }, 'link'))
-    ).rejects.toThrow('binding.gyp link');
+    const { inventory, lock } = inventoryFromRow(row);
+    row.disposition = 'registry-publication-only-no-execution-needed';
+    row.rootReviewed = true;
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    expect(() =>
+      assertArtifactInventory(inventory, artifactMap(lock), 'lock', baselineFixture())
+    ).not.toThrow();
+    row.rootReviewed = false;
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toThrow(
+      'needs review'
+    );
+    expect(() =>
+      assertArtifactInventory(inventory, artifactMap(lock), 'lock', baselineFixture())
+    ).toThrow('needs review');
   });
 
-  it('detects root hook files without package scripts and rejects ambiguous hook links', async () => {
+  it('rejects ambiguous default-install and root-hook archive links', async () => {
     const manifest = { name: 'probe', version: '2.0.0' };
-    const plain = await inspectArchive(await archiveFixture(manifest));
-    expect(plain.rootHookFiles).toEqual([]);
-    const bytes = await archiveFixture(manifest, false, 'node publisher-hook.cjs');
-    const archive = await inspectArchive(bytes);
-    expect(archive.hooks).toEqual({});
-    expect(archive.rootHookFiles).toEqual(['.hooks/install']);
     expect(
       (await inspectArchive(await archiveFixture(manifest, false, 'backslash'))).rootHookFiles
     ).toEqual(['.hooks\\install']);
-    const integrity = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            versions: {
-              '2.0.0': {
-                hasInstallScript: false,
-                dist: { integrity, tarball: 'https://registry.npmjs.org/probe/-/probe-2.0.0.tgz' },
-              },
-            },
-          }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          arrayBuffer: async () =>
-            bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        })
+    await expect(inspectArchive(await archiveFixture(manifest, 'link'))).rejects.toThrow(
+      'binding.gyp link'
     );
-    const row = await inspectRegistryArtifact({
-      key: 'probe@2.0.0',
-      name: 'probe',
-      version: '2.0.0',
-      integrity,
-    });
-    expect(row.metadataContradiction).toBe(true);
-    expect(row.disposition).toBe('review-required');
     await expect(inspectArchive(await archiveFixture(manifest, false, 'link'))).rejects.toThrow(
       'Ambiguous root .hooks'
     );
@@ -325,5 +370,94 @@ describe('all-archive lifecycle inventory', () => {
     expect(() =>
       assertArtifactInventory(inventory, artifactMap(lockFixture()), 'lock', baselineFixture())
     ).toThrow('needs review');
+  });
+});
+
+describe('live candidate archive review', () => {
+  it('accepts an unrelated root-only dependency change with historical whole-lock fields', () => {
+    const { inventory, lock } = candidateInventoryFixture();
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    addArtifact(lock, 'root-only');
+    lock.importers['.'].dependencies['root-only'] = { version: '1.0.0' };
+    expect(assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toEqual({
+      candidateArtifacts: 3,
+      reviewedArtifacts: 1,
+    });
+  });
+
+  it.each(['direct', 'optional'])(
+    'rejects a new candidate %s artifact without archive review',
+    (edge) => {
+      const { inventory, lock } = candidateInventoryFixture();
+      expect(() =>
+        assertCandidateArchiveInventory(inventory, lock, baselineFixture())
+      ).not.toThrow();
+      addArtifact(lock, 'unreviewed');
+      const owner =
+        edge === 'direct'
+          ? lock.importers['experiments/native-architecture'].devDependencies
+          : lock.snapshots['probe@2.0.0(shared@1.0.0)'].optionalDependencies;
+      owner.unreviewed = edge === 'direct' ? { version: '1.0.0' } : '1.0.0';
+      expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toThrow(
+        'Missing reviewed candidate archive: unreviewed@1.0.0'
+      );
+    }
+  );
+
+  it.each(['row', 'joint'])(
+    'derives required archives independently of a %s omission',
+    (omission) => {
+      const { inventory, lock } = candidateInventoryFixture();
+      expect(() =>
+        assertCandidateArchiveInventory(inventory, lock, baselineFixture())
+      ).not.toThrow();
+      inventory.rows = [];
+      inventory.inspectedArtifacts = 0;
+      if (omission === 'joint') inventory.selectedArtifacts = [];
+      expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toThrow(
+        'Missing reviewed candidate archive: probe@2.0.0'
+      );
+    }
+  );
+
+  it.each([
+    { field: 'integrity', value: 'sha512-changed', error: 'Artifact changed after review' },
+    {
+      field: 'tarball',
+      value: 'https://registry.npmjs.org/probe/-/changed.tgz',
+      error: 'Reviewed archive URL changed',
+    },
+  ])('rejects a same-version candidate $field change', ({ field, value, error }) => {
+    const { inventory, lock } = candidateInventoryFixture();
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    lock.packages['probe@2.0.0'].resolution[field] = value;
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toThrow(
+      error
+    );
+  });
+
+  it.each([
+    { url: 'not-a-url', error: 'Invalid reviewed archive URL' },
+    {
+      url: 'https://registry.npmjs.org.example.test/probe.tgz',
+      error: 'Nonregistry reviewed archive',
+    },
+    { url: 'https://user@registry.npmjs.org/probe.tgz', error: 'Nonregistry reviewed archive' },
+  ])('rejects an unowned reviewed archive URL: $url', ({ url, error }) => {
+    const { inventory, lock } = candidateInventoryFixture();
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    inventory.rows[0].tarball = url;
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).toThrow(
+      error
+    );
+  });
+
+  it('does not waive production leakage for a fully reviewed candidate archive', () => {
+    const { inventory, lock } = candidateInventoryFixture();
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    expect(() => assertProductionClosure(lock, ['shared@1.0.0'])).not.toThrow();
+    lock.importers['.'].dependencies.probe = { version: '2.0.0(shared@1.0.0)' };
+    expect(() => assertCandidateArchiveInventory(inventory, lock, baselineFixture())).not.toThrow();
+    expect(() => assertProductionClosure(lock, ['shared@1.0.0'])).toThrow('entered the shipping');
   });
 });

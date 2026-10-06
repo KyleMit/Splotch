@@ -2,7 +2,7 @@
 
 <!-- code-map:generated:start snapshot -->
 
-> **Snapshot of c20bb9f0665f (2026-10-06).** Every table in this map is generated from that commit
+> **Snapshot of a190af1f5d62 (2026-10-06).** Every table in this map is generated from that commit
 > by `npm run gen:code-map`; the prose around them is maintained by the `reconcile-code-map` skill.
 > Counts drift as the code changes — regenerate rather than hand-edit.
 
@@ -53,36 +53,36 @@ boundaries are judgment calls even though every total is exact.
 | Disposition                    | Files |
 | ------------------------------ | ----: |
 | Measured and categorized       | 2,873 |
-| Explicitly excluded            | 5,060 |
-| **All tracked files**          | 7,933 |
+| Explicitly excluded            | 5,095 |
+| **All tracked files**          | 7,968 |
 | Unassigned or multiply counted |     0 |
 
 | Exclusion class                                  | Files |
 | ------------------------------------------------ | ----: |
 | Binary media / archives                          | 3,208 |
-| Generated measurement data                       | 1,037 |
+| Generated measurement data                       | 1,054 |
 | Vector art assets / traced samples               |   291 |
+| Generated audit / ranking text and captured logs |   235 |
 | Generated / provider agent delivery trees        |   228 |
-| Generated audit / ranking text and captured logs |   217 |
 | Archived payloads / hashes                       |    51 |
 | Generated report / proof-sheet HTML              |    23 |
 | Repository metadata outside LOC scope            |     2 |
 | Code map output                                  |     1 |
 | Dependency lockfile                              |     1 |
 | Publishing marker                                |     1 |
-| **Total explicitly excluded**                    | 5,060 |
+| **Total explicitly excluded**                    | 5,095 |
 
 <!-- code-map:generated:end coverage -->
 
 <!-- code-map:generated:start totals -->
 
-## Grand total: **470,744 LOC across 2,873 measured files**
+## Grand total: **470,810 LOC across 2,873 measured files**
 
 | Area                                                            |     LOC | Files |
 | --------------------------------------------------------------- | ------: | ----: |
-| **tools (excluding asset-gen)** — repo automation               | 183,152 |   830 |
+| **tools (excluding asset-gen)** — repo automation               | 183,180 |   830 |
 | **web/src** — the app                                           | 121,613 |   973 |
-| **docs** — ADRs & guides                                        |  74,004 |   416 |
+| **docs** — ADRs & guides                                        |  74,042 |   416 |
 | **tools/asset-gen** — art pipeline                              |  30,553 |   210 |
 | **web/tests** — E2E + integration                               |  28,628 |   138 |
 | **.ruler** — agent-instruction sources                          |  14,321 |    96 |
@@ -104,7 +104,7 @@ boundaries are judgment calls even though every total is exact.
 
 ## Splits for every measured area over 3,000 LOC
 
-### tools excluding asset-gen (183,152) — by subtree
+### tools excluding asset-gen (183,180) — by subtree
 
 | Sub-bucket         |    LOC | Files |
 | ------------------ | -----: | ----: |
@@ -122,7 +122,7 @@ boundaries are judgment calls even though every total is exact.
 | page-inventory     |  4,693 |    12 |
 | mobile             |  4,490 |    38 |
 | git-housekeeping   |  3,783 |    18 |
-| migration          |  3,718 |    21 |
+| migration          |  3,746 |    21 |
 | api-smoke          |  2,137 |    11 |
 | flaky-digest       |  1,974 |     9 |
 | marketing-assets   |  1,771 |    15 |
@@ -193,14 +193,14 @@ token surface remain in their own domains.
 | Generation, result & reporting UI               |  3,342 |    20 |
 | **AI image generation total**                   | 18,296 |   110 |
 
-### docs (74,004) — by subtree
+### docs (74,042) — by subtree
 
 | Sub-bucket     |    LOC | Files |
 | -------------- | -----: | ----: |
 | scratchpad     | 29,134 |   176 |
 | adrs           | 25,205 |   174 |
 | (root docs)    | 12,621 |    24 |
-| migration      |  1,925 |    12 |
+| migration      |  1,963 |    12 |
 | MOBILE         |  1,628 |     4 |
 | investigations |  1,318 |     8 |
 | CLOUD          |    738 |     2 |

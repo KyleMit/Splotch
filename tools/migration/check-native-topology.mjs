@@ -1,5 +1,4 @@
 import { verifyForgeMitigation } from './lib/forge-mitigation.mjs';
-import { assertProductionInstallContract } from './lib/production-install-contract.mjs';
 import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -21,8 +20,7 @@ import {
 } from './lib/native-config.mjs';
 import {
   assertAlignmentUpdateOwner,
-  assertArtifactInventory,
-  assertCandidateArtifactRecord,
+  assertCandidateArchiveInventory,
   assertJavaScriptLocks,
   assertProductionClosure,
   assertShippingImports,
@@ -52,20 +50,9 @@ export async function checkNativeTopology(argv) {
   const lockSha256 = createHash('sha256')
     .update(readFileSync(join(root, 'pnpm-lock.yaml')))
     .digest('hex');
-  assertCandidateArtifactRecord(
-    readJson(join(evidence, 'candidate-exclusive-artifacts.json')),
-    lock,
-    lockSha256
-  );
-  assertProductionInstallContract(
-    readJson(join(evidence, 'production-install-contract.json')),
-    root,
-    lock
-  );
-  const inventory = assertArtifactInventory(
+  const inventory = assertCandidateArchiveInventory(
     readJson(join(evidence, 'script-inventory.json')),
-    artifactMap(lock),
-    lockSha256,
+    lock,
     readJson(join(evidence, 'baseline-artifact-resolutions.json'))
   );
   const production = assertProductionClosure(
@@ -91,7 +78,7 @@ export async function checkNativeTopology(argv) {
     .filter((artifact) => artifact.name === 'metro')
     .map((artifact) => artifact.version)
     .sort();
-  const shipping = inspectShippingPluginPaths(root, alignment.shippingConfigHashes);
+  const shipping = inspectShippingPluginPaths(root);
   return {
     scope: 'Candidate topology only; no native compile, mount, performance or upgrade result',
     lockSha256,

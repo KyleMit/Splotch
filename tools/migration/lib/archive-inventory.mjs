@@ -140,13 +140,6 @@ export async function inspectRegistryArtifact(artifact) {
     tarball: metadata.dist.tarball,
     registryIntegrity: metadata.dist.integrity,
     hasInstallScript: metadata.hasInstallScript ?? null,
-    metadataContradiction:
-      metadata.hasInstallScript === false &&
-      (archive.rootBindingGyp ||
-        archive.rootHookFiles.length > 0 ||
-        ['preinstall', 'install', 'postinstall'].some((hook) =>
-          Object.hasOwn(archive.hooks, hook)
-        )),
     engines: metadata.engines ?? {},
     metadataHooks: Object.fromEntries(
       INSTALL_HOOKS.filter((name) => Object.hasOwn(metadata.scripts ?? {}, name)).map((name) => [

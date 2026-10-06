@@ -207,11 +207,19 @@ function hasForgeMitigationImport(ast) {
   );
 }
 
-function hasPrecedingReturn(statements) {
+function hasPrecedingTermination(statements) {
   let returns = false;
   function visit(node) {
     if (ts.isFunctionLike(node) || ts.isClassDeclaration(node)) return;
     if (ts.isReturnStatement(node)) returns = true;
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === 'process' &&
+      node.expression.name.text === 'exit'
+    )
+      returns = true;
     ts.forEachChild(node, visit);
   }
   for (const statement of statements) visit(statement);
@@ -250,7 +258,7 @@ function hasDirectForgeMitigationCall(ast) {
         );
       })
   );
-  return index >= 0 && !hasPrecedingReturn(statements.slice(0, index));
+  return index >= 0 && !hasPrecedingTermination(statements.slice(0, index));
 }
 
 function forgeMitigationWiringViolations(workspaceYaml, checker, commands) {
@@ -272,11 +280,60 @@ function forgeMitigationWiringViolations(workspaceYaml, checker, commands) {
   return failures;
 }
 
+function hasTopologyMainInvocation(ast) {
+  const index = ast.statements.findIndex(
+    (node) => ts.isIfStatement(node) && node.expression.getText(ast) === 'isMain(import.meta.url)'
+  );
+  if (index < 0 || hasPrecedingTermination(ast.statements.slice(0, index))) return false;
+  const main = ast.statements[index];
+  if (main.elseStatement || !ts.isExpressionStatement(main.thenStatement)) return false;
+  const call = main.thenStatement.expression;
+  if (
+    !ts.isCallExpression(call) ||
+    call.expression.getText(ast) !== 'runMain' ||
+    call.arguments.length !== 1
+  )
+    return false;
+  const callback = call.arguments[0];
+  if (
+    !ts.isArrowFunction(callback) ||
+    !callback.modifiers?.some((node) => node.kind === ts.SyntaxKind.AsyncKeyword) ||
+    !ts.isBlock(callback.body)
+  )
+    return false;
+  const statements = callback.body.statements;
+  return (
+    statements.length === 1 &&
+    ts.isExpressionStatement(statements[0]) &&
+    statements[0].getText(ast).replace(/\s+/g, '') ===
+      'console.log(JSON.stringify(awaitcheckNativeTopology(process.argv.slice(2)),null,2));'
+  );
+}
+
+function forgeInvocationWiringViolations(checker, scripts) {
+  const failures = [];
+  if (
+    scripts['check:migration:native-topology'] !== 'node tools/migration/check-native-topology.mjs'
+  )
+    failures.push('npm topology script does not invoke the guard');
+  const ast = ts.createSourceFile(
+    'check-native-topology.mjs',
+    checker,
+    ts.ScriptTarget.Latest,
+    true
+  );
+  if (ast.parseDiagnostics.length || !hasTopologyMainInvocation(ast))
+    failures.push('topology main does not await the guard');
+  return failures;
+}
+
 describe('the guard-qualified Forge advisory exception', () => {
   const checker = readFileSync(join(repoRoot, 'tools/migration/check-native-topology.mjs'), 'utf8');
+  const { scripts } = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
 
   it('requires the actual installed guard before the unchanged Quality audit', () => {
     expect(forgeMitigationWiringViolations(pnpmWorkspace, checker, QUALITY_COMMANDS)).toEqual([]);
+    expect(forgeInvocationWiringViolations(checker, scripts)).toEqual([]);
   });
 
   it('rejects commented imports/calls, dead or conditional calls and preceding returns', () => {
@@ -297,6 +354,8 @@ describe('the guard-qualified Forge advisory exception', () => {
       'const forgeMitigation = root ? await verifyForgeMitigation(root, lock, workspace) : null;',
       `return {}; ${call}`,
       `if (root) return {}; ${call}`,
+      `process.exit(0); ${call}`,
+      `if (root) process.exit(0); ${call}`,
     ])
       expect(
         forgeMitigationWiringViolations(
@@ -305,6 +364,31 @@ describe('the guard-qualified Forge advisory exception', () => {
           QUALITY_COMMANDS
         )
       ).toContain('mandatory installed mitigation call absent');
+  });
+
+  it('rejects no-op npm scripts, dead main callbacks and preceding process exits', () => {
+    expect(
+      forgeInvocationWiringViolations(checker, {
+        ...scripts,
+        'check:migration:native-topology': 'node -e 0',
+      })
+    ).toContain('npm topology script does not invoke the guard');
+    for (const changed of [
+      checker.replace('if (isMain(import.meta.url))', 'if (false)'),
+      checker.replace('runMain(async () => {', 'runMain(async () => { return;'),
+      checker.replace('await checkNativeTopology(process.argv.slice(2))', '{}'),
+      checker.replace(
+        'await checkNativeTopology(process.argv.slice(2))',
+        'checkNativeTopology(process.argv.slice(2))'
+      ),
+      checker.replace(
+        'if (isMain(import.meta.url))',
+        'process.exit(0); if (isMain(import.meta.url))'
+      ),
+    ])
+      expect(forgeInvocationWiringViolations(changed, scripts)).toContain(
+        'topology main does not await the guard'
+      );
   });
 
   it('rejects missing import, missing unconditional call and missing or reordered Quality step', () => {

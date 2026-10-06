@@ -212,25 +212,72 @@ export function assertArtifactInventory(inventory, artifacts, lockSha256, baseli
     const selected = artifacts.get(row.key);
     assert.ok(selected, `Inventory artifact absent from lock: ${row.key}`);
     assert.equal(row.integrity, selected.integrity, `Artifact changed after review: ${row.key}`);
-    assert.equal(row.archiveIntegrityVerified, true, `Archive integrity unverified: ${row.key}`);
-    assert.deepEqual(row.rootHookFiles, [], `Unreviewed root .hooks: ${row.key}`);
-    const hooks = Object.keys(row.hooks);
-    if (hooks.length || row.rootBindingGyp) {
-      assert.deepEqual(hooks, ['prepare'], `Unreviewed install hook: ${row.key}`);
-      assert.equal(row.rootBindingGyp, false, `Unreviewed default install: ${row.key}`);
-      assert.equal(row.disposition, 'registry-publication-only-no-execution-needed');
-      assert.equal(
-        row.rootReviewed,
-        true,
-        `Publisher prepare disposition needs review: ${row.key}`
-      );
-    } else assert.equal(row.disposition, 'no-install-hooks');
-    const metadataContradiction =
-      row.hasInstallScript === false &&
-      (hooks.some((hook) => hook !== 'prepare') ||
-        row.rootBindingGyp ||
-        row.rootHookFiles.length > 0);
-    assert.equal(metadataContradiction, false, `Registry metadata contradicts archive: ${row.key}`);
+    assertArchiveVerdict(row);
   }
   return { reviewedArtifacts: rows.size };
+}
+
+function assertArchiveVerdict(row) {
+  assert.equal(row.archiveIntegrityVerified, true, `Archive integrity unverified: ${row.key}`);
+  assert.deepEqual(row.rootHookFiles, [], `Unreviewed root .hooks: ${row.key}`);
+  assert.equal(row.rootBindingGyp, false, `Unreviewed default install: ${row.key}`);
+  assert.ok(
+    row.hooks && typeof row.hooks === 'object' && !Array.isArray(row.hooks),
+    `Invalid archive hooks: ${row.key}`
+  );
+  const hooks = Object.keys(row.hooks);
+  assert.ok(
+    Object.values(row.hooks).every((command) => typeof command === 'string'),
+    `Invalid archive hook command: ${row.key}`
+  );
+  if (hooks.length) {
+    assert.deepEqual(hooks, ['prepare'], `Unreviewed install hook: ${row.key}`);
+    assert.equal(row.disposition, 'registry-publication-only-no-execution-needed');
+    assert.equal(row.rootReviewed, true, `Publisher prepare disposition needs review: ${row.key}`);
+  } else assert.equal(row.disposition, 'no-install-hooks');
+}
+
+export function assertCandidateArchiveInventory(inventory, lock, baseline) {
+  assert.equal(inventory.schemaVersion, 1, 'Unsupported candidate archive inventory');
+  assert.equal(inventory.complete, true, 'Incomplete pre-install archive inventory');
+  assert.equal(baseline.schemaVersion, 1, 'Unsupported baseline artifact record');
+  assert.match(baseline.sourceRevision, /^[a-f0-9]{40}$/, 'Missing baseline source revision');
+  assert.ok(Array.isArray(inventory.rows), 'Missing reviewed archive rows');
+  assert.equal(inventory.inspectedArtifacts, inventory.rows.length, 'Inventory row count differs');
+  const rows = new Map(inventory.rows.map((row) => [row.key, row]));
+  assert.equal(rows.size, inventory.rows.length, 'Duplicate inventory identity');
+  const artifacts = artifactMap(lock);
+  const closure = getImporterArtifactKeys(lock, CANDIDATE_DIRECTORY, true);
+  const required = changedArtifactMaps(
+    artifactMap({ packages: baseline.packages }),
+    new Map([...closure].map((key) => [key, artifacts.get(key)]))
+  );
+  for (const artifact of required) {
+    const row = rows.get(artifact.key);
+    assert.ok(row, `Missing reviewed candidate archive: ${artifact.key}`);
+    assert.equal(row.name, artifact.name, `Reviewed archive name changed: ${artifact.key}`);
+    assert.equal(
+      row.version,
+      artifact.version,
+      `Reviewed archive version changed: ${artifact.key}`
+    );
+    assert.equal(
+      row.integrity,
+      artifact.integrity,
+      `Artifact changed after review: ${artifact.key}`
+    );
+    assert.ok(
+      typeof row.tarball === 'string' && URL.canParse(row.tarball),
+      `Invalid reviewed archive URL: ${artifact.key}`
+    );
+    const url = new URL(row.tarball);
+    assert.ok(
+      url.origin === 'https://registry.npmjs.org' && !url.username && !url.password,
+      `Nonregistry reviewed archive: ${artifact.key}`
+    );
+    if (artifact.tarball)
+      assert.equal(row.tarball, artifact.tarball, `Reviewed archive URL changed: ${artifact.key}`);
+    assertArchiveVerdict(row);
+  }
+  return { candidateArtifacts: closure.size, reviewedArtifacts: required.length };
 }

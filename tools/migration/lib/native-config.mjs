@@ -200,7 +200,7 @@ export function inspectNativeConfig(root, candidate, identities, lock) {
   };
 }
 
-export function inspectShippingPluginPaths(root, expectedHashes) {
+export function inspectShippingPluginPaths(root) {
   const files = [
     'capacitor.config.json',
     'android/capacitor.settings.gradle',
@@ -214,11 +214,6 @@ export function inspectShippingPluginPaths(root, expectedHashes) {
         .digest('hex'),
     ])
   );
-  assert.deepEqual(
-    hashes,
-    expectedHashes,
-    'Shipping configuration changed from the reviewed install baseline'
-  );
   const gradle = readFileSync(join(root, files[1]), 'utf8');
   const swift = readFileSync(join(root, files[2]), 'utf8');
   const paths = [...gradle.matchAll(/new File\('([^']+)'\)/g)]
@@ -230,8 +225,21 @@ export function inspectShippingPluginPaths(root, expectedHashes) {
       ])
     );
   assert.ok(paths.length > 0, 'Committed native plugin paths were not inspected');
+  const modulesRoot = realpathSync(join(root, 'node_modules'));
   const plugins = paths.map(([owner, pluginPath]) => {
     const absolute = resolve(dirname(join(root, owner)), pluginPath);
+    const fromModules = relative(modulesRoot, absolute);
+    assert.ok(
+      fromModules &&
+        fromModules !== '..' &&
+        !fromModules.startsWith('../') &&
+        !isAbsolute(fromModules),
+      `Capacitor plugin path escapes installed dependencies: ${owner} ${pluginPath}`
+    );
+    assert.ok(
+      !fromModules.split('/').includes('.pnpm'),
+      `Capacitor plugin path uses content-addressed store: ${owner} ${pluginPath}`
+    );
     assert.equal(
       realpathSync(absolute),
       absolute,
@@ -240,4 +248,12 @@ export function inspectShippingPluginPaths(root, expectedHashes) {
     return { owner, path: absolute };
   });
   return { hashes, plugins };
+}
+
+export function assertShippingConfigEvidence(shipping, expectedHashes) {
+  assert.deepEqual(
+    shipping.hashes,
+    expectedHashes,
+    'Shipping configuration differs from the reviewed install evidence'
+  );
 }

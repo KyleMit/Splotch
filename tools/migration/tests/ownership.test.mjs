@@ -11,7 +11,11 @@ import {
   readJson,
   resolveNativePackage,
 } from '../lib/native-identity.mjs';
-import { assertMetroOwnership, inspectShippingPluginPaths } from '../lib/native-config.mjs';
+import {
+  assertMetroOwnership,
+  assertShippingConfigEvidence,
+  inspectShippingPluginPaths,
+} from '../lib/native-config.mjs';
 import {
   assertAlignmentUpdateOwner,
   assertShippingImports,
@@ -122,7 +126,7 @@ describe('root policy and shipping boundary', () => {
     expect(() => assertShippingImports(root, ['react-native'])).toThrow('candidate workspace');
   });
 
-  it('rejects shipping configuration drift while committed plugin paths still resolve', () => {
+  it('keeps live plugin paths canonical while exact proof rejects shipping byte drift', () => {
     const root = fixture();
     const files = {
       'capacitor.config.json': JSON.stringify({ appId: 'test.fixture' }),
@@ -138,9 +142,31 @@ describe('root policy and shipping boundary', () => {
         createHash('sha256').update(source).digest('hex'),
       ])
     );
-    expect(() => inspectShippingPluginPaths(root, expected)).not.toThrow();
+    expect(() =>
+      assertShippingConfigEvidence(inspectShippingPluginPaths(root), expected)
+    ).not.toThrow();
     write(root, 'capacitor.config.json', JSON.stringify({ appId: 'test.changed' }));
-    expect(() => inspectShippingPluginPaths(root, expected)).toThrow('reviewed install baseline');
+    const current = inspectShippingPluginPaths(root);
+    expect(current.plugins).toHaveLength(2);
+    expect(() => assertShippingConfigEvidence(current, expected)).toThrow(
+      'reviewed install evidence'
+    );
+    const storePlugin = '.pnpm/fixture-plugin@2.0.0_peer@1.0.0/node_modules/fixture-plugin';
+    mkdirSync(join(root, 'node_modules', storePlugin), { recursive: true });
+    for (const [owner, source] of [
+      ['android/capacitor.settings.gradle', `new File('../node_modules/${storePlugin}')`],
+      [
+        'ios/App/CapApp-SPM/Package.swift',
+        `.package(name: "FixturePlugin", path: "../../../node_modules/${storePlugin}")`,
+      ],
+    ]) {
+      write(root, owner, source);
+      expect(() => inspectShippingPluginPaths(root)).toThrow('content-addressed store');
+      write(root, owner, files[owner]);
+    }
+    mkdirSync(join(root, 'foreign-plugin'));
+    write(root, 'android/capacitor.settings.gradle', "new File('../foreign-plugin')");
+    expect(() => inspectShippingPluginPaths(root)).toThrow('path escapes installed dependencies');
   });
 
   it('rejects the wrong Metro project root and broadened source watching', () => {
