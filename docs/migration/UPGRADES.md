@@ -76,11 +76,12 @@ every supported source class is accepted; “HEAD works” cannot retire legacy 
 
 ### Verified published bytes and tagged source
 
-The [2026-10-06 inventory](evidence/upgrade-artifact-inventory/README.md) qualifies all ten
-currently attached native binaries against complete release metadata and reads their actual embedded
-versions with the unchanged release readers. It also freezes eight actual tag commits, 364 selected
-source blobs and 1,199 searched production-source identities. These are completed inventory checks;
-signed installs, effective origins, installed graphs and transactional upgrades remain pending.
+The [2026-10-06 inventory](evidence/upgrade-artifact-inventory/README.md) qualifies all ten native
+binaries attached at its 16:30 UTC metadata observation against complete release metadata and reads
+their actual embedded versions with the unchanged release readers. It also freezes eight actual tag
+commits, 364 selected source blobs and 1,199 searched production-source identities. These are
+completed inventory checks; signed installs, effective origins, installed graphs and transactional
+upgrades remain pending.
 
 | Public tag | Tagged Android version / code | Actual attached AAB version / code       | Actual attached IPA version / code |
 | ---------- | ----------------------------- | ---------------------------------------- | ---------------------------------- |

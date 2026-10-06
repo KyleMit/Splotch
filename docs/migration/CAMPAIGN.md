@@ -99,9 +99,12 @@ b5bb0824-3f7a-4ad7-9e05-4e8e9af77333 round three remain required.
 F1's composed bounded repair 0ffbfad71c18b1bb284517011b30258298a0d283, source
 49c274e565ef8f9936b0a997a24f89a46b8ec3c7, passed 973 scoped tests and the applicable full
 Browserless tier with source/index/installed inputs unchanged. Its owned group/port released at
-17:01:08.672Z. Commit/push of final evidence, final-head CI and independent acceptance remain
-pending. Original bbe89d5b-644f-4d4f-9366-e5156cebf4ea has3 used / 0 remaining; no reset, fresh or
-fourth review is authorized. Native candidate expansion remains dependent on F1 acceptance.
+17:01:08.672Z. The subsequent
+[17:12 publication/CI receipt](evidence/upgrade-artifact-inventory/f1-final-head-ci-e4e9.json.txt)
+binds published e4e9fc044d46d49c3565379a3e6419e8eff4af9d, green final-head CI and all resolved
+threads without implying independent acceptance. Original bbe89d5b-644f-4d4f-9366-e5156cebf4ea has 3
+used / 0 remaining; no reset, fresh or fourth review is authorized. Native candidate expansion
+remains dependent on F1 acceptance.
 
 No host/device lease is held at this transition. The exact Temurin17 macOS/aarch64 archive is
 byte-qualified and fully inspected, with observed setgid directory modes/signature trust and later

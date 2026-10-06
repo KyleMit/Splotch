@@ -79,6 +79,14 @@ source and create an owned replay directory when reproducing. Tag source can be 
 through its exact Git blob IDs; changing the parent does not invalidate immutable legacy bytes, but
 it cannot relabel earlier execution identities.
 
+The supplemental [F1 publication/CI receipt](f1-final-head-ci-e4e9.json.txt) and
+[complete Quality export](f1-quality-e4e9-complete.log.txt.gz) preserve its later head and CI
+without moving its tested implementation source. The standard gzip has the exact original decoded
+bytes, including whitespace; the envelope records compressed/uncompressed identities and maps the
+receipt’s original producer-relative logPath. Acceptance remains held at the original three-round
+budget. The saved final documentation-gate receipt keeps its recorded Markdown/index scope; later
+citation-only edits pass scoped formatting/reference checks.
+
 Inventory evidence does not replace same-ID reads, ordered transactions, old installed graph,
 held-picture continuity from applicable unreleased source, background-job reconciliation, physical
 accessibility, signed upgrades or final architecture/product/release acceptance.

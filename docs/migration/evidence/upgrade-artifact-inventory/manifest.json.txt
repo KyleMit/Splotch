@@ -2498,11 +2498,14 @@
       "preservedExact": true
     },
     {
-      "path": "f1-quality-e4e9-complete.log.txt",
+      "path": "f1-quality-e4e9-complete.log.txt.gz",
       "originalPath": "import-boundary/final-v8-durable/f1-quality-e4e9-complete.log.txt",
-      "bytes": 135370,
-      "sha256": "1b7a5886b560d7f5f6c7da83dbc1b340add0412cddca633a16a4b29680e4387a",
-      "preservedExact": true
+      "bytes": 23636,
+      "sha256": "614115a2683ad8a0098b77ae3cb1e7d8f9e7ee3017135d565a51a9b4534e7e78",
+      "preservedExact": true,
+      "uncompressedBytes": 135370,
+      "uncompressedSha256": "1b7a5886b560d7f5f6c7da83dbc1b340add0412cddca633a16a4b29680e4387a",
+      "representation": "Standard gzip preserves original complete decoded log bytes; original receipt logPath remains its original producer-relative name"
     }
   ],
   "claimLimits": [
