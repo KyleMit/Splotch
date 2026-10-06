@@ -1,0 +1,101 @@
+{
+  "scope": "Timestamped operational source state; not at-execution binding or migration acceptance",
+  "units": {
+    "parent": {
+      "observedAtUtc": "2026-10-06T16:27:49.061118+00:00",
+      "root": "/Users/kylemit/Code/Splotch",
+      "head": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+      "tree": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+      "indexTree": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+      "porcelain": "",
+      "unstagedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stagedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "import_boundary": {
+      "observedAtUtc": "2026-10-06T16:27:49.157388+00:00",
+      "root": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "head": "3470e0b410e86909486e5bee876a8239d45ad5f3",
+      "tree": "2b9f970e04228dac56bae5671221aea99f76ed9d",
+      "indexTree": "2b9f970e04228dac56bae5671221aea99f76ed9d",
+      "porcelain": " M tools/migration/README.md\n M tools/migration/lib/candidate-imports.mjs\n M tools/migration/lib/candidate-references.mjs\n M tools/migration/tests/candidate-configs.test.mjs\n M tools/migration/tests/candidate-imports.test.mjs\n",
+      "unstagedDiffSha256": "53f620fde5c47bbefc3edc0fb1795528578d69b793e52495fc79b71f888e34ff",
+      "stagedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "retained_control": {
+      "observedAtUtc": "2026-10-06T16:27:49.252080+00:00",
+      "root": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch",
+      "head": "b2d1edc120954db235ced8be5c82ef98c3df2168",
+      "tree": "84eb73c7cdd3393c684685ef9c0481fad731d3f3",
+      "indexTree": "97b493401445d7fc77b3f34f6e58d948701e558f",
+      "porcelain": "M  docs/migration/evidence/retained-control/README.md\nA  docs/migration/evidence/retained-control/nonce-diagnostic.json\nM  migration/probes/web-host/README.md\nM  tools/check-pwa-precache.mjs\nA  tools/lib/pwa-precache-source.mjs\nM  tools/migration/README.md\nM  tools/migration/build-web-host.mjs\nM  tools/migration/check-web-host.mjs\nM  tools/migration/lib/web-host-artifact.mjs\nM  tools/migration/lib/web-host-comparison.mjs\nM  tools/migration/lib/web-host-evidence.mjs\nM  tools/migration/lib/web-host-metadata.mjs\nA  tools/migration/lib/web-host-ownership.d.mts\nM  tools/migration/test-web-host.mjs\nA  tools/migration/tests/web-host-artifact-fixture.mjs\nM  tools/migration/tests/web-host-browser.test.mjs\nM  tools/migration/tests/web-host-build.test.mjs\nM  tools/migration/tests/web-host-inputs.test.mjs\nM  tools/migration/tests/web-host-preview.test.mjs\nM  tools/tests/check-pwa-precache.test.mjs\nA  web/appShellBuildNonce.test.ts\nA  web/appShellBuildNonce.ts\nM  web/vite.config.ts\n",
+      "unstagedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stagedDiffSha256": "b916851bfd1374e774bcec88a934421508c76f40b786e9153f78dc4c5245e982"
+    },
+    "native_structural": {
+      "observedAtUtc": "2026-10-06T16:27:49.347781+00:00",
+      "root": "/Users/kylemit/.codex/worktrees/migration-native-source/Splotch",
+      "head": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+      "tree": "1633333b0821c6f90385661de1e813676c6521ad",
+      "indexTree": "1633333b0821c6f90385661de1e813676c6521ad",
+      "porcelain": " M .github/workflows/test.yml\n M .gitignore\n M .prettierignore\n M dprint.json\n M eslint.config.js\n M package.json\n M stylelint.config.js\n M tools/ci-mirror/run-quality-checks.mjs\n M tools/migration/README.md\n?? experiments/native-architecture/NATIVE-SOURCES.md\n?? experiments/native-architecture/TEMPLATE-LICENSE\n?? experiments/native-architecture/android/\n?? experiments/native-architecture/ios/\n?? experiments/native-architecture/native-template-provenance.json\n?? tools/migration/check-native-candidate.mjs\n?? tools/migration/inputs/expo-template-bare-minimum-57.0.28.metadata.json.txt\n?? tools/migration/inputs/native-template-manifest.json\n?? tools/migration/lib/native-apple-scene.mjs\n?? tools/migration/lib/native-source-contract.mjs\n?? tools/migration/lib/native-source-files.mjs\n?? tools/migration/lib/native-template-transforms.mjs\n?? tools/migration/lib/native-template.mjs\n?? tools/migration/materialize-native-candidate.mjs\n?? tools/migration/tests/native-apple-scene.test.mjs\n?? tools/migration/tests/native-provenance.test.mjs\n?? tools/migration/tests/native-registration.test.mjs\n?? tools/migration/tests/native-source-contract.test.mjs\n?? tools/migration/tests/native-template.test.mjs\n",
+      "unstagedDiffSha256": "27762d0d4c5bedea367e6b7313c5e7cb19028ec63cce0b4b9f800ea0eff06057",
+      "stagedDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "acceptedIntegration": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "originMainLastFetched": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "reviews": {
+    "F1": {
+      "conversation": "bbe89d5b-644f-4d4f-9366-e5156cebf4ea",
+      "used": 3,
+      "remaining": 0,
+      "lastReview": 5431448391,
+      "state": "material finding confirmed; dependent acceptance halted"
+    },
+    "retained": {
+      "conversation": "b5bb0824-3f7a-4ad7-9e05-4e8e9af77333",
+      "used": 2,
+      "remaining": 1,
+      "lastReview": 5431123113,
+      "state": "repairs; final gates/round/CI pending"
+    },
+    "native": {
+      "conversation": "7c940639-09e2-4236-961f-1122171cb5d8",
+      "used": 1,
+      "remaining": 2,
+      "state": "source-only; initial NO-GO"
+    },
+    "burden": {
+      "conversation": "9bbc9f6a-7cff-4a23-aa31-35e18feec8f0",
+      "used": 3,
+      "remaining": 0,
+      "lastReview": 5431393919,
+      "state": "reviewed final source and final CI; integrated preregistration only"
+    }
+  },
+  "hardware": {
+    "observedAtUtc": "2026-10-06T15:58:35Z",
+    "adbTransports": 0,
+    "appleUsbDevices": 0,
+    "connectedCoreDevices": 0,
+    "captureLease": false,
+    "claimLimit": "passive enumeration; no calibration or capture preflight"
+  },
+  "leaseTransitions": {
+    "nativeSdkFour": {
+      "owner": "native_structural",
+      "pid": 88277,
+      "startedAtUtc": "2026-10-06T16:24:56.423Z",
+      "deadlineSeconds": 900,
+      "releasedAtUtc": "2026-10-06T16:26:51.107Z",
+      "result": "unintended missing authenticated AppleDouble member; NDK unaccepted",
+      "releaseProof": "owner host ps verifies PID and group absent; complete host-local receipt"
+    },
+    "retainedReplacement": {
+      "owner": "retained_control",
+      "authorized": true,
+      "actualStart": "pending owner announcement at snapshot",
+      "scope": "composed final-source Quality and Browserless; 600-second per-command deadlines, unused SMOKE_PORT5300"
+    }
+  }
+}

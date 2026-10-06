@@ -1,6 +1,8 @@
 # Common-horizon burden preregistration, revised decision policy
 
-**Status: proposed until original Claude review and integration.**
+**Status: preregistration accepted in [PR2704](https://github.com/KyleMit/Splotch/pull/2704).** The
+[integration receipt](evidence/resumption/burden-accepted-integration.json.txt) records the reviewed
+source, original third round and final-head CI; no candidate or architecture acceptance follows.
 
 Parent-owned documentation unit; the
 [original proposal](evidence/burden-preregistration/original-proposal.md.txt) and full Claude

@@ -1,0 +1,67 @@
+{
+  "observedAtUtc": "2026-10-06T16:26:15.896759+00:00",
+  "scope": "PR2704 preregistration acceptance only",
+  "merge": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "mergeParents": [
+    "e7413bf92066fcf45967cf04241a513fd48d49ff",
+    "a8a49e399e5d37bfc923776e0818948b950f8f65"
+  ],
+  "reviewedHead": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+  "actualQualityCheckout": "a0781a9a40532f26d8066191dfedae6d8bb84bbe",
+  "treeIdentities": {
+    "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+    "a8a49e399e5d37bfc923776e0818948b950f8f65": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+    "a0781a9a40532f26d8066191dfedae6d8bb84bbe": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0"
+  },
+  "originIntegrationObserved": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "originMainObserved": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "durableFiles": [
+    {
+      "path": "quality-ci-native-complete.json",
+      "bytes": 138497,
+      "sha256": "c47dda9e5389a7577eb388dd2b8dcf8fe3ad1d3e5d3fff588dca0890d1ab08a9"
+    },
+    {
+      "path": "final-head-ci-attribution.json",
+      "bytes": 52403,
+      "sha256": "0032a746b42ae62b54e92916b0c5f76462d840d4658d95db746bf916fdf58224"
+    },
+    {
+      "path": "merged-pr-native.json",
+      "bytes": 3629,
+      "sha256": "78f4cf214518ba3833dba1327e786474badf2c1813fb03b0bb4ab0e2c26172e6"
+    }
+  ],
+  "supplementObservedAtUtc": "2026-10-06T16:37:10.214487+00:00",
+  "review": {
+    "conversation": "9bbc9f6a-7cff-4a23-aa31-35e18feec8f0",
+    "round": 3,
+    "used": 3,
+    "remaining": 0,
+    "reviewId": 5431393919,
+    "reviewUrl": "https://github.com/KyleMit/Splotch/pull/2704#pullrequestreview-5431393919",
+    "reviewedHead": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+    "findings": 0,
+    "unverified": 0
+  },
+  "ci": {
+    "registeredHead": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+    "testsRunId": 37493557806,
+    "testsConclusion": "success",
+    "adrRunId": 37493557606,
+    "adrConclusion": "success",
+    "completeJobCount": 18,
+    "executedSucceeded": 14,
+    "conditionalSkipped": 4,
+    "completeNativeMetadata": "burden-final-head-ci-metadata.json.txt",
+    "completeNativeMetadataSha256": "0032a746b42ae62b54e92916b0c5f76462d840d4658d95db746bf916fdf58224",
+    "actualQualityCheckout": "a0781a9a40532f26d8066191dfedae6d8bb84bbe",
+    "qualityJobId": 112372207608
+  },
+  "claimLimits": [
+    "Preregistration acceptance only; no migration implementation acceptance",
+    "One complete Quality checkout log binds actual source; other jobs are complete native workflow metadata, not individually exported checkout logs",
+    "No complete installed-graph assertion from job metadata",
+    "Original host-local acceptance receipt remains immutable; this committed supplement adds already captured review and CI facts"
+  ]
+}
