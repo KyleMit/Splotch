@@ -1,0 +1,18 @@
+{
+  "id": "d474e648-81c8-410c-9f15-de76c559f4be",
+  "rival": "claude",
+  "scope": {
+    "base": "e7413bf92066fcf45967cf04241a513fd48d49ff",
+    "head": "f6901a62b8abd742f2d5003a88c4d25695d4186d",
+    "description": "pull request 2704",
+    "range": "e7413bf92066fcf45967cf04241a513fd48d49ff...f6901a62b8abd742f2d5003a88c4d25695d4186d"
+  },
+  "question": false,
+  "worktree": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/d474e648-81c8-410c-9f15-de76c559f4be/worktree",
+  "packetDir": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/d474e648-81c8-410c-9f15-de76c559f4be/packet",
+  "round": 2,
+  "resumed": true,
+  "repoRoot": "/Users/kylemit/Code/Splotch",
+  "branch": "codex/migration-burden-preregistration",
+  "createdAt": "2026-10-06T15:58:33.238Z"
+}

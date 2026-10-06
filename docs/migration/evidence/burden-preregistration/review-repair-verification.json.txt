@@ -1,0 +1,287 @@
+{
+  "observedAt": "2026-10-06T16:06:32.236538+00:00",
+  "originalReview": {
+    "wrapper": "d474e648-81c8-410c-9f15-de76c559f4be",
+    "actualConversation": "9bbc9f6a-7cff-4a23-aa31-35e18feec8f0",
+    "round": 2,
+    "resumed": true,
+    "testedSource": "f6901a62b8abd742f2d5003a88c4d25695d4186d",
+    "reviewId": 5431273305
+  },
+  "dispositions": {
+    "native-paper-floor": "Proposed tools/bindings lower4/3 restored to original6/6; every retained Capacitor service survives, with added paper bindings. Upper18/18 unchanged.",
+    "candidate-choice": "Strict comparison of sum recurring RN upper against native-paper lower for fully deployed24-month rates; initial/reserve/delay/horizon-fraction/transition excluded only from this arm-to-arm test.",
+    "output-paths": "Both output paths required; bare and partial invocations reject before creating evidence-directory files.",
+    "incidental-copy": "Fixed is20 spacing."
+  },
+  "currentScript": {
+    "bytes": 13556,
+    "sha256": "fc0366c669d81e40ca84c1ce33fe21ed3a8795fa5f12bd2abd1af34f3fb85aaf"
+  },
+  "priorSourceAtCommit": "f6901a62b8abd742f2d5003a88c4d25695d4186d",
+  "priorScriptSha256": "9efb3522965ce64ac4b9460f8f81f15b609ef1be4e6612a18633aacd222f7145",
+  "factsChangedOnlyScriptIdentity": true,
+  "dispositionUnchanged": true,
+  "threeCallerByteEquality": true,
+  "boundaryChecks": [
+    {
+      "category": "UI and behavior",
+      "path": "web/src/routes/api/generate-image/+server.ts",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/routes/admin/+page.svelte",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/lib/components/admin/AdminConsole.svelte",
+      "matches": false
+    },
+    {
+      "category": "UI and behavior",
+      "path": "web/src/lib/components/DrawingCanvas.svelte",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/secureStorage.ts",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/installationId.ts",
+      "matches": true
+    },
+    {
+      "category": "native binding and lifecycle",
+      "path": "web/src/lib/plugins/systemBack.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "web/securityPolicy.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "web/src/lib/pwa/updates.ts",
+      "matches": true
+    },
+    {
+      "category": "web security PWA and host",
+      "path": "netlify.toml",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "web/src/lib/drawing/exportDrawing.test.ts",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/mobile/android/tests/run-smoke-test.test.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/tests/native-smoke-flow.test.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "tools/release/cut-release.mjs",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "fastlane/metadata/en-US/release_notes.txt",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": "releases/1.6.0.md",
+      "matches": true
+    },
+    {
+      "category": "validation physical and release",
+      "path": ".maestro/smoke.yaml",
+      "matches": true
+    },
+    {
+      "category": "dependency and toolchain",
+      "path": "tools/bootstrap-worktree.mjs",
+      "matches": true
+    },
+    {
+      "category": "dependency and toolchain",
+      "path": "tools/install-nonowner.mjs",
+      "matches": false
+    }
+  ],
+  "sourceDirectoryUnchangedByMissingOutputs": true,
+  "originalRawUnchangedSha256": "820a082c920cbe59e14d01ba126c106346d37ebe9b638d973255cf74f5954076",
+  "calls": [
+    {
+      "label": "default-repository",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/default-repository.json",
+        "--disposition-output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/default-repository-disposition.json"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 0,
+      "stdout": "{\"counts\": {\"UI and behavior\": 467, \"dependency and toolchain\": 341, \"native binding and lifecycle\": 118, \"validation physical and release\": 880, \"web security PWA and host\": 97}, \"dispositionBytes\": 9457, \"firstParentCommits\": 1246, \"outputBytes\": 14309, \"outputSha256\": \"934798327d74a044618d1a5eac7950090a8f93cbd594b04d6d2db96e7f3d84ad\"}\n",
+      "stderr": ""
+    },
+    {
+      "label": "explicit-other-repository",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/explicit-other-repository.json",
+        "--disposition-output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/explicit-other-repository-disposition.json",
+        "--repo",
+        "/Users/kylemit/.codex/worktrees/3218/Splotch"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 0,
+      "stdout": "{\"counts\": {\"UI and behavior\": 467, \"dependency and toolchain\": 341, \"native binding and lifecycle\": 118, \"validation physical and release\": 880, \"web security PWA and host\": 97}, \"dispositionBytes\": 9457, \"firstParentCommits\": 1246, \"outputBytes\": 14309, \"outputSha256\": \"934798327d74a044618d1a5eac7950090a8f93cbd594b04d6d2db96e7f3d84ad\"}\n",
+      "stderr": ""
+    },
+    {
+      "label": "explicit-original",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/explicit-original.json",
+        "--disposition-output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/explicit-original-disposition.json",
+        "--original",
+        "/private/tmp/splotch-resume-01a111b0/burden-facts.json"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 0,
+      "stdout": "{\"counts\": {\"UI and behavior\": 467, \"dependency and toolchain\": 341, \"native binding and lifecycle\": 118, \"validation physical and release\": 880, \"web security PWA and host\": 97}, \"dispositionBytes\": 9457, \"firstParentCommits\": 1246, \"outputBytes\": 14309, \"outputSha256\": \"934798327d74a044618d1a5eac7950090a8f93cbd594b04d6d2db96e7f3d84ad\"}\n",
+      "stderr": ""
+    },
+    {
+      "label": "missing-output-paths",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "usage: source-facts.py [-h] [--repo REPO] --output OUTPUT\n                       [--original ORIGINAL]\n                       --disposition-output DISPOSITION_OUTPUT\nsource-facts.py: error: the following arguments are required: --output, --disposition-output\n"
+    },
+    {
+      "label": "missing-disposition-path",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/should-not-exist.json"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "usage: source-facts.py [-h] [--repo REPO] --output OUTPUT\n                       [--original ORIGINAL]\n                       --disposition-output DISPOSITION_OUTPUT\nsource-facts.py: error: the following arguments are required: --disposition-output\n"
+    },
+    {
+      "label": "original-overwrite-refusal",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-facts.json",
+        "--disposition-output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/refusal-disposition.json",
+        "--original",
+        "/private/tmp/splotch-resume-01a111b0/burden-facts.json"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py\", line 239, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py\", line 144, in main\n    raise ValueError('Outputs must be distinct and cannot overwrite original receipt or script')\nValueError: Outputs must be distinct and cannot overwrite original receipt or script\n"
+    },
+    {
+      "label": "wrong-original-refusal",
+      "argv": [
+        "python3",
+        "/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py",
+        "--output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/wrong-output.json",
+        "--disposition-output",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/wrong-disposition.json",
+        "--original",
+        "/private/tmp/splotch-resume-01a111b0/burden-round2/wrong-original.json"
+      ],
+      "cwd": "/Users/kylemit/Code/Splotch",
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py\", line 239, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/kylemit/Code/Splotch/docs/migration/evidence/burden-preregistration/source-facts.py\", line 152, in main\n    raise ValueError('Original immutable receipt identity differs')\nValueError: Original immutable receipt identity differs\n"
+    }
+  ],
+  "files": {
+    "source-facts.py": {
+      "bytes": 13556,
+      "sha256": "fc0366c669d81e40ca84c1ce33fe21ed3a8795fa5f12bd2abd1af34f3fb85aaf"
+    },
+    "source-facts.json.txt": {
+      "bytes": 14309,
+      "sha256": "934798327d74a044618d1a5eac7950090a8f93cbd594b04d6d2db96e7f3d84ad"
+    },
+    "source-facts-disposition.json.txt": {
+      "bytes": 9457,
+      "sha256": "930867186944bd1bca6d91d31120725552c7ea4cc615f888d4b6a659e7211fe3"
+    }
+  },
+  "claimLimits": "Scoped document/factual-script repair. No runtime, remedy, comparative, physical or release acceptance. Final original round three and final-head CI remain required.",
+  "staticGates": {
+    "observedAt": "2026-10-06T16:09:56.121213+00:00",
+    "sourceChanges": "Only docs/migration paths; no TypeScript/runtime/lock changes versus f690; exact current script hash bound above.",
+    "commands": [
+      {
+        "command": "npm run format:check",
+        "exitCode": 0,
+        "completeLog": "format.log.txt",
+        "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+      },
+      {
+        "command": "npm run check:doc-refs",
+        "exitCode": 0,
+        "completeLog": "docrefs.log.txt",
+        "sha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10"
+      },
+      {
+        "command": "npm run check:adrs -- --base=origin/codex/native-migration",
+        "exitCode": 0,
+        "completeLog": "adrs.log.txt",
+        "sha256": "be4fc795147fa72ef44a63881e491bdc77f418e8fbd4f7b27dcc3927d0f54b42"
+      },
+      {
+        "command": "npm run check",
+        "exitCode": 0,
+        "completeLog": "typecheck.log.txt",
+        "sha256": "4595b4efb6c1c1b0100b2035bc63ae0b8c9ca0f4400c49ad091f85a179ba7323"
+      },
+      {
+        "command": "npm run lint -- --ignore-pattern 'logs/**'",
+        "exitCode": 0,
+        "completeLog": "lint.log.txt",
+        "sha256": "5e273c5df28f550a154ad77e0fca643b5947db5e5aeff9f7555ffa74fc03d5a9"
+      }
+    ],
+    "lintScope": "Whole tracked repository; wholly gitignored host-local preservation logs excluded because an old extracted eslint config references an absent private module. Bare failure retained from initialhead; two inherited ignored perf-profiles warnings, no errors.",
+    "fullBrowserless": "Not repeated locally for docs/script-only unit; final-head CI required."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "1d47c6e5-c469-4852-b53e-7004ebbfc71f",
+  "rival": "claude",
+  "scope": {
+    "base": "aa507a74963adac35baed84c7ab2e13cdc12a946",
+    "head": "a29a97ba00cb94cc3902608495582d7685cd51b2",
+    "description": "this branch against origin/codex/native-migration",
+    "range": "aa507a74963adac35baed84c7ab2e13cdc12a946...a29a97ba00cb94cc3902608495582d7685cd51b2"
+  },
+  "question": true,
+  "worktree": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/1d47c6e5-c469-4852-b53e-7004ebbfc71f/worktree",
+  "packetDir": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/1d47c6e5-c469-4852-b53e-7004ebbfc71f/packet",
+  "round": 1,
+  "resumed": false,
+  "repoRoot": "/Users/kylemit/Code/Splotch",
+  "branch": "codex/migration-live-records",
+  "createdAt": "2026-10-06T15:12:21.015Z"
+}

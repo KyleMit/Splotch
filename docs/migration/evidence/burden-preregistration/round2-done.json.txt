@@ -1,0 +1,48 @@
+{
+  "findingsPath": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/d474e648-81c8-410c-9f15-de76c559f4be/findings.json",
+  "findings": 3,
+  "unverified": 0,
+  "rivalSessionId": "9bbc9f6a-7cff-4a23-aa31-35e18feec8f0",
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 42844,
+    "cache_read_input_tokens": 581216,
+    "output_tokens": 15653,
+    "output_tokens_details": {
+      "thinking_tokens": 11099
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 42844,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "not_available",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 6577,
+        "cache_read_input_tokens": 89563,
+        "cache_creation_input_tokens": 5791,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 5791
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "logPath": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/d474e648-81c8-410c-9f15-de76c559f4be/rival.ndjson",
+  "session": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/d474e648-81c8-410c-9f15-de76c559f4be",
+  "round": 2,
+  "scope": {
+    "base": "e7413bf92066fcf45967cf04241a513fd48d49ff",
+    "head": "f6901a62b8abd742f2d5003a88c4d25695d4186d",
+    "description": "pull request 2704",
+    "range": "e7413bf92066fcf45967cf04241a513fd48d49ff...f6901a62b8abd742f2d5003a88c4d25695d4186d"
+  }
+}
