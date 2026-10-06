@@ -122,7 +122,7 @@
     "perf:web:undo": "PERF_MARKS=true node tools/perf/web/run-undo-scenarios.mjs",
     "perf:web:undo:webkit": "PERF_MARKS=true node tools/perf/web/run-undo-scenarios.mjs --engine=webkit --no-throttle",
     "perf:web:undo:webkit:fast": "PERF_MARKS=true node tools/perf/web/run-undo-scenarios.mjs --engine=webkit --no-throttle --suite=fast",
-    "perf:web:replay": "PERF_MARKS=true node tools/perf/web/replay-input-recording.mjs",
+    "perf:web:replay": "PERF_MARKS=true node --experimental-strip-types --disable-warning=ExperimentalWarning tools/perf/web/replay-input-recording.mjs",
     "perf:build": "PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build",
     "postperf:build": "node tools/perf/write-build-provenance.mjs",
     "perf:build:cap": "PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run cap:sync",
