@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-10-06T14:51:40.807674+00:00",
+  "root": "/private/tmp/splotch-resume-01a111b0/records",
+  "archiveMemberCount": 616,
+  "uniqueFileCount": 615,
+  "capsules": [
+    "retained-evidence.tar.gz",
+    "native-source-snapshot.tar.gz",
+    "prepared-work.tar.gz",
+    "advisory-audits.tar.gz"
+  ],
+  "verification": "/private/tmp/splotch-resume-01a111b0/preservation/verification.json",
+  "duplicates": [
+    {
+      "member": "native/android-compile-plan.md",
+      "firstCapsule": "native-source-snapshot.tar.gz",
+      "secondCapsule": "prepared-work.tar.gz",
+      "sha256": "b7aae25abf7bc6284a2b81dbfa9091339071900c38a2167d71eec61e3a68d213",
+      "mode": "0644"
+    }
+  ],
+  "overlaySource": false,
+  "executedPreparedSource": false,
+  "setupFailure": "First exclusive-create extraction stopped on identical cross-capsule duplicate native/android-compile-plan.md; no overwrite. Resume read-compared bytes and modes for existing paths and wrote only absent paths.",
+  "newFilesOnResume": 10,
+  "verifiedExistingOccurrencesOnResume": 606
+}

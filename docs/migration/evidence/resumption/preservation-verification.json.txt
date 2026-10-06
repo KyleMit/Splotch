@@ -1,0 +1,122 @@
+{
+  "observedAt": "2026-10-06T14:50:53.756680+00:00",
+  "checkpoint": "63c5f2f45a463774f50455041174f075abaa4af2",
+  "acceptedParent": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "manifestSha256": "0ec40235af2b4673dbb0a64e753eaf64c318449b981a5bd7b55a66fadf38785a",
+  "scope": "Preservation verification only; no application or candidate acceptance",
+  "artifacts": [
+    {
+      "file": "retained-evidence.tar.gz",
+      "kind": "tar.gz",
+      "bytes": 32231376,
+      "sha256": "b26d60b8f56d14ec979aae4cf976b0da46b9e9373b6a61314d46e833f395a43a",
+      "matchesCheckpoint": true,
+      "memberCount": 160,
+      "logicalBytes": 199019201,
+      "safeRegularMembers": true,
+      "originalSourceStatus": {
+        "match": 160
+      },
+      "originalSourceDrift": []
+    },
+    {
+      "file": "native-source-snapshot.tar.gz",
+      "kind": "tar.gz",
+      "bytes": 746666,
+      "sha256": "8a8e14524f1cc17ab4fe0acbe294a24d86d8f6e38383b3a7a99aea8e36bb458e",
+      "matchesCheckpoint": true,
+      "memberCount": 78,
+      "logicalBytes": 1243114,
+      "safeRegularMembers": true,
+      "originalSourceStatus": {
+        "match": 78
+      },
+      "originalSourceDrift": []
+    },
+    {
+      "file": "prepared-work.tar.gz",
+      "kind": "tar.gz",
+      "bytes": 2845205,
+      "sha256": "19700f77f30aeea7987761bdd93d8b297e73a6000189112c285112f744966df8",
+      "matchesCheckpoint": true,
+      "memberCount": 368,
+      "logicalBytes": 7717875,
+      "safeRegularMembers": true,
+      "originalSourceStatus": {
+        "match": 368
+      },
+      "originalSourceDrift": []
+    },
+    {
+      "file": "retained-source.bundle",
+      "kind": "git-bundle",
+      "bytes": 57401,
+      "sha256": "a7eb9c5077adaa04c1f2f94e38d8e3dce8b3d28c5139cfc89537bca2bd8d82af",
+      "matchesCheckpoint": true,
+      "head": "8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6",
+      "ref": "refs/heads/codex/migration-retained-web-host",
+      "prerequisites": [
+        "dc08a90abc67b53124146bf288c80de0f9ffd1dd"
+      ],
+      "verificationStdout": "The bundle contains this ref:\n8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6 refs/heads/codex/migration-retained-web-host\nThe bundle requires this ref:\ndc08a90abc67b53124146bf288c80de0f9ffd1dd \nThe bundle uses this hash algorithm: sha1\n",
+      "verificationStderr": "/Users/kylemit/Code/Splotch/docs/migration/evidence/continuation/retained-source.bundle is okay\n"
+    },
+    {
+      "file": "retained-predecessor.bundle",
+      "kind": "git-bundle",
+      "bytes": 45169,
+      "sha256": "3af8d09e07bcbc287ad1e69617bbc6527aefcfa988682e7ee266cfda5d2c67e6",
+      "matchesCheckpoint": true,
+      "head": "63b9b4d19c630b576d13159b49003488454c5071",
+      "ref": "refs/continuation/migration-retained-predecessor",
+      "prerequisites": [
+        "d1402f6b2bedd2c30cbc88d30597466855b33874"
+      ],
+      "verificationStdout": "The bundle contains this ref:\n63b9b4d19c630b576d13159b49003488454c5071 refs/continuation/migration-retained-predecessor\nThe bundle requires this ref:\nd1402f6b2bedd2c30cbc88d30597466855b33874 \nThe bundle uses this hash algorithm: sha1\n",
+      "verificationStderr": "/Users/kylemit/Code/Splotch/docs/migration/evidence/continuation/retained-predecessor.bundle is okay\n"
+    },
+    {
+      "file": "advisory-audits.tar.gz",
+      "kind": "tar.gz",
+      "bytes": 67844,
+      "sha256": "1b4fa97c68e65e227379ae959bbc1f53c2b71fe758e7587cf18fc00264dfd76e",
+      "matchesCheckpoint": true,
+      "memberCount": 10,
+      "logicalBytes": 210407,
+      "safeRegularMembers": true,
+      "originalSourceStatus": {
+        "match": 10
+      },
+      "originalSourceDrift": []
+    }
+  ],
+  "worktrees": [
+    {
+      "path": "/Users/kylemit/Code/Splotch",
+      "head": "63c5f2f45a463774f50455041174f075abaa4af2",
+      "statusPorcelain": ""
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch",
+      "head": "8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6",
+      "statusPorcelain": ""
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-native-source/Splotch",
+      "head": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+      "statusPorcelain": " M .github/workflows/test.yml\n M .gitignore\n M .prettierignore\n M dprint.json\n M eslint.config.js\n M package.json\n M stylelint.config.js\n M tools/ci-mirror/run-quality-checks.mjs\n M tools/migration/README.md\n?? experiments/native-architecture/NATIVE-SOURCES.md\n?? experiments/native-architecture/TEMPLATE-LICENSE\n?? experiments/native-architecture/android/\n?? experiments/native-architecture/ios/\n?? experiments/native-architecture/native-template-provenance.json\n?? tools/migration/check-native-candidate.mjs\n?? tools/migration/inputs/expo-template-bare-minimum-57.0.28.metadata.json.txt\n?? tools/migration/inputs/native-template-manifest.json\n?? tools/migration/lib/native-apple-scene.mjs\n?? tools/migration/lib/native-source-contract.mjs\n?? tools/migration/lib/native-source-files.mjs\n?? tools/migration/lib/native-template-transforms.mjs\n?? tools/migration/lib/native-template.mjs\n?? tools/migration/materialize-native-candidate.mjs\n?? tools/migration/tests/native-apple-scene.test.mjs\n?? tools/migration/tests/native-provenance.test.mjs\n?? tools/migration/tests/native-registration.test.mjs\n?? tools/migration/tests/native-source-contract.test.mjs\n?? tools/migration/tests/native-template.test.mjs\n"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+      "head": "9442b27817a61486750b070ff07c880d124571a6",
+      "statusPorcelain": ""
+    }
+  ],
+  "manifestMatchesCheckpoint": true,
+  "refs": {
+    "origin/codex/native-migration": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+    "origin/codex/migration-continuation-records": "63c5f2f45a463774f50455041174f075abaa4af2",
+    "codex/migration-retained-web-host": "8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6"
+  },
+  "passed": true
+}

@@ -1,0 +1,569 @@
+{
+  "scope": "Live preserved source bytes and exact modes only; no compile, execution or acceptance.",
+  "observedAt": "2026-10-06T15:16:49.535298+00:00",
+  "manifestSha256": "0ec40235af2b4673dbb0a64e753eaf64c318449b981a5bd7b55a66fadf38785a",
+  "worktree": "/Users/kylemit/.codex/worktrees/migration-native-source/Splotch",
+  "head": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "rows": [
+    {
+      "path": ".github/workflows/test.yml",
+      "partition": "registration10",
+      "bytes": 33820,
+      "mode": "0644",
+      "sha256": "894852e33b6a087c01519ccbaa2fedb489721b711cba4278beaa5f0fab6af332",
+      "matchesManifest": true
+    },
+    {
+      "path": ".gitignore",
+      "partition": "registration10",
+      "bytes": 7612,
+      "mode": "0644",
+      "sha256": "9815240a278294ffe07a1ba43612c9e14e91a7132924ac20d75644b4fcbeb426",
+      "matchesManifest": true
+    },
+    {
+      "path": ".prettierignore",
+      "partition": "registration10",
+      "bytes": 2759,
+      "mode": "0644",
+      "sha256": "fee75d83c7e4cb7981889635a61fb1892a4aba2f788c3313192c782f91d35e53",
+      "matchesManifest": true
+    },
+    {
+      "path": "dprint.json",
+      "partition": "registration10",
+      "bytes": 1353,
+      "mode": "0644",
+      "sha256": "d279e6a896ec22eb0cfe8687ebafe15785628215207e4ef5db84d026074ddb33",
+      "matchesManifest": true
+    },
+    {
+      "path": "eslint.config.js",
+      "partition": "registration10",
+      "bytes": 46145,
+      "mode": "0644",
+      "sha256": "0a6f3b78e0511022b37938b2a262c129d340c1febd376fa7f150d36e320e4a6f",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/NATIVE-SOURCES.md",
+      "partition": "maintained60",
+      "bytes": 4567,
+      "mode": "0644",
+      "sha256": "c544ecd6192094a5c83e0f399bfee751a1a02ec62b78251ada9d8ad68edde14e",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/TEMPLATE-LICENSE",
+      "partition": "maintained60",
+      "bytes": 1106,
+      "mode": "0644",
+      "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/build.gradle",
+      "partition": "maintained60",
+      "bytes": 3221,
+      "mode": "0644",
+      "sha256": "8bc3c8c9b4cabb25985a3dd30478647bc257789255b06735254afa814447304e",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/proguard-rules.pro",
+      "partition": "maintained60",
+      "bytes": 53,
+      "mode": "0644",
+      "sha256": "8aeca16a794df43f924f9fb096ac9aaa66270971d6eebd0c92d1e411d320a38a",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/AndroidManifest.xml",
+      "partition": "maintained60",
+      "bytes": 914,
+      "mode": "0644",
+      "sha256": "e5a586e66c602c706ac0e166b3abe8baad0b72794399428441d47c2dac28ad88",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/MainActivity.kt",
+      "partition": "maintained60",
+      "bytes": 2197,
+      "mode": "0644",
+      "sha256": "b07495740e573e3372bea282e2ad6e9077fc234ea64737a9b25b4ee364227bb0",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt",
+      "partition": "maintained60",
+      "bytes": 1499,
+      "mode": "0644",
+      "sha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable-hdpi/splashscreen_logo.png",
+      "partition": "maintained60",
+      "bytes": 20754,
+      "mode": "0644",
+      "sha256": "721c895579cb08ec4c9a0fe7dadafe9a97c33ef758d3578ad5e8b540de59f974",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable-mdpi/splashscreen_logo.png",
+      "partition": "maintained60",
+      "bytes": 12863,
+      "mode": "0644",
+      "sha256": "f84b9b17a4a1c7d7dd840cd272c07a6c3fd66d5a9826b64bb53facb6f176bc24",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png",
+      "partition": "maintained60",
+      "bytes": 29081,
+      "mode": "0644",
+      "sha256": "e1c5250e339add5ed7849cb0859d052edb9781abb91db049e68ae3a4059247d7",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png",
+      "partition": "maintained60",
+      "bytes": 47123,
+      "mode": "0644",
+      "sha256": "23d97ccb41a821ee345b2c5bb0c9bdab730a751a9227925acbf0af021dc38a9b",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png",
+      "partition": "maintained60",
+      "bytes": 66529,
+      "mode": "0644",
+      "sha256": "be9fac5c4cda48c41dce592288c486524bba3e4ca7fa00c0a04a46928154b5bf",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "partition": "maintained60",
+      "bytes": 245,
+      "mode": "0644",
+      "sha256": "51fca95679d075ddbe2b9fe7ad2efb5ef545c5770a9ad6cafe8bf610c18c67be",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/drawable/rn_edit_text_material.xml",
+      "partition": "maintained60",
+      "bytes": 1917,
+      "mode": "0644",
+      "sha256": "738e3aaad53180caba1419a6d5db8465a0742662fe59a4bbaf05f1061cbc3390",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "partition": "maintained60",
+      "bytes": 3056,
+      "mode": "0644",
+      "sha256": "ded7aabf6a56b694e486e096efd89e2f0c9067d292b634663898e352c9491f10",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp",
+      "partition": "maintained60",
+      "bytes": 5024,
+      "mode": "0644",
+      "sha256": "21304a0c9b00da6a72cfa31c7229c9528fc17b6e5eb4e68a969bce08c01a2fee",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "partition": "maintained60",
+      "bytes": 2096,
+      "mode": "0644",
+      "sha256": "eef20f25fb1477d8c9df15757e764811cc503fb0777f18d0f7fb2d19178b5bf6",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "partition": "maintained60",
+      "bytes": 2858,
+      "mode": "0644",
+      "sha256": "520d05f978a15ba0ccf23006a1a5691a054a02478c70cafc5ebafae76e600f0d",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+      "partition": "maintained60",
+      "bytes": 4569,
+      "mode": "0644",
+      "sha256": "e77c5045bfdb6f4bbe955b3a793bfed3baa369ce4811ae2a9103d5480637cfff",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp",
+      "partition": "maintained60",
+      "bytes": 7098,
+      "mode": "0644",
+      "sha256": "2846e1a703e519791fe22f41bcb243b82f908d12e5ebcb43f020ddf9982780b0",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp",
+      "partition": "maintained60",
+      "bytes": 6464,
+      "mode": "0644",
+      "sha256": "eb3a34b13632e0cb3b1c0f4273035866cbe81b1b17b7178ce29d19c78d394a5e",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp",
+      "partition": "maintained60",
+      "bytes": 10676,
+      "mode": "0644",
+      "sha256": "363a569beb72e8b007bf046454612148d4c9f782b9391352059fe83179f18e30",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp",
+      "partition": "maintained60",
+      "bytes": 9250,
+      "mode": "0644",
+      "sha256": "9ff27328b6916b7f75b99ef36153f154bb4724946e5654635cba2e257352c69f",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
+      "partition": "maintained60",
+      "bytes": 15523,
+      "mode": "0644",
+      "sha256": "5bacd97a1b41e4413c6092cdbd83f65112a9124e823cfaa3a219c65e2761647b",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/values/colors.xml",
+      "partition": "maintained60",
+      "bytes": 136,
+      "mode": "0644",
+      "sha256": "b71bfe77b51d8984d196c20f04394bfd15fd1420f579a6f96b900889592c4493",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/values/strings.xml",
+      "partition": "maintained60",
+      "bytes": 85,
+      "mode": "0644",
+      "sha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/app/src/main/res/values/styles.xml",
+      "partition": "maintained60",
+      "bytes": 337,
+      "mode": "0644",
+      "sha256": "c24f72ee2e907c5ccafb4758e8f981654cb64c811bd5a1bab36bfa946153c059",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/build.gradle",
+      "partition": "maintained60",
+      "bytes": 556,
+      "mode": "0644",
+      "sha256": "bdb916d3fe7085c9e9f3bb45bd5eacb97f5d2c5a2b2af965642f7d904739ca68",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/gradle.properties",
+      "partition": "maintained60",
+      "bytes": 441,
+      "mode": "0644",
+      "sha256": "60c8e3e155680995c9e7c5be1913c7c78a3bcd227929280c36d001fe20b444a5",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.jar",
+      "partition": "maintained60",
+      "bytes": 46175,
+      "mode": "0644",
+      "sha256": "b3a875ddc1f044746e1b1a55f645584505f4a10438c1afea9f15e92a7c42ec13",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/gradle/wrapper/gradle-wrapper.properties",
+      "partition": "maintained60",
+      "bytes": 339,
+      "mode": "0644",
+      "sha256": "40c4ac801fa3d3029cc46957c91216f9fcff52a05a011a0579357bae3dc4c441",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/gradlew",
+      "partition": "maintained60",
+      "bytes": 8618,
+      "mode": "0755",
+      "sha256": "fb68debc1b1acf8ec55dc0d5e5495e1dedd0bd6b61f304bee61613eeb2bd9b92",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/android/settings.gradle",
+      "partition": "maintained60",
+      "bytes": 1263,
+      "mode": "0644",
+      "sha256": "89cc82f22e665fb69aa88b10a0086f41a929919aff24d59736dcd9f5945e33d1",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld.xcodeproj/project.pbxproj",
+      "partition": "maintained60",
+      "bytes": 17043,
+      "mode": "0644",
+      "sha256": "58a845f05e1bf298f9e9b2b36896b14938722e850596de220e58bbb94b56ca5b",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "partition": "maintained60",
+      "bytes": 135,
+      "mode": "0644",
+      "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "partition": "maintained60",
+      "bytes": 238,
+      "mode": "0644",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld.xcodeproj/xcshareddata/xcschemes/HelloWorld.xcscheme",
+      "partition": "maintained60",
+      "bytes": 3306,
+      "mode": "0644",
+      "sha256": "c6d0856ab8a818761e17f4c640092fcd19cbdb85acfa175b100292542ed970c6",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/AppDelegate.swift",
+      "partition": "maintained60",
+      "bytes": 2063,
+      "mode": "0644",
+      "sha256": "248a72ab880e205edd772bc984cccbc59e9b18a1523002e63dd8332de4a096e6",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/HelloWorld-Bridging-Header.h",
+      "partition": "maintained60",
+      "bytes": 102,
+      "mode": "0644",
+      "sha256": "4a625b53abd4333ca454a4161ba62ab1b0cb44e8a4581326c0bcfe03dc26dd5c",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json",
+      "partition": "maintained60",
+      "bytes": 169,
+      "mode": "0644",
+      "sha256": "2f1b8a0c5efd596703501e97c9c5ca878463dca6e43ad08c5a9c108cb2ae3711",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/Images.xcassets/Contents.json",
+      "partition": "maintained60",
+      "bytes": 59,
+      "mode": "0644",
+      "sha256": "940968520a462215ccf98317a12e4c3b90875bf9c51a5f473a8ffb97e8cd1464",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/Info.plist",
+      "partition": "maintained60",
+      "bytes": 2030,
+      "mode": "0644",
+      "sha256": "4e50cf2bc7f220209ef261d4765a0972f7e334ee3943aaf05e0baacc695ad925",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/SplashScreen.storyboard",
+      "partition": "maintained60",
+      "bytes": 3516,
+      "mode": "0644",
+      "sha256": "0763588212466aaec0b9121db1e318eba07aff23b29940f7df97728c6f69f2d1",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/HelloWorld/Supporting/Expo.plist",
+      "partition": "maintained60",
+      "bytes": 188,
+      "mode": "0644",
+      "sha256": "d9b06c202956033b01e62b21c727eea89b6a4fd456ef71d420c39f460426b9f3",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/Podfile",
+      "partition": "maintained60",
+      "bytes": 2653,
+      "mode": "0644",
+      "sha256": "b66d1a4c0ef1f06ef3f400d5f47dff79c1dcc363b57e8f885cf716fba403cc12",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/ios/Podfile.properties.json",
+      "partition": "maintained60",
+      "bytes": 112,
+      "mode": "0644",
+      "sha256": "d0eb719a09eb05712b856e96013fa04330896ef487434f3616be3aa9febb9863",
+      "matchesManifest": true
+    },
+    {
+      "path": "experiments/native-architecture/native-template-provenance.json",
+      "partition": "maintained60",
+      "bytes": 20847,
+      "mode": "0644",
+      "sha256": "569ceb944787ccdb1ec3127a75d8b2b8903171a1d74a019d4a4cc9424df06b26",
+      "matchesManifest": true
+    },
+    {
+      "path": "package.json",
+      "partition": "registration10",
+      "bytes": 121842,
+      "mode": "0644",
+      "sha256": "1c09c168e8dd28073abbb35976711beb95f81a12d8ff8ae2b916cff5efa9d6ee",
+      "matchesManifest": true
+    },
+    {
+      "path": "stylelint.config.js",
+      "partition": "registration10",
+      "bytes": 9989,
+      "mode": "0644",
+      "sha256": "d198e9a019bee45f3cd4cb421b1fe90df2871951d208d60ade850e23611c1170",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/ci-mirror/run-quality-checks.mjs",
+      "partition": "registration10",
+      "bytes": 1180,
+      "mode": "0644",
+      "sha256": "5ed44e25e49425a3b59e981fdb3d046103e6f2a41e442610f04f1e9615ab820d",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/README.md",
+      "partition": "registration10",
+      "bytes": 3929,
+      "mode": "0644",
+      "sha256": "e237c4bdba2a96f6741f9ed1cf8541dcdec0a6c0af6b726bdc57d1c4502e1f9b",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/check-native-candidate.mjs",
+      "partition": "maintained60",
+      "bytes": 1324,
+      "mode": "0644",
+      "sha256": "bc091a4b7d7356c040f1727999f06d435ca6006c2863ea1e5724b1d0e2722958",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/inputs/expo-template-bare-minimum-57.0.28.metadata.json.txt",
+      "partition": "maintained60",
+      "bytes": 2468,
+      "mode": "0644",
+      "sha256": "faee783906ddffa9423b0983ff00e210d6206f851109c44a0e0fa930dc4e9dde",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/inputs/native-template-manifest.json",
+      "partition": "maintained60",
+      "bytes": 58749,
+      "mode": "0644",
+      "sha256": "1254d4285e460f17cfa04f0c948a48e94e3ab111b0efc36bd86bcd0270316d61",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/lib/native-apple-scene.mjs",
+      "partition": "maintained60",
+      "bytes": 5956,
+      "mode": "0644",
+      "sha256": "6ee1cbda2baa5a412900843a53a2457125c5ba7aa1b1a6a9d0926c4a0d758867",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/lib/native-source-contract.mjs",
+      "partition": "maintained60",
+      "bytes": 10288,
+      "mode": "0644",
+      "sha256": "0cec780ff04e2b2b9d9aa8efd30a46617e08647d6e15f2b5802b54514ac44fe4",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/lib/native-source-files.mjs",
+      "partition": "maintained60",
+      "bytes": 3897,
+      "mode": "0644",
+      "sha256": "572a49d17d685473098eec5193ac67eb083d4469cf799de63666cac994bcceb2",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/lib/native-template-transforms.mjs",
+      "partition": "maintained60",
+      "bytes": 12097,
+      "mode": "0644",
+      "sha256": "d9344acec8c1b4990b98e3556c9f37156ced1fe66a9347cba50621678f598fe3",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/lib/native-template.mjs",
+      "partition": "maintained60",
+      "bytes": 10157,
+      "mode": "0644",
+      "sha256": "fb27ee5658e50ae0ac0f6546a4bb5064ddef66caa475e024f7fba7b0fdd74c57",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/materialize-native-candidate.mjs",
+      "partition": "maintained60",
+      "bytes": 3805,
+      "mode": "0644",
+      "sha256": "51354b49019bfc793610834079cef5f4ee4d2bdd010960c956f641c18485e9b7",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/tests/native-apple-scene.test.mjs",
+      "partition": "maintained60",
+      "bytes": 10310,
+      "mode": "0644",
+      "sha256": "6e84fcd792e7658efa4bcc245a4c0d914b23b76dd331f2dcba4cd67a9d16cfce",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/tests/native-provenance.test.mjs",
+      "partition": "maintained60",
+      "bytes": 13275,
+      "mode": "0644",
+      "sha256": "80a352f31d4b10348467c3c2aba7ee536787f0dc74abae06a00c55cacfefa683",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/tests/native-registration.test.mjs",
+      "partition": "registration10",
+      "bytes": 11725,
+      "mode": "0644",
+      "sha256": "eba07207461b878561284039e04ab80208c66a5c18b794dab680d7fb10814c28",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/tests/native-source-contract.test.mjs",
+      "partition": "maintained60",
+      "bytes": 19547,
+      "mode": "0644",
+      "sha256": "98e600f65fac0a42d7126e7314fd7e74f6bb4ab7312b869397b182865e9c6732",
+      "matchesManifest": true
+    },
+    {
+      "path": "tools/migration/tests/native-template.test.mjs",
+      "partition": "maintained60",
+      "bytes": 11287,
+      "mode": "0644",
+      "sha256": "14e0a2862e3657149ee08caa24a63c7dc016c51a964c1ff4ff7d8ea917f0838a",
+      "matchesManifest": true
+    }
+  ]
+}

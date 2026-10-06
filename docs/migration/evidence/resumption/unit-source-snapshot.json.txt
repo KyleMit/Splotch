@@ -1,0 +1,94 @@
+{
+  "observedAt": "2026-10-06T15:16:49.928212+00:00",
+  "scope": "Unit source snapshot; result claims are limited to separately named gate receipts. F1 untracked source files are explicitly included.",
+  "units": {
+    "retained": {
+      "worktree": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch",
+      "head": "a5758cae8337739ef671936fe42f296157f0e4b8",
+      "tree": "be204790bd04a70370ca9dcb9cb1c7596cb3d4e5",
+      "headDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "headDiffBytes": 0,
+      "files": [
+        {
+          "path": ".github/workflows/test.yml",
+          "bytes": 37666,
+          "sha256": "37208e9093aa67c90208fa534e82436cb2c5b937d2d634b3ed1bbe13e6c8a9f5"
+        },
+        {
+          "path": "docs/migration/evidence/retained-control/README.md",
+          "bytes": 5662,
+          "sha256": "2ef2f79338482cb4797ce87a01d59c6313f4866ee6229fc991e722be30fcce47"
+        },
+        {
+          "path": "migration/probes/web-host/README.md",
+          "bytes": 3378,
+          "sha256": "8a335e0dd3196f54786764a5b4d40898f3d57fb31d2308c0905a79a8f51b5316"
+        },
+        {
+          "path": "migration/probes/web-host/host/contract.ts",
+          "bytes": 1673,
+          "sha256": "b707e280991c10b08a877abc240574b8f9b6d2af740ea23f7b562627d1606000"
+        },
+        {
+          "path": "tools/code-map/lib/code-map-rules.mjs",
+          "bytes": 16744,
+          "sha256": "3f3bb132d3075e0bed7913623f9d40fef994f126a56d73dda3a33dcbcecdc1d8"
+        },
+        {
+          "path": "tools/code-map/tests/code-map-rules.test.mjs",
+          "bytes": 6224,
+          "sha256": "60d3f82a4bd30a66ac171a5611a1ad94e263f10396bb57128dc94cd7437ce64f"
+        },
+        {
+          "path": "tools/migration/README.md",
+          "bytes": 9099,
+          "sha256": "279bf8567a8fe86df263d035b9f8d1efd3b33d4334cf18e38a3771084d2f2799"
+        },
+        {
+          "path": "tools/tests/retained-web-host-workflow.test.mjs",
+          "bytes": 9342,
+          "sha256": "46b8169c52c6b87d7711bb8cefe88a16f236d866849949c3f2ba6e0ed184d81a"
+        }
+      ]
+    },
+    "F1": {
+      "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "head": "aa507a74963adac35baed84c7ab2e13cdc12a946",
+      "tree": "4d5db84a99d98163774eca45ff05961faee54e5b",
+      "headDiffSha256": "db64c503f59e9635f6735148ba24fb77f765079405a6bdc96a625f6a0909ef59",
+      "headDiffBytes": 5309,
+      "files": [
+        {
+          "path": "tools/migration/README.md",
+          "bytes": 4492,
+          "sha256": "989702420ba574dcf61f3581053e129c79e977a072ea7bceb3e9f44d7d14f5de"
+        },
+        {
+          "path": "tools/migration/check-native-topology.mjs",
+          "bytes": 3672,
+          "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17"
+        },
+        {
+          "path": "tools/migration/lib/candidate-imports.mjs",
+          "bytes": 7135,
+          "sha256": "5cbe37e2e0a6a0c43a9bd2ee405f66f80e0500416c4e654f1a07c8b77e335d7a"
+        },
+        {
+          "path": "tools/migration/lib/candidate-references.mjs",
+          "bytes": 9630,
+          "sha256": "3c8ed92567657abafc169ea3ee65924830e9b525db3c0f252937c1c4d4b03827"
+        },
+        {
+          "path": "tools/migration/lib/native-identity.mjs",
+          "bytes": 6302,
+          "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd"
+        },
+        {
+          "path": "tools/migration/tests/candidate-imports.test.mjs",
+          "bytes": 15996,
+          "sha256": "f2eab7afd664f57ed2937efdfa72d98cbc5af7ab78aa87751f5be34ec056007e"
+        }
+      ]
+    }
+  }
+}
