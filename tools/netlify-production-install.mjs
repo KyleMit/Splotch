@@ -261,7 +261,7 @@ function qualifyConfig(launcher, root, env, runChild, ambient) {
     {
       key: 'store-dir',
       disposition:
-        ambient.storeDir === null ? 'pnpm-11.22-source-default' : 'qualified-netlify-cache-literal',
+        ambient.storeDir === null ? 'pnpm-11.22-source-default' : ambient.family.disposition,
     },
     { key: 'node-linker', value: 'hoisted' },
     { key: 'packages', value: packages },
@@ -315,7 +315,7 @@ function installStage(launcher, root, env, runChild, record, ambient) {
   const startedAt = new Date().toISOString();
   const started = performance.now();
   record({ stage: 'second-production-install-start', cwd: root, argv, startedAt });
-  verifyAmbientPnpmConfig(ambient);
+  verifyAmbientPnpmConfig(ambient, env);
   const child = runChild(launcher.path, argv, {
     cwd: root,
     env,
@@ -333,7 +333,7 @@ function installStage(launcher, root, env, runChild, record, ambient) {
     launchFailed: Boolean(child.error),
   };
   record(result);
-  verifyAmbientPnpmConfig(ambient);
+  verifyAmbientPnpmConfig(ambient, env);
   assert.ok(
     !child.error && child.status === 0 && child.signal == null,
     'Second production install failed'
@@ -349,10 +349,10 @@ export function installNetlifyProductionDependencies(
 ) {
   qualifyRoots(root);
   const ambient = qualifyNoPreloads(root, env, record);
-  const qualifiedChild = (...args) => {
-    verifyAmbientPnpmConfig(ambient);
-    const child = runChild(...args);
-    verifyAmbientPnpmConfig(ambient);
+  const qualifiedChild = (path, argv, options) => {
+    verifyAmbientPnpmConfig(ambient, options.env);
+    const child = runChild(path, argv, options);
+    verifyAmbientPnpmConfig(ambient, options.env);
     return child;
   };
   const before = currentOwners(root);
@@ -380,11 +380,11 @@ export function installNetlifyProductionDependencies(
   const settings = qualifyConfig(launcher, root, childEnv, qualifiedChild, ambient);
   qualifyRoots(root);
   assert.deepEqual(currentOwners(root), before, 'Qualification changed installer source owners');
-  verifyAmbientPnpmConfig(ambient);
+  verifyAmbientPnpmConfig(ambient, childEnv);
   record({
     stage: 'second-production-install-qualified',
     ambient: {
-      kind: ambient.proof === null ? 'absent' : 'sole-netlify-cache-setting',
+      kind: ambient.proof === null ? 'absent' : ambient.family.kind,
       sha256: ambient.proof?.sha256 ?? null,
       scalarForm: ambient.form ?? null,
     },

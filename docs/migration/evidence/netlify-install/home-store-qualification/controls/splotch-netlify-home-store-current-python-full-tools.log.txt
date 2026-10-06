@@ -1,0 +1,62 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-rrnlq2/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+(node:13566) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-61v0wI/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+(node:13605) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13630) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+Pass --device-id=, --capabilities-file=, or --session-id=
+(node:13644) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13669) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-61v0wI/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+(node:13673) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+Pass --device-id=, --capabilities-file=, or --session-id=
+(node:13698) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13725) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13742) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13746) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+
+ Test Files  320 passed (320)
+      Tests  7504 passed (7504)
+   Start at  07:10:02
+   Duration  39.51s (tests 91%, import 7%, transform 2%)
+
+    Isolate  320 workers spawned · ~73ms startup each (spawn + environment, per file)
+             at least ~2.51s faster with isolate: false — reuses workers across files instead of one per file
+

@@ -9,11 +9,23 @@ import {
   readSync,
   realpathSync,
 } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, parse } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { CANDIDATE_DIRECTORY } from './native-candidate.mjs';
 
 const MAX_AMBIENT_CONFIG_BYTES = 4096;
 const NETLIFY_CACHE_ROOT = '/opt/build/cache';
+const NETLIFY_HOME_ROOT = '/opt/buildhome';
+const NETLIFY_HOME_STORE = join(NETLIFY_HOME_ROOT, '.pnpm-store');
+const CACHE_STORE_FAMILY = Object.freeze({
+  kind: 'sole-netlify-cache-setting',
+  disposition: 'qualified-netlify-cache-literal',
+});
+const HOME_STORE_FAMILY = Object.freeze({
+  kind: 'sole-netlify-home-store-setting',
+  disposition: 'qualified-netlify-home-store-literal',
+});
 const STORE_VERSION_DIRECTORY = 'v11';
 const AMBIENT_CONFIG_KEYS = [
   'storeDir',
@@ -66,20 +78,67 @@ function inCache(value) {
   );
 }
 
-function canonicalDirectoryProof(path) {
+function homeStoreFacts(value, env) {
+  const processHome = homedir();
+  return {
+    matchesFixedHomeStore: value === NETLIFY_HOME_STORE,
+    processHomeMatchesFixed: processHome === NETLIFY_HOME_ROOT,
+    storeMatchesProcessHome: value === join(processHome, '.pnpm-store'),
+    childHomeMatchesFixed: env.HOME === NETLIFY_HOME_ROOT,
+  };
+}
+
+function requireHomeOwner(config, env) {
+  const facts = homeStoreFacts(config.storeDir, env);
+  if (!facts.processHomeMatchesFixed || !facts.childHomeMatchesFixed) {
+    config.record({ stage: 'ambient-pnpm-home-owner-refused', ...facts });
+    assert.fail('Netlify home store homeowner differs');
+  }
+}
+
+function homeFilesystemRefused(config, path, kind) {
+  const role =
+    path === config.storeDir ? 'store' : path === config.physicalStore ? 'version' : 'home';
+  config.record({ stage: 'ambient-pnpm-home-filesystem-refused', role, kind });
+}
+
+function canonicalDirectoryProof(path, refused) {
   const root = parse(path).root;
   let current = root;
   const proof = [];
   for (const part of ['', ...path.slice(root.length).split('/').filter(Boolean)]) {
     if (part) current = join(current, part);
-    const entry = optionalEntry(current);
-    if (!entry) break;
-    assert.ok(
-      entry.isDirectory() && !entry.isSymbolicLink(),
-      'Cache store ancestor is not a regular directory'
-    );
-    assert.ok(realpathSync(current) === current, 'Cache store ancestor is not canonical');
-    proof.push({ path: current, device: entry.dev, inode: entry.ino, mode: entry.mode });
+    let kind = 'inspection';
+    try {
+      const entry = optionalEntry(current);
+      if (!entry) break;
+      kind = entry.isSymbolicLink() ? 'link' : entry.isFile() ? 'file' : 'other';
+      assert.ok(
+        entry.isDirectory() && !entry.isSymbolicLink(),
+        'Cache store ancestor is not a regular directory'
+      );
+      kind = 'inspection';
+      const canonical = realpathSync(current);
+      kind = 'noncanonical';
+      assert.ok(canonical === current, 'Cache store ancestor is not canonical');
+      proof.push({ path: current, device: entry.dev, inode: entry.ino, mode: entry.mode });
+    } catch (error) {
+      refused?.(current, kind);
+      throw error;
+    }
+  }
+  return proof;
+}
+
+function storeProof(config) {
+  const home = config.family === HOME_STORE_FAMILY;
+  const proof = canonicalDirectoryProof(
+    config.physicalStore,
+    home ? (path, kind) => homeFilesystemRefused(config, path, kind) : undefined
+  );
+  if (home && !proof.some((entry) => entry.path === NETLIFY_HOME_ROOT)) {
+    homeFilesystemRefused(config, NETLIFY_HOME_ROOT, 'missing');
+    assert.fail('Netlify home directory is absent');
   }
   return proof;
 }
@@ -123,9 +182,11 @@ function boundedConfig(path, entry) {
     const store = literalStore(text);
     observation.soleStoreDirForm = store?.form ?? 'unrecognized';
     observation.storeDirValueClass = store
-      ? inCache(store.value)
-        ? 'netlify-cache-path'
-        : 'other-absolute-path'
+      ? store.value === NETLIFY_HOME_STORE
+        ? 'netlify-home-store-path'
+        : inCache(store.value)
+          ? 'netlify-cache-path'
+          : 'other-absolute-path'
       : 'unrecognized';
     return {
       observation,
@@ -150,41 +211,51 @@ export function qualifyAmbientPnpmConfig(path, root, env, record) {
   } catch {
     throw new Error('Ambient pnpm configuration filesystem qualification failed');
   }
-  if (env.NETLIFY !== 'true' || !config.store || !inCache(config.store.value)) {
-    record(config.observation);
+  const home = config.store?.value === NETLIFY_HOME_STORE;
+  const facts = home ? homeStoreFacts(config.store.value, env) : null;
+  if (
+    env.NETLIFY !== 'true' ||
+    !config.store ||
+    (!home && !inCache(config.store.value)) ||
+    (home && (!facts.processHomeMatchesFixed || !facts.childHomeMatchesFixed))
+  ) {
+    record({ ...config.observation, ...(facts ?? homeStoreFacts(config.store?.value, env)) });
     assert.fail('Ambient pnpm settings need separate review');
   }
   const storeDir = config.store.value;
   const physicalStore = storeDir.endsWith(`/${STORE_VERSION_DIRECTORY}`)
     ? storeDir
     : join(storeDir, STORE_VERSION_DIRECTORY);
-  const cleaningRoots = [
-    join(root, 'node_modules'),
-    join(root, CANDIDATE_DIRECTORY, 'node_modules'),
-  ];
-  assert.ok(
-    cleaningRoots.every(
-      (cleaningRoot) =>
-        physicalStore !== cleaningRoot &&
-        !physicalStore.startsWith(`${cleaningRoot}/`) &&
-        !cleaningRoot.startsWith(`${physicalStore}/`)
-    ),
-    'Netlify cache store overlaps clean-install roots'
-  );
-  let cacheProof;
-  try {
-    cacheProof = canonicalDirectoryProof(physicalStore);
-  } catch {
-    throw new Error('Netlify cache store filesystem qualification failed');
-  }
-  return {
+  const qualified = {
     path,
     proof: config.proof,
     storeDir,
     physicalStore,
-    cacheProof,
+    family: home ? HOME_STORE_FAMILY : CACHE_STORE_FAMILY,
     form: config.store.form,
+    record,
   };
+  const cleaningRoots = [
+    join(root, 'node_modules'),
+    join(root, CANDIDATE_DIRECTORY, 'node_modules'),
+  ];
+  const disjoint = cleaningRoots.every(
+    (cleaningRoot) =>
+      physicalStore !== cleaningRoot &&
+      !physicalStore.startsWith(`${cleaningRoot}/`) &&
+      !cleaningRoot.startsWith(`${physicalStore}/`)
+  );
+  if (home && !disjoint) homeFilesystemRefused(qualified, physicalStore, 'cleanup-overlap');
+  assert.ok(disjoint, 'Netlify cache store overlaps clean-install roots');
+  try {
+    return { ...qualified, cacheProof: storeProof(qualified) };
+  } catch {
+    throw new Error(
+      home
+        ? 'Netlify home store filesystem qualification failed'
+        : 'Netlify cache store filesystem qualification failed'
+    );
+  }
 }
 
 function verifyConfigProof(config) {
@@ -200,7 +271,12 @@ function verifyConfigProof(config) {
     'Ambient pnpm file changed during qualification'
   );
   assert.deepEqual(actual.proof, config.proof, 'Ambient pnpm file changed during qualification');
-  const current = canonicalDirectoryProof(config.physicalStore);
+  const current = storeProof(config);
+  const changed = config.cacheProof.find(
+    (entry, index) => !isDeepStrictEqual(entry, current[index])
+  );
+  if (changed && config.family === HOME_STORE_FAMILY)
+    homeFilesystemRefused(config, changed.path, 'identity-changed');
   assert.deepEqual(
     current.slice(0, config.cacheProof.length),
     config.cacheProof,
@@ -208,8 +284,9 @@ function verifyConfigProof(config) {
   );
 }
 
-export function verifyAmbientPnpmConfig(config) {
+export function verifyAmbientPnpmConfig(config, env) {
   try {
+    if (config.family === HOME_STORE_FAMILY) requireHomeOwner(config, env);
     verifyConfigProof(config);
   } catch {
     throw new Error('Ambient pnpm configuration or cache proof changed');

@@ -1,0 +1,56 @@
+import hashlib,io,json,os,pathlib,shutil,subprocess,tarfile,tempfile,time
+source=pathlib.Path('/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch')
+base='6bac65f02b605b6efb0a0545eeda5e6cdc40a76a'
+packet=pathlib.Path(tempfile.mkdtemp(prefix='splotch-netlify-home-store-real-controls-',dir='/private/tmp')).resolve()
+root=packet/'checkout';root.mkdir()
+home=packet/'home';home.mkdir()
+configuration=packet/'configuration';(configuration/'pnpm').mkdir(parents=True)
+settings=configuration/'pnpm/config.yaml'
+store=str(home/'.pnpm-store')
+env=dict(os.environ,PATH='/Users/kylemit/.nvm/versions/node/v22.23.2/bin:/Users/kylemit/.nvm/versions/node/v24.16.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin',PNPM_FLAGS='--prod',COREPACK_ENABLE_NETWORK='0',NETLIFY='true',XDG_CONFIG_HOME=str(configuration),HOME=str(home),COREPACK_HOME='/Users/kylemit/.cache/node/corepack')
+rows=[];source_rows=[]
+receipt=pathlib.Path('/private/tmp/splotch-netlify-home-store-real-controls-receipt.json')
+def save(status='running'):
+ receipt.write_text(json.dumps(dict(status=status,packet=str(packet),sourceBase=base,sourceRows=source_rows,sourceOwners={path:dict(sha256=digest,mode=oct(mode)) for path,(digest,mode) in before.items()},steps=rows,scope='Actual released pnpm11.22 and actual installer with one fixed-home declaration substitution into a canonical owned synthetic namespace; not actual Netlify evidence'),indent=2)+'\n')
+def run(label,argv,expect=0,extra=None):
+ log=packet/(label+'.log.txt');started=time.monotonic()
+ with log.open('w') as out:child=subprocess.run(argv,cwd=root,env=env|(extra or {}),stdout=out,stderr=subprocess.STDOUT)
+ row=dict(step=label,argv=argv,exitCode=child.returncode,durationSeconds=time.monotonic()-started,log=str(log),bytes=log.stat().st_size,sha256=hashlib.sha256(log.read_bytes()).hexdigest());rows.append(row);save();print(json.dumps(row),flush=True)
+ if not (child.returncode==0 if expect==0 else child.returncode!=0):
+  save('failed');raise AssertionError((label,child.returncode))
+ return log.read_text()
+def put(path,contents):
+ target=root/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(contents) if isinstance(contents,dict) else contents)
+archive=subprocess.run(['git','archive','--format=tar',base],cwd=source,check=True,stdout=subprocess.PIPE).stdout
+with tarfile.open(fileobj=io.BytesIO(archive)) as stream:stream.extractall(root,filter='data')
+for path in ['tools/netlify-production-install.mjs','tools/lib/netlify-cache-config.mjs']:
+ target=root/path;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source/path,target)
+ data=target.read_bytes();source_rows.append(dict(path=path,bytes=len(data),sha256=hashlib.sha256(data).hexdigest()))
+helper=root/'tools/lib/netlify-cache-config.mjs';original=helper.read_text();declaration="const NETLIFY_HOME_ROOT = '/opt/buildhome';"
+assert original.count(declaration)==1
+helper.write_text(original.replace(declaration,"const NETLIFY_HOME_ROOT = '"+str(home)+"';"))
+substituted=helper.read_text();assert substituted.replace("const NETLIFY_HOME_ROOT = '"+str(home)+"';",declaration)==original
+source_rows.append(dict(path='tools/lib/netlify-cache-config.mjs',disposition='only fixed home-root declaration changed in disposable caller',fixtureSha256=hashlib.sha256(helper.read_bytes()).hexdigest()))
+owners=['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','experiments/native-architecture/package.json','netlify.toml']
+before={path:(hashlib.sha256((root/path).read_bytes()).hexdigest(),(root/path).stat().st_mode&0o777) for path in owners}
+save();print(json.dumps(dict(packet=str(packet),sourceBase=base)),flush=True)
+version=run('released-pnpm-version',['pnpm','--version']);assert version.strip()=='11.22.0'
+run('released-global-store-writer',['pnpm','config','set','store-dir',store])
+assert settings.read_text()=='storeDir: '+store+'\n'
+for form,text in [('plain','storeDir: '+store+'\n'),('single-quoted',"storeDir: '"+store+"'\n"),('double-quoted','storeDir: "'+store+'"\r\n')]:
+ settings.write_text(text)
+ selected=run('released-getter-'+form,['pnpm','config','get','--json','store-dir'])
+ assert json.loads(selected)==store
+settings.write_text('storeDir: '+store+'\n')
+run('development-baseline',['pnpm','install','--frozen-lockfile'])
+stale='node_modules/filelist/node_modules/brace-expansion/package.json';put(stale,dict(name='brace-expansion',version='2.1.1'))
+put('node_modules/.pnpm/splotch-stale-store/node_modules/splotch-stale-store/package.json',dict(name='splotch-stale-store',version='1.0.0'))
+put('experiments/native-architecture/node_modules/splotch-stale-candidate/package.json',dict(name='splotch-stale-candidate',version='1.0.0'))
+run('qualified-warm-ci-with-home-store',['node','tools/netlify-production-install.mjs'])
+for path in [stale,'node_modules/.pnpm/splotch-stale-store','experiments/native-architecture/node_modules/splotch-stale-candidate']:assert not (root/path).exists(),path
+assert before=={path:(hashlib.sha256((root/path).read_bytes()).hexdigest(),(root/path).stat().st_mode&0o777) for path in owners}
+inspection="""import{readFileSync}from'node:fs';import{join}from'node:path';const root=process.cwd();const{inspectNetlifyProductionInstall}=await import(new URL('file://'+root+'/tools/netlify-topology-witness.mjs'));const contract=JSON.parse(readFileSync(join(root,'docs/migration/evidence/netlify-install/production-install-contract.json'),'utf8'));const env={BRANCH:'feature/netlify-migration-topology-05',NETLIFY:'true',CONTEXT:'branch-deploy',COMMIT_REF:"""+json.dumps(base)+""",PNPM_FLAGS:'--prod'};console.log(JSON.stringify(inspectNetlifyProductionInstall(root,contract,{env,headSha:env.COMMIT_REF,nodeVersion:process.version,packageManagerVersion:'11.22.0'})));"""
+run('qualified-warm-selected-physical-witness',['node','--input-type=module','--eval',inspection])
+run('qualified-production-release-build',['npm','run','build'],extra=dict(NETLIFY='false'))
+assert before=={path:(hashlib.sha256((root/path).read_bytes()).hexdigest(),(root/path).stat().st_mode&0o777) for path in owners}
+save('passed');print(json.dumps(dict(status='passed',steps=len(rows),packet=str(packet))),flush=True)

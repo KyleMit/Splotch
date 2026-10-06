@@ -1,0 +1,3 @@
+function getGlobalConfigPath(configDir) {
+  return path61.join(configDir, GLOBAL_CONFIG_YAML_FILENAME);
+}

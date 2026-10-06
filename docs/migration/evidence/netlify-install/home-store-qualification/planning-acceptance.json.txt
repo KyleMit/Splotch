@@ -1,0 +1,25 @@
+{
+  "acceptedAt": "2026-10-06T10:54:24.881188+00:00",
+  "kind": "planning-question-not-implementation-round",
+  "head": "6bac65f02b605b6efb0a0545eeda5e6cdc40a76a",
+  "question": {
+    "path": "/private/tmp/splotch-netlify-home-store-plan-question.md",
+    "bytes": 33159,
+    "sha256": "b94b2925425458c4727d584c303132fa71b4bdb5afc524140625bad5c0883824"
+  },
+  "review": {
+    "path": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/ac5db7fe-aef8-4873-b377-44ab20035561/findings.json",
+    "sha256": "6ce02fc0983e671b831a379a3e15e8351e1e221340895bcf72758254e2242c2e",
+    "session": "ac5db7fe-aef8-4873-b377-44ab20035561",
+    "verdict": "conditional GO"
+  },
+  "acceptedConditions": [
+    "Distinguish both qualified store-family labels",
+    "Finite literal/home agreement refusal booleans without values",
+    "Finite home/store/version filesystem refusal classes recorded before sanitized errors",
+    "Require both real process homedir and passed child HOME to equal fixed image-owned home"
+  ],
+  "existingOwners": "unchanged pending private source implementation",
+  "hostedAcceptance": "pending",
+  "nextImplementationReview": "PR2699 round3, resumed original conversation"
+}

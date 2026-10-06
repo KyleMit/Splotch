@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "status": "private-frozen-source-only-controls-unexecuted",
+  "author": "native_contract",
+  "predecessorRoot": "/private/tmp/splotch-netlify-home-store-successor-ku0vj0ra/predecessor",
+  "sourceRoot": "/private/tmp/splotch-netlify-home-store-successor-ku0vj0ra/prepared",
+  "predecessorRows": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 6925,
+      "mode": "0o644",
+      "sha256": "b32f866909b41e7cd4f0b1ac0ea244a7fdbbf8308c5003bd58122b47380853a9"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14391,
+      "mode": "0o644",
+      "sha256": "a0fa5b402d653f87d85a8fef71ba35f10b8e2d01cd9283b61c640151e778d991"
+    }
+  ],
+  "sourceRows": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 9906,
+      "mode": "0o644",
+      "sha256": "d620329f5261123b4ecb217843dbc42965cdb7af1b9e8e1ac87c6d332598da61"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14445,
+      "mode": "0o644",
+      "sha256": "03596b8e4ab56f2672a659088d0a71dda43b39188b9e5480aa22611e9d5d56ea"
+    },
+    {
+      "path": "tools/tests/netlify-home-store.test.mjs",
+      "bytes": 17371,
+      "mode": "0o644",
+      "sha256": "6ee1e791a62b566373b57cca0ed3f422fd4174c172d270e96c3ec06ca2aa5ce8"
+    }
+  ],
+  "sourceRowsSHA256": "bfd073d147343bd73bc61d812aa4298dcc76287989f776a7cce417cc0f5ada48",
+  "contextRows": [
+    {
+      "path": "tools/lib/native-candidate.mjs",
+      "bytes": 70,
+      "mode": "0o644",
+      "sha256": "26f61d13f70340c980e2a23d9805cb7f4b7f8def6345548d9deeb970935ab063"
+    },
+    {
+      "path": "tools/lib/netlify-runtime.mjs",
+      "bytes": 1578,
+      "mode": "0o644",
+      "sha256": "235770108da0ff3358666a111a40fcba02c37947e1350c1adc84a57ca14d043a"
+    },
+    {
+      "path": "tools/lib/proc.mjs",
+      "bytes": 9879,
+      "mode": "0o644",
+      "sha256": "367287eaeb04b8ca8854b282c7e1b903e5c28f2c136be05ea6c633cf7339d891"
+    },
+    {
+      "path": "tools/tests/fixtures/netlify-install.mjs",
+      "bytes": 5340,
+      "mode": "0o644",
+      "sha256": "97414522d48f9e3ad9ecc4c60e3a1b78cee4d52e6c79682ebe106972bd89bdb4"
+    },
+    {
+      "path": "tools/tests/netlify-cache-config.test.mjs",
+      "bytes": 10486,
+      "mode": "0o644",
+      "sha256": "0da096da0785f68a7752a173992f32a8c5f89574794b45562a9d07a4f065f6f4"
+    },
+    {
+      "path": "tools/tests/netlify-production-install.test.mjs",
+      "bytes": 16702,
+      "mode": "0o644",
+      "sha256": "eabf711341a50fcfae2c138f1e26bd496d73a1141835a7f6436a892c8a66d6c4"
+    }
+  ],
+  "changedPaths": [
+    "tools/lib/netlify-cache-config.mjs",
+    "tools/netlify-production-install.mjs"
+  ],
+  "addedPaths": [
+    "tools/tests/netlify-home-store.test.mjs"
+  ],
+  "packetFiles": [
+    {
+      "path": "SOURCE-PREPARATION.md",
+      "bytes": 4707,
+      "sha256": "75481e448d299f7c3bc2af76ab4b6749ef9db6770fbc55b66fa39eae9cbca980"
+    },
+    {
+      "path": "home-store.diff",
+      "bytes": 27772,
+      "sha256": "7adf3bf1633ba3b51571abfcbdf16a932b64970a1ecd682f2de1540fd4a2214e"
+    }
+  ],
+  "normativeInputs": [
+    {
+      "path": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/ac5db7fe-aef8-4873-b377-44ab20035561/findings.json",
+      "bytes": 5230,
+      "sha256": "6ce02fc0983e671b831a379a3e15e8351e1e221340895bcf72758254e2242c2e"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-current-image-d5w5lxao/REPORT.md",
+      "bytes": 5727,
+      "sha256": "0eecc27a2617f435ecbb380dd6a123319777801e56751b45bd2e3cb46baa5b80"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-current-image-d5w5lxao/report-receipt.json",
+      "bytes": 4676,
+      "sha256": "55dcce3af7404abe4d152c8b1a33b237a92c7cb22192ebbaaf813c9e6804a757"
+    }
+  ],
+  "executed": false,
+  "worktreeOrGitMutated": false,
+  "existingCacheControlsOrSharedFixtureChanged": false,
+  "pending": [
+    "independent-new-source-review",
+    "root-application/formatting/discovery",
+    "actual-CLI/negative/inversion-controls",
+    "unchanged90-controls/fulltools/Quality",
+    "released-pnpm writer/getter/ci/witness/build",
+    "actual hosted install/witness/build and final PR review"
+  ]
+}

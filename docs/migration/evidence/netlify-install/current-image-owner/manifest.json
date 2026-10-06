@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "scope": "current public image owner source; no hosted success or runtime scalar claim",
+  "originalInspectionRowsDigest": "683670a2714b9e325646cfc7a70d7adafb0ac3cfae02450b469a4b64b7f9c5e1",
+  "files": [
+    {
+      "path": "README.md",
+      "originalName": null,
+      "kind": "authored-package-metadata",
+      "bytes": 5444,
+      "mode": "0644",
+      "sha256": "2de15b07b47e2743b3d447c700dfe992a6453199314157dd940f0196a8d7c4d0"
+    },
+    {
+      "path": "oci/amd64-config.json.txt",
+      "originalName": "amd64-config.json",
+      "kind": "original-byte-copy",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "5a939a76f0a00fa1e346f2efb257bd01f5b3f3758b5ef68b7cf8289d7f334286"
+    },
+    {
+      "path": "oci/amd64-manifest.json.txt",
+      "originalName": "amd64-manifest.json",
+      "kind": "original-byte-copy",
+      "bytes": 9777,
+      "mode": "0644",
+      "sha256": "b16db53a205bbea59f99309b2f03269d1cd2dbe5f00d12c942b37c1581ce9419"
+    },
+    {
+      "path": "oci/arm64-config.json.txt",
+      "originalName": "arm64-config.json",
+      "kind": "original-byte-copy",
+      "bytes": 36591,
+      "mode": "0644",
+      "sha256": "509ebb9020a104265385e2b92e3994f1955b676a2e808dc51fa941ba9196cd46"
+    },
+    {
+      "path": "oci/arm64-manifest.json.txt",
+      "originalName": "arm64-manifest.json",
+      "kind": "original-byte-copy",
+      "bytes": 9770,
+      "mode": "0644",
+      "sha256": "8a14311b4552e7276665ee316f16c681e49561336b23cd0608c33c60641e0731"
+    },
+    {
+      "path": "oci/index.json.txt",
+      "originalName": "index.json",
+      "kind": "original-byte-copy",
+      "bytes": 743,
+      "mode": "0644",
+      "sha256": "4e3c154359c1f753b65b4a46b3f60c4bdb2abde136e6c6903d84eb91b4338ada"
+    },
+    {
+      "path": "oci/source-layers/amd64-layer-43.tar.gz",
+      "originalName": "amd64-layer-43.tar.gz",
+      "kind": "original-byte-copy",
+      "bytes": 8325,
+      "mode": "0644",
+      "sha256": "bf6df5ae9efd601ef23c307e2c61f760e681abd7d3e68f47c398ba7d512f364d"
+    },
+    {
+      "path": "oci/source-layers/arm64-layer-43.tar.gz",
+      "originalName": "arm64-layer-43.tar.gz",
+      "kind": "original-byte-copy",
+      "bytes": 8318,
+      "mode": "0644",
+      "sha256": "e0df32ea247d5dd609b8867c67314231d4a8a0b996f31815fce9155c9dff6cb3"
+    },
+    {
+      "path": "pnpm/pnpm-11.22.0-166419-166421.txt",
+      "originalName": "pnpm-11.22.0-166419-166421.txt",
+      "kind": "original-byte-copy",
+      "bytes": 106,
+      "mode": "0644",
+      "sha256": "46720f08afa000e0f6cafb4011a8b343ac7c93bd39c672d45b6e7755d1e814f0"
+    },
+    {
+      "path": "pnpm/pnpm-11.22.0-256736-256763.txt",
+      "originalName": "pnpm-11.22.0-256736-256763.txt",
+      "kind": "original-byte-copy",
+      "bytes": 869,
+      "mode": "0644",
+      "sha256": "d8d5dc82d856befe6d9d9d4db28c5174f125645db8f74f730eee6f0ea274e119"
+    },
+    {
+      "path": "pnpm/pnpm-11.22.0-256777-256825.txt",
+      "originalName": "pnpm-11.22.0-256777-256825.txt",
+      "kind": "original-byte-copy",
+      "bytes": 2004,
+      "mode": "0644",
+      "sha256": "e729e13aff779b49c2dd1d2b351cabba3a01bb0c43461d2c7952b9cff6b0afc1"
+    },
+    {
+      "path": "pnpm/pnpm-11.22.0-257071-257109.txt",
+      "originalName": "pnpm-11.22.0-257071-257109.txt",
+      "kind": "original-byte-copy",
+      "bytes": 1093,
+      "mode": "0644",
+      "sha256": "047b44ffe2c896cbfc64ab9856f153777a37ed4f92add69dc2c0da5637348ec6"
+    },
+    {
+      "path": "pnpm/provenance.json.txt",
+      "originalName": "pnpm-source-provenance.json",
+      "kind": "original-byte-copy",
+      "bytes": 1340,
+      "mode": "0644",
+      "sha256": "1ae559ed3b672a77b9933da0dde6d4f81360d450495605803616abc2410692aa"
+    },
+    {
+      "path": "provenance/amd64-relevant-history-map.json.txt",
+      "originalName": "amd64-relevant-history-map.json",
+      "kind": "original-byte-copy",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "281fe993bb3803ab4dcd5df8f56eae50872b39ab2c39f7ce4c8082e1069c5076"
+    },
+    {
+      "path": "provenance/arm64-relevant-history-map.json.txt",
+      "originalName": "arm64-relevant-history-map.json",
+      "kind": "original-byte-copy",
+      "bytes": 6669,
+      "mode": "0644",
+      "sha256": "80e8cf246a2baed94c8c3fdce6d4d0ff473c0b0485002a6c950f6f0f2e661619"
+    },
+    {
+      "path": "provenance/original-inspection-receipt.json.txt",
+      "originalName": "report-receipt.json",
+      "kind": "original-byte-copy",
+      "bytes": 4676,
+      "mode": "0644",
+      "sha256": "55dcce3af7404abe4d152c8b1a33b237a92c7cb22192ebbaaf813c9e6804a757"
+    },
+    {
+      "path": "provenance/retrieval.json.txt",
+      "originalName": "retrieval.json",
+      "kind": "original-byte-copy",
+      "bytes": 9377,
+      "mode": "0644",
+      "sha256": "bc452cc10c9fca81c7ba270e7c01abcf0b48636d1cf15b4ed287af5a983fee95"
+    },
+    {
+      "path": "provenance/source-equivalence.json",
+      "originalName": null,
+      "kind": "authored-package-metadata",
+      "bytes": 1487,
+      "mode": "0644",
+      "sha256": "b50af41eda2b527e62015459a7d18cd14924e212b1351c993cd12ce059f6daa0"
+    },
+    {
+      "path": "source/build-entrypoint.sh.txt",
+      "originalName": "amd64-build-entrypoint.sh.txt",
+      "kind": "original-byte-copy",
+      "bytes": 941,
+      "mode": "0644",
+      "sha256": "f9c13c17a2cc456ac1b5f13305961d97e8221bdc96b75a89479152a65867f19b"
+    },
+    {
+      "path": "source/run-build-functions.sh.txt",
+      "originalName": "amd64-current-run-build-functions.sh.txt",
+      "kind": "original-byte-copy",
+      "bytes": 31256,
+      "mode": "0644",
+      "sha256": "7dbf92db3332c6bad52633098adb7cb9abe35038346a9ac56e16c9c84665bf24"
+    }
+  ]
+}

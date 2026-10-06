@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-production-install.test.mjs tests/netlify-cache-config.test.mjs tests/netlify-home-store.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+
+ Test Files  3 passed (3)
+      Tests  150 passed (150)
+   Start at  07:08:09
+   Duration  53.31s (tests 100%)
+
