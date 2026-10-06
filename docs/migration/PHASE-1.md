@@ -52,6 +52,9 @@ Each unit receives an implementation plan and Claude review, then an exact-head 
 and applicable CI before joining the integration branch. Units may investigate independently; they
 do not confer another unit's evidence.
 
+Register the contract's causal limits, observer fallback and burden ranges before remedies or
+comparison results; update those records only through reviewed evidence.
+
 1. **Portable drawing defaults.** Move width/default-color values to plain existing-vocabulary
    owners while retaining used Svelte state APIs/restoration; remove the unused repository-internal
    default-color re-export rather than preserving speculative compatibility. Import the width owner
@@ -97,10 +100,13 @@ do not confer another unit's evidence.
    render/WebContent/Metal producers. When system traces cannot certify content/presentation, use a
    validated external display observer. A normal screen recording is not automatically sufficient.
    Use the bounded observer attempts and provisional fallback registered in the contract; neither
-   unavailable hardware nor callbacks establish a performance verdict. Delay paper, decoded output
-   and chrome separately; inject incoherent epochs and missing clock/token evidence so the validator
-   rejects them. Simulator/emulator proves mechanics only. Extend to static Skia before full
-   native-paper investment; thresholds require fresh physical controls.
+   unavailable hardware nor callbacks establish a performance verdict. A provisional ADR names the
+   failed OS and permits only isolated units 3 and 5–9. Use the contract's single bounded re-entry
+   rule; absent calibration, record retention/comparison unproved without a Phase 1 exit or final
+   gate waiver. Delay paper, decoded output and chrome separately; inject incoherent epochs and
+   missing clock/token evidence so the validator rejects them. Simulator/emulator proves mechanics
+   only. Extend to static Skia before full native-paper investment; thresholds require fresh
+   physical controls.
 5. **Released template and static native graphics.** Commit the isolated minimum native template and
    exact toolchain/locks, preserving API24/iOS16.4. Compile optimized builds for both OSes and
    exercise static Skia geometry and output. Audit actual permissions, binaries, install scripts and
@@ -160,17 +166,21 @@ do not confer another unit's evidence.
     candidate results. Costs fixed in place no longer count as architecture failure elimination. If
     fresh controls show no motivating failures, including after remedies, use the contract’s
     structural/fidelity/continuity and recurring-burden rule, with retained Svelte/Capacitor a valid
-    outcome and no unmeasured architecture-performance claim.
+    outcome and no unmeasured architecture-performance claim. If both matched candidates leave
+    motivating costs, use the contract's two-unit causal branch and its evidence-based escalation or
+    retention outcome. Burden-only selection uses the registered 24-month conservative materiality
+    rule, not a merely smaller estimated tool count.
 11. **Foundation selection.** Apply the contract's eligibility, material benefit and
     recurring-burden rule to viable production designs. Separate initial migration cost, recurring
     ownership and runtime costs; prototype only uncertain estimates that can change selection. Label
     measured versus estimated burden entries for both arms and record complete fixture construction
     as initial migration cost. RN-island integration is causal evidence, not the sole hybrid cost
     exhibit. Consider Flutter/separate-native fallbacks if leading designs fail. Record a reviewed
-    final ADR and exact released dependencies/floors before product ownership moves. The observer
-    fallback records a scoped provisional ADR permitting independent candidate foundation work; it
-    does not complete Phase 1, finalize architecture selection or approve cutover. Where motivating
-    costs remain, ordinary measured eligibility is still required for final selection.
+    final ADR and exact released dependencies/floors before product ownership moves. The provisional
+    observer ADR is limited to the contract's named OS, isolated units and single bounded re-entry;
+    it approves no ownership move, Phase 1 exit or final selection. A residual-cost or unproved
+    comparison retention decision leaves unmet release work pending. Where motivating costs remain,
+    ordinary measured eligibility is still required for final selection.
 
 Native paper mechanics are independent of web vocabulary selection; full RN UI comparison depends on
 the selected vocabulary or measures each survivor. Hardware availability does not block structural

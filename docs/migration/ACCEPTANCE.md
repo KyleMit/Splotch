@@ -188,10 +188,13 @@ Existing report fidelity labels must not substitute for the current per-capture 
 changed native presentation rate needs its own characterized regime; browser-specific allowances and
 recorded instrument dispositions remain scoped to their original evidence.
 
-Architecture plans define primary improvement metrics and reproducible session fixtures before
-implementation. Final comparison must show equivalent visible behavior, explain regressions, and
-demonstrate repeatable improvement in the agreed native problem metrics. Frame-gate success alone
-does not establish end-to-end readiness, lower memory, or better startup.
+Architecture plans define primary metrics and reproducible session fixtures before implementation.
+Final comparison preserves equivalent visible behavior and explains regressions. Where fresh
+controls retain motivating native problems, a migration requires repeatable improvement in the
+registered metrics. Where fresh controls show no motivating failures, the contract's no-residual
+rule applies without an unproved architecture benefit. Retention with unresolved costs or comparison
+evidence leaves release work pending and the campaign incomplete. Frame-gate success alone does not
+establish end-to-end readiness, lower memory or better startup.
 
 ## Evidence ledger for each migrated area
 

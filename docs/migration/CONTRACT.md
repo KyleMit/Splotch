@@ -3,8 +3,8 @@
 ## Scope and decision status
 
 Select the drawing product architecture across web, Android, and iOS through the Codex/Claude pair,
-and replace UI and client behavior where the selected design requires it. The registered no-residual
-outcome may retain the current Svelte/Capacitor product; report that as retention rather than a
+and replace UI and client behavior where the selected design requires it. The registered retention
+outcomes may retain the current Svelte/Capacitor product; report that as retention rather than a
 completed UI replacement. Preserve the complete product, existing-user data, hosted API contracts,
 and visual character. Keep the current product runnable until each target is ready. Retain
 SvelteKit/Netlify for hosted APIs, admin, and informational routes unless a concrete requirement
@@ -50,6 +50,10 @@ Before choosing the implementation foundation, record:
    Calibrate new observables and input transports before using them for comparative conclusions.
 5. Phase 1 implementation plans for the smallest checks that settle structural risk. Claude reviews
    the contract and plans, including alternative costs and pivot conditions, before code begins.
+
+The [baseline inventory](BASELINE.md) records banked source/build provenance, input regimes,
+dispositions, missing witnesses and section-specific age limits. Current physical controls remain
+pending; an available historical source is not a capture of the campaign head.
 
 The committed
 [deployment matrix](../../scrapbook/performance/2026-07-31-deployment-target-matrix/index.md) is
@@ -107,13 +111,14 @@ applicable web contracts. Among eligible candidates, prefer native paper inside 
 host/input/layer glue has the lower recurring burden, unless RN demonstrates an additional mechanism
 benefit that exceeds a preregistered materiality threshold and justifies the additional burden.
 Select RN when it has the lower demonstrated burden or meets that exception; otherwise select the
-viable hybrid. If neither removes the motivating cost, continue causal investigation before
-selecting a foundation. Define materiality from current-control variability, the owning action
-budgets, visible readiness, and the cost of the extra ownership before seeing candidate results. For
-example, residual surrounding-WebView cost can justify RN only when its matched improvement crosses
-that registered threshold. A failed required contract must be repaired or the candidate yields.
-These checks select a foundation; the integrated, tuned application's final performance verdict
-remains a later gate.
+viable hybrid. If neither candidate removes the motivating cost after its valid matched mechanism
+checks and bounded tuning, enter the bounded residual-cost branch below; an unfinished candidate or
+an unproved observer is not a measured failure of that candidate. Define materiality from
+current-control variability, the owning action budgets, visible readiness, and the cost of the extra
+ownership before seeing candidate results. For example, residual surrounding-WebView cost can
+justify RN only when its matched improvement crosses that registered threshold. A failed required
+contract must be repaired or the candidate yields. These checks select a foundation; the integrated,
+tuned application's final performance verdict remains a later gate.
 
 A same-backend RN/native-paper island inside Capacitor can isolate the surrounding UI's cost without
 becoming the intended production hybrid. Judge recurring burden on viable production designs,
@@ -121,6 +126,30 @@ separating initial migration work, toolchain/dependency ownership, bridge/lifecy
 runtime cost. Prototype only uncertain estimates that could change the choice. The causal island
 neither proves strict burden dominance nor forces the hybrid to retain every experimental
 dependency.
+
+Before remedies or candidate comparison results, register conservative burden ranges over a common
+24-month planning horizon from the foundation decision. Name recurring maintenance obligations and
+their demonstrated current frequency, initial migration/validation work, a separate risk reserve and
+assumptions about deployment delay. Use the same reviewed effort units and ranges for all arms,
+crediting savings only after the relevant owner can actually be retired within that horizon. Record
+measured facts separately from estimates; dependency counts, token counts, calendar waiting and
+unsupported forecasts are not measured maintenance savings. The horizon is a decision policy, not a
+measured payback forecast; use coarse engineering-effort ranges rather than fictitious precise
+hours.
+
+Mandatory burden categories are UI/behavior synchronization; dependency/toolchain/floor upkeep;
+native bindings, ordering, lifecycle and upgrades; web host/security/PWA adapters; and tests,
+physical evidence and release/privacy maintenance. Runtime and resource contracts remain separate
+gates. A burden-only migration must remove at least one demonstrated recurring maintenance
+obligation without an uncompensated regression in those categories. Its lower-bound recurring saving
+must exceed the upper-bound remaining initial migration/validation effort plus the risk reserve.
+Document any added obligation and its concrete compensation; no saving can compensate for a failed
+mandatory product, release or continuity contract. Uncertain, overlapping or unsupported
+estimate-only differences favor lower-change retention.
+
+Past experimental effort remains recorded as campaign cost but is not a future saving or a reason to
+proceed. Update remaining-effort ranges only with reviewed scope or feasibility evidence, preserving
+the original ranges and reasons; do not revise the horizon or reserve to qualify a preferred result.
 
 A production hybrid inherits paper-level evidence only when it retains the same input collector,
 paint backend and paper-consumer semantics. Host glue still needs its own interaction and coherence
@@ -132,20 +161,40 @@ The matched RN drawing screen uses the native build of the selected shared vocab
 measures every surviving vocabulary. Register it in the scenario manifest; a raw-RN fixture cannot
 certify the theme/style costs of a production RSD screen.
 
+Where motivating costs remain and neither candidate removes them, allow at most two reviewed causal
+units per affected OS and workload family. Each unit names a falsifiable owner/mechanism question, a
+bounded intervention and its stopping condition before results. Escalate this branch to Flutter or
+separate native UI only when evidence attributes the failed mechanism to the shared foundation, and
+a feasible alternative has a concrete bypass with supported floors, installation identity and
+continuity still possible. Otherwise record retention of the shipping architecture, with the
+residual costs outstanding as release work. This retention is not a performance benefit, does not
+make either failed candidate eligible, and cannot complete the campaign while any final physical,
+release, acceptance or continuity gate remains unmet.
+
 If fresh controls show no current motivating failures, including after bounded in-place remedies,
-select among structurally viable, faithful and continuous designs satisfying applicable web
-contracts by recurring burden, including the current Svelte/Capacitor architecture as an explicit
-outcome. Claim no additional architecture performance benefit without a separately preregistered
-comparison. Passing remedied workloads remain regression obligations.
+compare structurally viable, faithful and continuous designs satisfying applicable web contracts
+under the registered burden-only materiality rule, including current Svelte/Capacitor retention as
+an explicit outcome. Claim no additional architecture performance benefit without a separately
+preregistered comparison. Passing remedied workloads remain regression obligations.
 
 For each OS, attempt a calibrated system-trace observer and a calibrated display observer in at most
-two reviewed implementation cycles per family. Hardware unavailability does not count as failed
-calibration. If neither can observe the registered outcome, record comparison as unproved and a
-scoped provisional structural/burden ADR permitting independent candidate foundation work. This is
-not Phase 1 exit, final architecture selection or product cutover. Where motivating costs remain,
-final selection still requires the measured eligibility above. Retain the shipping target until its
-pre-cutover performance gate is proved. Do not expand observer research indefinitely or waive final
-evidence.
+two reviewed implementation cycles per observer family. Hardware unavailability does not count as
+failed calibration. If neither can observe the registered outcome, name the failed OS, outcome and
+coverage gap, record comparison as unproved, and record a scoped provisional ADR. It permits only
+isolated candidate work in PHASE-1 units 3 and 5–9, with each unit's reviewed scope and stopping
+condition; it permits no production ownership move or cutover. It is not Phase 1 exit or final
+architecture selection, and evidence from it certifies neither the other OS nor a cross-platform
+selection. Independently valid evidence on the other OS retains its own scope.
+
+A reviewed new observer mechanism, or an actual hardware/tooling change that addresses the named
+coverage failure, may reopen one further bounded cycle per failed OS and registered outcome, shared
+across the observer families. Register its coverage predicates, rejecting controls and stopping
+condition before running it. A renamed metric, cosmetic rerun or relaxed predicate cannot reopen the
+budget; another unrelated tool revision does not automatically grant another cycle. Without
+qualifying re-entry, or if that cycle also fails, record the shipping architecture as retained and
+comparison unproved, with required evidence still pending. Where motivating costs remain, final
+selection still requires ordinary measured eligibility. Retention and an exhausted research budget
+cannot complete the migration or waive its final gates.
 
 Evaluate Flutter or separate platform UI plans in more depth if a leading path fails a structural
 requirement or its recurring burden dominates. Select the architecture in an ADR with alternatives,
@@ -197,10 +246,13 @@ commit owner requires a reviewed equivalent workload and observable, with missin
 rather than reported as zero, before signed artifacts are published.
 
 Early measurements diagnose mechanisms and feasibility. Overall performance is judged after the
-complete UI is integrated and tuned. Require repeatable improvement in primary native problems
-remaining in fresh controls; otherwise apply the registered no-residual rule without claiming an
-additional architecture performance benefit. Every outcome requires no unexplained regression in
-passing workloads and complete-app startup, memory, thermal, long-session, lifecycle,
+complete UI is integrated and tuned. Where fresh controls retain primary native problems, a
+migration must demonstrate repeatable improvement under the registered criteria. When fresh controls
+show no motivating failures, apply the registered no-residual rule without an additional unproved
+architecture-performance claim. Retention with unresolved costs or unproved comparison evidence does
+not enter that no-residual branch: those costs and evidence remain outstanding release work and the
+final performance gate remains unmet. Every outcome requires no unexplained regression in passing
+workloads and complete-app startup, memory, thermal, long-session, lifecycle,
 input-to-visible-result and action-readiness evidence. Define success thresholds for each causal
 comparison before inspecting its results.
 
@@ -261,8 +313,10 @@ retention decision:
    and all introduced dependencies/permissions are accounted for.
 3. Full integrated and tuned performance satisfies the measurement contract, including fresh
    physical release-gate evidence and improvements where primary native problems remain in fresh
-   controls. A no-residual outcome follows its registered rule and claims no unproved architecture
-   benefit. Current passing behavior and visual semantics are preserved.
+   controls. A genuine no-residual outcome follows its registered rule and claims no unproved
+   architecture benefit. Retention with residual costs or unproved comparison evidence records an
+   architecture disposition only; that release work remains unresolved and cannot complete the
+   campaign. Current passing behavior and visual semantics are preserved.
 4. Applicable CI/build/security/asset gates pass, signed native artifacts are version-verified,
    deployment smokes pass, and release/store metadata and dependency/privacy records reflect the
    actual product. Store publication and external approval state are recorded separately from
