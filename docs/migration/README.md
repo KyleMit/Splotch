@@ -18,6 +18,8 @@ alternative. A complete React DOM rewrite is not a prerequisite to native work.
 * [Product acceptance](ACCEPTANCE.md): behaviors and scenarios that the replacement must preserve.
 * [Web contract](WEB-CONTRACT.md): startup, hosting, security, navigation, and offline boundaries.
 * [Upgrade contract](UPGRADES.md): native services, persisted data, and same-identity upgrade proof.
+* [Dependency health](DEPENDENCY-HEALTH.md): the external audit repair and separately bounded
+  embedded-code residual.
 
 These documents define pending requirements, not claims that a candidate already passes. Existing
 tests and ADRs remain authoritative until a reviewed change replaces or amends them. Keep evidence
@@ -46,16 +48,25 @@ options, choice, recurring cost, and validation in the PR and relevant ADR.
 
 ## Work ledger
 
-| Unit                            | State                 | Evidence and next exit                                                                                                                                                                  |
-| ------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architecture direction review   | Conditional agreement | Claude reviewed the complete proposal at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4; see the contract's decision summary. No candidate performance was measured.                          |
-| Phase 0: migration contract     | In review             | Product, web, and native audits define scope. Baseline provenance, architecture-comparison implementation plans, and Claude's contract review must be recorded before this phase exits. |
-| Phase 1: architecture checks    | Pending               | Compare causal mechanisms, native build/integration feasibility, and shared web contract feasibility; choose released dependency versions and record the decision.                      |
-| Phase 2: foundation             | Pending               | Runnable isolated candidate builds, shared behavior boundaries, native bindings, test/capture entry points, and CI.                                                                     |
-| Phase 3: drawing                | Pending               | Complete renderer/input/history/export/audio behaviors behind the selected platform boundary.                                                                                           |
-| Phase 4: complete product       | Pending               | Every applicable acceptance scenario has a replacement implementation and test/evidence mapping.                                                                                        |
-| Phase 5: integrated tuning      | Pending               | Full canonical workloads, complete UI, matched physical-device controls, and release-gate evidence.                                                                                     |
-| Phase 6: cutover and retirement | Pending               | Independent target readiness, signed artifacts and upgrade proof, hosted deployment checks, final Claude review, and documented retirement of replaced UI owners.                       |
+The contract landed in [PR 2691](https://github.com/KyleMit/Splotch/pull/2691), merged at
+d3d4203539143584bc1af96e7652fc7f39f3382b after two Claude review rounds and 13 resolved findings.
+Applicable CI passed except the inherited high-severity `source-map-js@1.2.1` audit failure
+(GHSA-68fv-2mgg-jv7q), addressed by the dependency unit now in progress. Local frozen-install,
+audit, Quality, release-build, and full-test checks pass; implementation review and CI remain
+pending. Architecture selection, candidate acceptance, and new physical-control results remain
+pending.
+
+| Unit                            | State                 | Evidence and next exit                                                                                                                                                                                               |
+| ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture direction review   | Conditional agreement | Claude reviewed the complete proposal at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4; see the contract's decision summary. No candidate performance was measured.                                                       |
+| Phase 0: migration contract     | Contract merged       | Product, web, native, upgrade, and acceptance boundaries are reviewed. Baseline provenance and architecture-comparison implementation plans remain pending before the phase exits.                                   |
+| Dependency health maintenance   | In progress           | Reviewed targeted lock repair passes frozen-install, audit, Quality, release-build, and full-test checks locally. Implementation review and CI remain pending. The embedded magicast residual is separately bounded. |
+| Phase 1: architecture checks    | Pending               | Compare causal mechanisms, native build/integration feasibility, and shared web contract feasibility; choose released dependency versions and record the decision.                                                   |
+| Phase 2: foundation             | Pending               | Runnable isolated candidate builds, shared behavior boundaries, native bindings, test/capture entry points, and CI.                                                                                                  |
+| Phase 3: drawing                | Pending               | Complete renderer/input/history/export/audio behaviors behind the selected platform boundary.                                                                                                                        |
+| Phase 4: complete product       | Pending               | Every applicable acceptance scenario has a replacement implementation and test/evidence mapping.                                                                                                                     |
+| Phase 5: integrated tuning      | Pending               | Full canonical workloads, complete UI, matched physical-device controls, and release-gate evidence.                                                                                                                  |
+| Phase 6: cutover and retirement | Pending               | Independent target readiness, signed artifacts and upgrade proof, hosted deployment checks, final Claude review, and documented retirement of replaced UI owners.                                                    |
 
 The ledger is updated in each reviewed unit. Preserve failures and rejected assumptions beside their
 dispositions. Main continues moving during the campaign: reconcile its product changes into the
