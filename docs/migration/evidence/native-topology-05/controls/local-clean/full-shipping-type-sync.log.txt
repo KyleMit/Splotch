@@ -1,0 +1,16 @@
+$ svelte-kit sync
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m

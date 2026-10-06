@@ -1,0 +1,11 @@
+
+> splotch@1.6.0 lint:deps:prod
+> knip --config knip.production.json --production --strict --no-progress
+
+Unresolved imports (6)
+$pageIcon                web/src/lib/components/design/ExternalMark.svelte:1:18
+$pageIcon                web/src/lib/components/page/BackLink.svelte:2:18      
+$pageIcon                web/src/lib/components/page/BackToTopLink.svelte:1:18 
+$nativePageParentCenter  web/src/lib/components/page/PageShell.svelte:8:40     
+$pageIcon                web/src/lib/components/page/ReleaseHistory.svelte:3:18
+$notFoundPage            web/src/routes/+error.svelte:3:26                     

@@ -1,10 +1,11 @@
 # Native topology 05 provenance and structural checks
 
-The Forge security repair is documented in [FORGE-MITIGATION.md](FORGE-MITIGATION.md). Its exact
-source, lock-only refresh, patched frozen install, mandatory guard and focused controls passed; full
-Quality, required test tiers and CI results are pending. Earlier install and structural observations
-below use the unpatched lock and remain historical evidence. The lock-bound policy inputs are
-re-bound to the repair lock; registry artifacts and selected lifecycle verdicts are unchanged.
+The guarded Forge repair is documented in [FORGE-MITIGATION.md](FORGE-MITIGATION.md). Quality, the
+complete required test tier, and independent clean local full and production install/build cases
+passed on executable source 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5. Independent final review, CI
+and the actual hosted production-install observation remain pending. Earlier install and structural
+observations below use the unpatched lock and remain historical evidence. The lock-bound policy
+inputs use the repair lock; registry artifacts and lifecycle verdicts are unchanged.
 
 The lock-only sentinel resolved a reviewed local tarball with four root hooks and one
 third-party-shaped postinstall without running any hook or creating node_modules. The actual
@@ -39,8 +40,8 @@ preparation; future source-type changes require renewed provenance, not an infer
 Existing root build verdicts remain unchanged. The frozen full install succeeded on the recorded
 host runtime. Candidate TSX/type/Babel checks, both-platform Expo/RN scanners, installed React/RN
 identity, Metro ownership, shipping type diagnostics, lint and production/dead-code Knip passed.
-Native compilation, clean production install/build, supported-Node CI and actual hosted proof remain
-pending; this package makes no runtime, performance or upgrade claim.
+Native compilation, supported-Node CI and actual hosted proof remain pending. The corrected-source
+clean local cases are recorded below; this package makes no runtime, performance or upgrade claim.
 
 Audit runtime explicitly used already installed baseline YAML 2.9.1/tar 7.5.22 through a private
 loader; both are declared actual root tool dependencies in this unit. Archive inspection executed no
@@ -88,3 +89,26 @@ pending and are owned by the separate Netlify proof unit.
 `pnpm-why.json` records the resolved Metro/React/RN graph, including the separate CLI Metro version.
 `structural-checks.json` links the final checker and 95 scoped guards, normal observer CLI, shipping
 diagnostics, Knip and generation logs, with the remaining validation boundaries explicit.
+
+## Corrected-source full tier and clean local cases
+
+[The corrected full tier](corrected-source-full-tests.json) passed all app, SSR, asset, store and
+tools tiers, then all 1,170 browser tests. [The clean local proof](local-clean-proof.json) uses two
+independent full-history clones, Node22.23.2 and pnpm11.22.0 with the existing warm shared store.
+The full tree passed its exact topology/Forge guard, unchanged production Knip and complete static
+shipping build. The separate production-only tree passed its builtin installed-tree observer with
+445 installed package identities and no member of the 329-artifact candidate-exclusive closure, then
+the exact root Netlify command, complete web guards and identical SSR staging inventories. The web
+build carries its owner-derived version1.6.2712; the static export carries1.6.0.
+
+Two real setup failures are retained: the cached pnpm entry was not executable through a symlink, so
+an owned temporary launcher invokes the exact qualified Node/manager without shared mutation; Knip
+initially lacked generated SvelteKit aliases, then passed after the existing owning sync. No alias
+exception, guard waiver, lifecycle allowance, cache clearing or lock/source change follows. The
+production observer inputs explicitly simulate a local branch-deploy context. No proof ref or hosted
+install/build was produced by these commands.
+
+[The source binding](final-source-binding.json) keeps local executed artifact source distinct from
+the later evidence-only review tip. The hosted proof must observe the first automatic build of its
+reviewed nonproduction ref and remains pending. Native compilation, mounts, integrated performance
+and product/upgrade parity remain later migration obligations.

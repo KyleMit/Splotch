@@ -1,0 +1,65 @@
+{
+  "sourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "source": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+  "job": "/private/tmp/splotch-topology05-clean.2izk1qay",
+  "runtimePATH": "/Users/kylemit/.nvm/versions/node/v22.23.2/bin:/private/tmp/splotch-topology05-clean.2izk1qay/runtime-bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  "homePreserved": true,
+  "hostOS": "Darwin",
+  "hostArchitecture": "arm64",
+  "managerPackage": "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0",
+  "managerEntrySha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad",
+  "managerWrapperSha256": "36421c09780e26ab75aebe4b87414d5bf3a8abceeb3ebf84c894acb6fd816de1",
+  "versions": {
+    "nodeVersion": "v22.23.2",
+    "pnpmVersion": "11.22.0",
+    "warmStorePath": "/Users/kylemit/Library/pnpm/store/v11",
+    "nodeIdentity": "{\"version\":\"v22.23.2\",\"architecture\":\"arm64\",\"executable\":\"/Users/kylemit/.nvm/versions/node/v22.23.2/bin/node\"}"
+  },
+  "clones": [
+    {
+      "mode": "full",
+      "checkout": "/private/tmp/splotch-topology05-clean.2izk1qay/full",
+      "head": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+      "describe": "v1.6.0-2712-g6e29c1f4c",
+      "tags": [
+        "refs/tags/rescue/radiogroup-roving-tabindex 38668e08c7c161d2df5df9d46c4e36c4e595c050 ",
+        "refs/tags/rescue/segmented-primitive 8d3a83a1f515d9898e4de250901c474d20fa5101 ",
+        "refs/tags/rescue/setting-gap d576e7d5afd48db30f9e7c9d4b96e3581f229bb1 ",
+        "refs/tags/v1.0.0 06f5bf94f367a9a0e697e49306a13eb053474dc5 ",
+        "refs/tags/v1.0.1 c7091f351243fef6288b9ffdc70b1cc6112ee774 ",
+        "refs/tags/v1.1.0 2966e81dce4183e64dab8b9c1138b1bf1a99b224 ",
+        "refs/tags/v1.2.0 aaf24315dcef143e38ae2418bbfdb4a4d418eb4a ",
+        "refs/tags/v1.3.0 1a7113d0fdb38923d9283555190030ac866e2c53 ",
+        "refs/tags/v1.4.0 4756b058f75d22e12d43fac7be5af70236c8be5c ",
+        "refs/tags/v1.5.0 ad3702e44d384a2a7acc6dd497dc791df848c06a ",
+        "refs/tags/v1.6.0 d8b86469f63c57a06a9de45664a42eea15b99eb0"
+      ],
+      "origin": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch"
+    },
+    {
+      "mode": "prod",
+      "checkout": "/private/tmp/splotch-topology05-clean.2izk1qay/prod",
+      "head": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+      "describe": "v1.6.0-2712-g6e29c1f4c",
+      "tags": [
+        "refs/tags/rescue/radiogroup-roving-tabindex 38668e08c7c161d2df5df9d46c4e36c4e595c050 ",
+        "refs/tags/rescue/segmented-primitive 8d3a83a1f515d9898e4de250901c474d20fa5101 ",
+        "refs/tags/rescue/setting-gap d576e7d5afd48db30f9e7c9d4b96e3581f229bb1 ",
+        "refs/tags/v1.0.0 06f5bf94f367a9a0e697e49306a13eb053474dc5 ",
+        "refs/tags/v1.0.1 c7091f351243fef6288b9ffdc70b1cc6112ee774 ",
+        "refs/tags/v1.1.0 2966e81dce4183e64dab8b9c1138b1bf1a99b224 ",
+        "refs/tags/v1.2.0 aaf24315dcef143e38ae2418bbfdb4a4d418eb4a ",
+        "refs/tags/v1.3.0 1a7113d0fdb38923d9283555190030ac866e2c53 ",
+        "refs/tags/v1.4.0 4756b058f75d22e12d43fac7be5af70236c8be5c ",
+        "refs/tags/v1.5.0 ad3702e44d384a2a7acc6dd497dc791df848c06a ",
+        "refs/tags/v1.6.0 d8b86469f63c57a06a9de45664a42eea15b99eb0"
+      ],
+      "origin": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch"
+    }
+  ],
+  "preparationCorrection": {
+    "initialExitCode": 1,
+    "reason": "Existing cached pnpm.cjs entry is not executable; direct temporary symlink raised PermissionError before any installation. Replaced only owned temporary symlink with fixed node launcher. Shared files unchanged."
+  },
+  "scope": "Fresh local clones only. Existing warm shared store; no installation/build/hosted result."
+}

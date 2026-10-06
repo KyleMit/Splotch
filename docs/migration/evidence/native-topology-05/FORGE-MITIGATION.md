@@ -18,10 +18,11 @@ review and merge remain absent; this contributor-patch risk is accepted for this
 
 The authorized lock-only refresh and patched frozen install succeeded. The mandatory installed
 source/crypto/consumer guard and the focused tests passed. Local Quality passed after the bounded
-follow-up; required full test tiers and final-head CI validation remain **pending**. Earlier
-`full-install.json`, `topology-report.json` and `structural-checks.json` retain the actual unpatched
-pre-repair observations; they are historical evidence, not a pass for this mitigation. Parent source
-review released the boundary before the normal frozen install.
+follow-up. The corrected-source full tier and independent clean local cases passed; independent
+final review, CI and actual hosted proof remain **pending**. Earlier `full-install.json`,
+`topology-report.json` and `structural-checks.json` retain the actual unpatched pre-repair
+observations; they are historical evidence, not a pass for this mitigation. Parent source review
+released the boundary before the normal frozen install.
 
 ## Exact source and lock delta
 
@@ -143,7 +144,7 @@ contains the executed mandatory guard, RSA/Expo controls and actual main resolut
 mitigation and Quality-wiring suite passed all tests, including the malformed-source and dist
 negative controls. Setup assertions run outside crypto rejection assertions so fixture preparation
 failure cannot count as a verifier failure. The repaired Quality result is recorded below; required
-final-head test tiers and CI remain pending.
+independent final review, CI and hosted proof remain pending.
 
 ## Follow-up ownership repair and remaining tier
 
@@ -173,4 +174,9 @@ format; the [bounded repair](netlify-floor-owner-repair.json) preserves the exis
 identity checks and adds real-owner and boundary fixtures. Its
 [focused guards](netlify-floor-owner-focused.json) and unchanged
 [Quality mirror](netlify-floor-owner-quality.json) passed. Required full-tier acceptance for the
-corrected sealed head, final review and CI remain pending.
+corrected sealed head passed in [the full-tier receipt](corrected-source-full-tests.json).
+[Independent clean local cases](local-clean-proof.json) passed the actual full-tree guard/static
+export and separate production installed-tree observer/web build/staging on Node22.23.2. Their
+executed source is 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5, with unchanged lock/patch/guard inputs.
+The source binding distinguishes later bookkeeping from tested artifacts. Independent final review,
+CI and the actual hosted observation remain pending.

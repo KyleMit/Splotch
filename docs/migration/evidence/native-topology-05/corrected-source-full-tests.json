@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "command": ["npm", "test"],
+  "cwd": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch",
+  "rootSession": 66584,
+  "exitCode": 0,
+  "executionEnvironment": {
+    "SPLOTCH_E2E_PORT": "5300",
+    "SMOKE_PORT": "5400"
+  },
+  "reportedTiers": [
+    {
+      "name": "app coverage",
+      "files": 352,
+      "tests": 4463
+    },
+    {
+      "name": "web SSR",
+      "files": 6,
+      "tests": 45
+    },
+    {
+      "name": "asset generation",
+      "files": 33,
+      "tests": 298
+    },
+    {
+      "name": "store drawings",
+      "files": 2,
+      "tests": 22
+    },
+    {
+      "name": "tools",
+      "files": 315,
+      "tests": 7311
+    },
+    {
+      "name": "browsers",
+      "tests": 1170,
+      "reportedDuration": "5.4m"
+    }
+  ],
+  "totalCommandDurationRecorded": false,
+  "log": "controls/corrected-source-full-tests.log.txt",
+  "logSha256": "62138220534681a626057328ac89f752defb818b41f42f990a383b501d0f457a",
+  "scope": "Complete required tier on sealed executable source. Later evidence-only tip is distinct; no native/performance/hosted claim."
+}

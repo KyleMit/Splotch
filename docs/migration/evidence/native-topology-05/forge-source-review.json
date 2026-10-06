@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "passed-installed-focused-quality-awaiting-corrected-sealed-head-required-tier-and-review",
+  "status": "passed-installed-focused-quality-corrected-full-and-clean-local-awaiting-review-ci-hosted",
   "advisory": "GHSA-86w9-cpqp-85rv",
   "issue": "https://github.com/KyleMit/Splotch/issues/2696",
   "approvalDate": "2026-10-06",
@@ -24,8 +24,8 @@
     },
     {
       "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
-      "bytes": 13339,
-      "sha256": "f7f1a34c790c1dc1b2dace3e2bfdcdad7f01e48a05cb550c985ce4c9814fc141"
+      "bytes": 13906,
+      "sha256": "320aa0d2e8adec4f4a9f2d828484ebf49e4fac3e319a2dda1cf43af8aef78845"
     },
     {
       "path": "patches/node-forge@1.4.0.patch",
@@ -113,10 +113,7 @@
       "sha256": "df0ec7f72bf302a182d00bef3ec023e0b723b7364a97b211fb5df83d7957d6e2"
     }
   ],
-  "pending": [
-    "Corrected sealed-head required test tier and independent final review/CI",
-    "Clean production install/build and actual hosted proof"
-  ],
+  "pending": ["Independent final review and CI", "Actual hosted production-install/build proof"],
   "installedRsaSha256AtLockOnlyReview": "fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50",
   "guardExecutedAtInitialSourceReview": false,
   "installedVerification": "forge-installed-sources.json",
@@ -130,5 +127,8 @@
   "reconciledCodeMap": "committed-code-map.json",
   "reconciledSourceCommit": "c20bb9f0665f439563268f31901f3fd8eae23c7a",
   "nodeFloorObserverRepair": "netlify-floor-owner-repair.json",
-  "predecessorFullTier": "predecessor-f40-full-tests.json"
+  "predecessorFullTier": "predecessor-f40-full-tests.json",
+  "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
+  "correctedSourceFullTier": "corrected-source-full-tests.json",
+  "independentCleanLocalCases": "local-clean-proof.json"
 }
