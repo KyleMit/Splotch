@@ -1,0 +1,2272 @@
+{
+  "disposition": "production-installed-tree-passed",
+  "proofBranch": "feature/netlify-migration-topology-05",
+  "context": "branch-deploy",
+  "commit": "de3110af7687f236d9b7ed8a474d294de8a9e437",
+  "nodeVersion": "v22.23.2",
+  "packageManager": "pnpm@11.22.0",
+  "productionFlags": "--prod",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "candidateExclusiveArtifactCount": 329,
+  "installedPackageCount": 445,
+  "installed": [
+    {
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "key": "@apideck/better-ajv-errors@0.3.7",
+      "path": "node_modules/@apideck/better-ajv-errors"
+    },
+    {
+      "key": "@babel/code-frame@7.29.7",
+      "path": "node_modules/@babel/code-frame"
+    },
+    {
+      "key": "@babel/compat-data@7.29.7",
+      "path": "node_modules/@babel/compat-data"
+    },
+    {
+      "key": "@babel/core@7.29.7",
+      "path": "node_modules/@babel/core"
+    },
+    {
+      "key": "@babel/generator@7.29.7",
+      "path": "node_modules/@babel/generator"
+    },
+    {
+      "key": "@babel/helper-annotate-as-pure@7.29.7",
+      "path": "node_modules/@babel/helper-annotate-as-pure"
+    },
+    {
+      "key": "@babel/helper-compilation-targets@7.29.7",
+      "path": "node_modules/@babel/helper-compilation-targets"
+    },
+    {
+      "key": "@babel/helper-create-class-features-plugin@7.29.7",
+      "path": "node_modules/@babel/helper-create-class-features-plugin"
+    },
+    {
+      "key": "@babel/helper-create-regexp-features-plugin@7.29.7",
+      "path": "node_modules/@babel/helper-create-regexp-features-plugin"
+    },
+    {
+      "key": "@babel/helper-define-polyfill-provider@0.6.8",
+      "path": "node_modules/@babel/helper-define-polyfill-provider"
+    },
+    {
+      "key": "@babel/helper-globals@7.29.7",
+      "path": "node_modules/@babel/helper-globals"
+    },
+    {
+      "key": "@babel/helper-member-expression-to-functions@7.29.7",
+      "path": "node_modules/@babel/helper-member-expression-to-functions"
+    },
+    {
+      "key": "@babel/helper-module-imports@7.29.7",
+      "path": "node_modules/@babel/helper-module-imports"
+    },
+    {
+      "key": "@babel/helper-module-transforms@7.29.7",
+      "path": "node_modules/@babel/helper-module-transforms"
+    },
+    {
+      "key": "@babel/helper-optimise-call-expression@7.29.7",
+      "path": "node_modules/@babel/helper-optimise-call-expression"
+    },
+    {
+      "key": "@babel/helper-plugin-utils@7.29.7",
+      "path": "node_modules/@babel/helper-plugin-utils"
+    },
+    {
+      "key": "@babel/helper-remap-async-to-generator@7.29.7",
+      "path": "node_modules/@babel/helper-remap-async-to-generator"
+    },
+    {
+      "key": "@babel/helper-replace-supers@7.29.7",
+      "path": "node_modules/@babel/helper-replace-supers"
+    },
+    {
+      "key": "@babel/helper-skip-transparent-expression-wrappers@7.29.7",
+      "path": "node_modules/@babel/helper-skip-transparent-expression-wrappers"
+    },
+    {
+      "key": "@babel/helper-string-parser@7.29.7",
+      "path": "node_modules/@babel/helper-string-parser"
+    },
+    {
+      "key": "@babel/helper-validator-identifier@7.29.7",
+      "path": "node_modules/@babel/helper-validator-identifier"
+    },
+    {
+      "key": "@babel/helper-validator-option@7.29.7",
+      "path": "node_modules/@babel/helper-validator-option"
+    },
+    {
+      "key": "@babel/helper-wrap-function@7.29.7",
+      "path": "node_modules/@babel/helper-wrap-function"
+    },
+    {
+      "key": "@babel/helpers@7.29.7",
+      "path": "node_modules/@babel/helpers"
+    },
+    {
+      "key": "@babel/parser@7.29.7",
+      "path": "node_modules/@babel/parser"
+    },
+    {
+      "key": "@babel/plugin-bugfix-firefox-class-in-computed-class-key@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-firefox-class-in-computed-class-key"
+    },
+    {
+      "key": "@babel/plugin-bugfix-safari-class-field-initializer-scope@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-safari-class-field-initializer-scope"
+    },
+    {
+      "key": "@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression"
+    },
+    {
+      "key": "@babel/plugin-bugfix-safari-rest-destructuring-rhs-array@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-safari-rest-destructuring-rhs-array"
+    },
+    {
+      "key": "@babel/plugin-bugfix-v8-spread-parameters-in-optional-chaining@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-v8-spread-parameters-in-optional-chaining"
+    },
+    {
+      "key": "@babel/plugin-bugfix-v8-static-class-fields-redefine-readonly@7.29.7",
+      "path": "node_modules/@babel/plugin-bugfix-v8-static-class-fields-redefine-readonly"
+    },
+    {
+      "key": "@babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2",
+      "path": "node_modules/@babel/plugin-proposal-private-property-in-object"
+    },
+    {
+      "key": "@babel/plugin-syntax-import-assertions@7.29.7",
+      "path": "node_modules/@babel/plugin-syntax-import-assertions"
+    },
+    {
+      "key": "@babel/plugin-syntax-import-attributes@7.29.7",
+      "path": "node_modules/@babel/plugin-syntax-import-attributes"
+    },
+    {
+      "key": "@babel/plugin-syntax-unicode-sets-regex@7.18.6",
+      "path": "node_modules/@babel/plugin-syntax-unicode-sets-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-arrow-functions@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-arrow-functions"
+    },
+    {
+      "key": "@babel/plugin-transform-async-generator-functions@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-async-generator-functions"
+    },
+    {
+      "key": "@babel/plugin-transform-async-to-generator@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-async-to-generator"
+    },
+    {
+      "key": "@babel/plugin-transform-block-scoped-functions@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-block-scoped-functions"
+    },
+    {
+      "key": "@babel/plugin-transform-block-scoping@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-block-scoping"
+    },
+    {
+      "key": "@babel/plugin-transform-class-properties@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-class-properties"
+    },
+    {
+      "key": "@babel/plugin-transform-class-static-block@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-class-static-block"
+    },
+    {
+      "key": "@babel/plugin-transform-classes@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-classes"
+    },
+    {
+      "key": "@babel/plugin-transform-computed-properties@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-computed-properties"
+    },
+    {
+      "key": "@babel/plugin-transform-destructuring@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-destructuring"
+    },
+    {
+      "key": "@babel/plugin-transform-dotall-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-dotall-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-duplicate-keys@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-duplicate-keys"
+    },
+    {
+      "key": "@babel/plugin-transform-duplicate-named-capturing-groups-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-duplicate-named-capturing-groups-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-dynamic-import@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-dynamic-import"
+    },
+    {
+      "key": "@babel/plugin-transform-explicit-resource-management@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-explicit-resource-management"
+    },
+    {
+      "key": "@babel/plugin-transform-exponentiation-operator@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-exponentiation-operator"
+    },
+    {
+      "key": "@babel/plugin-transform-export-namespace-from@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-export-namespace-from"
+    },
+    {
+      "key": "@babel/plugin-transform-for-of@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-for-of"
+    },
+    {
+      "key": "@babel/plugin-transform-function-name@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-function-name"
+    },
+    {
+      "key": "@babel/plugin-transform-json-strings@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-json-strings"
+    },
+    {
+      "key": "@babel/plugin-transform-literals@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-literals"
+    },
+    {
+      "key": "@babel/plugin-transform-logical-assignment-operators@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-logical-assignment-operators"
+    },
+    {
+      "key": "@babel/plugin-transform-member-expression-literals@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-member-expression-literals"
+    },
+    {
+      "key": "@babel/plugin-transform-modules-amd@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-modules-amd"
+    },
+    {
+      "key": "@babel/plugin-transform-modules-commonjs@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-modules-commonjs"
+    },
+    {
+      "key": "@babel/plugin-transform-modules-systemjs@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-modules-systemjs"
+    },
+    {
+      "key": "@babel/plugin-transform-modules-umd@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-modules-umd"
+    },
+    {
+      "key": "@babel/plugin-transform-named-capturing-groups-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-named-capturing-groups-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-new-target@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-new-target"
+    },
+    {
+      "key": "@babel/plugin-transform-nullish-coalescing-operator@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-nullish-coalescing-operator"
+    },
+    {
+      "key": "@babel/plugin-transform-numeric-separator@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-numeric-separator"
+    },
+    {
+      "key": "@babel/plugin-transform-object-rest-spread@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-object-rest-spread"
+    },
+    {
+      "key": "@babel/plugin-transform-object-super@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-object-super"
+    },
+    {
+      "key": "@babel/plugin-transform-optional-catch-binding@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-optional-catch-binding"
+    },
+    {
+      "key": "@babel/plugin-transform-optional-chaining@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-optional-chaining"
+    },
+    {
+      "key": "@babel/plugin-transform-parameters@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-parameters"
+    },
+    {
+      "key": "@babel/plugin-transform-private-methods@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-private-methods"
+    },
+    {
+      "key": "@babel/plugin-transform-private-property-in-object@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-private-property-in-object"
+    },
+    {
+      "key": "@babel/plugin-transform-property-literals@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-property-literals"
+    },
+    {
+      "key": "@babel/plugin-transform-regenerator@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-regenerator"
+    },
+    {
+      "key": "@babel/plugin-transform-regexp-modifiers@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-regexp-modifiers"
+    },
+    {
+      "key": "@babel/plugin-transform-reserved-words@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-reserved-words"
+    },
+    {
+      "key": "@babel/plugin-transform-shorthand-properties@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-shorthand-properties"
+    },
+    {
+      "key": "@babel/plugin-transform-spread@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-spread"
+    },
+    {
+      "key": "@babel/plugin-transform-sticky-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-sticky-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-template-literals@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-template-literals"
+    },
+    {
+      "key": "@babel/plugin-transform-typeof-symbol@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-typeof-symbol"
+    },
+    {
+      "key": "@babel/plugin-transform-unicode-escapes@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-unicode-escapes"
+    },
+    {
+      "key": "@babel/plugin-transform-unicode-property-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-unicode-property-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-unicode-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-unicode-regex"
+    },
+    {
+      "key": "@babel/plugin-transform-unicode-sets-regex@7.29.7",
+      "path": "node_modules/@babel/plugin-transform-unicode-sets-regex"
+    },
+    {
+      "key": "@babel/preset-env@7.29.7",
+      "path": "node_modules/@babel/preset-env"
+    },
+    {
+      "key": "@babel/preset-modules@0.1.6-no-external-plugins",
+      "path": "node_modules/@babel/preset-modules"
+    },
+    {
+      "key": "@babel/runtime@7.29.7",
+      "path": "node_modules/@babel/runtime"
+    },
+    {
+      "key": "@babel/template@7.29.7",
+      "path": "node_modules/@babel/template"
+    },
+    {
+      "key": "@babel/traverse@7.29.7",
+      "path": "node_modules/@babel/traverse"
+    },
+    {
+      "key": "@babel/types@7.29.7",
+      "path": "node_modules/@babel/types"
+    },
+    {
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "key": "@capacitor/android@8.5.2",
+      "path": "node_modules/@capacitor/android"
+    },
+    {
+      "key": "@capacitor/app@8.1.1",
+      "path": "node_modules/@capacitor/app"
+    },
+    {
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "key": "@capacitor/ios@8.5.2",
+      "path": "node_modules/@capacitor/ios"
+    },
+    {
+      "key": "@capacitor/keyboard@8.0.5",
+      "path": "node_modules/@capacitor/keyboard"
+    },
+    {
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "key": "@envelop/instrumentation@1.0.1",
+      "path": "node_modules/@envelop/instrumentation"
+    },
+    {
+      "key": "@esbuild/darwin-arm64@0.25.12",
+      "path": "node_modules/@esbuild/darwin-arm64"
+    },
+    {
+      "key": "@fastify/busboy@3.2.2",
+      "path": "node_modules/@fastify/busboy"
+    },
+    {
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "key": "@iarna/toml@2.2.5",
+      "path": "node_modules/@iarna/toml"
+    },
+    {
+      "key": "@img/colour@1.1.0",
+      "path": "node_modules/@img/colour"
+    },
+    {
+      "key": "@img/sharp-darwin-arm64@0.35.5",
+      "path": "node_modules/@img/sharp-darwin-arm64"
+    },
+    {
+      "key": "@img/sharp-libvips-darwin-arm64@1.3.4",
+      "path": "node_modules/@img/sharp-libvips-darwin-arm64"
+    },
+    {
+      "key": "@isaacs/cliui@9.0.0",
+      "path": "node_modules/@isaacs/cliui"
+    },
+    {
+      "key": "@jridgewell/gen-mapping@0.3.13",
+      "path": "node_modules/@jridgewell/gen-mapping"
+    },
+    {
+      "key": "@jridgewell/remapping@2.3.5",
+      "path": "node_modules/@jridgewell/remapping"
+    },
+    {
+      "key": "@jridgewell/resolve-uri@3.1.2",
+      "path": "node_modules/@jridgewell/resolve-uri"
+    },
+    {
+      "key": "@jridgewell/source-map@0.3.11",
+      "path": "node_modules/@jridgewell/source-map"
+    },
+    {
+      "key": "@jridgewell/sourcemap-codec@1.6.0",
+      "path": "node_modules/@jridgewell/sourcemap-codec"
+    },
+    {
+      "key": "@jridgewell/trace-mapping@0.3.31",
+      "path": "node_modules/@jridgewell/trace-mapping"
+    },
+    {
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "key": "@netlify/dev-utils@6.0.1",
+      "path": "node_modules/@netlify/dev-utils"
+    },
+    {
+      "key": "semver@7.8.5",
+      "path": "node_modules/@netlify/dev-utils/node_modules/semver"
+    },
+    {
+      "key": "@netlify/otel@7.0.2",
+      "path": "node_modules/@netlify/otel"
+    },
+    {
+      "key": "@netlify/runtime-utils@3.0.0",
+      "path": "node_modules/@netlify/runtime-utils"
+    },
+    {
+      "key": "@opentelemetry/api@1.9.1",
+      "path": "node_modules/@opentelemetry/api"
+    },
+    {
+      "key": "@opentelemetry/api-logs@0.221.0",
+      "path": "node_modules/@opentelemetry/api-logs"
+    },
+    {
+      "key": "@opentelemetry/context-async-hooks@2.10.0",
+      "path": "node_modules/@opentelemetry/context-async-hooks"
+    },
+    {
+      "key": "@opentelemetry/core@2.10.0",
+      "path": "node_modules/@opentelemetry/core"
+    },
+    {
+      "key": "@opentelemetry/instrumentation@0.221.0",
+      "path": "node_modules/@opentelemetry/instrumentation"
+    },
+    {
+      "key": "@opentelemetry/resources@2.10.0",
+      "path": "node_modules/@opentelemetry/resources"
+    },
+    {
+      "key": "@opentelemetry/sdk-trace@2.10.0",
+      "path": "node_modules/@opentelemetry/sdk-trace"
+    },
+    {
+      "key": "@opentelemetry/sdk-trace-base@2.10.0",
+      "path": "node_modules/@opentelemetry/sdk-trace-base"
+    },
+    {
+      "key": "@opentelemetry/sdk-trace-node@2.10.0",
+      "path": "node_modules/@opentelemetry/sdk-trace-node"
+    },
+    {
+      "key": "@opentelemetry/semantic-conventions@1.43.0",
+      "path": "node_modules/@opentelemetry/semantic-conventions"
+    },
+    {
+      "key": "@oxc-project/types@0.151.0",
+      "path": "node_modules/@oxc-project/types"
+    },
+    {
+      "key": "@polka/url@1.0.0-next.29",
+      "path": "node_modules/@polka/url"
+    },
+    {
+      "key": "@rolldown/binding-darwin-arm64@1.2.11",
+      "path": "node_modules/@rolldown/binding-darwin-arm64"
+    },
+    {
+      "key": "@rolldown/pluginutils@1.0.1",
+      "path": "node_modules/@rolldown/pluginutils"
+    },
+    {
+      "key": "@rollup/plugin-babel@6.1.0",
+      "path": "node_modules/@rollup/plugin-babel"
+    },
+    {
+      "key": "@rollup/plugin-node-resolve@16.0.3",
+      "path": "node_modules/@rollup/plugin-node-resolve"
+    },
+    {
+      "key": "@rollup/plugin-replace@6.0.3",
+      "path": "node_modules/@rollup/plugin-replace"
+    },
+    {
+      "key": "@rollup/plugin-terser@1.0.0",
+      "path": "node_modules/@rollup/plugin-terser"
+    },
+    {
+      "key": "@rollup/pluginutils@5.4.0",
+      "path": "node_modules/@rollup/pluginutils"
+    },
+    {
+      "key": "@rollup/rollup-darwin-arm64@4.62.2",
+      "path": "node_modules/@rollup/rollup-darwin-arm64"
+    },
+    {
+      "key": "@standard-schema/spec@1.1.0",
+      "path": "node_modules/@standard-schema/spec"
+    },
+    {
+      "key": "@sveltejs/acorn-typescript@1.0.13",
+      "path": "node_modules/@sveltejs/acorn-typescript"
+    },
+    {
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "key": "magic-string@1.2.3",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte/node_modules/magic-string"
+    },
+    {
+      "key": "@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1",
+      "path": "node_modules/@trickfilm400/rollup-plugin-off-main-thread"
+    },
+    {
+      "key": "@types/cookie@0.6.0",
+      "path": "node_modules/@types/cookie"
+    },
+    {
+      "key": "@types/estree@1.0.9",
+      "path": "node_modules/@types/estree"
+    },
+    {
+      "key": "@types/node@22.20.4",
+      "path": "node_modules/@types/node"
+    },
+    {
+      "key": "@types/resolve@1.20.2",
+      "path": "node_modules/@types/resolve"
+    },
+    {
+      "key": "@types/trusted-types@2.0.7",
+      "path": "node_modules/@types/trusted-types"
+    },
+    {
+      "key": "@typescript-eslint/types@8.71.0",
+      "path": "node_modules/@typescript-eslint/types"
+    },
+    {
+      "key": "@whatwg-node/disposablestack@0.0.6",
+      "path": "node_modules/@whatwg-node/disposablestack"
+    },
+    {
+      "key": "@whatwg-node/fetch@0.10.13",
+      "path": "node_modules/@whatwg-node/fetch"
+    },
+    {
+      "key": "@whatwg-node/node-fetch@0.8.6",
+      "path": "node_modules/@whatwg-node/node-fetch"
+    },
+    {
+      "key": "@whatwg-node/promise-helpers@1.3.2",
+      "path": "node_modules/@whatwg-node/promise-helpers"
+    },
+    {
+      "key": "@whatwg-node/server@0.11.0",
+      "path": "node_modules/@whatwg-node/server"
+    },
+    {
+      "key": "acorn@8.18.0",
+      "path": "node_modules/acorn"
+    },
+    {
+      "key": "ajv@8.20.0",
+      "path": "node_modules/ajv"
+    },
+    {
+      "key": "ansis@4.4.0",
+      "path": "node_modules/ansis"
+    },
+    {
+      "key": "aria-query@5.3.1",
+      "path": "node_modules/aria-query"
+    },
+    {
+      "key": "array-buffer-byte-length@1.0.2",
+      "path": "node_modules/array-buffer-byte-length"
+    },
+    {
+      "key": "arraybuffer.prototype.slice@1.0.4",
+      "path": "node_modules/arraybuffer.prototype.slice"
+    },
+    {
+      "key": "async@3.2.6",
+      "path": "node_modules/async"
+    },
+    {
+      "key": "async-function@1.0.0",
+      "path": "node_modules/async-function"
+    },
+    {
+      "key": "at-least-node@1.0.0",
+      "path": "node_modules/at-least-node"
+    },
+    {
+      "key": "atomically@2.1.1",
+      "path": "node_modules/atomically"
+    },
+    {
+      "key": "available-typed-arrays@1.0.7",
+      "path": "node_modules/available-typed-arrays"
+    },
+    {
+      "key": "axobject-query@4.1.0",
+      "path": "node_modules/axobject-query"
+    },
+    {
+      "key": "babel-plugin-polyfill-corejs2@0.4.17",
+      "path": "node_modules/babel-plugin-polyfill-corejs2"
+    },
+    {
+      "key": "babel-plugin-polyfill-corejs3@0.14.2",
+      "path": "node_modules/babel-plugin-polyfill-corejs3"
+    },
+    {
+      "key": "babel-plugin-polyfill-regenerator@0.6.8",
+      "path": "node_modules/babel-plugin-polyfill-regenerator"
+    },
+    {
+      "key": "balanced-match@1.0.2",
+      "path": "node_modules/balanced-match"
+    },
+    {
+      "key": "baseline-browser-mapping@2.11.26",
+      "path": "node_modules/baseline-browser-mapping"
+    },
+    {
+      "key": "brace-expansion@2.1.7",
+      "path": "node_modules/brace-expansion"
+    },
+    {
+      "key": "browserslist@4.29.2",
+      "path": "node_modules/browserslist"
+    },
+    {
+      "key": "buffer-from@1.1.2",
+      "path": "node_modules/buffer-from"
+    },
+    {
+      "key": "call-bind@1.0.9",
+      "path": "node_modules/call-bind"
+    },
+    {
+      "key": "call-bind-apply-helpers@1.0.2",
+      "path": "node_modules/call-bind-apply-helpers"
+    },
+    {
+      "key": "call-bound@1.0.4",
+      "path": "node_modules/call-bound"
+    },
+    {
+      "key": "callsite@1.0.0",
+      "path": "node_modules/callsite"
+    },
+    {
+      "key": "caniuse-lite@1.0.30001813",
+      "path": "node_modules/caniuse-lite"
+    },
+    {
+      "key": "chokidar@5.0.0",
+      "path": "node_modules/chokidar"
+    },
+    {
+      "key": "cjs-module-lexer@2.2.1",
+      "path": "node_modules/cjs-module-lexer"
+    },
+    {
+      "key": "clsx@2.1.1",
+      "path": "node_modules/clsx"
+    },
+    {
+      "key": "commander@2.20.3",
+      "path": "node_modules/commander"
+    },
+    {
+      "key": "common-tags@1.8.2",
+      "path": "node_modules/common-tags"
+    },
+    {
+      "key": "convert-source-map@2.0.0",
+      "path": "node_modules/convert-source-map"
+    },
+    {
+      "key": "cookie@0.6.0",
+      "path": "node_modules/cookie"
+    },
+    {
+      "key": "core-js-compat@3.49.0",
+      "path": "node_modules/core-js-compat"
+    },
+    {
+      "key": "cross-spawn@7.0.6",
+      "path": "node_modules/cross-spawn"
+    },
+    {
+      "key": "crypto-random-string@2.0.0",
+      "path": "node_modules/crypto-random-string"
+    },
+    {
+      "key": "data-view-buffer@1.0.2",
+      "path": "node_modules/data-view-buffer"
+    },
+    {
+      "key": "data-view-byte-length@1.0.2",
+      "path": "node_modules/data-view-byte-length"
+    },
+    {
+      "key": "data-view-byte-offset@1.0.1",
+      "path": "node_modules/data-view-byte-offset"
+    },
+    {
+      "key": "debug@4.4.3",
+      "path": "node_modules/debug"
+    },
+    {
+      "key": "decache@4.6.2",
+      "path": "node_modules/decache"
+    },
+    {
+      "key": "deepmerge@4.3.1",
+      "path": "node_modules/deepmerge"
+    },
+    {
+      "key": "define-data-property@1.1.4",
+      "path": "node_modules/define-data-property"
+    },
+    {
+      "key": "define-properties@1.2.1",
+      "path": "node_modules/define-properties"
+    },
+    {
+      "key": "detect-libc@2.1.2",
+      "path": "node_modules/detect-libc"
+    },
+    {
+      "key": "dettle@1.0.5",
+      "path": "node_modules/dettle"
+    },
+    {
+      "key": "devalue@5.9.4",
+      "path": "node_modules/devalue"
+    },
+    {
+      "key": "dot-prop@9.0.0",
+      "path": "node_modules/dot-prop"
+    },
+    {
+      "key": "dunder-proto@1.0.1",
+      "path": "node_modules/dunder-proto"
+    },
+    {
+      "key": "ejs@3.1.10",
+      "path": "node_modules/ejs"
+    },
+    {
+      "key": "electron-to-chromium@1.5.440",
+      "path": "node_modules/electron-to-chromium"
+    },
+    {
+      "key": "empathic@2.1.0",
+      "path": "node_modules/empathic"
+    },
+    {
+      "key": "env-paths@3.0.0",
+      "path": "node_modules/env-paths"
+    },
+    {
+      "key": "es-abstract@1.24.2",
+      "path": "node_modules/es-abstract"
+    },
+    {
+      "key": "es-abstract-get@1.0.0",
+      "path": "node_modules/es-abstract-get"
+    },
+    {
+      "key": "es-define-property@1.0.1",
+      "path": "node_modules/es-define-property"
+    },
+    {
+      "key": "es-errors@1.3.0",
+      "path": "node_modules/es-errors"
+    },
+    {
+      "key": "es-module-lexer@3.0.2",
+      "path": "node_modules/es-module-lexer"
+    },
+    {
+      "key": "es-object-atoms@1.1.2",
+      "path": "node_modules/es-object-atoms"
+    },
+    {
+      "key": "es-set-tostringtag@2.1.0",
+      "path": "node_modules/es-set-tostringtag"
+    },
+    {
+      "key": "es-to-primitive@1.3.1",
+      "path": "node_modules/es-to-primitive"
+    },
+    {
+      "key": "esbuild@0.25.12",
+      "path": "node_modules/esbuild"
+    },
+    {
+      "key": "escalade@3.2.0",
+      "path": "node_modules/escalade"
+    },
+    {
+      "key": "esm-env@1.2.2",
+      "path": "node_modules/esm-env"
+    },
+    {
+      "key": "esrap@2.3.8",
+      "path": "node_modules/esrap"
+    },
+    {
+      "key": "estree-walker@2.0.2",
+      "path": "node_modules/estree-walker"
+    },
+    {
+      "key": "esutils@2.0.3",
+      "path": "node_modules/esutils"
+    },
+    {
+      "key": "eta@4.6.0",
+      "path": "node_modules/eta"
+    },
+    {
+      "key": "fast-deep-equal@3.1.3",
+      "path": "node_modules/fast-deep-equal"
+    },
+    {
+      "key": "fast-json-stable-stringify@2.1.0",
+      "path": "node_modules/fast-json-stable-stringify"
+    },
+    {
+      "key": "fast-uri@3.1.8",
+      "path": "node_modules/fast-uri"
+    },
+    {
+      "key": "fdir@6.5.0",
+      "path": "node_modules/fdir"
+    },
+    {
+      "key": "filelist@1.0.6",
+      "path": "node_modules/filelist"
+    },
+    {
+      "key": "for-each@0.3.5",
+      "path": "node_modules/for-each"
+    },
+    {
+      "key": "foreground-child@3.3.1",
+      "path": "node_modules/foreground-child"
+    },
+    {
+      "key": "fs-extra@9.1.0",
+      "path": "node_modules/fs-extra"
+    },
+    {
+      "key": "fsevents@2.3.3",
+      "path": "node_modules/fsevents"
+    },
+    {
+      "key": "function-bind@1.1.2",
+      "path": "node_modules/function-bind"
+    },
+    {
+      "key": "function.prototype.name@1.2.0",
+      "path": "node_modules/function.prototype.name"
+    },
+    {
+      "key": "functions-have-names@1.2.3",
+      "path": "node_modules/functions-have-names"
+    },
+    {
+      "key": "generator-function@2.0.1",
+      "path": "node_modules/generator-function"
+    },
+    {
+      "key": "gensync@1.0.0-beta.2",
+      "path": "node_modules/gensync"
+    },
+    {
+      "key": "get-intrinsic@1.3.0",
+      "path": "node_modules/get-intrinsic"
+    },
+    {
+      "key": "get-own-enumerable-property-symbols@3.0.2",
+      "path": "node_modules/get-own-enumerable-property-symbols"
+    },
+    {
+      "key": "get-proto@1.0.1",
+      "path": "node_modules/get-proto"
+    },
+    {
+      "key": "get-symbol-description@1.1.0",
+      "path": "node_modules/get-symbol-description"
+    },
+    {
+      "key": "glob@11.1.0",
+      "path": "node_modules/glob"
+    },
+    {
+      "key": "balanced-match@4.0.4",
+      "path": "node_modules/glob/node_modules/balanced-match"
+    },
+    {
+      "key": "brace-expansion@5.0.12",
+      "path": "node_modules/glob/node_modules/brace-expansion"
+    },
+    {
+      "key": "minimatch@10.2.6",
+      "path": "node_modules/glob/node_modules/minimatch"
+    },
+    {
+      "key": "globalthis@1.0.4",
+      "path": "node_modules/globalthis"
+    },
+    {
+      "key": "gopd@1.2.0",
+      "path": "node_modules/gopd"
+    },
+    {
+      "key": "graceful-fs@4.2.11",
+      "path": "node_modules/graceful-fs"
+    },
+    {
+      "key": "has-bigints@1.1.0",
+      "path": "node_modules/has-bigints"
+    },
+    {
+      "key": "has-property-descriptors@1.0.2",
+      "path": "node_modules/has-property-descriptors"
+    },
+    {
+      "key": "has-proto@1.2.0",
+      "path": "node_modules/has-proto"
+    },
+    {
+      "key": "has-symbols@1.1.0",
+      "path": "node_modules/has-symbols"
+    },
+    {
+      "key": "has-tostringtag@1.0.2",
+      "path": "node_modules/has-tostringtag"
+    },
+    {
+      "key": "hasown@2.0.4",
+      "path": "node_modules/hasown"
+    },
+    {
+      "key": "idb@7.1.1",
+      "path": "node_modules/idb"
+    },
+    {
+      "key": "import-in-the-middle@3.5.1",
+      "path": "node_modules/import-in-the-middle"
+    },
+    {
+      "key": "internal-slot@1.1.0",
+      "path": "node_modules/internal-slot"
+    },
+    {
+      "key": "is-array-buffer@3.0.5",
+      "path": "node_modules/is-array-buffer"
+    },
+    {
+      "key": "is-async-function@2.1.1",
+      "path": "node_modules/is-async-function"
+    },
+    {
+      "key": "is-bigint@1.1.0",
+      "path": "node_modules/is-bigint"
+    },
+    {
+      "key": "is-boolean-object@1.2.2",
+      "path": "node_modules/is-boolean-object"
+    },
+    {
+      "key": "is-callable@1.2.7",
+      "path": "node_modules/is-callable"
+    },
+    {
+      "key": "is-core-module@2.16.2",
+      "path": "node_modules/is-core-module"
+    },
+    {
+      "key": "is-data-view@1.0.2",
+      "path": "node_modules/is-data-view"
+    },
+    {
+      "key": "is-date-object@1.1.0",
+      "path": "node_modules/is-date-object"
+    },
+    {
+      "key": "is-document.all@1.0.0",
+      "path": "node_modules/is-document.all"
+    },
+    {
+      "key": "is-finalizationregistry@1.1.1",
+      "path": "node_modules/is-finalizationregistry"
+    },
+    {
+      "key": "is-generator-function@1.1.2",
+      "path": "node_modules/is-generator-function"
+    },
+    {
+      "key": "is-map@2.0.3",
+      "path": "node_modules/is-map"
+    },
+    {
+      "key": "is-module@1.0.0",
+      "path": "node_modules/is-module"
+    },
+    {
+      "key": "is-negative-zero@2.0.3",
+      "path": "node_modules/is-negative-zero"
+    },
+    {
+      "key": "is-number-object@1.1.1",
+      "path": "node_modules/is-number-object"
+    },
+    {
+      "key": "is-obj@1.0.1",
+      "path": "node_modules/is-obj"
+    },
+    {
+      "key": "is-reference@3.0.3",
+      "path": "node_modules/is-reference"
+    },
+    {
+      "key": "is-regex@1.2.1",
+      "path": "node_modules/is-regex"
+    },
+    {
+      "key": "is-regexp@1.0.0",
+      "path": "node_modules/is-regexp"
+    },
+    {
+      "key": "is-set@2.0.3",
+      "path": "node_modules/is-set"
+    },
+    {
+      "key": "is-shared-array-buffer@1.0.4",
+      "path": "node_modules/is-shared-array-buffer"
+    },
+    {
+      "key": "is-stream@2.0.1",
+      "path": "node_modules/is-stream"
+    },
+    {
+      "key": "is-string@1.1.1",
+      "path": "node_modules/is-string"
+    },
+    {
+      "key": "is-symbol@1.1.1",
+      "path": "node_modules/is-symbol"
+    },
+    {
+      "key": "is-typed-array@1.1.15",
+      "path": "node_modules/is-typed-array"
+    },
+    {
+      "key": "is-weakmap@2.0.2",
+      "path": "node_modules/is-weakmap"
+    },
+    {
+      "key": "is-weakref@1.1.1",
+      "path": "node_modules/is-weakref"
+    },
+    {
+      "key": "is-weakset@2.0.4",
+      "path": "node_modules/is-weakset"
+    },
+    {
+      "key": "isarray@2.0.5",
+      "path": "node_modules/isarray"
+    },
+    {
+      "key": "isexe@2.0.0",
+      "path": "node_modules/isexe"
+    },
+    {
+      "key": "jackspeak@4.2.3",
+      "path": "node_modules/jackspeak"
+    },
+    {
+      "key": "jake@10.9.4",
+      "path": "node_modules/jake"
+    },
+    {
+      "key": "jiti@2.7.0",
+      "path": "node_modules/jiti"
+    },
+    {
+      "key": "js-tokens@4.0.0",
+      "path": "node_modules/js-tokens"
+    },
+    {
+      "key": "jsesc@3.1.0",
+      "path": "node_modules/jsesc"
+    },
+    {
+      "key": "json-schema-traverse@1.0.0",
+      "path": "node_modules/json-schema-traverse"
+    },
+    {
+      "key": "json5@2.2.3",
+      "path": "node_modules/json5"
+    },
+    {
+      "key": "jsonfile@6.2.1",
+      "path": "node_modules/jsonfile"
+    },
+    {
+      "key": "jsonpointer@5.0.1",
+      "path": "node_modules/jsonpointer"
+    },
+    {
+      "key": "kleur@4.1.5",
+      "path": "node_modules/kleur"
+    },
+    {
+      "key": "leven@3.1.0",
+      "path": "node_modules/leven"
+    },
+    {
+      "key": "lightningcss@1.33.0",
+      "path": "node_modules/lightningcss"
+    },
+    {
+      "key": "lightningcss-darwin-arm64@1.33.0",
+      "path": "node_modules/lightningcss-darwin-arm64"
+    },
+    {
+      "key": "locate-character@3.0.0",
+      "path": "node_modules/locate-character"
+    },
+    {
+      "key": "lodash.debounce@4.0.8",
+      "path": "node_modules/lodash.debounce"
+    },
+    {
+      "key": "lodash.sortby@4.7.0",
+      "path": "node_modules/lodash.sortby"
+    },
+    {
+      "key": "lru-cache@5.1.1",
+      "path": "node_modules/lru-cache"
+    },
+    {
+      "key": "magic-string@0.30.21",
+      "path": "node_modules/magic-string"
+    },
+    {
+      "key": "math-intrinsics@1.1.0",
+      "path": "node_modules/math-intrinsics"
+    },
+    {
+      "key": "minimatch@5.1.9",
+      "path": "node_modules/minimatch"
+    },
+    {
+      "key": "minipass@7.1.3",
+      "path": "node_modules/minipass"
+    },
+    {
+      "key": "module-details-from-path@1.0.4",
+      "path": "node_modules/module-details-from-path"
+    },
+    {
+      "key": "mrmime@2.0.1",
+      "path": "node_modules/mrmime"
+    },
+    {
+      "key": "ms@2.1.3",
+      "path": "node_modules/ms"
+    },
+    {
+      "key": "nanoid@3.3.18",
+      "path": "node_modules/nanoid"
+    },
+    {
+      "key": "node-releases@2.0.57",
+      "path": "node_modules/node-releases"
+    },
+    {
+      "key": "object-inspect@1.13.4",
+      "path": "node_modules/object-inspect"
+    },
+    {
+      "key": "object-keys@1.1.1",
+      "path": "node_modules/object-keys"
+    },
+    {
+      "key": "object.assign@4.1.7",
+      "path": "node_modules/object.assign"
+    },
+    {
+      "key": "obug@2.1.4",
+      "path": "node_modules/obug"
+    },
+    {
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "key": "own-keys@1.0.1",
+      "path": "node_modules/own-keys"
+    },
+    {
+      "key": "package-json-from-dist@1.0.1",
+      "path": "node_modules/package-json-from-dist"
+    },
+    {
+      "key": "parse-gitignore@2.0.0",
+      "path": "node_modules/parse-gitignore"
+    },
+    {
+      "key": "path-key@3.1.1",
+      "path": "node_modules/path-key"
+    },
+    {
+      "key": "path-parse@1.0.7",
+      "path": "node_modules/path-parse"
+    },
+    {
+      "key": "path-scurry@2.0.2",
+      "path": "node_modules/path-scurry"
+    },
+    {
+      "key": "lru-cache@11.5.1",
+      "path": "node_modules/path-scurry/node_modules/lru-cache"
+    },
+    {
+      "key": "picocolors@1.1.1",
+      "path": "node_modules/picocolors"
+    },
+    {
+      "key": "picomatch@4.0.7",
+      "path": "node_modules/picomatch"
+    },
+    {
+      "key": "possible-typed-array-names@1.1.0",
+      "path": "node_modules/possible-typed-array-names"
+    },
+    {
+      "key": "postcss@8.5.28",
+      "path": "node_modules/postcss"
+    },
+    {
+      "key": "pretty-bytes@6.1.1",
+      "path": "node_modules/pretty-bytes"
+    },
+    {
+      "key": "punycode@2.3.1",
+      "path": "node_modules/punycode"
+    },
+    {
+      "key": "readdirp@5.1.1",
+      "path": "node_modules/readdirp"
+    },
+    {
+      "key": "reflect.getprototypeof@1.0.10",
+      "path": "node_modules/reflect.getprototypeof"
+    },
+    {
+      "key": "regenerate@1.4.2",
+      "path": "node_modules/regenerate"
+    },
+    {
+      "key": "regenerate-unicode-properties@10.2.2",
+      "path": "node_modules/regenerate-unicode-properties"
+    },
+    {
+      "key": "regexp.prototype.flags@1.5.4",
+      "path": "node_modules/regexp.prototype.flags"
+    },
+    {
+      "key": "regexpu-core@6.4.0",
+      "path": "node_modules/regexpu-core"
+    },
+    {
+      "key": "regjsgen@0.8.0",
+      "path": "node_modules/regjsgen"
+    },
+    {
+      "key": "regjsparser@0.13.2",
+      "path": "node_modules/regjsparser"
+    },
+    {
+      "key": "require-from-string@2.0.2",
+      "path": "node_modules/require-from-string"
+    },
+    {
+      "key": "require-in-the-middle@8.0.1",
+      "path": "node_modules/require-in-the-middle"
+    },
+    {
+      "key": "resolve@1.22.12",
+      "path": "node_modules/resolve"
+    },
+    {
+      "key": "rolldown@1.2.11",
+      "path": "node_modules/rolldown"
+    },
+    {
+      "key": "rollup@4.62.2",
+      "path": "node_modules/rollup"
+    },
+    {
+      "key": "safe-array-concat@1.1.4",
+      "path": "node_modules/safe-array-concat"
+    },
+    {
+      "key": "safe-push-apply@1.0.0",
+      "path": "node_modules/safe-push-apply"
+    },
+    {
+      "key": "safe-regex-test@1.1.0",
+      "path": "node_modules/safe-regex-test"
+    },
+    {
+      "key": "semver@6.3.1",
+      "path": "node_modules/semver"
+    },
+    {
+      "key": "serialize-javascript@7.0.6",
+      "path": "node_modules/serialize-javascript"
+    },
+    {
+      "key": "set-cookie-parser@3.1.2",
+      "path": "node_modules/set-cookie-parser"
+    },
+    {
+      "key": "set-function-length@1.2.2",
+      "path": "node_modules/set-function-length"
+    },
+    {
+      "key": "set-function-name@2.0.2",
+      "path": "node_modules/set-function-name"
+    },
+    {
+      "key": "set-proto@1.0.0",
+      "path": "node_modules/set-proto"
+    },
+    {
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "key": "semver@7.8.5",
+      "path": "node_modules/sharp/node_modules/semver"
+    },
+    {
+      "key": "shebang-command@2.0.0",
+      "path": "node_modules/shebang-command"
+    },
+    {
+      "key": "shebang-regex@3.0.0",
+      "path": "node_modules/shebang-regex"
+    },
+    {
+      "key": "side-channel@1.1.1",
+      "path": "node_modules/side-channel"
+    },
+    {
+      "key": "side-channel-list@1.0.1",
+      "path": "node_modules/side-channel-list"
+    },
+    {
+      "key": "side-channel-map@1.0.1",
+      "path": "node_modules/side-channel-map"
+    },
+    {
+      "key": "side-channel-weakmap@1.0.2",
+      "path": "node_modules/side-channel-weakmap"
+    },
+    {
+      "key": "signal-exit@4.1.0",
+      "path": "node_modules/signal-exit"
+    },
+    {
+      "key": "sirv@3.0.2",
+      "path": "node_modules/sirv"
+    },
+    {
+      "key": "smob@1.6.2",
+      "path": "node_modules/smob"
+    },
+    {
+      "key": "source-map@0.6.1",
+      "path": "node_modules/source-map"
+    },
+    {
+      "key": "source-map-js@1.2.2",
+      "path": "node_modules/source-map-js"
+    },
+    {
+      "key": "source-map-support@0.5.21",
+      "path": "node_modules/source-map-support"
+    },
+    {
+      "key": "stop-iteration-iterator@1.1.0",
+      "path": "node_modules/stop-iteration-iterator"
+    },
+    {
+      "key": "string.prototype.matchall@4.0.12",
+      "path": "node_modules/string.prototype.matchall"
+    },
+    {
+      "key": "string.prototype.trim@1.2.11",
+      "path": "node_modules/string.prototype.trim"
+    },
+    {
+      "key": "string.prototype.trimend@1.0.10",
+      "path": "node_modules/string.prototype.trimend"
+    },
+    {
+      "key": "string.prototype.trimstart@1.0.8",
+      "path": "node_modules/string.prototype.trimstart"
+    },
+    {
+      "key": "stringify-object@3.3.0",
+      "path": "node_modules/stringify-object"
+    },
+    {
+      "key": "strip-comments@2.0.1",
+      "path": "node_modules/strip-comments"
+    },
+    {
+      "key": "stubborn-fs@2.0.0",
+      "path": "node_modules/stubborn-fs"
+    },
+    {
+      "key": "stubborn-utils@1.0.2",
+      "path": "node_modules/stubborn-utils"
+    },
+    {
+      "key": "supports-color@10.2.2",
+      "path": "node_modules/supports-color"
+    },
+    {
+      "key": "supports-preserve-symlinks-flag@1.0.0",
+      "path": "node_modules/supports-preserve-symlinks-flag"
+    },
+    {
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "key": "temp-dir@2.0.0",
+      "path": "node_modules/temp-dir"
+    },
+    {
+      "key": "tempy@0.6.0",
+      "path": "node_modules/tempy"
+    },
+    {
+      "key": "type-fest@0.16.0",
+      "path": "node_modules/tempy/node_modules/type-fest"
+    },
+    {
+      "key": "terser@5.48.0",
+      "path": "node_modules/terser"
+    },
+    {
+      "key": "tinyglobby@0.2.17",
+      "path": "node_modules/tinyglobby"
+    },
+    {
+      "key": "totalist@3.0.1",
+      "path": "node_modules/totalist"
+    },
+    {
+      "key": "tr46@1.0.1",
+      "path": "node_modules/tr46"
+    },
+    {
+      "key": "tslib@2.8.1",
+      "path": "node_modules/tslib"
+    },
+    {
+      "key": "type-fest@4.41.0",
+      "path": "node_modules/type-fest"
+    },
+    {
+      "key": "typed-array-buffer@1.0.3",
+      "path": "node_modules/typed-array-buffer"
+    },
+    {
+      "key": "typed-array-byte-length@1.0.3",
+      "path": "node_modules/typed-array-byte-length"
+    },
+    {
+      "key": "typed-array-byte-offset@1.0.4",
+      "path": "node_modules/typed-array-byte-offset"
+    },
+    {
+      "key": "typed-array-length@1.0.8",
+      "path": "node_modules/typed-array-length"
+    },
+    {
+      "key": "typescript@6.0.3",
+      "path": "node_modules/typescript"
+    },
+    {
+      "key": "unbox-primitive@1.1.0",
+      "path": "node_modules/unbox-primitive"
+    },
+    {
+      "key": "undici-types@6.21.0",
+      "path": "node_modules/undici-types"
+    },
+    {
+      "key": "unicode-canonical-property-names-ecmascript@2.0.1",
+      "path": "node_modules/unicode-canonical-property-names-ecmascript"
+    },
+    {
+      "key": "unicode-match-property-ecmascript@2.0.0",
+      "path": "node_modules/unicode-match-property-ecmascript"
+    },
+    {
+      "key": "unicode-match-property-value-ecmascript@2.2.1",
+      "path": "node_modules/unicode-match-property-value-ecmascript"
+    },
+    {
+      "key": "unicode-property-aliases-ecmascript@2.2.0",
+      "path": "node_modules/unicode-property-aliases-ecmascript"
+    },
+    {
+      "key": "unique-string@2.0.0",
+      "path": "node_modules/unique-string"
+    },
+    {
+      "key": "universalify@2.0.1",
+      "path": "node_modules/universalify"
+    },
+    {
+      "key": "upath@1.2.0",
+      "path": "node_modules/upath"
+    },
+    {
+      "key": "update-browserslist-db@1.3.3",
+      "path": "node_modules/update-browserslist-db"
+    },
+    {
+      "key": "urlpattern-polyfill@10.1.0",
+      "path": "node_modules/urlpattern-polyfill"
+    },
+    {
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    },
+    {
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "key": "vitefu@1.1.3",
+      "path": "node_modules/vitefu"
+    },
+    {
+      "key": "webidl-conversions@4.0.2",
+      "path": "node_modules/webidl-conversions"
+    },
+    {
+      "key": "whatwg-url@7.1.0",
+      "path": "node_modules/whatwg-url"
+    },
+    {
+      "key": "when-exit@2.1.5",
+      "path": "node_modules/when-exit"
+    },
+    {
+      "key": "which@2.0.2",
+      "path": "node_modules/which"
+    },
+    {
+      "key": "which-boxed-primitive@1.1.1",
+      "path": "node_modules/which-boxed-primitive"
+    },
+    {
+      "key": "which-builtin-type@1.2.1",
+      "path": "node_modules/which-builtin-type"
+    },
+    {
+      "key": "which-collection@1.0.2",
+      "path": "node_modules/which-collection"
+    },
+    {
+      "key": "which-typed-array@1.1.22",
+      "path": "node_modules/which-typed-array"
+    },
+    {
+      "key": "workbox-background-sync@7.4.1",
+      "path": "node_modules/workbox-background-sync"
+    },
+    {
+      "key": "workbox-broadcast-update@7.4.1",
+      "path": "node_modules/workbox-broadcast-update"
+    },
+    {
+      "key": "workbox-build@7.4.1",
+      "path": "node_modules/workbox-build"
+    },
+    {
+      "key": "pretty-bytes@5.6.0",
+      "path": "node_modules/workbox-build/node_modules/pretty-bytes"
+    },
+    {
+      "key": "source-map@0.8.0-beta.0",
+      "path": "node_modules/workbox-build/node_modules/source-map"
+    },
+    {
+      "key": "workbox-cacheable-response@7.4.1",
+      "path": "node_modules/workbox-cacheable-response"
+    },
+    {
+      "key": "workbox-core@7.4.1",
+      "path": "node_modules/workbox-core"
+    },
+    {
+      "key": "workbox-expiration@7.4.1",
+      "path": "node_modules/workbox-expiration"
+    },
+    {
+      "key": "workbox-google-analytics@7.4.1",
+      "path": "node_modules/workbox-google-analytics"
+    },
+    {
+      "key": "workbox-navigation-preload@7.4.1",
+      "path": "node_modules/workbox-navigation-preload"
+    },
+    {
+      "key": "workbox-precaching@7.4.1",
+      "path": "node_modules/workbox-precaching"
+    },
+    {
+      "key": "workbox-range-requests@7.4.1",
+      "path": "node_modules/workbox-range-requests"
+    },
+    {
+      "key": "workbox-recipes@7.4.1",
+      "path": "node_modules/workbox-recipes"
+    },
+    {
+      "key": "workbox-routing@7.4.1",
+      "path": "node_modules/workbox-routing"
+    },
+    {
+      "key": "workbox-strategies@7.4.1",
+      "path": "node_modules/workbox-strategies"
+    },
+    {
+      "key": "workbox-streams@7.4.1",
+      "path": "node_modules/workbox-streams"
+    },
+    {
+      "key": "workbox-sw@7.4.1",
+      "path": "node_modules/workbox-sw"
+    },
+    {
+      "key": "workbox-window@7.4.1",
+      "path": "node_modules/workbox-window"
+    },
+    {
+      "key": "ws@8.21.3",
+      "path": "node_modules/ws"
+    },
+    {
+      "key": "yallist@3.1.1",
+      "path": "node_modules/yallist"
+    },
+    {
+      "key": "yaml@2.9.1",
+      "path": "node_modules/yaml"
+    },
+    {
+      "key": "zimmerframe@1.1.5",
+      "path": "node_modules/zimmerframe"
+    },
+    {
+      "key": "zod@4.6.5",
+      "path": "node_modules/zod"
+    }
+  ],
+  "resolutions": [
+    {
+      "context": ".",
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "context": ".",
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "context": ".",
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "context": ".",
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "context": ".",
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "context": ".",
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "context": ".",
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "context": ".",
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "context": ".",
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "context": ".",
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "context": ".",
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "context": ".",
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "context": ".",
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "context": "experiments/native-architecture",
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    },
+    {
+      "context": "web",
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "context": "web",
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "context": "web",
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "context": "web",
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "context": "web",
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "context": "web",
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "context": "web",
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "context": "web",
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "context": "web",
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "context": "web",
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "context": "web",
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "context": "web",
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "context": "web",
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "context": "netlify/functions",
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    },
+    {
+      "context": "tools",
+      "key": "@aparajita/capacitor-secure-storage@8.0.1",
+      "path": "node_modules/@aparajita/capacitor-secure-storage"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor-community/media@9.1.0",
+      "path": "node_modules/@capacitor-community/media"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/core@8.5.2",
+      "path": "node_modules/@capacitor/core"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/device@8.0.3",
+      "path": "node_modules/@capacitor/device"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/haptics@8.0.2",
+      "path": "node_modules/@capacitor/haptics"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/network@8.0.1",
+      "path": "node_modules/@capacitor/network"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/preferences@8.0.1",
+      "path": "node_modules/@capacitor/preferences"
+    },
+    {
+      "context": "tools",
+      "key": "@capacitor/screen-orientation@8.0.1",
+      "path": "node_modules/@capacitor/screen-orientation"
+    },
+    {
+      "context": "tools",
+      "key": "@fontsource-variable/quicksand@5.3.0",
+      "path": "node_modules/@fontsource-variable/quicksand"
+    },
+    {
+      "context": "tools",
+      "key": "@netlify/blobs@11.1.1",
+      "path": "node_modules/@netlify/blobs"
+    },
+    {
+      "context": "tools",
+      "key": "@sveltejs/adapter-netlify@6.0.4",
+      "path": "node_modules/@sveltejs/adapter-netlify"
+    },
+    {
+      "context": "tools",
+      "key": "@sveltejs/adapter-static@3.0.10",
+      "path": "node_modules/@sveltejs/adapter-static"
+    },
+    {
+      "context": "tools",
+      "key": "@sveltejs/kit@2.70.3",
+      "path": "node_modules/@sveltejs/kit"
+    },
+    {
+      "context": "tools",
+      "key": "@sveltejs/vite-plugin-svelte@7.3.1",
+      "path": "node_modules/@sveltejs/vite-plugin-svelte"
+    },
+    {
+      "context": "tools",
+      "key": "openai@7.23.0",
+      "path": "node_modules/openai"
+    },
+    {
+      "context": "tools",
+      "key": "sharp@0.35.5",
+      "path": "node_modules/sharp"
+    },
+    {
+      "context": "tools",
+      "key": "svelte@5.57.1",
+      "path": "node_modules/svelte"
+    },
+    {
+      "context": "tools",
+      "key": "vite-plugin-pwa@1.3.0",
+      "path": "node_modules/vite-plugin-pwa"
+    },
+    {
+      "context": "tools",
+      "key": "vite@8.3.1",
+      "path": "node_modules/vite"
+    }
+  ],
+  "scope": "Post-install tree and identity; cloud install/build/deploy logs remain separate evidence"
+}

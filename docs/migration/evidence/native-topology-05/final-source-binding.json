@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "artifactSourceCommit": "6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5",
-  "scope": "Historical local receipt binding verified at a190af1f5d6257024daaf47c4cdbd2b95490e133. The subsequent topology review correction source supersedes its current-tree comparison; historical receipts remain bound to their original source, not the corrected tree. A corrected-source binding is pending.",
+  "artifactSourceCommit": "de3110af7687f236d9b7ed8a474d294de8a9e437",
+  "scope": "Current local execution receipts bind this sealed corrected source; later review-tip changes are restricted to explicitly named data/log/prose bookkeeping outputs. No self-commit, hosted, native or byte-identical cross-build claim.",
   "comparison": {
     "allTrackedChangesAgainstSourceRestrictedToExplicitOutputs": true,
     "untrackedPathsRestrictedToExplicitOutputs": true,
@@ -12,6 +12,11 @@
       "path": ".github/dependabot.yml",
       "bytes": 2120,
       "sha256": "c9abc80cafe36f641acd96f2563dd257de0dbbaa63bfdfc56141e8e1a13cb1f9"
+    },
+    {
+      "path": ".github/workflows/native-topology-proof.yml",
+      "bytes": 860,
+      "sha256": "3dd9e0a45e075f54065a5b8541a807b3fb802648edf1002374d478f60b88039f"
     },
     {
       "path": ".github/workflows/test.yml",
@@ -47,11 +52,6 @@
       "path": "capacitor.config.json",
       "bytes": 296,
       "sha256": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757"
-    },
-    {
-      "path": "docs/CODE-MAP.md",
-      "bytes": 13808,
-      "sha256": "6f7274a8a6d268e2fa7e9aeea4b3f535c61892a8b7fbe06f035e7ae24b6dd90b"
     },
     {
       "path": "docs/CONTRIBUTING.md",
@@ -91,7 +91,7 @@
     {
       "path": "docs/migration/evidence/native-topology-05/production-install-contract.json",
       "bytes": 104583,
-      "sha256": "2bb77eae13b3f7277273d68b8827f4c1a0c7f78dcb97b5d6306f480c066cd4e1"
+      "sha256": "fbac33c767ebc8db04db91779bfeb5ffe3c19c8fd06f064eae1fdf87fbc7737e"
     },
     {
       "path": "docs/migration/evidence/native-topology-05/script-inventory.json",
@@ -175,8 +175,8 @@
     },
     {
       "path": "package.json",
-      "bytes": 120786,
-      "sha256": "d7a6b58d166315cc490dd6a9dd7f69a26dd7240683d3804a1f82277bd17a709f"
+      "bytes": 121297,
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9"
     },
     {
       "path": "patches/node-forge@1.4.0.patch",
@@ -215,8 +215,8 @@
     },
     {
       "path": "tools/ci-mirror/tests/run-quality-checks.test.mjs",
-      "bytes": 14344,
-      "sha256": "4705d8d63cc50fb71ddd1ee833eb813fd97ae248c2346eaecb9ec1433c3b7424"
+      "bytes": 17503,
+      "sha256": "4beec9cc0415c6d61294c59f5ccdb7162035d3422d1cec0f7e78d58a04545ada"
     },
     {
       "path": "tools/code-map/lib/code-map-rules.mjs",
@@ -235,18 +235,28 @@
     },
     {
       "path": "tools/migration/README.md",
-      "bytes": 1571,
-      "sha256": "eef4396ebe8c90dad6ccd4541a274335be74d6e8f1fa3aa024639e786f962b69"
+      "bytes": 2655,
+      "sha256": "533dd025593fa5be55272bae995adf0e7f2563475c9b0bda623553f24d9404b9"
+    },
+    {
+      "path": "tools/migration/check-native-topology-evidence.mjs",
+      "bytes": 2093,
+      "sha256": "03bfdbaa515ff25793b93333660052f2d2e47d896995e633095905c21bc35b31"
     },
     {
       "path": "tools/migration/check-native-topology.mjs",
-      "bytes": 4097,
-      "sha256": "253f0105206b18434d6e766784220cdabd1d68296a644bde9bcea6aa6cc67515"
+      "bytes": 3674,
+      "sha256": "09ff0998bca4346203471314e0dfea08a7d1b18b8f6064a2e526906b722ac21a"
     },
     {
       "path": "tools/migration/gen-script-inventory.mjs",
       "bytes": 2226,
       "sha256": "c8d472cbba6a1d0e56a7436e5b3a6ed3d51db18709f1e4c60d981be16d04b62e"
+    },
+    {
+      "path": "tools/migration/gen-topology-proof-inputs.mjs",
+      "bytes": 2124,
+      "sha256": "5e62c2dd5a679fbc2b74430ed1e4eab73f8976e35f874981dc4b60b808ef039a"
     },
     {
       "path": "tools/migration/inputs/forge-mitigation.json",
@@ -255,8 +265,8 @@
     },
     {
       "path": "tools/migration/lib/archive-inventory.mjs",
-      "bytes": 6181,
-      "sha256": "e8c17dffee2bd16baf5064bb8bec2b23e19584e032064472cfb6970563af4285"
+      "bytes": 5911,
+      "sha256": "23a39938684155941a8b46eb181eeed29124f2d9de991d0acb54d0bd1b0d9c6a"
     },
     {
       "path": "tools/migration/lib/forge-controls.mjs",
@@ -280,8 +290,8 @@
     },
     {
       "path": "tools/migration/lib/native-config.mjs",
-      "bytes": 8688,
-      "sha256": "dd75e715a636a0127256cf505fb02362962ae30e5fa09e63a8f2a437a433054e"
+      "bytes": 9268,
+      "sha256": "d7eeb459c02feb87d882500228bf551de51a8b79a82aabefbd2780bbd0b55f03"
     },
     {
       "path": "tools/migration/lib/native-identity.mjs",
@@ -295,8 +305,8 @@
     },
     {
       "path": "tools/migration/lib/topology-policy.mjs",
-      "bytes": 9616,
-      "sha256": "befada4da7f1c66ada37243a4420ee6765d79704b2f2045ecc95b435942a6a33"
+      "bytes": 11716,
+      "sha256": "42e91b92faf20595df66c8bd386e3b1012819aba5b20b056e093577f38ed25fa"
     },
     {
       "path": "tools/migration/tests/forge-controls.test.mjs",
@@ -310,8 +320,8 @@
     },
     {
       "path": "tools/migration/tests/inventory.test.mjs",
-      "bytes": 12696,
-      "sha256": "e9ab61f9d53a9844bf649c701a04097cc31eed99e7c3ccc97e3e8318cf9c0dba"
+      "bytes": 18090,
+      "sha256": "f5f429288580429ed1ba543a15f4a5ac7a7f79816489502d36d6ed6fddb1bc7c"
     },
     {
       "path": "tools/migration/tests/netlify-topology-witness.test.mjs",
@@ -320,8 +330,8 @@
     },
     {
       "path": "tools/migration/tests/ownership.test.mjs",
-      "bytes": 7781,
-      "sha256": "0c3e8398428cb4603933afcfd0296826529a8edbbaf6f580fba26ac88f0dd3ec"
+      "bytes": 8831,
+      "sha256": "761e4108d571f583e0ddfd9b9b394e43b847a25c23a45605c1102604800922a3"
     },
     {
       "path": "tools/migration/tests/production-boundary.test.mjs",
@@ -337,6 +347,11 @@
       "path": "tools/migration/tests/scanner.test.mjs",
       "bytes": 5911,
       "sha256": "0188131bf4783a3d1628827fbbe67efb947eefb9172545d6ee32c40151ee3114"
+    },
+    {
+      "path": "tools/migration/tests/topology-proof-wiring.test.mjs",
+      "bytes": 3762,
+      "sha256": "21ac572440b4b55620acc4b1f15b7fd09f44e340073741e0b64ddfe2a2103675"
     },
     {
       "path": "tools/netlify-topology-witness.mjs",
@@ -365,38 +380,48 @@
     }
   ],
   "allowedBookkeepingOutputs": [
-    "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
+    "docs/CODE-MAP.md",
     "docs/migration/evidence/native-topology-05/README.md",
-    "docs/migration/evidence/native-topology-05/controls/corrected-source-full-tests.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-frozen-install.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-native-topology.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-production-classification-after-sync.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-production-classification.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-shipping-static-build.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/full-shipping-type-sync.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/preparation.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-exact-netlify-command.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-frozen-install.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-installed-tree-witness.log.txt",
-    "docs/migration/evidence/native-topology-05/controls/local-clean/prod-owner-derived-versions.log.txt",
-    "docs/migration/evidence/native-topology-05/corrected-source-full-tests.json",
     "docs/migration/evidence/native-topology-05/evidence-manifest.json",
     "docs/migration/evidence/native-topology-05/final-source-binding.json",
-    "docs/migration/evidence/native-topology-05/forge-source-review.json",
-    "docs/migration/evidence/native-topology-05/local-clean-proof.json",
-    "docs/migration/evidence/native-topology-05/local-clean/full-final-identity.json",
-    "docs/migration/evidence/native-topology-05/local-clean/full-installed-lock.yaml.txt",
-    "docs/migration/evidence/native-topology-05/local-clean/full-lock-provenance.json",
-    "docs/migration/evidence/native-topology-05/local-clean/full-native-topology.json",
-    "docs/migration/evidence/native-topology-05/local-clean/full-result.json",
-    "docs/migration/evidence/native-topology-05/local-clean/preparation.json",
-    "docs/migration/evidence/native-topology-05/local-clean/prod-final-identity.json",
-    "docs/migration/evidence/native-topology-05/local-clean/prod-installed-lock.yaml.txt",
-    "docs/migration/evidence/native-topology-05/local-clean/prod-installed-tree-witness.json",
-    "docs/migration/evidence/native-topology-05/local-clean/prod-lock-provenance.json",
-    "docs/migration/evidence/native-topology-05/local-clean/prod-result.json"
+    "docs/migration/evidence/native-topology-05/review-correction/controls/derived-proof-inputs.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/focused.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-clone.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-exact-proof-inputs.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-frozen-install.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-live-topology.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-production-classification.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-shipping-static-build.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-shipping-type-sync.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/full-tests.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/prod-clone.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/prod-exact-netlify-command.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/prod-frozen-install.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/prod-installed-tree-witness.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/prod-owner-derived-versions.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/controls/quality.log.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/first-claude-review.json",
+    "docs/migration/evidence/native-topology-05/review-correction/full-tests.json",
+    "docs/migration/evidence/native-topology-05/review-correction/independent-source-review.md",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/full-final-identity.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/full-installed-lock.yaml.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/full-result.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/preparation.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/prod-final-identity.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/prod-installed-lock.yaml.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/prod-installed-tree-witness.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/prod-result.json",
+    "docs/migration/evidence/native-topology-05/review-correction/local-clean/runner.py.txt",
+    "docs/migration/evidence/native-topology-05/review-correction/quality.json",
+    "docs/migration/evidence/native-topology-05/review-correction/review-dispositions.json"
   ],
-  "localReceipts": ["corrected-source-full-tests.json", "local-clean-proof.json"],
-  "metadataLimit": "Later Git HEAD/build-time changes legitimately alter web version/timestamps; outputs remain bound to each actual observed commit.",
-  "historicalReviewTip": "a190af1f5d6257024daaf47c4cdbd2b95490e133"
+  "localReceipts": [
+    "review-correction/full-tests.json",
+    "review-correction/quality.json",
+    "review-correction/local-clean/preparation.json",
+    "review-correction/local-clean/full-result.json",
+    "review-correction/local-clean/prod-result.json"
+  ],
+  "historicalBinding": "historical-source-binding-a190.json",
+  "metadataLimit": "Later Git HEAD/build-time changes legitimately alter web versions and timestamps. Each artifact remains bound to its actual observed source; no same-SHA or byte-identical hosted claim."
 }

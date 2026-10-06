@@ -4,11 +4,11 @@ The guarded Forge repair is documented in [FORGE-MITIGATION.md](FORGE-MITIGATION
 complete required test tier, and independent clean local full and production install/build cases
 passed on executable source 6e29c1f4c68e55ca6e68f7d0b479c67a3983dfa5. These are historical receipts.
 The first exact PR review completed and CI passed on evidence tip
-a190af1f5d6257024daaf47c4cdbd2b95490e133; Claude required topology-check corrections. Their full
-validation, second review and actual hosted production-install observation remain pending. Earlier
-install and structural observations below use the unpatched lock and remain historical evidence. The
-lock-bound policy inputs use the repair lock; registry artifacts and lifecycle verdicts are
-unchanged.
+a190af1f5d6257024daaf47c4cdbd2b95490e133; Claude required topology-check corrections. Their complete
+local validation is recorded below; second review, new-tip CI and actual hosted production-install
+observation remain pending. Earlier install and structural observations below use the unpatched lock
+and remain historical evidence. The lock-bound policy inputs use the repair lock; registry artifacts
+and lifecycle verdicts are unchanged.
 
 The lock-only sentinel resolved a reviewed local tarball with four root hooks and one
 third-party-shaped postinstall without running any hook or creating node_modules. The actual
@@ -115,9 +115,9 @@ install/build was produced by these commands.
 
 [The historical source binding](historical-source-binding-a190.json) keeps the earlier local
 executed artifact source distinct from its evidence-only review tip.
-[The current binding record](final-source-binding.json) explicitly marks that comparison historical
-until corrected-source validation is sealed. The hosted proof must observe the first automatic build
-of its reviewed nonproduction ref and remains pending. Native compilation, mounts, integrated
+[The current binding record](final-source-binding.json) binds the separately validated corrected
+source and its local execution receipts. The hosted proof must observe the first automatic build of
+its reviewed nonproduction ref and remains pending. Native compilation, mounts, integrated
 performance and product/upgrade parity remain later migration obligations.
 
 ## First-review topology corrections
@@ -137,4 +137,30 @@ The actual npm entry and awaited CLI main now join the installed Forge invocatio
 no-op, unreachable or preceding process exit fails. Abbreviated registry metadata remains
 informational; actual archive lifecycle capability controls include omitted metadata. Existing real
 flat plugin directories pass while foreign and content-addressed pnpm paths fail. Forty-five focused
-tests pass; full corrected-source checks and clean installs/builds remain pending.
+tests pass; the complete corrected-source checks and fresh clean installs/builds are recorded below.
+
+## Validated first-review correction source
+
+The executable correction source is de3110af7687f236d9b7ed8a474d294de8a9e437.
+[The complete tier](review-correction/full-tests.json) passed 4,463 app,45 SSR,298 asset,22 store
+and7,340 tools tests, then all1,170 browser tests. [Quality](review-correction/quality.json) passed
+all15 owners on executable bytes subsequently sealed in that source; its pre-commit Git HEAD is
+recorded separately. The two fresh clones use Node22.23.2 and pnpm11.22.0, the existing warm store,
+and downloaded zero packages.
+
+[The full case](review-correction/local-clean/full-result.json) passed frozen installation, live
+topology, exact proof inputs, ordinary Kit sync, unchanged production Knip and complete static
+shipping build. [The separate production-only case](review-correction/local-clean/prod-result.json)
+passed frozen installation, the actual installed-tree witness, exact Netlify build/staging command
+and owning version derivation. Its445 installed identities and95 direct resolutions contain no
+member of the329-artifact candidate-exclusive closure; no full install preceded this production
+case. Web client/server version1.6.2714 and static version1.6.0 match their actual source/history;
+SSR staging file inventories are identical and both clone tracked trees remain clean.
+
+All raw exits, log hashes, runtime identities and the bounded local runner are retained under
+review-correction. The production observer context is explicitly synthetic LOCAL input.
+[The review dispositions](review-correction/review-dispositions.json) distinguish the completed
+first review and corrections from pending second review, new-tip CI and actual hosted proof.
+Historical6e29/a190 receipts remain unchanged. The active source binding binds this corrected source
+and these new local receipts independently from the later evidence-only review tip. No native or
+full migration completion follows from this dependency/topology result.

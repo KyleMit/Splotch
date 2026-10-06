@@ -2,7 +2,7 @@
 
 <!-- code-map:generated:start snapshot -->
 
-> **Snapshot of a190af1f5d62 (2026-10-06).** Every table in this map is generated from that commit
+> **Snapshot of de3110af7687 (2026-10-06).** Every table in this map is generated from that commit
 > by `npm run gen:code-map`; the prose around them is maintained by the `reconcile-code-map` skill.
 > Counts drift as the code changes — regenerate rather than hand-edit.
 
@@ -52,15 +52,15 @@ boundaries are judgment calls even though every total is exact.
 
 | Disposition                    | Files |
 | ------------------------------ | ----: |
-| Measured and categorized       | 2,873 |
-| Explicitly excluded            | 5,095 |
-| **All tracked files**          | 7,968 |
+| Measured and categorized       | 2,877 |
+| Explicitly excluded            | 5,096 |
+| **All tracked files**          | 7,973 |
 | Unassigned or multiply counted |     0 |
 
 | Exclusion class                                  | Files |
 | ------------------------------------------------ | ----: |
 | Binary media / archives                          | 3,208 |
-| Generated measurement data                       | 1,054 |
+| Generated measurement data                       | 1,055 |
 | Vector art assets / traced samples               |   291 |
 | Generated audit / ranking text and captured logs |   235 |
 | Generated / provider agent delivery trees        |   228 |
@@ -70,26 +70,26 @@ boundaries are judgment calls even though every total is exact.
 | Code map output                                  |     1 |
 | Dependency lockfile                              |     1 |
 | Publishing marker                                |     1 |
-| **Total explicitly excluded**                    | 5,095 |
+| **Total explicitly excluded**                    | 5,096 |
 
 <!-- code-map:generated:end coverage -->
 
 <!-- code-map:generated:start totals -->
 
-## Grand total: **470,810 LOC across 2,873 measured files**
+## Grand total: **471,361 LOC across 2,877 measured files**
 
 | Area                                                            |     LOC | Files |
 | --------------------------------------------------------------- | ------: | ----: |
-| **tools (excluding asset-gen)** — repo automation               | 183,180 |   830 |
+| **tools (excluding asset-gen)** — repo automation               | 183,666 |   833 |
 | **web/src** — the app                                           | 121,613 |   973 |
-| **docs** — ADRs & guides                                        |  74,042 |   416 |
+| **docs** — ADRs & guides                                        |  74,068 |   416 |
 | **tools/asset-gen** — art pipeline                              |  30,553 |   210 |
 | **web/tests** — E2E + integration                               |  28,628 |   138 |
 | **.ruler** — agent-instruction sources                          |  14,321 |    96 |
 | android + ios + fastlane + Maestro — native shells              |   3,945 |    71 |
 | scrapbook — run-artifact prose                                  |   3,556 |     7 |
-| .github — CI and issue config                                   |   2,629 |    26 |
-| root config / README / shared assets                            |   2,628 |    20 |
+| .github — CI and issue config                                   |   2,664 |    27 |
+| root config / README / shared assets                            |   2,632 |    20 |
 | .claude / .codex — agent runtime config                         |   2,164 |    25 |
 | web/\* — build/test config and static text                      |   2,138 |    28 |
 | perf-profiles — committed profiling evidence                    |     442 |     7 |
@@ -104,7 +104,7 @@ boundaries are judgment calls even though every total is exact.
 
 ## Splits for every measured area over 3,000 LOC
 
-### tools excluding asset-gen (183,180) — by subtree
+### tools excluding asset-gen (183,666) — by subtree
 
 | Sub-bucket         |    LOC | Files |
 | ------------------ | -----: | ----: |
@@ -121,8 +121,8 @@ boundaries are judgment calls even though every total is exact.
 | vectorize          |  4,701 |    18 |
 | page-inventory     |  4,693 |    12 |
 | mobile             |  4,490 |    38 |
+| migration          |  4,148 |    24 |
 | git-housekeeping   |  3,783 |    18 |
-| migration          |  3,746 |    21 |
 | api-smoke          |  2,137 |    11 |
 | flaky-digest       |  1,974 |     9 |
 | marketing-assets   |  1,771 |    15 |
@@ -133,8 +133,8 @@ boundaries are judgment calls even though every total is exact.
 | adrs               |  1,161 |     5 |
 | redteam            |  1,088 |    10 |
 | page-load          |  1,014 |     4 |
+| ci-mirror          |  1,004 |     9 |
 | icons              |    951 |     9 |
-| ci-mirror          |    920 |     9 |
 | lib                |    767 |    13 |
 | app-driver         |    754 |     5 |
 | tokens             |    655 |     4 |
@@ -193,14 +193,14 @@ token surface remain in their own domains.
 | Generation, result & reporting UI               |  3,342 |    20 |
 | **AI image generation total**                   | 18,296 |   110 |
 
-### docs (74,042) — by subtree
+### docs (74,068) — by subtree
 
 | Sub-bucket     |    LOC | Files |
 | -------------- | -----: | ----: |
 | scratchpad     | 29,134 |   176 |
 | adrs           | 25,205 |   174 |
 | (root docs)    | 12,621 |    24 |
-| migration      |  1,963 |    12 |
+| migration      |  1,989 |    12 |
 | MOBILE         |  1,628 |     4 |
 | investigations |  1,318 |     8 |
 | CLOUD          |    738 |     2 |

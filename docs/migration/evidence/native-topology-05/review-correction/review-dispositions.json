@@ -1,0 +1,43 @@
+{
+  "review": "37577782-0bed-4cd0-b563-312c5342c735",
+  "reviewedHistoricalHead": "a190af1f5d6257024daaf47c4cdbd2b95490e133",
+  "correctionSourceCommit": "de3110af7687f236d9b7ed8a474d294de8a9e437",
+  "findings": [
+    {
+      "commentId": 4192492258,
+      "status": "addressed",
+      "resolution": "Separate live topology invariants from exact historical evidence; derive current candidate closure for reviewed archive verdicts; mandatory named PR/proof CI runs live and exact checks; two derived proof inputs have actual generator owner."
+    },
+    {
+      "commentId": 4192492265,
+      "status": "addressed",
+      "resolution": "Actual npm script, awaited top-level CLI main and mitigation sink are guarded; no-op/dead/no-await/preceding process.exit controls."
+    },
+    {
+      "commentId": 4192492274,
+      "status": "addressed",
+      "resolution": "Drop inert contradiction verdict; abbreviated registry metadata is informational and omitted metadata is exercised against authoritative actual tar capability."
+    }
+  ],
+  "additionalIndependentFinding": {
+    "status": "addressed",
+    "resolution": "Live Gradle and Swift real existing .pnpm/version+peer plugin paths fail while canonical flat and legitimate config-byte changes pass."
+  },
+  "proofInputRegeneration": {
+    "scope": "Derived inputs only; does not renew archive/review/execution receipts",
+    "changed": ["production-install-contract.json rootManifestSha256"],
+    "unchanged": [
+      "pnpm-lock.yaml",
+      "candidate-exclusive-artifacts.json",
+      "candidate/artifact closures",
+      "shipping Capacitor config",
+      "lifecycle allowances"
+    ]
+  },
+  "pending": [
+    "second exact PR Claude review",
+    "new-tip CI including dedicated exact topology job",
+    "first automatic nonproduction Netlify installation/build observation",
+    "native compile/mount/full UI/performance/product/upgrade migration"
+  ]
+}
