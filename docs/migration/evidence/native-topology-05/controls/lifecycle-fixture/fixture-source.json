@@ -1,0 +1,23 @@
+{
+  "rootManifest": {
+    "name": "topology-lock-only-control",
+    "private": true,
+    "packageManager": "pnpm@11.22.0",
+    "dependencies": {
+      "topology-lifecycle-control": "file:./control.tgz"
+    },
+    "scripts": {
+      "preinstall": "node root-marker.cjs",
+      "install": "node root-marker.cjs",
+      "postinstall": "node root-marker.cjs",
+      "prepare": "node root-marker.cjs"
+    }
+  },
+  "rootMarkerSource": "require('node:fs').writeFileSync('ROOT_SCRIPT_EXECUTED', 'executed');\n",
+  "workspacePolicy": "nodeLinker: hoisted\nstrictDepBuilds: true\nallowBuilds: {}\n",
+  "archiveFiles": {
+    "package/package.json": "{\"name\": \"topology-lifecycle-control\", \"version\": \"1.0.0\", \"scripts\": {\"postinstall\": \"node marker.cjs\"}}",
+    "package/marker.cjs": "require('node:fs').writeFileSync('DEPENDENCY_SCRIPT_EXECUTED', 'executed');\n"
+  },
+  "archiveBase64": "H4sICN54xGoC/2NvbnRyb2wudGd6AO3TQWvCMBQH8J73KUouVdDazK4Hd9QOdhGZDraTlPiUaEy6JG4T8buvdWMDL7tIGez/u7zwePAgj39ZiE2xol75WeO1Mzq4sKSSpempVs5rwm/49/vU5zy77gdhEjRg53xhq/XB/3RgutgSG4TMm9Ios9p3lVyS2AtFXWG0t0axTsheyTppdD3I4yRO6p4TVpbeVb0DK43zUld/qVQ9o82Cwm1hN2RjsXbseAzgL/rKfe/nVpff8Wv+eXqe/z7PkP8mWHrZSUutqE7sYOmidvxmpac7qWi616IVjfJJPh7l4+HzfDp8uJ/M5vlTPnyc5aOoE0b0TmLnaRG1b6+QJgAAAAAAAAAAAAAAAAAAAIDmfQDpmxfLACgAAA=="
+}

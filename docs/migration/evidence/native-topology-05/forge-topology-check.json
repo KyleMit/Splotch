@@ -1,0 +1,7 @@
+{
+  "command": ["npm", "run", "check:migration:native-topology"],
+  "exitCode": 0,
+  "elapsedSeconds": 5.674,
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "log": "controls/forge-topology-check.log.txt"
+}

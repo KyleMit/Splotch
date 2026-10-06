@@ -276,13 +276,17 @@ choices:
 * **The dependency-audit gate is `high`.** The original critical-only threshold accommodated a large
   pre-existing transitive advisory count under npm (ADR-0029). Dependency upgrades and the pnpm
   migration (ADR-0119) cleared that constraint, so high and critical advisories now block CI.
-  Advisory-specific exceptions require evidence that the installed path is both unfixable and
-  non-exploitable here; severity-wide or dependency-class exclusions are not part of the policy. The
-  only sanctioned mechanism is an exact GHSA in pnpm's `auditConfig.ignoreGhsas`, accompanied in the
-  same change by a record under **Active dependency-audit status and exceptions** in
-  `docs/DEPENDENCIES.md`. The record names the locked dependency paths, upstream proof that no
-  patched resolution exists, repository-specific reachability evidence, approver and approval date,
-  a review-by date no more than 90 days later, and the removal trigger. The tool policy test
+  Advisory-specific exceptions have two narrow bases: evidence that the installed path is both
+  unfixable and non-exploitable here, or an affected published version mitigated by a reviewed
+  exact-version local patch whose source, lock reachability, every installed copy and actual
+  consumer controls a named guard proves before audit in Quality. The latter does not claim
+  non-exploitability or a published fix; unsupported consumers must fail that guard. Severity-wide
+  or dependency-class exclusions are not part of the policy. The only sanctioned mechanism is an
+  exact GHSA in pnpm's `auditConfig.ignoreGhsas`, accompanied in the same change by a record under
+  **Active dependency-audit status and exceptions** in `docs/DEPENDENCIES.md`. The record names the
+  locked dependency paths, upstream proof that no patched resolution exists, repository-specific
+  reachability evidence, approver and approval date, a review-by date no more than 90 days later,
+  and the removal trigger. The tool policy test
   (`tools/ci-mirror/tests/run-quality-checks.test.mjs`) requires exact agreement between the
   configured GHSA set and the unexpired evidence records, and rejects an incomplete record or one
   whose review-by date exceeds the 90-day window. Lowering the threshold, ignoring a CVE family,

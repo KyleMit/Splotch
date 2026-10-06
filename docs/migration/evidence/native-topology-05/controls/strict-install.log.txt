@@ -1,0 +1,11 @@
+Progress: resolved 0, reused 1, downloaded 0, added 0
+
+Packages: +1
++
+Packages are cloned from the content-addressable store to the virtual store.
+  Content-addressable store is at: /Users/kylemit/Library/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Progress: resolved 1, reused 1, downloaded 0, added 1, done
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: topology-lifecycle-control@file:control.tgz
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.

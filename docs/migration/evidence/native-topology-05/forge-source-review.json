@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "status": "passed-actual-installed-focused-quality-awaiting-final-head-required-tier-and-review",
+  "advisory": "GHSA-86w9-cpqp-85rv",
+  "issue": "https://github.com/KyleMit/Splotch/issues/2696",
+  "approvalDate": "2026-10-06",
+  "reviewBy": "2026-11-05",
+  "patchInputSha256": "d9b082687498d8017f4f07289aeed49600c5606b0e9b60384d822996d4213bde",
+  "files": [
+    {
+      "path": "docs/CODE-MAP.md",
+      "bytes": 14376,
+      "sha256": "7c3a8fa2593c3a3adda10e0a5e83fe346870421774e37a6f9628164510196800"
+    },
+    {
+      "path": "docs/DEPENDENCIES.md",
+      "bytes": 68174,
+      "sha256": "17b5f171fc893f95b12249925b596c414b86db78192bbf68687260ff120424ad"
+    },
+    {
+      "path": "docs/adrs/0031-linting-formatting-and-ci-quality-gates.md",
+      "bytes": 27445,
+      "sha256": "08bd580cbe559af1ed3cc0d0e39a9360ae835573ca15aa7daee79808c81508d4"
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
+      "bytes": 12711,
+      "sha256": "55e20439126f8f9017feecceae26b0e158762da5399748749b1121351f81e39a"
+    },
+    {
+      "path": "patches/node-forge@1.4.0.patch",
+      "bytes": 1119,
+      "sha256": "2f0f3be76c7a0502b8579e71f32b7df98954a90a7e448084ac08dd86bd55286d"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+    },
+    {
+      "path": "tools/ci-mirror/tests/run-quality-checks.test.mjs",
+      "bytes": 14344,
+      "sha256": "4705d8d63cc50fb71ddd1ee833eb813fd97ae248c2346eaecb9ec1433c3b7424"
+    },
+    {
+      "path": "tools/code-map/lib/code-map-rules.mjs",
+      "bytes": 16430,
+      "sha256": "22d6bbb3e527fe6d3b8a694589cbe546bd7c33f38aa8c3cbb05ce75f3a662a33"
+    },
+    {
+      "path": "tools/code-map/tests/code-map-rules.test.mjs",
+      "bytes": 6060,
+      "sha256": "aafc8c4459f1a063928a06a4f47c0108a4b6b4f3a70622694e36ce656b0c1359"
+    },
+    {
+      "path": "tools/migration/check-native-topology.mjs",
+      "bytes": 4097,
+      "sha256": "253f0105206b18434d6e766784220cdabd1d68296a644bde9bcea6aa6cc67515"
+    },
+    {
+      "path": "tools/migration/inputs/forge-mitigation.json",
+      "bytes": 11797,
+      "sha256": "d9b082687498d8017f4f07289aeed49600c5606b0e9b60384d822996d4213bde"
+    },
+    {
+      "path": "tools/migration/lib/forge-controls.mjs",
+      "bytes": 10617,
+      "sha256": "46d7daf57c14554526f75297c88b1445a4f9a71a74eb154774b4e2dafd72266a"
+    },
+    {
+      "path": "tools/migration/lib/forge-installed.mjs",
+      "bytes": 7814,
+      "sha256": "7633b9f40c8605cd7df459dee71a592417d5ea3712fbc8b408465892d5ce9f80"
+    },
+    {
+      "path": "tools/migration/lib/forge-mitigation.mjs",
+      "bytes": 8423,
+      "sha256": "9fefb45c94f5f955aec38858f5fde403a49982e9b58ebd23d4d33e51bd881650"
+    },
+    {
+      "path": "tools/migration/lib/lock-artifacts.mjs",
+      "bytes": 5923,
+      "sha256": "80fe3fe7d550dfe45e1a7d48a941c877e78120960d5ff0f6f200f2bb66709be0"
+    },
+    {
+      "path": "tools/migration/tests/forge-controls.test.mjs",
+      "bytes": 3080,
+      "sha256": "24af82462e9e21aa98da6852528f08a9b0a9527bd642ae3e160cb31dec63c38e"
+    },
+    {
+      "path": "tools/migration/tests/forge-mitigation.test.mjs",
+      "bytes": 13628,
+      "sha256": "ed1f384720615b8bcc7abe95b18db25227ed22e0fe4ec8b9a8d4542ae7709d52"
+    },
+    {
+      "path": "tools/migration/tests/ownership.test.mjs",
+      "bytes": 7781,
+      "sha256": "0c3e8398428cb4603933afcfd0296826529a8edbbaf6f580fba26ac88f0dd3ec"
+    }
+  ],
+  "pending": [
+    "Integration reconciliation and committed-rule code-map generation",
+    "Final-head required test tier and independent PR review/CI",
+    "Clean production install/build and actual hosted proof"
+  ],
+  "installedRsaSha256AtLockOnlyReview": "fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50",
+  "guardExecutedAtInitialSourceReview": false,
+  "installedVerification": "forge-installed-sources.json",
+  "mandatoryGuard": "forge-topology-check.json",
+  "focusedTests": "forge-focused-guards.json",
+  "boundedFollowup": "Canonical helper main/exports/actual-caller proof and full-tier fixture/doc/code-map ownership repairs, delegated root authorization",
+  "mandatoryRepairedGuard": "forge-repaired-topology.json",
+  "affectedFocusedTests": "forge-repaired-focused.json",
+  "repairedQuality": "forge-repaired-quality.json",
+  "independentSourceReview": "forge-independent-source-review.json"
+}

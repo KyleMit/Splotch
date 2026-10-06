@@ -1,0 +1,15 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tools/migration/tests/forge-mitigation.test.mjs",
+    "tools/migration/tests/forge-controls.test.mjs",
+    "tools/ci-mirror/tests/run-quality-checks.test.mjs"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 0.968,
+  "log": "controls/forge-focused-guards.log.txt",
+  "scope": "Actual installed crypto/Expo, exact mitigation and Quality wiring/date guards"
+}

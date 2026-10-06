@@ -1,0 +1,466 @@
+
+> splotch@1.6.0 test
+> npm run test:unit:coverage && npm run test:asset-gen && npm run test:store-drawings && npm run test:tools && npm run test:e2e
+
+
+> splotch@1.6.0 test:unit:coverage
+> node tools/run-web-tool.mjs vitest run --coverage && node tools/run-web-tool.mjs vitest run --config vitest.webSsr.config.ts
+
+$ vitest run --coverage
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/web
+      Coverage enabled with v8
+
+
+ Test Files  348 passed (348)
+      Tests  4432 passed (4432)
+   Start at  02:16:20
+   Duration  12.26s (tests 34%, environment 27%, transform 17%, import 14%, worker 5%, setup 3%)
+
+    Isolate  348 workers spawned · ~103ms startup each (spawn + environment, per file)
+             at least ~3.89s faster with isolate: false — reuses workers across files instead of one per file
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   88.21 |    80.39 |    90.3 |    90.2 |                   
+ src               |    93.1 |       80 |     100 |   96.29 |                   
+  hooks.server.ts  |    93.1 |       80 |     100 |   96.29 | 110               
+ src/lib           |   96.21 |    89.59 |   97.79 |    98.6 |                   
+  ...leFeedback.ts |   94.73 |    77.77 |     100 |     100 | 17-26             
+  api.ts           |     100 |       50 |     100 |     100 | 6                 
+  appVersion.ts    |     100 |       50 |     100 |     100 | 4                 
+  glassPanes.ts    |   97.97 |    91.56 |   92.85 |   98.92 | 146               
+  idb.ts           |     100 |       75 |     100 |     100 | 9,32-37           
+  idle.ts          |    96.2 |    82.85 |   95.23 |     100 | ...04,117,148-149 
+  imagePrefetch.ts |   91.07 |    84.84 |     100 |   95.65 | 38-39             
+  palette.ts       |   93.33 |       50 |     100 |     100 | 53                
+  savedFile.ts     |   57.14 |      100 |      75 |   53.84 | 11-16             
+  secureStorage.ts |   95.04 |    84.74 |   97.29 |   98.97 | 270               
+  storage.ts       |    93.9 |    87.23 |     100 |    99.2 | 125               
+  theme.ts         |   95.23 |    90.24 |     100 |     100 | 81,107,140-148    
+  unreachable.ts   |       0 |      100 |       0 |       0 | 5                 
+  ...isplayFont.ts |     100 |      100 |   66.66 |     100 |                   
+ src/lib/actions   |    90.6 |    78.63 |   92.99 |   93.18 |                   
+  ...anelEvents.ts |   91.66 |    84.61 |     100 |   90.47 | 22,33             
+  ...oldGesture.ts |   94.73 |    88.46 |     100 |     100 | 21-31,55          
+  dragToClear.ts   |   98.45 |    94.11 |     100 |    98.9 | 171-172           
+  ...napGesture.ts |   95.23 |     87.5 |     100 |     100 | 49-54,87          
+  ...log.svelte.ts |   92.57 |    82.27 |   95.65 |   94.36 | 241-243,272-284   
+  ...alGateLink.ts |   33.33 |        0 |      50 |   33.33 | 15-25             
+  ...oom.svelte.ts |   87.83 |    84.37 |   84.61 |   92.18 | 43-52             
+  ...oom.svelte.ts |      63 |    27.08 |   70.83 |   68.53 | ...65-180,193-220 
+  pressFeedback.ts |     100 |       75 |     100 |     100 | 23                
+  pressRelease.ts  |      70 |       30 |      60 |      70 | 24,27-29,39-40    
+  scribbleGuard.ts |   96.05 |    88.65 |     100 |     100 | ...35,262,270,326 
+  scrollCue.ts     |   94.44 |    81.57 |     100 |     100 | 71,78,88-113      
+ src/lib/ai        |   99.13 |    94.11 |     100 |   99.06 |                   
+  credentials.ts   |   83.33 |       75 |     100 |   83.33 | 26                
+  failureReport.ts |     100 |    77.77 |     100 |     100 | 17,24             
+  prompt.ts        |     100 |       75 |     100 |     100 | 32                
+ src/lib/audio     |   92.45 |    83.33 |   88.88 |   95.92 |                   
+  clearSound.ts    |   92.89 |    88.88 |      80 |   95.42 | ...42-244,263-264 
+  drawingSound.ts  |   91.91 |    79.71 |   96.55 |   96.58 | 116-117,155-156   
+ src/lib/boot      |   84.97 |    76.75 |   87.12 |   87.11 |                   
+  ...enOverlays.ts |   98.68 |    96.87 |    90.9 |     100 | 88                
+  coloringPacks.ts |   97.26 |    97.14 |   89.47 |     100 | 109               
+  ...arnessSeam.ts |   81.81 |    71.42 |   81.81 |   86.95 | 48,67,72-76       
+  dialogBack.ts    |     100 |    92.85 |     100 |     100 | 16                
+  ...istedState.ts |     100 |       80 |     100 |     100 | 37                
+  ...ackHandler.ts |      90 |      100 |      75 |   94.11 | 45                
+  wakeLock.ts      |   93.54 |    83.33 |      75 |     100 | 17-20,35          
+  ...ackHandler.ts |   52.17 |    36.84 |      75 |   54.65 | ...51-152,166-167 
+ .../coloringPacks |   92.53 |    84.98 |   93.96 |   96.83 |                   
+  assetResolver.ts |   91.66 |    66.66 |     100 |     100 | 5-18              
+  manager.ts       |   91.09 |    79.31 |   93.54 |   94.91 | 51-54,172,178     
+  manifest.ts      |    93.1 |     92.1 |     100 |   96.07 | 113,162           
+  nativeStore.ts   |     100 |       50 |     100 |     100 | 30                
+  policy.ts        |      50 |        0 |       0 |   66.66 | 5                 
+  webStore.ts      |   93.29 |    87.14 |   91.11 |   98.55 | 226,307           
+ ...lib/components |   93.05 |     90.9 |      88 |   92.53 |                   
+  ...try.svelte.ts |    37.5 |      100 |      40 |    37.5 | 27-33             
+  iconTypes.ts     |     100 |       50 |     100 |     100 | 17                
+ ...ponents/design |   92.72 |    81.25 |     100 |     100 |                   
+  ...umb.svelte.ts |   90.47 |    66.66 |     100 |     100 | 23-27,37-48       
+ ...omponents/page |    87.5 |      100 |   83.33 |   85.48 |                   
+  ...ter.svelte.ts |   80.43 |      100 |   78.94 |   75.67 | 35,43-48,59-61    
+ ...nents/settings |   86.17 |    72.32 |   92.45 |   85.16 |                   
+  ...ttingsCopy.ts |    87.5 |       25 |     100 |   85.71 | 16                
+  sections.ts      |   67.39 |       58 |      80 |   63.15 | 76-77,112,130-149 
+  ...ery.svelte.ts |   76.31 |    64.28 |      80 |   77.14 | 35-36,61-64,68-71 
+  ...ons.svelte.ts |    98.3 |    91.66 |   96.55 |     100 | 104,130           
+ src/lib/design    |   97.29 |     90.9 |     100 |     100 |                   
+  colorContrast.ts |   95.83 |    94.44 |     100 |     100 | 28,85             
+  iconTokens.ts    |     100 |       50 |     100 |     100 | 115               
+  tokens.ts        |   93.33 |       75 |     100 |     100 | 38                
+ src/lib/drawing   |   78.74 |    67.91 |   78.91 |   81.29 |                   
+  aiAutoSave.ts    |   79.31 |    85.71 |     100 |   83.33 | 39-42             
+  ...rationPoll.ts |   97.77 |    90.47 |     100 |     100 | 24-55             
+  aiImage.ts       |   90.69 |    89.85 |     100 |      92 | 119-122,185-186   
+  ...geResponse.ts |   97.29 |     92.5 |     100 |     100 | 28,36,56          
+  ...adEncoding.ts |      88 |    81.81 |     100 |    87.5 | 38-39,51          
+  ...xtRecovery.ts |   91.66 |    82.14 |   88.88 |   94.91 | 51,110,145        
+  canvasMeasure.ts |      90 |       85 |      90 |   94.28 | 118-119           
+  ...Appearance.ts |    92.3 |       90 |     100 |     100 | 33                
+  crayonBrush.ts   |   85.25 |    58.42 |   89.74 |   88.68 | ...65-566,570-571 
+  ...Boundaries.ts |    87.5 |    93.75 |      75 |   90.47 | 98,124            
+  ...PassBuffer.ts |   90.16 |    83.18 |   96.77 |   91.36 | ...25-528,624-625 
+  ...gWorkDebug.ts |   95.12 |    71.42 |     100 |      95 | 80-81             
+  earlyBoot.ts     |     100 |    83.33 |     100 |     100 | 49                
+  emptyScan.ts     |    87.5 |    83.33 |     100 |   92.85 | 53-54             
+  engine.ts        |   12.04 |        5 |     7.4 |   12.82 | ...1412,1453-1523 
+  ...eListeners.ts |   95.65 |     62.5 |   88.88 |   95.23 | 71,98             
+  ...Compositor.ts |   96.55 |       80 |     100 |     100 | 37-53             
+  exportDrawing.ts |   96.94 |    83.33 |   96.29 |   99.14 | 187               
+  exportScale.ts   |      50 |        0 |       0 |      50 | 6                 
+  folderSave.ts    |    97.7 |    90.74 |     100 |     100 | 57,82,119,139-140 
+  idleEmptyScan.ts |   16.66 |        0 |      20 |   18.75 | 23-45             
+  imageSave.ts     |   97.14 |    86.95 |     100 |   96.96 | 22                
+  inkMotion.ts     |   54.46 |    37.83 |   73.33 |   58.16 | ...39-142,235-270 
+  ...tionBounds.ts |     100 |    95.83 |     100 |     100 | 25                
+  ...eComposite.ts |   95.91 |    86.66 |     100 |     100 | 8,64              
+  magicBrush.ts    |   91.92 |    83.59 |   96.55 |   96.93 | 223-226,256,356   
+  ...eet.worker.ts |   95.45 |       90 |      75 |   95.23 | 78                
+  ...sterClient.ts |   88.46 |     64.1 |     100 |    90.9 | 52-59             
+  overlay.ts       |   94.11 |    89.47 |     100 |     100 | 19,28             
+  paperView.ts     |   95.83 |     90.9 |   85.71 |   95.55 | 182,261           
+  ...reamQuirks.ts |   94.11 |      100 |   83.33 |     100 |                   
+  pngEncoder.ts    |   85.86 |    66.66 |   93.75 |    86.9 | ...-88,93,116-118 
+  ...der.worker.ts |     100 |     87.5 |     100 |     100 | 31                
+  ...dAnimation.ts |   95.94 |    86.95 |     100 |   97.14 | 95-96             
+  ...earCapture.ts |   95.83 |     92.3 |     100 |   97.36 | 65                
+  saveOnDelete.ts  |   95.23 |      100 |      75 |     100 |                   
+  screenAngle.ts   |    12.5 |        0 |       0 |   16.66 | 9-19              
+  ...otFeedback.ts |   91.66 |       50 |     100 |     100 | 16                
+  strokeOps.ts     |    87.5 |       84 |     100 |   90.32 | 120-122           
+  ...asterQueue.ts |    84.9 |       80 |   66.66 |   86.95 | 138-139,145-148   
+  ...keSnapshot.ts |       0 |        0 |       0 |       0 | 13-63             
+  ...xtRecovery.ts |   89.79 |    77.27 |     100 |   95.55 | 39-40             
+  tiledLayout.ts   |   94.44 |    72.22 |     100 |     100 | 19-23,55-72       
+  ...agicRecode.ts |   81.25 |    85.71 |      80 |   85.71 | 44-50,81-82       
+  ...Compositor.ts |     100 |       75 |     100 |     100 | 30                
+  tiledRenderer.ts |   90.87 |    85.79 |   92.59 |   94.92 | ...40,434,479-483 
+  ...erReadback.ts |   84.37 |       70 |    90.9 |      88 | 91,101-102        
+  tiledSurfaces.ts |    89.1 |    80.55 |   96.42 |   89.85 | ...31-242,323-327 
+  ...ndoPatches.ts |   88.23 |    81.57 |     100 |   91.66 | 47-51             
+  undoHistory.ts   |      50 |        0 |       0 |      50 | 22                
+  ...ctureStore.ts |     100 |    95.23 |     100 |     100 | 100               
+ src/lib/platform  |   82.24 |    82.88 |   88.23 |   84.26 |                   
+  deviceInfo.ts    |    3.57 |        0 |       0 |       4 | 10-67             
+  deviceReport.ts  |     100 |    93.33 |     100 |     100 | 68                
+  haptics.ts       |      50 |       50 |      25 |      50 | 17,25-31          
+  index.ts         |   91.83 |    87.27 |     100 |     100 | 44,57-72,122,191  
+  orientation.ts   |   93.75 |    93.54 |     100 |     100 | 28,58             
+  safeArea.ts      |    92.3 |       75 |     100 |     100 | 42                
+ src/lib/plugins   |      85 |    83.33 |   88.88 |    87.5 |                   
+  pencilEraser.ts  |      85 |    83.33 |   88.88 |    87.5 | 43-44             
+ src/lib/pwa       |   94.31 |    88.29 |   96.15 |   96.15 |                   
+  appShellRoute.ts |      75 |        0 |    87.5 |   71.42 | 23,52             
+  ...gPackRoute.ts |     100 |       50 |     100 |     100 | 10                
+  updates.ts       |   94.11 |    91.56 |   97.36 |   96.55 | 302-303,362-364   
+ src/lib/server    |   95.06 |    92.27 |   96.66 |   95.63 |                   
+  devHarness.ts    |   33.33 |       50 |      50 |      50 | 23                
+  ...tionGrants.ts |   87.65 |    84.88 |     100 |   87.91 | ...41,249-250,315 
+  ...horization.ts |   97.36 |    96.66 |     100 |   97.05 | 101               
+  ...onDelivery.ts |     100 |    93.75 |     100 |     100 | 51                
+  ...rationJobs.ts |   98.06 |    97.29 |     100 |    98.5 | 125,301           
+  ...ationStart.ts |   95.65 |    83.33 |     100 |   97.61 | 69                
+  github.ts        |   93.75 |      100 |      80 |   92.85 | 22                
+  http.ts          |   98.18 |    94.59 |     100 |     100 | 67,92             
+  imageReport.ts   |    90.9 |    90.47 |   85.71 |   90.24 | 73,78,95,137      
+  ...horization.ts |   93.02 |    91.89 |     100 |   97.36 | 97                
+  ...eportStore.ts |   91.37 |       92 |      70 |   92.72 | 66-67,112-113     
+  report.ts        |   92.85 |    97.29 |     100 |    92.5 | 158,192-193       
+  reportToken.ts   |   94.44 |    91.66 |     100 |   95.55 | 108,133           
+  ...ityHeaders.ts |   64.28 |       50 |      50 |   66.66 | 53-56             
+  tokens.ts        |     100 |    92.42 |     100 |     100 | ...39,157,295,307 
+  usage.ts         |     100 |    90.47 |     100 |     100 | 97,116,147,165    
+  ...ordStorage.ts |     100 |    93.75 |     100 |     100 | 41,97             
+ src/lib/server/ai |   95.89 |    87.24 |     100 |   96.08 |                   
+  ...roundPunch.ts |   92.91 |     80.3 |     100 |   92.45 | 173-186           
+  imageSize.ts     |   95.12 |    93.93 |     100 |   97.22 | 102               
+  openai.ts        |     100 |     90.9 |     100 |     100 | 85,162            
+  openaiSafety.ts  |     100 |    89.33 |     100 |     100 | ...23-140,165,208 
+ src/lib/state     |    96.5 |    91.46 |   96.52 |   97.27 |                   
+  aiAccessToken.ts |   95.45 |    91.66 |     100 |     100 | 36                
+  aiKey.ts         |   57.89 |       50 |   57.14 |      60 | 41-46             
+  ...ess.svelte.ts |   96.87 |    81.25 |     100 |   98.36 | 125               
+  books.ts         |    99.1 |    93.54 |     100 |   99.01 | 195               
+  canvas.svelte.ts |    62.5 |      100 |   58.33 |    62.5 | 63,72-78,90-91    
+  ...ker.svelte.ts |     100 |       50 |     100 |     100 | 55-65             
+  ...ons.svelte.ts |   95.69 |    92.06 |     100 |   98.75 | 37                
+  ...een.svelte.ts |     100 |    94.73 |     100 |     100 | 96                
+  ...all.svelte.ts |   92.43 |    86.66 |   96.42 |   93.39 | 331-341           
+  layout.svelte.ts |   91.17 |    67.85 |   94.73 |   93.33 | 75,109-110,134    
+  leaveConfirm.ts  |     100 |       50 |     100 |     100 | 10                
+  modal.svelte.ts  |   81.81 |      100 |   83.33 |      80 | 19-20             
+  ...ork.svelte.ts |   98.38 |    88.57 |     100 |     100 | 63,82,108,137     
+  ...ate.svelte.ts |     100 |    95.28 |     100 |     100 | 74,83,96,377,472  
+  readonlyView.ts  |   89.74 |    88.46 |   66.66 |   88.23 | 42-45             
+  ...ure.svelte.ts |   95.68 |    92.85 |      96 |   97.91 | 56-57             
+  ...een.svelte.ts |   92.59 |    93.33 |     100 |   95.65 | 30                
+  ...ers.svelte.ts |   96.55 |     87.5 |     100 |     100 | 74                
+  ...ngs.svelte.ts |   98.97 |      100 |   97.36 |    98.8 | 387               
+  tool.svelte.ts   |     100 |    92.85 |     100 |     100 | 91,137            
+ src/routes/admin  |   86.95 |    88.88 |   83.33 |   90.47 |                   
+  +page.server.ts  |   86.95 |    88.88 |   83.33 |   90.47 | 150-155           
+ ...i/admin/tokens |   93.54 |       80 |     100 |     100 |                   
+  +server.ts       |   93.54 |       80 |     100 |     100 | 106,117           
+ ...api/csp-report |   97.67 |    93.93 |     100 |     100 |                   
+  +server.ts       |   97.67 |    93.93 |     100 |     100 | 52,88             
+ ...generate-image |   95.08 |    90.47 |     100 |     100 |                   
+  +server.ts       |   95.08 |    90.47 |     100 |     100 | 121-140,171,240   
+ ...eration-result |     100 |    96.87 |     100 |     100 |                   
+  +server.ts       |     100 |    96.87 |     100 |     100 | 114               
+ ...tes/api/report |      90 |    83.33 |     100 |     100 |                   
+  +server.ts       |      90 |    83.33 |     100 |     100 | 36                
+ ...i/report-image |     100 |       75 |     100 |     100 |                   
+  +server.ts       |     100 |       75 |     100 |     100 | 38-52             
+ ...api/verify-key |   94.44 |       90 |     100 |     100 |                   
+  +server.ts       |   94.44 |       90 |     100 |     100 | 32                
+ ...dev/engine/lib |   82.05 |    89.47 |      75 |   75.86 |                   
+  pixelReadback.ts |   82.05 |    89.47 |      75 |   75.86 | 25-31             
+ .../dev/notch/lib |   86.66 |    79.06 |      90 |   91.66 |                   
+  diagnostics.ts   |   85.71 |    78.04 |     100 |   90.32 | 154-157           
+  orientations.ts  |   66.66 |      100 |   33.33 |      80 | 47                
+ ...sets/[...file] |       0 |        0 |       0 |       0 |                   
+  +server.ts       |       0 |        0 |       0 |       0 | 21-64             
+ ...ore-frames/lib |   97.67 |       75 |     100 |     100 |                   
+  targets.ts       |    87.5 |       50 |     100 |     100 | 46                
+ ...outes/feedback |   95.65 |      100 |   66.66 |     100 |                   
+  +page.server.ts  |   95.65 |      100 |   66.66 |     100 |                   
+ ...routes/privacy |   68.83 |     72.5 |   73.33 |   68.75 |                   
+  contents.ts      |      12 |        0 |       0 |   13.04 | 50-73             
+  ...nks.svelte.ts |   96.15 |    90.62 |     100 |     100 | 41-42,52          
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 88.21% ( 10342/11724 )
+Branches     : 80.39% ( 4912/6110 )
+Functions    : 90.3% ( 2366/2620 )
+Lines        : 90.2% ( 9208/10208 )
+================================================================================
+$ vitest run --config vitest.webSsr.config.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./standalonePageEntries" without a file extension (vitest.webSsr.config.ts:3:39). Add the file extension
+  - import "./vitest.config" without a file extension (vitest.webSsr.config.ts:4:48). Add the file extension
+  - import "./standalonePageEntries" without a file extension (vitest.config.ts:3:39). Add the file extension
+  - import "./defines" without a file extension (vitest.config.ts:4:30). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/web
+
+
+ Test Files  6 passed (6)
+      Tests  45 passed (45)
+   Start at  02:16:33
+   Duration  1.15s (transform 66%, import 20%, tests 14%)
+
+
+> splotch@1.6.0 test:asset-gen
+> vitest run --config tools/asset-gen/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/tools/asset-gen
+
+
+ Test Files  33 passed (33)
+      Tests  298 passed (298)
+   Start at  02:16:35
+   Duration  16.25s (tests 96%, import 3%, transform 1%)
+
+
+> splotch@1.6.0 test:store-drawings
+> vitest run --config tools/store-drawings/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/tools/store-drawings
+
+
+ Test Files  2 passed (2)
+      Tests  22 passed (22)
+   Start at  02:16:51
+   Duration  273ms (import 55%, transform 25%, tests 19%, worker 1%)
+
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/tools
+
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-QL3EL0/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-ZGBv6J/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-ZGBv6J/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+ ❯ tests/tool-specifier-resolution.test.mjs (783 tests | 2 failed) 111ms
+   ❯ relative specifiers under tools/ (681)
+     × tools/ci-mirror/tests/run-quality-checks.test.mjs resolves every relative specifier 3ms
+     × tools/migration/tests/ownership.test.mjs resolves every relative specifier 0ms
+ ❯ tests/doc-references.test.mjs (57 tests | 1 failed) 265ms
+   ❯ the repository (1)
+     × has no unresolved doc references 260ms
+ ❯ code-map/tests/code-map-rules.test.mjs (37 tests | 1 failed) 34ms
+   ❯ code map coverage (2)
+     × places every tracked file in exactly one exclusion class or measured area 31ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/doc-references.test.mjs > the repository > has no unresolved doc references
+AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "file": "docs/DEPENDENCIES.md",
++     "kind": "path",
++     "line": 909,
++     "ref": "lib/rsa.js",
++   },
++   {
++     "file": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
++     "kind": "path",
++     "line": 32,
++     "ref": "lib/rsa.js",
++   },
++   {
++     "file": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
++     "kind": "path",
++     "line": 36,
++     "ref": "lib/rsa.js",
++   },
++   {
++     "file": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
++     "kind": "path",
++     "line": 37,
++     "ref": "lib/rsa.js",
++   },
++   {
++     "file": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
++     "kind": "path",
++     "line": 94,
++     "ref": "lib/index.js",
++   },
++ ]
+
+ ❯ tests/doc-references.test.mjs:274:22
+    272|   it('has no unresolved doc references', () => {
+    273|     const { findings, stale } = scan();
+    274|     expect(findings).toEqual([]);
+       |                      ^
+    275|     expect(stale).toEqual([]);
+    276|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/tool-specifier-resolution.test.mjs > relative specifiers under tools/ > tools/ci-mirror/tests/run-quality-checks.test.mjs resolves every relative specifier
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "./lib/forge-mitigation.mjs -> tools/ci-mirror/tests/lib/forge-mitigation.mjs",
++ ]
+
+ ❯ tests/tool-specifier-resolution.test.mjs:98:70
+     96|     );
+     97|
+     98|     expect(broken.map(({ spec, target }) => `${spec} -> ${target}`)).t…
+       |                                                                      ^
+     99|   });
+    100| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/tool-specifier-resolution.test.mjs > relative specifiers under tools/ > tools/migration/tests/ownership.test.mjs resolves every relative specifier
+AssertionError: expected [ …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "./assets/helper.mjs -> tools/migration/tests/assets/helper.mjs",
++   "../../experiments/native-architecture/src/index.ts -> tools/experiments/native-architecture/src/index.ts",
++ ]
+
+ ❯ tests/tool-specifier-resolution.test.mjs:98:70
+     96|     );
+     97|
+     98|     expect(broken.map(({ spec, target }) => `${spec} -> ${target}`)).t…
+       |                                                                      ^
+     99|   });
+    100| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  code-map/tests/code-map-rules.test.mjs > code map coverage > places every tracked file in exactly one exclusion class or measured area
+AssertionError: expected [ …(9) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "experiments/native-architecture/alignment.json matches 0 areas (none)",
++   "experiments/native-architecture/app.json matches 0 areas (none)",
++   "experiments/native-architecture/babel.config.cjs matches 0 areas (none)",
++   "experiments/native-architecture/metro.config.cjs matches 0 areas (none)",
++   "experiments/native-architecture/package.json matches 0 areas (none)",
++   "experiments/native-architecture/scripts/check-transform.cjs matches 0 areas (none)",
++   "experiments/native-architecture/src/ProbeApp.tsx matches 0 areas (none)",
++   "experiments/native-architecture/src/index.ts matches 0 areas (none)",
++   "experiments/native-architecture/tsconfig.json matches 0 areas (none)",
++ ]
+
+ ❯ code-map/tests/code-map-rules.test.mjs:37:22
+     35|       }
+     36|     }
+     37|     expect(unplaced).toEqual([]);
+       |                      ^
+     38|   });
+     39|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  3 failed | 308 passed (311)
+      Tests  4 failed | 7181 passed (7185)
+   Start at  02:16:51
+   Duration  29.23s (tests 90%, import 7%, transform 2%)
+
+    Isolate  311 workers spawned · ~63ms startup each (spawn + environment, per file)
+             at least ~2.12s faster with isolate: false — reuses workers across files instead of one per file
+

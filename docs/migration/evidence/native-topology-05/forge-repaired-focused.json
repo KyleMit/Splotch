@@ -1,0 +1,19 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tools/migration/tests/forge-mitigation.test.mjs",
+    "tools/migration/tests/forge-controls.test.mjs",
+    "tools/migration/tests/ownership.test.mjs",
+    "tools/ci-mirror/tests/run-quality-checks.test.mjs",
+    "tools/tests/tool-specifier-resolution.test.mjs",
+    "tools/tests/doc-references.test.mjs",
+    "tools/code-map/tests/code-map-rules.test.mjs"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 0.982,
+  "log": "controls/forge-repaired-focused.log.txt",
+  "scope": "Affected installed-entry/crypto/mitigation, fixture-specifier, external doc refs and candidate/evidence map ownership guards"
+}

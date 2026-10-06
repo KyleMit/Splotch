@@ -1,6 +1,6 @@
 # pnpm settings. From pnpm 11 this file — not a `pnpm` field in package.json — is
 # where pnpm reads its own configuration, so it exists here even though Splotch is a
-# single package with no workspace members (no `packages:` key, deliberately).
+# shipping root plus the private native architecture candidate.
 # ADR-0119 records the npm -> pnpm migration and the reasoning behind each setting.
 
 # Flat node_modules, the same layout npm produces. `cap sync` resolves every plugin to
@@ -14,6 +14,9 @@
 # measured identical under both linkers (ADR-0119), because the hoisted tree is still
 # cloned out of the shared content-addressable store. What it gives up is pnpm's strict
 # dependency isolation, so an undeclared transitive import stays resolvable here.
+packages:
+  - experiments/native-architecture
+
 nodeLinker: hoisted
 
 # The sharp and tar entries moved verbatim from package.json's npm `overrides` block.
@@ -43,14 +46,22 @@ overrides:
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
 
-# Advisories the high-severity audit gate skips, each one only while no patched
-# release exists to override to. Every entry names the issue that removes it.
+# Exact advisory exceptions require the active evidence and expiry controls in
+# docs/DEPENDENCIES.md. Local mitigation also requires the named installed guard.
+# Every entry names the issue that removes it.
 auditConfig:
   ignoreGhsas:
     # braces <=3.0.3 stack-exhaustion DoS; no patched release published. Dev-only:
     # reached solely via stylelint > globby > micromatch over this repo's own globs,
     # absent from the production install. Remove with issue 2648.
     - GHSA-vfj7-8cjw-p6xm
+    # Published node-forge 1.4.0 stays affected; exact lib/rsa.js local mitigation
+    # requires check:migration:native-topology installed/source/consumer proof.
+    # Unpatched dist bundles are forbidden. Retire with issue 2696.
+    - GHSA-86w9-cpqp-85rv
+
+patchedDependencies:
+  node-forge@1.4.0: patches/node-forge@1.4.0.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the

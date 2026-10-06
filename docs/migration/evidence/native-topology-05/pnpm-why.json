@@ -1,0 +1,1233 @@
+[
+  {
+    "name": "metro",
+    "version": "0.84.5",
+    "path": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/.pnpm/metro@0.84.5_supports-color@10.2.2/node_modules/metro",
+    "peersSuffixHash": "b648",
+    "dependents": [
+      {
+        "name": "@expo/metro",
+        "version": "56.0.2",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "@expo/cli",
+            "version": "57.0.27",
+            "peersSuffixHash": "d0cc",
+            "dependents": [
+              {
+                "name": "expo",
+                "version": "57.0.26",
+                "peersSuffixHash": "1fee",
+                "dependents": [
+                  {
+                    "name": "@expo/cli",
+                    "version": "57.0.27",
+                    "circular": true
+                  },
+                  {
+                    "name": "@expo/dom-webview",
+                    "version": "57.0.1",
+                    "peersSuffixHash": "23de",
+                    "dependents": [
+                      {
+                        "name": "@expo/log-box",
+                        "version": "57.0.4",
+                        "peersSuffixHash": "2a40",
+                        "dependents": [
+                          {
+                            "name": "@expo/cli",
+                            "version": "57.0.27",
+                            "circular": true
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "@expo/log-box",
+                    "version": "57.0.4",
+                    "peersSuffixHash": "2a40",
+                    "deduped": true
+                  },
+                  {
+                    "name": "@expo/metro-config",
+                    "version": "57.0.12",
+                    "peersSuffixHash": "de42",
+                    "dependents": [
+                      {
+                        "name": "@expo/cli",
+                        "version": "57.0.27",
+                        "circular": true
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "@expo/router-server",
+                    "version": "57.0.11",
+                    "peersSuffixHash": "1320",
+                    "dependents": [
+                      {
+                        "name": "@expo/cli",
+                        "version": "57.0.27",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "@splotch/native-architecture",
+                    "version": "",
+                    "depField": "devDependencies"
+                  },
+                  {
+                    "name": "babel-preset-expo",
+                    "version": "57.0.13",
+                    "peersSuffixHash": "7148",
+                    "dependents": [
+                      {
+                        "name": "@splotch/native-architecture",
+                        "version": "",
+                        "depField": "devDependencies"
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo-asset",
+                    "version": "57.0.18",
+                    "peersSuffixHash": "986d",
+                    "dependents": [
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo-constants",
+                    "version": "57.0.20",
+                    "peersSuffixHash": "4c0d",
+                    "dependents": [
+                      {
+                        "name": "@expo/router-server",
+                        "version": "57.0.11",
+                        "peersSuffixHash": "1320",
+                        "deduped": true
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      },
+                      {
+                        "name": "expo-asset",
+                        "version": "57.0.18",
+                        "peersSuffixHash": "986d",
+                        "deduped": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo-file-system",
+                    "version": "57.0.7",
+                    "peersSuffixHash": "c86d",
+                    "dependents": [
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo-font",
+                    "version": "57.0.4",
+                    "peersSuffixHash": "23de",
+                    "dependents": [
+                      {
+                        "name": "@expo/router-server",
+                        "version": "57.0.11",
+                        "peersSuffixHash": "1320",
+                        "deduped": true
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo-keep-awake",
+                    "version": "57.0.2",
+                    "peersSuffixHash": "cabc",
+                    "dependents": [
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "@expo/metro-config",
+            "version": "57.0.12",
+            "peersSuffixHash": "de42",
+            "deduped": true
+          },
+          {
+            "name": "expo",
+            "version": "57.0.26",
+            "peersSuffixHash": "1fee",
+            "deduped": true
+          }
+        ]
+      },
+      {
+        "name": "metro-config",
+        "version": "0.84.5",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "@expo/metro",
+            "version": "56.0.2",
+            "peersSuffixHash": "b648",
+            "deduped": true
+          },
+          {
+            "name": "metro",
+            "version": "0.84.5",
+            "circular": true
+          }
+        ]
+      },
+      {
+        "name": "metro-transform-worker",
+        "version": "0.84.5",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "@expo/metro",
+            "version": "56.0.2",
+            "peersSuffixHash": "b648",
+            "deduped": true
+          },
+          {
+            "name": "metro",
+            "version": "0.84.5",
+            "circular": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "metro",
+    "version": "0.84.6",
+    "path": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/.pnpm/metro@0.84.6_supports-color@10.2.2/node_modules/metro",
+    "peersSuffixHash": "b648",
+    "dependents": [
+      {
+        "name": "@react-native/community-cli-plugin",
+        "version": "0.86.3",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "react-native",
+            "version": "0.86.3",
+            "peersSuffixHash": "6f39",
+            "dependents": [
+              {
+                "name": "@expo/cli",
+                "version": "57.0.27",
+                "peersSuffixHash": "d0cc",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "peersSuffixHash": "1fee",
+                    "dependents": [
+                      {
+                        "name": "@expo/cli",
+                        "version": "57.0.27",
+                        "circular": true
+                      },
+                      {
+                        "name": "@expo/dom-webview",
+                        "version": "57.0.1",
+                        "peersSuffixHash": "23de",
+                        "dependents": [
+                          {
+                            "name": "@expo/log-box",
+                            "version": "57.0.4",
+                            "peersSuffixHash": "2a40",
+                            "dependents": [
+                              {
+                                "name": "@expo/cli",
+                                "version": "57.0.27",
+                                "circular": true
+                              },
+                              {
+                                "name": "expo",
+                                "version": "57.0.26",
+                                "circular": true
+                              }
+                            ]
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "@expo/log-box",
+                        "version": "57.0.4",
+                        "peersSuffixHash": "2a40",
+                        "deduped": true
+                      },
+                      {
+                        "name": "@expo/metro-config",
+                        "version": "57.0.12",
+                        "peersSuffixHash": "de42",
+                        "dependents": [
+                          {
+                            "name": "@expo/cli",
+                            "version": "57.0.27",
+                            "circular": true
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "@expo/router-server",
+                        "version": "57.0.11",
+                        "peersSuffixHash": "1320",
+                        "dependents": [
+                          {
+                            "name": "@expo/cli",
+                            "version": "57.0.27",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "@splotch/native-architecture",
+                        "version": "",
+                        "depField": "devDependencies"
+                      },
+                      {
+                        "name": "babel-preset-expo",
+                        "version": "57.0.13",
+                        "peersSuffixHash": "7148",
+                        "dependents": [
+                          {
+                            "name": "@splotch/native-architecture",
+                            "version": "",
+                            "depField": "devDependencies"
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo-asset",
+                        "version": "57.0.18",
+                        "peersSuffixHash": "986d",
+                        "dependents": [
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo-constants",
+                        "version": "57.0.20",
+                        "peersSuffixHash": "4c0d",
+                        "dependents": [
+                          {
+                            "name": "@expo/router-server",
+                            "version": "57.0.11",
+                            "peersSuffixHash": "1320",
+                            "deduped": true
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          },
+                          {
+                            "name": "expo-asset",
+                            "version": "57.0.18",
+                            "peersSuffixHash": "986d",
+                            "deduped": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo-file-system",
+                        "version": "57.0.7",
+                        "peersSuffixHash": "c86d",
+                        "dependents": [
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo-font",
+                        "version": "57.0.4",
+                        "peersSuffixHash": "23de",
+                        "dependents": [
+                          {
+                            "name": "@expo/router-server",
+                            "version": "57.0.11",
+                            "peersSuffixHash": "1320",
+                            "deduped": true
+                          },
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "expo-keep-awake",
+                        "version": "57.0.2",
+                        "peersSuffixHash": "cabc",
+                        "dependents": [
+                          {
+                            "name": "expo",
+                            "version": "57.0.26",
+                            "circular": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "@expo/devtools",
+                "version": "57.0.1",
+                "peersSuffixHash": "743a",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "peersSuffixHash": "1fee",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/dom-webview",
+                "version": "57.0.1",
+                "peersSuffixHash": "23de",
+                "deduped": true
+              },
+              {
+                "name": "@expo/log-box",
+                "version": "57.0.4",
+                "peersSuffixHash": "2a40",
+                "deduped": true
+              },
+              {
+                "name": "@react-native/virtualized-lists",
+                "version": "0.86.3",
+                "peersSuffixHash": "f933",
+                "dependents": [
+                  {
+                    "name": "react-native",
+                    "version": "0.86.3",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@splotch/native-architecture",
+                "version": "",
+                "depField": "devDependencies"
+              },
+              {
+                "name": "expo",
+                "version": "57.0.26",
+                "peersSuffixHash": "1fee",
+                "deduped": true
+              },
+              {
+                "name": "expo-asset",
+                "version": "57.0.18",
+                "peersSuffixHash": "986d",
+                "deduped": true
+              },
+              {
+                "name": "expo-constants",
+                "version": "57.0.20",
+                "peersSuffixHash": "4c0d",
+                "deduped": true
+              },
+              {
+                "name": "expo-file-system",
+                "version": "57.0.7",
+                "peersSuffixHash": "c86d",
+                "deduped": true
+              },
+              {
+                "name": "expo-font",
+                "version": "57.0.4",
+                "peersSuffixHash": "23de",
+                "deduped": true
+              },
+              {
+                "name": "expo-modules-core",
+                "version": "57.0.20",
+                "peersSuffixHash": "743a",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "peersSuffixHash": "1fee",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-modules-jsi",
+                "version": "57.1.1",
+                "peersSuffixHash": "47e0",
+                "dependents": [
+                  {
+                    "name": "expo-modules-core",
+                    "version": "57.0.20",
+                    "peersSuffixHash": "743a",
+                    "deduped": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "metro-config",
+        "version": "0.84.6",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "@react-native/community-cli-plugin",
+            "version": "0.86.3",
+            "peersSuffixHash": "b648",
+            "deduped": true
+          },
+          {
+            "name": "metro",
+            "version": "0.84.6",
+            "circular": true
+          }
+        ]
+      },
+      {
+        "name": "metro-transform-worker",
+        "version": "0.84.6",
+        "peersSuffixHash": "b648",
+        "dependents": [
+          {
+            "name": "metro",
+            "version": "0.84.6",
+            "circular": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "react",
+    "version": "19.2.3",
+    "path": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/.pnpm/react@19.2.3/node_modules/react",
+    "dependents": [
+      {
+        "name": "@expo/devtools",
+        "version": "57.0.1",
+        "peersSuffixHash": "743a",
+        "dependents": [
+          {
+            "name": "expo",
+            "version": "57.0.26",
+            "peersSuffixHash": "1fee",
+            "dependents": [
+              {
+                "name": "@expo/cli",
+                "version": "57.0.27",
+                "peersSuffixHash": "d0cc",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/dom-webview",
+                "version": "57.0.1",
+                "peersSuffixHash": "23de",
+                "dependents": [
+                  {
+                    "name": "@expo/log-box",
+                    "version": "57.0.4",
+                    "peersSuffixHash": "2a40",
+                    "dependents": [
+                      {
+                        "name": "@expo/cli",
+                        "version": "57.0.27",
+                        "peersSuffixHash": "d0cc",
+                        "deduped": true
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/log-box",
+                "version": "57.0.4",
+                "peersSuffixHash": "2a40",
+                "deduped": true
+              },
+              {
+                "name": "@expo/metro-config",
+                "version": "57.0.12",
+                "peersSuffixHash": "de42",
+                "dependents": [
+                  {
+                    "name": "@expo/cli",
+                    "version": "57.0.27",
+                    "peersSuffixHash": "d0cc",
+                    "deduped": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/router-server",
+                "version": "57.0.11",
+                "peersSuffixHash": "1320",
+                "dependents": [
+                  {
+                    "name": "@expo/cli",
+                    "version": "57.0.27",
+                    "peersSuffixHash": "d0cc",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "@splotch/native-architecture",
+                "version": "",
+                "depField": "devDependencies"
+              },
+              {
+                "name": "babel-preset-expo",
+                "version": "57.0.13",
+                "peersSuffixHash": "7148",
+                "dependents": [
+                  {
+                    "name": "@splotch/native-architecture",
+                    "version": "",
+                    "depField": "devDependencies"
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-asset",
+                "version": "57.0.18",
+                "peersSuffixHash": "986d",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-constants",
+                "version": "57.0.20",
+                "peersSuffixHash": "4c0d",
+                "dependents": [
+                  {
+                    "name": "@expo/router-server",
+                    "version": "57.0.11",
+                    "peersSuffixHash": "1320",
+                    "deduped": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  },
+                  {
+                    "name": "expo-asset",
+                    "version": "57.0.18",
+                    "peersSuffixHash": "986d",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-file-system",
+                "version": "57.0.7",
+                "peersSuffixHash": "c86d",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-font",
+                "version": "57.0.4",
+                "peersSuffixHash": "23de",
+                "dependents": [
+                  {
+                    "name": "@expo/router-server",
+                    "version": "57.0.11",
+                    "peersSuffixHash": "1320",
+                    "deduped": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-keep-awake",
+                "version": "57.0.2",
+                "peersSuffixHash": "cabc",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "@expo/dom-webview",
+        "version": "57.0.1",
+        "peersSuffixHash": "23de",
+        "deduped": true
+      },
+      {
+        "name": "@expo/log-box",
+        "version": "57.0.4",
+        "peersSuffixHash": "2a40",
+        "deduped": true
+      },
+      {
+        "name": "@expo/router-server",
+        "version": "57.0.11",
+        "peersSuffixHash": "1320",
+        "deduped": true
+      },
+      {
+        "name": "@react-native/virtualized-lists",
+        "version": "0.86.3",
+        "peersSuffixHash": "f933",
+        "dependents": [
+          {
+            "name": "react-native",
+            "version": "0.86.3",
+            "peersSuffixHash": "6f39",
+            "dependents": [
+              {
+                "name": "@expo/cli",
+                "version": "57.0.27",
+                "peersSuffixHash": "d0cc",
+                "deduped": true
+              },
+              {
+                "name": "@expo/devtools",
+                "version": "57.0.1",
+                "peersSuffixHash": "743a",
+                "deduped": true
+              },
+              {
+                "name": "@expo/dom-webview",
+                "version": "57.0.1",
+                "peersSuffixHash": "23de",
+                "deduped": true
+              },
+              {
+                "name": "@expo/log-box",
+                "version": "57.0.4",
+                "peersSuffixHash": "2a40",
+                "deduped": true
+              },
+              {
+                "name": "@react-native/virtualized-lists",
+                "version": "0.86.3",
+                "circular": true
+              },
+              {
+                "name": "@splotch/native-architecture",
+                "version": "",
+                "depField": "devDependencies"
+              },
+              {
+                "name": "expo",
+                "version": "57.0.26",
+                "peersSuffixHash": "1fee",
+                "deduped": true
+              },
+              {
+                "name": "expo-asset",
+                "version": "57.0.18",
+                "peersSuffixHash": "986d",
+                "deduped": true
+              },
+              {
+                "name": "expo-constants",
+                "version": "57.0.20",
+                "peersSuffixHash": "4c0d",
+                "deduped": true
+              },
+              {
+                "name": "expo-file-system",
+                "version": "57.0.7",
+                "peersSuffixHash": "c86d",
+                "deduped": true
+              },
+              {
+                "name": "expo-font",
+                "version": "57.0.4",
+                "peersSuffixHash": "23de",
+                "deduped": true
+              },
+              {
+                "name": "expo-modules-core",
+                "version": "57.0.20",
+                "peersSuffixHash": "743a",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "peersSuffixHash": "1fee",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-modules-jsi",
+                "version": "57.1.1",
+                "peersSuffixHash": "47e0",
+                "dependents": [
+                  {
+                    "name": "expo-modules-core",
+                    "version": "57.0.20",
+                    "peersSuffixHash": "743a",
+                    "deduped": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "@splotch/native-architecture",
+        "version": "",
+        "depField": "devDependencies"
+      },
+      {
+        "name": "expo",
+        "version": "57.0.26",
+        "peersSuffixHash": "1fee",
+        "deduped": true
+      },
+      {
+        "name": "expo-asset",
+        "version": "57.0.18",
+        "peersSuffixHash": "986d",
+        "deduped": true
+      },
+      {
+        "name": "expo-font",
+        "version": "57.0.4",
+        "peersSuffixHash": "23de",
+        "deduped": true
+      },
+      {
+        "name": "expo-keep-awake",
+        "version": "57.0.2",
+        "peersSuffixHash": "cabc",
+        "deduped": true
+      },
+      {
+        "name": "expo-modules-core",
+        "version": "57.0.20",
+        "peersSuffixHash": "743a",
+        "deduped": true
+      },
+      {
+        "name": "react-native",
+        "version": "0.86.3",
+        "peersSuffixHash": "6f39",
+        "deduped": true
+      }
+    ]
+  },
+  {
+    "name": "react-native",
+    "version": "0.86.3",
+    "path": "/Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/node_modules/.pnpm/react-native@0.86.3_@babel+core@7.29.7_supports-color@10.2.2__@types+react@19.2.2_react@19.2.3_supports-color@10.2.2/node_modules/react-native",
+    "peersSuffixHash": "6f39",
+    "dependents": [
+      {
+        "name": "@expo/cli",
+        "version": "57.0.27",
+        "peersSuffixHash": "d0cc",
+        "dependents": [
+          {
+            "name": "expo",
+            "version": "57.0.26",
+            "peersSuffixHash": "1fee",
+            "dependents": [
+              {
+                "name": "@expo/cli",
+                "version": "57.0.27",
+                "circular": true
+              },
+              {
+                "name": "@expo/dom-webview",
+                "version": "57.0.1",
+                "peersSuffixHash": "23de",
+                "dependents": [
+                  {
+                    "name": "@expo/log-box",
+                    "version": "57.0.4",
+                    "peersSuffixHash": "2a40",
+                    "dependents": [
+                      {
+                        "name": "@expo/cli",
+                        "version": "57.0.27",
+                        "circular": true
+                      },
+                      {
+                        "name": "expo",
+                        "version": "57.0.26",
+                        "circular": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/log-box",
+                "version": "57.0.4",
+                "peersSuffixHash": "2a40",
+                "deduped": true
+              },
+              {
+                "name": "@expo/metro-config",
+                "version": "57.0.12",
+                "peersSuffixHash": "de42",
+                "dependents": [
+                  {
+                    "name": "@expo/cli",
+                    "version": "57.0.27",
+                    "circular": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@expo/router-server",
+                "version": "57.0.11",
+                "peersSuffixHash": "1320",
+                "dependents": [
+                  {
+                    "name": "@expo/cli",
+                    "version": "57.0.27",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "@splotch/native-architecture",
+                "version": "",
+                "depField": "devDependencies"
+              },
+              {
+                "name": "babel-preset-expo",
+                "version": "57.0.13",
+                "peersSuffixHash": "7148",
+                "dependents": [
+                  {
+                    "name": "@splotch/native-architecture",
+                    "version": "",
+                    "depField": "devDependencies"
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-asset",
+                "version": "57.0.18",
+                "peersSuffixHash": "986d",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-constants",
+                "version": "57.0.20",
+                "peersSuffixHash": "4c0d",
+                "dependents": [
+                  {
+                    "name": "@expo/router-server",
+                    "version": "57.0.11",
+                    "peersSuffixHash": "1320",
+                    "deduped": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  },
+                  {
+                    "name": "expo-asset",
+                    "version": "57.0.18",
+                    "peersSuffixHash": "986d",
+                    "deduped": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-file-system",
+                "version": "57.0.7",
+                "peersSuffixHash": "c86d",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-font",
+                "version": "57.0.4",
+                "peersSuffixHash": "23de",
+                "dependents": [
+                  {
+                    "name": "@expo/router-server",
+                    "version": "57.0.11",
+                    "peersSuffixHash": "1320",
+                    "deduped": true
+                  },
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              },
+              {
+                "name": "expo-keep-awake",
+                "version": "57.0.2",
+                "peersSuffixHash": "cabc",
+                "dependents": [
+                  {
+                    "name": "expo",
+                    "version": "57.0.26",
+                    "circular": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "@expo/devtools",
+        "version": "57.0.1",
+        "peersSuffixHash": "743a",
+        "dependents": [
+          {
+            "name": "expo",
+            "version": "57.0.26",
+            "peersSuffixHash": "1fee",
+            "deduped": true
+          }
+        ]
+      },
+      {
+        "name": "@expo/dom-webview",
+        "version": "57.0.1",
+        "peersSuffixHash": "23de",
+        "deduped": true
+      },
+      {
+        "name": "@expo/log-box",
+        "version": "57.0.4",
+        "peersSuffixHash": "2a40",
+        "deduped": true
+      },
+      {
+        "name": "@react-native/virtualized-lists",
+        "version": "0.86.3",
+        "peersSuffixHash": "f933",
+        "dependents": [
+          {
+            "name": "react-native",
+            "version": "0.86.3",
+            "circular": true
+          }
+        ]
+      },
+      {
+        "name": "@splotch/native-architecture",
+        "version": "",
+        "depField": "devDependencies"
+      },
+      {
+        "name": "expo",
+        "version": "57.0.26",
+        "peersSuffixHash": "1fee",
+        "deduped": true
+      },
+      {
+        "name": "expo-asset",
+        "version": "57.0.18",
+        "peersSuffixHash": "986d",
+        "deduped": true
+      },
+      {
+        "name": "expo-constants",
+        "version": "57.0.20",
+        "peersSuffixHash": "4c0d",
+        "deduped": true
+      },
+      {
+        "name": "expo-file-system",
+        "version": "57.0.7",
+        "peersSuffixHash": "c86d",
+        "deduped": true
+      },
+      {
+        "name": "expo-font",
+        "version": "57.0.4",
+        "peersSuffixHash": "23de",
+        "deduped": true
+      },
+      {
+        "name": "expo-modules-core",
+        "version": "57.0.20",
+        "peersSuffixHash": "743a",
+        "dependents": [
+          {
+            "name": "expo",
+            "version": "57.0.26",
+            "peersSuffixHash": "1fee",
+            "deduped": true
+          }
+        ]
+      },
+      {
+        "name": "expo-modules-jsi",
+        "version": "57.1.1",
+        "peersSuffixHash": "47e0",
+        "dependents": [
+          {
+            "name": "expo-modules-core",
+            "version": "57.0.20",
+            "peersSuffixHash": "743a",
+            "deduped": true
+          }
+        ]
+      }
+    ]
+  }
+]

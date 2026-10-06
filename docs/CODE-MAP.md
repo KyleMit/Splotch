@@ -22,14 +22,16 @@ change them. Every tracked file lands in exactly one measured area or one explic
 * **Measured:** source code (including tracked generated source used at runtime), authored Markdown,
   hand-authored SVG, XML and project files, shell/config files, store listing text, test fixtures,
   scripts inside evidence packages, and authoritative `.ruler/**` sources. A nested `.ruler`
-  instruction source counts in the area it describes.
+  instruction source counts in the area it describes. The isolated native candidate has its own
+  measured area; it is separate from the shipped web app and native shells.
 * **Binary media / archives:** images, audio, fonts, JARs, and gzip/zip archives.
 * **Vector art assets / traced samples:** coloring-page outlines under `web/static/coloring/`, and
   the traced SVG corpora of `model-eval`, `centerline-tracing`, and the `vectorize` pilot.
   Hand-authored icons in `web/src` stay measured.
 * **Generated measurement data:** JSON, JSONL, TSV, CSV, and `.out` files under the evidence roots
-  (`perf-profiles/`, `scrapbook/`, `docs/scratchpad/`, `docs/investigations/`, `tools/asset-gen/`,
-  and the `centerline-tracing` benchmark), plus captured logs and ranking text there.
+  (`perf-profiles/`, `scrapbook/`, `docs/scratchpad/`, `docs/investigations/`,
+  `docs/migration/evidence/`, `tools/asset-gen/`, and the `centerline-tracing` benchmark), plus
+  captured logs and ranking text there.
 * **Generated report HTML, payloads, and lockfile:** scrapbook and asset-gen report pages; patch,
   diff, encrypted, and hash payloads; `pnpm-lock.yaml`; the scrapbook publishing marker.
 * **Agent dedup:** generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`,

@@ -53,6 +53,14 @@ describe('exclusion classes', () => {
     ['web/static/coloring/farm/cow.svg', 'Vector art assets / traced samples'],
     ['tools/model-eval/samples/gen__pizza__square.svg', 'Vector art assets / traced samples'],
     ['docs/scratchpad/perf/run/summary.json', 'Generated measurement data'],
+    [
+      'docs/migration/evidence/native-topology-05/script-inventory.json',
+      'Generated measurement data',
+    ],
+    [
+      'docs/migration/evidence/native-topology-05/controls/install.log.txt',
+      'Generated audit / ranking text and captured logs',
+    ],
     ['perf-profiles/evidence/run/capture.json', 'Generated measurement data'],
     ['tools/perf/tests/fixtures/frame-stamp-matrix/ipad.json', 'Generated measurement data'],
     ['docs/scratchpad/perf/run/memory.txt', 'Generated audit / ranking text and captured logs'],
@@ -72,6 +80,9 @@ describe('exclusion classes', () => {
     ['tools/store-drawings/samples/sun.svg', 'tools excluding asset-gen', 'store-drawings'],
     ['docs/scratchpad/perf/run/check.mjs', 'docs', 'scratchpad'],
     ['package.json', 'root', '(root)'],
+    ['experiments/native-architecture/src/ProbeApp.tsx', 'experiments/native-architecture', 'src'],
+    ['experiments/native-architecture/package.json', 'experiments/native-architecture', '(root)'],
+    ['docs/migration/evidence/native-topology-05/README.md', 'docs', 'migration'],
   ])('measures %s in %s / %s', (path, area, bucket) => {
     expect(classifyPath(path)).toEqual({ kind: 'measured', area, bucket });
   });

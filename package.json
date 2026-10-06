@@ -26,7 +26,7 @@
     "dev:cap": "CAPACITOR=true node tools/run-web-tool.mjs vite dev --host",
     "dev:tunnel": "node tools/start-cloud-tunnel.mjs",
     "dev:stop": "node tools/stop-dev-servers.mjs",
-    "prebuild": "node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases",
+    "prebuild": "node tools/netlify-topology-witness.mjs && node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases",
     "build": "node tools/run-web-tool.mjs vite build",
     "postbuild": "node tools/check-release-seams.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-build-version.mjs && node tools/check-pwa-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/check-static-bundle.mjs --web && node tools/check-bundle-budgets.mjs && node tools/check-eager-error-bundle.mjs",
     "prebuild:cap": "node tools/run-web-tool.mjs svelte-kit sync && npm run gen:icon-names && npm run gen:releases",
@@ -271,7 +271,9 @@
     "worktrees:prune": "node tools/git-housekeeping/prune-agent-worktrees.mjs",
     "branches:prune": "node tools/git-housekeeping/prune-local-branches.mjs",
     "branches:gather": "node tools/git-housekeeping/gather-remote-branches.mjs",
-    "gen:android:assets": "capacitor-assets generate --android && node tools/mobile/android/gen-monochrome-icon.mjs"
+    "gen:android:assets": "capacitor-assets generate --android && node tools/mobile/android/gen-monochrome-icon.mjs",
+    "check:migration:native-topology": "node tools/migration/check-native-topology.mjs",
+    "gen:migration:script-inventory": "node tools/migration/gen-script-inventory.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -282,7 +284,7 @@
     "dev:cap": "Dev server in native mode (CAPACITOR=true) on the network, for android:live",
     "dev:tunnel": "Claude Code Cloud only: start dev + a chisel reverse tunnel and print the public phone-preview URL (needs TUNNEL_AUTH; see docs/CLOUD/Claude-Code.md, ADR-0021)",
     "dev:stop": "Kill any stale dev servers holding the dev ports (vite 5173, netlify dev 8888)",
-    "prebuild": "svelte-kit sync + gen:icon-names + gen:releases before build",
+    "prebuild": "named Netlify topology observation + svelte-kit sync + gen:icon-names + gen:releases before build",
     "build": "Web build (adapter-netlify) for splotch.art",
     "postbuild": "Verify release seams, one app version across client/server/version.json/coloring manifest/service worker, PWA precache integrity, native-code exclusion, startup JS/CSS bytes and modulepreload count, the largest lazy JS chunk, and the eagerly loaded root error import closure after build",
     "prebuild:cap": "svelte-kit sync + gen:icon-names + gen:releases before build:cap",
@@ -527,7 +529,9 @@
     "check:matrix-staleness": "Report each performance-matrix section's capture age, oldest first (ADR-0175, superseding ADR-0159): every captured drawing, undo, and action section, preserved ones included, with its capturedOn date, its age in days, its product commit, and the engine and measured-surface commits that landed since. Age is reported, not failed, by default: main takes several product merges a day while campaigns refresh the matrix periodically, so a current-or-stale verdict was false for most of every section's life. Every release-gate section older than RELEASE_GATE_MAX_AGE_DAYS (or undated) is named with its date and age in a WARN line; tripwire and advisory rows are never flagged. --release-gate-age fails on any such section: it is the age clause of a performance campaign's completion gate. --strict asserts provenance-complete instead: every captured section carries a valid capturedOn date and a product commit this checkout can resolve. Chained onto gen:performance-matrix. Flags: --manifest=, --base= (default HEAD), --strict, --release-gate-age",
     "check:device-identifiers": "Fail when any tracked file contains a physical-device identifier (Apple hardware UDID or rig Android serial shapes), or any tracked file under perf-profiles/evidence/ carries a capture-host address (a private IPv4 or an mDNS .local name) — promoted evidence must carry [redacted] for a device and lan-host / rig-mac.local for a host, and tests the FAKE_* constants from tools/perf/lib/device-identifiers.mjs; output masks matched values (issues 1645 and 2221). Also run as a test by tools/perf/tests/device-identifier-guard.test.mjs in the CI tools tier",
     "perf:campaign:status": "How far along is a campaign, and what is left. Exists because both obvious ways to read this off ledger.tsv are wrong: it is an append-only log with skip and retry rows, so `wc -l` is not a cell count, and a resumed run records `already-valid` rather than `valid-json`, so grepping the latter undercounts a finished target. Completion is decided by the RUNNER'S OWN artifact inspection — matching runtime AND the fidelity verdict where the transport writes one — so status cannot call a structurally rejected measurement complete, and a ledger row cannot certify a cell whose artifact was deleted or replaced. Physical-device status includes the same drift-reference queue the runner executes. The ledger supplies attempts spent and is reported when it disagrees with disk. Flags: --target= (required), --modes=, --items=, --output-root=, --ledger=",
-    "gen:android:assets": "Regenerate Android launcher icons and splash with Capacitor assets, then restore the app-designed monochrome drawable and both adaptive references from assets/icon-monochrome.xml"
+    "gen:android:assets": "Regenerate Android launcher icons and splash with Capacitor assets, then restore the app-designed monochrome drawable and both adaptive references from assets/icon-monochrome.xml",
+    "check:migration:native-topology": "Verify the isolated native candidate declarations, SDK alignment, resolution, Metro/autolinking and typed entry without generating or building native projects",
+    "gen:migration:script-inventory": "Inspect all new lock artifacts against registry/archive integrity before allowing a native candidate dependency install"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -567,7 +571,9 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.2",
-    "web-features": "3.40.0"
+    "web-features": "3.40.0",
+    "yaml": "2.9.1",
+    "tar": "7.5.22"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.1",

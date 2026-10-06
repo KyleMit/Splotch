@@ -1,0 +1,24 @@
+{
+  "template": {
+    "name": "expo-template-bare-minimum",
+    "version": "57.0.28",
+    "integrity": "sha512-8rr+H+WPM1OnnH+IzAtW4jOglhhN+KAdPKI+l3jfuIZXt0PQt+wSAoPb/v+4unM5hHjmQu65ES0jfqSZPGcGEw=="
+  },
+  "directPackages": {
+    "@babel/core": "7.29.7",
+    "@types/react": "19.2.2",
+    "babel-preset-expo": "57.0.13",
+    "expo": "57.0.26",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "rendererReactVersion": "19.2.3",
+  "expoMetroVersion": "56.0.2",
+  "metroVersion": "0.84.5",
+  "requiredRefreshPeer": ">=0.14.0 <1.0.0",
+  "shippingConfigHashes": {
+    "capacitor.config.json": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+    "android/capacitor.settings.gradle": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+    "ios/App/CapApp-SPM/Package.swift": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+  }
+}

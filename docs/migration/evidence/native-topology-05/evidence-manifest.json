@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "scope": "Durable topology05 evidence files; manifest excludes itself",
+  "files": [
+    {
+      "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
+      "sha256": "55e20439126f8f9017feecceae26b0e158762da5399748749b1121351f81e39a",
+      "bytes": 12711
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/README.md",
+      "sha256": "23192a9d68d1b30b9527d7dc62b5fe45ab442c8a839b7dcdf09013ed4268464a",
+      "bytes": 8068
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-artifact-resolutions.json",
+      "sha256": "403d1a9ce7b5527c80a6cb8140ddbe2daaefb4058fede8bd955ee7320e566d37",
+      "bytes": 233987
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/baseline-production-artifacts.json",
+      "sha256": "b2f13b86cd54dd62ebcf83cc4a97eb96fca02e3bc49bc8a3bf00d273f20a3514",
+      "bytes": 19307
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/candidate-exclusive-artifacts.json",
+      "sha256": "25eace14fcfd607e6cffa6ef6d5e62bd7f721be0901a88a8f0aa2cc3b50a6ce6",
+      "bytes": 35747
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/dead-code-knip.log.txt",
+      "sha256": "beb15135903096b9c639bfec1401d9e28eae0af0c45966039e3641ef092bffd7",
+      "bytes": 89
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/denied-install.log.txt",
+      "sha256": "fd7f79cf27f090adf1eeb3516afddc7696539df87b3f3e8d53d63aa012494092",
+      "bytes": 165
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/final-file-lint.log.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-focused-guards.log.txt",
+      "sha256": "830c660229c958f3cff3809eb1e9eb977636ee64d68abece2f71abca53a9f1ca",
+      "bytes": 442
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-frozen-install.log.txt",
+      "sha256": "3e0da25cf22f26fd94c6f7840f4d2dea6bebe4ce9d22303ad2bebf7f340eef35",
+      "bytes": 464
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-full-tests.log.txt",
+      "sha256": "6f4873aed4b05307e9dc12747b54b86bf3e903aec7d15938f21857b3403da5fa",
+      "bytes": 27571
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-lock-only.log.txt",
+      "sha256": "b36facc3b3a3c3b31c6412ae1557ac5086cab916119a7107a20c1db630ac19d4",
+      "bytes": 126
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-quality.log.txt",
+      "sha256": "17ad0ab13a01d00ecc6701ae18b763cbd959c90394f00ec79eb70d4d6b071257",
+      "bytes": 59605
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-repaired-focused.log.txt",
+      "sha256": "3774c431ef0b616b9473033ea143d1b69873343fb5c7a8f13817d26a0b4fe7d9",
+      "bytes": 624
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-repaired-quality.log.txt",
+      "sha256": "3050ad36c9c9e047e5201e7405f3baa5424e600730158de804c46d694fb807cb",
+      "bytes": 60057
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-repaired-topology.log.txt",
+      "sha256": "b09e83cd4ddcee53f0e9dfdabd40dec4e26535c6551a7e26600d96735f3d4bfc",
+      "bytes": 53841
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/forge-topology-check.log.txt",
+      "sha256": "e0bb54171ac58f060dc409ce38daa35877714e901b5563e63771b715aaa3695b",
+      "bytes": 53389
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/full-install.log.txt",
+      "sha256": "e94cbf6c947ae0312e223fb91cf2d0939e396e04761e4d2e368a8e242222d1d8",
+      "bytes": 845
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/lifecycle-fixture/fixture-source.json",
+      "sha256": "8ed26e4bc67daac7b06c3537968889ea5becdea3ecff6261d189bc3304760c34",
+      "bytes": 1304
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/lock-only.log.txt",
+      "sha256": "0a93824df0112232969d2aef8922f627b45c70ad6dcf93c65815750c33fafbf6",
+      "bytes": 143
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/normal-witness-cli.log.txt",
+      "sha256": "5b5091f9d4eadc44c09efab22fab3c562347f85926b0e33dcc62ff80b8268d26",
+      "bytes": 45
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/production-knip.log.txt",
+      "sha256": "eb0bae2414e26089f5c4421de986a841af8d5338c3cfc6f4f15663e0e1e93829",
+      "bytes": 105
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/ruler-generation.log.txt",
+      "sha256": "98ad5b3a242a798a684a952c264f5a4bcd394376762f6765fbd275e55f06cddc",
+      "bytes": 1819
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/scoped-guards.log.txt",
+      "sha256": "b56c7a447273077cb6f3c7a03fb0ec814c6546c9d2af9d360d7cc8228d6d4666",
+      "bytes": 476
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/shipping-types.log.txt",
+      "sha256": "001cac17b2946448d8c346304faef2a3b58b59a5607c7cafe23d9fd8dd05f7f8",
+      "bytes": 2295
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/strict-install.log.txt",
+      "sha256": "42f1835cb833bdaa670961456d990c4b73202f1f5cb2a759be08007696ce96e3",
+      "bytes": 515
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/controls/supplemental-archive-audit.log.txt",
+      "sha256": "9b10278ac7a4464790bf379957a95ad0b0737d832138a93feb95915065a9208a",
+      "bytes": 12885
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-focused-guards.json",
+      "sha256": "be85ee9200c475d8f17979b7a8b483a2fa35c3bcf068d7561b5f1aa878276f9f",
+      "bytes": 423
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-frozen-install.json",
+      "sha256": "44de0ccdbb36799c47320228e3928def21988764092aa197cca24e2ec25ff6af",
+      "bytes": 1056
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-full-tests.json",
+      "sha256": "ea4e0ef8173d71e8bafd50c06fce88ccf84af8b1361146a254fd288a9e56f02b",
+      "bytes": 314
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-independent-source-review.json",
+      "sha256": "a4e14b841b542ac4a153cee0a8489c294c3da30c487200e526ccac4ae9b3ff06",
+      "bytes": 836
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-install-host-preflight.json",
+      "sha256": "be34272b71db316297607b37220586fb70aa610d6a0d7102b7abf28980f96e31",
+      "bytes": 640
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-installed-lock.yaml.txt",
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "bytes": 518383
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-installed-sources.json",
+      "sha256": "bc8f9398b2270b9f950f97b2de17970ad7cf5d09693a9c7ae7d16aec06a26351",
+      "bytes": 10392
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-lock-delta.json",
+      "sha256": "c57b5e1e740b761b7d446becc586b91af1c6aafd1e91c28ae47247d76bc7a6e2",
+      "bytes": 402
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-lock-only.json",
+      "sha256": "7457020dd4dc66c087d632cb091cf3fedb2aa8cdf9d5582c508ecc2e0fa885e0",
+      "bytes": 537
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-quality.json",
+      "sha256": "223a6ede6013da3c108c7fa2d0dffff6a85dbf72bb1ac35772721408a75e0e0d",
+      "bytes": 229
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-repaired-focused.json",
+      "sha256": "af03acde2ec02ef71af6952462d2b97a0c9fb5de4c3eb77b1749c24b787b0171",
+      "bytes": 669
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-repaired-quality.json",
+      "sha256": "5046231def29372b5f5b7527a2050676e71f0741b3464fdfddc0c641396c4e79",
+      "bytes": 255
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-repaired-topology-report.json",
+      "sha256": "3c430f7857b875420fd16007cdd44ce4cb84829e0e928be97e50d87f84bf4b60",
+      "bytes": 51040
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-repaired-topology.json",
+      "sha256": "8e8684374d8b69a637f0a84f77c22b3dab1f28493b7c4295c40b737805ddf680",
+      "bytes": 345
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-source-review.json",
+      "sha256": "576df3f941e42e4df21b5d6c214139aa73847830752e6c4ae0f6b5a271abf82f",
+      "bytes": 4611
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-topology-check.json",
+      "sha256": "8dfbe3fe1666e37216caa6dc5b533502a8cb0bf64e5df1583bfb3d3e39a33ee5",
+      "bytes": 245
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/forge-topology-report.json",
+      "sha256": "913b4faf5c15502afbc5f707da8d0018e9e0b7e0e548bfb4e6f22400c0093f6d",
+      "bytes": 50588
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/full-install.json",
+      "sha256": "1774aadcc2ccfd9ae66732a28e73cdd1f1c56148dcfb0c9d149e4b7ab437b9a6",
+      "bytes": 603
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/lock-only-control.json",
+      "sha256": "69a37b662ab5588adc40f30bf32fc49d0aa7fcbb299b0ad1f55093903b85c400",
+      "bytes": 1757
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/pnpm-lifecycle-source.json",
+      "sha256": "81266d0774d19272fbaf04876d9ff00322980156c0cf201df0b7be96cc2ee479",
+      "bytes": 6034
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/pnpm-why.json",
+      "sha256": "fc2cd83c0f95cbaeb4deba9f63d2c04aad3feb8c705b0f7be3234f5b3bc35603",
+      "bytes": 38523
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/prepare-source-review.json",
+      "sha256": "6713191103be9bea9c9c2abf335ee87b2b3d2e4be566e2b36e5e57bc649835cb",
+      "bytes": 8009
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/production-install-contract.json",
+      "sha256": "2bb77eae13b3f7277273d68b8827f4c1a0c7f78dcb97b5d6306f480c066cd4e1",
+      "bytes": 104583
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/script-inventory.json",
+      "sha256": "c425e65eec49e6e6b1c35fe102faf386a524e3b60d00cd8ba1d3f96008258361",
+      "bytes": 246797
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/structural-checks.json",
+      "sha256": "c5faac5258af7f093e83c7e809cdb39711614c81069b17e4cabfaf3d590e9249",
+      "bytes": 3004
+    },
+    {
+      "path": "docs/migration/evidence/native-topology-05/topology-report.json",
+      "sha256": "09b4d616d866a5b3af153d08c447a871929dafabe13336665401c9d4051ad06b",
+      "bytes": 46180
+    }
+  ]
+}

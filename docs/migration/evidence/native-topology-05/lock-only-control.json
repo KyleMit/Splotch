@@ -1,0 +1,48 @@
+{
+  "packageManager": "pnpm@11.22.0",
+  "command": ["pnpm", "install", "--lockfile-only", "--frozen-lockfile=false"],
+  "exitCode": 0,
+  "rootHooks": ["preinstall", "install", "postinstall", "prepare"],
+  "dependencyHooks": ["postinstall"],
+  "lockWritten": true,
+  "nodeModulesPresent": false,
+  "sentinelMarkers": [],
+  "scope": "Reviewed local tarball fixture; no candidate packages installed or executed",
+  "fixture": "controls/lifecycle-fixture/fixture-source.json",
+  "fixtureTarballSha512": "sha512-tZflxGfPTMQhoK8VuHIFnZseaNmnt9zdU5F7Tb/yQDuzQKA1TEmN8mWznnPC4irIlCmqrJfF7NDMc7MwqAUGew==",
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.22.0",
+  "workingDirectory": "/private/tmp/splotch-native-topology-lock-only-recheck",
+  "markerSearch": {
+    "root": [],
+    "dependency": []
+  },
+  "strictInstallControl": {
+    "fixtureTarball": "identical bytes",
+    "rootManifest": {
+      "name": "splotch-script-policy-control",
+      "private": true,
+      "packageManager": "pnpm@11.22.0",
+      "dependencies": {
+        "topology-lifecycle-control": "file:./control.tgz"
+      }
+    },
+    "workspacePolicy": "nodeLinker: hoisted\nstrictDepBuilds: true\nallowBuilds: { topology-lifecycle-control@file:control.tgz: set this to true or false }\n",
+    "command": ["pnpm", "install"],
+    "exitCode": 1,
+    "rejection": "ERR_PNPM_IGNORED_BUILDS",
+    "sentinelMarkers": [],
+    "log": "controls/strict-install.log.txt"
+  },
+  "log": "controls/lock-only.log.txt",
+  "deniedInstallControl": {
+    "command": ["pnpm", "install", "--frozen-lockfile"],
+    "exitCode": 0,
+    "explicitVerdict": {
+      "topology-lifecycle-control": false
+    },
+    "rootLifecycleHooks": [],
+    "sentinelMarkers": [],
+    "log": "controls/denied-install.log.txt"
+  }
+}

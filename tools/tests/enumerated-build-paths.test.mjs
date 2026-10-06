@@ -38,7 +38,7 @@ const capabilityFolders = [
 /** The names inside the first `tools/{a,b,c}/…` brace list in knip's project globs. */
 function knipEnumeratedFolders() {
   const knip = JSON.parse(readFileSync(join(repoRoot, 'knip.json'), 'utf8'));
-  const braced = knip.project.find((glob) => glob.startsWith('tools/{'));
+  const braced = knip.workspaces['.'].project.find((glob) => glob.startsWith('tools/{'));
   return braced.slice('tools/{'.length, braced.indexOf('}')).split(',');
 }
 

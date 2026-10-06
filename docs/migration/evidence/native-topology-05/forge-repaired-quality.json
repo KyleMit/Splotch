@@ -1,0 +1,7 @@
+{
+  "command": ["npm", "run", "check:quality"],
+  "exitCode": 0,
+  "elapsedSeconds": 44.101,
+  "log": "controls/forge-repaired-quality.log.txt",
+  "scope": "Post-helper-entry and full-tier ownership repairs; no full test/browser/build/native execution"
+}

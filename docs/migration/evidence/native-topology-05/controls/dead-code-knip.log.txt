@@ -1,0 +1,3 @@
+
+> splotch@1.6.0 lint:dead
+> knip --no-progress --include files,exports,types,duplicates

@@ -1,0 +1,13 @@
+{
+  "name": "@splotch/native-architecture",
+  "private": true,
+  "main": "src/index.ts",
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@types/react": "19.2.2",
+    "babel-preset-expo": "57.0.13",
+    "expo": "57.0.26",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  }
+}

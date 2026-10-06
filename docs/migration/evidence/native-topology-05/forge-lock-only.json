@@ -1,0 +1,11 @@
+{
+  "command": ["pnpm", "install", "--lockfile-only", "--frozen-lockfile=false"],
+  "exitCode": 0,
+  "elapsedSeconds": 0.28,
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.22.0",
+  "installedRsaSha256Before": "fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50",
+  "installedRsaSha256After": "fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50",
+  "installedSourceUnchanged": true,
+  "scope": "Lock-only resolution; installed registry source remains unpatched; no normal install or test/build execution"
+}
