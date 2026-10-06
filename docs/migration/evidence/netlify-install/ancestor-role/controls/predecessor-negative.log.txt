@@ -1,0 +1,42 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/netlify-home-store.test.mjs -t records the finite ancestor/link filesystem refusal before children --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools
+
+ ❯ tests/netlify-home-store.test.mjs (61 tests | 1 failed | 60 skipped) 35ms
+   ❯ Exact Netlify image home store (61)
+     × records the finite ancestor/link filesystem refusal before children 34ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/netlify-home-store.test.mjs > Exact Netlify image home store > records the finite ancestor/link filesystem refusal before children
+AssertionError: expected { …(3) } to deeply equal { …(3) }
+
+- Expected
++ Received
+
+  {
+    "kind": "link",
+-   "role": "ancestor",
++   "role": "home",
+    "stage": "ambient-pnpm-home-filesystem-refused",
+  }
+
+ ❯ tests/netlify-home-store.test.mjs:278:34
+    276|     setSetting(value.context, 'store-dir', store);
+    277|     const child = expectBeforeChild(value, 'Netlify home store filesys…
+    278|     expect(events(child).at(-1)).toEqual({
+       |                                  ^
+    279|       stage: 'ambient-pnpm-home-filesystem-refused',
+    280|       role: 'ancestor',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 60 skipped (61)
+   Start at  07:22:51
+   Duration  117ms (tests 51%, transform 33%, import 15%, worker 2%)
+

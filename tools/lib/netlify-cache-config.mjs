@@ -98,7 +98,13 @@ function requireHomeOwner(config, env) {
 
 function homeFilesystemRefused(config, path, kind) {
   const role =
-    path === config.storeDir ? 'store' : path === config.physicalStore ? 'version' : 'home';
+    path === config.storeDir
+      ? 'store'
+      : path === config.physicalStore
+        ? 'version'
+        : path === NETLIFY_HOME_ROOT
+          ? 'home'
+          : 'ancestor';
   config.record({ stage: 'ambient-pnpm-home-filesystem-refused', role, kind });
 }
 

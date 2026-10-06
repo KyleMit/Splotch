@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "scope": "R3 requested diagnostic follow-up and final local controls; current-head CI and hosted acceptance pending",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2630,
+      "mode": "0644",
+      "sha256": "4907e2ab666b9bbeb9d1275a66c1d744a11e93ea68ff94170650d4ee1343c350",
+      "kind": "authored-package-metadata"
+    },
+    {
+      "path": "claude-r3-findings.json.txt",
+      "bytes": 4744,
+      "mode": "0644",
+      "sha256": "040b991ac4ba7d9606736ab43ce16d9af39b89a9560b5930254da2e4f7ae9909",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "claude-r3-posted.json.txt",
+      "bytes": 172,
+      "mode": "0644",
+      "sha256": "472bc1ee7c5f76ec7b491d4e264717ba61cc8d30821d9dda62b58423e44cb292",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/predecessor-negative.json.txt",
+      "bytes": 554,
+      "mode": "0644",
+      "sha256": "46b9424dee953143f95823db4ed460356d90fdbceb94fb97e2eab61bee34806c",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/predecessor-negative.log.txt",
+      "bytes": 1525,
+      "mode": "0644",
+      "sha256": "443efecbbfa9e5b8c9f30c2d9afe496ab8d0d7ba01541ecce938bf5ce3316a24",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-ancestor-focused.log.txt",
+      "bytes": 402,
+      "mode": "0644",
+      "sha256": "4d3a5db8754384bbd38bfeaa6ac699deb4440183563ffe7949fb9e9e29e53d75",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-ancestor-format.log.txt",
+      "bytes": 343,
+      "mode": "0644",
+      "sha256": "3d9088f8dbb9863acdc28554d5aba03b0063369a4c9a108acddb375707f8c575",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-ancestor-full-tools.log.txt",
+      "bytes": 4060,
+      "mode": "0644",
+      "sha256": "43295860905ac9f446ae59f0a053ffb4da9e82475cd599e0d3ecec3a183f54c3",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-ancestor-quality.log.txt",
+      "bytes": 60088,
+      "mode": "0644",
+      "sha256": "626e534eef862fe4ad3955177279d98bdd0f4884b3db42b1f399334aaa2b4c42",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/splotch-netlify-home-ancestor-real-manager.log.txt",
+      "bytes": 4166,
+      "mode": "0644",
+      "sha256": "9f1f16614080e392cd593f543fb159cb54a582a2a9e56e75cc778ae3c692f231",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "controls/validation.json.txt",
+      "bytes": 2170,
+      "mode": "0644",
+      "sha256": "5efc5a56521a778fe551d25e0149bb7288ff6b498aaa630ca579db1a44e7fec7",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "execution-binding.json",
+      "bytes": 2196,
+      "mode": "0644",
+      "sha256": "eee8fa1712b031152f6a1f669d1ebce537b7a429a0c5786f5dc8cf8e1af4b4b5",
+      "kind": "authored-package-metadata"
+    },
+    {
+      "path": "real-pnpm/development-baseline.log.txt",
+      "bytes": 1131,
+      "mode": "0644",
+      "sha256": "5b8f416dec351092d509aa3d4dc88cf6fe32eb3c1cf2a1742aba68e69f29fea8",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/protocol.py.txt",
+      "bytes": 6188,
+      "mode": "0644",
+      "sha256": "672d0ae622569c99ccf8ccecd3c87573de9a110c402bdbb23b17f5b88bdeae41",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-production-release-build.log.txt",
+      "bytes": 62483,
+      "mode": "0644",
+      "sha256": "b8317a371a3f9585c95e51ab358d1c1743aaa4a43468ec86822d34316f8df151",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-warm-ci-with-home-store.log.txt",
+      "bytes": 5709,
+      "mode": "0644",
+      "sha256": "35cd287aa5a1d247f050ac1f426cc00364e8d4e65747ed046e87471c25784707",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/qualified-warm-selected-physical-witness.log.txt",
+      "bytes": 45862,
+      "mode": "0644",
+      "sha256": "7838dc37bea94618cd83c91ff7844f2a7e4d9c69824c0cae91ea253dcb38e001",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/receipt.json.txt",
+      "bytes": 6443,
+      "mode": "0644",
+      "sha256": "fabef00aa8b78072f8dab1c93529f6c8a131a28d8c91ad4286280ce2ae7ba441",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-double-quoted.log.txt",
+      "bytes": 85,
+      "mode": "0644",
+      "sha256": "97cda04d362fc0b6ed273eae634687bd3c8fbe912f2c48ad381e0b23f43019b4",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-plain.log.txt",
+      "bytes": 85,
+      "mode": "0644",
+      "sha256": "97cda04d362fc0b6ed273eae634687bd3c8fbe912f2c48ad381e0b23f43019b4",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-getter-single-quoted.log.txt",
+      "bytes": 85,
+      "mode": "0644",
+      "sha256": "97cda04d362fc0b6ed273eae634687bd3c8fbe912f2c48ad381e0b23f43019b4",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-global-store-writer.log.txt",
+      "bytes": 0,
+      "mode": "0644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "real-pnpm/released-pnpm-version.log.txt",
+      "bytes": 8,
+      "mode": "0644",
+      "sha256": "a8608bace4e3de4e6d8c1f809759eab6c60aa908a62f739089cab67e9c4955c6",
+      "kind": "original-byte-copy"
+    },
+    {
+      "path": "reviewed-d70-ci.json.txt",
+      "bytes": 36407,
+      "mode": "0644",
+      "sha256": "2b023c2163ee3f2631996d7e87f2c5ddd7465a8d1647b3576a5107033a302261",
+      "kind": "original-byte-copy"
+    }
+  ]
+}

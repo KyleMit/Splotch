@@ -257,6 +257,33 @@ describe('Exact Netlify image home store', () => {
     expect(child.stdout + child.stderr).not.toContain('private-file-value');
   });
 
+  it('records the finite ancestor/link filesystem refusal before children', () => {
+    const value = homeFixture();
+    const ancestor = join(value.context.root, 'linked-home-parent');
+    const target = join(value.context.root, 'owned-home-parent');
+    const home = join(ancestor, 'home');
+    mkdirSync(join(target, 'home'), { recursive: true });
+    symlinkSync(target, ancestor, 'dir');
+    replaceOwned(
+      value.helper,
+      `const NETLIFY_HOME_ROOT = ${JSON.stringify(value.home)};`,
+      `const NETLIFY_HOME_ROOT = ${JSON.stringify(home)};`
+    );
+    value.home = home;
+    value.context.env.HOME = home;
+    const store = join(home, '.pnpm-store');
+    put(value.context.env.XDG_CONFIG_HOME, 'pnpm/config.yaml', `storeDir: ${store}\n`);
+    setSetting(value.context, 'store-dir', store);
+    const child = expectBeforeChild(value, 'Netlify home store filesystem qualification failed');
+    expect(events(child).at(-1)).toEqual({
+      stage: 'ambient-pnpm-home-filesystem-refused',
+      role: 'ancestor',
+      kind: 'link',
+    });
+    expect(child.stdout + child.stderr).not.toContain(ancestor);
+    expect(child.stdout + child.stderr).not.toContain(target);
+  });
+
   it.each(['noncanonical', 'inspection'])(
     'records a private %s home inspection failure',
     (kind) => {

@@ -1,0 +1,72 @@
+[
+  {
+    "stage": "format",
+    "argv": [
+      "node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--write",
+      "tools/netlify-production-install.mjs",
+      "tools/lib/netlify-cache-config.mjs",
+      "tools/tests/netlify-production-install.test.mjs",
+      "tools/tests/netlify-cache-config.test.mjs",
+      "tools/tests/fixtures/netlify-install.mjs",
+      "tools/tests/netlify-home-store.test.mjs"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 0.1628189580515027,
+    "log": "/private/tmp/splotch-netlify-home-ancestor-format.log.txt",
+    "logSha256": "3d9088f8dbb9863acdc28554d5aba03b0063369a4c9a108acddb375707f8c575"
+  },
+  {
+    "stage": "focused",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "tests/netlify-production-install.test.mjs",
+      "tests/netlify-cache-config.test.mjs",
+      "tests/netlify-home-store.test.mjs",
+      "--maxWorkers=1"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 53.51832174998708,
+    "log": "/private/tmp/splotch-netlify-home-ancestor-focused.log.txt",
+    "logSha256": "4d3a5db8754384bbd38bfeaa6ac699deb4440183563ffe7949fb9e9e29e53d75"
+  },
+  {
+    "stage": "real-manager",
+    "argv": [
+      "/opt/homebrew/bin/python3",
+      "/private/tmp/splotch-netlify-home-ancestor-real-controls.py"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 28.69776849995833,
+    "log": "/private/tmp/splotch-netlify-home-ancestor-real-manager.log.txt",
+    "logSha256": "9f1f16614080e392cd593f543fb159cb54a582a2a9e56e75cc778ae3c692f231"
+  },
+  {
+    "stage": "full-tools",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 39.97616924997419,
+    "log": "/private/tmp/splotch-netlify-home-ancestor-full-tools.log.txt",
+    "logSha256": "43295860905ac9f446ae59f0a053ffb4da9e82475cd599e0d3ecec3a183f54c3"
+  },
+  {
+    "stage": "quality",
+    "argv": [
+      "npm",
+      "run",
+      "check:quality"
+    ],
+    "exitCode": 0,
+    "durationSeconds": 52.490200458909385,
+    "log": "/private/tmp/splotch-netlify-home-ancestor-quality.log.txt",
+    "logSha256": "626e534eef862fe4ad3955177279d98bdd0f4884b3db42b1f399334aaa2b4c42"
+  }
+]

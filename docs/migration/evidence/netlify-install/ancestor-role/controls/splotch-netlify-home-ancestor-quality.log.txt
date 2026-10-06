@@ -1,0 +1,1596 @@
+
+> splotch@1.6.0 check:quality
+> node tools/ci-mirror/run-quality-checks.mjs
+
+
+[1m$ npm run format:check[0m
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+
+[1m$ npm run check[0m
+
+> splotch@1.6.0 precheck
+> node tools/mobile/check-app-ids.mjs && node tools/run-web-tool.mjs svelte-kit sync
+
+[check-app-ids] all native app IDs match "art.splotch.app" and names match "Splotch".
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:5:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:6:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:7:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:11:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:12:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:17:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:18:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:19:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:24:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+> splotch@1.6.0 check
+> node tools/run-web-tool.mjs svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && npm run check:netlify
+
+$ svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+Loading svelte-check in workspace: /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/web
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+
+
+[1m$ npm run lint[0m
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+[1m$ npm run check:migration:native-topology[0m
+
+> splotch@1.6.0 check:migration:native-topology
+> node tools/migration/check-native-topology.mjs
+
+{
+  "scope": "Candidate topology only; no native compile, mount, performance or upgrade result",
+  "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "forgeMitigation": {
+    "status": "affected-published-version-with-guarded-lib-only-local-mitigation",
+    "advisory": "GHSA-86w9-cpqp-85rv",
+    "issue": 2696,
+    "patchedRsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+    "lockedPaths": [
+      "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
+      "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>expo>@expo/cli>node-forge"
+    ],
+    "installedCopies": [
+      {
+        "path": "node_modules/node-forge",
+        "rsaSha256": "22cdfb3220439533211cf00ff7c7e6605607761d77a2c3c263411d4c70798c4f",
+        "controls": [
+          {
+            "name": "public e=3 forgery rejected with default verification options",
+            "passed": true
+          },
+          {
+            "name": "signed malformed outer-extra rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nested-extra rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-1 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-8 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed nonempty-32 rejected",
+            "passed": true
+          },
+          {
+            "name": "signed malformed constructed rejected",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding absent accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding empty accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding long-null accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding indefinite-inner accepted",
+            "passed": true
+          },
+          {
+            "name": "fixed compatibility encoding nonminimal-oid accepted",
+            "passed": true
+          },
+          {
+            "name": "wrong digest rejected",
+            "passed": true
+          },
+          {
+            "name": "indefinite outer DigestInfo accepted",
+            "passed": true
+          },
+          {
+            "name": "Node SHA256 signature accepted",
+            "passed": true
+          },
+          {
+            "name": "RSA PSS accepted",
+            "passed": true
+          },
+          {
+            "name": "RSA NONE accepted and wrong digest rejected",
+            "passed": true
+          }
+        ]
+      }
+    ],
+    "consumers": [
+      {
+        "consumer": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/code-signing-certificates",
+        "control": "actual certificate/signature/CSR and tamper rejection",
+        "resolvedEntry": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/code-signing-certificates/build/main.js",
+        "passed": true
+      },
+      {
+        "consumer": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/cli",
+        "control": "actual CLI manifest signing and iOS parser with host subprocess fixture",
+        "resolvedEntry": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/cli/build/src/utils/codesigning.js",
+        "helperEntry": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/code-signing-certificates/build/main.js",
+        "passed": true
+      }
+    ],
+    "scannedPackages": 1419,
+    "staticMainReferences": [
+      {
+        "package": "@expo/cli",
+        "version": "57.0.27",
+        "path": "node_modules/@expo/cli/build/src/run/ios/codeSigning/Security.js"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/__tests__/main-test.js"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/main.d.ts"
+      },
+      {
+        "package": "@expo/code-signing-certificates",
+        "version": "0.0.6",
+        "path": "node_modules/@expo/code-signing-certificates/build/main.js"
+      }
+    ],
+    "unpatchedDistBundles": "registry bytes preserved; static subpath consumers forbidden",
+    "limits": "Static import/require and subpath literal references plus exact known consumer bytes; not a general proof about arbitrary computed code or live certificate-fetch/signing workflows"
+  },
+  "inventory": {
+    "candidateArtifacts": 468,
+    "reviewedArtifacts": 267
+  },
+  "production": {
+    "shippingArtifacts": 542,
+    "candidateArtifacts": 468,
+    "sharedArtifacts": 139
+  },
+  "shippingImports": {
+    "scannedShippingFiles": 549,
+    "scope": "Shipping source plus local production-entry import/re-export/dynamic-literal/require closure; computed imports and subprocess commands remain owned by production Knip/build checks"
+  },
+  "identities": {
+    "direct": {
+      "@babel/core": {
+        "name": "@babel/core",
+        "version": "7.29.7",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@babel/core",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@babel/core/package.json"
+      },
+      "@types/react": {
+        "name": "@types/react",
+        "version": "19.2.2",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@types/react",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@types/react/package.json"
+      },
+      "babel-preset-expo": {
+        "name": "babel-preset-expo",
+        "version": "57.0.13",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/babel-preset-expo",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/babel-preset-expo/package.json"
+      },
+      "expo": {
+        "name": "expo",
+        "version": "57.0.26",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo/package.json"
+      },
+      "react": {
+        "name": "react",
+        "version": "19.2.3",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react/package.json"
+      },
+      "react-native": {
+        "name": "react-native",
+        "version": "0.86.3",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-native",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-native/package.json"
+      }
+    },
+    "wrapper": {
+      "name": "@expo/metro",
+      "version": "56.0.2",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/package.json"
+    },
+    "metro": {
+      "name": "metro",
+      "version": "0.84.5",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro/package.json"
+    },
+    "metroFamily": {
+      "metro": {
+        "name": "metro",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro/package.json"
+      },
+      "metro-babel-transformer": {
+        "name": "metro-babel-transformer",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-babel-transformer",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-babel-transformer/package.json"
+      },
+      "metro-cache": {
+        "name": "metro-cache",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-cache",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-cache/package.json"
+      },
+      "metro-cache-key": {
+        "name": "metro-cache-key",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-cache-key",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-cache-key/package.json"
+      },
+      "metro-config": {
+        "name": "metro-config",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-config",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-config/package.json"
+      },
+      "metro-core": {
+        "name": "metro-core",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-core",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-core/package.json"
+      },
+      "metro-file-map": {
+        "name": "metro-file-map",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-file-map",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-file-map/package.json"
+      },
+      "metro-minify-terser": {
+        "name": "metro-minify-terser",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-minify-terser",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-minify-terser/package.json"
+      },
+      "metro-resolver": {
+        "name": "metro-resolver",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-resolver",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-resolver/package.json"
+      },
+      "metro-runtime": {
+        "name": "metro-runtime",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-runtime",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-runtime/package.json"
+      },
+      "metro-source-map": {
+        "name": "metro-source-map",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-source-map",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro/node_modules/metro-source-map/package.json"
+      },
+      "metro-symbolicate": {
+        "name": "metro-symbolicate",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-symbolicate",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-symbolicate/package.json"
+      },
+      "metro-transform-plugins": {
+        "name": "metro-transform-plugins",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-transform-plugins",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-transform-plugins/package.json"
+      },
+      "metro-transform-worker": {
+        "name": "metro-transform-worker",
+        "version": "0.84.5",
+        "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-transform-worker",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/metro-transform-worker/package.json"
+      }
+    },
+    "config": {
+      "name": "@expo/metro-config",
+      "version": "57.0.12",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro-config",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/metro-config/package.json"
+    },
+    "refresh": {
+      "name": "react-refresh",
+      "version": "0.14.2",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-refresh",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-refresh/package.json"
+    },
+    "refreshBabel": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-refresh/babel.js",
+    "rendererVersion": "19.2.3",
+    "cli": {
+      "name": "@expo/cli",
+      "version": "57.0.27",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/cli",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/cli/package.json"
+    },
+    "expoConfig": {
+      "name": "@expo/config",
+      "version": "57.0.9",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/config",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/config/package.json"
+    },
+    "autolinking": {
+      "name": "expo-modules-autolinking",
+      "version": "57.0.13",
+      "directory": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-autolinking",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-autolinking/package.json"
+    }
+  },
+  "config": {
+    "projectRoot": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture",
+    "entries": {
+      "android": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture/src/index.ts",
+      "ios": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture/src/index.ts"
+    },
+    "serverRoot": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch",
+    "nodeModulesPaths": [
+      "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture/node_modules",
+      "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules"
+    ],
+    "watchFolders": [
+      "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules",
+      "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture"
+    ],
+    "nativeConditions": {
+      "ios": [
+        "react-native"
+      ],
+      "android": [
+        "react-native"
+      ],
+      "tvos": [
+        "react-native"
+      ],
+      "macos": [
+        "react-native"
+      ],
+      "web": [
+        "browser"
+      ]
+    },
+    "expoModules": {
+      "android": {
+        "search": {
+          "expo": {
+            "name": "expo",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo",
+            "version": "57.0.26",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "ExpoFetchModule"
+                ],
+                "podspecPath": "Expo.podspec"
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.fetch.ExpoFetchModule"
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/dom-webview": {
+            "name": "@expo/dom-webview",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/dom-webview",
+            "version": "57.0.1",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "DomWebViewModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.webview.DomWebViewModule"
+                ],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/log-box": {
+            "name": "@expo/log-box",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/log-box",
+            "version": "57.0.4",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "podspecPath": "ExpoLogBox.podspec"
+              },
+              "android": {
+                "modules": []
+              }
+            },
+            "duplicates": []
+          },
+          "expo-asset": {
+            "name": "expo-asset",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-asset",
+            "version": "57.0.18",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "AssetModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.asset.AssetModule"
+                ],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-constants": {
+            "name": "expo-constants",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-constants",
+            "version": "57.0.20",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "ConstantsModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.constants.ConstantsModule"
+                ],
+                "services": [
+                  "expo.modules.constants.ConstantsService"
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-file-system": {
+            "name": "expo-file-system",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-file-system",
+            "version": "57.0.7",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "FileSystemModule",
+                  "FileSystemLegacyModule"
+                ],
+                "appDelegateSubscribers": [
+                  "FileSystemBackgroundSessionHandler"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.filesystem.FileSystemModule",
+                  "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-font": {
+            "name": "expo-font",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-font",
+            "version": "57.0.4",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "FontLoaderModule",
+                  "FontUtilsModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.font.FontLoaderModule",
+                  "expo.modules.font.FontUtilsModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-keep-awake": {
+            "name": "expo-keep-awake",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-keep-awake",
+            "version": "57.0.2",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "KeepAwakeModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.keepawake.KeepAwakeModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-core": {
+            "name": "expo-modules-core",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core",
+            "version": "57.0.20",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "podspecPath": [
+                  "./ExpoModulesCore.podspec",
+                  "./ExpoModulesWorklets.podspec"
+                ]
+              },
+              "android": {
+                "gradlePlugins": [
+                  {
+                    "id": "expo-module-gradle-plugin",
+                    "group": "expo.modules",
+                    "sourceDir": "expo-module-gradle-plugin",
+                    "applyToRootProject": false
+                  }
+                ]
+              }
+            },
+            "duplicates": []
+          }
+        },
+        "extraDependencies": [],
+        "coreFeatures": [],
+        "modules": [
+          {
+            "packageName": "@expo/dom-webview",
+            "projects": [
+              {
+                "name": "expo-dom-webview",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/dom-webview/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.webview.DomWebViewModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.1"
+          },
+          {
+            "packageName": "@expo/log-box",
+            "projects": [
+              {
+                "name": "expo-log-box",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/log-box/android",
+                "modules": [],
+                "services": [],
+                "packages": [
+                  "expo.modules.logbox.ExpoLogBoxPackage"
+                ]
+              }
+            ],
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo",
+            "projects": [
+              {
+                "name": "expo",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.fetch.ExpoFetchModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [
+                  "expo.modules.ExpoModulesPackage"
+                ]
+              }
+            ],
+            "packageVersion": "57.0.26"
+          },
+          {
+            "packageName": "expo-asset",
+            "projects": [
+              {
+                "name": "expo-asset",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-asset/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.asset.AssetModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.18"
+          },
+          {
+            "packageName": "expo-constants",
+            "projects": [
+              {
+                "name": "expo-constants",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-constants/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.constants.ConstantsModule",
+                    "name": null
+                  }
+                ],
+                "services": [
+                  "expo.modules.constants.ConstantsService"
+                ],
+                "packages": []
+              }
+            ],
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-file-system",
+            "projects": [
+              {
+                "name": "expo-file-system",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-file-system/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.filesystem.FileSystemModule",
+                    "name": null
+                  },
+                  {
+                    "classifier": "expo.modules.filesystem.legacy.FileSystemLegacyModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.7"
+          },
+          {
+            "packageName": "expo-font",
+            "projects": [
+              {
+                "name": "expo-font",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-font/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.font.FontLoaderModule",
+                    "name": null
+                  },
+                  {
+                    "classifier": "expo.modules.font.FontUtilsModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo-keep-awake",
+            "projects": [
+              {
+                "name": "expo-keep-awake",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-keep-awake/android",
+                "modules": [
+                  {
+                    "classifier": "expo.modules.keepawake.KeepAwakeModule",
+                    "name": null
+                  }
+                ],
+                "services": [],
+                "packages": [],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            ],
+            "packageVersion": "57.0.2"
+          },
+          {
+            "packageName": "expo-modules-core",
+            "projects": [
+              {
+                "name": "expo-modules-core",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core/android",
+                "modules": [],
+                "services": [],
+                "packages": [
+                  "expo.modules.adapters.react.ReactAdapterPackage",
+                  "expo.modules.core.BasePackage",
+                  "expo.modules.kotlin.edgeToEdge.EdgeToEdgePackage"
+                ]
+              }
+            ],
+            "plugins": [
+              {
+                "id": "expo-module-gradle-plugin",
+                "group": "expo.modules",
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core/expo-module-gradle-plugin",
+                "applyToRootProject": false
+              }
+            ],
+            "packageVersion": "57.0.20"
+          }
+        ]
+      },
+      "apple": {
+        "search": {
+          "expo": {
+            "name": "expo",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo",
+            "version": "57.0.26",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "ExpoFetchModule"
+                ],
+                "podspecPath": "Expo.podspec"
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.fetch.ExpoFetchModule"
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/dom-webview": {
+            "name": "@expo/dom-webview",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/dom-webview",
+            "version": "57.0.1",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "DomWebViewModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.webview.DomWebViewModule"
+                ],
+                "publication": {
+                  "groupId": "expo.modules.webview",
+                  "artifactId": "expo.modules.webview",
+                  "version": "57.0.1",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "@expo/log-box": {
+            "name": "@expo/log-box",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/log-box",
+            "version": "57.0.4",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "podspecPath": "ExpoLogBox.podspec"
+              },
+              "android": {
+                "modules": []
+              }
+            },
+            "duplicates": []
+          },
+          "expo-asset": {
+            "name": "expo-asset",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-asset",
+            "version": "57.0.18",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "AssetModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.asset.AssetModule"
+                ],
+                "publication": {
+                  "groupId": "expo.modules.asset",
+                  "artifactId": "expo.modules.asset",
+                  "version": "57.0.18",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-constants": {
+            "name": "expo-constants",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-constants",
+            "version": "57.0.20",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "ConstantsModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.constants.ConstantsModule"
+                ],
+                "services": [
+                  "expo.modules.constants.ConstantsService"
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-file-system": {
+            "name": "expo-file-system",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-file-system",
+            "version": "57.0.7",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "FileSystemModule",
+                  "FileSystemLegacyModule"
+                ],
+                "appDelegateSubscribers": [
+                  "FileSystemBackgroundSessionHandler"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.filesystem.FileSystemModule",
+                  "expo.modules.filesystem.legacy.FileSystemLegacyModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.filesystem",
+                  "version": "57.0.7",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-font": {
+            "name": "expo-font",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-font",
+            "version": "57.0.4",
+            "config": {
+              "platforms": [
+                "apple",
+                "android",
+                "web"
+              ],
+              "apple": {
+                "modules": [
+                  "FontLoaderModule",
+                  "FontUtilsModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.font.FontLoaderModule",
+                  "expo.modules.font.FontUtilsModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.font",
+                  "version": "57.0.4",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-keep-awake": {
+            "name": "expo-keep-awake",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-keep-awake",
+            "version": "57.0.2",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "modules": [
+                  "KeepAwakeModule"
+                ]
+              },
+              "android": {
+                "modules": [
+                  "expo.modules.keepawake.KeepAwakeModule"
+                ],
+                "publication": {
+                  "groupId": "host.exp.exponent",
+                  "artifactId": "expo.modules.keepawake",
+                  "version": "57.0.2",
+                  "repository": "local-maven-repo"
+                }
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-core": {
+            "name": "expo-modules-core",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core",
+            "version": "57.0.20",
+            "config": {
+              "platforms": [
+                "apple",
+                "android"
+              ],
+              "apple": {
+                "podspecPath": [
+                  "./ExpoModulesCore.podspec",
+                  "./ExpoModulesWorklets.podspec"
+                ]
+              },
+              "android": {
+                "gradlePlugins": [
+                  {
+                    "id": "expo-module-gradle-plugin",
+                    "group": "expo.modules",
+                    "sourceDir": "expo-module-gradle-plugin",
+                    "applyToRootProject": false
+                  }
+                ]
+              }
+            },
+            "duplicates": []
+          },
+          "expo-modules-jsi": {
+            "name": "expo-modules-jsi",
+            "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-jsi",
+            "version": "57.1.1",
+            "config": {
+              "platforms": [
+                "apple"
+              ]
+            },
+            "duplicates": []
+          }
+        },
+        "extraDependencies": [],
+        "coreFeatures": [],
+        "modules": [
+          {
+            "packageName": "@expo/dom-webview",
+            "pods": [
+              {
+                "podName": "ExpoDomWebView",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/dom-webview/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoDomWebView"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "DomWebViewModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.1"
+          },
+          {
+            "packageName": "@expo/log-box",
+            "pods": [
+              {
+                "podName": "ExpoLogBox",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@expo/log-box"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoLogBox"
+            ],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo",
+            "pods": [
+              {
+                "podName": "Expo",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo"
+              }
+            ],
+            "swiftModuleNames": [
+              "Expo"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "ExpoFetchModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.26"
+          },
+          {
+            "packageName": "expo-asset",
+            "pods": [
+              {
+                "podName": "ExpoAsset",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-asset/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoAsset"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "AssetModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.18"
+          },
+          {
+            "packageName": "expo-constants",
+            "pods": [
+              {
+                "podName": "EXConstants",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-constants/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "EXConstants"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "ConstantsModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-file-system",
+            "pods": [
+              {
+                "podName": "ExpoFileSystem",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-file-system/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoFileSystem"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "FileSystemModule"
+              },
+              {
+                "name": null,
+                "class": "FileSystemLegacyModule"
+              }
+            ],
+            "appDelegateSubscribers": [
+              "FileSystemBackgroundSessionHandler"
+            ],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.7"
+          },
+          {
+            "packageName": "expo-font",
+            "pods": [
+              {
+                "podName": "ExpoFont",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-font/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoFont"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "FontLoaderModule"
+              },
+              {
+                "name": null,
+                "class": "FontUtilsModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.4"
+          },
+          {
+            "packageName": "expo-keep-awake",
+            "pods": [
+              {
+                "podName": "ExpoKeepAwake",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-keep-awake/ios"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoKeepAwake"
+            ],
+            "modules": [
+              {
+                "name": null,
+                "class": "KeepAwakeModule"
+              }
+            ],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.2"
+          },
+          {
+            "packageName": "expo-modules-core",
+            "pods": [
+              {
+                "podName": "ExpoModulesCore",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core"
+              },
+              {
+                "podName": "ExpoModulesWorklets",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-core"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoModulesCore",
+              "ExpoModulesWorklets"
+            ],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.0.20"
+          },
+          {
+            "packageName": "expo-modules-jsi",
+            "pods": [
+              {
+                "podName": "ExpoModulesJSI",
+                "podspecDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo-modules-jsi/apple"
+              }
+            ],
+            "swiftModuleNames": [
+              "ExpoModulesJSI"
+            ],
+            "modules": [],
+            "appDelegateSubscribers": [],
+            "reactDelegateHandlers": [],
+            "debugOnly": false,
+            "packageVersion": "57.1.1"
+          }
+        ]
+      }
+    },
+    "rnConfig": {
+      "android": {
+        "root": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture",
+        "reactNativePath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-native",
+        "dependencies": {
+          "expo": {
+            "root": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo",
+            "name": "expo",
+            "platforms": {
+              "android": {
+                "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo/android",
+                "packageImportPath": "import expo.modules.ExpoModulesPackage;",
+                "packageInstance": "new ExpoModulesPackage()",
+                "buildTypes": [],
+                "componentDescriptors": [],
+                "cmakeListsPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo/android/build/generated/source/codegen/jni/CMakeLists.txt",
+                "cxxModuleCMakeListsModuleName": null,
+                "cxxModuleCMakeListsPath": null,
+                "cxxModuleHeaderName": null,
+                "isPureCxxDependency": false
+              }
+            }
+          }
+        },
+        "project": {}
+      },
+      "ios": {
+        "root": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture",
+        "reactNativePath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/react-native",
+        "dependencies": {
+          "expo": {
+            "root": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo",
+            "name": "expo",
+            "platforms": {
+              "ios": {
+                "podspecPath": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/expo/Expo.podspec",
+                "version": "57.0.26",
+                "configurations": [],
+                "scriptPhases": []
+              }
+            }
+          }
+        },
+        "project": {
+          "ios": {
+            "sourceDir": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture/ios"
+          }
+        }
+      }
+    },
+    "generatedNativeIntegration": "Pending: no generated candidate native trees"
+  },
+  "transform": {
+    "projectRoot": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture",
+    "filename": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/experiments/native-architecture/src/ProbeApp.tsx",
+    "coreVersion": "7.29.7",
+    "presetVersion": "57.0.13",
+    "transformed": true
+  },
+  "graphMetroVersions": [
+    "0.84.5",
+    "0.84.6"
+  ],
+  "shipping": {
+    "hashes": {
+      "capacitor.config.json": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+      "android/capacitor.settings.gradle": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+      "ios/App/CapApp-SPM/Package.swift": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45"
+    },
+    "plugins": [
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/android/capacitor"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@aparajita/capacitor-secure-storage/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor-community/media/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/device/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/haptics/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/network/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/preferences/android"
+      },
+      {
+        "owner": "android/capacitor.settings.gradle",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/screen-orientation/android"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@aparajita/capacitor-secure-storage"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor-community/media"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/device"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/haptics"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/network"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/preferences"
+      },
+      {
+        "owner": "ios/App/CapApp-SPM/Package.swift",
+        "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/node_modules/@capacitor/screen-orientation"
+      }
+    ]
+  }
+}
+
+[1m$ npm run lint:css[0m
+
+> splotch@1.6.0 lint:css
+> stylelint "**/*.{css,svelte}"
+
+
+[1m$ npm run check:svg-assets[0m
+
+> splotch@1.6.0 check:svg-assets
+> node tools/optimize-svg-assets.mjs --check
+
+[optimize-svg-assets] 303 SVG(s) already optimal — nothing to do.
+
+[1m$ npm run ruler:check[0m
+
+> splotch@1.6.0 ruler:check
+> node tools/ruler/check-generated-files.mjs
+
+$ npm run ruler:apply
+
+> splotch@1.6.0 ruler:apply
+> node tools/ruler/apply-ruler.mjs
+
+$ ruler apply
+[ruler] Nested mode is experimental and may change in future releases.
+[ruler] Skills support is experimental and behavior may change in future releases.
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+[ruler] Applying rules for Claude Code...
+[ruler] Applying rules for OpenAI Codex CLI...
+Ruler apply completed successfully.
+$ /Users/kylemit/.nvm/versions/node/v22.23.2/bin/node /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools/ruler/mirror-skill-notes.mjs
+[skill-notes] mirrored 21 file(s) to .claude/skill-notes and .agents/skill-notes
+$ /Users/kylemit/.nvm/versions/node/v22.23.2/bin/node /Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools/ruler/apply-skill-forks.mjs
+[skill-forks] applied 0 runner-specific skill(s) and 0 note(s)
+$ dprint fmt
+Formatted 58 files.
+[ruler:check] Generated agent files are in sync with .ruler/.
+
+[1m$ npm run check:ideas-review[0m
+
+> splotch@1.6.0 check:ideas-review
+> node tools/asset-gen/ideas-exploration/build-review.mjs --check
+
+[ideas-review] ideas-review.html is current.
+
+[1m$ npm run gen:tokens:check[0m
+
+> splotch@1.6.0 gen:tokens:check
+> node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-token-css.mjs --check
+
+tokens.css is up to date.
+
+[1m$ npm run lint:tokens[0m
+
+> splotch@1.6.0 lint:tokens
+> node tools/tokens/lint-token-styles.mjs
+
+Token style lint passed (9 allowlisted raw-hex files, 2 allowlisted raw-font-size files, 24 ratcheted unpinned-:global() files, 0 raw z-index, 0 !important).
+
+[1m$ npm run lint:dead[0m
+
+> splotch@1.6.0 lint:dead
+> knip --no-progress --include files,exports,types,duplicates
+
+
+[1m$ npm run lint:deps:prod[0m
+
+> splotch@1.6.0 lint:deps:prod
+> knip --config knip.production.json --production --strict --no-progress
+
+
+[1m$ npm run check:assets:manifest[0m
+
+> splotch@1.6.0 check:assets:manifest
+> node tools/asset-gen/gen-asset-manifest.mjs --check
+
+[asset-manifest] 1014 asset(s) match the manifest.
+
+[1m$ npm run scrapbook:check[0m
+
+> splotch@1.6.0 scrapbook:check
+> node tools/scrapbook/publish-scrapbook.mjs --check
+
+scrapbook: every collection resolves to a reachable entry page; index.html is current.
+
+[1m$ pnpm audit --audit-level=high[0m
+5 vulnerabilities found
+Severity: 1 low | 2 moderate | 2 high (2 ignored)
+
+✓ Quality: all 15 checks passed
