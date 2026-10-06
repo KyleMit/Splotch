@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-06T21:16:40.072180+00:00",
+  "actualRoles": {
+    "released": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+    "held": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+    "reader": "709fadd68ecb802aa2c9daa3fc197ce8d072b23c"
+  },
+  "actualProfile": {
+    "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/accepted-composition-709/source-profile-inputs.json.txt",
+    "bytes": 38456,
+    "sha256": "c29af0f8a288398b96acecd2294850666fe69f6601ecaadcb59d986198d7040b",
+    "mode": "0o444",
+    "inode": [
+      16777230,
+      218560520
+    ]
+  },
+  "sourceManifestMember": "accepted-composition-709/source-profile-inputs.json.txt",
+  "profileCapsule": "history.tar.gz",
+  "profileSourceSha256": "c29af0f8a288398b96acecd2294850666fe69f6601ecaadcb59d986198d7040b",
+  "sourceBlobsIncludedByReference": 56,
+  "currentSourceOwner": {
+    "path": "/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch/tools/migration/legacy-continuity/source-inputs.mjs",
+    "bytes": 5176,
+    "sha256": "cda1ef8862b9db4bbe632db9423ae169a11813d934415d69fe43c6e4ee513b76",
+    "mode": "0o644",
+    "inode": [
+      16777230,
+      218128267
+    ]
+  },
+  "currentContract": {
+    "path": "/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch/tools/migration/legacy-continuity/contract.mjs",
+    "bytes": 3363,
+    "sha256": "16e1c219da10a3172285e61775ea7641dd0847f77513f50e00e8f91fd7e45fa9",
+    "mode": "0o644",
+    "inode": [
+      16777230,
+      218128262
+    ]
+  },
+  "scope": "all previous role/Git/config/SDK declared owners unchanged; capability test parent/readme/status/archive packaging repair requires fresh full tools/gates, real CLI role outputs must match prior executed positives; not native/compiledSDK/effective-profile/channel acceptance"
+}

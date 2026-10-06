@@ -66,15 +66,16 @@ The immutable [capsules](evidence/continuation/README.md) remain the portable in
 
 ## Units and dependencies
 
-| Unit                                                            | Owner and exact input                                                                                                                  | Dependencies / artifact root                                                                                                 | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                          | Rival provenance                                                                                                                                                      |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                         | capsules; durable root `preservation`                                                                                        | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                    | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction |
-| F1 candidate import boundary                                    | import_boundary; composed 0ffbfad71c18b1bb284517011b30258298a0d283, repair 49c274e565ef8f9936b0a997a24f89a46b8ec3c7 over accepted f149 | Actual checker/candidate/frozen graph; durable `import-boundary`, PR2703                                                     | Published e4e9fc044d46d49c3565379a3e6419e8eff4af9d; 973 scoped tests/full Browserless and final-head hosted CI pass. Seven public threads resolved; actual consumer grammar probe found no new defect. Changed-source independent acceptance remains halted at exhausted budget; native expansion depends on acceptance                                                                              | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3 used / 0 remaining; no fresh/reset/fourth review authorized                 |
-| Retained Svelte controls                                        | retained_control; published81f84eebaf71c3d178186137d9c2bb07f7e85209/tree957779386684564e864da7a9d79c0ed4ea9b32e3; local calls85c8      | Historical 8dd and qualified lock; durable `retained`, PR2702                                                                | Source-bound final Quality/Browserless and all seven distinct public calls pass; source/index/complete borrowed graph unchanged, lease released. f149 composition and complete receipt archive published; ordinary hosted checks and shipping compiles pass, hosted seven-call job and original final review pending; 85c8 local receipt scope retained                                              | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual original round2 resumed; 2 used / 1 remaining; unrelated ledger preserved; fresh fallback blocks acceptance              |
-| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8    | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                                          | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                              |
-| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                    | explicit capture-session lease, actual devices and preregistration below; baseline banked separately                         | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                           | Review required before consequential probe and phase exit                                                                                                             |
-| Continuity, neutral React host, vocabularies and faithful paper | parent owns published artifact/tag-source inventory at f149; remaining runnable owners assigned after preceding gates                  | PHASE-1 units 5–9; retained acceptance before real host; compilation before same-ID feasibility; durable `continuity-intake` | PR2706 atbc17 published; original round1 confirms four records findings, repairs prepared. First-head CI guard failure preserved; changed-head review/CI/integration pending. Qualified102 legacy-provider files remain source-only. Preserved host preparation only; no React recovery, native continuity, faithful renderer or vocabulary runtime acceptance                                       | Inventory original7816bd4e-769a-44d4-8755-6c9ff2cc3bb9;1used/2remain, review5432293756; implementation/phase exits retain their own budgets                           |
-| Matched comparison, selected product and release                | parent final integrator                                                                                                                | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                                         | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                         | Final Codex and Claude inventory review mandatory                                                                                                                     |
+| Unit                                                            | Owner and exact input                                                                                                                                                                                        | Dependencies / artifact root                                                                                                                                                                                                          | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Rival provenance                                                                                                                                                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                                                                                               | capsules; durable root `preservation`                                                                                                                                                                                                 | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                                                                                                                                    | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction |
+| F1 candidate import boundary                                    | import_boundary; composed 0ffbfad71c18b1bb284517011b30258298a0d283, repair 49c274e565ef8f9936b0a997a24f89a46b8ec3c7 over accepted f149                                                                       | Actual checker/candidate/frozen graph; durable `import-boundary`, PR2703                                                                                                                                                              | Published e4e9fc044d46d49c3565379a3e6419e8eff4af9d; 973 scoped tests/full Browserless and final-head hosted CI pass. Seven public threads resolved; actual consumer grammar probe found no new defect. Changed-source independent acceptance remains halted at exhausted budget; native expansion depends on acceptance                                                                                                                                                                                              | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3 used / 0 remaining; no fresh/reset/fourth review authorized                 |
+| Retained Svelte controls                                        | retained_control; published81f84eebaf71c3d178186137d9c2bb07f7e85209/tree957779386684564e864da7a9d79c0ed4ea9b32e3; local calls85c8                                                                            | Historical 8dd and qualified lock; durable `retained`, PR2702                                                                                                                                                                         | Source-bound final Quality/Browserless and all seven distinct public calls pass; source/index/complete borrowed graph unchanged, lease released. f149 composition and complete receipt archive published; ordinary hosted checks and shipping compiles pass, hosted seven-call job and original final review pending; 85c8 local receipt scope retained                                                                                                                                                              | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual original round2 resumed; 2 used / 1 remaining; unrelated ledger preserved; fresh fallback blocks acceptance              |
+| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8                                                                          | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                                                                                                                                                   | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance                                                                                                                 | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                              |
+| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                                                                                          | explicit capture-session lease, actual devices and preregistration below; baseline banked separately                                                                                                                                  | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                                                                                                                                           | Review required before consequential probe and phase exit                                                                                                             |
+| Continuity, neutral React host, vocabularies and faithful paper | parent owns published artifact/tag-source inventory at f149; remaining runnable owners assigned after preceding gates                                                                                        | PHASE-1 units 5–9; retained acceptance before real host; compilation before same-ID feasibility; durable `continuity-intake`                                                                                                          | PR2706 atbc17 published; original round1 confirms four records findings, repairs prepared. First-head CI guard failure preserved; changed-head review/CI/integration pending. Qualified102 legacy-provider files remain source-only. Preserved host preparation only; no React recovery, native continuity, faithful renderer or vocabulary runtime acceptance                                                                                                                                                       | Inventory original7816bd4e-769a-44d4-8755-6c9ff2cc3bb9;1used/2remain, review5432293756; implementation/phase exits retain their own budgets                           |
+| Legacy continuity L0a/L0b                                       | preservation_verify; implemented isolated accepted base/reader 709fadd68ecb802aa2c9daa3fc197ce8d072b23c, released d8b86469f63c57a06a9de45664a42eea15b99eb0 and held ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 | Accepted PR2706 launch-owner records and PR2702 retained owners; qualified source-only provider/SPM binary-target manifests; own fixture graph/install/runtime and parent native lease remain dependencies; durable legacy-continuity | Compact source all15 Quality/all5 Browserless/3 role checks passed at staged tree9724 in133.828s; source65/runtime/semanticindex/qualified install reuse equal and all7groups/producer/port independently released. One complete521-member capsule preserves474 historical files plus47 success records, exact old gated capsule/canonical originals unchanged; maintained25/root package/Knip code bytes unchanged. Metadata/docs/source PR/CI and original r2 next; no native/profile/channel/physical acceptance. | Original 1b406e61-641e-4cf8-86fb-2b1cd7548469; 1 used/2 remaining; future actual PR-keyed adoption preserves original identity/consumed round; no review launch/reset |
+| Matched comparison, selected product and release                | parent final integrator                                                                                                                                                                                      | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                                                                                                                                                  | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                                                                                                                                         | Final Codex and Claude inventory review mandatory                                                                                                                     |
 
 Owners update this register at meaningful transitions, changed inputs, failures and handoffs.
 Accepted units link source/PR receipts; do not multiply private packets or reuse stale results.
@@ -204,3 +205,131 @@ at-execution source identity. The later snapshot proves committed contents only.
 original Claude acceptance and final-head CI remain required. Subsequent gates record HEAD/tree,
 working-tree diff and untracked source hashes and porcelain state before and after execution. The
 retained unit owns complete logs, artifacts, source binding and subsequent review/CI.
+
+## L0 implemented-source transition
+
+Observed at 2026-10-06 19:25:03 UTC on isolated source base
+794448fbf76276b76a910c167b5c2e0c4e1ea538. The preservation_verify owner composed the accepted PR2706
+launch-owner records and repaired all twelve original L0 findings before implementing the finite
+source fixture/observer/configuration. Nine actual source-only composition controls have complete
+receipts in [source composition](evidence/legacy-continuity/README.md#complete-historical-records).
+Their old tool/overlay identities remain historical: guarded entry, process ownership, ADB cleanup
+and raw held-record transport changes require their own later gates. No fixture installation, native
+build/execution, profile survival, signed upgrade or continuity acceptance is established. The
+provisional install/check/lint lease was released unused while source repairs completed.
+
+Original Claude conversation 1b406e61-641e-4cf8-86fb-2b1cd7548469 retains one used round and two
+remaining. Actual PR-keyed adoption must preserve its identity and consumed round; implemented
+observer/route/configuration/read shape and trust receive round two before native execution. Round
+three is reserved for executed evidence and the final unit. Parent owns integration and the next
+bounded tools lease; native execution requires a separate explicit host/device lease.
+
+## L0 accepted-base composition transition
+
+Observed at 2026-10-06 19:56:01 UTC on accepted integration
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The isolated L0 owner preserved all25 current
+tool/template bytes and the immutable31-file SDK owner packet, fast-forwarded from
+794448fbf76276b76a910c167b5c2e0c4e1ea538 with hooks disabled, then composed only its
+script/description, two knip entries and own current register row. The reader now binds the accepted
+source and actual Vite nonce helper; released and held source identities remain fixed. Old f935
+source and 60df supervisor receipts retain their original unexecuted scope. New
+source/input/producer identities require fresh applicable gates. No installation, native continuity,
+compiled SDK association, review adoption or new substantive round follows from this composition.
+
+## L0 first tools failure and bounded source repair
+
+Observed at 2026-10-06 20:13:08 UTC on isolated accepted
+base709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The first whole600 tools lease completed32.1348seconds
+and stopped immediately on one accidental ESLint no-unsafe-finally error. Own frozen install, full
+JS graph,10scoped guards and check exited0; lint exited1. Exact original receipt and actual release
+proof remain in
+[first tools lease](evidence/legacy-continuity/README.md#complete-historical-records). All owned
+groups were absent, source/runtime/index unchanged and no later role/flag control ran.
+
+The parent reviewed the exact two-file repair before application: command and ownership errors are
+propagated after cleanup, preserving both in AggregateError; the original ownership rule is
+unchanged. A new actual production-function guard checks nonzero-only and simultaneous lost-leader
+failures, saved evidence and restored success. Fresh changed11guard/checklint and pending
+source/flag controls remain unexecuted. The complete unchanged relevant install/graph receipt may be
+reused only after byte/runtime/input qualification; no install repeat is proposed. Original Claude1b
+retains1used/2remaining, with no adoption or new round.
+Native/static-build/full/device/browser/performance acceptance remains open and needs its own
+lease/review.
+
+## L0 repaired-source scoped completion
+
+Observed at 2026-10-06 20:39:27 UTC on isolated accepted base
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The parent independently verified all 126 source inputs
+and granted the exact follow-up. All 11 guards, check/lint, three real source inspections and
+intended unknown-flag refusal/restored positive met their actual predicates. Complete final hashing
+finished within 29.3179 seconds, source/runtime/index and before/after install reuse stayed
+unchanged, and all eight command groups plus producer 66703 were absent.
+[Exact follow-up receipts](evidence/legacy-continuity/README.md#complete-historical-records)
+preserve complete channels, source identities and actual release. This transfers only the scoped
+source/tool obligations; no native or channel outcome follows.
+
+The next boundary is staged final-source full Quality and Browserless on a parent-granted exclusive
+lease, with a named unused SMOKE_PORT and complete semantic-index/runtime/source receipts. Original
+Claude 1b still has 1 used/2 remaining; a real PR-keyed adoption and actual round-two resumption
+precede native trust. Parent retains cross-unit register reconciliation and final acceptance.
+
+## L0 first full-gate finding and source packaging repair
+
+Observed at 2026-10-06T20:57:24.128911+00:00 on isolated accepted base
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The first full Quality invocation reached all fifteen
+steps and failed exactly format:check, ruler:check and lint:dead. The original historical row was
+unformatted Markdown; its immutable read-only copy correctly refused formatter mutation. Six
+values/helpers had real internal consumers and unnecessary exports, and Knip already discovered the
+fixture executable through its root script. Browserless was not executed. Complete
+[failure/release evidence](evidence/legacy-continuity/README.md#complete-historical-records)
+preserves the actual tested staged tree, unchanged source/semantic index/runtime/install reuse,
+owned group/producer absence and free SMOKE_PORT. An additive mirror-scope amendment corrects the
+mirror helper's inherited follow-up label; it does not change actual invocation bytes.
+
+The finite source repair makes those six internal owners private and removes only the redundant
+entry. The historical 1,055-byte row becomes a raw .md.txt projection with exactly the same
+SHA/mode/inode; its original canonical path and all historical manifests remain unchanged. Explicit
+projection provenance and all 53 projected/current and original canonical member identities carry
+the one path mapping. No formatter/dead-code rule was suppressed. Fresh final-source Quality, first
+Browserless and three role inspections require a separately granted exclusive lease. Original Claude
+1b remains one used/two remaining; no PR/review/native acceptance follows these repairs.
+
+## L0 Browserless finding and complete history capsule
+
+Observed at 2026-10-06T21:15:10.600553+00:00 on isolated accepted base
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The later retry passed all fifteen Quality stages before
+Browserless reached all five stages and failed exactly two tools tests. The historical copied
+CAMPAIGN document had fifteen relative links whose original location was lost; the capability test
+path was incorrectly read as a repository-root walk. Complete raw channels and source/runtime/index/
+qualified-install reuse remain in the [historical records](evidence/legacy-continuity/README.md).
+The following three role calls were halted. Four command groups and producer 94478 were
+independently absent, with SMOKE_PORT 5386 free and no cleanup signal or unleased retry.
+
+The owner changed only its capability test anchor to the actual parent-directory owner and packaged
+all 474 historical members as one safe complete capsule. Every member byte/mode/hash, independent
+canonical original and new owned extraction was verified before redundant uncommitted unit copies
+were removed. Historical raw Markdown, manifests and canonical records remain unchanged; no rule was
+suppressed. Current tools/templates/tests and maintained documentation stay visible. Fresh
+changed-source full Quality/Browserless and three role positives need a parent-granted exclusive
+lease. Original Claude 1b remains one used/two remaining, with no new review/adoption/native or
+upgrade acceptance.
+
+## L0 compact local full-gate completion and portable evidence
+
+Observed at 2026-10-06T21:28:23.109606+00:00 on isolated accepted base
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The exact frozen staged tree
+9724d3af35f1169ab52a438c2799c3cecae2ea17 passed all fifteen Quality stages, all five Browserless
+stages and three byte-exact source-role positives. Complete final input hashing finished in 133.828
+seconds within the granted 900-second whole deadline. Source/runtime/semantic index and qualified
+own installation reuse stayed equal. Independent OS checks proved all seven command groups and
+producer 56798 absent; no signal was sent and port 5386 was free before/after.
+
+The [portable index](evidence/legacy-continuity/README.md) records the actual tested tree separately
+from the later evidence-only packaging. The single current capsule preserves all 474 historical
+members plus 47 complete success records, with full safe member/channel/hash/mode/canonical/readback
+verification. The exact old gated capsule and manifests remain immutable in canonical records. All
+25 maintained source/template/test files and bounded package/Knip code inputs remain unchanged; only
+owned current docs/provenance and success evidence are appended. Current metadata/doc checks, source
+PR/final-head CI and original Claude round two remain next gates. Original conversation 1b retains
+one used/two remaining; no native/runtime/profile/signed-channel/physical or architecture acceptance
+follows these local source/tool gates.

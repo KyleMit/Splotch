@@ -1,0 +1,11 @@
+export function isCurrentHeldPicture(_value: unknown): boolean {
+  return false;
+}
+
+export async function seedHeld(_nonce: string): Promise<never> {
+  throw new Error('L0_RELEASED_HAS_NO_HELD_FORMAT');
+}
+
+export function falseHeldHint(): never {
+  throw new Error('L0_RELEASED_HAS_NO_HELD_FORMAT');
+}

@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-06T21:16:40.072180+00:00",
+  "base": "709fadd68ecb802aa2c9daa3fc197ce8d072b23c",
+  "scope": "proposed ONE exclusive whole900 full Quality300/Browserless480/3role positives60 each with complete source/runtime/semantic-index/installreuse and actual owned port5386 checks; no install/list/catalog/native/browser/performance/rival execution yet",
+  "wholeDeadlineSeconds": 900,
+  "jobDeadlineSeconds": {
+    "quality": 300,
+    "browserless": 480,
+    "rolesEach": 60,
+    "portEach": 30
+  },
+  "finalizationReserveSeconds": 60,
+  "producer": {
+    "path": "/private/tmp/splotch-resume-01a111b0/legacy-continuity-source/run-final-source-gates-compact.py",
+    "bytes": 17825,
+    "sha256": "3d41aa0a1cad365bbb2f55506d3c7f0d089af95e8d4783860964c1cbb0973047",
+    "mode": "0o644",
+    "inode": [
+      16777230,
+      218563080
+    ]
+  },
+  "historicalArchiveSha256": "38f5f6619ee1adf6a8d666342f13b26e73d8275f487667f416a42575c8a8bbe9",
+  "historicalMemberManifestSha256": "a92eb8312ca52f35f80682427c881d1faf1b9bddbf4593eac49d9f65fbf71c81",
+  "latestFailureReceiptSha256": "f5f69179abec6746093a7636f6b62962a94fa910126f77b209814d8efbb64cd9",
+  "originalConversation": "1b406e61-641e-4cf8-86fb-2b1cd7548469",
+  "budget": {
+    "used": 1,
+    "remaining": 2
+  },
+  "deadlineJustification": "actual earlier Quality46.629s/Browserless77.839s; bounded300/480 plus remaining-whole caps include provisioning-independent checks, 3roles, hash/cleanup reserve; no silent retry or extension",
+  "selectedWrongNegatives": "original full-gate failures remain accidental; intended wrong archive member hash only metadata refusal; actual scoped unknown flag has separate preserved exact reason"
+}

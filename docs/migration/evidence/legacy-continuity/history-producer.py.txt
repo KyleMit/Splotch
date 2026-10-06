@@ -1,0 +1,47 @@
+from pathlib import Path,PurePosixPath
+import base64,datetime,gzip,hashlib,io,json,os,stat,tarfile
+R=Path('/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch');E=R/'docs/migration/evidence/legacy-continuity';S=Path('/private/tmp/splotch-resume-01a111b0/legacy-continuity-source');P=S/'compact-history';C=Path('/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity');OLD=C/'compact-history';SUCCESS=C/'full-final-gates-compact-20261006212026';EXTRACT=Path('/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521')
+def h(b):return hashlib.sha256(b).hexdigest()
+def identity(p):
+ st=p.lstat();assert stat.S_ISREG(st.st_mode);b=p.read_bytes();return {'path':str(p),'bytes':len(b),'sha256':h(b),'mode':format(stat.S_IMODE(st.st_mode),'04o'),'device':st.st_dev,'inode':st.st_ino}
+def write(leaf,value):(P/leaf).write_text(json.dumps(value,indent=2)+'\n')
+old=json.loads((OLD/'history-members.json.txt').read_bytes());assert old['memberCount']==474 and old['archive']['sha256']=='38f5f6619ee1adf6a8d666342f13b26e73d8275f487667f416a42575c8a8bbe9';assert h((E/'history.tar.gz').read_bytes())==h((OLD/'history.tar.gz').read_bytes())==old['archive']['sha256'];assert (E/'history-members.json.txt').read_bytes()==(OLD/'history-members.json.txt').read_bytes()
+oldCopies={leaf:identity(OLD/leaf) for leaf in ['history.tar.gz','history-members.json.txt','history-qualification.json.txt','history-producer.py.txt']}
+rows=[];payloads=[]
+with tarfile.open(OLD/'history.tar.gz','r:gz') as archive:
+ members=archive.getmembers();assert len(members)==474
+ for member,row in zip(members,old['entries']):
+  rel=PurePosixPath(member.name);assert not rel.is_absolute() and '..' not in rel.parts and '\\' not in member.name and '\x00' not in member.name and member.isreg() and not member.linkname;assert member.name==row['member'] and member.size==row['bytes'] and member.mode==int(row['mode'],8)
+  b=archive.extractfile(member).read();assert h(b)==row['sha256'];c=identity(Path(row['canonical']['path']));assert c==row['canonical'];rows.append({'member':member.name,'bytes':len(b),'sha256':h(b),'mode':row['mode'],'canonical':c,'previousUnitIdentity':{k:row[k] for k in ['path','device','inode']},'category':'unchanged former unit history'});payloads.append(b)
+mirrorRaw=(SUCCESS/'mirror-manifest.json.txt').read_bytes();mirror=json.loads(mirrorRaw);assert h(mirrorRaw)=='f3470375334750905a0de4a7be58ffdc6e144db4efe14ab19d55f19eebb94a06' and mirror['count']==47
+for row in mirror['files']:
+ p=Path(row['canonical']);c=identity(p);assert c['sha256']==row['sha256'] and c['bytes']==row['bytes'] and c['mode']==row['copyMode'];assert [c['device'],c['inode']]==row['canonicalInode'] and row['sourceInode']!=row['canonicalInode']
+ b=p.read_bytes();member='full-final-gates-compact-20261006212026/'+row['path'];rows.append({'member':member,'bytes':len(b),'sha256':h(b),'mode':c['mode'],'canonical':c,'previousActualScratchSource':row['source'],'category':'actual full current-source gate success'});payloads.append(b)
+assert len(rows)==521 and len({r['member'] for r in rows})==521
+archive=P/'history-521.tar.gz';assert not archive.exists()
+with archive.open('xb') as raw:
+ with gzip.GzipFile(filename='',mode='wb',fileobj=raw,mtime=0,compresslevel=6) as gz:
+  with tarfile.open(fileobj=gz,mode='w',format=tarfile.USTAR_FORMAT) as tar:
+   for row,b in zip(rows,payloads):
+    info=tarfile.TarInfo(row['member']);info.size=row['bytes'];info.mode=int(row['mode'],8);info.uid=info.gid=info.mtime=0;info.uname=info.gname='';tar.addfile(info,io.BytesIO(b))
+def verify(expected):
+ with tarfile.open(archive,'r:gz') as a:
+  actual=a.getmembers();assert len(actual)==len(expected) and len({m.name for m in actual})==len(actual),'L0_CAPSULE_MEMBER_COUNT_OR_DUPLICATE'
+  for m,row in zip(actual,expected):
+   rel=PurePosixPath(m.name);assert not rel.is_absolute() and '..' not in rel.parts and '\\' not in m.name and '\x00' not in m.name,'L0_CAPSULE_UNSAFE_PATH'
+   assert m.isreg() and not m.linkname and m.name==row['member'],'L0_CAPSULE_MEMBER_TYPE_OR_IDENTITY';assert m.size==row['bytes'] and m.mode==int(row['mode'],8),'L0_CAPSULE_MEMBER_MODE_OR_LENGTH';assert h(a.extractfile(m).read())==row['sha256'],'L0_CAPSULE_MEMBER_HASH'
+verify(rows);wrong=[dict(r) for r in rows];wrong[-1]['sha256']='0'*64
+try:verify(wrong)
+except AssertionError as error:assert str(error)=='L0_CAPSULE_MEMBER_HASH';refusal={'exitCode':1,'reason':str(error),'changedExpectedMember':wrong[-1]['member']}
+else:raise AssertionError('wrong hash accepted')
+verify(rows);EXTRACT.mkdir(exist_ok=False);readback=[]
+with tarfile.open(archive,'r:gz') as a:
+ for m,row in zip(a.getmembers(),rows):
+  p=EXTRACT/m.name;p.parent.mkdir(parents=True,exist_ok=True);assert p.parent.resolve().is_relative_to(EXTRACT.resolve()) and not p.exists()
+  with p.open('xb') as f:f.write(a.extractfile(m).read())
+  p.chmod(m.mode);value=identity(p);assert all(value[k]==row[k] for k in ['bytes','sha256','mode']) and (value['device'],value['inode'])!=(row['canonical']['device'],row['canonical']['inode']);readback.append(value)
+for row in rows:assert identity(Path(row['canonical']['path']))==row['canonical']
+for leaf,value in oldCopies.items():assert identity(OLD/leaf)==value
+manifest={'schema':1,'observedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'kind':'tar.gz','file':'history.tar.gz','archive':identity(archive),'memberCount':521,'logicalBytes':sum(r['bytes'] for r in rows),'entries':rows,'ownedVerifiedExtractionRoot':str(EXTRACT),'producer':identity(Path(__file__)),'exactGated474Records':oldCopies,'successMirrorReceipt':{'bytes':len(mirrorRaw),'sha256':h(mirrorRaw),'encoding':'base64','value':base64.b64encode(mirrorRaw).decode()},'testedSource':{'base':'709fadd68ecb802aa2c9daa3fc197ce8d072b23c','stagedTree':'9724d3af35f1169ab52a438c2799c3cecae2ea17','semanticIndexSha256':'73611f44a2323927c12bbd99a0b7ad26bc5d629e4d45f8b77be231c70f6b1cd5','source65ManifestSha256':'5c7a3112cd9df66cabe69d1769c314136f8262d987765e48a1100cc1b7421c20','actualFullReceiptSha256':'c7dcf4b88cc8faab8ef10abbc3be137ee05a67e126bbbfd33ef929a75d9ee004','laterChangeScope':'append only success evidence and owned current docs/provenance; maintained25/tool/root package/knip code byte identities stay equal'},'scope':'all474 unchanged former-unit history plus47 actual complete success records; historical data and local source/tool gates only, no native/rival/profile/channel/physical/campaign acceptance'};write('history-521-members.json.txt',manifest)
+write('history-521-qualification.json.txt',{'archive':identity(archive),'memberManifest':identity(P/'history-521-members.json.txt'),'producer':identity(Path(__file__)),'positive':{'exitCode':0,'safeRegularUniqueMembers':521},'wrongExpectedHashRefusal':refusal,'restoredPositive':{'exitCode':0,'safeRegularUniqueMembers':521},'allCanonicalOriginalsUnchanged':True,'exactGated474OriginalsUnchanged':oldCopies,'newOwnedReadback':readback,'scope':'complete source/evidence capsule metadata controls, no source/provider/native/crypto execution'})
+print(json.dumps({'archive':identity(archive),'manifest':identity(P/'history-521-members.json.txt'),'qualification':identity(P/'history-521-qualification.json.txt'),'members':521,'logicalBytes':manifest['logicalBytes'],'extract':str(EXTRACT)}))

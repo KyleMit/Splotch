@@ -1,0 +1,8 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { exposeFixture } from './fixture';
+
+  onMount(exposeFixture);
+</script>
+
+<p>Owned legacy continuity fixture</p>

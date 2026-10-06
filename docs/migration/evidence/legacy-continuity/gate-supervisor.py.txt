@@ -1,0 +1,213 @@
+from pathlib import Path
+import subprocess,json,hashlib,datetime,time,os,signal,re,sys
+
+REPO=Path('/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch')
+SOURCE=Path('/private/tmp/splotch-resume-01a111b0/legacy-continuity-source')
+MANIFEST=SOURCE/'compact-history/source-manifest.json.txt'
+FREEZE=SOURCE/'compact-history/staged-freeze.json.txt'
+SMOKE_PORT=5386
+QUALITY_DEADLINE_SECONDS=300
+BROWSERLESS_DEADLINE_SECONDS=480
+NODE=Path('/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node')
+PNPM=Path('/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/corepack/dist/pnpm.js')
+NPM=Path('/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/npm/bin/npm-cli.js')
+WHOLE_DEADLINE_SECONDS=900
+TEARDOWN_SECONDS=2
+IDENTITY_SECONDS=2
+GIT_QUERY_SECONDS=15
+FINALIZATION_RESERVE_SECONDS=60
+POLL_SECONDS=.1
+ART=SOURCE/('full-final-gates-compact-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S'))
+PREVIOUS=SOURCE/'tools-gates-20261006200650'
+PREVIOUS_RECEIPT_SHA='bf6bf2ccc51b4b1435ae0d56061d274d6adf8274e713cc82106420fd1b77a765'
+
+ENV={**os.environ,'PATH':str(NODE.parent)+':'+os.environ['PATH'],'LC_ALL':'C','SMOKE_PORT':str(SMOKE_PORT),'DPRINT_CACHE_DIR':'/private/tmp/splotch-resume-01a111b0/dprint-cache'}
+rows=[]
+whole_start=time.monotonic()
+
+def whole_remaining():
+ remaining=WHOLE_DEADLINE_SECONDS-(time.monotonic()-whole_start)
+ if remaining<=0:raise TimeoutError('L0_WHOLE_FINAL_GATES_DEADLINE')
+ return remaining
+
+def whole_alarm(signum,frame):raise TimeoutError('L0_WHOLE_FINAL_GATES_DEADLINE')
+signal.signal(signal.SIGALRM,whole_alarm)
+signal.setitimer(signal.ITIMER_REAL,WHOLE_DEADLINE_SECONDS)
+
+def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def sha(data):
+ whole_remaining();value=hashlib.sha256(data).hexdigest();whole_remaining();return value
+def write(name,value):
+ whole_remaining();(ART/name).write_text(json.dumps(value,indent=2)+'\n');whole_remaining()
+def file_identity(path):
+ whole_remaining();b=path.read_bytes();st=path.stat();whole_remaining()
+ return {'path':str(path),'realpath':str(path.resolve()),'bytes':len(b),'sha256':sha(b),'mode':oct(st.st_mode&0o777),'inode':[st.st_dev,st.st_ino]}
+def observe(pid):
+ try:
+  p=subprocess.run(['/bin/ps','-ww','-p',str(pid),'-o','pid=','-o','ppid=','-o','pgid=','-o','lstart=','-o','args='],capture_output=True,timeout=IDENTITY_SECONDS,env=ENV)
+  raw=p.stdout.decode();m=re.fullmatch(r'\s*(\d+)\s+(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})\s+([\s\S]+?)\s*',raw)
+  value={'exitCode':p.returncode,'stdout':raw,'stderr':p.stderr.decode()}
+  if not m or p.returncode: return {'status':'unavailable',**value}
+  return {'status':'observed','pid':int(m[1]),'ppid':int(m[2]),'pgid':int(m[3]),'birth':m[4],'argv':m[5],**value}
+ except Exception as e:return {'status':'unavailable','error':str(e)}
+def exists(pid):
+ try:os.killpg(pid,0);return True
+ except ProcessLookupError:return False
+
+def signal_owned(row,sig):
+ live=observe(row['pid']);row.setdefault('signalChecks',[]).append({'at':now(),'live':live,'signal':signal.Signals(sig).name})
+ initial=row['identity']
+ assert live['status']=='observed' and initial['status']=='observed', 'L0_TOOL_LEADER_UNAVAILABLE_NO_SIGNAL'
+ assert all(live[k]==initial[k] for k in ['pid','ppid','pgid','birth','argv']) and live['ppid']==os.getpid() and live['pgid']==row['pid'], 'L0_TOOL_OWNERSHIP_CHANGED_NO_SIGNAL'
+ os.killpg(row['pid'],sig)
+
+def release(row):
+ if not exists(row['pid']):return
+ signal_owned(row,signal.SIGTERM)
+ deadline=time.monotonic()+TEARDOWN_SECONDS
+ while exists(row['pid']) and time.monotonic()<deadline:time.sleep(POLL_SECONDS)
+ if exists(row['pid']):signal_owned(row,signal.SIGKILL)
+ deadline=time.monotonic()+TEARDOWN_SECONDS
+ while exists(row['pid']) and time.monotonic()<deadline:time.sleep(POLL_SECONDS)
+ assert not exists(row['pid']),'L0_TOOL_GROUP_REMAINS'
+
+def run(label,argv,call_seconds=60,expected=0,reason=None):
+ remaining=whole_remaining()-FINALIZATION_RESERVE_SECONDS
+ assert remaining>0,'L0_WHOLE_FINAL_GATES_DEADLINE'
+ timeout=min(call_seconds,remaining)
+ call_started=time.monotonic()
+ row={'label':label,'argv':argv,'cwd':str(REPO),'startedAt':now(),'perCallDeadlineSeconds':call_seconds,'effectiveDeadlineSeconds':timeout,'expectedExit':expected,'expectedReason':reason}
+ rows.append(row)
+ with (ART/(label+'.stdout.raw.txt')).open('wb') as out,(ART/(label+'.stderr.raw.txt')).open('wb') as err:
+  p=subprocess.Popen(argv,cwd=REPO,env=ENV,stdout=out,stderr=err,start_new_session=True)
+  row['pid']=p.pid;row['identity']=observe(p.pid)
+  write('commands.json.txt',rows)
+  try:
+   assert row['identity']['status']=='observed' and row['identity']['ppid']==os.getpid() and row['identity']['pgid']==p.pid, 'L0_TOOL_SPAWN_IDENTITY_UNQUALIFIED'
+   row['exitCode']=p.wait(timeout=timeout)
+  except Exception as e:row['failure']=str(e);raise
+  finally:
+   try:release(row)
+   except Exception as e:row['unresolvedOwnership']=str(e);raise
+   finally:
+    row['groupAbsent']=not exists(p.pid);row['endedAt']=now();row['elapsedSeconds']=time.monotonic()-call_started;write('commands.json.txt',rows)
+ stdout=(ART/(label+'.stdout.raw.txt')).read_bytes();stderr=(ART/(label+'.stderr.raw.txt')).read_bytes()
+ row['stdout']={'bytes':len(stdout),'sha256':sha(stdout)};row['stderr']={'bytes':len(stderr),'sha256':sha(stderr)}
+ write('commands.json.txt',rows)
+ assert row['exitCode']==expected,(label,'L0_UNEXPECTED_EXIT',row['exitCode'])
+ if reason:assert reason.encode() in stderr,(label,'L0_WRONG_FAILURE_REASON')
+ print(json.dumps({'label':label,'exitCode':row['exitCode'],'groupAbsent':row['groupAbsent'],'stdoutBytes':len(stdout),'stderrBytes':len(stderr)}),flush=True)
+ return stdout
+
+def git_bytes(*args):
+ whole_remaining()
+ value=subprocess.check_output(['git',*args],cwd=REPO,timeout=min(GIT_QUERY_SECONDS,whole_remaining()))
+ whole_remaining();return value
+
+def source_snapshot(label):
+ manifest=json.loads(MANIFEST.read_bytes());freeze=json.loads(FREEZE.read_bytes())
+ assert sha(MANIFEST.read_bytes())==freeze['sourceManifestSha256'],'L0_SOURCE_MANIFEST_CHANGED'
+ current=[file_identity(REPO/r['path']) for r in manifest['files']]
+ for expected,actual in zip(manifest['files'],current):
+  assert expected['sha256']==actual['sha256'] and expected['bytes']==actual['bytes'] and expected['mode']==actual['mode'], ('L0_SOURCE_INPUT_CHANGED',expected['path'])
+ index=Path(git_bytes('rev-parse','--git-path','index').decode().strip())
+ if not index.is_absolute():index=REPO/index
+ base=git_bytes('rev-parse','HEAD').decode().strip()
+ staged=git_bytes('ls-files','--stage','-z');tree=git_bytes('write-tree').decode().strip()
+ unstaged=git_bytes('diff','--binary');untracked=git_bytes('ls-files','--others','--exclude-standard','-z')
+ status=git_bytes('status','--porcelain=v1','-z')
+ stat=git_bytes('diff','--cached','--numstat','HEAD')
+ owned_diff=git_bytes('diff','--cached','--binary','HEAD','--','tools/migration/legacy-continuity','package.json','knip.json','docs/migration/CAMPAIGN.md','docs/migration/evidence/legacy-continuity/README.md')
+ for name,value in [('stage.bin.txt',staged),('unstaged.diff.txt',unstaged),('untracked.bin.txt',untracked),('status.bin.txt',status),('staged-numstat.txt',stat),('owned-source.diff.txt',owned_diff)]:
+  (ART/(label+'.'+name)).write_bytes(value);whole_remaining()
+ assert not unstaged and not untracked,'L0_WORKING_SOURCE_NOT_FULLY_STAGED'
+ assert base==freeze['base'] and tree==freeze['stagedTree'] and sha(staged)==freeze['semanticIndexSha256'] and sha(status)==freeze['statusSha256'] and sha(owned_diff)==freeze['ownedSourceDiffSha256'],'L0_STAGED_SOURCE_FREEZE_CHANGED'
+ return {'base':base,'manifest':file_identity(MANIFEST),'freeze':file_identity(FREEZE),'selected':current,'rawIndex':file_identity(index),'semanticIndexSha256':sha(staged),'stagedTree':tree,'unstagedDiffSha256':sha(unstaged),'untrackedSha256':sha(untracked),'ownedSourceDiffSha256':sha(owned_diff),'statusSha256':sha(status),'runtime':[file_identity(p) for p in [NODE,PNPM,NPM,Path('/bin/ps')]],'scope':'all Git-staged source identities plus complete selected own evidence/execution-owner byte/mode qualification; raw index identity is diagnostic, semantic index/tree and actual working bytes govern acceptance'}
+
+def qualify_smoke_port(label):
+ code="const {portIsFree}=await import("+json.dumps((REPO/'tools/lib/net.mjs').as_uri())+");const port="+str(SMOKE_PORT)+";const free=await portIsFree(port,'localhost');console.log(JSON.stringify({port,free,owner:'tools/lib/net.mjs',node:process.version,execPath:process.execPath}));if(!free)throw new Error('L0_SMOKE_PORT_TAKEN_NO_FOREIGN_CLEANUP');"
+ output=run(label,[str(NODE),'--input-type=module','--eval',code],30)
+ value=json.loads(output)
+ assert value['port']==SMOKE_PORT and value['free'] is True,'L0_SMOKE_PORT_UNQUALIFIED'
+ return value
+
+def qualify_install_reuse(snapshot):
+ receipt_bytes=(PREVIOUS/'receipt.json.txt').read_bytes()
+ assert sha(receipt_bytes)==PREVIOUS_RECEIPT_SHA,'L0_PREVIOUS_INSTALL_RECEIPT_CHANGED'
+ receipt=json.loads(receipt_bytes)
+ assert receipt['sourceAndIndexUnchanged'] and receipt['ownedCommandGroupsAbsent'] and receipt['before']['base']==snapshot['base'] and receipt['after']['base']==snapshot['base'],'L0_PREVIOUS_INSTALL_SCOPE_CHANGED'
+ for label in ['frozen-ignored-install','complete-installed-graph']:
+  call=next(row for row in receipt['commands'] if row['label']==label)
+  assert call['exitCode']==0 and call['groupAbsent'] and not call.get('unresolvedOwnership'),'L0_PREVIOUS_INSTALL_EXECUTION_UNQUALIFIED'
+ for prior in receipt['before']['runtime']:
+  current=next(row for row in snapshot['runtime'] if row['path']==prior['path'])
+  assert all(prior[key]==current[key] for key in ['realpath','bytes','sha256','mode','inode']),'L0_PREVIOUS_INSTALL_RUNTIME_CHANGED'
+ dependencies=[]
+ for name in ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml']:
+  prior=next(row for row in receipt['before']['selected'] if row['path']==str(REPO/name))
+  current=next(row for row in snapshot['selected'] if row['path']==str(REPO/name))
+  assert all(prior[key]==current[key] for key in ['realpath','bytes','sha256','mode']),'L0_PREVIOUS_INSTALL_INPUT_CHANGED'
+  dependencies.append(current)
+ graph=(PREVIOUS/'complete-installed-graph.stdout.raw.txt').read_bytes()
+ call=next(row for row in receipt['commands'] if row['label']=='complete-installed-graph')
+ assert len(graph)==call['stdout']['bytes'] and sha(graph)==call['stdout']['sha256'],'L0_COMPLETE_GRAPH_RECEIPT_CHANGED'
+ parsed=json.loads(graph);assert isinstance(parsed,list) and len(parsed)==2,'L0_COMPLETE_GRAPH_ROOTS_CHANGED'
+ metadata=json.loads((PREVIOUS/'installed-metadata.json.txt').read_bytes())
+ assert metadata['completeGraphBytes']==len(graph) and metadata['completeGraphSha256']==sha(graph),'L0_INSTALLED_METADATA_GRAPH_CHANGED'
+ packages=[]
+ for prior in metadata['packages']:
+  current=file_identity(Path(prior['path']));pkg=json.loads(Path(prior['path']).read_bytes())
+  assert all(prior[key]==current[key] for key in ['realpath','bytes','sha256','mode','inode']) and pkg['name']==prior['name'] and pkg['version']==prior['version'],'L0_INSTALLED_PACKAGE_METADATA_CHANGED'
+  packages.append({**current,'name':pkg['name'],'version':pkg['version']})
+ locks=[]
+ for label,path in [('installed.modules.yaml.txt',REPO/'node_modules/.modules.yaml'),('installed.pnpm-lock.yaml.txt',REPO/'node_modules/.pnpm/lock.yaml')]:
+  previous=(PREVIOUS/label).read_bytes();current=file_identity(path)
+  assert len(previous)==current['bytes'] and sha(previous)==current['sha256'],'L0_INSTALLED_LOCK_OR_LINKER_CHANGED'
+  locks.append(current)
+ return {'previousArtifactRoot':str(PREVIOUS),'previousReceiptSha256':PREVIOUS_RECEIPT_SHA,'completeGraphBytes':len(graph),'completeGraphSha256':sha(graph),'dependencyInputs':dependencies,'runtime':snapshot['runtime'],'packages':packages,'installedLocks':locks,'scope':'reuse complete previous JS resolution/installation receipt after exact relevant input/runtime/direct package/lock-linker byte qualification; no list/install/catalog rerun or complete native/compiled SDK/library-byte association'}
+
+ART.mkdir(exist_ok=False)
+write('lease.started.json.txt',{'owner':'L0','scope':'compact current-source Quality and Browserless local jobs, three actual role CLI positives, input-qualified previous installation/complete JS graph reuse and actual owned smoke-port checks; no install/list/catalog/native/candidate/static build/device/Playwright/performance/rival','startedAt':now(),'wholeDeadlineSeconds':WHOLE_DEADLINE_SECONDS,'jobDeadlinesSeconds':{'quality':QUALITY_DEADLINE_SECONDS,'browserless':BROWSERLESS_DEADLINE_SECONDS},'finalizationReserveSeconds':FINALIZATION_RESERVE_SECONDS,'gitQueryDeadlineSeconds':GIT_QUERY_SECONDS,'teardownPerSignalSeconds':TEARDOWN_SECONDS,'smokePort':SMOKE_PORT,'supervisor':observe(os.getpid()),'sourceManifest':file_identity(MANIFEST),'stagedFreeze':file_identity(FREEZE),'producer':file_identity(Path(__file__))})
+print(json.dumps({'artifactRoot':str(ART),'leaseSeconds':WHOLE_DEADLINE_SECONDS,'smokePort':SMOKE_PORT}),flush=True)
+failure=None;before=None;after=None;reuse_before=None;reuse_after=None;port_before=None;port_after=None
+try:
+ before=source_snapshot('before');write('before.json.txt',before)
+ assert before['base']=='709fadd68ecb802aa2c9daa3fc197ce8d072b23c','L0_IMPLEMENTATION_BASE_CHANGED'
+ reuse_before=qualify_install_reuse(before);write('install-reuse.before.json.txt',reuse_before)
+ port_before=qualify_smoke_port('smoke-port-before');write('smoke-port.before.json.txt',port_before)
+ run('quality',[str(NODE),str(NPM),'run','check:quality'],QUALITY_DEADLINE_SECONDS)
+ run('browserless',[str(NODE),str(NPM),'run','test:browserless'],BROWSERLESS_DEADLINE_SECONDS)
+ for role in ['released','held','reader']:
+  output=run('final-inspect-'+role,[str(NODE),str(NPM),'run','--silent','migration:legacy-continuity','--','inspect','--source',role],60)
+  prior=(SOURCE/'tools-followup-20261006203134'/('final-inspect-'+role+'.stdout.raw.txt')).read_bytes()
+  assert output==prior,('L0_SOURCE_ROLE_OUTPUT_CHANGED',role)
+  write('source-role-'+role+'.json.txt',{'role':role,'currentOutputBytes':len(output),'currentOutputSha256':sha(output),'priorPositiveBytes':len(prior),'priorPositiveSha256':sha(prior),'equalWithoutNormalization':True,'scope':'actual current source inspector output matches original executed positive at unchanged role/profile inputs; no native/effective-profile/SDKcompiled association'})
+except Exception as e:
+ failure=str(e);print(json.dumps({'failure':failure}),flush=True)
+finally:
+ try:
+  port_after=qualify_smoke_port('smoke-port-after');write('smoke-port.after.json.txt',port_after)
+  after=source_snapshot('after');write('after.json.txt',after)
+  if before:
+   assert before['base']==after['base'] and before['semanticIndexSha256']==after['semanticIndexSha256'] and before['stagedTree']==after['stagedTree'] and before['statusSha256']==after['statusSha256'] and before['ownedSourceDiffSha256']==after['ownedSourceDiffSha256'],'L0_SOURCE_SEMANTIC_INDEX_CHANGED'
+   assert before['runtime']==after['runtime'],'L0_RUNTIME_CHANGED'
+  reuse_after=qualify_install_reuse(after);write('install-reuse.after.json.txt',reuse_after)
+  if reuse_before:assert reuse_before==reuse_after,'L0_INSTALL_REUSE_INPUTS_CHANGED'
+ except Exception as e:failure=(failure+'; ' if failure else '')+str(e)
+ unresolved=[r for r in rows if not r.get('groupAbsent')]
+ unchanged=bool(before and after and before['semanticIndexSha256']==after['semanticIndexSha256'] and before['stagedTree']==after['stagedTree'] and before['statusSha256']==after['statusSha256'] and before['ownedSourceDiffSha256']==after['ownedSourceDiffSha256'])
+ receipt={'completedAt':now(),'elapsedSeconds':time.monotonic()-whole_start,'scope':'compact current-source full local Quality/Browserless and three actual role positives at frozen staged source plus qualified previous JS installation/graph reuse; not native continuity/effective profile/compiled SDK/channel/physical acceptance','failure':failure,'unresolvedOwnership':unresolved,'commands':rows,'before':before,'after':after,'installReuseBefore':reuse_before,'installReuseAfter':reuse_after,'sourceAndSemanticIndexUnchanged':unchanged,'rawIndexBytesUnchanged':bool(before and after and before['rawIndex']['sha256']==after['rawIndex']['sha256']),'smokePortBefore':port_before,'smokePortAfter':port_after,'smokePortAvailableAfter':bool(port_after and port_after['free']),'ownedCommandGroupsAbsent':not unresolved}
+ try:
+  write('receipt.json.txt',receipt)
+  write('manifest.json.txt',{'files':[{**file_identity(p),'path':str(p.relative_to(ART))} for p in sorted(ART.rglob('*')) if p.is_file()]})
+  receipt_sha=sha((ART/'receipt.json.txt').read_bytes());final_elapsed=time.monotonic()-whole_start
+  assert final_elapsed<WHOLE_DEADLINE_SECONDS,'L0_FINALIZATION_EXCEEDED_WHOLE_DEADLINE'
+  whole_remaining();signal.setitimer(signal.ITIMER_REAL,0)
+  print(json.dumps({'artifactRoot':str(ART),'failure':failure,'unresolvedCount':len(unresolved),'receiptSha256':receipt_sha,'finalElapsedSeconds':final_elapsed,'wholeDeadlineSatisfied':True,'smokePortAvailableAfter':bool(port_after and port_after['free'])}),flush=True)
+ except Exception as e:
+  signal.setitimer(signal.ITIMER_REAL,0)
+  failure=(failure+'; ' if failure else '')+str(e)
+  emergency={'at':now(),'failure':failure,'elapsedSeconds':time.monotonic()-whole_start,'scope':'expiry/finalization failure only; no complete gate acceptance','commands':rows,'unresolvedOwnership':unresolved,'smokePortAfter':port_after}
+  (ART/'expiry-or-finalization-failure.json.txt').write_text(json.dumps(emergency,indent=2)+'\n')
+  print(json.dumps({'artifactRoot':str(ART),'failure':failure,'wholeDeadlineSatisfied':False,'unresolvedCount':len(unresolved)}),flush=True)
+if failure:sys.exit(1)

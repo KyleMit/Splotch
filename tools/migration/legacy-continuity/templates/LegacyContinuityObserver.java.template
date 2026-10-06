@@ -1,0 +1,160 @@
+package art.splotch.app;
+
+import android.content.SharedPreferences;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import java.security.KeyStore;
+import java.util.Map;
+
+@CapacitorPlugin(name = "LegacyContinuityObserver")
+public class LegacyContinuityObserver extends Plugin {
+    private static final String[] OBSERVED_KEYS = { @@OWNED_KEYS@@ };
+    private static final String[] VAULT_ACCOUNTS = { @@VAULT_ACCOUNTS@@ };
+    private static final String OWNER_KEY = @@OWNER_KEY@@;
+    private static final String VOLUME_KEY = @@VOLUME_KEY@@;
+    private static final String PREFERENCES_GROUP = @@PREFERENCES_GROUP@@;
+    private static final String VAULT_PREFERENCES = @@VAULT_PREFERENCES@@;
+    private static final int WRONG_VOLUME_VALUE = 7;
+
+    private SharedPreferences preferences(String name) {
+        return getContext().getSharedPreferences(name, android.content.Context.MODE_PRIVATE);
+    }
+
+    private KeyStore vault() throws Exception {
+        KeyStore store = KeyStore.getInstance("AndroidKeyStore");
+        store.load(null);
+        return store;
+    }
+
+    private String nonce(PluginCall call, boolean mutation) {
+        String value = call.getString("nonce");
+        if (value == null || !value.matches("[a-f0-9]{32}")) throw new IllegalArgumentException("L0_NONCE_INVALID");
+        if (mutation && !value.equals(preferences(PREFERENCES_GROUP).getAll().get(OWNER_KEY))) {
+            throw new IllegalArgumentException("L0_OWNERSHIP_MARKER_MISMATCH");
+        }
+        return value;
+    }
+
+    private JSObject preferenceValues() {
+        Map<String, ?> values = preferences(PREFERENCES_GROUP).getAll();
+        JSObject rows = new JSObject();
+        for (String key : OBSERVED_KEYS) {
+            JSObject row = new JSObject();
+            if (!values.containsKey(key)) {
+                row.put("kind", "absent");
+                row.put("value", JSObject.NULL);
+            } else {
+                Object value = values.get(key);
+                row.put("kind", value instanceof String ? "string" : "native-type");
+                row.put("nativeType", value == null ? "null" : value.getClass().getName());
+                row.put("value", value == null ? JSObject.NULL : value);
+            }
+            rows.put(key, row);
+        }
+        return rows;
+    }
+
+    private JSObject vaultValues() throws Exception {
+        KeyStore store = vault();
+        Map<String, ?> values = preferences(VAULT_PREFERENCES).getAll();
+        JSObject result = new JSObject();
+        for (String account : VAULT_ACCOUNTS) {
+            boolean rowPresent = values.containsKey(account);
+            boolean aliasPresent = store.containsAlias(account);
+            JSObject row = new JSObject();
+            row.put("rowPresent", rowPresent);
+            row.put("aliasPresent", aliasPresent);
+            row.put("confirmedAbsent", !rowPresent && !aliasPresent);
+            Object value = values.get(account);
+            row.put("row", value == null ? JSObject.NULL : value);
+            row.put("rowType", value == null ? "absent" : value.getClass().getName());
+            result.put(account, row);
+        }
+        return result;
+    }
+
+    @PluginMethod
+    public void observe(PluginCall call) {
+        try {
+            nonce(call, false);
+            JSObject result = new JSObject();
+            result.put("platform", "android");
+            result.put("preferences", preferenceValues());
+            result.put("vault", vaultValues());
+            result.put("bundleId", getContext().getPackageName());
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("L0_NATIVE_OBSERVATION_FAILED", error);
+        }
+    }
+
+    @PluginMethod
+    public void corruptPreference(PluginCall call) {
+        try {
+            nonce(call, true);
+            boolean committed = preferences(PREFERENCES_GROUP).edit().putInt(VOLUME_KEY, WRONG_VOLUME_VALUE).commit();
+            if (!committed) throw new IllegalStateException("L0_CONTROL_DISK_WRITE_FAILED");
+            call.resolve(preferenceValues());
+        } catch (Exception error) { call.reject("L0_CONTROL_REFUSED", error); }
+    }
+
+    @PluginMethod
+    public void observeDisk(PluginCall call) {
+        try {
+            nonce(call, false);
+            JSObject result = new JSObject();
+            result.put("preferences", LegacyContinuityDisk.read(getContext(), PREFERENCES_GROUP, OBSERVED_KEYS));
+            result.put("vault", LegacyContinuityDisk.read(getContext(), VAULT_PREFERENCES, VAULT_ACCOUNTS));
+            call.resolve(result);
+        } catch (Exception error) { call.reject("L0_DISK_OBSERVATION_FAILED", error); }
+    }
+
+    @PluginMethod
+    public void corruptVaultRow(PluginCall call) {
+        try {
+            String value = nonce(call, true);
+            String account = VAULT_ACCOUNTS[0];
+            if (!vault().containsAlias(account)) throw new IllegalStateException("L0_CONTROL_REQUIRES_OWNED_ALIAS");
+            if (!preferences(VAULT_PREFERENCES).edit().putString(account, "invalid-ciphertext-" + value).commit()) {
+                throw new IllegalStateException("L0_CONTROL_DISK_WRITE_FAILED");
+            }
+            call.resolve(vaultValues());
+        } catch (Exception error) { call.reject("L0_CONTROL_REFUSED", error); }
+    }
+
+    @PluginMethod
+    public void removeOwnedAlias(PluginCall call) {
+        try {
+            nonce(call, true);
+            String account = VAULT_ACCOUNTS[0];
+            if (!preferences(VAULT_PREFERENCES).contains(account)) throw new IllegalStateException("L0_CONTROL_REQUIRES_OWNED_ROW");
+            KeyStore store = vault();
+            if (!store.containsAlias(account)) throw new IllegalStateException("L0_CONTROL_REQUIRES_OWNED_ALIAS");
+            store.deleteEntry(account);
+            call.resolve(vaultValues());
+        } catch (Exception error) { call.reject("L0_CONTROL_REFUSED", error); }
+    }
+
+    @PluginMethod
+    public void removeOrphanRows(PluginCall call) {
+        try {
+            nonce(call, true);
+            KeyStore store = vault();
+            SharedPreferences.Editor editor = preferences(VAULT_PREFERENCES).edit();
+            for (String account : VAULT_ACCOUNTS) {
+                if (store.containsAlias(account)) throw new IllegalStateException("L0_CLEANUP_ALIAS_STILL_PRESENT");
+                editor.remove(account);
+            }
+            if (!editor.commit()) throw new IllegalStateException("L0_CLEANUP_DISK_WRITE_FAILED");
+            call.resolve(vaultValues());
+        } catch (Exception error) { call.reject("L0_CLEANUP_REFUSED", error); }
+    }
+
+    @PluginMethod
+    public void queryRefusal(PluginCall call) {
+        call.reject("L0_IOS_CONTROL_ONLY");
+    }
+}

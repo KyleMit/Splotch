@@ -1,0 +1,389 @@
+import { registerPlugin } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { isNative } from '$lib/platform';
+import {
+  STORAGE_KEYS,
+  writeBool,
+  writeInt,
+  writeString,
+  hydrateDurableStorage,
+  removeKey,
+} from '$lib/storage';
+import {
+  saveApiKey,
+  saveAccessCode,
+  loadApiKey,
+  loadAccessCode,
+  clearApiKey,
+  clearAccessCode,
+} from '$lib/secureStorage';
+import { fixtureConfig } from './fixture-config';
+import { readHeldRaw, putUndefinedHeldControl } from './held-reader';
+import { seedHeld, falseHeldHint } from './held-owner';
+import { parsedSettings } from './settings-parser';
+
+interface NativeObservation {
+  platform: 'android' | 'ios';
+  bundleId: string;
+  preferences: Record<string, { kind: string; value: unknown }>;
+  vault: Record<string, unknown>;
+}
+
+interface NativeObserver {
+  observe(options: { nonce: string }): Promise<NativeObservation>;
+  observeDisk(options: { nonce: string }): Promise<unknown>;
+  removeOrphanRows(options: { nonce: string }): Promise<unknown>;
+  corruptPreference(options: { nonce: string }): Promise<unknown>;
+  corruptVaultRow(options: { nonce: string }): Promise<unknown>;
+  removeOwnedAlias(options: { nonce: string }): Promise<unknown>;
+  queryRefusal(options: { nonce: string }): Promise<unknown>;
+}
+
+const observer = registerPlugin<NativeObserver>('LegacyContinuityObserver');
+type Command = (typeof fixtureConfig.commands)[number];
+let rawCaptured = false;
+let settingsParsed = false;
+
+function selectedRole(): 'released' | 'held' | 'reader' {
+  return fixtureConfig.role;
+}
+
+declare global {
+  interface Window {
+    __SPLOTCH_L0__?: { ready: boolean; run: typeof runFixtureCommand };
+  }
+}
+
+function commandIsKnown(value: unknown): value is Command {
+  return typeof value === 'string' && fixtureConfig.commands.some((command) => command === value);
+}
+
+function localSnapshot() {
+  return Object.fromEntries(
+    fixtureConfig.observedKeys.map((key) => [key, localStorage.getItem(key)])
+  );
+}
+
+function assertNativeMap(
+  value: unknown,
+  keys: readonly string[]
+): asserts value is Record<string, unknown> {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    Array.isArray(value) ||
+    Object.keys(value).sort().join('\0') !== [...keys].sort().join('\0')
+  ) {
+    throw new Error('L0_INCOMPLETE_NATIVE_OBSERVATION');
+  }
+}
+
+async function snapshot(nonce: string) {
+  const native = await observer.observe({ nonce });
+  if (
+    !native ||
+    (native.platform !== 'android' && native.platform !== 'ios') ||
+    native.bundleId !== 'art.splotch.app'
+  ) {
+    throw new Error('L0_NATIVE_IDENTITY_MISMATCH');
+  }
+  assertNativeMap(native.preferences, fixtureConfig.observedKeys);
+  assertNativeMap(native.vault, fixtureConfig.vaultAccounts);
+  return {
+    origin: location.origin,
+    href: location.href,
+    native: isNative(),
+    drawingSurface: document.documentElement.hasAttribute('data-app-surface'),
+    role: fixtureConfig.role,
+    revision: fixtureConfig.revision,
+    local: localSnapshot(),
+    observation: native,
+    held: await readHeldRaw(),
+  };
+}
+
+async function requireOwnedHeld(nonce: string) {
+  const held = await readHeldRaw();
+  if (
+    !('raw' in held) ||
+    held.status !== 'recognized-source' ||
+    !held.complete ||
+    held.entryCount !== 1 ||
+    held.raw.kind !== 'array' ||
+    Object.keys(held.raw.fields).sort().join(',') !== '0,length'
+  ) {
+    throw new Error('L0_HELD_CONTROL_REQUIRES_EXACT_OWNED_PICTURE');
+  }
+  const picture = held.raw.fields['0'];
+  if (
+    picture.kind !== 'object' ||
+    Object.keys(picture.fields).sort().join(',') !== 'baseName,bytes,outcome,signature,type'
+  ) {
+    throw new Error('L0_HELD_CONTROL_REQUIRES_EXACT_OWNED_PICTURE');
+  }
+  const fields = picture.fields;
+  const expected = {
+    baseName: `l0-${nonce}`,
+    signature: `l0-${nonce}`,
+    type: 'image/png',
+    outcome: 'denied',
+  };
+  for (const [name, value] of Object.entries(expected)) {
+    const field = fields[name];
+    if (field.kind !== 'string' || field.value !== value)
+      throw new Error('L0_HELD_OWNERSHIP_MISMATCH');
+  }
+  const bytes = fields.bytes;
+  if (
+    bytes.kind !== 'buffer' ||
+    bytes.bytes !== fixtureConfig.picture.bytes ||
+    bytes.sha256 !== fixtureConfig.picture.sha256 ||
+    bytes.base64 !== fixtureConfig.picture.base64
+  ) {
+    throw new Error('L0_HELD_BYTES_MISMATCH');
+  }
+}
+
+async function requireOwner(nonce: string) {
+  if (!rawCaptured) throw new Error('L0_RAW_SNAPSHOT_REQUIRED');
+  const owner = await Preferences.get({ key: fixtureConfig.ownerKey });
+  if (owner.value !== nonce) throw new Error('L0_OWNERSHIP_MARKER_MISMATCH');
+  if (localStorage.getItem(fixtureConfig.unrelatedKey) !== `unrelated-${nonce}`) {
+    throw new Error('L0_UNRELATED_SENTINEL_CHANGED');
+  }
+}
+
+function writeSettings() {
+  writeBool(STORAGE_KEYS.soundEnabled, false);
+  writeInt(STORAGE_KEYS.soundVolume, 37);
+  writeString(STORAGE_KEYS.theme, 'dark');
+  writeBool(fixtureConfig.keys[fixtureConfig.drawerProperty], false);
+  writeBool(STORAGE_KEYS.coloringBookEnabled, false);
+  writeBool(STORAGE_KEYS.aiImageEnabled, true);
+}
+
+async function seed(nonce: string) {
+  if (selectedRole() === 'reader') throw new Error('L0_READER_CANNOT_SEED');
+  if (!rawCaptured) throw new Error('L0_RAW_SNAPSHOT_REQUIRED');
+  const before = await snapshot(nonce);
+  if (Object.values(before.local).some((value) => value !== null))
+    throw new Error('L0_SEED_REQUIRES_EMPTY_OWNED_KEYS');
+  if (Object.values(before.observation.preferences).some((value) => value.kind !== 'absent')) {
+    throw new Error('L0_SEED_REQUIRES_EMPTY_NATIVE_KEYS');
+  }
+  const vaultStates = Object.values(before.observation.vault);
+  if (vaultStates.length !== fixtureConfig.secretNames.length)
+    throw new Error('L0_INCOMPLETE_VAULT_OBSERVATION');
+  for (const state of vaultStates) {
+    if (
+      typeof state !== 'object' ||
+      state === null ||
+      !('confirmedAbsent' in state) ||
+      state.confirmedAbsent !== true
+    ) {
+      throw new Error('L0_SEED_REQUIRES_CONFIRMED_VAULT_ABSENCE');
+    }
+  }
+  localStorage.setItem(fixtureConfig.ownerKey, nonce);
+  localStorage.setItem(fixtureConfig.unrelatedKey, `unrelated-${nonce}`);
+  await Preferences.set({ key: fixtureConfig.ownerKey, value: nonce });
+  await Preferences.set({
+    key: fixtureConfig.unrelatedKey,
+    value: `unrelated-${nonce}`,
+  });
+  writeSettings();
+  await saveApiKey(`owned-api-${nonce}`);
+  await saveAccessCode(`owned-code-${nonce}`);
+  return {
+    phase: 'writers-acknowledged-memory-only',
+    snapshot: await snapshot(nonce),
+  };
+}
+
+async function vaultRead(nonce: string) {
+  const { SecureStorage } = await import('@aparajita/capacitor-secure-storage');
+  const provider = await Promise.all(
+    fixtureConfig.secretNames.map(async (name) => {
+      try {
+        const value: unknown = await SecureStorage.get(name);
+        return {
+          name,
+          status: 'resolved',
+          type: Object.prototype.toString.call(value),
+          value: value instanceof Date ? value.toISOString() : value,
+        };
+      } catch (error) {
+        return {
+          name,
+          status: 'rejected',
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    })
+  );
+  return {
+    provider,
+    app: { api: await loadApiKey(), code: await loadAccessCode() },
+    native: await observer.observe({ nonce }),
+  };
+}
+
+async function executeOwned(command: Command, nonce: string): Promise<unknown> {
+  await requireOwner(nonce);
+  if (command === 'parse') {
+    if (settingsParsed) throw new Error('L0_PARSE_REQUIRES_FRESH_DOCUMENT');
+    settingsParsed = true;
+    return parsedSettings();
+  }
+  if (command === 'disk') {
+    if ((await observer.observe({ nonce })).platform !== 'android')
+      throw new Error('L0_IOS_DISK_OBSERVATION_IS_HOST_PLIST_AND_RELAUNCH');
+    return observer.observeDisk({ nonce });
+  }
+  if (command === 'native-wrong-type') return observer.corruptPreference({ nonce });
+  if (command === 'preferences') {
+    return Promise.all(
+      fixtureConfig.observedKeys.map(async (key) => {
+        try {
+          return {
+            key,
+            status: 'resolved',
+            value: (await Preferences.get({ key })).value,
+          };
+        } catch (error) {
+          return {
+            key,
+            status: 'rejected',
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      })
+    );
+  }
+  if (command === 'hydrate') {
+    const before = localSnapshot();
+    const restored = await hydrateDurableStorage();
+    return {
+      before,
+      returnedType: typeof restored,
+      returned: restored ?? null,
+      after: localSnapshot(),
+    };
+  }
+  if (command === 'evict-local') {
+    for (const key of Object.values(fixtureConfig.keys)) localStorage.removeItem(key);
+    return snapshot(nonce);
+  }
+  if (command === 'invalid-theme') {
+    writeString(STORAGE_KEYS.theme, 'night');
+    return snapshot(nonce);
+  }
+  if (command === 'noncanonical-volume') {
+    writeString(STORAGE_KEYS.soundVolume, '37abc');
+    return snapshot(nonce);
+  }
+  if (command === 'restore-settings') {
+    writeSettings();
+    return snapshot(nonce);
+  }
+  if (command === 'vault-read') return vaultRead(nonce);
+  if (command === 'vault-cipher-corrupt' || command === 'vault-orphan-alias') {
+    if ((await observer.observe({ nonce })).platform !== 'android')
+      throw new Error('L0_ANDROID_CONTROL_ONLY');
+    return command === 'vault-cipher-corrupt'
+      ? observer.corruptVaultRow({ nonce })
+      : observer.removeOwnedAlias({ nonce });
+  }
+  if (command === 'vault-query-refusal') {
+    if ((await observer.observe({ nonce })).platform !== 'ios')
+      throw new Error('L0_IOS_CONTROL_ONLY');
+    return observer.queryRefusal({ nonce });
+  }
+  if (command === 'restore-vault') {
+    await saveApiKey(`owned-api-${nonce}`);
+    await saveAccessCode(`owned-code-${nonce}`);
+    return vaultRead(nonce);
+  }
+  if (command === 'vault-absent') {
+    await clearApiKey();
+    await clearAccessCode();
+    await observer.removeOrphanRows({ nonce });
+    return vaultRead(nonce);
+  }
+  if (
+    command === 'vault-nonstring' ||
+    command === 'vault-date' ||
+    command === 'vault-invalid-json'
+  ) {
+    const { SecureStorage } = await import('@aparajita/capacitor-secure-storage');
+    const [name] = fixtureConfig.secretNames;
+    if (command === 'vault-nonstring') await SecureStorage.set(name, { owned: nonce });
+    if (command === 'vault-date') await SecureStorage.set(name, '2026-10-06T12:00:00.000Z');
+    if (command === 'vault-invalid-json')
+      await SecureStorage.setItem(name, `invalid-json-${nonce}`);
+    return vaultRead(nonce);
+  }
+  if (command === 'held-read') return readHeldRaw();
+  if (command === 'held-seed') {
+    if (selectedRole() !== 'held') throw new Error('L0_HELD_WRITER_SOURCE_REQUIRED');
+    const existing = await readHeldRaw();
+    if (existing.status !== 'absent-database' && existing.status !== 'absent-record')
+      throw new Error('L0_HELD_SEED_REQUIRES_ABSENCE');
+    await seedHeld(nonce);
+    return readHeldRaw();
+  }
+  if (command === 'held-false-hint' || command === 'held-undefined') {
+    if (selectedRole() !== 'held') throw new Error('L0_HELD_CONTROL_SOURCE_REQUIRED');
+    await requireOwnedHeld(nonce);
+    if (command === 'held-false-hint') falseHeldHint();
+    else await putUndefinedHeldControl();
+    return readHeldRaw();
+  }
+  if (command === 'cleanup') {
+    await clearApiKey();
+    await clearAccessCode();
+    await observer.removeOrphanRows({ nonce });
+    for (const key of Object.values(fixtureConfig.keys)) removeKey(key);
+    return {
+      snapshot: await snapshot(nonce),
+      vault: await vaultRead(nonce),
+      held: await readHeldRaw(),
+      heldAndLegacyKeysRetained: true,
+      ownershipMarkersRetained: true,
+    };
+  }
+  throw new Error('L0_COMMAND_DISPOSITION_MISSING');
+}
+
+export async function runFixtureCommand(command: unknown, nonce: unknown) {
+  if (!commandIsKnown(command)) throw new Error('L0_COMMAND_INVALID');
+  if (typeof nonce !== 'string' || !/^[a-f0-9]{32}$/.test(nonce))
+    throw new Error('L0_NONCE_INVALID');
+  if (
+    location.pathname !== fixtureConfig.path ||
+    !isNative() ||
+    document.documentElement.hasAttribute('data-app-surface')
+  ) {
+    throw new Error('L0_ROUTE_OR_PLATFORM_MISMATCH');
+  }
+  let result: unknown;
+  if (command === 'raw') {
+    result = await snapshot(nonce);
+    rawCaptured = true;
+  } else if (command === 'seed') result = await seed(nonce);
+  else result = await executeOwned(command, nonce);
+  return {
+    command,
+    nonce,
+    role: fixtureConfig.role,
+    revision: fixtureConfig.revision,
+    result,
+  };
+}
+
+export function exposeFixture() {
+  window.__SPLOTCH_L0__ = { ready: true, run: runFixtureCommand };
+  return () => {
+    delete window.__SPLOTCH_L0__;
+  };
+}
