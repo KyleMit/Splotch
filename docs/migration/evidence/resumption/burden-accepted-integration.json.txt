@@ -1,0 +1,35 @@
+{
+  "observedAtUtc": "2026-10-06T16:26:15.896759+00:00",
+  "scope": "PR2704 preregistration acceptance only",
+  "merge": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "mergeParents": [
+    "e7413bf92066fcf45967cf04241a513fd48d49ff",
+    "a8a49e399e5d37bfc923776e0818948b950f8f65"
+  ],
+  "reviewedHead": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+  "actualQualityCheckout": "a0781a9a40532f26d8066191dfedae6d8bb84bbe",
+  "treeIdentities": {
+    "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+    "a8a49e399e5d37bfc923776e0818948b950f8f65": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+    "a0781a9a40532f26d8066191dfedae6d8bb84bbe": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0"
+  },
+  "originIntegrationObserved": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "originMainObserved": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "durableFiles": [
+    {
+      "path": "quality-ci-native-complete.json",
+      "bytes": 138497,
+      "sha256": "c47dda9e5389a7577eb388dd2b8dcf8fe3ad1d3e5d3fff588dca0890d1ab08a9"
+    },
+    {
+      "path": "final-head-ci-attribution.json",
+      "bytes": 52403,
+      "sha256": "0032a746b42ae62b54e92916b0c5f76462d840d4658d95db746bf916fdf58224"
+    },
+    {
+      "path": "merged-pr-native.json",
+      "bytes": 3629,
+      "sha256": "78f4cf214518ba3833dba1327e786474badf2c1813fb03b0bb4ab0e2c26172e6"
+    }
+  ]
+}
