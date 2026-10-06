@@ -49,6 +49,20 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
 > platform), and the `postbuild`/`postbuild:cap` check `tools/check-build-version.mjs` fails a build
 > whose client, server, `version.json`, coloring-manifest filename, or precache disagree.
 
+> Amended 2026-10: `web/svelte.config.js` gives SvelteKit's `kit.version.name` the same
+> platform-keyed, pinned app version. Kit's timestamp default changed payload namespaces and chunk
+> URLs between equivalent builds; the shared owner makes those outputs deterministic. The postbuild
+> guard also requires the shipped `_app/version.json` to agree with the app version endpoint.
+> Package metadata resolves relative to `buildVersion.ts`, so config evaluation from an editor's
+> working directory reads the same package owner.
+>
+> Equal app versions are a deployment compatibility policy, not a digest of every build input. Kit's
+> lazy-route and error-navigation update recovery also uses this identity: incompatible replacements
+> under the same app version no longer gain a timestamp-based reload. The existing PWA policy
+> already treats equal versions as compatible (ADR-0022); deploy incompatible inputs under a
+> different version. Kit polling remains disabled. Its remote-prerender cache namespace also uses
+> the version; the app has no remote-prerender caller.
+
 `__APP_VERSION__` and the emitted `version.json` both flow from this value unchanged, so the About
 tab and the `updates.ts` mismatch check pick it up with no other code changes. The mismatch redirect
 is safe to fire per-deploy: it runs only once at init (page load, canvas empty), never on the

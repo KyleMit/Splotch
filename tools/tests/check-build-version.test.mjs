@@ -29,6 +29,7 @@ function buildOutput({
   const root = mkdtempSync(join(tmpdir(), 'splotch-build-version-'));
   fixtures.push(root);
   writeBundle(root, 'client', client);
+  write(root, 'client/_app/version.json', JSON.stringify({ version: client }));
   writeBundle(root, 'server', server);
   if (serviceWorker) {
     write(
@@ -47,6 +48,22 @@ describe('buildVersionProblems', () => {
 
   it('accepts a native build, which ships no service worker', () => {
     expect(buildVersionProblems(buildOutput({ native: true }))).toEqual([]);
+  });
+
+  it('reports a build missing the Kit version endpoint', () => {
+    const output = buildOutput();
+    rmSync(join(output.clientDir, '_app/version.json'));
+
+    expect(buildVersionProblems(output)).toEqual(['Client _app/version.json is missing']);
+  });
+
+  it('reports a Kit endpoint that differs while all app version surfaces agree', () => {
+    const output = buildOutput();
+    write(output.clientDir, '_app/version.json', JSON.stringify({ version: '1791257537740' }));
+
+    expect(buildVersionProblems(output)).toEqual([
+      'Client _app/version.json carries 1791257537740, not 1.6.896',
+    ]);
   });
 
   it('reports a web build that ships no service worker', () => {

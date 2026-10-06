@@ -1,6 +1,7 @@
 import adapterNetlify from '@sveltejs/adapter-netlify';
 import adapterStatic from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { buildMetadataOncePerProcess } from './buildVersion.ts';
 import { nativeCspDirectives, WEB_CSP_DIRECTIVES } from './securityPolicy.ts';
 import { standalonePageEntries } from './standalonePageEntries.ts';
 
@@ -10,12 +11,14 @@ import { standalonePageEntries } from './standalonePageEntries.ts';
 // (api, admin, dev) aren't reachable inside the bundle and are skipped by
 // `strict: false`; the native AI button talks to the hosted endpoint instead.
 const isCapacitor = process.env.CAPACITOR === 'true';
+const { appVersion } = buildMetadataOncePerProcess({ isCapacitor, env: process.env });
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
   kit: {
     alias: standalonePageEntries(isCapacitor),
+    version: { name: appVersion },
     // Hashes protect prerendered pages through a CSP meta tag; per-response
     // nonces protect SSR pages. The Netlify/SSR security-header layer supplies
     // the directives that meta delivery cannot express without overriding this
