@@ -23,13 +23,15 @@ Accepted integration: c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b after burden PR 2
 [Acceptance receipt](evidence/resumption/burden-accepted-integration.json.txt) binds its reviewed
 head a8a49e399e5d37bfc923776e0818948b950f8f65, actual Quality checkout
 a0781a9a40532f26d8066191dfedae6d8bb84bbe and integration to the same tree, preserving their distinct
-Git identities. All 14 executed test jobs and ADR Integrity succeeded; four conditional WebKit jobs
-skipped. Original Claude round three found no remaining findings or unverified claims. This accepts
-preregistration only. Records PR 2701 integrated at e7413bf92066fcf45967cf04241a513fd48d49ff. Its
-original Claude review completed three rounds with no remaining findings at source
-15470a2d531f41929ea4cf61f9d61410e32025cc; Tests and ADR Integrity registered on its final head
-passed. The actual CI test-merge source b02f8abb73646747f6214ae5e511372f05e915d3 has the same tree
-as that head and final integration;
+Git identities. The
+[complete native CI metadata](evidence/resumption/burden-final-head-ci-metadata.json.txt) records
+all 18 test jobs. All 14 executed test jobs and ADR Integrity succeeded; four conditional WebKit
+jobs skipped. Original Claude round three found no remaining findings or unverified claims. This
+accepts preregistration only. Records PR 2701 integrated at
+e7413bf92066fcf45967cf04241a513fd48d49ff. Its original Claude review completed three rounds with no
+remaining findings at source 15470a2d531f41929ea4cf61f9d61410e32025cc; Tests and ADR Integrity
+registered on its final head passed. The actual CI test-merge source
+b02f8abb73646747f6214ae5e511372f05e915d3 has the same tree as that head and final integration;
 [attribution](evidence/burden-preregistration/records-ci-source-attribution.json.txt) keeps the Git
 identities distinct.
 [Review 5430932906](https://github.com/KyleMit/Splotch/pull/2701#pullrequestreview-5430932906)
