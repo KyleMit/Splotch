@@ -270,6 +270,94 @@ describe('Netlify second production installer', () => {
     expect(JSON.stringify(context.records)).not.toContain('fixture-auth-marker');
   });
 
+  it('records only global setting names and the fixed cache-path class before refusal', () => {
+    const context = fixture();
+    put(
+      context.env.XDG_CONFIG_HOME,
+      'pnpm/config.yaml',
+      'storeDir: /opt/build/cache/.pnpm-store\nsecretSetting: fixture-not-printed\n'
+    );
+    put(context.root, 'node_modules/sentinel', 'untouched');
+    expect(context.run).toThrow('Ambient pnpm settings need separate review');
+    expect(context.records).toEqual([
+      {
+        stage: 'ambient-pnpm-config-refused',
+        kind: 'regular-file',
+        sizeBytes: Buffer.byteLength(
+          'storeDir: /opt/build/cache/.pnpm-store\nsecretSetting: fixture-not-printed\n'
+        ),
+        namedKeys: ['storeDir'],
+        unlistedKeyCount: 1,
+        storeDirValueClass: 'unrecognized',
+      },
+    ]);
+    expect(context.calls()).toEqual([]);
+    expect(readFileSync(join(context.root, 'node_modules/sentinel'), 'utf8')).toBe('untouched');
+    expect(JSON.stringify(context.records)).not.toContain('fixture-not-printed');
+    expect(JSON.stringify(context.records)).not.toContain('secretSetting');
+    expect(JSON.stringify(context.records)).not.toContain('/opt/build/cache/.pnpm-store');
+  });
+
+  it('redacts value-shaped lines in a multiline scalar to a count', () => {
+    const context = fixture();
+    put(
+      context.env.XDG_CONFIG_HOME,
+      'pnpm/config.yaml',
+      'token: "abc\nAbCdEf0123456789secret: tail"\n'
+    );
+    expect(context.run).toThrow('Ambient pnpm settings need separate review');
+    expect(context.records[0]).toMatchObject({ namedKeys: [], unlistedKeyCount: 2 });
+    expect(JSON.stringify(context.records)).not.toContain('AbCdEf0123456789secret');
+    expect(context.calls()).toEqual([]);
+  });
+
+  it.each([
+    ['storeDir: /opt/build/cache/.pnpm-store\n', 'netlify-cache-path'],
+    ['storeDir: /opt/build/cache/../../../root/x\n', 'unrecognized'],
+    ['storeDir: /opt/build/cache/./x\n', 'unrecognized'],
+    ['storeDir: /opt/build/cache/a\nstoreDir: /home/x\n', 'unrecognized'],
+    ['storeDir: /opt/build/cache/a\nconfigDependencies: {}\n', 'unrecognized'],
+  ])('classifies only one complete plain cache-store setting: %s', (text, classification) => {
+    const context = fixture();
+    put(context.env.XDG_CONFIG_HOME, 'pnpm/config.yaml', text);
+    expect(context.run).toThrow('Ambient pnpm settings need separate review');
+    expect(context.records[0].storeDirValueClass).toBe(classification);
+    expect(JSON.stringify(context.records)).not.toContain('/opt/build/cache');
+    expect(context.calls()).toEqual([]);
+  });
+
+  it('does not read through a linked global settings parent', () => {
+    const context = fixture();
+    put(context.root, 'outside-pnpm/config.yaml', 'storeDir: /opt/build/cache/.pnpm-store\n');
+    mkdirSync(context.env.XDG_CONFIG_HOME, { recursive: true });
+    symlinkSync(join(context.root, 'outside-pnpm'), join(context.env.XDG_CONFIG_HOME, 'pnpm'));
+    expect(context.run).toThrow('Ambient pnpm settings need separate review');
+    expect(context.records[0]).toMatchObject({
+      kind: 'linked-parent',
+      namedKeys: [],
+      storeDirValueClass: 'unobserved',
+    });
+    expect(context.calls()).toEqual([]);
+  });
+
+  it('does not read a linked global settings target before refusal', () => {
+    const context = fixture();
+    put(context.root, 'outside-global.yaml', 'outsideMarker: fixture-outside-not-printed\n');
+    mkdirSync(join(context.env.XDG_CONFIG_HOME, 'pnpm'), { recursive: true });
+    symlinkSync(
+      join(context.root, 'outside-global.yaml'),
+      join(context.env.XDG_CONFIG_HOME, 'pnpm/config.yaml')
+    );
+    expect(context.run).toThrow('Ambient pnpm settings need separate review');
+    expect(context.records[0]).toMatchObject({
+      kind: 'symlink',
+      namedKeys: [],
+      storeDirValueClass: 'unobserved',
+    });
+    expect(context.calls()).toEqual([]);
+    expect(JSON.stringify(context.records)).not.toContain('outsideMarker');
+  });
+
   it.each([
     'configDependencies: {}',
     'pnpmfile: ./hook.cjs',

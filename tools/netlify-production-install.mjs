@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { accessSync, constants, lstatSync, readFileSync, realpathSync } from 'node:fs';
+import {
+  accessSync,
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  readSync,
+  realpathSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
-import { delimiter, isAbsolute, join, relative, resolve } from 'node:path';
+import { delimiter, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
 import { CANDIDATE_DIRECTORY } from './lib/native-candidate.mjs';
@@ -14,6 +24,19 @@ const SUPPORTED_PNPM_VERSION = '11.22.0';
 const CONFIG_TIMEOUT_MS = 30_000;
 const INSTALL_TIMEOUT_MS = 15 * 60_000;
 const MAX_CONFIG_OUTPUT_BYTES = 16_384;
+const MAX_AMBIENT_CONFIG_BYTES = 4096;
+const AMBIENT_CONFIG_KEYS = [
+  'storeDir',
+  'cacheDir',
+  'stateDir',
+  'globalDir',
+  'nodeLinker',
+  'globalPnpmfile',
+  'pnpmfile',
+  'configDependencies',
+  'lockfileDir',
+  'managePackageManagerVersions',
+];
 const OWNER_PATHS = [
   'package.json',
   'pnpm-lock.yaml',
@@ -118,12 +141,57 @@ function globalConfigPath(env) {
     : join(homedir(), '.config/pnpm/config.yaml');
 }
 
-function qualifyNoPreloads(root, env) {
-  assert.equal(
-    optionalLstat(globalConfigPath(env)),
-    null,
-    'Ambient pnpm settings need separate review'
-  );
+function ambientConfigObservation(path, entry) {
+  const observation = {
+    stage: 'ambient-pnpm-config-refused',
+    kind: entry.isSymbolicLink() ? 'symlink' : entry.isFile() ? 'regular-file' : 'other',
+    sizeBytes: entry.size,
+    namedKeys: [],
+    unlistedKeyCount: 0,
+    storeDirValueClass: 'unobserved',
+  };
+  if (!entry.isFile() || entry.isSymbolicLink() || entry.size > MAX_AMBIENT_CONFIG_BYTES) {
+    return observation;
+  }
+  if (realpathSync(dirname(path)) !== dirname(path)) {
+    return { ...observation, kind: 'linked-parent' };
+  }
+  const file = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const actual = fstatSync(file);
+    if (!actual.isFile() || actual.size > MAX_AMBIENT_CONFIG_BYTES) return observation;
+    const buffer = Buffer.alloc(MAX_AMBIENT_CONFIG_BYTES + 1);
+    const bytes = readSync(file, buffer, 0, buffer.length, 0);
+    if (bytes > MAX_AMBIENT_CONFIG_BYTES) return observation;
+    const text = buffer.subarray(0, bytes).toString('utf8');
+    const scrapedKeys = [...text.matchAll(/^([A-Za-z][A-Za-z0-9-]{0,63}):/gm)].map(
+      (match) => match[1]
+    );
+    observation.namedKeys = scrapedKeys.filter((key) => AMBIENT_CONFIG_KEYS.includes(key));
+    observation.unlistedKeyCount = scrapedKeys.length - observation.namedKeys.length;
+    const store = /^storeDir: (\/opt\/build\/cache\/[A-Za-z0-9._/-]+)(?:\r?\n)?$/.exec(text);
+    observation.storeDirValueClass =
+      store &&
+      store[0] === text &&
+      store[1]
+        .split('/')
+        .slice(4)
+        .every((part) => part && part !== '.' && part !== '..')
+        ? 'netlify-cache-path'
+        : 'unrecognized';
+    return observation;
+  } finally {
+    closeSync(file);
+  }
+}
+
+function qualifyNoPreloads(root, env, record) {
+  const path = globalConfigPath(env);
+  const entry = optionalLstat(path);
+  if (entry !== null) {
+    record(ambientConfigObservation(path, entry));
+    assert.fail('Ambient pnpm settings need separate review');
+  }
   const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
   // pnpm expands YAML keys; this closed spelling guard refuses unsupported escapes/interpolation.
   assert.ok(
@@ -338,7 +406,7 @@ export function installNetlifyProductionDependencies(
   { runChild, record }
 ) {
   qualifyRoots(root);
-  qualifyNoPreloads(root, env);
+  qualifyNoPreloads(root, env, record);
   const before = currentOwners(root);
   const manifest = readManifest(root, 'package.json');
   readManifest(root, `${CANDIDATE_DIRECTORY}/package.json`);

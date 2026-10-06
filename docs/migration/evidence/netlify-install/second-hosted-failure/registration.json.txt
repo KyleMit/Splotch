@@ -1,0 +1,40 @@
+{
+  "registeredAt": "2026-10-06T09:37:53.884197+00:00",
+  "proofRef": "feature/netlify-migration-topology-05",
+  "oldHead": "423769b486d81a8da0cdd1c1e6abfedc31bec757",
+  "reviewedHead": "c4372771edd370afe2d92b7b4eea7eab29356d90",
+  "review": "https://github.com/KyleMit/Splotch/pull/2699#pullrequestreview-5426486729",
+  "verdict": "GO implementation to automatic hosted validation",
+  "reviewLimit": "Native PR metadata verified by handler; Claude did not run gh. No hosted/native/migration acceptance.",
+  "ci": [
+    {
+      "id": 37443235354,
+      "name": "Tests",
+      "conclusion": "success"
+    },
+    {
+      "id": 37443235373,
+      "name": "ADR Integrity",
+      "conclusion": "success"
+    },
+    {
+      "id": 37443235495,
+      "name": "Native topology proof",
+      "conclusion": "success"
+    }
+  ],
+  "localBrowser": {
+    "log": "/private/tmp/splotch-netlify-install-final-e2e.log.txt",
+    "bytes": 227005,
+    "sha256": "7e7300cf20c2b4b443f28cfc6a42d56b8bd9c1f3d6f466bd12deffaeb9bba058",
+    "passed": 1170,
+    "originalFailurePreserved": true
+  },
+  "sitePreflight": {
+    "path": "/private/tmp/splotch-netlify-install-site-preflight.json",
+    "bytes": 529,
+    "sha256": "da6812a6ffd92f9d5279392df563f8d2bbd49a5281b78e323644d1cff99ee314"
+  },
+  "operation": "Native fast-forward update_ref with expected old SHA, force:false; no production/site/settings/cache/manual-deploy mutation",
+  "hostedStatus": "pending"
+}
