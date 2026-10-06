@@ -1,5 +1,5 @@
 export const WEB_HOST_VARIANT = 'retained-control';
-export const WEB_HOST_ARTIFACTS = ['release', 'mechanism'] as const;
+const WEB_HOST_ARTIFACTS = ['release', 'mechanism'] as const;
 export type WebHostArtifact = (typeof WEB_HOST_ARTIFACTS)[number];
 export const WEB_HOST_ENV = {
   artifactRoot: 'SPLOTCH_WEB_HOST_ARTIFACT_ROOT',

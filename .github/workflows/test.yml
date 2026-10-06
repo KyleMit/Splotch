@@ -713,3 +713,84 @@ jobs:
             perf-profiles/**/undo-fast-set-history.json
           if-no-files-found: warn
           retention-days: 90
+
+  retained-web-host-control:
+    name: Retained web host control
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      TOPOLOGY_SHA: dc08a90abc67b53124146bf288c80de0f9ffd1dd
+      TOPOLOGY_LOCK_SHA256: 705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92
+      ARTIFACT_PARENT: ${{ runner.temp }}/retained-web-host
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Build and check retained release and mechanism
+        run: |
+          set -euo pipefail
+          for artifact in release mechanism; do
+            parent="$ARTIFACT_PARENT/$artifact"
+            mkdir -p "$parent"
+            log="$parent/build.log.txt"
+            npm --silent run migration:web-host:build -- \
+              --topology-sha="$TOPOLOGY_SHA" \
+              --topology-lock-sha256="$TOPOLOGY_LOCK_SHA256" \
+              --artifact="$artifact" --output-parent="$parent" | tee "$log"
+            count="$(awk '/^Owned web-host artifact: / { count++ } END { print count+0 }' "$log")"
+            if [[ "$count" != 1 ]]; then
+              echo "Successful retained build must report exactly one artifact root" >&2
+              exit 1
+            fi
+            owned="$(sed -n 's/^Owned web-host artifact: //p' "$log")"
+            npm run migration:web-host:check -- --artifact-root="$owned" | tee "$parent/check.log.txt"
+            browser_runs=1
+            if [[ "$artifact" == mechanism ]]; then browser_runs=2; fi
+            for (( invocation=1; invocation<=browser_runs; invocation++ )); do
+              port="$(npm --silent run show:free-port)"
+              npm run migration:web-host:test -- --artifact-root="$owned" \
+                --port="$port" --browser-registry="$HOME/.cache/ms-playwright" \
+                | tee "$parent/browser-$invocation.log.txt"
+            done
+          done
+
+      - name: Upload retained release evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: retained-web-host-release-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/retained-web-host/release/*.log.txt
+            ${{ runner.temp }}/retained-web-host/release/splotch-web-host-*/*.json
+            ${{ runner.temp }}/retained-web-host/release/splotch-web-host-*/.splotch-web-host.json
+            ${{ runner.temp }}/retained-web-host/release/splotch-web-host-*/controls/**
+            ${{ runner.temp }}/retained-web-host/release/splotch-web-host-*/browser-results/**
+            ${{ runner.temp }}/retained-web-host/release/splotch-web-host-*/browser-report/**
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload retained mechanism evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: retained-web-host-mechanism-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/retained-web-host/mechanism/*.log.txt
+            ${{ runner.temp }}/retained-web-host/mechanism/splotch-web-host-*/*.json
+            ${{ runner.temp }}/retained-web-host/mechanism/splotch-web-host-*/.splotch-web-host.json
+            ${{ runner.temp }}/retained-web-host/mechanism/splotch-web-host-*/controls/**
+            ${{ runner.temp }}/retained-web-host/mechanism/splotch-web-host-*/browser-results/**
+            ${{ runner.temp }}/retained-web-host/mechanism/splotch-web-host-*/browser-report/**
+          if-no-files-found: warn
+          retention-days: 7

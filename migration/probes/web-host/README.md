@@ -8,8 +8,9 @@ is no React runtime, candidate UI, source overlay or alternate Kit route tree in
 Invoke the root `migration:web-host:*` commands documented in
 [the tool capability](../../../tools/migration/README.md). The build requires the actual reviewed
 topology05 commit and lock, a frozen installed tree, and this slice's real source commit. An
-explicit provisional trial is useful for iteration but remains unreviewed. No install, build,
-browser run or physical capture has been performed for this prepared source slice.
+explicit provisional trial is useful for iteration but remains unreviewed. The
+[retained-control acceptance record](../../../docs/migration/evidence/retained-control/README.md)
+separates historical local execution from the resumed source and CI acceptance gates.
 
 The wrapper writes server/client module and static/dynamic edge receipts outside product output.
 Both build copies use staged retained npm lifecycle owners with input checks between stages.
@@ -34,7 +35,7 @@ as failure, even if the child exits successfully.
 Before the first PR is accepted, record real child exits, both build passes, ordinary/wrapper
 comparison, active-checkout isolation, screenshots, browser controls and applicable repository
 checks. Complete emitted-byte comparison (recorded UUID/copy-path normalization only), wrapper
-module receipts and source/startup checks remain pending until exercised. Discovery/CI registration
-waits for the actual topology05 stack to avoid competing changes. Deployed headers, worker
+module receipts and source/startup checks must bind the tested source. Root discovery and CI
+register the retained control over the accepted topology checkpoint. Deployed headers, worker
 update/offline behavior, React SSR/hydration/recovery, startup accounting and physical performance
 remain later gates. No architecture selection follows from a retained control.

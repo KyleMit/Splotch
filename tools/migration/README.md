@@ -54,14 +54,16 @@ npm run migration:web-host:check -- --artifact-root=<reported-owned-root>
 npm run migration:web-host:test -- --artifact-root=<reported-owned-root> --port=<unused-port> --browser-registry=<existing-absolute-registry>
 ```
 
-The topology commit and lock digest are required execution inputs, presently pending. They cannot be
-guessed from a predecessor. The active source must contain that commit and retain its exact lock. A
-frozen full dependency install must already exist and have the same installed lock; this runner
-never installs. Final evidence exports a clean committed source slice, records its real commit and
-source hashes, and derives version metadata through `web/buildVersion.ts`. `--provisional` permits
-local iteration with HEAD, binary patch and actual file hashes; it cannot supply final review
-evidence. `--artifact=mechanism` enables only the existing private harness, with performance marks
-disabled. It is distinct from the release artifact and cannot score release startup costs.
+The topology commit and lock digest are required execution inputs. Use the accepted identities in
+[the retained-control acceptance record](../../docs/migration/evidence/retained-control/README.md);
+they cannot be guessed from a predecessor. The active source must contain that commit and retain its
+exact lock. A frozen full dependency install must already exist and have the same installed lock;
+this runner never installs. Final evidence exports a clean committed source slice, records its real
+commit and source hashes, and derives version metadata through `web/buildVersion.ts`.
+`--provisional` permits local iteration with HEAD, binary patch and actual file hashes; it cannot
+supply final review evidence. `--artifact=mechanism` enables only the existing private harness, with
+performance marks disabled. It is distinct from the release artifact and cannot score release
+startup costs.
 
 Outputs are a new `splotch-web-host-*` temporary root (or under the explicitly separate existing
 `--output-parent`), a fresh ownership marker, frozen inputs, reference/control copies, both wrapper
@@ -109,5 +111,7 @@ eligibility.
 
 Maintain boundary strings in the React-free build contract. Preserve the existing Kit config,
 routes, metadata, generators and shipping postbuild owners. Tool-helper guards live in this
-capability's tests; wrapper/browser sources live under `migration/probes/web-host`. Root discovery,
-CI filters and exact checks will be reconciled after stacking the actual topology05 head.
+capability's tests; wrapper/browser sources live under `migration/probes/web-host`. Root discovery
+and the retained-control CI job register these callers over the accepted topology checkpoint. CI
+runs release build/check/browser, then mechanism build/check/browser twice, serially on one runner.
+The acceptance record owns the measured harness-cost derivation for its numeric job deadline.
