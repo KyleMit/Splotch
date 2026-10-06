@@ -1,0 +1,1421 @@
+{
+  "observedAt": "2026-10-06 16:21:40 UTC",
+  "registeredHead": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+  "actualQualityCheckout": "a0781a9a40532f26d8066191dfedae6d8bb84bbe",
+  "gitParents": [
+    "e7413bf92066fcf45967cf04241a513fd48d49ff",
+    "a8a49e399e5d37bfc923776e0818948b950f8f65"
+  ],
+  "equalTree": "fb76f95eaf43770fed2a1ccc8c61d3cac407f8e0",
+  "jobCount": 18,
+  "executedSuccess": 14,
+  "conditionalSkipped": 4,
+  "jobs": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Action completed."
+        }
+      ],
+      "structuredContent": {
+        "jobs": [
+          {
+            "id": 112372207109,
+            "name": "Page-load performance",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run page-load performance gate",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Upload Lighthouse reports",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              }
+            ]
+          },
+          {
+            "id": 112372207263,
+            "name": "Release build smoke",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Build without profiling seams",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Build native bundle boundary",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              }
+            ]
+          },
+          {
+            "id": 112372207345,
+            "name": "Browserless tests",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run unit tests with coverage",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run asset-pipeline tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Run store-drawing pipeline tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Run repo-script tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "API contract smoke",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207395,
+            "name": "Tests (5/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207479,
+            "name": "WebKit smoke",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run WebKit smoke",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              }
+            ]
+          },
+          {
+            "id": 112372207495,
+            "name": "Firefox smoke",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run Firefox smoke",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              }
+            ]
+          },
+          {
+            "id": 112372207570,
+            "name": "Tests (8/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207608,
+            "name": "Quality",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Format check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Type check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Lint",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Native candidate topology",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "CSS lint",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "SVG optimization check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Agent-file drift",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Ideas review drift",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Design-token drift",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Token style lint",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              },
+              {
+                "name": "Dead-code check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Production dependency check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Asset manifest check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Scrapbook index check",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Audit dependencies",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 35
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 36
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 37
+              }
+            ]
+          },
+          {
+            "id": 112372207609,
+            "name": "Tests (1/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207617,
+            "name": "Tests (4/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207686,
+            "name": "Tests (6/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207739,
+            "name": "Tests (7/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372207823,
+            "name": "Tests (2/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372208066,
+            "name": "Tests (3/8)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run e2e tests",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "App-driver smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Worker-sweep smoke",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Upload report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-playwright",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run ./.github/actions/setup-pnpm",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ]
+          },
+          {
+            "id": 112372208952,
+            "name": "WebKit commit gate (fast)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": null
+          },
+          {
+            "id": 112372208955,
+            "name": "WebKit commit gate (full)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": null
+          },
+          {
+            "id": 112372210106,
+            "name": "WebKit commit gate (fast, fresh-runner retry)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": null
+          },
+          {
+            "id": 112372212235,
+            "name": "WebKit commit gate (failure report)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "run_id": 37493557806,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "reviewThreads": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Action completed."
+        }
+      ],
+      "structuredContent": {
+        "review_threads": [
+          {
+            "id": "PRRT_kwDOQ9lQis6pjXqi",
+            "is_resolved": true,
+            "is_outdated": true,
+            "path": "docs/migration/BURDEN.md",
+            "line": null,
+            "diff_side": "RIGHT",
+            "start_line": null,
+            "start_diff_side": null,
+            "original_line": 98,
+            "original_start_line": null,
+            "resolved_by": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "comments": [
+              {
+                "id": "PRRC_kwDOQ9lQis76MsdD",
+                "database_id": 4197631811,
+                "body": "**suggestion:** **The lowered lower endpoints for native paper contradict its own list of obligations, and they quietly raise the bar RN must clear.**\n\n- **Floors went down:** tools went from 6 to 4 and bindings from 6 to 3, against retention's 4–12 / 4–12.\n- **The text says the opposite:** lines 109-111 say native paper keeps the Svelte UI, the web drawing engine and *every* Capacitor service, and *adds* collector/renderer bindings, bridge command/layer ordering and platform surface lifecycle. Every tools and bindings obligation retention has survives, and more are added. Paper's floor in those categories therefore can't be below retention's.\n- **The stated reason doesn't apply here:** \"direct-binding/shared-vocabulary savings\" (line 91) fits the RN, Flutter and separate-native arms. Paper keeps the Capacitor bridge and doesn't change vocabulary.\n- **Why it matters:** these floors have no effect on the burden-only formula, which uses the arm's upper bound. They do feed the candidate-choice rule at line 148, where RN shows lower burden only if its aggregate upper bound is below paper's aggregate lower bound. Paper's aggregate floor drops from 24 (original row) to 19, without evidence. That makes the RN test harder and favours the default — which is exactly the kind of unreviewed range drift lines 171-172 forbid.\n\n**Fix:** restore paper's tools and bindings floors to at least retention's (4 and 4; the original 6 and 6 is better). Otherwise, name the retention tools/bindings owner that paper actually retires, with the evidence it would need.",
+                "created_at": "2026-10-06T16:04:25Z",
+                "updated_at": "2026-10-06T16:04:25Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              },
+              {
+                "id": "PRRC_kwDOQ9lQis76M-Cs",
+                "database_id": 4197703852,
+                "body": "Fixed in a8a49e399e5d37bfc923776e0818948b950f8f65. Native paper's tools and bindings floors are restored to the original 6 and 6, with their retained Capacitor owners and added paper bindings stated explicitly. The earlier proposed 4/3 amendment and this correction remain preserved. Upper bounds and burden-only arithmetic are unchanged; no saving is claimed.",
+                "created_at": "2026-10-06T16:10:53Z",
+                "updated_at": "2026-10-06T16:10:53Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              }
+            ]
+          },
+          {
+            "id": "PRRT_kwDOQ9lQis6pjXqp",
+            "is_resolved": true,
+            "is_outdated": true,
+            "path": "docs/migration/BURDEN.md",
+            "line": null,
+            "diff_side": "RIGHT",
+            "start_line": null,
+            "start_diff_side": "RIGHT",
+            "original_line": 152,
+            "original_start_line": 148,
+            "resolved_by": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "comments": [
+              {
+                "id": "PRRC_kwDOQ9lQis76MsdP",
+                "database_id": 4197631823,
+                "body": "**suggestion:** **The candidate-choice rule doesn't define which aggregate is compared.** \"Evidence-backed nonoverlapping aggregate recurring bounds after the same category/retirement rules\" could mean any of these:\n\n- (a) raw ΣR over a fully deployed 24 months;\n- (b) the f-prorated, clamped per-category values from the burden-only section;\n- (c) the full horizon net, including I + Q + T.\n\nPaper and RN have different delay ranges (3–12 vs 6–18) and initial work (62 vs 102 upper bound), so the readings can give different answers. A later reviewer could pick whichever reading favours the arm they prefer. This is the rule that decides paper versus RN, so it should be fixed before any results, like the burden-only arithmetic.\n\n**Fix:** state the formula. For example: RN demonstrates lower burden only if Σ_c R[RN,c].upper < Σ_c R[paper,c].lower over a fully deployed 24 months, using only owner retirements whose feasibility has been reviewed. Initial work and delay are excluded under CONTRACT:111 (\"lower recurring burden\"). Alternatively, adopt the horizon-net comparison explicitly and cite why.",
+                "created_at": "2026-10-06T16:04:25Z",
+                "updated_at": "2026-10-06T16:04:25Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              },
+              {
+                "id": "PRRC_kwDOQ9lQis76M-tN",
+                "database_id": 4197706573,
+                "body": "Fixed in a8a49e399e5d37bfc923776e0818948b950f8f65. The candidate-choice rule compares the sum of RN recurring upper bounds strictly against the sum of native-paper recurring lower bounds for fully deployed 24-month rates, with evidence-backed ranges and reviewed credited retirement feasibility. Initial work, reserve, delay, horizon fraction and transition are explicitly excluded from this arm-to-arm recurring test; the separate burden-only migration test retains them.",
+                "created_at": "2026-10-06T16:11:09Z",
+                "updated_at": "2026-10-06T16:11:09Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              }
+            ]
+          },
+          {
+            "id": "PRRT_kwDOQ9lQis6pjXqz",
+            "is_resolved": true,
+            "is_outdated": true,
+            "path": "docs/migration/evidence/burden-preregistration/source-facts.py",
+            "line": null,
+            "diff_side": "RIGHT",
+            "start_line": null,
+            "start_diff_side": "RIGHT",
+            "original_line": 138,
+            "original_start_line": 136,
+            "resolved_by": {
+              "login": "KyleMit",
+              "name": "KyleMit",
+              "email": null,
+              "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+              "id": null
+            },
+            "comments": [
+              {
+                "id": "PRRC_kwDOQ9lQis76Msdj",
+                "database_id": 4197631843,
+                "body": "**nit:** **The default output names don't match the committed receipts.**\n\n- **What the defaults produce:** `source-facts.json` and `burden-facts-v2-disposition.json`, written beside the script in the tracked evidence directory.\n- **What's committed:** `source-facts.json.txt` and `source-facts-disposition.json.txt`.\n- **Effect:** a bare run leaves stray untracked files under `docs/`, and the `burden-facts-v2` name is a leftover from an earlier draft.\n\nThe README's explicit-path command works; I reproduced both receipts byte-for-byte that way.\n\n**Fix:** default both outputs to `$TMPDIR` (or make them required). If a default name is kept, make it `source-facts-disposition.json`.",
+                "created_at": "2026-10-06T16:04:25Z",
+                "updated_at": "2026-10-06T16:04:25Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              },
+              {
+                "id": "PRRC_kwDOQ9lQis76M_Uj",
+                "database_id": 4197709091,
+                "body": "Fixed in a8a49e399e5d37bfc923776e0818948b950f8f65. Both output paths are required. Actual bare and partial invocations reject through argparse before creating files; three qualified callers reproduce identical compact receipts and unchanged dispositions. Regeneration changes only the script identity, with the original-overwrite and wrong-raw rejecting controls plus restored positives preserved in review-repair-verification.json.txt.",
+                "created_at": "2026-10-06T16:11:25Z",
+                "updated_at": "2026-10-06T16:11:25Z",
+                "author": {
+                  "login": "KyleMit",
+                  "name": "KyleMit",
+                  "email": null,
+                  "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+                  "id": null
+                },
+                "viewer_did_author": true
+              }
+            ]
+          }
+        ]
+      },
+      "isError": false
+    }
+  },
+  "pr": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Action completed."
+        }
+      ],
+      "structuredContent": {
+        "url": "https://github.com/KyleMit/Splotch/pull/2704",
+        "number": 2704,
+        "state": "open",
+        "merged": false,
+        "mergeable": true,
+        "draft": true,
+        "body": "Fixes the campaign's decision arithmetic before comparative results: a common 24-month horizon, absolute remaining initial effort, one combined reserve, upper retirement delay and explicit transition upkeep. Defines the RN-versus-native-paper recurring comparison and names potential retired and added owners for every viable arm; estimates grant no measured saving or architecture acceptance.\n\nPreserves the original proposal and two complete rounds from the original Claude conversation. Review repairs restore native paper's retained tools/bindings floors, require explicit factual-script outputs and preserve actual rejecting controls. The compact pinned-history receipt reproduces without private raw data. The single campaign register distinguishes source/execution/review/integration and records the current physical-device dependency.\n\nValidation: three script callers reproduce byte-identical receipts; missing output paths, original overwrite and wrong raw bytes reject for their intended reasons. Full formatting, typecheck, documentation references, ADR integrity and whitespace checks pass. Lint passes with wholly gitignored preservation logs excluded (bare lint hits an old extracted config with missing modules); no tracked log source is excluded. Original Claude round two resumed and all three findings are addressed. Final original round three and final-head CI remain pending. Remedies and comparison are ineligible until acceptance.",
+        "title": "docs(migration): preregister burden before remedies and comparison",
+        "base": "codex/native-migration",
+        "base_sha": "e7413bf92066fcf45967cf04241a513fd48d49ff",
+        "head": "codex/migration-burden-preregistration",
+        "head_sha": "a8a49e399e5d37bfc923776e0818948b950f8f65",
+        "head_repo_id": 1138315402,
+        "head_repo_full_name": "KyleMit/Splotch",
+        "merge_commit_sha": "a0781a9a40532f26d8066191dfedae6d8bb84bbe",
+        "user": {
+          "login": "KyleMit",
+          "name": "KyleMit",
+          "email": null,
+          "avatar_url": "https://avatars.githubusercontent.com/u/4307307?v=4",
+          "id": 4307307
+        },
+        "requested_reviewers": null,
+        "requested_team_reviewers": null,
+        "diff": null,
+        "comments": null,
+        "created_at": "2026-10-06T15:57:20Z",
+        "updated_at": "2026-10-06T16:13:49Z",
+        "closed_at": null,
+        "merged_at": null,
+        "commits": 2,
+        "changed_files": 18,
+        "additions": 1889,
+        "deletions": 25,
+        "display_url": "https://github.com/KyleMit/Splotch/pull/2704",
+        "display_title": "docs(migration): preregister burden before remedies and comparison"
+      },
+      "isError": false
+    }
+  },
+  "claimLimits": "Actual complete Quality checkout log and Git tree/parent attribution; other jobs captured as complete native job metadata under same workflow. No installed-graph or migration implementation claim."
+}
