@@ -1,0 +1,207 @@
+{
+  "head": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "startInclusive": "2026-07-08T00:00:00Z",
+  "endInclusive": "2026-10-06T15:00:00Z",
+  "scope": "Finite old-to-new classification corrections; no burden-policy arithmetic or effort estimate.",
+  "categories": {
+    "UI and behavior": {
+      "originalCount": 497,
+      "correctedCount": 467,
+      "addedCount": 0,
+      "removedCount": 30,
+      "originalCommitSetSha256": "23245c38d0d7124149e8d04d566f4cf486fb58e8d970723df6282a06758edea7",
+      "addedCommitSetSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "removedCommitSetSha256": "6dea01beab1c0d8209e034fd8776f0702d2f2b77de9d195e317f2d593cb93987",
+      "reason": "Keep the original product UI/state/drawing/route subset, excluding API/admin routes and admin-only components. Tests under these paths remain counted as source changes and also overlap validation.",
+      "addedExamples": [],
+      "removedExamples": [
+        {
+          "sha": "077c34f77c7ef3b457a0b72e9614f2eaba6211f1",
+          "committedAt": "2026-09-30T00:55:42-04:00",
+          "subject": "Merge pull request #2542 from KyleMit/claude/cq5-generate-image-deadline",
+          "matchedPaths": [
+            "web/src/routes/api/generate-image/+server.ts",
+            "web/src/routes/api/generate-image/server.test.ts"
+          ]
+        },
+        {
+          "sha": "c923680847ed1c837856cfe756185fcfd33452fb",
+          "committedAt": "2026-09-29T17:20:00-04:00",
+          "subject": "Merge pull request #2512 from KyleMit/claude/cq4-generation-fallback-deadline",
+          "matchedPaths": [
+            "web/src/routes/api/generate-image/+server.ts",
+            "web/src/routes/api/generate-image/server.test.ts",
+            "web/src/routes/api/generation-result/+server.ts",
+            "web/src/routes/api/generation-result/server.test.ts"
+          ]
+        },
+        {
+          "sha": "4f3fdf5e9917584768a6c010a2aaad638293ef06",
+          "committedAt": "2026-09-29T17:08:50-04:00",
+          "subject": "Merge pull request #2509 from KyleMit/claude/cq4-admin-form-names",
+          "matchedPaths": [
+            "web/src/lib/components/admin/AdminConsole.svelte",
+            "web/src/routes/admin/+page.server.ts",
+            "web/src/routes/admin/+page.svelte",
+            "web/src/routes/admin/login.integration.test.ts",
+            "web/src/routes/admin/page.server.test.ts"
+          ]
+        }
+      ]
+    },
+    "dependency and toolchain": {
+      "originalCount": 334,
+      "correctedCount": 341,
+      "addedCount": 7,
+      "removedCount": 0,
+      "originalCommitSetSha256": "28c0e4ce2df92733827e53764ff069fbb15e78a69fba94ac8d219c4a2a472f65",
+      "addedCommitSetSha256": "d2ac683270765664cd5d09a9b07560604914f2f82a7fa3837ec4a6a6e5f95b9f",
+      "removedCommitSetSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Replace nonexistent tools/install, tools/netlify and tools/worktree prefixes with finite tracked local/CI/cloud provisioning and invocation owners. Package metadata changes still include script edits, not only dependency upgrades.",
+      "addedExamples": [
+        {
+          "sha": "fcc5fffd59425b107dd0e362c862c0bfd4be93ce",
+          "committedAt": "2026-10-01T17:27:42-04:00",
+          "subject": "Merge pull request #2613 from KyleMit/codex/cloud-claude-rival-reviews",
+          "matchedPaths": [
+            ".codex/cloud/maintenance.sh",
+            ".codex/cloud/setup.sh"
+          ]
+        },
+        {
+          "sha": "1cea0e17ecc15f72c9df9f034e0e653568bd6259",
+          "committedAt": "2026-10-01T13:34:08-04:00",
+          "subject": "Merge pull request #2600 from KyleMit/codex/cloud-setup-and-env-docs",
+          "matchedPaths": [
+            ".codex/cloud/maintenance.sh",
+            ".codex/cloud/setup.sh"
+          ]
+        },
+        {
+          "sha": "db2e4be3e30870e77728d22a01ca255556b61b48",
+          "committedAt": "2026-09-25T20:27:51-04:00",
+          "subject": "Merge pull request #2334 from KyleMit/claude/worktree-main-ref-freshness-5c602b",
+          "matchedPaths": [
+            "tools/bootstrap-worktree.mjs"
+          ]
+        }
+      ],
+      "removedExamples": []
+    },
+    "native binding and lifecycle": {
+      "originalCount": 74,
+      "correctedCount": 118,
+      "addedCount": 44,
+      "removedCount": 0,
+      "originalCommitSetSha256": "aa1f42163ce64302b23496f0bd8342bf7adbc83512491d43ffe7e66a20a365d1",
+      "addedCommitSetSha256": "7f7ec250b762c721b65a3992ffb36f15b2a8edb72a7a640d602a6501b198b40f",
+      "removedCommitSetSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Add the web-side native plugin, secure-storage, installation identity, platform and plugin bridge owners, including their colocated tests.",
+      "addedExamples": [
+        {
+          "sha": "206b8633b6a9926b10fb80ca7450eb29537f58ff",
+          "committedAt": "2026-10-01T14:21:12-04:00",
+          "subject": "Merge pull request #2609 from KyleMit/claude/truncate-without-lone-surrogate",
+          "matchedPaths": [
+            "web/src/lib/platform/deviceReport.test.ts",
+            "web/src/lib/platform/deviceReport.ts"
+          ]
+        },
+        {
+          "sha": "12ae877f7abf8bff1baabfcf3338666eec1aad25",
+          "committedAt": "2026-09-29T17:10:47-04:00",
+          "subject": "Merge pull request #2510 from KyleMit/claude/cq4-device-labels-store-params",
+          "matchedPaths": [
+            "web/src/lib/platform/deviceReport.test.ts",
+            "web/src/lib/platform/deviceReport.ts"
+          ]
+        },
+        {
+          "sha": "fd85060add1677a0a285f3f513c8f33ba709f697",
+          "committedAt": "2026-09-29T16:46:14-04:00",
+          "subject": "Merge pull request #2508 from KyleMit/claude/cq4-tests-that-can-fail",
+          "matchedPaths": [
+            "web/src/lib/platform/safeAreaProperties.test.ts"
+          ]
+        }
+      ],
+      "removedExamples": []
+    },
+    "web security PWA and host": {
+      "originalCount": 62,
+      "correctedCount": 97,
+      "addedCount": 35,
+      "removedCount": 0,
+      "originalCommitSetSha256": "819c9181d08cb6ca072bbc6f3af52cb099f4a117331bcf40f11135cf180937eb",
+      "addedCommitSetSha256": "00f0813633f79293be73e41137b1b03b9b9dd98ce1f08e477229bfc0b853e768",
+      "removedCommitSetSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Add the actual CSP policy, PWA owners and root Netlify configuration/functions. This remains a named host/security subset, not all backend or web behavior.",
+      "addedExamples": [
+        {
+          "sha": "419c4d66161e54ff2386a50f5f2266efbdc5cd19",
+          "committedAt": "2026-10-04T06:09:26-04:00",
+          "subject": "Merge pull request #2671 from KyleMit/smell/ci-config-r1-3",
+          "matchedPaths": [
+            "netlify.toml"
+          ]
+        },
+        {
+          "sha": "81530fe8d8fa6df55da7f5a7499dc51f1dfb3472",
+          "committedAt": "2026-09-29T12:34:05-04:00",
+          "subject": "Merge pull request #2489 from KyleMit/claude/cq3-docs-say-what-code-does",
+          "matchedPaths": [
+            "netlify.toml"
+          ]
+        },
+        {
+          "sha": "5c8e22cdede85174eeacf75aca1217bc84756f89",
+          "committedAt": "2026-09-29T12:26:35-04:00",
+          "subject": "Merge pull request #2472 from KyleMit/claude/cq3-generation-job-truths",
+          "matchedPaths": [
+            "netlify/functions/generate-image-background.ts"
+          ]
+        }
+      ],
+      "removedExamples": []
+    },
+    "validation physical and release": {
+      "originalCount": 564,
+      "correctedCount": 880,
+      "addedCount": 316,
+      "removedCount": 0,
+      "originalCommitSetSha256": "19b00216ecf0aa2062a04b2ba83a7f7cdfbc1b000a2c153768cbb8c65ed934e0",
+      "addedCommitSetSha256": "49cca55b6914b8118bcb222ed42149f2cf02f66f3b40ada02a5ca056609e2b77",
+      "removedCommitSetSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Retain actual tools/release owners and add web/root-web and tool colocated tests, tool test directories and tracked releases/store/native-smoke metadata. Fixture and test-support changes in tests directories are included.",
+      "addedExamples": [
+        {
+          "sha": "dd6b86a2343d400bb654bc664020c09768e6c7f5",
+          "committedAt": "2026-10-04T21:31:05-04:00",
+          "subject": "Merge pull request #2687 from KyleMit/smell/asset-gen-pipeline-r1-1",
+          "matchedPaths": [
+            "tools/asset-gen/tests/book-proof-sheet-cli.test.mjs",
+            "tools/asset-gen/tests/data-uri.test.mjs",
+            "tools/asset-gen/tests/image-stats.test.mjs"
+          ]
+        },
+        {
+          "sha": "e49c2f733f751f807b65b6bea55631b610958ab5",
+          "committedAt": "2026-10-04T21:30:51-04:00",
+          "subject": "Merge pull request #2686 from KyleMit/smell/docs-guides-r1-1",
+          "matchedPaths": [
+            "tools/tests/instruction-file-names.test.mjs"
+          ]
+        },
+        {
+          "sha": "69ab65edc5b1436d9fdeb6378e9e743f3694f127",
+          "committedAt": "2026-10-04T21:29:38-04:00",
+          "subject": "Merge pull request #2682 from KyleMit/smell/native-release-r1-3",
+          "matchedPaths": [
+            "tools/mobile/android/tests/run-smoke-test.test.mjs"
+          ]
+        }
+      ],
+      "removedExamples": []
+    }
+  }
+}

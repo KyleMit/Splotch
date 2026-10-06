@@ -1,0 +1,55 @@
+# Common-horizon burden preregistration proposal
+
+This is a decision-policy plan for Claude challenge before documentation implementation or any remedy/comparative-result execution. Parent owns the final registration. No destination, recurring saving or performance benefit is selected. It will be appended to the one live CAMPAIGN register after review; original ranges and subsequent reviewed amendments remain visible.
+
+The common horizon is 24 months beginning at the reviewed foundation decision. One effort-week means one person's concentrated engineering effort including implementation, validation and review, independent of elapsed waiting or agent concurrency. These are coarse estimates, not measured hours. Calendar delay consumes horizon; a retired owner's credit begins only at actual retirement. Compare all arms using the same units and category definitions. Do not annualize source-change counts into future hours or savings.
+
+## Factual inputs
+
+Source anchor origin/main ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 and integration aa507a74963adac35baed84c7ab2e13cdc12a946. Actual source history was executed with burden-facts.py and captured in burden-facts.json under the current resumption artifact root. From 2026-07-08T00:00:00Z through 2026-10-06T15:00:00Z the 1,246 first-parent commits include 497 touching UI/behavior paths, 334 dependency/toolchain paths, 74 native-binding/lifecycle paths, 62 web-security/PWA/host paths and 564 validation/physical/release paths. Categories overlap. Package.json changes include script registrations and these counts include feature work. These are observed change frequencies and auditable examples of active owners, not counts of maintenance incidents, measured effort or predicted cadence.
+
+Concrete recurring obligations exist today: single Svelte product UI/behavior ownership; pnpm and production/hoisted dependency validation; Capacitor plugin/OS-floor and Keychain/Keystore/origin continuity; SvelteKit SSR/CSP/PWA/admin/API seams; device input/instrument calibration, full tests, privacy inventory and release/version/signing. Native binding history includes actual Android theme/icon fixes and release-owner repairs. Dependency history includes actual Vite/Sharp bumps; physical evidence history includes capture-owner repairs. Preserve these exact source references in a compact reproducible receipt rather than carrying every unrelated historical diff.
+
+The source history does not measure the effort for those obligations. Initially every saving remains an estimate, and no current owner is retired. Existing experiment costs (including this campaign's contracts, topology and retained probes) are past cost, neither future saving nor reason to continue. Hosted shipping compilation, dependency counts, tokens, reviewer agreement and simulator mechanics confer no maintenance reduction.
+
+## Initial remaining implementation/validation estimates
+
+These start at foundation decision and exclude past experimental cost. They include the entire remaining applicable product and final gates; no arm can omit physical, continuity, supported-source/channel, privacy or release readiness. A retention row includes remaining campaign validation and any bounded, behavior-preserving remedy, rather than pretending retaining source closes final gates.
+
+Ranges are effort-weeks. Each cell describes a disjoint work category; integrated testing belongs to validation, not to each earlier category. Alternative UI means the production design, not the causal RN island. Common backend/API/admin work stays shared where the contract says so.
+
+| Category | Svelte/Capacitor retention | Svelte + native paper | RN shared web UI | RN mobile + Svelte web | Flutter shared UI | Separate native + Svelte web |
+| --- | --- | --- | --- | --- | --- | --- |
+| UI, drawing/input/history/export behavior | 0–4 | 6–18 | 12–32 | 12–32 | 16–40 | 20–48 |
+| Dependencies, supported tools and floors | 0–2 | 2–6 | 4–12 | 4–12 | 4–12 | 4–12 |
+| Bindings, ordered services, lifecycle and upgrades | 2–8 | 4–12 | 6–18 | 6–18 | 6–18 | 6–18 |
+| Web host, CSP, PWA and accessibility adapters | 0–2 | 0–2 | 4–12 | 0–4 | 6–18 | 0–4 |
+| Integrated tests, physical evidence and release/privacy gates | 8–20 | 8–24 | 12–28 | 12–28 | 12–28 | 12–28 |
+| Separate initial risk reserve | 4–12 | 8–20 | 12–32 | 12–32 | 12–32 | 12–32 |
+
+The wide UI range reflects that no full native paper, React recovery host or shared vocabulary runtime has been accepted. The binding range reflects unexecuted same-ID reads, ordered transaction migration and channel upgrades. The floor/tool range reflects actual candidate compile/provisioning still pending. Physical and release work is common mandatory effort regardless of architecture. These broad estimates must be challenged; they are not confidence intervals inferred from completed work.
+
+## Recurring 24-month estimates after a production arm is deployed
+
+Ranges are effort-weeks over a fully deployed 24 months. Do not credit a full 24 months when deployment is delayed. These estimates deliberately overlap because no recurring replacement saving is measured yet.
+
+| Category | Svelte/Capacitor retention | Svelte + native paper | RN shared web UI | RN mobile + Svelte web | Flutter shared UI | Separate native + Svelte web |
+| --- | --- | --- | --- | --- | --- | --- |
+| UI/behavior synchronization | 2–8 | 2–10 | 4–12 | 10–24 | 6–18 | 16–36 |
+| Dependency/toolchain/floor upkeep | 4–12 | 6–18 | 6–20 | 8–24 | 6–20 | 8–24 |
+| Native bindings, ordering, lifecycle and upgrades | 4–12 | 6–18 | 6–20 | 6–20 | 6–20 | 6–18 |
+| Web host/security/PWA adapters | 2–8 | 2–8 | 4–14 | 2–8 | 6–18 | 2–8 |
+| Tests, physical evidence and release/privacy maintenance | 8–20 | 8–24 | 10–28 | 12–28 | 10–28 | 12–32 |
+| Separate recurring risk reserve | 4–12 | 6–16 | 8–20 | 8–20 | 8–20 | 8–20 |
+
+Do not sum optimistic ranges as demonstrated savings. The five categories are mandatory; resolve double-counting and common work before computing any selection bound. The recurring risk reserve is a separate uncertainty allowance and cannot be silently folded into an asserted saving.
+
+## Deployment and materiality policy
+
+The deployment-delay planning range is 0–6 months for retention, 3–12 for native-paper hybrid, and 6–18 for each whole native/UI replacement. These are estimates anchored to unfulfilled obligations, not delivery promises. Calendar waiting is not engineering effort. Credit reduced obligation only for the actual remaining horizon after the old owner is retired. During transition, register both owners and actual synchronization/release duties. No assumed simultaneous cutover or zero overlap.
+
+The contract's burden-only predicate governs: remove at least one demonstrated recurring obligation, with no uncompensated regression in any mandatory category, and require lower-bound recurring saving to exceed upper-bound remaining initial migration/validation plus risk reserve. With these initial overlapping estimate-only ranges and zero retired owners, no burden-only migration qualifies. This is not an architecture verdict; ordinary matched performance eligibility could still justify a candidate under the contract, with added burden explicitly accounted for.
+
+Reconsider only uncertainty that could change the decision. Examples: real neutral/shared web adapter proof determines whether UI synchronization is one vocabulary or two; actual production-hybrid collector/backend/host contracts determine bridge maintenance; effective released tool/lock/floor execution determines native upkeep; retirement proof identifies which operational owner truly disappears. Revise a range only for reviewed new scope or feasibility evidence, preserving the prior range, reason and source. Do not shrink reserve or reset the horizon to make a preferred arm qualify.
+
+Before timed candidate comparison, register separately the within-OS common visible/readiness observable, complete matched screen/prior journey, observer coverage and material performance threshold from fresh physical variability and owning action budgets. These estimates cannot substitute for those gates. Remedies and comparison results remain ineligible until this burden policy is reviewed and committed. Structural compilation and independent host/source tests remain eligible.
