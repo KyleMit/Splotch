@@ -1,5 +1,8 @@
 # Migration progress checklist
 
+The maintainer resumed the full campaign on 2026-10-06. The [live campaign register](CAMPAIGN.md)
+tracks current execution and acceptance; the dated checklist below preserves the pause frontier.
+
 Status at the 2026-10-06 pause: the accepted integration checkpoint is
 dc08a90abc67b53124146bf288c80de0f9ffd1dd. The full migration is incomplete and remains paused until
 the maintainer authorizes continuation. The [work ledger](README.md#work-ledger) records the eight
