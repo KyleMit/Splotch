@@ -1,0 +1,13 @@
+{
+  "label": "e2e-final",
+  "argv": [
+    "npm",
+    "run",
+    "test:e2e"
+  ],
+  "SPLOTCH_E2E_PORT": "5300",
+  "started": "2026-10-06T15:09:36.535362+00:00",
+  "seconds": 328.4797667081002,
+  "exitCode": 0,
+  "log": "/private/tmp/splotch-resume-01a111b0/retained/e2e-final.log.txt"
+}

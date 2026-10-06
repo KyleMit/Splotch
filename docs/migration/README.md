@@ -1,5 +1,8 @@
 # Product UI migration
 
+Live execution resumed on 2026-10-06. The [campaign register](CAMPAIGN.md) owns current status, unit
+dependencies, evidence and resource leases; the pause checkpoint below remains historical.
+
 This campaign delivers the migration tracked by
 [epic 2690](https://github.com/KyleMit/Splotch/issues/2690). The maintainer authorized Codex and
 Claude to make decisions and complete the work autonomously, with independent review throughout. The

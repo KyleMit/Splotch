@@ -1,0 +1,10 @@
+{
+  "rowCount": 70,
+  "partitions": {
+    "maintained60": 60,
+    "registration10": 10
+  },
+  "allLiveIntakeBytesAndModesMatch": true,
+  "sourceAcceptance": false,
+  "compiledOrMounted": false
+}

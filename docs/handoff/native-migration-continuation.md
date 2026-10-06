@@ -1,5 +1,10 @@
 # Handoff — native migration continuation
 
+The maintainer resumed the entire campaign on 2026-10-06 in chat
+01a111b0-d64d-7c22-ab7d-865db89de7e2. Preservation PR 2700 merged unchanged. This packet preserves
+the prior pause; the [live campaign register](../migration/CAMPAIGN.md) supersedes its present-tense
+pause instructions and owns current execution.
+
 > 2026-10-06 · branch `codex/migration-continuation-records` · PR
 > [2700](https://github.com/KyleMit/Splotch/pull/2700) · Preserve the paused migration for the next
 > authorized session.
