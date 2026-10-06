@@ -14,6 +14,7 @@ import {
   TOPOLOGY_INPUT_PATHS,
   TOPOLOGY_CONTEXTS,
   topologyArtifactKeys,
+  compareTopologyPaths,
   assertTopologyGraph,
   TOPOLOGY_INSPECTION_SCOPE,
 } from './migration/lib/netlify-topology-report.mjs';
@@ -93,7 +94,7 @@ function installedPackages(root, candidate, contexts) {
     }
   }
   for (const context of contexts) modulesDirectory(join(context, 'node_modules'));
-  return rows.sort((a, b) => a.path.localeCompare(b.path));
+  return rows.sort((a, b) => compareTopologyPaths(a.path, b.path));
 }
 
 function resolveInstalledMetadata(root, context, name) {

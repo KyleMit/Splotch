@@ -7,6 +7,7 @@ import {
   realpathSync,
   rmSync,
   symlinkSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,13 +23,26 @@ import {
   TOPOLOGY_INPUT_PATHS,
   TOPOLOGY_PROOF_BRANCH,
   createHostedTopologyRecord,
+  assertTopologyGraph,
 } from '../lib/netlify-topology-report.mjs';
 
 const CLI_TIMEOUT_MS = 30_000;
+const EXPORT_FILE_MODE = 0o644;
+const RESTRICTIVE_UMASKS = [0o027, 0o077];
 const roots = [];
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const bytes = (value) => Buffer.from(JSON.stringify(value));
 const artifact = (name, version) => ({ key: `${name}@${version}`, name, version });
+
+function transportReceipt(body, metadata) {
+  return {
+    url: `https://${metadata.id}--splotch.netlify.app/migration-install-topology.json`,
+    status: 200,
+    contentType: 'application/json; charset=utf-8',
+    bytes: body.length,
+    sha256: hash(body),
+  };
+}
 
 function put(root, path, value) {
   mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -100,9 +114,10 @@ function fixture() {
     context: env.CONTEXT,
     state: 'ready',
   };
-  const check = (value = record, selected = metadata) =>
-    checkHostedTopologyBytes(bytes(value), contractBytes, commit, selected);
-  return { root, contract, contractBytes, record, metadata, check };
+  const transport = transportReceipt(bytes(record), metadata);
+  const check = (value = record, selected = metadata, receipt = transport) =>
+    checkHostedTopologyBytes(bytes(value), contractBytes, commit, selected, receipt);
+  return { root, contract, contractBytes, record, metadata, transport, check };
 }
 
 afterEach(() => {
@@ -125,6 +140,78 @@ describe('Complete hosted topology export', () => {
     expect(record.inspection.packageManagerVersion).toBe('11.22.0');
     for (const key of Object.keys(TOPOLOGY_INPUT_PATHS))
       expect(record.inspection[key]).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it.each(RESTRICTIVE_UMASKS)('writes the published mode under restrictive umask %i', (mask) => {
+    const { root, record } = fixture();
+    const previous = process.umask(mask);
+    try {
+      writeHostedTopologyFile(root, record);
+      expect(statSync(join(root, TOPOLOGY_EXPORT_PATH)).mode & 0o777).toBe(EXPORT_FILE_MODE);
+      expect(JSON.parse(readFileSync(join(root, TOPOLOGY_EXPORT_PATH), 'utf8'))).toEqual(record);
+    } finally {
+      process.umask(previous);
+    }
+  });
+
+  it.each([
+    ['missing receipt', () => undefined, 'Hosted transport receipt is missing'],
+    ['fields', (t) => ({ ...t, extra: 'not-selected' }), 'Hosted transport fields differ'],
+    [
+      'wrong deploy',
+      (t) => ({ ...t, url: t.url.replace('2'.repeat(24), '9'.repeat(24)) }),
+      'Hosted transport URL differs',
+    ],
+    [
+      'mutable URL',
+      (t) => ({ ...t, url: 'https://splotch.netlify.app/migration-install-topology.json' }),
+      'Hosted transport URL differs',
+    ],
+    ['query', (t) => ({ ...t, url: t.url + '?cache=1' }), 'Hosted transport URL differs'],
+    ['fragment', (t) => ({ ...t, url: t.url + '#body' }), 'Hosted transport URL differs'],
+    [
+      'credentials',
+      (t) => ({ ...t, url: t.url.replace('https://', 'https://user@') }),
+      'Hosted transport URL differs',
+    ],
+    [
+      'insecure transport',
+      (t) => ({ ...t, url: t.url.replace('https:', 'http:') }),
+      'Hosted transport URL differs',
+    ],
+    ['status', (t) => ({ ...t, status: 404 }), 'Hosted transport status differs'],
+    ['HTML', (t) => ({ ...t, contentType: 'text/html' }), 'Hosted transport content type differs'],
+    [
+      'JSON prefix',
+      (t) => ({ ...t, contentType: 'application/jsonx' }),
+      'Hosted transport content type differs',
+    ],
+    ['byte count', (t) => ({ ...t, bytes: t.bytes - 1 }), 'Hosted transport byte count differs'],
+    ['digest', (t) => ({ ...t, sha256: '0'.repeat(64) }), 'Hosted transport bytes differ'],
+  ])('refuses transport %s and restores the complete response binding', (_, mutate, reason) => {
+    const { contractBytes, record, metadata, transport, check } = fixture();
+    expect(() =>
+      checkHostedTopologyBytes(
+        bytes(record),
+        contractBytes,
+        record.inspection.commit,
+        metadata,
+        mutate(transport)
+      )
+    ).toThrow(reason);
+    expect(check().disposition).toBe('hosted-topology-invariants-verified');
+  });
+
+  it('refuses locally changed valid graph bytes bound to the original transport', () => {
+    const { contract, record, check } = fixture();
+    const changed = structuredClone(record);
+    const oldPath = changed.inspection.installed[0].path;
+    const newPath = 'node_modules/requirec';
+    changed.inspection.installed[0].path = newPath;
+    for (const row of changed.inspection.resolutions) if (row.path === oldPath) row.path = newPath;
+    expect(() => assertTopologyGraph(changed.inspection, contract)).not.toThrow();
+    expect(() => check(changed)).toThrow('Hosted transport bytes differ');
+    expect(check().disposition).toBe('hosted-topology-invariants-verified');
   });
 
   it.each([
@@ -293,7 +380,8 @@ describe('Complete hosted topology export', () => {
         Buffer.from('<html>SSR catch-all</html>'),
         contractBytes,
         record.inspection.commit,
-        metadata
+        metadata,
+        transportReceipt(bytes(record), metadata)
       )
     ).toThrow('Hosted file is HTML');
     expect(() =>
@@ -301,7 +389,8 @@ describe('Complete hosted topology export', () => {
         bytes(record).subarray(0, 20),
         contractBytes,
         record.inspection.commit,
-        metadata
+        metadata,
+        transportReceipt(bytes(record), metadata)
       )
     ).toThrow(SyntaxError);
     expect(check().disposition).toBe('hosted-topology-invariants-verified');
@@ -315,7 +404,13 @@ describe('Complete hosted topology export', () => {
       Buffer.from('"}'),
     ]);
     expect(() =>
-      checkHostedTopologyBytes(malformed, contractBytes, record.inspection.commit, metadata)
+      checkHostedTopologyBytes(
+        malformed,
+        contractBytes,
+        record.inspection.commit,
+        metadata,
+        transportReceipt(bytes(record), metadata)
+      )
     ).toThrow(TypeError);
     expect(check().disposition).toBe('hosted-topology-invariants-verified');
   });

@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { closeSync, fstatSync, openSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  fchmodSync,
+  fstatSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { runNetlifyTopologyWitness, topologyProofContext } from '../netlify-topology-witness.mjs';
@@ -22,6 +30,7 @@ export function writeHostedTopologyFile(root, record) {
   const bytes = Buffer.from(JSON.stringify(record, null, 2) + '\n');
   const descriptor = openSync(output, 'wx', EXPORT_FILE_MODE);
   try {
+    fchmodSync(descriptor, EXPORT_FILE_MODE);
     const stat = fstatSync(descriptor);
     assert.ok(stat.isFile() && stat.nlink === 1, 'Topology export must be a single regular file');
     assert.equal(stat.mode & 0o777, EXPORT_FILE_MODE, 'Topology export mode differs');

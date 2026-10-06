@@ -46,10 +46,38 @@ is app latency. Complete capsule members include the producers, original recorde
 controls, explicit failure disposition and release receipts. These receipts retain their tested
 source hashes. Later documentation publication does not change those identities.
 
-Original Claude planning conversation 029bce38-e7e6-4c21-98ac-035278e7f05f spent one substantive
-round. Its seven summary challenges informed the source; it did not accept this implementation. Two
-rounds remain: actual PR source review, then complete hosted execution evidence. PR-keyed adoption
-must preserve the original record and identity. No additional/fresh/reset round is implied.
+Original Claude conversation 029bce38-e7e6-4c21-98ac-035278e7f05f resumed for PR2707 source review
+at 15ee75b85f4903a78567bf6b759204d8bff28b5d. The PR-keyed ledger carries the original planning round
+rather than resetting it; unrelated ledgers remained unchanged. Review
+[5434468134](https://github.com/KyleMit/Splotch/pull/2707#pullrequestreview-5434468134) identified
+two reproduced portability failures and two smaller repairs. Two substantive rounds are used; one
+remains for the executed revision, complete hosted evidence and final CI. Source-only agreement does
+not accept the hosted graph.
+
+The repairs use one locale-independent package-path ordering, explicitly set the new export file's
+mode after exclusive creation, require the reader's complete immutable-response transport receipt,
+and restore literal Unicode in package descriptions without changing package semantics. The
+transport receipt's URL, status, JSON media type, decoded byte count and digest must match the exact
+artifact consumed. Metadata and transport remain operator-attested inputs; they do not authenticate
+a fabricated census. Scoped execution passed 81 tests, focused lint, full check and lint. The new
+same-length changed-graph control reaches the digest rejection and restores the original response.
+Restrictive umasks and actual English, Czech and Lithuanian default ICU locales passed. The first
+wrong-order fixture and existing test-file size refusal are preserved as accidental failures,
+separately from intended rejecting controls. The locale test belongs to the existing observer suite;
+no line cap or evidence guard was weakened. The repaired twelve-input revision passed all fifteen
+Quality stages, five Browserless tiers, ordinary web and Capacitor static builds in 135.126 seconds.
+Both builds omitted the export. The actual Node22.13.0/ARM64 floor ran the ordinary no-op producer
+and three suites with 88 assertions in 0.904 seconds. Complete raw and semantic indexes were saved;
+semantic indexes, source/runtime inputs and exclusive candidate identities stayed equal, and every
+actual command group and producer was absent after completion. These durations measure validation
+cost.
+
+The additive [repair capsule](review-repairs.tar.gz) and
+[complete member manifest](review-repairs-manifest.json) preserve 184 exact safe members: all failed
+and passed repair attempts, complete current full/floor channels, exact finite producers and
+selected original round-two technical provenance. Provider raw conversations and authentication
+state remain host-local. Verify the outer digest and every regular member before extracting into a
+new owned records directory; the earlier capsule remains byte-exact at its original source hashes.
 
 An actual automatic nonproduction build, complete immutable body retrieval, strict offline
 consumption, original Claude acceptance and final-head CI remain pending. No RN compilation,

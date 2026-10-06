@@ -4,7 +4,8 @@ import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 export const TOPOLOGY_PROOF_BRANCH = 'feature/netlify-migration-topology-05';
 export const PRODUCTION_INSTALL_CONTRACT =
   'docs/migration/evidence/netlify-install/production-install-contract.json';
-export const TOPOLOGY_EXPORT_PATH = 'web/build/migration-install-topology.json';
+export const TOPOLOGY_PUBLIC_PATH = '/migration-install-topology.json';
+export const TOPOLOGY_EXPORT_PATH = `web/build${TOPOLOGY_PUBLIC_PATH}`;
 export const TOPOLOGY_CONTEXTS = ['.', CANDIDATE_DIRECTORY, 'web', 'netlify/functions', 'tools'];
 export const TOPOLOGY_INPUT_PATHS = {
   lockSha256: 'pnpm-lock.yaml',
@@ -16,6 +17,10 @@ export const TOPOLOGY_INPUT_PATHS = {
 const EXPORT_OBSERVATION = 'after-web-build-and-shipping-postbuild-guards';
 export const TOPOLOGY_INSPECTION_SCOPE =
   'Observed installed tree and identity; cloud install/build/deploy logs remain separate evidence';
+
+export function compareTopologyPaths(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
 
 function fields(value, names, label) {
   assert.ok(
@@ -89,11 +94,7 @@ export function assertTopologyGraph(record, contract) {
     installed.set(row.path, row.key);
     return row.path;
   });
-  assert.deepEqual(
-    paths,
-    [...paths].sort((left, right) => left.localeCompare(right)),
-    'Unsorted installed rows'
-  );
+  assert.deepEqual(paths, [...paths].sort(compareTopologyPaths), 'Unsorted installed rows');
   assert.ok(Array.isArray(record.resolutions), 'Resolution rows are missing');
   const expected = TOPOLOGY_CONTEXTS.flatMap((context) =>
     contract.productionDirect.map(({ key }) => ({ context, key }))

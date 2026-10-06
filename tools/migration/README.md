@@ -127,17 +127,20 @@ five-context resolution rows, reviewed input hashes, actual runtime identities a
 selected non-secret deploy identifiers. Its observation happens after the build. It proves no native
 candidate execution, performance, continuity or deployed application behavior.
 
-`check:migration:hosted-topology -- --artifact <downloaded-json> --commit <sha> --metadata <json>`
+`check:migration:hosted-topology -- --artifact <downloaded-json> --commit <sha> --metadata <json> --transport <json>`
 requires the exact source checkout. The metadata file contains only `id`, `build_id`, `site_id`,
 `commit_ref`, `branch`, `context` and `state` from the supported deploy read. Fetch the file using
 the deploy-ID permalink, preserve its URL, status, content type and complete decoded body with byte
 count and SHA-256, and reject HTML or partial responses. Bind that transport receipt to the exact
-bytes supplied to the reader. The offline reader rechecks graph and deploy/source invariants against
-the contract bytes in that checkout; its receipt alone does not establish a physical package census
-for an arbitrary local JSON file. Completeness also requires the selected immutable response and its
-exact committed physical producer. Full deploy logs are optional corroboration; their availability
-cannot replace this reader or the complete downloaded graph. Raw metadata may contain tokens and
-stays host-local.
+bytes supplied to the reader using a transport JSON file with exactly `url`, `status`,
+`contentType`, `bytes` and `sha256`. The reader requires the immutable deploy-ID URL, HTTP 200, JSON
+media type and matching complete decoded bytes. Transport and selected metadata remain
+operator-attested inputs, not authenticated proof on their own. The offline reader rechecks graph
+and deploy/source invariants against the contract bytes in that checkout; its receipt alone does not
+establish a physical package census for an arbitrary local JSON file. Completeness also requires the
+selected immutable response and its exact committed physical producer. Full deploy logs are optional
+corroboration; their availability cannot replace this reader or the complete downloaded graph. Raw
+metadata may contain tokens and stays host-local.
 
 The export owner changes when the production manifest, lock, candidate manifest, workspace, Netlify
 configuration, proof branch or postbuild ownership changes. Regenerate reviewed proof inputs before

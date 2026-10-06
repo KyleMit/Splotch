@@ -9,6 +9,7 @@ import { verifyNetlifyRuntime } from '../lib/netlify-runtime.mjs';
 import {
   PRODUCTION_INSTALL_CONTRACT,
   TOPOLOGY_INPUT_PATHS,
+  TOPOLOGY_PUBLIC_PATH,
   assertHostedTopologyDeploy,
   assertHostedTopologyRecord,
 } from './lib/netlify-topology-report.mjs';
@@ -21,7 +22,46 @@ function parseTopologyJson(bytes) {
   return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
 }
 
-export function checkHostedTopologyBytes(bytes, contractBytes, expectedCommit, metadata) {
+function assertHostedTopologyTransport(transport, bytes, metadata) {
+  assert.ok(
+    transport !== null && typeof transport === 'object' && !Array.isArray(transport),
+    'Hosted transport receipt is missing'
+  );
+  assert.deepEqual(
+    Object.keys(transport).sort(),
+    ['url', 'status', 'contentType', 'bytes', 'sha256'].sort(),
+    'Hosted transport fields differ'
+  );
+  assert.equal(typeof transport.url, 'string', 'Hosted transport URL is missing');
+  const url = new URL(transport.url);
+  assert.match(
+    url.hostname,
+    new RegExp(`^${metadata.id}--[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.netlify\\.app$`),
+    'Hosted transport URL differs from the immutable deploy'
+  );
+  assert.equal(
+    transport.url,
+    `https://${url.hostname}${TOPOLOGY_PUBLIC_PATH}`,
+    'Hosted transport URL differs from the immutable deploy'
+  );
+  assert.equal(transport.status, 200, 'Hosted transport status differs');
+  assert.equal(typeof transport.contentType, 'string', 'Hosted transport content type is missing');
+  assert.equal(
+    transport.contentType.split(';', 1)[0].trim().toLowerCase(),
+    'application/json',
+    'Hosted transport content type differs'
+  );
+  assert.equal(transport.bytes, bytes.length, 'Hosted transport byte count differs');
+  assert.equal(transport.sha256, sha256(bytes), 'Hosted transport bytes differ');
+}
+
+export function checkHostedTopologyBytes(
+  bytes,
+  contractBytes,
+  expectedCommit,
+  metadata,
+  transport
+) {
   assert.ok(
     !bytes.toString('utf8').trimStart().startsWith('<'),
     'Hosted file is HTML, not a topology export'
@@ -30,6 +70,7 @@ export function checkHostedTopologyBytes(bytes, contractBytes, expectedCommit, m
   const contract = parseTopologyJson(contractBytes);
   assertHostedTopologyRecord(record, contract, sha256(contractBytes));
   assertHostedTopologyDeploy(record, expectedCommit, metadata);
+  assertHostedTopologyTransport(transport, bytes, metadata);
   return {
     disposition: 'hosted-topology-invariants-verified',
     commit: expectedCommit,
@@ -49,11 +90,12 @@ export function runHostedTopologyCheck(argv) {
       artifact: { type: 'string' },
       commit: { type: 'string' },
       metadata: { type: 'string' },
+      transport: { type: 'string' },
     },
     strict: true,
     allowPositionals: false,
   });
-  for (const name of ['artifact', 'commit', 'metadata'])
+  for (const name of ['artifact', 'commit', 'metadata', 'transport'])
     assert.ok(values[name], `Missing --${name}`);
   const head = execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: ROOT,
@@ -81,7 +123,8 @@ export function runHostedTopologyCheck(argv) {
   }
   const bytes = readFileSync(values.artifact);
   const metadata = JSON.parse(readFileSync(values.metadata, 'utf8'));
-  const result = checkHostedTopologyBytes(bytes, contractBytes, values.commit, metadata);
+  const transport = parseTopologyJson(readFileSync(values.transport));
+  const result = checkHostedTopologyBytes(bytes, contractBytes, values.commit, metadata, transport);
   const inspection = parseTopologyJson(bytes).inspection;
   verifyNetlifyRuntime(ROOT, JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')), {
     nodeVersion: inspection.nodeVersion,

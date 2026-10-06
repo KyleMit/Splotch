@@ -3,6 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { assertTopologyGraph } from '../lib/netlify-topology-report.mjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   PRODUCTION_INSTALL_CONTRACT,
@@ -95,6 +97,55 @@ describe('Netlify topology production-install observer', () => {
     expect(result.installedPackageCount).toBe(2);
     expect(result.resolutions).toHaveLength(5);
     expect(result.installed.some((row) => row.key === 'shared@1.0.0')).toBe(true);
+  });
+
+  it('observes and reads identical package ordering across actual default ICU locales', () => {
+    const { root, contract, facts } = fixture();
+    for (const name of ['chalk', 'hono']) {
+      put(root, `node_modules/${name}/package.json`, { name, version: '1.0.0' });
+      contract.productionArtifacts.push(artifact(name, '1.0.0'));
+    }
+    contract.productionArtifacts.sort((left, right) =>
+      left.key < right.key ? -1 : left.key > right.key ? 1 : 0
+    );
+    const contractPath = join(root, 'contract.json');
+    put(root, 'contract.json', contract);
+    const moduleUrl = pathToFileURL(join(ROOT, 'tools/netlify-topology-witness.mjs')).href;
+    const program = `
+      import { readFileSync } from 'node:fs';
+      import { inspectNetlifyProductionInstall } from ${JSON.stringify(moduleUrl)};
+      console.log(JSON.stringify({
+        locale: Intl.DateTimeFormat().resolvedOptions().locale,
+        inspection: inspectNetlifyProductionInstall(
+          ${JSON.stringify(root)},
+          JSON.parse(readFileSync(${JSON.stringify(contractPath)}, 'utf8')),
+          ${JSON.stringify(facts)}
+        ),
+      }));
+    `;
+    const observations = [];
+    for (const [locale, expected] of [
+      ['en_US.UTF-8', 'en-US'],
+      ['cs_CZ.UTF-8', 'cs-CZ'],
+      ['lt_LT.UTF-8', 'lt-LT'],
+    ]) {
+      const result = spawnSync(process.execPath, ['--input-type=module', '--eval', program], {
+        env: { ...process.env, LANG: locale, LC_ALL: locale },
+        encoding: 'utf8',
+        timeout: CLI_TIMEOUT_MS,
+      });
+      expect(result.status, result.stderr).toBe(0);
+      const observed = JSON.parse(result.stdout);
+      expect(observed.locale).toBe(expected);
+      assertTopologyGraph(observed.inspection, contract);
+      observations.push(observed.inspection);
+    }
+    expect(observations[1]).toEqual(observations[0]);
+    expect(observations[2]).toEqual(observations[0]);
+    const changed = structuredClone(observations[0]);
+    changed.installed.reverse();
+    expect(() => assertTopologyGraph(changed, contract)).toThrow('Unsorted installed rows');
+    expect(() => assertTopologyGraph(observations[0], contract)).not.toThrow();
   });
 
   it.each([
