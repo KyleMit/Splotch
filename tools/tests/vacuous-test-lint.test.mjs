@@ -33,6 +33,7 @@ const VITEST_FIXTURE = 'tools/tests/seeded-defect.test.mjs';
 const WEB_SRC_VITEST_FIXTURE = 'web/src/lib/seeded-defect.test.ts';
 const VITEST_HARNESS_FIXTURE = 'web/src/lib/seededTestHarness.ts';
 const PLAYWRIGHT_FIXTURE = 'web/tests/seeded-defect.spec.ts';
+const WEB_HOST_PLAYWRIGHT_FIXTURE = 'migration/probes/web-host/tests/seeded-defect.spec.ts';
 const PLAYWRIGHT_HELPER_FIXTURE = 'web/tests/seeded-helper.ts';
 
 const rulesReportedFor = async (fixture, source) => {
@@ -103,47 +104,51 @@ describe.each([VITEST_FIXTURE, WEB_SRC_VITEST_FIXTURE, VITEST_HARNESS_FIXTURE])(
   }
 );
 
-describe('the Playwright block reports a test that cannot fail', () => {
-  it('flags a test body with no assertion', async () => {
-    const body = `test('asserts nothing', async ({ page }) => { await page.goto('/'); });`;
-    expect(await playwrightRules(body)).toContain('playwright/expect-expect');
-  });
+describe.each([PLAYWRIGHT_FIXTURE, WEB_HOST_PLAYWRIGHT_FIXTURE])(
+  'the Playwright block reports a test that cannot fail in %s',
+  (fixture) => {
+    const fixtureRules = (body) => rulesReportedFor(fixture, playwrightSpec(body));
+    it('flags a test body with no assertion', async () => {
+      const body = `test('asserts nothing', async ({ page }) => { await page.goto('/'); });`;
+      expect(await fixtureRules(body)).toContain('playwright/expect-expect');
+    });
 
-  it('flags a committed .only, which silently skips the rest of the file', async () => {
-    const body = `test.only('is focused', async () => { expect(1).toBe(1); });`;
-    expect(await playwrightRules(body)).toContain('playwright/no-focused-test');
-  });
+    it('flags a committed .only, which silently skips the rest of the file', async () => {
+      const body = `test.only('is focused', async () => { expect(1).toBe(1); });`;
+      expect(await fixtureRules(body)).toContain('playwright/no-focused-test');
+    });
 
-  it('flags an unconditionally skipped test', async () => {
-    const body = `test.skip('is disabled', async () => { expect(1).toBe(1); });`;
-    expect(await playwrightRules(body)).toContain('playwright/no-skipped-test');
-  });
+    it('flags an unconditionally skipped test', async () => {
+      const body = `test.skip('is disabled', async () => { expect(1).toBe(1); });`;
+      expect(await fixtureRules(body)).toContain('playwright/no-skipped-test');
+    });
 
-  it('flags an expect that never reaches a matcher', async () => {
-    expect(await playwrightRules(`test('never matches', async () => { expect(1); });`)).toContain(
-      'playwright/valid-expect'
-    );
-  });
+    it('flags an expect that never reaches a matcher', async () => {
+      expect(await fixtureRules(`test('never matches', async () => { expect(1); });`)).toContain(
+        'playwright/valid-expect'
+      );
+    });
 
-  it('flags a web-first assertion whose promise is dropped', async () => {
-    const body = `test('drops the wait', async ({ page }) => { expect(page.locator('h1')).toBeVisible(); });`;
-    expect(await playwrightRules(body)).toContain('playwright/missing-playwright-await');
-  });
+    it('flags a web-first assertion whose promise is dropped', async () => {
+      const body = `test('drops the wait', async ({ page }) => { expect(page.locator('h1')).toBeVisible(); });`;
+      expect(await fixtureRules(body)).toContain('playwright/missing-playwright-await');
+    });
 
-  it('flags an assertion left inside a floating promise chain', async () => {
-    const body = `test('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
-    expect(await playwrightRules(body)).toContain('playwright/valid-expect-in-promise');
-  });
+    it('flags an assertion left inside a floating promise chain', async () => {
+      const body = `test('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
+      expect(await fixtureRules(body)).toContain('playwright/valid-expect-in-promise');
+    });
 
-  it('flags an assertion reachable only if something threw', async () => {
-    const body = [
-      `test('rejects bad input', async ({ page }) => {`,
-      `  try { await page.goto('/'); } catch (error) { expect(error.message).toBe('bad'); }`,
-      `});`,
-    ].join('\n');
-    expect(await playwrightRules(body)).toContain('playwright/no-conditional-expect');
-  });
-});
+    it('flags an assertion reachable only if something threw', async () => {
+      const body = [
+        `test('rejects bad input', async ({ page }) => {`,
+        `  try { await page.goto('/'); } catch (error) { expect(error.message).toBe('bad'); }`,
+        `});`,
+      ].join('\n');
+      expect(await fixtureRules(body)).toContain('playwright/no-conditional-expect');
+    });
+  }
+);
 
 describe('the Playwright helper block reports an assertion that cannot fail', () => {
   it('flags an expect that never reaches a matcher', async () => {

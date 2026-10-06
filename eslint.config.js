@@ -604,6 +604,7 @@ export default tseslint.config(
     files: [
       'web/src/**',
       'web/tests/**',
+      'migration/probes/web-host/**/*.ts',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
@@ -843,7 +844,7 @@ export default tseslint.config(
   {
     // Playwright specs. Same vacuous-test guard as the Vitest block above, spelled in this
     // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
-    files: ['web/tests/**/*.spec.ts'],
+    files: ['web/tests/**/*.spec.ts', 'migration/probes/web-host/tests/**/*.spec.ts'],
     plugins: { playwright },
     rules: {
       ...VACUOUS_TEST_RULES.playwright,

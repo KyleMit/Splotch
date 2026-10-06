@@ -1,0 +1,17 @@
+{
+  "observed": "2026-10-06T18:52:37.153675+00:00",
+  "controllerPid": 13238,
+  "recordedStartIdentity": "13238 81283 13238 Tue Oct  6 14:50:17 2026     /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /private/tmp/splotch-resume-01a111b0/retained/package-floor-evidence.py",
+  "ownedGroupRemaining": [],
+  "toolHandle": 9043,
+  "toolExitCode": 0,
+  "state": "released",
+  "sourceUnchanged": true,
+  "archiveBytes": 11757568,
+  "archiveSha256": "a31ee2a2bedc365838b7616231ca42976c1ffed30cd08ea07e9a7f3e30d3c811",
+  "completeDecodedMembers": 413,
+  "actualManifestSha256": "eb7d07534aa2938a2bc192974f63198635011c1d931a1a75dfaa6dc5b26bff79",
+  "wholeDeadlineSeconds": 600,
+  "elapsedSeconds": 103.51501316705253,
+  "claim": "Compression only; all original selected bytes/modes and complete safe decoded member census verified, source unchanged; no children or product process"
+}

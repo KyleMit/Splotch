@@ -125,10 +125,17 @@ const subtreeBucket =
 const rootBucket = (path) => (path.includes('/') ? path.slice(0, path.indexOf('/')) : '(root)');
 
 const NATIVE_ROOTS = ['android/', 'ios/', 'fastlane/', '.maestro/'];
+const MIGRATION_PROBES_DIRECTORY = 'migration/probes';
 
 // Areas are disjoint by construction; `areasFor` returns every match so the
 // coverage test can prove it rather than trust rule order.
 export const AREAS = [
+  {
+    label: `**${MIGRATION_PROBES_DIRECTORY}** — isolated migration probes`,
+    key: MIGRATION_PROBES_DIRECTORY,
+    matches: (path) => path.startsWith(`${MIGRATION_PROBES_DIRECTORY}/`),
+    bucket: subtreeBucket(`${MIGRATION_PROBES_DIRECTORY}/`),
+  },
   {
     label: `**${CANDIDATE_DIRECTORY}** — isolated native candidate`,
     key: CANDIDATE_DIRECTORY,

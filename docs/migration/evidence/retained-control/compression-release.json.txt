@@ -1,0 +1,14 @@
+{
+  "owner": "retained_control",
+  "toolHandle": 81846,
+  "toolExitCode": 0,
+  "ownedProcess": 82015,
+  "processMetadataCommand": "ps -p 82015 -o pid=,ppid=,pgid=,lstart=,args=",
+  "processMetadataExitCode": 1,
+  "processMetadataOutput": "",
+  "ownedProcessGone": true,
+  "ownedChildren": [],
+  "portsUsed": [],
+  "signalsSent": [],
+  "releaseCondition": "Verified complete archive, every original member unchanged and decoded byte/mode/size exact, unchanged source, finished original tool handle, recorded process absent."
+}
