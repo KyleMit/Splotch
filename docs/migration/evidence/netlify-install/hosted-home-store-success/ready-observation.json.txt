@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-10-06T11:38:37.143205+00:00",
+  "deploy": {
+    "id": "6ac4dd381d311b0008210aa1",
+    "build_id": "6ac4dd381d311b0008210a9f",
+    "site_id": "8804b246-aa43-44dc-b997-4dc452079910",
+    "state": "ready",
+    "created_at": "2026-10-06T11:36:24.716Z",
+    "updated_at": "2026-10-06T11:37:52.867Z",
+    "context": "branch-deploy",
+    "branch": "feature/netlify-migration-topology-05",
+    "commit_ref": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+    "skipped": null,
+    "deploy_ssl_url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app",
+    "deploy_url": "http://feature-netlify-migration-topology-05--splotchy.netlify.app",
+    "published_at": null,
+    "title": "Distinguish ancestor failures in Netlify home-store diagnostics"
+  },
+  "build": {
+    "id": "6ac4dd381d311b0008210a9f",
+    "deploy_id": "6ac4dd381d311b0008210aa1",
+    "sha": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+    "done": true,
+    "created_at": "2026-10-06T11:36:24.746Z"
+  },
+  "error": null,
+  "scope": "Fixed exact deployment/build identity, publication metadata and bounded redacted error only; no environment/configuration values or complete build log retained"
+}

@@ -1,0 +1,73 @@
+{
+  "source": "Passive DATA selection from bound installed package manifests/OpenAPI; no client execution",
+  "identities": [
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/package.json",
+      "name": "netlify-cli",
+      "version": "26.1.0"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/api/package.json",
+      "name": "@netlify/api",
+      "version": "14.0.19"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/open-api/package.json",
+      "name": "@netlify/open-api",
+      "version": "2.55.0"
+    }
+  ],
+  "operations": [
+    {
+      "operationId": "listSiteDeploys",
+      "path": "/sites/{site_id}/deploys",
+      "method": "get",
+      "successStatus": "200",
+      "deployObjectRequired": null,
+      "published_at": {
+        "type": "string",
+        "format": "dateTime"
+      },
+      "context": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string"
+      }
+    },
+    {
+      "operationId": "getSiteDeploy",
+      "path": "/sites/{site_id}/deploys/{deploy_id}",
+      "method": "get",
+      "successStatus": "200",
+      "deployObjectRequired": null,
+      "published_at": {
+        "type": "string",
+        "format": "dateTime"
+      },
+      "context": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string"
+      }
+    },
+    {
+      "operationId": "getDeploy",
+      "path": "/deploys/{deploy_id}",
+      "method": "get",
+      "successStatus": "200",
+      "deployObjectRequired": null,
+      "published_at": {
+        "type": "string",
+        "format": "dateTime"
+      },
+      "context": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string"
+      }
+    }
+  ]
+}

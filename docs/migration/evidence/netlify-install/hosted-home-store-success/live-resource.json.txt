@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-10-06T11:41:50.485620+00:00",
+  "url": "https://feature-netlify-migration-topology-05--splotchy.netlify.app/version.json",
+  "finalUrl": "https://feature-netlify-migration-topology-05--splotchy.netlify.app/version.json",
+  "status": 200,
+  "headers": {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache,no-store,must-revalidate",
+    "ETag": "\"fd0fdcb8f98d6dba3e65425e7959e9bb-ssl\""
+  },
+  "bytes": 22,
+  "sha256": "d1f54dcb0d653fe454bb1cadbd2cae8e4483a7f7752c5e6cc413ae8bcb2bb8ec",
+  "json": {
+    "version": "1.6.2722"
+  },
+  "scope": "Unauthenticated read of the deployed branch version artifact, matching the actual hosted postbuild version; not a complete UI/runtime/performance or source-SHA response proof"
+}

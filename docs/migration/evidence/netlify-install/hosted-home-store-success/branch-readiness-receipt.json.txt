@@ -1,0 +1,133 @@
+{
+  "reviewedAt": "2026-10-06T11:43:33.438041+00:00",
+  "scope": "Passive source/record review; additive registration correction only; no hosted-operation certification",
+  "registeredHead": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+  "inputRows": [
+    {
+      "path": "/private/tmp/splotch-netlify-home-ancestor-hosted-registration.json",
+      "bytes": 3280,
+      "mode": "0o644",
+      "sha256": "cfc23953ec63a689dba9f73d2a0ed56d8f5d89502f4d70e98bd31fe9dee609b1"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-home-ancestor-hosted-observed-20261006T113837143205Z.json",
+      "bytes": 1191,
+      "mode": "0o644",
+      "sha256": "6300738794a9ab11ab53a77d46c0f0f326852a8843317f8a3453f9552744ca41"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/package.json",
+      "bytes": 7415,
+      "mode": "0o644",
+      "sha256": "a33e06e777a9203e691511acc223d0920bac2f6cfbb1ba2b905bdd4374335905"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/api/package.json",
+      "bytes": 1609,
+      "mode": "0o644",
+      "sha256": "d29750792a6b7c1d9bc945a5b07af418e71f2216ed4ccae816728afead5be718"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/open-api/package.json",
+      "bytes": 1919,
+      "mode": "0o644",
+      "sha256": "da89403f3514f51525b90674645b26788bb3b108975e4ce0f5af289783be6dac"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/api/lib/methods/index.js",
+      "bytes": 3505,
+      "mode": "0o644",
+      "sha256": "8589e2f102557414a99b747754dec209d4cc840e40a1c3d2d3ce4ef8730ccfd6"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/api/lib/methods/response.js",
+      "bytes": 2163,
+      "mode": "0o644",
+      "sha256": "1dbf57e965d541ca58619cdd90d1a88e26b8705a04cb5f1c09fd1b6ea5c1dfd3"
+    },
+    {
+      "path": "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/netlify-cli/node_modules/@netlify/open-api/dist/swagger.json",
+      "bytes": 688846,
+      "mode": "0o644",
+      "sha256": "51219977345b11baf7422dc4364fb9f80fcba910198cff09cbc497ed6768aa71"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/tools/netlify-topology-witness.mjs",
+      "bytes": 9428,
+      "mode": "0o644",
+      "sha256": "cc3aac54e8ee253d8f3907ac2cb3a2206d392a7775f9c1b181314c4908e244f3"
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-netlify-install/Splotch/docs/migration/evidence/netlify-install/production-install-contract.json",
+      "bytes": 104583,
+      "mode": "0o644",
+      "sha256": "8eb060c717ec84e62028b9ee88fa38fb67dc040240426d7bb94bdd6f9d9b08f7"
+    }
+  ],
+  "sourceCommitBindings": [
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "commit": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+      "sha256": "cc3aac54e8ee253d8f3907ac2cb3a2206d392a7775f9c1b181314c4908e244f3",
+      "currentBytesEqualCommitted": true
+    },
+    {
+      "path": "docs/migration/evidence/netlify-install/production-install-contract.json",
+      "commit": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+      "sha256": "8eb060c717ec84e62028b9ee88fa38fb67dc040240426d7bb94bdd6f9d9b08f7",
+      "currentBytesEqualCommitted": true
+    }
+  ],
+  "retainedRows": [
+    {
+      "path": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/REVIEW.md",
+      "bytes": 6021,
+      "mode": "0o644",
+      "sha256": "caf1e275fe09ab946a0bbb4ee7dec41574022dfa63469281e25c0568edc64420"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/observed.original.json.txt",
+      "bytes": 1191,
+      "mode": "0o644",
+      "sha256": "6300738794a9ab11ab53a77d46c0f0f326852a8843317f8a3453f9552744ca41"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/registration.original.json.txt",
+      "bytes": 3280,
+      "mode": "0o644",
+      "sha256": "cfc23953ec63a689dba9f73d2a0ed56d8f5d89502f4d70e98bd31fe9dee609b1"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/schema-and-client-identity.json",
+      "bytes": 1853,
+      "mode": "0o644",
+      "sha256": "0089c730398308a096b1ac065ce5798784045654b8057b305b3e35de354083cc"
+    },
+    {
+      "path": "/private/tmp/splotch-netlify-branch-ready-review-4zqz_0y4/source-excerpts.txt",
+      "bytes": 5954,
+      "mode": "0o644",
+      "sha256": "8fc39266d15c122bf66d3220dd7aabae5e7177b96ca97cfc7ee120d7cf75b753"
+    }
+  ],
+  "officialSources": [
+    {
+      "url": "https://docs.netlify.com/api-and-cli-guides/api-guides/get-started-with-api/#poll-for-deploy-state",
+      "retrievedOn": "2026-10-06",
+      "webLines": [
+        454,
+        472
+      ],
+      "rawPageBytesRetained": false
+    },
+    {
+      "url": "https://docs.netlify.com/deploy/deploy-overview/#definitions",
+      "retrievedOn": "2026-10-06",
+      "webLines": [
+        291,
+        303
+      ],
+      "rawPageBytesRetained": false
+    }
+  ]
+}

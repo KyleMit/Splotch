@@ -49,7 +49,11 @@ function git(args: string): string | undefined {
 }
 
 function readPackageVersion(): string {
-  return (JSON.parse(readFileSync('../package.json', 'utf8')) as { version: string }).version;
+  return (
+    JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+      version: string;
+    }
+  ).version;
 }
 
 // Deliberately expose the build time as minute-resolution YYYY-MM-DD HH:MM.

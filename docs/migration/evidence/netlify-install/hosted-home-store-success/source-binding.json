@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "hostedSource": "53135ad5e9fd93e4f0c4a65bd74108b7fda1690e",
+  "hostedTree": "9aad2562ca5768206054af4fdf3202995890abad",
+  "acceptedChildMerge": "cbb104976d0840611dff7f5188b9b8712050fe6a",
+  "incomingKit": "5ccf8cb1475ba945235bada82c96458a223ccc06",
+  "kitPaths": [
+    "docs/adrs/0030-git-derived-web-version.md",
+    "tools/check-build-version.mjs",
+    "tools/tests/check-build-version.test.mjs",
+    "tools/tests/svelte-kit-version.test.mjs",
+    "web/buildVersion.ts",
+    "web/svelte.config.js"
+  ],
+  "runtimeOwners": {
+    "package.json": {
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "mode": "0o644"
+    },
+    "pnpm-lock.yaml": {
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0o644"
+    },
+    "pnpm-workspace.yaml": {
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0o644"
+    },
+    "experiments/native-architecture/package.json": {
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "mode": "0o644"
+    },
+    "netlify.toml": {
+      "sha256": "6440deb3865eab6f6c4727ff8d57be163570eabae95230a46c4c82eff7d4ec33",
+      "mode": "0o644"
+    }
+  },
+  "installerSourceRows": [
+    {
+      "path": "tools/lib/netlify-cache-config.mjs",
+      "bytes": 10066,
+      "mode": "0o644",
+      "sha256": "3c23e3f0f80e5c482a94076d7f961640df2045b9a495df0b2689d0547b0e7337"
+    },
+    {
+      "path": "tools/netlify-production-install.mjs",
+      "bytes": 14445,
+      "mode": "0o644",
+      "sha256": "03596b8e4ab56f2672a659088d0a71dda43b39188b9e5480aa22611e9d5d56ea"
+    },
+    {
+      "path": "tools/tests/netlify-home-store.test.mjs",
+      "bytes": 19278,
+      "mode": "0o644",
+      "sha256": "fc3a8e5deb7dadafcd9df5cc2895e3db39dad220e803916f5d2c06936e62d6b9"
+    }
+  ],
+  "scope": "Hosted result bound to531; pending combined-source validation is separate"
+}
