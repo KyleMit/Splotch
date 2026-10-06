@@ -1,0 +1,43 @@
+{
+  "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-rootdirs-l0aiR1",
+  "sourceInputs": "final-v2/source-inputs.json",
+  "scanner": {
+    "passed": true,
+    "result": {
+      "scannedCandidateFiles": [
+        "app.json",
+        "babel.config.cjs",
+        "metro.config.cjs",
+        "scripts/check-transform.cjs",
+        "src/ProbeApp.tsx",
+        "src/index.ts",
+        "tsconfig.json"
+      ],
+      "dependencyReferences": 14,
+      "generatedSubpathExclusions": [
+        "node_modules",
+        ".git",
+        ".expo",
+        "dist",
+        "android/.gradle",
+        "android/.cxx",
+        "android/build",
+        "android/app/.cxx",
+        "android/app/build",
+        "ios/Pods",
+        "ios/build"
+      ],
+      "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+      "scope": "All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins",
+      "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+    }
+  },
+  "tsc": {
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "scope": "Candidate config resolution alias can select foreign source; guard/typecheck only."
+}

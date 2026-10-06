@@ -6,6 +6,29 @@ root install and creates no native project or device process. Quality uses live 
 identities, installed Forge controls, production/import boundaries and current canonical native
 plugin paths; it does not freeze unrelated root script, lock or Capacitor bytes.
 
+Candidate import ownership walks maintained JS/TS files, including platform suffixes, dotfiles and
+untracked local helpers. It checks tsconfig extensions, types, JSX import sources and local
+project/include paths, Expo JSON/JS plugin arrays, and explicit Babel preset/plugin references. The
+result lists scanned files and finite generated subpath exclusions. Dependency directories named
+`node_modules` are excluded at any candidate depth; local imports back into an excluded subtree
+fail. Maintained `android/` and `ios/` files are not blanket-excluded.
+
+The strict candidate parser covers literal import/re-export/require/require.resolve, templates,
+TypeScript import-equals/import-type, JSX/JSDoc and triple-slash references. Computed module
+arguments, loader aliases, `createRequire`, `import.meta.resolve` and JS provider-context resolution
+fail visibly. Babel aliases and computed plugin/preset configuration require an explicit reviewed
+owner; use full package names or `require.resolve` for the supported forms. TypeScript path aliases,
+custom type roots, base URLs and merged root directories also require such an owner. The shared
+shipping/Forge parser keeps its existing scope.
+
+Root Node configs and `scripts/` can use actual Node builtins; app source cannot. App source also
+refuses local edges into Node-owned configs/scripts; internal aliases retain their canonical role.
+Bare packages must be candidate declarations with canonical package syntax. Hoisted declared
+packages may live outside the candidate; only local/discovered targets receive lexical/physical
+ownership checks. Unresolved local module resolution stays with TypeScript/Metro. Podfile/Gradle and
+native provider-context commands remain the separate PHASE-1 source/materialization/toolchain
+obligation; this scanner emits that non-coverage and supplies no native execution result.
+
 `check:migration:native-topology:evidence` verifies the exact topology05 lock/manifest/Netlify and
 Capacitor proof inputs, complete historical archive selection and candidate-exclusive record. The
 Native topology proof workflow runs both commands on the topology05 PR and the named Netlify proof

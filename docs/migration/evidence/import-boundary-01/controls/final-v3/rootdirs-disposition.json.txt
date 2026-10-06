@@ -1,0 +1,12 @@
+{
+  "sourceInputs": "source-inputs.json",
+  "originalCounterexample": "../rootdirs-counterexample.json",
+  "intendedRejection": "tsconfig.json uses unsupported tsconfig rootDirs ownership\n+ actual - expected\n\n+ [\n+   './src',\n+   '../foreign'\n+ ]\n- undefined\n",
+  "restoredGuardPassed": true,
+  "restoredTypecheck": {
+    "exitCode": 0,
+    "signal": null,
+    "stdout": "",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "tools/migration/lib/candidate-imports.mjs": {
+    "sha256": "4ece4550b8e86aaf371e5bc93a6803fdf2981b990d9701cb15d5c5d988052b0e",
+    "origin": "Inverse of recorded role correction, byte-identical to the pre-correction source manifest"
+  },
+  "tools/migration/lib/candidate-references.mjs": {
+    "sha256": "3c8ed92567657abafc169ea3ee65924830e9b525db3c0f252937c1c4d4b03827",
+    "origin": "Unchanged final source matching pre-correction manifest"
+  },
+  "tools/migration/lib/native-identity.mjs": {
+    "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+    "origin": "Unchanged final source matching pre-correction manifest"
+  },
+  "tools/migration/check-native-topology.mjs": {
+    "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+    "origin": "Unchanged final source matching pre-correction manifest"
+  },
+  "tools/migration/tests/candidate-imports.test.mjs": {
+    "sha256": "3be2644b87ae22cbd1e396fe0aecdfe3d7f055eef9709539e0ec2a0b521ea4f7",
+    "origin": "Inverse of recorded role correction, byte-identical to the pre-correction source manifest"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "scope": "Candidate guard role counterexamples only, no native/Metro runtime claim",
+  "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/role-counterexample-1K5scd",
+  "appToNodePassed": true,
+  "aliasRolePassed": true,
+  "aliasScannedFiles": [
+    "app.json",
+    "babel.config.cjs",
+    "metro.config.cjs",
+    "scripts/app-alias/ProbeApp.tsx",
+    "scripts/app-alias/index.ts",
+    "scripts/check-transform.cjs",
+    "scripts/fs-helper.cjs",
+    "tsconfig.json"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/import_boundary",
+  "resource": "exclusive host Browserless tier",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "sourceInputs": "source-inputs.json",
+  "command": "SMOKE_PORT=5300 npm run test:browserless",
+  "port": 5300,
+  "portUnusedImmediatelyBeforeLaunch": true,
+  "startedAt": "2026-10-06T15:25:45.158Z",
+  "deadlineMs": 1800000,
+  "launcherPid": 88757,
+  "releaseCondition": "command exits and its owned process group is gone and smoke port binds again",
+  "status": "released",
+  "childPid": 88771,
+  "processGroup": 88771,
+  "finishedAt": "2026-10-06T15:27:00.435Z",
+  "outcome": {
+    "exitCode": 0,
+    "signal": null
+  },
+  "ownedProcessGroupGone": true,
+  "smokePortReleased": true
+}

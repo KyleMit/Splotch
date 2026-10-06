@@ -1,0 +1,35 @@
+{
+  "method": "Inverse of the bounded rootDirs option/control correction; all reconstructed executable bytes verified against immutable v2 source-inputs hashes.",
+  "results": [
+    {
+      "file": "tools/migration/lib/candidate-imports.mjs",
+      "bytes": 7135,
+      "sha256": "5cbe37e2e0a6a0c43a9bd2ee405f66f80e0500416c4e654f1a07c8b77e335d7a",
+      "matchesRecordedV2": true
+    },
+    {
+      "file": "tools/migration/lib/candidate-references.mjs",
+      "bytes": 9630,
+      "sha256": "3c8ed92567657abafc169ea3ee65924830e9b525db3c0f252937c1c4d4b03827",
+      "matchesRecordedV2": true
+    },
+    {
+      "file": "tools/migration/lib/native-identity.mjs",
+      "bytes": 6302,
+      "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+      "matchesRecordedV2": true
+    },
+    {
+      "file": "tools/migration/check-native-topology.mjs",
+      "bytes": 3672,
+      "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+      "matchesRecordedV2": true
+    },
+    {
+      "file": "tools/migration/tests/candidate-imports.test.mjs",
+      "bytes": 15996,
+      "sha256": "f2eab7afd664f57ed2937efdfa72d98cbc5af7ab78aa87751f5be34ec056007e",
+      "matchesRecordedV2": true
+    }
+  ]
+}
