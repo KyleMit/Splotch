@@ -16,6 +16,12 @@ unproved comparison evidence is recorded honestly and cannot complete unmet fina
 
 ## Campaign records
 
+* [Continuation packet](../handoff/native-migration-continuation.md): paused state, recoverable work
+  and the first steps for the next authorized session.
+* [Preserved evidence and source](evidence/continuation/README.md): portable, hash-bound capsules
+  and explicit local-only gaps.
+* [Progress checklist](PROGRESS.md): accepted work, partial implementation, and remaining phase
+  exits.
 * [Migration contract](CONTRACT.md): scope, decisions, phase exits, and completion evidence.
 * [Legacy baseline inventory](BASELINE.md): exact banked provenance, scoring limits and outstanding
   current controls.
@@ -59,29 +65,40 @@ options, choice, recurring cost, and validation in the PR and relevant ADR.
 
 ## Work ledger
 
-The contract landed in [PR 2691](https://github.com/KyleMit/Splotch/pull/2691), merged at
-d3d4203539143584bc1af96e7652fc7f39f3382b after two Claude review rounds and 13 resolved findings.
-Applicable CI passed except the inherited high-severity `source-map-js@1.2.1` audit failure
-(GHSA-68fv-2mgg-jv7q). [PR 2692](https://github.com/KyleMit/Splotch/pull/2692) repairs the external
-`source-map-js` graph and owns its independent-review and exact-head CI records. Local
-frozen-install, audit, Quality, release-build, and full-test checks pass. Architecture selection,
-candidate acceptance, and new physical-control results remain pending.
+The campaign paused on 2026-10-06 with eight accepted PRs on `codex/native-migration` at
+dc08a90abc67b53124146bf288c80de0f9ffd1dd. This is an accepted-source checkpoint, not a completed
+migration or a final architecture decision. The [progress checklist](PROGRESS.md) separates accepted
+foundation work from pending product and release acceptance.
 
-| Unit                          | State                  | Evidence and next exit                                                                                                                                                                                                                                                |
-| ----------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architecture direction review | Conditional agreement  | Claude reviewed the complete proposal at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4; see the contract's decision summary. No candidate performance was measured.                                                                                                        |
-| Phase 0: migration contract   | Baseline inventoried   | Product, web, native, upgrade and acceptance boundaries are reviewed; BASELINE.md records banked provenance. Current physical controls, measurement mapping and remaining implementation plans are pending before the phase exits.                                    |
-| Dependency health maintenance | source-map-js patched  | Targeted lock repair passes frozen-install, audit, Quality, release-build, and full-test checks locally. PR 2692 records independent review and exact-head CI. The embedded magicast residual is separately bounded.                                                  |
-| Portable drawing defaults     | Plain owners extracted | Shared engine/state/Node values, release budgets and scoped verification are recorded in RENDERER-DEFAULTS.md. [PR 2693](https://github.com/KyleMit/Splotch/pull/2693) merged after two Claude rounds, full tests and green final-head CI.                            |
-| Magic work observation        | Observer implemented   | PERF-only brush/worker/recode counters, six diagnostic spans and contained action reads preserve scored activity. MAGIC-WITNESS.md records contracts and limits; physical attribution and any A1 change remain separate reviewed exits.                               |
-| Phase 1: architecture checks  | In progress            | Two complete Claude plan reviews refine the execution sequence. Portable drawing defaults are extracted; candidate structural proofs and physical comparison remain pending.                                                                                          |
-| Phase 2: foundation           | Pending                | Runnable isolated candidate builds, shared behavior boundaries, native bindings, test/capture entry points, and CI.                                                                                                                                                   |
-| Phase 3: drawing              | Pending                | Complete renderer/input/history/export/audio behaviors behind the selected platform boundary.                                                                                                                                                                         |
-| Phase 4: complete product     | Pending                | Every applicable acceptance scenario has a selected implementation and test/evidence mapping.                                                                                                                                                                         |
-| Phase 5: integrated tuning    | Pending                | Full canonical workloads, complete UI, matched physical-device controls, and release-gate evidence.                                                                                                                                                                   |
-| Phase 6: cutover or retention | Pending                | Applicable target readiness, signed artifacts and upgrade proof, hosted deployment checks and final Claude review; reviewed cutover with retirement of replaced owners, or reviewed retention with remaining owners explicit. All final completion gates still apply. |
+| Accepted unit                            | PR                                                   | Merge commit                             | Result and limit                                                                                                                                                                                                       |
+| ---------------------------------------- | ---------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Migration and acceptance contracts       | [2691](https://github.com/KyleMit/Splotch/pull/2691) | d3d4203539143584bc1af96e7652fc7f39f3382b | Reviewed scope, parity, web, native and upgrade requirements; replacement validation remains pending.                                                                                                                  |
+| Dependency audit repair                  | [2692](https://github.com/KyleMit/Splotch/pull/2692) | 1ceb97338eced2b280964a5a2257ce4933c489d6 | Patched the external source-map-js graph; DEPENDENCY-HEALTH.md bounds the separate embedded residual.                                                                                                                  |
+| Portable drawing defaults                | [2693](https://github.com/KyleMit/Splotch/pull/2693) | d2e77431c4a06bcdea7fe33611a28edd43e8ada2 | Extracted plain value owners while preserving shipping state and startup budgets; this is initial shared groundwork.                                                                                                   |
+| Architecture-check sequence              | [2694](https://github.com/KyleMit/Splotch/pull/2694) | d1402f6b2bedd2c30cbc88d30597466855b33874 | Reviewed bounded checks, fair alternatives, comparison limits and phase exits; it does not select the architecture.                                                                                                    |
+| Read-only Magic work witness             | [2695](https://github.com/KyleMit/Splotch/pull/2695) | e5ab28af553a55841aac35c938fc7b0e19ec9ba7 | Added contained observation without changing scored activity; physical attribution and any suppression remain pending.                                                                                                 |
+| Shared SvelteKit version owner           | [2698](https://github.com/KyleMit/Splotch/pull/2698) | 5ccf8cb1475ba945235bada82c96458a223ccc06 | Corrected build-version agreement before combined topology acceptance.                                                                                                                                                 |
+| Cached Netlify production-install repair | [2699](https://github.com/KyleMit/Splotch/pull/2699) | cbb104976d0840611dff7f5188b9b8712050fe6a | Merged into the topology unit; actual nonproduction hosted installation and release build passed.                                                                                                                      |
+| Isolated Expo candidate package topology | [2697](https://github.com/KyleMit/Splotch/pull/2697) | dc08a90abc67b53124146bf288c80de0f9ffd1dd | Preserved shipping web/Capacitor ownership; full local tests, applicable CI, shipping Android/iOS compilation and combined nonproduction Netlify proof passed. The React Native candidate has not compiled or mounted. |
 
-The ledger is updated in each reviewed unit. Preserve failures and rejected assumptions beside their
+The combined topology acceptance is bound to reviewed source
+9442b27817a61486750b070ff07c880d124571a6 and its resulting merge above. PR 2697 records final Claude
+agreement, resolved findings and exact-head acceptance. Eighteen applicable CI jobs succeeded; four
+jobs were intentionally skipped by their workflow predicates. Shipping Android/iOS compile results
+are not React Native candidate results. Hosted observations establish successful production
+installation, release guards and a live version resource; the bounded rendered log capture is not a
+complete raw build log.
+
+Two isolated units were preserved at the pause. Retained Svelte controls at
+8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6 passed release and delayed-hydration browser checks,
+repeated-evidence preservation and nine negative-control categories locally. Their CI integration,
+final source validation, PR and resumed Claude review remain pending. Native candidate template
+sources and registration are prepared locally but unvalidated. Neither unit has joined the accepted
+integration branch. The [continuation packet](../handoff/native-migration-continuation.md) owns
+recoverable files, local-only gaps, review continuity and the refreshed branch/PR state; do not
+infer acceptance from preparation.
+
+Update this ledger in each reviewed unit. Preserve failures and rejected assumptions beside their
 dispositions. Main continues moving during the campaign: reconcile its product changes into the
 integration branch at phase boundaries and before cutover, using `reconcile-with-main`, and refresh
 dependencies after dependency changes. A new shipping feature joins the acceptance inventory before

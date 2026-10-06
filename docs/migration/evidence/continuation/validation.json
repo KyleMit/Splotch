@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-06T13:47:00.330925+00:00",
+  "scope": "Documentation and passive preservation only; migration paused; no app or prepared-source execution",
+  "acceptedIntegrationHead": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "branch": "codex/migration-continuation-records",
+  "checks": [
+    {
+      "command": "npm run format:check",
+      "exitCode": 0,
+      "scope": "Whole checkout formatting"
+    },
+    {
+      "command": "npm run check:doc-refs",
+      "exitCode": 0,
+      "scope": "Tracked-file documentation references; final run after staging new records"
+    },
+    {
+      "command": "npm run check:adrs",
+      "exitCode": 0,
+      "scope": "ADR integrity"
+    },
+    {
+      "command": "Passive standard-library artifact/member and Git-bundle verification",
+      "exitCode": 0,
+      "artifacts": 6,
+      "archiveMembers": 616,
+      "gitBundles": 2
+    },
+    {
+      "command": "Original migration worktree head/status and native intake identity checks",
+      "exitCode": 0,
+      "nativeFiles": 70,
+      "retainedSourceUnchanged": true,
+      "nativeSourceUnchanged": true
+    }
+  ],
+  "independentPreservationReview": {
+    "agent": "Codex durable_ledger",
+    "verdict": "GO",
+    "materialFindings": 0,
+    "scope": "Artifact identities, member safety/modes/source equality, bundle refs/prerequisites, source continuity, documented recovery entry points and acceptance/review boundaries; read-only, not a Claude unit review",
+    "nonblockingDisposition": "Handoff instructs replacing incoming links in the future handoff-deletion commit"
+  },
+  "historicalFailures": [
+    {
+      "check": "First check:doc-refs before staging",
+      "exitCode": 1,
+      "reason": "New record paths were absent from git ls-files; all five unresolved references passed after staging"
+    },
+    {
+      "check": "dprint fmt cache save",
+      "exitCode": 0,
+      "reason": "Host cache was not writable in sandbox; four source files were formatted and whole checkout format:check passed with nonincremental Markdown checking"
+    }
+  ],
+  "notClaimed": [
+    "No new migration code, dependency install, native build/mount or performance capture",
+    "No original Claude resumption, review-budget reset, ledger adoption or integration merge",
+    "No app/npm test repetition on this docs-only checkpoint; historical acceptance remains exact-source scoped"
+  ]
+}
