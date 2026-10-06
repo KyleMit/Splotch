@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "passed-actual-installed-focused-quality-awaiting-final-head-required-tier-and-review",
+  "status": "passed-installed-focused-quality-awaiting-corrected-sealed-head-required-tier-and-review",
   "advisory": "GHSA-86w9-cpqp-85rv",
   "issue": "https://github.com/KyleMit/Splotch/issues/2696",
   "approvalDate": "2026-10-06",
@@ -24,8 +24,8 @@
     },
     {
       "path": "docs/migration/evidence/native-topology-05/FORGE-MITIGATION.md",
-      "bytes": 12846,
-      "sha256": "34315b21a167c8d941a6c45fe0f1668715b8dc764852ba11bdcaff193c220855"
+      "bytes": 13339,
+      "sha256": "f7f1a34c790c1dc1b2dace3e2bfdcdad7f01e48a05cb550c985ce4c9814fc141"
     },
     {
       "path": "patches/node-forge@1.4.0.patch",
@@ -98,13 +98,23 @@
       "sha256": "ed1f384720615b8bcc7abe95b18db25227ed22e0fe4ec8b9a8d4542ae7709d52"
     },
     {
+      "path": "tools/migration/tests/netlify-topology-witness.test.mjs",
+      "bytes": 11655,
+      "sha256": "53a95b9b047fef0e4b0ae90975dfbfb806e79f45c3269721cab9bb0c4f8673a6"
+    },
+    {
       "path": "tools/migration/tests/ownership.test.mjs",
       "bytes": 7781,
       "sha256": "0c3e8398428cb4603933afcfd0296826529a8edbbaf6f580fba26ac88f0dd3ec"
+    },
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "bytes": 10807,
+      "sha256": "df0ec7f72bf302a182d00bef3ec023e0b723b7364a97b211fb5df83d7957d6e2"
     }
   ],
   "pending": [
-    "Final-head required test tier and independent PR review/CI",
+    "Corrected sealed-head required test tier and independent final review/CI",
     "Clean production install/build and actual hosted proof"
   ],
   "installedRsaSha256AtLockOnlyReview": "fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50",
@@ -118,5 +128,7 @@
   "repairedQuality": "forge-repaired-quality.json",
   "independentSourceReview": "forge-independent-source-review.json",
   "reconciledCodeMap": "committed-code-map.json",
-  "reconciledSourceCommit": "c20bb9f0665f439563268f31901f3fd8eae23c7a"
+  "reconciledSourceCommit": "c20bb9f0665f439563268f31901f3fd8eae23c7a",
+  "nodeFloorObserverRepair": "netlify-floor-owner-repair.json",
+  "predecessorFullTier": "predecessor-f40-full-tests.json"
 }

@@ -67,11 +67,11 @@ function verifyRuntime(root, manifest, facts) {
   assert.equal(facts.env.PNPM_FLAGS, flags, 'Actual production install flags differ');
   const configuredMajor = configValue(config, 'NODE_VERSION');
   const runtime = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(facts.nodeVersion);
-  const floor = /^>=(\d+)\.(\d+)\.(\d+)$/.exec(manifest.engines?.node ?? '');
+  const floor = /^>=(\d+)\.(\d+)(?:\.(\d+))?$/.exec(manifest.engines?.node ?? '');
   assert.ok(runtime && floor, 'Node runtime/floor is not recorded in the reviewed format');
   assert.equal(runtime[1], configuredMajor, 'Actual Node major differs from the configured owner');
   const actual = runtime.slice(1).map(Number);
-  const minimum = floor.slice(1).map(Number);
+  const minimum = floor.slice(1).map((part) => Number(part ?? '0'));
   const firstDifference = actual.findIndex((part, index) => part !== minimum[index]);
   assert.ok(
     firstDifference < 0 || actual[firstDifference] > minimum[firstDifference],

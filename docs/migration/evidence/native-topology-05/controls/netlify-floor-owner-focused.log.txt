@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/netlify-topology-witness.test.mjs tools/migration/tests/ownership.test.mjs tools/ci-mirror/tests/run-quality-checks.test.mjs tools/tests/enumerated-build-paths.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/migration-native-topology/Splotch/tools
+
+
+ Test Files  4 passed (4)
+      Tests  58 passed (58)
+   Start at  02:38:12
+   Duration  234ms (import 42%, tests 33%, transform 24%, worker 1%)
+

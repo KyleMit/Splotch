@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "reviewedPredecessor": "f40dba5ff3c695a885cb9bdf17bf295ed2c946f1",
+  "problem": "Observer rejected actual root engines.node two-component lower bound; default fixture used an invented three-component floor",
+  "correction": "Accept only the existing two- or three-component >= lower-bound vocabulary, normalize omitted patch to0, preserve strict runtime/configured major/minimum/manager/flag checks",
+  "fixtureOwner": "Root package.json engines.node read by the default fixture before its manifest/contract hashes are derived",
+  "controls": [
+    "Real root owner clean production fixture",
+    "Exact >=22.13 floor acceptance and lower minor rejection",
+    "Exact >=22.13.2 floor acceptance and lower patch rejection",
+    "Six unsupported floor shapes rejected specifically by the format assertion",
+    "Existing wrong-major, manager and production-flags rejection preserved"
+  ],
+  "focusedTests": "netlify-floor-owner-focused.json",
+  "quality": "netlify-floor-owner-quality.json",
+  "independentReview": {
+    "reviewer": "Codex candidate_entry independent subagent",
+    "scope": "Read-only exact two-file diff against approved proposal; no imports/tests/edits/install/build/native",
+    "disposition": "No findings; real-owner fixture and specific success/failure controls verified"
+  },
+  "predecessorFullTier": "predecessor-f40-full-tests.json",
+  "pending": [
+    "Corrected sealed-head full required tier, independent final review and CI",
+    "Clean local full/production installs/builds and actual hosted proof"
+  ],
+  "sourceFiles": [
+    {
+      "path": "tools/netlify-topology-witness.mjs",
+      "bytes": 10807,
+      "sha256": "df0ec7f72bf302a182d00bef3ec023e0b723b7364a97b211fb5df83d7957d6e2"
+    },
+    {
+      "path": "tools/migration/tests/netlify-topology-witness.test.mjs",
+      "bytes": 11655,
+      "sha256": "53a95b9b047fef0e4b0ae90975dfbfb806e79f45c3269721cab9bb0c4f8673a6"
+    }
+  ],
+  "status": "focused-and-unchanged-quality-passed; corrected sealed-head required tier/review/production proofs pending"
+}

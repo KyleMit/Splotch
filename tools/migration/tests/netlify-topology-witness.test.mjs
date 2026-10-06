@@ -15,6 +15,7 @@ import { ROOT } from '../../lib/proc.mjs';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 
 const CLI_TIMEOUT_MS = 30_000;
+const ROOT_NODE_FLOOR = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).engines.node;
 const roots = [];
 const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
 const artifact = (name, version) => ({ key: `${name}@${version}`, name, version });
@@ -25,12 +26,12 @@ function put(root, relative, value) {
   writeFileSync(path, typeof value === 'string' ? value : JSON.stringify(value));
 }
 
-function fixture() {
+function fixture(nodeFloor = ROOT_NODE_FLOOR) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-topology-witness-'));
   roots.push(root);
   put(root, 'package.json', {
     packageManager: 'pnpm@11.22.0',
-    engines: { node: '>=22.13.0' },
+    engines: { node: nodeFloor },
     dependencies: { required: '2.0.0' },
   });
   put(root, `${CANDIDATE_DIRECTORY}/package.json`, {
@@ -209,6 +210,33 @@ describe('Netlify topology production-install observer', () => {
       expect(() =>
         inspectNetlifyProductionInstall(root, contract, { ...facts, ...change })
       ).toThrow();
+  });
+
+  it.each([
+    ['>=22.13', 'v22.13.0', 'v22.12.999'],
+    ['>=22.13.2', 'v22.13.2', 'v22.13.1'],
+  ])('accepts the exact floor and rejects the lower boundary for %s', (floor, valid, invalid) => {
+    const { root, contract, facts } = fixture(floor);
+    expect(
+      inspectNetlifyProductionInstall(root, contract, { ...facts, nodeVersion: valid }).disposition
+    ).toBe('production-installed-tree-passed');
+    expect(() =>
+      inspectNetlifyProductionInstall(root, contract, { ...facts, nodeVersion: invalid })
+    ).toThrow('Node is below the root floor');
+  });
+
+  it.each([
+    '>=22',
+    '^22.13.0',
+    '>=22.13.0 || >=24',
+    '>22.13',
+    '>=22.13.0-beta.1',
+    '>=22.13.0 trailing',
+  ])('rejects unsupported engine floor format %s', (floor) => {
+    const { root, contract, facts } = fixture(floor);
+    expect(() => inspectNetlifyProductionInstall(root, contract, facts)).toThrow(
+      'Node runtime/floor is not recorded in the reviewed format'
+    );
   });
 
   it('remains a no-op outside the selected proof ref before reading evidence', () => {

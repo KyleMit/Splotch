@@ -1,0 +1,16 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tools/migration/tests/netlify-topology-witness.test.mjs",
+    "tools/migration/tests/ownership.test.mjs",
+    "tools/ci-mirror/tests/run-quality-checks.test.mjs",
+    "tools/tests/enumerated-build-paths.test.mjs"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 0.476,
+  "log": "controls/netlify-floor-owner-focused.log.txt",
+  "scope": "Reviewed Node-floor observer repair and actual owner/ownership/Quality wiring/build entry guards; no full tier/build/native execution"
+}

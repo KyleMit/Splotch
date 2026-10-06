@@ -166,5 +166,11 @@ in [forge-repaired-topology.json](forge-repaired-topology.json). Registry artifa
 remain unchanged. The initial Quality pass is recorded in [forge-quality.json](forge-quality.json);
 The [repaired Quality run](forge-repaired-quality.json) passed every gate after the bounded
 follow-up. The [independent source reviewer](forge-independent-source-review.json) confirmed closure
-of the helper-entry finding without executing code. The interrupted full tier and final-head CI
-remain pending on the reconciled review head.
+of the helper-entry finding without executing code. The later
+[reconciled predecessor full tier](predecessor-f40-full-tests.json) passed in root session12028. A
+subsequent actual-owner review found that the production observer rejected the root Node floor
+format; the [bounded repair](netlify-floor-owner-repair.json) preserves the existing floor and
+identity checks and adds real-owner and boundary fixtures. Its
+[focused guards](netlify-floor-owner-focused.json) and unchanged
+[Quality mirror](netlify-floor-owner-quality.json) passed. Required full-tier acceptance for the
+corrected sealed head, final review and CI remain pending.
