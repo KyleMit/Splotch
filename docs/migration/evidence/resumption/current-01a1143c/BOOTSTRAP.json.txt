@@ -1,0 +1,91 @@
+{
+  "observedAtUtc": "2026-10-07T02:44:25.736530+00:00",
+  "goalState": "active",
+  "goalThread": "01a1143c-91f7-79e0-95cf-006a16467c64",
+  "acceptedIntegration": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "preservation": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+  "main": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "capsuleVerification": {
+    "exitCode": 0,
+    "artifacts": 7,
+    "members": 663,
+    "records": 7
+  },
+  "advisoryVerification": {
+    "exitCode": 0,
+    "members": 2,
+    "archiveSha256": "ecb9bf1c502b8689f432e99b78a603b8d4165b74aa435e6f96b2f6342f05a166"
+  },
+  "originalReviews": {
+    "F1": {
+      "conversation": "bbe89d5b-644f-4d4f-9366-e5156cebf4ea",
+      "used": 3,
+      "remaining": 0
+    },
+    "L0": {
+      "conversation": "1b406e61-641e-4cf8-86fb-2b1cd7548469",
+      "used": 2,
+      "remaining": 1
+    },
+    "neutral": {
+      "conversation": "8c229c08-f640-4bb6-bf08-6953253da0ee",
+      "used": 1,
+      "remaining": 2
+    },
+    "N1": {
+      "conversation": "7c940639-09e2-4236-961f-1122171cb5d8",
+      "used": 2,
+      "remaining": 1
+    }
+  },
+  "worktrees": [
+    {
+      "owner": "parent",
+      "worktree": "/Users/kylemit/.codex/worktrees/267c/Splotch",
+      "head": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+      "branch": "codex/migration-resume-01a1143c",
+      "porcelainSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "semanticIndexSha256": "ca463a74440d8db2ce19f051c02dfaaad387036a9f2eebf3cfb7dcfc5936a386",
+      "statusEntries": 0
+    },
+    {
+      "owner": "L0",
+      "worktree": "/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch",
+      "head": "b3b16831557dd894186574b9ce3b0c1184b2aab7",
+      "branch": "codex/migration-legacy-continuity",
+      "porcelainSha256": "eeeeb09b71ea61bbcc80e96f9a9ab08ca634f6afbc3a807f135122cbc54eea70",
+      "semanticIndexSha256": "287bb09bc0bb4753ff4512016df3211409eae6a861ee6ed3e9ea0f2fd8cdc52f",
+      "statusEntries": 48,
+      "mergeHead": "78d844ce36845e13690e2ca4ee7fcd645eb128d0"
+    },
+    {
+      "owner": "neutral",
+      "worktree": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch",
+      "head": "cf0c4254d025094054d7ea7faab110da11c96243",
+      "branch": "codex/migration-neutral-react-host",
+      "porcelainSha256": "6e75eed500b1f8404f8606d68edf9a87e49780270701d4241b0c8ccbfafe4378",
+      "semanticIndexSha256": "a348bc496914e91dac8e4c2c3cd9e3a3450512b28958ed48b0876becf79fda8a",
+      "statusEntries": 50
+    },
+    {
+      "owner": "N1",
+      "worktree": "/Users/kylemit/.codex/worktrees/migration-native-source/Splotch",
+      "head": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+      "branch": "codex/migration-native-source",
+      "porcelainSha256": "eda0dca75781254e0b5457ab57c5f52c4050d733335b649161e3c2c4a8a911cb",
+      "semanticIndexSha256": "349b3ceb2b5eb27eb85f7631b263e267ccfa83ea47d72f1cae80b747c799b5c8",
+      "statusEntries": 70
+    },
+    {
+      "owner": "F1",
+      "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+      "head": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+      "branch": "codex/migration-import-boundary",
+      "porcelainSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "semanticIndexSha256": "67398f2802972a5f6f2af46bbb1a6f53c027ef31b5d8ced3831f72e83ca1528f",
+      "statusEntries": 0
+    }
+  ],
+  "resourceLeases": [],
+  "limits": "Resumption and verified preservation only; no implementation, native runtime, physical, continuity or release acceptance."
+}

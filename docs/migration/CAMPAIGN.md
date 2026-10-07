@@ -1,5 +1,37 @@
 # Live migration campaign
 
+The maintainer explicitly resumed the full campaign in Codex chat
+01a1143c-91f7-79e0-95cf-006a16467c64 on 2026-10-06 (America/New_York). The goal is **active**. The
+parent owns integration, acceptance, dependencies and resource leases. The
+[bootstrap receipt](evidence/resumption/current-01a1143c/BOOTSTRAP.json.txt) binds fetched refs,
+capsule verification, actual source locations and original review budgets. Preservation is not
+implementation acceptance. The dated pause records below remain immutable history.
+
+## Current executable register
+
+Accepted integration: cf0c4254d025094054d7ea7faab110da11c96243. Records base:
+74e0f5c5e75b1594433a67a69d9647cfa667911c. Shipping main: ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4.
+No architecture destination is selected.
+
+| Unit                                        | Owner and exact source                                                                                                                                           | State and dependencies                                                                             | Next executable gate                                                                                                                                             | Artifacts and original review budget                                                                                                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1 import ownership                         | Parent; PR2703 e4e9fc044d46d49c3565379a3e6419e8eff4af9d                                                                                                          | Held; changed grammar exceeds final conditional review                                             | Human disposition for an additional original-conversation round; no dependent RN growth                                                                          | [Published evidence](https://github.com/KyleMit/Splotch/blob/e4e9fc044d46d49c3565379a3e6419e8eff4af9d/docs/migration/evidence/import-boundary-01/README.md); bbe89d5b-644f-4d4f-9366-e5156cebf4ea, 3 used / 0 remaining |
+| L0 continuity                               | l0_continuity; PR2708 b3b16831557dd894186574b9ce3b0c1184b2aab7, paused47 inputs plus current repairs, actual MERGE_HEAD 78d844ce36845e13690e2ca4ee7fcd645eb128d0 | Repairing primary-result/evidence finalization and indeterminate ownership; current checks pending | Rejecting/restored ownership controls, check/lint, ordinary pending merge and cf0 composition, then qualified real native reads                                  | [Pause capsules](evidence/resumption/paused-continuation/README.md); 1b406e61-641e-4cf8-86fb-2b1cd7548469, 2 used / 1 remaining, reserved for changed source and executed evidence                                      |
+| Neutral React host                          | neutral_host; actual retained-controls worktree at cf0 with staged50                                                                                             | Qualifying installed/source identities and real consumer/oracle repairs                            | Exact adoption/recovery/retained pixels/history/commands and shared consumers; original source challenge before release-host execution                           | [Pause capsules](evidence/resumption/paused-continuation/README.md); 8c229c08-f640-4bb6-bf08-6953253da0ee, 1 used / 2 remaining; raw75000 lazy ceiling remains hard                                                     |
+| N1 native qualification                     | native_qualification; maintained dc08a90abc67b53124146bf288c80de0f9ffd1dd dirty70; repaired packet remains separate                                              | Source-only; F1 holds dependent growth; runtime/materialization receipts require qualification     | Verify repaired70 against maintained source and accepted owners, qualify actual toolchain/runtime, then optimized RN compile/mount/draw when dependencies permit | [Pause capsules](evidence/resumption/paused-continuation/README.md); 7c940639-09e2-4236-961f-1122171cb5d8, 2 used / 1 remaining                                                                                         |
+| Physical calibration and current causality  | Parent with native_qualification resource enumeration                                                                                                            | Fresh hardware access pending; simulator mechanics cannot score physical gates                     | Re-enumerate actual resources, lease available devices, calibrate common whole-screen visible/readiness observer and refresh shipping controls                   | [Baseline](BASELINE.md), [measurement contract](CONTRACT.md#measurement-and-performance-contract); no current physical acceptance                                                                                       |
+| Product, architecture, upgrades and release | Parent; accepted contract and current shipping owners                                                                                                            | All applicable final gates remain open; depends on qualified consumers and matched evidence        | Faithful product mechanisms/screens, ordered continuity transactions, burden decision, reviewed ADR, signed channels/artifacts and final Codex/Claude review     | [Completion contract](CONTRACT.md#migration-completion), [acceptance](ACCEPTANCE.md), [web](WEB-CONTRACT.md), [upgrades](UPGRADES.md); no completion claim                                                              |
+
+Current host lease: L0 owns sequential scoped controls, check/lint, ordinary pending merge and
+accepted-base composition, then applicable full Browserless/tools gates. Its owned lease receipts
+record the selected unused port, process/start identity, deadlines, closed outputs and release.
+Neutral and native owners continue source/read-only qualification; no native compile/install or
+physical-device lease is granted. Only owned verified handles may be stopped. Workers finalize
+outputs before binding manifests and report individual exits. The parent independently checks
+consequential identities and acceptance evidence.
+
+## Historical paused frontier
+
 The full migration goal is **paused**, unfinished, following the maintainer’s clean-stop request in
 Codex chat01a111b0-d64d-7c22-ab7d-865db89de7e2. The maintainer subsequently authorized durable
 records for a new session; implementation requires the next explicit human continuation instruction.
