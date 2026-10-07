@@ -5,10 +5,11 @@ import {
   writeOwnedJson,
 } from '../../../../tools/migration/lib/web-host-ownership.mjs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
-import { defineConfig, mergeConfig, type Plugin, type ResolvedConfig } from 'vite';
+import { defineConfig, mergeConfig, rolldownVersion, type Plugin, type ResolvedConfig } from 'vite';
 import { readRenderRequest, readRenderedChrome } from './chromeHtml.ts';
 import { pageOverlayPlugin, type PageOverlayBinding } from './pageOverlay.ts';
 import { captureReactGraph, assertReactGraph } from './reactGraph.ts';
+import { createRolldownRuntimeCapture } from './rolldownRuntime.ts';
 import {
   webHostRequest,
   WEB_HOST_ENV,
@@ -124,7 +125,9 @@ function neutralPlugins(owned: ReturnType<typeof ownedControl>): Plugin[] {
   let overlay: PageOverlayBinding | undefined;
   let config: ResolvedConfig | undefined;
   const virtualId = `\0${WEB_HOST_CHROME_VIRTUAL_ID}`;
+  const runtime = createRolldownRuntimeCapture(owned.copy, rolldownVersion);
   return [
+    runtime.plugin,
     pageOverlayPlugin(owned.copy, (binding) => {
       overlay = binding;
     }),
@@ -161,6 +164,7 @@ function neutralPlugins(owned: ReturnType<typeof ownedControl>): Plugin[] {
           overlay,
           bundle,
           plugin: this,
+          runtime,
           context: {
             mode: config.mode,
             nodeEnv: process.env.NODE_ENV,

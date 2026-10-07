@@ -66,12 +66,13 @@ permission is implied.
 
 All six actual shipping postbuild owners remain hard gates. The 75000-byte raw lazy ceiling is
 unchanged. The historical runtime-only 193523-byte experiment remains a failure signal requiring
-complete host costs and an explicit causal disposition. A fresh installed esbuild production module
-diagnostic retaining hydrateRoot, createElement and useSyncExternalStore emitted193583 raw bytes.
-This is a module signal, not a complete Vite host measurement, determinism result or guarantee that
-the host fails a shipping guard. A failed artifact stays failed and ineligible, and its actual
-reader refuses check/serve/browser. A diagnostic mechanism lane cannot establish release eligibility
-or silently change this status.
+complete host costs and an explicit causal disposition. The
+[installed production module diagnostic](evidence/resumption/current-01a1143c/neutral-module-diagnostic/README.md)
+retaining hydrateRoot, createElement and useSyncExternalStore emitted193583 raw bytes. This is a
+module signal, not a complete Vite host measurement, determinism result or guarantee that the host
+fails a shipping guard. A failed artifact stays failed and ineligible, and its actual reader refuses
+check/serve/browser. A diagnostic mechanism lane cannot establish release eligibility or silently
+change this status.
 
 The retained and synthetic HTML checks keep their original scope. The additional neutral browser
 source requires an adopted React client, the exact pending server preimage, the intentional fixture,
@@ -143,10 +144,49 @@ bindings on later failure. Actual caller controls returned 1/0/1/0; the five dur
 files passed 78 tests and targeted five-path ESLint returned 0. Their strict controller separately
 failed on one actual Vitest cache rewrite. Exact captured byte/mode restoration and a distinct
 postqualification proved complete installed/source equality and owned-group release; the strict
-failure remains a failure. These three source repairs and two new tests need fresh full source
-gates, an amended source commit and a new fully guarded cost attempt. Original 8c round two remains
-unspent. Browser mechanics, current full-source acceptance, hosted CI and the complete neutral cost
-disposition remain pending.
+failure remains a failure. At that checkpoint, these three source repairs and two new tests needed
+fresh full source gates, amended publication and a new fully guarded cost attempt. Original 8c round
+two was unspent; browser mechanics, hosted CI and the complete neutral cost disposition remained
+pending.
+
+At the subsequent source59 checkpoint, full-source06 passed check, lint, dead-code, all15 Quality
+checks and all5 Browserless stages, including the complete tools tier once. Exact staged source
+became 478dfe1df5d22014f79700a8f68871e61055a620. Actual cost02 then preserved successful neutral
+compile/render receipts but failed at the graph source fence: the actual core Rolldown runtime had
+no exposed module-info source. Neutral postbuild and complete costs were not measured. The
+[source59/cost02/runtime-control packet](evidence/resumption/neutral-runtime-2026-10-07/README.md)
+preserves those exits and the subsequent tiny qualification; failed artifacts remain ineligible.
+
+The runtime repair observes actual generating source, rendered contributors and normalized
+platform/format; binds exact complete browser/Node source fragments to the selected native producer;
+and validates API/native package agreement and the local exported runtime identity. Actual opposite
+variant, wrong writer stage/format, rebound producer/API, unknown virtual, altered output and
+published-pass negatives reject before restored positives pass. Two scoped files/16 tests and
+eight-path lint passed in16.674853 seconds. Internal rendered consistency and immutable published
+receipt validation remain separate claims. The qualified cache owner measured actual changed
+inventory/digests and retained prior raw bytes for exact restoration; changed raw payloads were not
+retained in that historical attempt.
+
+Accepted records integration ff90042ee807b04145bfb66d32c3704fd2b51c7d was composed through Git.
+Its53 changed paths are docs only; relevant runtime/package/lock owners equal accepted cf0 bytes.
+The eight tested runtime paths were reapplied byte-identically. CI's stale predecessor pins were
+amended to real source59 ancestor 478dfe1df5d22014f79700a8f68871e61055a620 and exact current lock
+5384d18a9b13b4bb4bbe45e533b92afc709e1819dae561bfcaedc06b161dde4a, retaining the same source and
+shipping guards. The changed source needs fresh full gates, publication and a fully guarded actual
+cost attempt before original8c source/disposition round two. That original conversation still has
+one used round and two remaining. Current hosted CI, genuine browser mechanics and final executed
+review remain pending.
+
+Full-source07 stopped at dead-code lint in27.900562 seconds: the internal pass-inventory reader had
+no external production export consumer. Its info step passed; check, lint, Quality and Browserless
+were not run. The failed receipt retains closed outputs, unchanged source/installed identities and
+released groups. The reader remains private, and the actual evidence boundary checks the published
+inventory before reading other artifacts. The revised outer-receipt controls distinguish advance to
+the exact absent render-request owner from corrupt-digest refusal; that advance does not establish
+complete neutral evidence. Full-source08 passed dead-code lint and1065 targeted tests, including
+both actual runtime cases, but failed the existing import-resolution guard on two generated fixture
+imports. Its later gates were not run. The revised fixture construction produces the same child
+source bytes while preserving that guard. Fresh changed-source qualification remains pending.
 
 Deployed CSP/PWA/API/admin/offline, physical/native/product fidelity and final architecture and
 release gates remain in the migration contract. F1 source acceptance remains a separate gate.

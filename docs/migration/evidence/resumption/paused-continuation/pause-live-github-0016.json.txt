@@ -1,0 +1,52 @@
+{
+  "observedAtUtc": "2026-10-07T00:16:00+00:00",
+  "scope": "Native GitHub read-only pause-frontier observations; source/CI/review scopes remain individual receipts",
+  "pullRequests": [
+    {
+      "number": 2703,
+      "url": "https://github.com/KyleMit/Splotch/pull/2703",
+      "title": "fix(migration): enforce candidate import and literal configuration ownership",
+      "state": "open",
+      "merged": false,
+      "draft": true,
+      "base": "codex/native-migration",
+      "base_sha": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+      "head": "codex/migration-import-boundary",
+      "head_sha": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+      "merge_commit_sha": "ebe71ae3a6e80347bb2238bea8acb42d8ee80a00",
+      "updated_at": "2026-10-06T17:12:05Z"
+    },
+    {
+      "number": 2708,
+      "url": "https://github.com/KyleMit/Splotch/pull/2708",
+      "title": "Add source-built legacy continuity fixture controls",
+      "state": "open",
+      "merged": false,
+      "draft": true,
+      "base": "codex/native-migration",
+      "base_sha": "709fadd68ecb802aa2c9daa3fc197ce8d072b23c",
+      "head": "codex/migration-legacy-continuity",
+      "head_sha": "b3b16831557dd894186574b9ce3b0c1184b2aab7",
+      "merge_commit_sha": null,
+      "updated_at": "2026-10-06T22:01:56Z"
+    },
+    {
+      "number": 2709,
+      "url": "https://github.com/KyleMit/Splotch/pull/2709",
+      "title": "Preserve accepted topology publication and migration frontier",
+      "state": "closed",
+      "merged": true,
+      "draft": false,
+      "base": "codex/native-migration",
+      "base_sha": "78d844ce36845e13690e2ca4ee7fcd645eb128d0",
+      "head": "codex/migration-live-frontier-22",
+      "head_sha": "07f3c32c8edca883e240782ebd2e1d66ec81b046",
+      "merge_commit_sha": "cf0c4254d025094054d7ea7faab110da11c96243",
+      "updated_at": "2026-10-06T23:39:59Z"
+    }
+  ],
+  "remoteMain": "ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4",
+  "remoteNativeMigration": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "branchRouteLimit": "Encoded slash branches route rejected INVALID_ARGUMENT; native git/ref/heads route succeeded. This setup refusal is not a rejecting control.",
+  "localSourcePolicy": "Uncommitted source remains host-local and frozen; no implementation acceptance or portability is inferred"
+}

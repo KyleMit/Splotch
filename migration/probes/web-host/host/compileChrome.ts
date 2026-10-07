@@ -1,6 +1,6 @@
 import { mkdirSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { build, type Plugin, type ResolvedConfig } from 'vite';
+import { build, rolldownVersion, type Plugin, type ResolvedConfig } from 'vite';
 import {
   assertOwnedArtifact,
   ownedPath,
@@ -15,6 +15,7 @@ import {
   webHostRequest,
 } from './contract.ts';
 import { captureReactGraph, assertReactGraph, type ReactGraph } from './reactGraph.ts';
+import { createRolldownRuntimeCapture } from './rolldownRuntime.ts';
 import { assertStandaloneReactCompilerConfig, REACT_SSR_SOURCE_PATH } from './reactProduction.ts';
 
 async function compileOwnedChrome(): Promise<void> {
@@ -45,6 +46,7 @@ async function compileOwnedChrome(): Promise<void> {
     relative(root, join(copyRoot, WEB_HOST_REACT_RENDERER_DIRECTORY))
   );
   mkdirSync(outputDirectory);
+  const runtime = createRolldownRuntimeCapture(copyRoot, rolldownVersion);
   let config: ResolvedConfig | undefined;
   let graph: ReactGraph | undefined;
   const receiptPlugin: Plugin = {
@@ -64,6 +66,7 @@ async function compileOwnedChrome(): Promise<void> {
         overlay: null,
         bundle,
         plugin: this,
+        runtime,
         context: {
           mode: config.mode,
           nodeEnv: process.env.NODE_ENV,
@@ -79,7 +82,7 @@ async function compileOwnedChrome(): Promise<void> {
     configFile: false,
     mode: 'production',
     oxc: { jsx: WEB_HOST_JSX },
-    plugins: [receiptPlugin],
+    plugins: [runtime.plugin, receiptPlugin],
     build: {
       ssr: join(copyRoot, REACT_SSR_SOURCE_PATH),
       outDir: outputDirectory,

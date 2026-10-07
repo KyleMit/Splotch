@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import {
   assertReactGraph,
   assertReactContribution,
-  emittedModuleReferences,
 } from '../../../migration/probes/web-host/host/reactGraph.ts';
+import { emittedModuleReferences } from '../../../migration/probes/web-host/host/reactGraphReferences.ts';
 import {
   bindReactFile,
   REACT_DEVELOPMENT_FILES,

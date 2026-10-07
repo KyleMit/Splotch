@@ -18,6 +18,7 @@ interface NeutralEvidenceInputs {
 }
 
 export function assertNeutralEvidence(input: NeutralEvidenceInputs) {
+  const values = readNeutralPassInventory(input.owned, input.passesSha256);
   const renderRequest = readRenderRequest(input.owned, input.copyRoot, input.requestSha256);
   const chrome = readRenderedChrome(
     input.owned,
@@ -30,12 +31,6 @@ export function assertNeutralEvidence(input: NeutralEvidenceInputs) {
     JSON.parse(readFileSync(join(input.copyRoot, WEB_HOST_REACT_RENDERER_GRAPH), 'utf8')),
     'ssr-renderer'
   );
-  const bytes = readFileSync(ownedPath(input.owned, WEB_HOST_NEUTRAL_PASSES));
-  if (!/^[a-f0-9]{64}$/.test(input.passesSha256) || chromeDigest(bytes) !== input.passesSha256)
-    throw new Error('Published neutral pass inventory changed');
-  const values: unknown = JSON.parse(bytes.toString('utf8'));
-  if (!Array.isArray(values) || !values.length)
-    throw new Error('Neutral Kit pass inventory is missing');
   const passes: ReactGraph[] = values.map((value) => {
     if (
       !value ||
@@ -55,6 +50,19 @@ export function assertNeutralEvidence(input: NeutralEvidenceInputs) {
     throw new Error('Neutral Kit passes disagree about the actual overlaid source');
   assertRequiredNeutralContributions(passes);
   return { renderRequest, chrome, rendererGraph, passes };
+}
+
+function readNeutralPassInventory(
+  owned: { root: string; token: string },
+  passesSha256: string
+): unknown[] {
+  const bytes = readFileSync(ownedPath(owned, WEB_HOST_NEUTRAL_PASSES));
+  if (!/^[a-f0-9]{64}$/.test(passesSha256) || chromeDigest(bytes) !== passesSha256)
+    throw new Error('Published neutral pass inventory changed');
+  const values: unknown = JSON.parse(bytes.toString('utf8'));
+  if (!Array.isArray(values) || !values.length)
+    throw new Error('Neutral Kit pass inventory is missing');
+  return values;
 }
 
 export function assertRequiredNeutralContributions(passes: ReactGraph[]): void {

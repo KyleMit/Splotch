@@ -1,0 +1,44 @@
+{
+  "scope": "Records PR2710 original Claude round1 dispositions; no implementation acceptance or budget reset",
+  "reviewedBase": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "reviewedHead": "8d3c37eeb778970d3b0d9b17ae8e7c83f04246eb",
+  "originalConversation": "e8aac07a-f006-4206-bf92-a5ee14840f60",
+  "roundsUsed": 1,
+  "remaining": 2,
+  "reviewId": 5437582887,
+  "reviewUrl": "https://github.com/KyleMit/Splotch/pull/2710#pullrequestreview-5437582887",
+  "rawFindings": {
+    "path": "CLAUDE-ROUND1-FINDINGS.json.txt",
+    "bytes": 9793,
+    "sha256": "44faa7ae8119d359e0a1db400d85f3eace7ffa9b4071f4d0769a779fcf499269"
+  },
+  "dispositions": [
+    {
+      "finding": "Historical handoff contradicts active register",
+      "classification": "valid",
+      "change": "Added active-register supersession preface; the exact bytes from line 9 through EOF equal the reviewed 8d3 file from line 3 through EOF: 18415 bytes, SHA256 1391291e9a922672d8ffd5e63491aab5270a14c832d5538aa4b7f19ad04c1fd6."
+    },
+    {
+      "finding": "Index lock mtime overlaps parent Quality",
+      "classification": "question reveals missing scope annotation",
+      "change": "Recorded exact overlap and actual parent Git administration mapping; same-window owned Quality is plausible, creating process remains unproved; source equality excludes Git administration."
+    },
+    {
+      "finding": "L0 status47 becomes48",
+      "classification": "question resolved by exact status reconstruction",
+      "change": "Added resumed untracked group-observation test reproduces bootstrap hash. Public original955-byte later control receipt binds3307-byte test, separately; bootstrap-time content is not established."
+    },
+    {
+      "finding": "193583 module diagnostic has no public backing",
+      "classification": "valid publication gap",
+      "change": "Preserved eight exact inert original records plus manifest, actual output193583 and production bundler inputs. Historical staged source and193523 experiment remain distinct; no complete-host or Node-cache accounting promotion."
+    }
+  ],
+  "independentCodexFollowup": "records_review checked the four actual repair deltas against8d3, complete diagnostic member equality and original receipt. An initial receipt/source identity mislabel was corrected before publication. Later current-register lease/timestamp annotations and this receipt are outside that followup.",
+  "limits": [
+    "No new Claude round has reviewed the repairs yet.",
+    "Original F1/L0/neutral/N1 conversations and budgets remain unchanged.",
+    "Host-local trust and bootstrap-time content limits remain.",
+    "Frozen register observations do not accept later executions, architecture or completion."
+  ]
+}

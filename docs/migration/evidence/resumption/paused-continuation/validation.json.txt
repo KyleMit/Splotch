@@ -1,0 +1,93 @@
+{
+  "recordedAtUtc": "2026-10-07T01:13:13.492417+00:00",
+  "scope": "Records-only preservation validation; no candidate/product/native/performance/continuity/release acceptance",
+  "campaignGoalStatus": "paused",
+  "acceptedParent": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "packageManifestSha256": "d310ae527b84cf559a96ae86e1f0a51bdbe208cbbb0ef73cf3cc858cbb3d6416",
+  "capsuleVerification": {
+    "exitCode": 0,
+    "artifacts": 7,
+    "members": 663,
+    "immutableRecords": 7,
+    "positiveCorrectDigestRefusalRestoredPositive": true,
+    "priorRejectingControlScope": "Six capsules/655 members/15 standalone records; final serialization archives the same eight Git record bytes and keeps the rejecting/restored digest witness applicable."
+  },
+  "checks": {
+    "format": 0,
+    "typeAndConfigCheck": 0,
+    "lint": 0,
+    "trackedDocumentationReferences": 0,
+    "applicableToolTier": {
+      "exitCode": 0,
+      "testFilesPassed": 329,
+      "testsPassed": 7726
+    }
+  },
+  "unintendedPreparationFailures": [
+    "First doc-reference check refused then-untracked new README; after staging it refused not-yet-written validation receipt. Final actual tracked-file reference check passed. These are records setup failures, not migration rejecting controls."
+  ],
+  "completeChannels": [
+    {
+      "file": "validation-format.log.txt",
+      "commandExitCode": 0,
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "file": "validation-check.log.txt",
+      "commandExitCode": 0,
+      "bytes": 2360,
+      "sha256": "fcc83800a8670d31a1a1989dc11abe0b178e94fb5909a23762f82864f40191a3"
+    },
+    {
+      "file": "validation-lint.log.txt",
+      "commandExitCode": 0,
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "file": "validation-tools.log.txt",
+      "commandExitCode": 0,
+      "bytes": 5632,
+      "sha256": "4052f132afe8d761565d90b0082e395dc6225d2ca1d47dcfa9032d21564bf551"
+    },
+    {
+      "file": "validation-capsule-verification.log.txt",
+      "commandExitCode": 0,
+      "bytes": 272,
+      "sha256": "006a6b3bed1c2047970b08ab81452ede28b5480b0bac50a7e74f88a1198d7bbe"
+    },
+    {
+      "file": "validation-doc-refs.log.txt",
+      "commandExitCode": 1,
+      "bytes": 369,
+      "sha256": "fd4a2211c0ea46f1b5f9cb11e36a07abedb5c38a817c97184ffe7a2f2bc065fd"
+    },
+    {
+      "file": "validation-doc-refs-restored.log.txt",
+      "commandExitCode": 1,
+      "bytes": 378,
+      "sha256": "d3d6c4007e484f4ce1ffb554fcfc17a7989de01ed1727ecbcc1e62e9e9c8bdb1"
+    },
+    {
+      "file": "validation-doc-refs-final.log.txt",
+      "commandExitCode": 0,
+      "bytes": 131,
+      "sha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10"
+    },
+    {
+      "file": "validation-final-verification.log.txt",
+      "commandExitCode": 0,
+      "bytes": 47,
+      "sha256": "6d3550ce976dd3c4b75b4bf050e71da5977229518ea0c0fa533638a1e8b4f143"
+    }
+  ],
+  "independentReview": {
+    "file": "independent-preservation-review.json.txt",
+    "sha256": "8dea0616387be404493d43ebaa62311a78d9aa8dfb4da215f05ef3e6b443cbc1"
+  },
+  "implementationWorkingSourceAndSemanticGitStateUnchanged": true,
+  "newApplicationBuildOrRuntimeEvidence": false,
+  "cutoverOrReleaseAuthorization": false,
+  "state": "complete preservation validation; no implementation acceptance"
+}

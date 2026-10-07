@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { createRequire, isBuiltin } from 'node:module';
-import ts from 'typescript';
+import { emittedModuleReferences } from './reactGraphReferences.ts';
 import type { Rolldown } from 'vite';
 import { chromeDigest } from './chromeHtml.ts';
 import {
@@ -15,10 +15,19 @@ import {
   type ReactFileBinding,
 } from './reactProduction.ts';
 import { overlayPageSource, type PageOverlayBinding } from './pageOverlay.ts';
+import {
+  assertRolldownRuntimeSource,
+  isRolldownRuntimeId,
+  type RolldownRuntimeSource,
+  type createRolldownRuntimeCapture,
+} from './rolldownRuntime.ts';
 import { WEB_HOST_UI_PACKAGES, WEB_HOST_UI_SCOPES, WEB_HOST_REACT_EXTERNALS } from './contract.ts';
 
 export type ReactGraphStage = 'ssr-renderer' | 'kit-client' | 'kit-server';
-type ModuleSource = { kind: 'file'; file: ReactFileBinding } | { kind: 'virtual'; sha256: string };
+type ModuleSource =
+  | { kind: 'file'; file: ReactFileBinding }
+  | { kind: 'virtual'; code: string; sha256: string }
+  | RolldownRuntimeSource;
 interface GraphModule {
   id: string;
   renderedLength: number;
@@ -77,51 +86,13 @@ export function assertReactContribution(id: string): void {
     throw new Error(`Native UI contribution is outside the neutral React slice: ${id}`);
 }
 
-export function emittedModuleReferences(code: string): string[] {
-  const source = ts.createSourceFile(
-    'emitted.mjs',
-    code,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS
-  );
-  const diagnostics = ts.transpileModule(code, {
-    fileName: 'emitted.mjs',
-    reportDiagnostics: true,
-    compilerOptions: {
-      target: ts.ScriptTarget.Latest,
-      module: ts.ModuleKind.ESNext,
-      allowJs: true,
-    },
-  }).diagnostics;
-  if (diagnostics?.some((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error))
-    throw new Error('Emitted JS could not be parsed for literal import evidence');
-  const references = new Set<string>();
-  function visit(node: ts.Node): void {
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    )
-      references.add(node.moduleSpecifier.text);
-    if (
-      ts.isCallExpression(node) &&
-      node.arguments.length === 1 &&
-      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-        (ts.isIdentifier(node.expression) && node.expression.text === 'require')) &&
-      ts.isStringLiteralLike(node.arguments[0])
-    )
-      references.add(node.arguments[0].text);
-    ts.forEachChild(node, visit);
-  }
-  visit(source);
-  return [...references].sort();
-}
-
 function moduleSource(
   id: string,
   copyRoot: string,
-  code: string | null
+  code: string | null,
+  runtime: ReturnType<typeof createRolldownRuntimeCapture>,
+  renderedCode: string | null,
+  stage: ReactGraphStage
 ): { id: string; source: ModuleSource } {
   const unwrapped = id.replace(/^\0/, '');
   const raw = unwrapped.split('?')[0];
@@ -132,10 +103,12 @@ function moduleSource(
       source: { kind: 'file', file },
     };
   }
+  const generated = runtime.source(id, renderedCode, stage);
+  if (generated) return { id, source: generated };
   if (!id.startsWith('\0') || typeof code !== 'string')
     throw new Error(`Contributing module has no canonical source binding: ${id}`);
   assertReactContribution(id);
-  return { id, source: { kind: 'virtual', sha256: chromeDigest(code) } };
+  return { id, source: { kind: 'virtual', code, sha256: chromeDigest(code) } };
 }
 
 function graphPackages(copyRoot: string, chunks: GraphChunk[]): ReactFileBinding[] {
@@ -163,6 +136,7 @@ export async function captureReactGraph(value: {
   overlay: PageOverlayBinding | null;
   bundle: Rolldown.OutputBundle;
   plugin: Rolldown.PluginContext;
+  runtime: ReturnType<typeof createRolldownRuntimeCapture>;
 }): Promise<ReactGraph> {
   const context = assertReactBuildContext(value.context);
   const outputNames = new Set(Object.keys(value.bundle));
@@ -174,7 +148,10 @@ export async function captureReactGraph(value: {
         const source = moduleSource(
           id,
           value.copyRoot,
-          value.plugin.getModuleInfo(id)?.code ?? null
+          value.plugin.getModuleInfo(id)?.code ?? null,
+          value.runtime,
+          rendered.code,
+          value.stage
         );
         if (rendered.renderedLength > 0) assertReactContribution(source.id);
         return { ...source, renderedLength: rendered.renderedLength };
@@ -228,7 +205,10 @@ export async function captureReactGraph(value: {
         ? moduleSource(
             chunk.facadeModuleId,
             value.copyRoot,
-            value.plugin.getModuleInfo(chunk.facadeModuleId)?.code ?? null
+            value.plugin.getModuleInfo(chunk.facadeModuleId)?.code ?? null,
+            value.runtime,
+            null,
+            value.stage
           ).id
         : null,
       modules,
@@ -288,7 +268,7 @@ function graphOverlay(
   return expected;
 }
 
-function graphModule(copyRoot: string, input: unknown): GraphModule {
+function graphModule(copyRoot: string, input: unknown, stage: ReactGraphStage): GraphModule {
   const module = object(input, ['id', 'renderedLength', 'source']);
   if (
     typeof module.id !== 'string' ||
@@ -303,22 +283,44 @@ function graphModule(copyRoot: string, input: unknown): GraphModule {
     throw new Error('Missing React contributor source');
   const kind = object(
     sourceValue,
-    sourceValue.kind === 'file' ? ['kind', 'file'] : ['kind', 'sha256']
+    sourceValue.kind === 'file'
+      ? ['kind', 'file']
+      : sourceValue.kind === 'rolldown-runtime'
+        ? [
+            'kind',
+            'apiVersion',
+            'target',
+            'producer',
+            'rawCode',
+            'rawSha256',
+            'renderedCode',
+            'renderedSha256',
+          ]
+        : ['kind', 'code', 'sha256']
   );
   if (kind.kind === 'file') {
     const [binding] = assertReactFileBindings(copyRoot, [kind.file]);
     if (module.id.replace(/^\0/, '').split('?')[0] !== binding.path)
       throw new Error('Contributor ID disagrees with its bound source');
     source = { kind: 'file', file: binding };
+  } else if (kind.kind === 'rolldown-runtime') {
+    source = assertRolldownRuntimeSource(
+      copyRoot,
+      module.id,
+      sourceValue,
+      Number(module.renderedLength),
+      stage
+    );
   } else {
     if (
       kind.kind !== 'virtual' ||
       !module.id.startsWith('\0') ||
-      typeof kind.sha256 !== 'string' ||
-      !/^[a-f0-9]{64}$/.test(kind.sha256)
+      typeof kind.code !== 'string' ||
+      kind.sha256 !== chromeDigest(kind.code) ||
+      isRolldownRuntimeId(copyRoot, module.id)
     )
       throw new Error('Malformed virtual contributor');
-    source = { kind: 'virtual', sha256: kind.sha256 };
+    source = { kind: 'virtual', code: kind.code, sha256: chromeDigest(kind.code) };
   }
   if (Number(module.renderedLength) > 0) assertReactContribution(module.id);
   return { id: module.id, renderedLength: Number(module.renderedLength), source };
@@ -396,7 +398,7 @@ function graphChunk(
     !Array.isArray(row.externals)
   )
     throw new Error('Malformed React chunk contributors');
-  const modules = row.modules.map((value) => graphModule(copyRoot, value));
+  const modules = row.modules.map((value) => graphModule(copyRoot, value, stage));
   if (new Set(modules.map((module) => module.id)).size !== modules.length)
     throw new Error('Duplicate React contributor');
   const imports = strings(row.imports);

@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 check:doc-refs
+> node tools/check-doc-references.mjs
+
+✓ Doc references: every repo path and npm script resolves

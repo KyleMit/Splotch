@@ -1,0 +1,10 @@
+
+> splotch@1.6.0 check:doc-refs
+> node tools/check-doc-references.mjs
+
+✗ Doc references: 1 unresolved reference(s)
+
+  docs/migration/CAMPAIGN.md:8  link evidence/resumption/paused-continuation/README.md
+
+Update each reference to what it now names, or delete it if the thing is gone.
+A reference that must stay unresolvable goes in ALLOWED_REFERENCES with its reason.
