@@ -196,7 +196,13 @@ function sandbox() {
       './fixture-config': { fixtureConfig: config },
       './held-reader': reader,
       './held-owner': heldOwner,
-      './settings-parser': {},
+      './settings-parser': {
+        async parsedSettings() {
+          events.push('settings-parse');
+          if (state.parserFailure) throw new Error('L0_TEST_PARSER_FAILED');
+          return { parsed: true };
+        },
+      },
     },
     {
       location: {
@@ -219,6 +225,27 @@ async function initialized() {
 }
 
 describe('actual held fixture control sequencing with finite IO doubles', () => {
+  it('requires a complete raw snapshot and fresh document for parser activation', async () => {
+    const value = sandbox();
+    await expect(value.run('parse', NONCE)).rejects.toThrow(/L0_RAW_SNAPSHOT_REQUIRED/);
+    expect(value.events).not.toContain('settings-parse');
+    await value.run('raw', NONCE);
+    expect((await value.run('parse', NONCE)).result).toEqual({ parsed: true });
+    await expect(value.run('parse', NONCE)).rejects.toThrow(/L0_PARSE_REQUIRES_FRESH_DOCUMENT/);
+    expect(value.events.filter((event) => event === 'settings-parse')).toHaveLength(1);
+    const restored = await initialized();
+    expect((await restored.run('parse', NONCE)).result).toEqual({ parsed: true });
+  });
+
+  it('retains a real parser rejection until the fresh-document positive', async () => {
+    const value = await initialized();
+    value.state.parserFailure = true;
+    await expect(value.run('parse', NONCE)).rejects.toThrow(/L0_TEST_PARSER_FAILED/);
+    await expect(value.run('parse', NONCE)).rejects.toThrow(/L0_PARSE_REQUIRES_FRESH_DOCUMENT/);
+    const restored = await initialized();
+    expect((await restored.run('parse', NONCE)).result).toEqual({ parsed: true });
+  });
+
   it('refuses an omitted native control marker and restores the complete raw snapshot', async () => {
     const value = sandbox();
     value.state.omitObservedKey = value.config.heldUndefinedOwnerKey;

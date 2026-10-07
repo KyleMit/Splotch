@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { verifyRunnerInputs } from '../runner-inputs.mjs';
 import { digest } from '../contract.mjs';
+import { FIXTURE_COMPILER_INPUTS } from '../fixture-source-namespace.mjs';
 
 const selectorControl = vi.hoisted(() => ({
   bytes: Buffer.from('host-only qualified selector fixture'),
@@ -26,6 +27,7 @@ vi.mock('node:fs', async (importOriginal) => {
 function inputs() {
   const capabilityDirectory = join(ROOT, 'tools/migration/legacy-continuity');
   return [
+    ...FIXTURE_COMPILER_INPUTS,
     ...readdirSync(capabilityDirectory)
       .filter((name) => name.endsWith('.mjs'))
       .map((name) => join(capabilityDirectory, name)),
@@ -51,6 +53,7 @@ describe('legacy current runner source boundary', () => {
     for (const name of [
       'proc.mjs',
       'materialize.mjs',
+      'fixture-source-namespace.mjs',
       'ios-receipt.mjs',
       'native-overlay.mjs',
       'command-failure.mjs',
@@ -59,6 +62,10 @@ describe('legacy current runner source boundary', () => {
         verifyRunnerInputs({
           runnerInputs: runnerInputs.filter((input) => !input.path.endsWith('/' + name)),
         })
+      ).toThrow(/INPUT_MISSING/);
+    for (const path of FIXTURE_COMPILER_INPUTS)
+      expect(() =>
+        verifyRunnerInputs({ runnerInputs: runnerInputs.filter((input) => input.path !== path) })
       ).toThrow(/INPUT_MISSING/);
     expect(() =>
       verifyRunnerInputs({

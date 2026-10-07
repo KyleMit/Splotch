@@ -1,8 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import {
   FIXTURE_DEBUG_SIGNING,
   digest,
@@ -28,9 +36,15 @@ vi.mock('node:fs', async (original) => {
   return {
     ...fs,
     ...Object.fromEntries(
-      ['existsSync', 'mkdirSync', 'readFileSync', 'rmSync', 'statSync', 'writeFileSync'].map(
-        (name) => [name, (path, ...args) => fs[name](actualPath(path), ...args)]
-      )
+      [
+        'existsSync',
+        'lstatSync',
+        'mkdirSync',
+        'readFileSync',
+        'rmSync',
+        'statSync',
+        'writeFileSync',
+      ].map((name) => [name, (path, ...args) => fs[name](actualPath(path), ...args)])
     ),
     realpathSync: (path) =>
       path === extraction.actualParent ? extraction.virtualParent : fs.realpathSync(path),
@@ -74,8 +88,19 @@ const ACTUAL_PATHS = [
   'ios/App/App.xcodeproj/project.pbxproj',
   'web/src/lib/drawing/unsavedPictureStore.ts',
 ];
+function actualWebSources(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return actualWebSources(path);
+    return entry.isFile() ? [[relative(ROOT, path), readFileSync(path)]] : [];
+  });
+}
+
 const actualSource = () =>
-  new Map(ACTUAL_PATHS.map((path) => [path, readFileSync(join(ROOT, path))]));
+  new Map([
+    ...ACTUAL_PATHS.map((path) => [path, readFileSync(join(ROOT, path))]),
+    ...actualWebSources(join(ROOT, 'web/src')),
+  ]);
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 
 function prepare(source) {
@@ -137,6 +162,14 @@ describe('actual materializer debug composition with finite source extraction do
     expect(readFileSync(join(ROOT, GRADLE_PATH))).toEqual(source.get(GRADLE_PATH));
     expect(existsSync(join(receipt.root, FIXTURE_DEBUG_SIGNING.keystoreName))).toBe(false);
     expect(existsSync(join(receipt.root, FIXTURE_DEBUG_SIGNING.propertiesName))).toBe(false);
+    const copies = receipt.fixtureOwnerNamespace.ownerCopies;
+    const storage = copies.filter((owner) => owner.source === 'web/src/lib/storage.ts');
+    expect(storage).toHaveLength(1);
+    const storageEdges = [...copies, ...receipt.fixtureOwnerNamespace.fixtureRewrites]
+      .flatMap((owner) => owner.substitutions)
+      .filter((edge) => edge.runtime && edge.sourceTarget === storage[0].source);
+    expect(storageEdges.length).toBeGreaterThan(3);
+    expect([...new Set(storageEdges.map((edge) => edge.target))]).toEqual([storage[0].target]);
   });
 
   it('refuses a missing guard in its ordering assertion and restores actual composition', () => {

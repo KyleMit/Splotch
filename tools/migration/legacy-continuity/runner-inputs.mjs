@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { digest } from './contract.mjs';
+import { FIXTURE_COMPILER_INPUTS } from './fixture-source-namespace.mjs';
 
 const RUNNER_MODULES = [
   'run-fixture.mjs',
@@ -21,6 +22,7 @@ const RUNNER_MODULES = [
   'cdp-session.mjs',
   'source-inputs.mjs',
   'materialize.mjs',
+  'fixture-source-namespace.mjs',
   'native-overlay.mjs',
   'ios-receipt.mjs',
 ];
@@ -28,6 +30,7 @@ const RUNNER_MODULES = [
 export function verifyRunnerInputs(lease) {
   assert.ok(Array.isArray(lease.runnerInputs), 'L0_RUNNER_INPUTS_REQUIRED');
   const required = [
+    ...FIXTURE_COMPILER_INPUTS,
     ...RUNNER_MODULES.map((name) => fileURLToPath(new URL(name, import.meta.url))),
     fileURLToPath(new URL('../../lib/proc.mjs', import.meta.url)),
     process.execPath,

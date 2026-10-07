@@ -12,14 +12,9 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
-import {
-  FIXTURE_PATH,
-  FIXTURE_DEBUG_SIGNING,
-  digest,
-  exposeHeldRecognizer,
-  replaceOnce,
-} from './contract.mjs';
+import { FIXTURE_PATH, FIXTURE_DEBUG_SIGNING, digest, replaceOnce } from './contract.mjs';
 import { nativeOverlay } from './native-overlay.mjs';
+import { relocateFixtureOwners, verifyFixtureOwners } from './fixture-source-namespace.mjs';
 import { inspectSource, sourceTree } from './source-inputs.mjs';
 
 const MATERIALIZATION_TIMEOUT_MS = 120_000;
@@ -84,15 +79,7 @@ function fixtureOverlay(root, input) {
   const route = 'web/src/routes/legacy-continuity.html';
   const nativeConfig = structuredClone(input.nativeConfig);
   nativeConfig.server.appStartPath = FIXTURE_PATH;
-  const heldOwnerPath = 'web/src/lib/drawing/unsavedPictureStore.ts';
-  const heldOverlay =
-    input.role === 'released'
-      ? {}
-      : {
-          [heldOwnerPath]: exposeHeldRecognizer(readFileSync(join(root, heldOwnerPath), 'utf8')),
-        };
-  return {
-    ...heldOverlay,
+  const fixtures = {
     'capacitor.config.json': JSON.stringify(nativeConfig, null, 2) + '\n',
     'android/app/build.gradle': debugSigningOverlay(root, read),
     [`${route}/+page.svelte`]: read('page.svelte.template'),
@@ -106,7 +93,11 @@ function fixtureOverlay(root, input) {
     [`${route}/held-owner.ts`]: read(
       input.role === 'released' ? 'held-released.ts.template' : 'held-main.ts.template'
     ),
-    ...nativeOverlay(root, input.configuration, templates),
+  };
+  const namespace = relocateFixtureOwners(root, input, fixtures);
+  return {
+    namespace,
+    overlay: { ...namespace.files, ...nativeOverlay(root, input.configuration, templates) },
   };
 }
 
@@ -133,7 +124,7 @@ export function materializeFixture(repo, role, output) {
   });
   verifyExtractedFiles(root, entries);
   rmSync(archive);
-  const overlay = fixtureOverlay(root, input);
+  const { overlay, namespace } = fixtureOverlay(root, { ...input, sourceFiles: entries });
   const changes = Object.entries(overlay).map(([path, text]) => {
     const target = join(root, path);
     const before = existsSync(target) ? digest(readFileSync(target)) : null;
@@ -146,6 +137,7 @@ export function materializeFixture(repo, role, output) {
       bytes: Buffer.byteLength(text),
     };
   });
+  verifyFixtureOwners(root, namespace);
   const toolPaths = [
     ...readdirSync(import.meta.dirname).filter((name) => name.endsWith('.mjs')),
     ...readdirSync(join(import.meta.dirname, 'templates')).map((name) => `templates/${name}`),
@@ -161,6 +153,7 @@ export function materializeFixture(repo, role, output) {
     tools,
     sourceFiles: entries,
     overlay: changes,
+    fixtureOwnerNamespace: namespace.receipt,
   };
   writeFileSync(join(root, '.splotch-l0-source.json'), JSON.stringify(receipt, null, 2) + '\n');
   return receipt;
