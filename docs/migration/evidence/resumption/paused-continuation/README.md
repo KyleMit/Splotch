@@ -10,9 +10,10 @@ implementation.
 
 ## Contents
 
-The [manifest](manifest.json.txt) binds every outer capsule and member by safe relative path,
-source, byte count, SHA256 and mode. Absolute paths are old-host provenance; member paths are
-portable.
+The [manifest](manifest.json.txt) binds outer capsules and standalone records by byte count and
+SHA256. Archive members also have enforced safe relative paths and modes. Standalone recorded modes
+are historical provenance: Git preserves only their executable bit, and the verifier does not check
+their filesystem modes. Absolute paths are old-host provenance; member paths are portable.
 
 | Capsule                          | Scope                                                                                                                                                                                                                                                       |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
