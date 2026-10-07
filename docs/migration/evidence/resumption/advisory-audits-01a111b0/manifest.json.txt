@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "preservedAtUtc": "2026-10-07T01:58:46.076353+00:00",
+  "campaignGoalStatus": "paused",
+  "acceptedIntegration": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "priorPreservation": "e13d534fd7f169f9a8d2bafe05fb1de635a69b5e",
+  "scope": "Exact advisory report bytes only, including recovered historical source appendix. No substantive unit round, source repair, architecture decision, empirical acceptance or resumption is implied.",
+  "artifact": {
+    "file": "reports.tar.gz",
+    "kind": "tar.gz",
+    "bytes": 1373503,
+    "sha256": "ecb9bf1c502b8689f432e99b78a603b8d4165b74aa435e6f96b2f6342f05a166",
+    "entries": [
+      {
+        "member": "coordination/COORDINATION-AUDIT.md",
+        "source": "/Users/kylemit/Code/Splotch/logs/session-coordination-audit-01a111b0/COORDINATION-AUDIT.md",
+        "bytes": 5743171,
+        "mode": "0o644",
+        "sha256": "8164e664ef32bee8f5e55b8ef4c7496a4ef492b4eebab89139eeb814bd7a453f"
+      },
+      {
+        "member": "technical/REPORT.md",
+        "source": "/Users/kylemit/Code/Splotch/logs/migration-progress-review-01a111b0/REPORT.md",
+        "bytes": 59299,
+        "mode": "0o644",
+        "sha256": "883870a7ae784fdcf9ee945f21995366427c73d8e2a2c69007d3358f760658f1"
+      }
+    ]
+  },
+  "excluded": "Reports link to host-local raw transcripts, supporting audit files and original tool state. These are not exported by this two-report capsule."
+}

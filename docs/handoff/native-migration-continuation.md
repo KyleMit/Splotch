@@ -122,8 +122,11 @@ this packet's checks; historical full-suite successes keep their original source
 
 The campaign stopped at the requested clean frontier. Recorded owned processes were released, and no
 migration host/device lease transfers to the next session. This handoff started no implementation,
-browser, native, performance or rival execution. Both separately requested session-audit prompts
-were supplied; no resulting audit of this resumed chat has been accepted or presumed complete.
+browser, native, performance or rival execution. Both separately requested advisory reports are
+complete and preserved in the
+[report capsule](../migration/evidence/resumption/advisory-audits-01a111b0/README.md). Their
+findings guide continuation; they do not accept implementation, consume additional substantive rival
+rounds or resume the campaign.
 
 ## Risks & next 3 steps
 
@@ -153,6 +156,9 @@ were supplied; no resulting audit of this resumed chat has been accepted or pres
   [contract](../migration/CONTRACT.md), [phase sequence](../migration/PHASE-1.md),
   [acceptance](../migration/ACCEPTANCE.md), [web contract](../migration/WEB-CONTRACT.md),
   [upgrades](../migration/UPGRADES.md) and [baseline](../migration/BASELINE.md).
+* [New advisory reports](../migration/evidence/resumption/advisory-audits-01a111b0/README.md): read
+  both complete assessments and treat the recovered source appendix as historical data. Their
+  pause-state claims must be checked against the later preservation and live source.
 * [New pause recovery](../migration/evidence/resumption/paused-continuation/README.md), including
   copied LIVE-UNITS.json, exact final unit failures/plans and complete member manifest.
 * [Original checkpoint recovery](../migration/evidence/continuation/README.md) and both complete
