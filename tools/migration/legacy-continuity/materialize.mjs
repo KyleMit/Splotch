@@ -18,6 +18,7 @@ import { relocateFixtureOwners, verifyFixtureOwners } from './fixture-source-nam
 import { inspectSource, sourceTree } from './source-inputs.mjs';
 
 const MATERIALIZATION_TIMEOUT_MS = 120_000;
+const SOURCE_ARCHIVE_PERMISSION_CONFIG = 'tar.umask=0022';
 
 function assertNewOwnedRoot(output) {
   const proposed = resolve(output);
@@ -43,8 +44,8 @@ function verifyExtractedFiles(root, entries) {
     assert.equal(blob, entry.blob, `L0_SOURCE_BYTES_CHANGED: ${entry.path}`);
     assert.equal(bytes.length, entry.bytes, `L0_SOURCE_LENGTH_CHANGED: ${entry.path}`);
     assert.equal(
-      Boolean(statSync(join(root, entry.path)).mode & 0o111),
-      entry.mode === '100755',
+      statSync(join(root, entry.path)).mode & 0o777,
+      Number.parseInt(entry.mode.slice(-3), 8),
       `L0_SOURCE_MODE_CHANGED: ${entry.path}`
     );
   }
@@ -115,11 +116,22 @@ export function materializeFixture(repo, role, output) {
       state: 'materializing-source-only',
     }) + '\n'
   );
-  execFileSync('git', ['archive', '--format=tar', `--output=${archive}`, input.revision], {
-    cwd: repo,
-    timeout: MATERIALIZATION_TIMEOUT_MS,
-  });
-  execFileSync('tar', ['-xf', archive, '-C', root], {
+  execFileSync(
+    'git',
+    [
+      '-c',
+      SOURCE_ARCHIVE_PERMISSION_CONFIG,
+      'archive',
+      '--format=tar',
+      `--output=${archive}`,
+      input.revision,
+    ],
+    {
+      cwd: repo,
+      timeout: MATERIALIZATION_TIMEOUT_MS,
+    }
+  );
+  execFileSync('tar', ['-xpf', archive, '-C', root], {
     timeout: MATERIALIZATION_TIMEOUT_MS,
   });
   verifyExtractedFiles(root, entries);

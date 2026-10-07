@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -24,6 +26,12 @@ const extraction = vi.hoisted(() => ({
   virtualParent: null,
   source: null,
   input: null,
+  sourceModes: null,
+  realArchive: false,
+  archiveWithoutPermissions: false,
+  noncanonicalArchiveMask: false,
+  actualArchiveCommands: [],
+  changedExtractedMode: null,
 }));
 vi.mock('node:fs', async (original) => {
   const fs = await original();
@@ -37,6 +45,7 @@ vi.mock('node:fs', async (original) => {
     ...fs,
     ...Object.fromEntries(
       [
+        'chmodSync',
         'existsSync',
         'lstatSync',
         'mkdirSync',
@@ -56,33 +65,80 @@ vi.mock('../source-inputs.mjs', () => ({
     [...extraction.source].map(([path, bytes]) => ({
       path,
       bytes: bytes.length,
-      mode: '100644',
+      mode: extraction.sourceModes.get(path),
       blob: createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),
     })),
 }));
-vi.mock('node:child_process', () => ({
-  execFileSync(command, args) {
-    if (command === 'git') {
-      writeFileSync(
-        args.find((value) => value.startsWith('--output=')).slice('--output='.length),
-        'source extraction double'
-      );
+vi.mock('node:child_process', async (original) => {
+  const childProcess = await original();
+  return {
+    execFileSync(command, args, options) {
+      if (command === 'git') {
+        if (extraction.realArchive) {
+          const actualArgs = args.map((value) =>
+            value.startsWith('--output=')
+              ? '--output=' +
+                extraction.actualParent +
+                value.slice('--output='.length + extraction.virtualParent.length)
+              : value
+          );
+          if (extraction.noncanonicalArchiveMask) {
+            const maskIndex = actualArgs.indexOf('tar.umask=0022');
+            if (maskIndex < 0) throw new Error('L0_TEST_ARCHIVE_MASK_OWNER_MISSING');
+            actualArgs[maskIndex] = 'tar.umask=0002';
+          }
+          extraction.actualArchiveCommands.push([...actualArgs]);
+          return childProcess.execFileSync(
+            command,
+            [...actualArgs, '--', ...extraction.source.keys()],
+            {
+              ...options,
+              timeout: ARCHIVE_TEST_TIMEOUT_MS,
+            }
+          );
+        }
+        writeFileSync(
+          args.find((value) => value.startsWith('--output=')).slice('--output='.length),
+          'source extraction double'
+        );
+        return Buffer.alloc(0);
+      }
+      if (command !== 'tar') throw new Error(`L0_TEST_COMMAND_UNEXPECTED: ${command}`);
+      const root = args[args.indexOf('-C') + 1];
+      if (extraction.realArchive) {
+        const actualArgs = args.map((value) =>
+          value.startsWith(extraction.virtualParent + '/')
+            ? extraction.actualParent + value.slice(extraction.virtualParent.length)
+            : value
+        );
+        if (extraction.archiveWithoutPermissions) actualArgs[0] = '-xf';
+        const result = childProcess.execFileSync(command, actualArgs, {
+          ...options,
+          timeout: ARCHIVE_TEST_TIMEOUT_MS,
+        });
+        if (extraction.changedExtractedMode) {
+          const { path, mode } = extraction.changedExtractedMode;
+          chmodSync(join(root, path), mode);
+        }
+        return result;
+      }
+      for (const [path, bytes] of extraction.source) {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), bytes);
+        chmodSync(join(root, path), Number.parseInt(extraction.sourceModes.get(path).slice(-3), 8));
+      }
       return Buffer.alloc(0);
-    }
-    if (command !== 'tar') throw new Error(`L0_TEST_COMMAND_UNEXPECTED: ${command}`);
-    const root = args[args.indexOf('-C') + 1];
-    for (const [path, bytes] of extraction.source) {
-      mkdirSync(dirname(join(root, path)), { recursive: true });
-      writeFileSync(join(root, path), bytes);
-    }
-    return Buffer.alloc(0);
-  },
-}));
+    },
+  };
+});
 
 const ROOT = resolve(import.meta.dirname, '../../../..');
+const ARCHIVE_TEST_TIMEOUT_MS = 5_000;
 const GRADLE_PATH = 'android/app/build.gradle';
 const ACTUAL_PATHS = [
   GRADLE_PATH,
+  'android/gradlew',
+  'web/browserTargets.ts',
   'android/app/src/main/java/art/splotch/app/MainActivity.java',
   'ios/App/App/MainViewController.swift',
   'ios/App/App.xcodeproj/project.pbxproj',
@@ -108,6 +164,12 @@ function prepare(source) {
   extraction.actualParent = parent;
   extraction.virtualParent = `/private/tmp/${parent.split('/').at(-1)}`;
   extraction.source = source;
+  extraction.sourceModes = new Map(
+    [...source.keys()].map((path) => [
+      path,
+      statSync(join(ROOT, path)).mode & 0o111 ? '100755' : '100644',
+    ])
+  );
   const picture = readFileSync(join(ROOT, 'web/static/favicon-96x96.png'));
   const configuration = {
     ...sourceConfiguration(
@@ -135,6 +197,12 @@ afterEach(() => {
   extraction.virtualParent = null;
   extraction.source = null;
   extraction.input = null;
+  extraction.sourceModes = null;
+  extraction.realArchive = false;
+  extraction.archiveWithoutPermissions = false;
+  extraction.noncanonicalArchiveMask = false;
+  extraction.actualArchiveCommands = [];
+  extraction.changedExtractedMode = null;
 });
 
 function expectPrePluginRefusal(source) {
@@ -170,6 +238,45 @@ describe('actual materializer debug composition with finite source extraction do
       .filter((edge) => edge.runtime && edge.sourceTarget === storage[0].source);
     expect(storageEdges.length).toBeGreaterThan(3);
     expect([...new Set(storageEdges.map((edge) => edge.target))]).toEqual([storage[0].target]);
+  });
+
+  it('preserves real archived source permissions under a private umask and rejects changed modes', () => {
+    const run = prepare(actualSource());
+    extraction.input.revision = 'HEAD';
+    extraction.realArchive = true;
+    const originalUmask = process.umask(0o077);
+    try {
+      const positive = run('private-archive-positive');
+      expect(extraction.actualArchiveCommands[0].slice(0, 3)).toEqual([
+        '-c',
+        'tar.umask=0022',
+        'archive',
+      ]);
+      expect(statSync(join(positive.root, 'web/browserTargets.ts')).mode & 0o777).toBe(0o644);
+      expect(statSync(join(positive.root, 'android/gradlew')).mode & 0o777).toBe(0o755);
+      expect(statSync(positive.root).mode & 0o777).toBe(0o700);
+      expect(statSync(join(positive.root, '.splotch-l0-source.json')).mode & 0o777).toBe(0o600);
+
+      extraction.noncanonicalArchiveMask = true;
+      expect(() => run('private-archive-header-mask-changed')).toThrow(
+        /L0_SOURCE_MODE_CHANGED: android\/app\/build.gradle/
+      );
+      extraction.noncanonicalArchiveMask = false;
+
+      extraction.archiveWithoutPermissions = true;
+      expect(() => run('private-archive-masked')).toThrow(/L0_SOURCE_MODE_CHANGED/);
+      extraction.archiveWithoutPermissions = false;
+      extraction.changedExtractedMode = { path: 'android/gradlew', mode: 0o700 };
+      expect(() => run('private-archive-executable-changed')).toThrow(
+        /L0_SOURCE_MODE_CHANGED: android\/gradlew/
+      );
+      extraction.changedExtractedMode = null;
+      const restored = run('private-archive-restored');
+      expect(statSync(join(restored.root, 'web/browserTargets.ts')).mode & 0o777).toBe(0o644);
+      expect(statSync(join(restored.root, 'android/gradlew')).mode & 0o777).toBe(0o755);
+    } finally {
+      process.umask(originalUmask);
+    }
   });
 
   it('refuses a missing guard in its ordering assertion and restores actual composition', () => {
