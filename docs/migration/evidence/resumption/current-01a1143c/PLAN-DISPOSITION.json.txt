@@ -1,0 +1,42 @@
+{
+  "scope": "Independent resumption-plan question at records74; not F1/L0/N1/neutral source acceptance or PR2710 diff review",
+  "originalUnitBudgetsUnchanged": true,
+  "reviewedBase": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+  "reviewedHead": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+  "conversation": "8ae9b1b0-fe58-4dfc-9f37-d86f9908c7ea",
+  "members": [
+    {
+      "path": "plan-challenge.json.txt",
+      "bytes": 7549,
+      "sha256": "a5fd926ae6626240c06370b42449bb020ae719b57684ad7398eae6fe63c0d29a",
+      "mode": "0o644"
+    },
+    {
+      "path": "plan-session.json.txt",
+      "bytes": 853,
+      "sha256": "74a8e9b4168f7435bc4294affd85a13c5be148e0bc4ea79a8094e936941a45a8",
+      "mode": "0o644"
+    },
+    {
+      "path": "plan-done.json.txt",
+      "bytes": 1684,
+      "sha256": "0eaaa395c7b7b84b682ab7be2fe72d888878245bfadfcb53a3bfd7b3aa9dfe7a",
+      "mode": "0o644"
+    },
+    {
+      "path": "plan-question.md.txt",
+      "bytes": 4793,
+      "sha256": "195242a093d58d7d3695894399c8c579abf964f12978e06cefddc861602532ee",
+      "mode": "0o644"
+    }
+  ],
+  "disposition": {
+    "neutral": "Measure qualified module signal and one actual release cost build before spending source round2 on honest source/disposition; no diagnostic-serving waiver. Earlier separate production module diagnostic193583raw is a runtime-only signal at its recorded source; neutral-module-diagnostic/README.md binds its original records, distinct from the historical193523-byte experiment.",
+    "L0": "Same-ID read/held mechanics only; destination ordered transactions and pack/job obligations get separate proportional units. Check remaining original review capacity before native stage.",
+    "Java21": "Shared artifact/payload/runtime trust prerequisite for L0, independent of held F1/N1; current550-row filesystem result is not runtime trust.",
+    "N1": "No current candidate materialization or growth before F1; repaired7da needs original source challenge and later executed acceptance capacity.",
+    "records": "Keep parent records off integration until reviewed phase boundary; lane current source gates remain their exact scope.",
+    "deadline": "Neutral whole-stage deadline must be qualified before build lease."
+  },
+  "publicationCorrection": "Question preserved as inert md.txt with exact reviewed bytes; local formatted draft was never published or accepted."
+}

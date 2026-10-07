@@ -1,0 +1,45 @@
+{
+  "observedAtUtc": "2026-10-07 01:03:22 UTC",
+  "scope": "Native GitHub PR metadata only; CI and review evidence retain their original exact-source scopes",
+  "pullRequests": [
+    {
+      "number": 2703,
+      "url": "https://github.com/KyleMit/Splotch/pull/2703",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head": "codex/migration-import-boundary",
+      "headSha": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+      "base": "codex/native-migration",
+      "baseSha": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+      "mergeCommitSha": "ebe71ae3a6e80347bb2238bea8acb42d8ee80a00",
+      "updatedAt": "2026-10-06T17:12:05Z"
+    },
+    {
+      "number": 2708,
+      "url": "https://github.com/KyleMit/Splotch/pull/2708",
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "head": "codex/migration-legacy-continuity",
+      "headSha": "b3b16831557dd894186574b9ce3b0c1184b2aab7",
+      "base": "codex/native-migration",
+      "baseSha": "709fadd68ecb802aa2c9daa3fc197ce8d072b23c",
+      "mergeCommitSha": null,
+      "updatedAt": "2026-10-07T00:17:48Z"
+    },
+    {
+      "number": 2709,
+      "url": "https://github.com/KyleMit/Splotch/pull/2709",
+      "state": "closed",
+      "draft": false,
+      "merged": true,
+      "head": "codex/migration-live-frontier-22",
+      "headSha": "07f3c32c8edca883e240782ebd2e1d66ec81b046",
+      "base": "codex/native-migration",
+      "baseSha": "78d844ce36845e13690e2ca4ee7fcd645eb128d0",
+      "mergeCommitSha": "cf0c4254d025094054d7ea7faab110da11c96243",
+      "updatedAt": "2026-10-06T23:39:59Z"
+    }
+  ]
+}
