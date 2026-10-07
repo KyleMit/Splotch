@@ -1,5 +1,11 @@
 # Handoff — native migration continuation
 
+This packet records the historical pause frontier at cf0c4254d025094054d7ea7faab110da11c96243. The
+maintainer resumed the full campaign in chat 01a1143c-91f7-79e0-95cf-006a16467c64 on 2026-10-06
+(America/New_York). The [live campaign register](../migration/CAMPAIGN.md) supersedes the
+present-tense pause instructions and unit states below and owns current execution. The remainder
+stays unchanged as pause history.
+
 > 2026-10-06 · branch `codex/migration-pause-continuation` · Preserve the paused full migration for
 > the next explicitly authorized session.
 
