@@ -48,10 +48,11 @@ const html = renderToString(
   }),
   { identifierPrefix: request.identifierPrefix }
 );
-const loadedReactFiles = collectLoadedReactFiles(
-  copyRoot,
-  Object.keys(createRequire(import.meta.url).cache)
-);
+// Node caches unevaluated conditional CJS targets during named ESM import discovery.
+const loadedCachePaths = Object.entries(createRequire(import.meta.url).cache)
+  .filter(([, module]) => module?.loaded === true)
+  .map(([path]) => path);
+const loadedReactFiles = collectLoadedReactFiles(copyRoot, loadedCachePaths);
 assertReactBuildContext({
   mode: 'production',
   nodeEnv: process.env.NODE_ENV,

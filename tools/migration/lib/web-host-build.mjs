@@ -303,6 +303,10 @@ export async function buildControlCopies({
     }
     for (const role of roles) assertCopyInputs(owned, current, role);
   } catch (error) {
+    if (error.webHostReactPreparation) {
+      current = error.webHostReactPreparation.bindings;
+      children.push(...error.webHostReactPreparation.children);
+    }
     error.webHostBuild = {
       children,
       bindings: current,

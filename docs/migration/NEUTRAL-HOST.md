@@ -43,8 +43,8 @@ The current input owners are [script inventory](evidence/native-topology-05/scri
 [production contract](evidence/netlify-install/production-install-contract.json) and
 [candidate-exclusive artifacts](evidence/native-topology-05/candidate-exclusive-artifacts.json). The
 accepted [narrow installation record](evidence/resumption/narrow-outcomes-2238.json.txt) records its
-qualified scope. Current source review, applicable full source gates, real production
-compiler/render, both Kit passes, browser mechanisms and final-head CI remain pending. Prepared
+qualified scope. At that preparation, source review, applicable full source gates, real production
+compiler/render, both Kit passes, browser mechanisms and final-head CI remained pending. Prepared
 controls, archive qualification and physical installation do not establish host acceptance.
 
 The source uses one deferred React client entry and a build-time `renderToString` publication with
@@ -127,6 +127,26 @@ after permitted repairs. Production compiler/render, complete host startup costs
 execution and original reviews remain pending. The hard shipping guards retain their original
 budgets, and failed artifacts stay unservable. Existing child/browser ceilings do not replace a
 measured, enforced complete execution-stage deadline.
+
+At the later 2026-10-07 UTC checkpoint, frozen source54 passed source05 check, lint, all 15 Quality
+steps and all 5 Browserless stages, then was published as 4f84efa7966ade0b6852dea9f3a2487de1478761.
+The [historical outcome packet](evidence/resumption/neutral-host-2026-10-07/README.md) preserves
+that exact scope. Its actual guarded release-cost attempt failed at neutral React rendering before
+the neutral Vite build: unevaluated Node CJS cache entries triggered a false development-module
+refusal. Neutral startup, lazy and eager costs remain unmeasured; this is an unintended early
+failure, not a hard budget rejection. The failed public object, nine copied-child logs, strict
+reader refusal and separate hosted stale-lock-pin refusal remain preserved.
+
+The existing renderer now qualifies actual loaded cache entries through the unchanged production
+owner. Existing preparation/build owners preserve successful compile receipts and frozen renderer
+bindings on later failure. Actual caller controls returned 1/0/1/0; the five durable scoped test
+files passed 78 tests and targeted five-path ESLint returned 0. Their strict controller separately
+failed on one actual Vitest cache rewrite. Exact captured byte/mode restoration and a distinct
+postqualification proved complete installed/source equality and owned-group release; the strict
+failure remains a failure. These three source repairs and two new tests need fresh full source
+gates, an amended source commit and a new fully guarded cost attempt. Original 8c round two remains
+unspent. Browser mechanics, current full-source acceptance, hosted CI and the complete neutral cost
+disposition remain pending.
 
 Deployed CSP/PWA/API/admin/offline, physical/native/product fidelity and final architecture and
 release gates remain in the migration contract. F1 source acceptance remains a separate gate.

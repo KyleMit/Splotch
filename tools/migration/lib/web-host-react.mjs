@@ -45,45 +45,53 @@ export async function prepareReactChrome({ owned, bindings, copyRoot, env }) {
     throw new Error('React preparation requires the neutral variant');
   const productionEnv = { ...env, NODE_ENV: 'production' };
   let current = freezeReactSourceInputs(owned, bindings);
-  const compile = await runCopiedChild({
-    owned,
-    copyRoot,
-    env: productionEnv,
-    label: 'neutral-react-compile',
-    command: process.execPath,
-    args: ['--experimental-strip-types', 'migration/probes/web-host/host/compileChrome.ts'],
-  });
-  current = freezeReactRendererInputs(owned, current);
-  const graph = assertReactGraph(
-    copyRoot,
-    JSON.parse(readFileSync(join(copyRoot, WEB_HOST_REACT_RENDERER_GRAPH), 'utf8')),
-    'ssr-renderer'
-  );
-  const renderRequest = makeRenderRequest(copyRoot, request, graph.context);
-  const requestSha256 = writeRenderRequest(owned, renderRequest);
-  const renderEnv = { ...productionEnv, [WEB_HOST_ENV.renderRequestSha256]: requestSha256 };
-  assertCopyInputs(owned, current, WEB_HOST_NEUTRAL_COPY_ROLE);
-  readRenderRequest(owned, copyRoot, requestSha256);
-  const render = await runCopiedChild({
-    owned,
-    copyRoot,
-    env: renderEnv,
-    label: 'neutral-react-render',
-    command: process.execPath,
-    args: [WEB_HOST_REACT_RENDERER],
-  });
-  assertCopyInputs(owned, current, WEB_HOST_NEUTRAL_COPY_ROLE);
-  readRenderRequest(owned, copyRoot, requestSha256);
-  const chromeSha256 = chromeDigest(readFileSync(ownedPath(owned, WEB_HOST_REACT_CHROME)));
-  const chrome = readRenderedChrome(owned, copyRoot, chromeSha256, requestSha256);
-  return {
-    bindings: current,
-    children: [compile, render],
-    graph,
-    renderRequest,
-    requestSha256,
-    chromeSha256,
-    chrome,
-    env: { ...renderEnv, [WEB_HOST_ENV.chromeSha256]: chromeSha256 },
-  };
+  const children = [];
+  try {
+    const compile = await runCopiedChild({
+      owned,
+      copyRoot,
+      env: productionEnv,
+      label: 'neutral-react-compile',
+      command: process.execPath,
+      args: ['--experimental-strip-types', 'migration/probes/web-host/host/compileChrome.ts'],
+    });
+    children.push(compile);
+    current = freezeReactRendererInputs(owned, current);
+    const graph = assertReactGraph(
+      copyRoot,
+      JSON.parse(readFileSync(join(copyRoot, WEB_HOST_REACT_RENDERER_GRAPH), 'utf8')),
+      'ssr-renderer'
+    );
+    const renderRequest = makeRenderRequest(copyRoot, request, graph.context);
+    const requestSha256 = writeRenderRequest(owned, renderRequest);
+    const renderEnv = { ...productionEnv, [WEB_HOST_ENV.renderRequestSha256]: requestSha256 };
+    assertCopyInputs(owned, current, WEB_HOST_NEUTRAL_COPY_ROLE);
+    readRenderRequest(owned, copyRoot, requestSha256);
+    const render = await runCopiedChild({
+      owned,
+      copyRoot,
+      env: renderEnv,
+      label: 'neutral-react-render',
+      command: process.execPath,
+      args: [WEB_HOST_REACT_RENDERER],
+    });
+    children.push(render);
+    assertCopyInputs(owned, current, WEB_HOST_NEUTRAL_COPY_ROLE);
+    readRenderRequest(owned, copyRoot, requestSha256);
+    const chromeSha256 = chromeDigest(readFileSync(ownedPath(owned, WEB_HOST_REACT_CHROME)));
+    const chrome = readRenderedChrome(owned, copyRoot, chromeSha256, requestSha256);
+    return {
+      bindings: current,
+      children,
+      graph,
+      renderRequest,
+      requestSha256,
+      chromeSha256,
+      chrome,
+      env: { ...renderEnv, [WEB_HOST_ENV.chromeSha256]: chromeSha256 },
+    };
+  } catch (error) {
+    error.webHostReactPreparation = { bindings: current, children };
+    throw error;
+  }
 }
