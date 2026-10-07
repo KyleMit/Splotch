@@ -1,0 +1,40 @@
+{
+  "scope": "Parent records publication setup; these are unintended staging/readback failures, separate from source Quality/tool outcomes",
+  "stagingRefusal": {
+    "exit": 128,
+    "atUtc": "2026-10-07T04:00:36Z",
+    "reason": "Existing zero-byte worktree Git index.lock prevented git add; no changes staged by the failed command"
+  },
+  "documentRefusal": {
+    "exit": 1,
+    "reason": "Two new linked evidence files were absent from Git tracked inventory because staging had failed",
+    "references": [
+      "evidence/shared-java21/README.md",
+      "evidence/resumption/current-01a1143c/PARENT-GATES.json.txt"
+    ]
+  },
+  "lockObservationAndPreservation": {
+    "observedGitProcesses": [],
+    "processTableSha256": "b246ca15a4368937a927b5554b0ebf3cd6a42c8b39c2f6a97151885235a185f7",
+    "lock": {
+      "path": "/Users/kylemit/Code/Splotch/.git/worktrees/Splotch7/index.lock",
+      "inode": 220065690,
+      "device": 16777230,
+      "bytes": 0,
+      "mtimeNs": 1791345393747952464,
+      "mode": "0o644",
+      "uid": 501
+    },
+    "openHolderLsofExit": 1,
+    "disposition": {
+      "action": "preserved orphaned zero-byte lock outside Git after unchanged inode/mtime, no open holder and two no-Git inventories",
+      "destination": "/private/tmp/splotch-parent-index-lock-preserved-01a1143c/index.lock",
+      "at": "2026-10-07T04:02:20.638336+00:00",
+      "originalLockStillPresent": false,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "restoredStagingExit": 0,
+  "restoredDocReferencesExit": 0,
+  "ownershipLimit": "The creating process was not attributed. The lock remained the same zero-byte inode/mtime; repeated current inventories showed no Git process and lsof showed no open holder. It was preserved reversibly, no process stopped."
+}
