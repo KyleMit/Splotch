@@ -14,6 +14,12 @@ evidence and the final unit; current scoped host checks do not qualify native co
 
 ## Source roles and preparation
 
+The `materialize` action supports macOS only. Its fixture signing owner admits the disposable
+`/private/tmp` roots used by this host campaign; Linux receives a named platform refusal before
+source extraction or output creation. `inspect` and host-file `ios-receipt` checks support macOS and
+Linux. Shipping Android builds on Linux remain owned by the
+[mobile guide](../../../docs/MOBILE/android.md); this unit supplies no Linux fixture-build consumer.
+
 | Role     | Exact Git source                         | Purpose                                               |
 | -------- | ---------------------------------------- | ----------------------------------------------------- |
 | released | d8b86469f63c57a06a9de45664a42eea15b99eb0 | Real v1.6 writers and released format                 |
@@ -101,6 +107,10 @@ inventory never authorizes cleanup. Channel EOF and actual destination closure a
 finalization failure the owner destroys its write destinations and waits for actual close. A
 still-unclosed file is retained as an unsettled path without a hash or completeness claim; the
 command fails. Already closed files preserve their observed bytes and digests.
+
+Host receipt outputs use a new owned-name directory beneath the canonical platform temporary root or
+canonical `/tmp`; realpath resolution rejects a parent symlink escaping both roots. Source
+materialization keeps its separate disposable fixture-root policy.
 
 Both routes expose one finite command vocabulary. They never seed automatically. Native mutation
 methods require the run's 32-hex nonce in the actual fixed Preferences ownership marker. Page

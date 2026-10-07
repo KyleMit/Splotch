@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
 import { assertNonce, digest, FIXTURE_COMMANDS } from './contract.mjs';
 import { spawnCommandGate } from './run-command-gate.mjs';
@@ -16,6 +17,13 @@ import { spawnCommandGate } from './run-command-gate.mjs';
 const COMMAND_DEADLINE_MS = 10_000;
 const TEARDOWN_DEADLINE_MS = 2_000;
 const POLL_INTERVAL_MS = 100;
+
+function isTemporaryParent(parent) {
+  return [tmpdir(), '/tmp'].some((path) => {
+    const root = realpathSync(path);
+    return parent === root || parent.startsWith(root + '/');
+  });
+}
 
 export function commandContext(options) {
   assertNonce(options.nonce);
@@ -44,10 +52,7 @@ export function commandContext(options) {
     'L0_OWNED_OUTPUT_NAME_REQUIRED'
   );
   const parent = realpathSync(dirname(root));
-  assert.ok(
-    parent === '/private/tmp' || parent.startsWith('/private/tmp/'),
-    'L0_OWNED_OUTPUT_ROOT_REQUIRED'
-  );
+  assert.ok(isTemporaryParent(parent), 'L0_OWNED_OUTPUT_ROOT_REQUIRED');
   assert.ok(!existsSync(root), 'L0_EXISTING_OUTPUT_REFUSED');
   mkdirSync(root);
   const context = {

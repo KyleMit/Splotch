@@ -149,6 +149,13 @@ The earlier zero-command shared-stash-tip setup failure remains separate. The co
 qualifies the exact owned recovery commit/tree and live membership, with the shared tip only a
 diagnostic. Changed-source full Quality/Browserless and actual final-head CI remain required.
 
+The [hosted portability correction](hosted-portability/README.md) preserves the actual Linux
+`ENOENT` failure separately from deliberate receipt-parent rejection/restoration. Its four-path
+source repair passed 62 scoped controls, all 15 Quality stages and all five Browserless stages. The
+changed producer's three actual macOS materializations requalify every source/overlay byte and mode;
+the CLI explicitly declares its macOS-only fixture boundary. This source checkpoint supplies no
+native execution or final review acceptance.
+
 Native compilation/install/runtime/effective-origin/profile, native installed graph and SDK compiled
 association, replacement transactions, deployed binary/source association, signed-channel upgrades,
 physical performance and final campaign completion remain open. Same-version source fixture

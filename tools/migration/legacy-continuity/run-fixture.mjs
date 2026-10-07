@@ -33,7 +33,10 @@ export async function runLegacyContinuity(argv) {
   );
   if (action === 'inspect' || action === 'materialize') {
     assert.ok(values.source, 'L0_SOURCE_REQUIRED');
-    if (action === 'materialize') assert.ok(values.output, 'L0_OUTPUT_REQUIRED');
+    if (action === 'materialize') {
+      assert.ok(values.output, 'L0_OUTPUT_REQUIRED');
+      assert.equal(process.platform, 'darwin', 'L0_SOURCE_MATERIALIZATION_REQUIRES_MACOS');
+    }
     const result =
       action === 'inspect'
         ? inspectSource(values.repo, values.source)

@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  existsSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { digest } from '../contract.mjs';
 
 const COMMAND_DEADLINE_MS = 5_000;
@@ -113,7 +123,7 @@ function invoke(root, inputs, output) {
     '--result',
     inputs.resultPath,
     '--output',
-    join(root, output),
+    resolve(root, output),
   ];
   try {
     const stdout = execFileSync(process.execPath, args, {
@@ -131,8 +141,59 @@ function invoke(root, inputs, output) {
 }
 
 describe('legacy iOS receipt outcome', () => {
+  it('declares materialization platform refusal before source or output IO and retains portable receipt execution', () => {
+    const owned = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-legacy-continuity-platform-')));
+    try {
+      const loader = join(owned, 'linux-platform.mjs');
+      writeFileSync(loader, "Object.defineProperty(process, 'platform', { value: 'linux' });\n");
+      const output = join(owned, 'splotch-legacy-continuity-platform-refused');
+      const cli = resolve(import.meta.dirname, '../run-fixture.mjs');
+      let refusal;
+      try {
+        execFileSync(
+          process.execPath,
+          ['--import', loader, cli, 'materialize', '--source', 'released', '--output', output],
+          { timeout: COMMAND_DEADLINE_MS }
+        );
+      } catch (error) {
+        refusal = error;
+      }
+      expect(refusal?.status).toBe(1);
+      expect(refusal?.stderr.toString()).toContain('L0_SOURCE_MATERIALIZATION_REQUIRES_MACOS');
+      expect(existsSync(output)).toBe(false);
+      const inputsRoot = join(owned, 'inputs');
+      mkdirSync(inputsRoot);
+      const inputs = receiptInputs(inputsRoot, 'completed');
+      expect(invoke(owned, inputs, 'splotch-legacy-continuity-platform-restored').status).toBe(0);
+    } finally {
+      rmSync(owned, { recursive: true });
+    }
+  });
+
+  it('refuses a real symlink escape before output creation and restores an owned temporary destination', () => {
+    const owned = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-legacy-continuity-host-path-')));
+    try {
+      const inputsRoot = join(owned, 'inputs');
+      mkdirSync(inputsRoot);
+      const inputs = receiptInputs(inputsRoot, 'completed');
+      const escape = join(owned, 'escape');
+      const outside = dirname(realpathSync('/tmp'));
+      symlinkSync(outside, escape);
+      const name = 'splotch-legacy-continuity-path-refused';
+      const refused = invoke(owned, inputs, join(escape, name));
+      expect(refused.status).toBe(1);
+      expect(refused.stderr).toContain('L0_OWNED_OUTPUT_ROOT_REQUIRED');
+      expect(existsSync(join(outside, name))).toBe(false);
+      expect(invoke(owned, inputs, 'splotch-legacy-continuity-path-restored').status).toBe(0);
+    } finally {
+      rmSync(owned, { recursive: true });
+    }
+  });
+
   it('keeps a complete command failure nonzero with failed top-level evidence and restores completion', () => {
-    const owned = mkdtempSync('/private/tmp/splotch-legacy-continuity-host-receipt-');
+    const owned = realpathSync(
+      mkdtempSync(join(tmpdir(), 'splotch-legacy-continuity-host-receipt-'))
+    );
     try {
       const failedRoot = join(owned, 'failed-inputs');
       mkdirSync(failedRoot);
@@ -168,7 +229,9 @@ describe('legacy iOS receipt outcome', () => {
   });
 
   it('refuses clipped framing separately from a completed app command and restores complete bytes', () => {
-    const owned = mkdtempSync('/private/tmp/splotch-legacy-continuity-host-frame-');
+    const owned = realpathSync(
+      mkdtempSync(join(tmpdir(), 'splotch-legacy-continuity-host-frame-'))
+    );
     try {
       const inputsRoot = join(owned, 'inputs');
       mkdirSync(inputsRoot);
