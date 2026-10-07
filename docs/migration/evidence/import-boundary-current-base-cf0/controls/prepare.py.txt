@@ -1,0 +1,30 @@
+import hashlib,json,pathlib,subprocess
+w=pathlib.Path('/Users/kylemit/.codex/worktrees/3218/Splotch')
+a=pathlib.Path('/private/tmp/splotch-f1-current-base-01a1143c')
+def git(*args):return subprocess.check_output(['git',*args],cwd=w)
+def digest(b):return hashlib.sha256(b).hexdigest()
+def write(name,data):(a/name).write_text(json.dumps(data,indent=2)+'\n')
+oldpath=w/'docs/migration/evidence/import-boundary-01/controls/final-v8/source-inputs.json.txt'
+old=json.loads(oldpath.read_bytes())
+current={p:{'bytes':len((w/p).read_bytes()),'sha256':digest((w/p).read_bytes())} for p in old['files']}
+selectors=['eslint.config.js','knip.json','knip.production.json','web/tsconfig.json','netlify/tsconfig.json','tools/vitest.config.mjs','tools/ci-mirror/run-browserless.mjs','web/vite.config.ts','.github/workflows/test.yml']
+for p in selectors:
+ if (w/p).is_file():current[p]={'bytes':len((w/p).read_bytes()),'sha256':digest((w/p).read_bytes())}
+paths=git('ls-files','tools').decode().strip().split('\n');paths=[p for p in paths if p.endswith('.mjs')]
+write('source-inputs.json',{'schemaVersion':1,'preparationHead':git('rev-parse','HEAD').decode().strip(),'acceptedBase':git('rev-parse','MERGE_HEAD').decode().strip(),'compositionState':'ordinary accepted-base merge staged without commit; gates precede merge commit','runtime':{'version':subprocess.check_output(['node','--version']).decode().strip()},'files':current,'trackedToolInputs':{'count':len(paths),'sha256':digest(('\n'.join(paths)+'\n').encode()),'enumeration':'git ls-files tools filtered to .mjs'}})
+oldpacket=w/'docs/migration/evidence/import-boundary-01';manifest=json.loads((oldpacket/'manifest.json').read_bytes());mismatches=[]
+for row in manifest['files']:
+ b=(oldpacket/row['path']).read_bytes()
+ if len(b)!=row['bytes'] or digest(b)!=row['sha256']:mismatches.append(row['path'])
+assert not mismatches,mismatches
+comparisons={p:{'historical':row,'current':current[p],'equal':row==current[p]} for p,row in old['files'].items()}
+oldinstalled=json.loads((oldpacket/'controls/final-v8/installed-inputs.json.txt').read_bytes());installed=[]
+for row in oldinstalled['installedGraph']:
+ b=pathlib.Path(row['manifestPath']).read_bytes();installed.append({**row,'currentSha256':digest(b),'equal':digest(b)==row['sha256']})
+assert all(r['equal'] for r in installed)
+e4=json.loads(git('show','e4e9fc044d46d49c3565379a3e6419e8eff4af9d:package.json'));now=json.loads((w/'package.json').read_bytes())
+depsEqual=all(e4.get(k)==now.get(k) for k in ['dependencies','devDependencies','optionalDependencies','packageManager','engines'])
+assert depsEqual
+write('composition-comparison.json',{'schemaVersion':1,'preparationHead':git('rev-parse','HEAD').decode().strip(),'acceptedBase':git('rev-parse','MERGE_HEAD').decode().strip(),'commonBase':git('merge-base','HEAD','MERGE_HEAD').decode().strip(),'historicalSourceInputReceipt':'../import-boundary-01/controls/final-v8/source-inputs.json.txt','historicalSourceInputSha256':digest(oldpath.read_bytes()),'inputComparisons':comparisons,'dependencyDeclarationsAndRuntimeFloorsEqual':depsEqual,'installedManifestComparisons':installed,'historicalPacket':{'manifest':'../import-boundary-01/manifest.json','sha256':digest((oldpacket/'manifest.json').read_bytes()),'verifiedMembers':len(manifest['files']),'allEqual':True},'trackedToolEnumeration':{'historical':old['trackedToolInputs'],'current':{'count':len(paths),'sha256':digest(('\n'.join(paths)+'\n').encode())}},'semanticIndexEntriesSha256':digest(git('ls-files','--stage','-z')),'receiptDisposition':{'historicalStaticScopedFull':'cannot establish current accepted-base gate; package check/postbuild owners, lint discovery, source enumeration and source tree changed; rerun current gates','historicalActualConsumer':'retains historical observations only; current scanner/candidate/config/lock and installed package manifests match, no new installed executable census was present in old receipts','independentReview':'HELD; original bbe89d5b-644f-4d4f-9366-e5156cebf4ea used 3, remaining 0; no exception authorized'}})
+write('incoming-survey.json',{'incomingCommits':git('log','--format=%H %s','HEAD..MERGE_HEAD').decode().splitlines(),'incomingPaths':git('diff','--name-status','HEAD...MERGE_HEAD').decode().splitlines(),'branchOwnedPaths':git('diff','--name-status','MERGE_HEAD...HEAD').decode().splitlines(),'textualConflicts':[],'semanticDisposition':'No candidate dependency/config/runtime or F1 grammar changes arrive; shared README keeps both native import grammar and accepted retained/hosted owners. Accepted package/check/postbuild, lint/discovery, PWA and shipping Vite source changes require broader current gates. No F1 source repair was needed.'})
+print(json.dumps({'currentInputs':len(current),'oldMatches':sum(r['equal'] for r in comparisons.values()),'oldInputCount':len(comparisons),'preservedPacketMembers':len(manifest['files']),'trackedTools':len(paths),'dependencyDeclarationsEqual':depsEqual,'installedManifestsEqual':True}))
