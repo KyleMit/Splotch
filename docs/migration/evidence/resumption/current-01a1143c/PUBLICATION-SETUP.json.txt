@@ -32,9 +32,18 @@
       "at": "2026-10-07T04:02:20.638336+00:00",
       "originalLockStillPresent": false,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "timingAssociation": {
+      "lockMtimeUtc": "2026-10-07T03:56:33.747952464Z",
+      "ownedQualityStartedAtUtc": "2026-10-07T03:55:48.962Z",
+      "ownedQualityFinishedAtUtc": "2026-10-07T03:56:38.842Z",
+      "parentWorktreeGitDir": "/Users/kylemit/Code/Splotch/.git/worktrees/Splotch7",
+      "mappingReadback": "git rev-parse --git-dir in /Users/kylemit/.codex/worktrees/267c/Splotch returned this directory",
+      "assessment": "The mtime falls inside the parent-owned Quality run on the same worktree. That run is a plausible source of the residue; timing alone does not identify the creating process or establish a cause. No foreign creator is claimed.",
+      "equalityScope": "Source and semantic-index equality do not cover Git administration files such as index.lock."
     }
   },
   "restoredStagingExit": 0,
   "restoredDocReferencesExit": 0,
-  "ownershipLimit": "The creating process was not attributed. The lock remained the same zero-byte inode/mtime; repeated current inventories showed no Git process and lsof showed no open holder. It was preserved reversibly, no process stopped."
+  "ownershipLimit": "The creating process was not identified. Its mtime overlaps the parent-owned Quality run on the same worktree, a plausible source of the residue; no foreign attribution is established. The lock remained the same zero-byte inode/mtime; repeated later inventories showed no Git process and lsof showed no open holder. It was preserved reversibly, no process stopped."
 }
