@@ -71,6 +71,7 @@ async function waitForHandBackMarker(fixture, signal) {
 }
 
 async function waitForFixtureClose(fixture, timeoutMs, phase) {
+  const deadline = performance.now() + timeoutMs;
   let timer;
   try {
     const status = await Promise.race([
@@ -82,6 +83,8 @@ async function waitForFixtureClose(fixture, timeoutMs, phase) {
         );
       }),
     ]);
+    if (performance.now() >= deadline)
+      throw new Error(fixtureDetails(fixture, `${phase} completed after deadline`));
     return status;
   } finally {
     clearTimeout(timer);
