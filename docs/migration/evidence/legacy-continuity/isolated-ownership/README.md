@@ -51,3 +51,27 @@ cannot establish a released signed-channel upgrade. Destination transactions and
 remain separate units. Original Claude conversation 1b406e61-641e-4cf8-86fb-2b1cd7548469 retains two
 used rounds and one unspent round reserved for frozen changed source plus completed native evidence;
 final review and acceptance remain pending.
+
+## Current process observation and failure evidence repair
+
+A later eight-path source repair preserves complete process-query results. Diagnostic stderr,
+nonzero or incomplete status, a signal/error, malformed UTF-8, duplicate rows or a wrong PID cannot
+establish ownership. Command failures and independent cleanup failures retain their original phases
+and nested causes at the fixture evidence boundary. The prepared native Integer control refuses
+independent cleanup, ownership, channel, child-settlement and after-input failures; actual native
+execution of that control remains pending.
+
+The [derived repair summary](admission-repair-summary.json.txt) binds the current source-only unit:
+HEAD 63d9773d571f06b617bfc87358b2705a42a872e8, staged tree 616fa73518c51afdd3ecaec7d744c04524cc8fdc,
+no pending merge, 54 maintained members and 115 caller inputs. All seven actual invocations exited
+0: fifteen new observer controls, 99 scoped tests, format, check, lint, all fifteen Quality checks
+and all five Browserless tiers, including 42 API smoke cases. The independent desktop observation
+was 191.260 seconds within the complete 2,100-second bound. Source and installed snapshots matched;
+all fifteen recorded groups were absent and the smoke port could be rebound. The host lease is
+released.
+
+The summary contains only derived outcomes and exact private receipt hashes. Original raw channels,
+strict process inventories and eight inert executed-source copies remain private. The existing
+five-member capsule and earlier failed/qualified scopes are unchanged. This repair establishes
+source qualification; actual Android/iOS native consumers and the original final review remain
+pending.

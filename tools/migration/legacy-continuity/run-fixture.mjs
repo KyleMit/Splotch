@@ -7,6 +7,11 @@ import { commandContext, finishEvidence, settleCommandChildren } from './command
 import { androidCommand } from './android-command.mjs';
 import { runAndroidDiskWatch } from './run-android-disk-watch.mjs';
 import { iosReceipt } from './ios-receipt.mjs';
+import {
+  COMMAND_FAILURE_PHASES,
+  recordCommandFailure,
+  serializeCommandError,
+} from './command-failure.mjs';
 
 export async function runLegacyContinuity(argv) {
   const { values, positionals } = parseArgs({
@@ -79,17 +84,17 @@ export async function runLegacyContinuity(argv) {
         try {
           await settleCommandChildren(context);
         } catch (error) {
+          recordCommandFailure(context, COMMAND_FAILURE_PHASES.childSettlement, error);
           failure = failure ? new AggregateError([failure, error]) : error;
         }
         process.removeListener('SIGTERM', cancelWork);
       }
     }
     if (failure) {
-      finishEvidence(
-        context,
-        'failed; disposition requires actual failure reason',
-        String(failure)
-      );
+      finishEvidence(context, 'failed; disposition requires actual failure reason', {
+        error: serializeCommandError(failure),
+        phases: context.failurePhases ?? [],
+      });
       throw failure;
     }
     const status =

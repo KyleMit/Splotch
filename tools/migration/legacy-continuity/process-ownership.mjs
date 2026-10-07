@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
 export const OWNERSHIP_DEADLINE_MS = 2_000;
@@ -49,7 +49,7 @@ function groupExists(call) {
 
 export function captureProcessIdentity(pid, timeoutMs) {
   try {
-    const raw = execFileSync(
+    const result = spawnSync(
       '/bin/ps',
       [
         '-ww',
@@ -66,9 +66,38 @@ export function captureProcessIdentity(pid, timeoutMs) {
         '-o',
         'args=',
       ],
-      { encoding: 'utf8', timeout: timeoutMs, env: { ...process.env, LC_ALL: 'C' } }
+      { timeout: timeoutMs, env: { ...process.env, LC_ALL: 'C' } }
     );
-    return processIdentityRecord(raw);
+    const stdout = result.stdout ?? Buffer.alloc(0);
+    const stderr = result.stderr ?? Buffer.alloc(0);
+    const raw = stdout.toString('utf8');
+    if (
+      result.status !== 0 ||
+      result.signal !== null ||
+      result.error ||
+      stderr.length ||
+      !Buffer.from(raw, 'utf8').equals(stdout)
+    ) {
+      return {
+        status: 'unavailable',
+        reason: 'L0_PROCESS_IDENTITY_RESULT_REFUSED',
+        exitCode: result.status ?? null,
+        signal: result.signal ?? null,
+        error: result.error ? String(result.error) : null,
+        stdoutHex: stdout.toString('hex'),
+        stderrHex: stderr.toString('hex'),
+      };
+    }
+    const identity = processIdentityRecord(raw);
+    if (raw.trim().split(/\r?\n/).length !== 1 || identity.pid !== pid) {
+      return {
+        status: 'unavailable',
+        reason: 'L0_PROCESS_IDENTITY_ROW_REFUSED',
+        stdoutHex: stdout.toString('hex'),
+        stderrHex: stderr.toString('hex'),
+      };
+    }
+    return identity;
   } catch (error) {
     return {
       status: 'unavailable',

@@ -1,0 +1,124 @@
+{
+  "scope": "Source admission repair only. Actual Android/iOS source builds, provider controls and native same-ID/held execution remain pending.",
+  "sourceBeforePublication": {
+    "head": "63d9773d571f06b617bfc87358b2705a42a872e8",
+    "headTree": "abd9659093431bafe213e87935f52d5b86ece5e1",
+    "stagedTree": "616fa73518c51afdd3ecaec7d744c04524cc8fdc",
+    "mergeHead": null,
+    "ownedStagedPaths": 8,
+    "maintainedMembers": 54,
+    "callerInputs": 115,
+    "semanticGitSelectors": 8
+  },
+  "repairs": [
+    "A successful process query with diagnostic stderr or malformed UTF-8 cannot establish signal ownership. Nonzero, incomplete, signaled, errored, duplicate-row and wrong-PID results are refused.",
+    "Actual command and independent cleanup errors retain structured original phases and nested causes through the fixture evidence boundary.",
+    "The next native Integer rejecting control requires its intended primary failure without independent cleanup, channel, child-settlement or after-input failure; its private consumer remains unexecuted."
+  ],
+  "currentActualSourceGates": [
+    {
+      "name": "admission-v2-observer-controls",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 15,
+      "observedCompleteSeconds": 1.252446709
+    },
+    {
+      "name": "admission-v2-scoped",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 150,
+      "observedCompleteSeconds": 9.970935584
+    },
+    {
+      "name": "admission-v2-format-check",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 150,
+      "observedCompleteSeconds": 12.908026415999998
+    },
+    {
+      "name": "admission-v2-check",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 210,
+      "observedCompleteSeconds": 7.656748458000003
+    },
+    {
+      "name": "admission-v2-lint",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 210,
+      "observedCompleteSeconds": 16.926129292
+    },
+    {
+      "name": "admission-v2-quality",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 630,
+      "observedCompleteSeconds": 51.64718933299999
+    },
+    {
+      "name": "admission-v2-browserless",
+      "targetExit": 0,
+      "controllerExit": 0,
+      "completeBoundSeconds": 570,
+      "observedCompleteSeconds": 77.43842674999999
+    }
+  ],
+  "counts": {
+    "newSharedObserverControls": 15,
+    "scopedTestsPassed": 99,
+    "qualityStepsPassed": 15,
+    "browserlessTiersPassed": 5,
+    "apiSmokePassed": 42,
+    "actualInvocations": 7,
+    "recordedGroupsAbsent": 15
+  },
+  "completeDuration": {
+    "desktopAfterExitSeconds": 191.26,
+    "wholeBoundSeconds": 2100,
+    "includedFinalizationSeconds": 30
+  },
+  "closedSourceBoundary": {
+    "sourceAndInstalledSnapshotsEqual": true,
+    "ownedGroupAbsenceIndependentlyObserved": true,
+    "smokePortRebindProved": true,
+    "hostLeaseReleased": true,
+    "noDeviceOrIsolatedAdbHeld": true
+  },
+  "privateEvidenceReferences": [
+    {
+      "path": "/private/tmp/splotch-l0-native-execution-202610070306/source-admission-repair-v2-passed-release/released.private.json",
+      "bytes": 59472,
+      "sha256": "f4ea1d4237cc6cc56a77115c997e4653c02328ef3e7bfe431503e9e173655f2c",
+      "mode": "0o600"
+    },
+    {
+      "path": "/private/tmp/splotch-l0-native-execution-202610070306/source-admission-repair-v2-passed-release/desktop-after-exit.private.json",
+      "bytes": 1178,
+      "sha256": "f944b3720295a3eedb96cd2af9645df14ebf5db39884d2263d528046efe544c8",
+      "mode": "0o600"
+    },
+    {
+      "path": "/private/tmp/splotch-l0-native-execution-202610070306/source-admission-repair-v2-passed-release/executed-eight.manifest.private.json",
+      "bytes": 7796,
+      "sha256": "8c9761aedcb5dba52810ed070f041cd9220598a5a04f89cf92bbbc2b36b06253",
+      "mode": "0o600"
+    },
+    {
+      "path": "/private/tmp/splotch-l0-native-execution-202610070306/source-admission-repair-v2-passed-release/parent-qualified.private.json",
+      "bytes": 1080,
+      "sha256": "920cd7e85e9eff8097f6ad107ca7babf493bc33546678c100b204ff757278374",
+      "mode": "0o600"
+    }
+  ],
+  "historicalScope": "Earlier failed gates, original six controller controls and the merge-refusal control retain their original scope; they are not new current invocations.",
+  "review": {
+    "originalConversation": "1b406e61-641e-4cf8-86fb-2b1cd7548469",
+    "used": 2,
+    "remaining": 1,
+    "reservedFor": "Frozen changed source plus actual completed native evidence; trusted-wrapper approval and final review remain pending."
+  },
+  "disclosure": "Derived outcome and source-boundary metadata only. No raw logs, inventories, profiles, executable payloads, signing material, credentials or dependency/cache trees."
+}

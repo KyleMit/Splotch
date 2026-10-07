@@ -48,7 +48,13 @@ describe('legacy current runner source boundary', () => {
   it('refuses missing and changed production modules before accepting the restored exact inputs', () => {
     const runnerInputs = inputs();
     expect(() => verifyRunnerInputs({ runnerInputs: [] })).toThrow(/INPUT_MISSING/);
-    for (const name of ['proc.mjs', 'materialize.mjs', 'ios-receipt.mjs', 'native-overlay.mjs'])
+    for (const name of [
+      'proc.mjs',
+      'materialize.mjs',
+      'ios-receipt.mjs',
+      'native-overlay.mjs',
+      'command-failure.mjs',
+    ])
       expect(() =>
         verifyRunnerInputs({
           runnerInputs: runnerInputs.filter((input) => !input.path.endsWith('/' + name)),

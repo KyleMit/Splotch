@@ -6,6 +6,7 @@ import { digest } from './contract.mjs';
 const RUNNER_MODULES = [
   'run-fixture.mjs',
   'command-evidence.mjs',
+  'command-failure.mjs',
   'run-command-gate.mjs',
   'process-ownership.mjs',
   'command-timing.mjs',

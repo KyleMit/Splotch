@@ -7,6 +7,7 @@ import { fixtureCommandExpression } from './android-writer-ack.mjs';
 import { connectFixtureSession } from './cdp-session.mjs';
 import { guardedAdbCommand } from './adb-server.mjs';
 import { commandRemainingMs, beginCommandCleanup } from './command-timing.mjs';
+import { COMMAND_FAILURE_PHASES, recordCommandFailure } from './command-failure.mjs';
 import { verifyPageReport } from './report-contract.mjs';
 import {
   installedAPKPath,
@@ -178,18 +179,21 @@ export async function androidCommand(context) {
       'L0_ANDROID_PROCESS_CHANGED_DURING_COMMAND'
     );
   } catch (error) {
+    recordCommandFailure(context, COMMAND_FAILURE_PHASES.command, error);
     failures.push(error);
   } finally {
     beginCommandCleanup(context);
     try {
       await closeConnections(context);
     } catch (error) {
+      recordCommandFailure(context, COMMAND_FAILURE_PHASES.cdpCleanup, error);
       failures.push(error);
     }
     if (forwardAttempted) {
       try {
         await adb(['logcat', '-d', '-v', 'threadtime', '--pid', String(context.lease.pid)]);
       } catch (error) {
+        recordCommandFailure(context, COMMAND_FAILURE_PHASES.logcatCapture, error);
         failures.push(error);
       }
       try {
@@ -213,6 +217,7 @@ export async function androidCommand(context) {
           'L0_OWNED_FORWARD_REMAINS'
         );
       } catch (error) {
+        recordCommandFailure(context, COMMAND_FAILURE_PHASES.forwardCleanup, error);
         failures.push(error);
       }
     }
