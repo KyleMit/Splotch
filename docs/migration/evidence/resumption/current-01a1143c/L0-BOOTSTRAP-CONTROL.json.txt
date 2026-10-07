@@ -1,0 +1,25 @@
+{
+  "source": [
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch/tools/migration/legacy-continuity/command-evidence.mjs",
+      "sha256": "1907cfc714a48a2c9b2b8ec7398454f9ba79af2a546f5f9bffe7b589b2921342",
+      "bytes": 13446
+    },
+    {
+      "path": "/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch/tools/migration/legacy-continuity/tests/group-observation.test.mjs",
+      "sha256": "00fbf5aea3ab26c2940f8f36396d152191e4077b93ea1ad1350a4109ddaa9e00",
+      "bytes": 3307
+    }
+  ],
+  "argv": [
+    "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+    "/Users/kylemit/.nvm/versions/node/v24.16.0/lib/node_modules/npm/bin/npm-cli.js",
+    "run",
+    "test:tools",
+    "--",
+    "migration/legacy-continuity/tests/group-observation.test.mjs",
+    "--maxWorkers=1"
+  ],
+  "exitCode": 1,
+  "scope": "deliberate injected EPERM rejecting control against unchanged command-evidence source"
+}

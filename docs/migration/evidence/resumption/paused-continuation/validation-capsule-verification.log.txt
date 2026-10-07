@@ -1,0 +1,4 @@
+positive {"artifacts": 6, "members": 655, "records": 15}
+rejecting control: correct SHA256 mismatch LIVE-UNITS.json.txt
+restored positive {"artifacts": 6, "members": 655, "records": 15}
+Original neutral R1 four source hashes match independent report and captured metadata

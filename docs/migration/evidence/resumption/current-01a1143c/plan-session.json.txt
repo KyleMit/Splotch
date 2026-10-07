@@ -1,0 +1,18 @@
+{
+  "id": "06e31df4-8371-4638-a616-feae25363dcb",
+  "rival": "claude",
+  "scope": {
+    "base": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+    "head": "74e0f5c5e75b1594433a67a69d9647cfa667911c",
+    "description": "this branch against 74e0f5c5e75b1594433a67a69d9647cfa667911c",
+    "range": "74e0f5c5e75b1594433a67a69d9647cfa667911c...74e0f5c5e75b1594433a67a69d9647cfa667911c"
+  },
+  "question": true,
+  "worktree": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/06e31df4-8371-4638-a616-feae25363dcb/worktree",
+  "packetDir": "/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/06e31df4-8371-4638-a616-feae25363dcb/packet",
+  "round": 1,
+  "resumed": false,
+  "repoRoot": "/Users/kylemit/.codex/worktrees/267c/Splotch",
+  "branch": "codex/migration-resume-01a1143c",
+  "createdAt": "2026-10-07T02:45:04.312Z"
+}

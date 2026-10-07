@@ -1,0 +1,36 @@
+{
+  "scope": "Independent read-only Codex review of additive campaign records; no implementation acceptance",
+  "reviewer": "records_review subagent",
+  "base": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "baseTree": "ff9dfd5527d53c6815a2c3b8b494d2f95e8c1cef",
+  "reviewedHead": "af4f335a0b0e4ab7867283e0936ca4371b4616b5",
+  "reviewedTree": "49581a823768711093afd7fcaeed03c1b6619809",
+  "verified": {
+    "outerArchives": 7,
+    "uniqueSafeRegularArchiveMembers": 663,
+    "archiveMemberBytesModesHashes": true,
+    "standaloneRecordBytesHashes": 7,
+    "advisoryReports": 2,
+    "planMembers": 4,
+    "validationChannelsAndBindings": 9,
+    "nestedNativeSourceMembers": 70,
+    "selectedTextSensitivityScanMembers": 573
+  },
+  "blockingFindings": [],
+  "clarification": {
+    "path": "docs/migration/evidence/resumption/paused-continuation/README.md",
+    "finding": "Distinguish enforced archive-member modes from historical standalone recorded modes",
+    "reviewedBytes": 7082,
+    "reviewedBlob": "671d73fafac47e322423cef5e68759fb67ece2fc",
+    "reviewedSha256": "ab5db92e689a678f11fc1d6d2d82b6fe19a3e5ff609d8d1d20d9bed223a5897e",
+    "fixCommit": "23a2600644b8326c11588bc4ab08c54e5f72926f",
+    "followup": "Clarification resolves the finding without changing preservation or acceptance claims; manifest/verifier bytes unchanged; no archive rerun in this follow-up"
+  },
+  "limits": [
+    "Original-host equality and private review-state availability were not independently established",
+    "No underlying F1, L0, neutral or N1 execution acceptance",
+    "No Claude calls, workloads, recovered controller execution, edits or GitHub actions by the reviewer",
+    "Separate from accepted PR2709 and the independent8ae9 plan question",
+    "This review does not review its own receipt or later records changes; exact-current Claude diff review and publication gates remain required"
+  ]
+}

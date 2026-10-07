@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
-import { readFileSync, appendFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { digest, FIXTURE_PATH } from './contract.mjs';
-import { capturedCommand, evidence } from './command-evidence.mjs';
+import { evidence } from './command-evidence.mjs';
+import { fixtureCommandExpression } from './android-writer-ack.mjs';
+import { connectFixtureSession } from './cdp-session.mjs';
+import { guardedAdbCommand } from './adb-server.mjs';
+import { commandRemainingMs, beginCommandCleanup } from './command-timing.mjs';
 import { verifyPageReport } from './report-contract.mjs';
-import { installedAPKPath, coloringRootInventory } from './android-runtime-inputs.mjs';
+import {
+  installedAPKPath,
+  coloringRootInventory,
+  androidProvider,
+  verifyChromiumProvider,
+} from './android-runtime-inputs.mjs';
 
 const PAGE_DEADLINE_MS = 30_000;
 const COMMAND_DEADLINE_MS = 30_000;
@@ -19,97 +27,13 @@ function processStartTicks(bytes) {
   return fields[19];
 }
 
-async function connect(context, url) {
-  assert.equal(typeof WebSocket, 'function', 'L0_NODE_WEBSOCKET_UNAVAILABLE');
-  const socket = new WebSocket(url);
-  const pending = new Map();
-  let id = 0;
-  const wire = join(context.root, 'cdp-wire.jsonl.txt');
-  writeFileSync(wire, '', { flag: 'wx' });
-  const rejectPending = (error) => {
-    for (const entry of pending.values()) entry.reject(error);
-    pending.clear();
-  };
-  socket.addEventListener('message', (event) => {
-    appendFileSync(
-      wire,
-      JSON.stringify({
-        receivedAt: new Date().toISOString(),
-        received: event.data,
-      }) + '\n'
-    );
-    let message;
+async function closeConnections(context) {
+  const failures = [];
+  for (const connection of context.cdpConnections ?? []) {
+    const { socket, wire } = connection;
     try {
-      message = JSON.parse(event.data);
-    } catch (error) {
-      rejectPending(error);
-      return;
-    }
-    const entry = pending.get(message.id);
-    if (entry) {
-      pending.delete(message.id);
-      entry.resolve(message);
-    }
-  });
-  socket.addEventListener('close', () => rejectPending(new Error('L0_CDP_CLOSED')));
-  socket.addEventListener('error', () => rejectPending(new Error('L0_CDP_ERROR')));
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
       socket.close();
-      reject(new Error('L0_CDP_OPEN_DEADLINE'));
-    }, COMMAND_DEADLINE_MS);
-    socket.addEventListener(
-      'open',
-      () => {
-        clearTimeout(timer);
-        resolve();
-      },
-      { once: true }
-    );
-    socket.addEventListener(
-      'error',
-      () => {
-        clearTimeout(timer);
-        reject(new Error('L0_CDP_OPEN_FAILED'));
-      },
-      { once: true }
-    );
-  });
-  return {
-    async evaluate(expression) {
-      const request = {
-        id: ++id,
-        method: 'Runtime.evaluate',
-        params: { expression, awaitPromise: true, returnByValue: true },
-      };
-      appendFileSync(
-        wire,
-        JSON.stringify({ sentAt: new Date().toISOString(), sent: request }) + '\n'
-      );
-      let timer;
-      try {
-        const reply = await Promise.race([
-          new Promise((resolve, reject) => {
-            pending.set(request.id, { resolve, reject });
-            socket.send(JSON.stringify(request));
-          }),
-          new Promise((_, reject) => {
-            timer = setTimeout(
-              () => reject(new Error('L0_CDP_COMMAND_DEADLINE')),
-              COMMAND_DEADLINE_MS
-            );
-          }),
-        ]);
-        assert.ok(!reply.error && !reply.result.exceptionDetails, 'L0_CDP_COMMAND_FAILED');
-        return reply.result.result.value;
-      } finally {
-        clearTimeout(timer);
-        pending.delete(request.id);
-      }
-    },
-    async close() {
-      socket.close();
-      const deadline = Date.now() + SOCKET_CLOSE_DEADLINE_MS;
+      const deadline = Date.now() + commandRemainingMs(context, SOCKET_CLOSE_DEADLINE_MS);
       while (socket.readyState !== WebSocket.CLOSED && Date.now() < deadline)
         await delay(POLL_INTERVAL_MS);
       assert.equal(socket.readyState, WebSocket.CLOSED, 'L0_CDP_SOCKET_REMAINS');
@@ -118,9 +42,27 @@ async function connect(context, url) {
         path: 'cdp-wire.jsonl.txt',
         bytes: bytes.length,
         sha256: digest(bytes),
+        complete: true,
       });
-    },
-  };
+      connection.finalized = true;
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  evidence(
+    context,
+    'cdp-settlement.json.txt',
+    JSON.stringify(
+      (context.cdpConnections ?? []).map(({ socket, closed, finalized }) => ({
+        readyState: socket.readyState,
+        closed,
+        finalized,
+      })),
+      null,
+      2
+    )
+  );
+  if (failures.length) throw new AggregateError(failures, 'L0_CDP_FINALIZATION_UNSETTLED');
 }
 
 async function runtimeIdentity(context, adb) {
@@ -141,10 +83,11 @@ async function runtimeIdentity(context, adb) {
   evidence(
     context,
     'post-attach-coloring-inventory.json.txt',
-    JSON.stringify({ ...coloringRootInventory(descendants), commandId: context.calls.at(-1).id }) +
+    JSON.stringify({ ...coloringRootInventory(descendants), commandId: context.lastAdbCall.id }) +
       '\n'
   );
-  await adb(['shell', 'dumpsys', 'webviewupdate']);
+  const provider = androidProvider(context, await adb(['shell', 'dumpsys', 'webviewupdate']));
+  evidence(context, 'webview-provider.json.txt', JSON.stringify(provider, null, 2));
   await adb(['shell', 'dumpsys', 'package', 'art.splotch.app']);
   await adb(['shell', 'dumpsys', 'jobscheduler']);
   const pidText = (await adb(['shell', 'pidof', 'art.splotch.app'])).toString().trim();
@@ -163,7 +106,7 @@ async function runtimeIdentity(context, adb) {
     unix.split('\n').some((line) => line.trim().endsWith(`@${socket}`)),
     'L0_OWNED_WEBVIEW_SOCKET_MISSING'
   );
-  return socket;
+  return { socket, provider };
 }
 
 export async function androidCommand(context) {
@@ -172,23 +115,27 @@ export async function androidCommand(context) {
     context.lease.adbSha256,
     'L0_ADB_IDENTITY_CHANGED'
   );
-  const adb = (args) =>
-    capturedCommand(context, context.lease.adbPath, ['-s', context.lease.device, ...args]);
+  const adb = (args) => guardedAdbCommand(context, args);
   assert.ok(
     Number.isInteger(context.lease.port) && context.lease.port > 1024 && context.lease.port < 65536,
     'L0_UNUSED_CDP_PORT_REQUIRED'
   );
-  const socket = await runtimeIdentity(context, adb);
-  const forwards = (await adb(['forward', '--list'])).toString();
-  assert.ok(
-    !forwards.split('\n').some((line) => line.split(/\s+/)[1] === `tcp:${context.lease.port}`),
-    'L0_FOREIGN_ADB_FORWARD_REFUSED'
-  );
-  await adb(['forward', '--no-rebind', `tcp:${context.lease.port}`, `localabstract:${socket}`]);
-  let session;
+  let session,
+    socket,
+    provider,
+    forwardAttempted = false;
+  const failures = [];
   try {
+    ({ socket, provider } = await runtimeIdentity(context, adb));
+    const forwards = (await adb(['forward', '--list'])).toString();
+    assert.ok(
+      !forwards.split('\n').some((line) => line.split(/\s+/)[1] === `tcp:${context.lease.port}`),
+      'L0_FOREIGN_ADB_FORWARD_REFUSED'
+    );
+    forwardAttempted = true;
+    await adb(['forward', '--no-rebind', `tcp:${context.lease.port}`, `localabstract:${socket}`]);
     const response = await fetch(`http://127.0.0.1:${context.lease.port}/json`, {
-      signal: AbortSignal.timeout(COMMAND_DEADLINE_MS),
+      signal: AbortSignal.timeout(commandRemainingMs(context, COMMAND_DEADLINE_MS)),
     });
     assert.ok(response.ok, 'L0_CDP_TARGET_LIST_FAILED');
     const bytes = Buffer.from(await response.arrayBuffer());
@@ -205,14 +152,17 @@ export async function androidCommand(context) {
       ['127.0.0.1', 'localhost'].includes(url.hostname) && Number(url.port) === context.lease.port,
       'L0_CDP_ENDPOINT_INVALID'
     );
-    session = await connect(context, url.href);
-    const deadline = Date.now() + PAGE_DEADLINE_MS;
+    session = await connectFixtureSession(context, url.href);
+    const browser = await session.browserVersion();
+    verifyChromiumProvider(provider, browser);
+    evidence(context, 'chromium-provider.json.txt', JSON.stringify({ provider, browser }, null, 2));
+    const deadline = Date.now() + commandRemainingMs(context, PAGE_DEADLINE_MS);
     while (!(await session.evaluate('Boolean(window.__SPLOTCH_L0__?.ready)'))) {
       assert.ok(Date.now() < deadline, 'L0_PAGE_READY_DEADLINE');
       await delay(POLL_INTERVAL_MS);
     }
     const run = async (command, name) => {
-      const expression = `(async () => JSON.stringify(await window.__SPLOTCH_L0__.run(${JSON.stringify(command)}, ${JSON.stringify(context.nonce)})))()`;
+      const expression = fixtureCommandExpression(command, context.nonce);
       const text = await session.evaluate(expression);
       assert.equal(typeof text, 'string', 'L0_PAGE_RETURN_ENCODING_INVALID');
       const bytes = evidence(context, name, text);
@@ -227,13 +177,22 @@ export async function androidCommand(context) {
       context.lease.processStartTicks,
       'L0_ANDROID_PROCESS_CHANGED_DURING_COMMAND'
     );
+  } catch (error) {
+    failures.push(error);
   } finally {
+    beginCommandCleanup(context);
     try {
-      if (session) await session.close();
-    } finally {
+      await closeConnections(context);
+    } catch (error) {
+      failures.push(error);
+    }
+    if (forwardAttempted) {
       try {
         await adb(['logcat', '-d', '-v', 'threadtime', '--pid', String(context.lease.pid)]);
-      } finally {
+      } catch (error) {
+        failures.push(error);
+      }
+      try {
         const beforeRemove = (await adb(['forward', '--list'])).toString();
         const mappings = beforeRemove
           .split('\n')
@@ -253,12 +212,11 @@ export async function androidCommand(context) {
           !after.split('\n').some((line) => line.split(/\s+/)[1] === `tcp:${context.lease.port}`),
           'L0_OWNED_FORWARD_REMAINS'
         );
-        assert.equal(
-          digest(readFileSync(context.lease.adbPath)),
-          context.lease.adbSha256,
-          'L0_ADB_IDENTITY_CHANGED_DURING_COMMAND'
-        );
+      } catch (error) {
+        failures.push(error);
       }
     }
   }
+  if (failures.length === 1) throw failures[0];
+  if (failures.length) throw new AggregateError(failures, 'L0_ANDROID_COMMAND_AND_CLEANUP_FAILED');
 }

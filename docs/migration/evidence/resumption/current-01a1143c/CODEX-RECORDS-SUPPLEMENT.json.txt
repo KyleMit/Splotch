@@ -1,0 +1,98 @@
+{
+  "recordedAtUtc": "2026-10-07T04:11:53Z",
+  "reviewer": "Independent bounded Codex agent /root/records_review",
+  "scope": "Supplemental records review only; no implementation acceptance or original rival budget reset",
+  "reviewedBase": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "reviewedHead": "8589fdd886a1d5a35472147f0774f8a9e0be3e8f",
+  "reviewedTree": "5596727b4938ab19dad3eebba987187154836b09",
+  "reviewedHeadWasClean": true,
+  "supplementalSince": "922857ba222c8c4b56366eb55a61f6a2cf294f9d",
+  "priorCoreReview": {
+    "head": "af4f335a0b0e4ab7867283e0936ca4371b4616b5",
+    "tree": "49581a823768711093afd7fcaeed03c1b6619809",
+    "scopeUnchanged": true,
+    "limit": "The earlier core archive review and subsequent standalone-mode clarification retain their original scopes; this supplement does not relabel them as reviews of the later head."
+  },
+  "reviewedPaths": [
+    {
+      "path": "docs/migration/CAMPAIGN.md",
+      "bytes": 55221,
+      "sha256": "20418dc4ee32e3ea9706b7269b3821366eb6a8c748f8464ecdd2233ec8eb284c"
+    },
+    {
+      "path": "docs/migration/evidence/resumption/current-01a1143c/PARENT-GATES.json.txt",
+      "bytes": 5610,
+      "sha256": "3b1e3ded825d7febc5db172ca9bdf1899b2220b607b7a6a38ff78e379a74e734"
+    },
+    {
+      "path": "docs/migration/evidence/resumption/current-01a1143c/PARENT-GATES.tar.gz",
+      "bytes": 1730924,
+      "sha256": "2af545bc9ec8ba46aab05405016db98cce046747c0813dbd78d2a932f3923f41"
+    },
+    {
+      "path": "docs/migration/evidence/resumption/current-01a1143c/PUBLICATION-SETUP.json.txt",
+      "bytes": 1815,
+      "sha256": "1090742d5cce89327b2c430842dfe8bf85c09503f8a278482738a3e453fac809"
+    },
+    {
+      "path": "docs/migration/evidence/shared-java21/README.md",
+      "bytes": 2167,
+      "sha256": "c88173e53d33957f8182bc9684227e2322172fec1583ed4b7a13173ea0d58f99"
+    },
+    {
+      "path": "docs/migration/evidence/shared-java21/manifest.json.txt",
+      "bytes": 88334,
+      "sha256": "082ca55ccc25bc3e131acaca0f633e5d6fb99d23e961d5fded2b630dd7a330bc"
+    },
+    {
+      "path": "docs/migration/evidence/shared-java21/receipts.tar.gz",
+      "bytes": 701273,
+      "sha256": "24c0856e5c513c9d742a5d350c24f00849daca0805719b9d22d72284e9657a1c"
+    }
+  ],
+  "independentChecks": {
+    "archiveIntegrity": "Both complete member sets are unique safe regular paths; member bytes, SHA256 and archived modes match their manifests, and both outer archive identities match.",
+    "java21": {
+      "members": 395,
+      "memberBytes": 5174710,
+      "exactPrivatePacketMatches": 395,
+      "originalPacketManifestSha256": "d04aedb87d0039f5f02a6556948fb71779923680b4331468ec2ec918bb687498",
+      "originalManifestMemberRows": 394,
+      "exactOriginalSourceMatches": 391,
+      "generatedRows": 3,
+      "finalReceiptBindingsVerified": 17,
+      "qualifiedSourceIdentitiesVerified": 4,
+      "packagedAvailabilityMappingsVerifiedAgainstOriginal": 61,
+      "installedWitnessRows": 550,
+      "installedWitnessRegularFiles": 459,
+      "signaturePositiveRejectingRestoredExits": [0, 1, 0],
+      "recordedModules": 69,
+      "runtimeResultSha256": "e00afdebe20d926e380bf21a07b0cb55b62d44eeec2db14af99a631061ed6de8",
+      "resultReadback": "Final acquisition/authentication/runtime receipts record exit0, unchanged frozen inputs and released observed groups. Actual Java17 refusal, restored Java21, codesign integrity and jimage read agree with the summaries; earlier failures remain unaccepted and separate.",
+      "privacyScan": "Finite scan of all395 members found no recognized provider-token, private-key or signed-authorization-query patterns. The availability map explicitly omits22 acquisition channels and host-local trust inputs."
+    },
+    "parentGates": {
+      "members": 19,
+      "memberBytes": 6056640,
+      "scratchRootSourceMatches": 17,
+      "controllerSourceMatches": 2,
+      "resultReadback": "Original scratch roots and both controller copies match the public bytes/modes. The logs preserve the initial Quality exit1, frozen installation exit0, subsequent all15 Quality checks exit0 and7726 tool tests exit0. Source and installed-metadata equality assertions retain their recorded limits."
+    },
+    "publicationSetup": "Preserved zero-byte lock bytes, SHA256, inode and mtime match the receipt; the original lock path was absent at readback. Historical process inventories were not independently reproduced.",
+    "claimBoundaries": "The register preserves original F1/L0/neutral/N1 identities and budgets, exhausted F1 hold, separate L0 native consumers, unexecuted L0 native evidence, pending neutral release cost, and open product/physical/continuity/ADR/signing/release gates."
+  },
+  "findings": [],
+  "verdict": "No findings within the seven-path supplemental records scope",
+  "limits": [
+    "Static/hash/archive and available original-source readback only; no recovered controller execution or qualification rerun.",
+    "Host-local raw artifact, installed runtimes, inherited verifier/SDK/signing material and signed redirect channels prevent independent reconstruction from the public packet alone.",
+    "No independent offline publisher/verifier attestation, fresh revocation, online notarization, complete OS loaded-image graph or native consumer acceptance.",
+    "Remote publication, hosted CI and private provider conversation/ledger availability were not independently verified in this supplement.",
+    "The finite privacy scan is not an exhaustive secret audit.",
+    "This receipt, its later formatting/publication, and any later metadata or source changes are outside the reviewed head and paths."
+  ],
+  "implementationAcceptance": false,
+  "originalUnitBudgetReset": false,
+  "migrationCompletion": false,
+  "reviewOperations": "Read-only checks; no full tests/build/install/performance/native/device workloads, Git mutations or external publication. This separately authorized receipt write is the only output edit."
+}

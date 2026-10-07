@@ -160,3 +160,10 @@ Native compilation/install/runtime/effective-origin/profile, native installed gr
 association, replacement transactions, deployed binary/source association, signed-channel upgrades,
 physical performance and final campaign completion remain open. Same-version source fixture
 mechanics cannot establish a released-channel upgrade.
+
+The [isolated ownership source qualification](isolated-ownership/README.md) records the current
+nineteen-path source repair and ordinary accepted ff900 composition. Exact staged source passed 96
+scoped tests, format/check/lint, all15 Quality checks and all5 Browserless tiers. The five-member
+public capsule contains derived outcomes, source identities and private raw hash references; full
+original evidence and genuine earlier source failures remain in the private owner checkpoint. Native
+execution and the final original review remain pending.

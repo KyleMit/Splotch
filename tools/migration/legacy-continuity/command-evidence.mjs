@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import {
   createWriteStream,
+  openSync,
+  writeSync,
+  fsyncSync,
+  closeSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -10,13 +13,27 @@ import {
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { setTimeout as delay } from 'node:timers/promises';
 import { assertNonce, digest, FIXTURE_COMMANDS } from './contract.mjs';
 import { spawnCommandGate } from './run-command-gate.mjs';
+import {
+  captureProcessIdentity,
+  recordProcessGroup,
+  releaseOwnedCommandGroup,
+  requireLiveCommandOwner,
+  OWNERSHIP_DEADLINE_MS,
+} from './process-ownership.mjs';
+
+import {
+  configureCommandTiming,
+  commandRemainingMs,
+  beginCommandCleanup,
+} from './command-timing.mjs';
+import { verifyRunnerInputs } from './runner-inputs.mjs';
+import { requireIsolatedServerLease } from './adb-server.mjs';
 
 const COMMAND_DEADLINE_MS = 10_000;
-const TEARDOWN_DEADLINE_MS = 2_000;
-const POLL_INTERVAL_MS = 100;
+const TEARDOWN_DEADLINE_MS = OWNERSHIP_DEADLINE_MS;
+export const COMMAND_CHILD_LEDGER = 'command-children.jsonl.txt';
 
 function isTemporaryParent(parent) {
   return [tmpdir(), '/tmp'].some((path) => {
@@ -38,6 +55,11 @@ export function commandContext(options) {
     assert.ok(Date.parse(lease.expiresAt) > Date.now(), 'L0_LEASE_EXPIRED');
   assert.match(lease.deviceName, /^splotch-l0-[a-z0-9-]+$/, 'L0_OWNED_DEVICE_NAME_REQUIRED');
   assert.ok(typeof lease.device === 'string' && lease.device.length > 0, 'L0_DEVICE_REQUIRED');
+  const timing = configureCommandTiming(lease, options.platform);
+  if (options.platform === 'android') {
+    verifyRunnerInputs(lease);
+    requireIsolatedServerLease(lease);
+  }
   const fixtureRoot = realpathSync(options.fixture);
   assert.equal(fixtureRoot, lease.fixtureRoot, 'L0_LEASE_SOURCE_ROOT_MISMATCH');
   const inputBytes = readFileSync(join(fixtureRoot, '.splotch-l0-source.json'));
@@ -55,8 +77,10 @@ export function commandContext(options) {
   assert.ok(isTemporaryParent(parent), 'L0_OWNED_OUTPUT_ROOT_REQUIRED');
   assert.ok(!existsSync(root), 'L0_EXISTING_OUTPUT_REFUSED');
   mkdirSync(root);
+  writeFileSync(join(root, COMMAND_CHILD_LEDGER), '', { flag: 'wx' });
   const context = {
     ...options,
+    ...timing,
     root,
     fixtureRoot,
     input,
@@ -101,107 +125,6 @@ export function evidence(context, name, bytes) {
   return data;
 }
 
-function observeGroup(call) {
-  let observation;
-  try {
-    process.kill(-call.pid, 0);
-    observation = { status: 'present' };
-  } catch (error) {
-    observation =
-      error.code === 'ESRCH'
-        ? { status: 'absent' }
-        : { status: 'indeterminate', code: error.code ?? null, error: String(error) };
-  }
-  call.groupObservations ??= [];
-  call.groupObservations.push({ at: new Date().toISOString(), ...observation });
-  return observation;
-}
-
-function groupExists(call) {
-  const observation = observeGroup(call);
-  assert.notEqual(observation.status, 'indeterminate', 'L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
-  return observation.status === 'present';
-}
-
-function processIdentity(pid, timeoutMs) {
-  try {
-    const raw = execFileSync(
-      '/bin/ps',
-      [
-        '-ww',
-        '-p',
-        String(pid),
-        '-o',
-        'pid=',
-        '-o',
-        'ppid=',
-        '-o',
-        'pgid=',
-        '-o',
-        'lstart=',
-        '-o',
-        'args=',
-      ],
-      { encoding: 'utf8', timeout: timeoutMs, env: { ...process.env, LC_ALL: 'C' } }
-    );
-    const match = raw
-      .trim()
-      .match(
-        /^(\d+)\s+(\d+)\s+(\d+)\s+(\w{3}\s+\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})\s+([\s\S]+)$/
-      );
-    if (!match) return { status: 'unavailable', raw, reason: 'L0_PROCESS_IDENTITY_FORMAT' };
-    return {
-      status: 'observed',
-      pid: Number(match[1]),
-      ppid: Number(match[2]),
-      pgid: Number(match[3]),
-      birth: match[4],
-      argv: match[5],
-      raw,
-    };
-  } catch (error) {
-    return {
-      status: 'unavailable',
-      error: String(error),
-      stdout: error.stdout?.toString() ?? '',
-      stderr: error.stderr?.toString() ?? '',
-    };
-  }
-}
-
-function requireLiveOwner(call) {
-  const live = processIdentity(call.pid, TEARDOWN_DEADLINE_MS);
-  call.signalIdentityChecks ??= [];
-  call.signalIdentityChecks.push({ at: new Date().toISOString(), live });
-  assert.ok(
-    call.identity?.status === 'observed' &&
-      live.status === 'observed' &&
-      live.pid === call.pid &&
-      live.ppid === process.pid &&
-      live.pgid === call.pid &&
-      call.identity.ppid === live.ppid &&
-      call.identity.pgid === live.pgid &&
-      call.identity.birth === live.birth &&
-      call.identity.argv === live.argv,
-    'L0_PROCESS_OWNERSHIP_UNRESOLVED_NO_SIGNAL'
-  );
-}
-
-async function endGroup(call) {
-  if (!groupExists(call)) return;
-  requireLiveOwner(call);
-  process.kill(-call.pid, 'SIGTERM');
-  const deadline = Date.now() + TEARDOWN_DEADLINE_MS;
-  while (groupExists(call) && Date.now() < deadline) await delay(POLL_INTERVAL_MS);
-  if (groupExists(call)) {
-    requireLiveOwner(call);
-    process.kill(-call.pid, 'SIGKILL');
-  }
-  const killDeadline = Date.now() + TEARDOWN_DEADLINE_MS;
-  while (groupExists(call) && Date.now() < killDeadline) await delay(POLL_INTERVAL_MS);
-  assert.ok(!groupExists(call), 'L0_OWNED_COMMAND_GROUP_REMAINS');
-}
-
 async function beforeDeadline(promise, deadline) {
   const remaining = deadline - Date.now();
   assert.ok(remaining > 0, 'L0_COMMAND_DEADLINE');
@@ -218,11 +141,11 @@ async function beforeDeadline(promise, deadline) {
   }
 }
 
-async function releaseCompletedGate(call, gate) {
-  const result = await beforeDeadline(gate.release(), Date.now() + TEARDOWN_DEADLINE_MS);
+async function releaseCompletedGate(call, gate, deadline) {
+  const result = await beforeDeadline(gate.release(), deadline);
   call.gateExit = result;
   assert.equal(result.code, 0, 'L0_GATE_RELEASE_FAILED');
-  const observation = observeGroup(call);
+  const observation = recordProcessGroup(call);
   call.naturalGroupChecks ??= [];
   call.naturalGroupChecks.push({
     at: new Date().toISOString(),
@@ -232,28 +155,59 @@ async function releaseCompletedGate(call, gate) {
   });
   assert.notEqual(observation.status, 'indeterminate', 'L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
   if (observation.status === 'present') {
-    requireLiveOwner(call);
+    requireLiveCommandOwner(call);
     assert.fail('L0_NATURAL_TARGET_GROUP_REMAINS');
   }
 }
 
-export async function capturedCommand(context, executable, args) {
-  const deadline = Date.now() + COMMAND_DEADLINE_MS;
+/**
+ * External native service supervision shares the fixture commands' durable spawn ledger.
+ * @public
+ */
+export function recordCommandPhase(context, call, phase) {
+  const fd = openSync(join(context.root, COMMAND_CHILD_LEDGER), 'a');
+  try {
+    const bytes = Buffer.from(
+      JSON.stringify({ at: new Date().toISOString(), ownerPid: process.pid, phase, call }) + '\n'
+    );
+    let offset = 0;
+    while (offset < bytes.length) {
+      const written = writeSync(fd, bytes, offset, bytes.length - offset);
+      assert.ok(
+        Number.isInteger(written) && written > 0 && written <= bytes.length - offset,
+        'L0_COMMAND_LEDGER_WRITE_NO_PROGRESS'
+      );
+      offset += written;
+    }
+    fsyncSync(fd);
+  } catch (error) {
+    call.ledgerFailure ??= String(error);
+    call.ledgerFailures ??= [];
+    call.ledgerFailures.push({ phase, reason: String(error) });
+    throw error;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+export async function capturedCommand(context, executable, args, boundMs = COMMAND_DEADLINE_MS) {
+  const deadline = Date.now() + commandRemainingMs(context, boundMs);
   const id = String(context.calls.length + 1).padStart(3, '0');
   const stdoutName = `${id}.stdout.raw.txt`;
   const stderrName = `${id}.stderr.raw.txt`;
-  const out = createWriteStream(join(context.root, stdoutName), { flags: 'wx' });
-  const err = createWriteStream(join(context.root, stderrName), { flags: 'wx' });
   const call = {
     id,
     executable,
     args,
     startedAt: new Date().toISOString(),
-    deadlineMs: COMMAND_DEADLINE_MS,
+    deadlineMs: deadline - Date.now(),
     deadlineAt: new Date(deadline).toISOString(),
   };
   context.calls.push(call);
-  const gate = spawnCommandGate(call);
+  recordCommandPhase(context, call, 'admitted');
+  const out = createWriteStream(join(context.root, stdoutName), { flags: 'wx' });
+  const err = createWriteStream(join(context.root, stderrName), { flags: 'wx' });
+  const gate = spawnCommandGate(call, (phase) => recordCommandPhase(context, call, phase));
   const child = gate.child;
   call.pid = child.pid;
   const naturalEnd = { stdout: false, stderr: false };
@@ -289,14 +243,17 @@ export async function capturedCommand(context, executable, args) {
   for (const pending of [outClosed, errClosed]) pending.catch(() => {});
   let cancelled = false;
   let output, commandError, ownershipError, outputError;
-  const assertRunning = () => assert.ok(!cancelled && Date.now() < deadline, 'L0_COMMAND_DEADLINE');
+  const assertRunning = () => {
+    assert.ok(!cancelled && Date.now() < deadline, 'L0_COMMAND_DEADLINE');
+    commandRemainingMs(context, COMMAND_DEADLINE_MS);
+  };
   const operation = async () => {
     await gate.ready;
     assertRunning();
     const identityRemainingMs = deadline - Date.now();
     assert.ok(identityRemainingMs > 0, 'L0_COMMAND_DEADLINE');
     call.identity = child.pid
-      ? processIdentity(child.pid, identityRemainingMs)
+      ? captureProcessIdentity(child.pid, identityRemainingMs)
       : { status: 'unavailable', reason: 'L0_CHILD_NOT_SPAWNED' };
     assertRunning();
     assert.ok(
@@ -306,6 +263,7 @@ export async function capturedCommand(context, executable, args) {
         call.identity.argv === [process.execPath, call.gatePath].join(' '),
       'L0_SPAWN_IDENTITY_UNQUALIFIED'
     );
+    recordCommandPhase(context, call, 'gate-qualified');
     await gate.start(executable, args);
     assertRunning();
     const result = await gate.result;
@@ -313,7 +271,11 @@ export async function capturedCommand(context, executable, args) {
     call.signal = result.signal;
     assertRunning();
     assert.equal(result.code, 0, `L0_COMMAND_EXIT_REFUSED: ${result.code}`);
-    await releaseCompletedGate(call, gate);
+    await releaseCompletedGate(
+      call,
+      gate,
+      Math.min(Date.now() + TEARDOWN_DEADLINE_MS, context.cleanupDeadline ?? Infinity)
+    );
     assertRunning();
     await Promise.all([outClosed, errClosed]);
     output = readFileSync(join(context.root, stdoutName));
@@ -335,8 +297,17 @@ export async function capturedCommand(context, executable, args) {
   } finally {
     cancelled = true;
     try {
-      if (gate.terminal) await releaseCompletedGate(call, gate);
-      else if (child.pid) await endGroup(call);
+      if (gate.terminal)
+        await releaseCompletedGate(
+          call,
+          gate,
+          Math.min(Date.now() + TEARDOWN_DEADLINE_MS, context.cleanupDeadline ?? Infinity)
+        );
+      else if (child.pid)
+        await releaseOwnedCommandGroup(
+          call,
+          Math.min(Date.now() + TEARDOWN_DEADLINE_MS * 2, context.cleanupDeadline ?? Infinity)
+        );
     } catch (error) {
       call.unresolvedOwnership = String(error);
       ownershipError = error;
@@ -351,14 +322,20 @@ export async function capturedCommand(context, executable, args) {
     out.end();
     err.end();
     try {
-      await beforeDeadline(Promise.all([outClosed, errClosed]), Date.now() + TEARDOWN_DEADLINE_MS);
+      await beforeDeadline(
+        Promise.all([outClosed, errClosed]),
+        Math.min(Date.now() + TEARDOWN_DEADLINE_MS, context.cleanupDeadline ?? Infinity)
+      );
     } catch (error) {
       call.outputFinalizationFailure = String(error);
       outputError = error;
       out.destroy();
       err.destroy();
       try {
-        await beforeDeadline(Promise.all(destinationClosed), Date.now() + TEARDOWN_DEADLINE_MS);
+        await beforeDeadline(
+          Promise.all(destinationClosed),
+          Math.min(Date.now() + TEARDOWN_DEADLINE_MS, context.cleanupDeadline ?? Infinity)
+        );
       } catch (closeError) {
         call.outputCloseFailure = String(closeError);
         outputError = new AggregateError([error, closeError], 'L0_OUTPUT_FINALIZATION_UNSETTLED');
@@ -366,7 +343,7 @@ export async function capturedCommand(context, executable, args) {
     }
     if (call.gateFailure && !commandError) commandError = new Error(call.gateFailure);
     call.endedAt = new Date().toISOString();
-    const finalGroup = child.pid ? observeGroup(call) : { status: 'absent' };
+    const finalGroup = child.pid ? recordProcessGroup(call) : { status: 'absent' };
     call.groupAbsent = finalGroup.status === 'absent';
     if (finalGroup.status === 'indeterminate') {
       ownershipError ??= new Error('L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
@@ -402,6 +379,12 @@ export async function capturedCommand(context, executable, args) {
         streamCompletion: natural ? 'natural-eof' : 'forced-or-unsettled',
       });
     }
+    try {
+      recordCommandPhase(context, call, 'finalized');
+    } catch (error) {
+      call.ledgerFailure = String(error);
+      outputError ??= error;
+    }
     writeFileSync(
       join(context.root, 'commands.json.txt'),
       JSON.stringify(context.calls, null, 2) + '\n'
@@ -414,7 +397,49 @@ export async function capturedCommand(context, executable, args) {
   return output;
 }
 
+export async function settleCommandChildren(context) {
+  beginCommandCleanup(context);
+  const failures = [];
+  for (const call of context.calls) {
+    try {
+      if (call.pid && recordProcessGroup(call).status !== 'absent') {
+        commandRemainingMs(context, TEARDOWN_DEADLINE_MS);
+        await releaseOwnedCommandGroup(
+          call,
+          Math.min(Date.now() + TEARDOWN_DEADLINE_MS * 2, context.cleanupDeadline ?? Infinity)
+        );
+      }
+      call.finalGroupObservation = call.pid ? recordProcessGroup(call) : { status: 'absent' };
+      call.groupAbsent = call.finalGroupObservation.status === 'absent';
+      assert.ok(call.groupAbsent, 'L0_INNER_COMMAND_GROUP_UNSETTLED');
+    } catch (error) {
+      call.finalSettlementFailure = String(error);
+      failures.push(error);
+    }
+    try {
+      recordCommandPhase(context, call, 'independently-settled');
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  writeFileSync(
+    join(context.root, 'commands.json.txt'),
+    JSON.stringify(context.calls, null, 2) + '\n'
+  );
+  if (context.platform === 'android') verifyRunnerInputs(context.lease);
+  if (failures.length) throw new AggregateError(failures, 'L0_INNER_COMMAND_SETTLEMENT_FAILED');
+}
+
 export function finishEvidence(context, status, detail) {
+  const ledgerBytes = readFileSync(join(context.root, COMMAND_CHILD_LEDGER));
+  context.artifacts.push({
+    path: COMMAND_CHILD_LEDGER,
+    bytes: ledgerBytes.length,
+    sha256: digest(ledgerBytes),
+    complete: context.calls.every(
+      (call) => call.groupAbsent === true && !call.ledgerFailure && !call.finalSettlementFailure
+    ),
+  });
   const commandsPath = join(context.root, 'commands.json.txt');
   if (existsSync(commandsPath)) {
     const bytes = readFileSync(commandsPath);

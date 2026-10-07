@@ -230,6 +230,56 @@ saveNaming source owners. The owned overlay exports the actual private recognize
 has no held format: its raw future-namespace observation explicitly borrows fixed later owner
 literals, recognizes no entries and refuses the held writer.
 
+The Android fixture actions `android-command` and `android-disk-watch` require macOS. They qualify
+this host's owned isolated adb listener using the actual macOS process and executable inspection
+owners; they refuse Linux before creating evidence or consuming an SDK command. This restriction
+does not change the shipping Android build guide's Linux consumer.
+
+Every Android command lease also supplies `workExpiresAt`, `cleanupExpiresAt`, `runnerInputs`,
+`browserTargetsSha256`, `unitNonce` and `adbServer`. The work and cleanup cuts are absolute and
+ordered inside `expiresAt`. Cancellation forbids new work while retaining the original cleanup cut.
+`runnerInputs` binds every maintained caller module and the selected inspection programs by path,
+realpath, bytes and SHA-256. The inputs are checked before command admission and after independent
+child settlement.
+
+The server must be owned by L0, started in the foreground through the recorded command gate and
+bound to a previously unused loopback port. Port 5037 is refused before evidence creation. A private
+immutable launch receipt binds the unit nonce, selected client bytes, complete foreground argv,
+spawned target PID and actual gate/server identities. A fresh strict process/listener/executable and
+nonmutating protocol observation precedes and follows each SDK call, including watcher and cleanup
+calls. Changed, missing, duplicate or indeterminate observations refuse further SDK consumption.
+Boundary observations do not prove continuous server identity between observations.
+
+SDK calls explicitly select the owned port with numeric `-H 127.0.0.1 -P PORT`. The upstream
+[adb client](https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-14.0.0_r27/client/adb_client.cpp)
+can stop and restart a server after a protocol mismatch. Numeric host selection does not establish
+nonmutating behavior. The session must qualify the actual selected client and emulator route against
+its own isolated endpoint; the default server is a separate read-only witness and receives no SDK
+call, stop or replacement instruction. An upstream source read does not associate the installed
+executable with compiled source.
+
+Before a gate starts its target, `command-children.jsonl.txt` records the admitted invocation,
+spawned gate and qualified gate identity, with each phase written and synchronized to disk. Target
+start/result and final output settlement append separate phases. Finalization independently observes
+every recorded inner group; an outer process's absence does not settle its detached children.
+Unavailable ownership refuses signals and leaves the command failed. Work, CDP, SDK calls and output
+closure use the original phase cuts; each complete outer invocation still needs its independently
+measured bound, including input checks and final receipt writing.
+
+The runtime captures the actual WebView provider and CDP browser version before fixture commands.
+Both must satisfy the Chrome floor derived from that role's frozen `web/browserTargets.ts`; the
+provider and CDP major versions must agree. An Android API level alone cannot establish this floor.
+
+`android-disk-watch` observes the actual seed command's matched raw preimage, request, response,
+nonce and source before accepting its JSON-string memory acknowledgement. It uses the same guarded
+SDK caller to capture complete primary/backup XML files. The five-second observation is measured at
+the closed SDK capture, with the later guard completion recorded separately. This proves no atomic
+multi-file transaction or alias durability.
+
+```sh
+npm run migration:legacy-continuity -- android-disk-watch --fixture /private/tmp/splotch-legacy-continuity-released-RUN --lease /private/tmp/L0-android-lease.json --nonce HEX32 --seed-output /private/tmp/splotch-legacy-continuity-android-seed-RUN --output /private/tmp/splotch-legacy-continuity-android-disk-RUN
+```
+
 ## Tool ownership and retirement
 
 Any source revision, owner literal/registration, tool/template, graph, generated configuration,

@@ -14,7 +14,7 @@ function fields(value, names) {
   );
 }
 
-export function spawnCommandGate(call) {
+export function spawnCommandGate(call, onPhase) {
   const path = fileURLToPath(import.meta.url);
   const bytes = readFileSync(path);
   call.gateSource = { path, bytes: bytes.length, sha256: digest(bytes) };
@@ -47,6 +47,7 @@ export function spawnCommandGate(call) {
   call.ownerRole = 'command-gate';
   call.gatePath = path;
   call.gateEvents = [];
+  call.pid = child.pid;
   const fail = (error) => {
     call.gateFailures ??= [];
     call.gateFailures.push({ at: new Date().toISOString(), reason: String(error) });
@@ -62,6 +63,7 @@ export function spawnCommandGate(call) {
         fields(message, ['kind']);
         assert.equal(phase, 'spawned', 'L0_GATE_MESSAGE_ORDER_INVALID');
         phase = 'ready';
+        onPhase('gate-ready');
         readyResolve();
       } else if (message?.kind === 'started') {
         fields(message, ['kind', 'pid']);
@@ -72,6 +74,7 @@ export function spawnCommandGate(call) {
         );
         call.targetPid = message.pid;
         phase = 'started';
+        onPhase('target-started');
       } else if (message?.kind === 'exit') {
         fields(message, ['kind', 'pid', 'code', 'signal']);
         assert.equal(phase, 'started', 'L0_GATE_MESSAGE_ORDER_INVALID');
@@ -83,6 +86,7 @@ export function spawnCommandGate(call) {
         );
         phase = 'terminal';
         terminal = message;
+        onPhase('target-exited');
         resultResolve(message);
       } else if (message?.kind === 'spawn-error') {
         fields(message, ['kind', 'error', 'code']);
@@ -94,6 +98,7 @@ export function spawnCommandGate(call) {
         );
         phase = 'terminal';
         terminal = message;
+        onPhase('target-spawn-error');
         resultReject(new Error(`L0_TARGET_SPAWN_FAILED: ${message.error}`));
       } else assert.fail('L0_GATE_MESSAGE_INVALID');
     } catch (error) {
@@ -111,6 +116,11 @@ export function spawnCommandGate(call) {
     new Promise((resolve, reject) => {
       child.send(message, (error) => (error ? reject(error) : resolve()));
     });
+  try {
+    onPhase('gate-spawned');
+  } catch (error) {
+    fail(error);
+  }
   return {
     child,
     ready,

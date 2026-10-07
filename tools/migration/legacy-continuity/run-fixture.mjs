@@ -3,8 +3,9 @@ import { parseArgs } from 'node:util';
 import { isMain, runMain } from '../../lib/proc.mjs';
 import { inspectSource } from './source-inputs.mjs';
 import { materializeFixture } from './materialize.mjs';
-import { commandContext, finishEvidence } from './command-evidence.mjs';
+import { commandContext, finishEvidence, settleCommandChildren } from './command-evidence.mjs';
 import { androidCommand } from './android-command.mjs';
+import { runAndroidDiskWatch } from './run-android-disk-watch.mjs';
 import { iosReceipt } from './ios-receipt.mjs';
 
 export async function runLegacyContinuity(argv) {
@@ -20,17 +21,29 @@ export async function runLegacyContinuity(argv) {
       command: { type: 'string' },
       nonce: { type: 'string' },
       receipt: { type: 'string' },
+      'seed-output': { type: 'string' },
       console: { type: 'string' },
       raw: { type: 'string' },
       result: { type: 'string' },
     },
   });
-  assert.equal(positionals.length, 1, 'Use inspect, materialize, android-command or ios-receipt');
+  assert.equal(
+    positionals.length,
+    1,
+    'Use inspect, materialize, android-command, android-disk-watch or ios-receipt'
+  );
   const [action] = positionals;
   assert.ok(
-    ['inspect', 'materialize', 'android-command', 'ios-receipt'].includes(action),
+    ['inspect', 'materialize', 'android-command', 'android-disk-watch', 'ios-receipt'].includes(
+      action
+    ),
     'L0_COMMAND_INVALID'
   );
+  if (action === 'android-disk-watch') {
+    const names = ['fixture', 'lease', 'nonce', 'seed-output', 'output'];
+    for (const name of names) assert.ok(values[name], `L0_WATCH_${name}_REQUIRED`);
+    return runAndroidDiskWatch(names.flatMap((name) => ['--' + name, values[name]]));
+  }
   if (action === 'inspect' || action === 'materialize') {
     assert.ok(values.source, 'L0_SOURCE_REQUIRED');
     if (action === 'materialize') {
@@ -49,13 +62,35 @@ export async function runLegacyContinuity(argv) {
     if (platform === 'ios')
       for (const name of ['receipt', 'console', 'raw', 'result'])
         assert.ok(values[name], `L0_${name.toUpperCase()}_REQUIRED`);
+    if (platform === 'android')
+      assert.equal(process.platform, 'darwin', 'L0_ANDROID_FIXTURE_GUARD_REQUIRES_MACOS');
     const context = commandContext({ ...values, platform });
-    let detail;
+    const cancelWork = () => {
+      context.workCancelled = true;
+    };
+    if (platform === 'android') process.on('SIGTERM', cancelWork);
+    let detail, failure;
     try {
       detail = platform === 'android' ? await androidCommand(context) : iosReceipt(context);
     } catch (error) {
-      finishEvidence(context, 'failed; disposition requires actual failure reason', String(error));
-      throw error;
+      failure = error;
+    } finally {
+      if (platform === 'android') {
+        try {
+          await settleCommandChildren(context);
+        } catch (error) {
+          failure = failure ? new AggregateError([failure, error]) : error;
+        }
+        process.removeListener('SIGTERM', cancelWork);
+      }
+    }
+    if (failure) {
+      finishEvidence(
+        context,
+        'failed; disposition requires actual failure reason',
+        String(failure)
+      );
+      throw failure;
     }
     const status =
       detail?.status === 'command-failure' ? 'command-failure' : 'command-receipt-completed';

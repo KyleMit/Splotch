@@ -1,0 +1,92 @@
+{
+  "preparedAtUtc": "2026-10-07T00:24:03.651643+00:00",
+  "userRequestedPauseWindow": {
+    "received": "2026-10-07T00:12:59Z",
+    "earliest": "2026-10-07T00:17:59Z",
+    "latest": "2026-10-07T01:02:59Z"
+  },
+  "state": "All unit work stopped and clean stopping point reached; explicit goal pause follows immediately",
+  "goalComplete": false,
+  "acceptedIntegration": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "implementationAcceptanceRemains": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "canonicalCheckoutPreservedClean": "feab24b13859d0328f158288fe9027330c09b748",
+  "uncommittedSourceRemainsHostLocal": true,
+  "noNewSourceCommitPushMergeDuringStopSequence": true,
+  "leasesReleased": true,
+  "deviceLease": null,
+  "originalReviewBudgetsPreserved": {
+    "F1": [
+      "bbe89d5b-644f-4d4f-9366-e5156cebf4ea",
+      3,
+      0
+    ],
+    "neutral": [
+      "8c229c08-f640-4bb6-bf08-6953253da0ee",
+      1,
+      2
+    ],
+    "L0": [
+      "1b406e61-641e-4cf8-86fb-2b1cd7548469",
+      2,
+      1
+    ],
+    "N1": [
+      "7c940639-09e2-4236-961f-1122171cb5d8",
+      2,
+      1
+    ]
+  },
+  "pr2708CurrentMetadata": {
+    "number": 2708,
+    "url": "https://github.com/KyleMit/Splotch/pull/2708",
+    "head": "b3b16831557dd894186574b9ce3b0c1184b2aab7",
+    "draft": true,
+    "updatedAt": "2026-10-07T00:17:48Z",
+    "originalConversation": "1b406e61-641e-4cf8-86fb-2b1cd7548469",
+    "roundsUsed": 2,
+    "roundsRemaining": 1
+  },
+  "receipts": {
+    "liveGitHub": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/pause-live-github-0016.json",
+      "bytes": 2301,
+      "sha256": "f983b1ae7c21347040406dfc0591420a4d4d49f5bd5116f5859d5f31ef03c1e8"
+    },
+    "worktreeFrontier": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/pause-worktree-frontier.json",
+      "bytes": 15473,
+      "sha256": "c78cbe67b1bb89b3d7f3e366b77f962df26e3f1342c723650950f8f915c9d1b4"
+    },
+    "neutralPreservation": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/neutral-host/source-preparation-paused-cf0-01/parent-final-preservation-release.json",
+      "bytes": 792,
+      "sha256": "8610a64b6b6a9c679b082aa02a68bda97ab20410326d2790df310cdc76d0df27"
+    },
+    "neutralFrontier": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/neutral-host/source-preparation-paused-cf0-01/pause-preparation/PAUSED-FRONTIER.md",
+      "bytes": 6002,
+      "sha256": "a9d48cd88f009b81b806947c5c980ed3c0b55d503016976b8f81933d4a0a26a1"
+    },
+    "L0Frontier": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity/fixture-extension-scoped-failure-20261007001559/tools-fixture-extension-20261007001559/PAUSED-FRONTIER.json.txt",
+      "bytes": 4298,
+      "sha256": "f60954df13bdd510f6f4bacf288f46a16cd9e91548e564ed67b0775e2520d7e2"
+    },
+    "java21Frontier": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/native/java21-filesystem-qualification/paused-frontier/PAUSED-FRONTIER.md.txt",
+      "bytes": 5747,
+      "sha256": "c4d6b51ee626ee4abd9746f92c4801b7bac4ac8cebc876f82f5733df69dc232a"
+    }
+  },
+  "resumeFirst": [
+    "Re-read active goal, this live register and exact unit frontiers; verify remote/source/environment inputs before adopting any grant. User resume is required.",
+    "Diagnose L0 actual two killEPERM process ownership failures using preserved inner controls, without guard weakening or unchanged blind retry; typecheck/lint remain unrun on current74 source. Preserve b3/real78d MERGE_HEAD; perform ordinary cf0 composition only after intermediate checks.",
+    "Qualify neutral complete current installed graph including attributed dprint hardlink, then freeze/run source/full gates and genuine original8c round2 before expensive host.",
+    "Native candidate source acceptance remains behind explicit F1 review-budget disposition; Java21 authenticated artifact/local payload/runtime qualification and actual qualified native mechanics remain separate.",
+    "Continue entire contract after these bounded units: physical calibration/comparison, faithful product, continuity, web contracts, signed upgrade/release and final independent review. Do not mark campaign complete at partial milestones."
+  ],
+  "externalDependencies": [
+    "Pending F1 original substantive-budget exception/disposition, no fourth/fresh/reset conversation permitted",
+    "Physical Android/iOS capture resources unavailable at last qualified observation; dependent physical/release gates remain open"
+  ]
+}
