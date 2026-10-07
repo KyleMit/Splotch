@@ -9,7 +9,11 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import {
-  WEB_HOST_COPY_ROLES,
+  WEB_HOST_NEUTRAL_COPY_ROLE,
+  WEB_HOST_NEUTRAL_PASSES,
+  webHostCopyRoles,
+  webHostCopyRequest,
+  webHostRequest,
   WEB_HOST_ENV,
   WEB_HOST_VARIANT,
   WEB_HOST_WRAPPER,
@@ -17,11 +21,28 @@ import {
 import { canonicalDirectory, ownedPath } from './web-host-ownership.mjs';
 import { assertCopyInputs, freezeCopyInputs } from './web-host-inputs.mjs';
 import { stagedBuildScripts } from './web-host-generated.mjs';
+import { sha256 } from './web-host-source.mjs';
+import { PINNED_APP_SHELL_NONCE_ENV } from '../../../web/appShellBuildNonce.ts';
 
 const BUILD_CHILD_TIMEOUT_MS = 600_000;
 const CHILD_ENV_NAMES = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TZ', 'SYSTEMROOT'];
 
-export function copiedBuildEnvironment(owned, copyRoot, artifact, pinnedMetadata) {
+export function copiedBuildEnvironment(
+  owned,
+  copyRoot,
+  artifact,
+  pinnedMetadata,
+  request = { variant: WEB_HOST_VARIANT, artifact, fixture: 'matching' }
+) {
+  const checked = webHostRequest({
+    ...request,
+    capacitor: 'false',
+    perfMarks: 'false',
+    harness: artifact === 'mechanism' ? 'true' : 'false',
+  });
+  if (checked.artifact !== artifact) throw new Error('Copied build artifact and request disagree');
+  const metadata = { ...pinnedMetadata };
+  if (checked.variant === 'neutral-embedded') delete metadata[PINNED_APP_SHELL_NONCE_ENV];
   const inherited = Object.fromEntries(
     CHILD_ENV_NAMES.filter((name) => process.env[name] !== undefined).map((name) => [
       name,
@@ -48,7 +69,7 @@ export function copiedBuildEnvironment(owned, copyRoot, artifact, pinnedMetadata
   }
   return {
     ...inherited,
-    ...pinnedMetadata,
+    ...metadata,
     CAPACITOR: 'false',
     PERF_MARKS: 'false',
     PUBLIC_ENABLE_DEV_HARNESS: artifact === 'mechanism' ? 'true' : 'false',
@@ -61,7 +82,9 @@ export function copiedBuildEnvironment(owned, copyRoot, artifact, pinnedMetadata
     [WEB_HOST_ENV.copyRoot]: copyRoot,
     [WEB_HOST_ENV.token]: owned.token,
     [WEB_HOST_ENV.artifact]: artifact,
-    [WEB_HOST_ENV.variant]: WEB_HOST_VARIANT,
+    [WEB_HOST_ENV.variant]: checked.variant,
+    [WEB_HOST_ENV.fixture]: checked.fixture,
+    ...(checked.variant === 'neutral-embedded' ? { NODE_ENV: 'production' } : {}),
   };
 }
 
@@ -156,69 +179,145 @@ export function freshBrowserEnvironment(owned, env) {
   return { ...env, PWTEST_CACHE_DIR: transform };
 }
 
-export async function buildControlCopies({ owned, copies, artifact, pinnedMetadata, bindings }) {
+export async function buildControlCopies({
+  owned,
+  copies,
+  artifact,
+  pinnedMetadata,
+  bindings,
+  request = { variant: WEB_HOST_VARIANT, artifact, fixture: 'matching' },
+}) {
   const children = [];
   const scriptOwners = {};
   let current = bindings;
-  for (const role of WEB_HOST_COPY_ROLES) {
-    const copyRoot = copies[role];
-    assertCopyInputs(owned, current, role);
-    scriptOwners[role] = stagedBuildScripts(copyRoot);
-    const env = copiedBuildEnvironment(owned, copyRoot, artifact, pinnedMetadata);
-    children.push(
-      await runCopiedChild({
+  let neutral;
+  if (bindings.variant !== request.variant)
+    throw new Error('Build copies disagree with their bound variant');
+  const roles = webHostCopyRoles(request.variant);
+  if (Object.keys(copies).sort().join() !== [...roles].sort().join())
+    throw new Error('Build omitted or added a requested copy role');
+  try {
+    for (const role of roles) {
+      const copyRoot = copies[role];
+      assertCopyInputs(owned, current, role);
+      scriptOwners[role] = stagedBuildScripts(copyRoot);
+      let env = copiedBuildEnvironment(
         owned,
         copyRoot,
-        env,
-        label: `${role}-prebuild`,
-        command: 'npm',
-        args: ['run', 'prebuild'],
-      })
-    );
-    assertCopyInputs(owned, current, role);
-    const args = ['--ignore-scripts', 'run', 'build'];
-    if (role === 'control') args.push('--', '--config', join(copyRoot, WEB_HOST_WRAPPER));
-    children.push(
-      await runCopiedChild({ owned, copyRoot, env, label: `${role}-build`, command: 'npm', args })
-    );
-    current = freezeCopyInputs(owned, current, role);
-    children.push(
-      await runCopiedChild({
+        artifact,
+        pinnedMetadata,
+        webHostCopyRequest(request, role)
+      );
+      children.push(
+        await runCopiedChild({
+          owned,
+          copyRoot,
+          env,
+          label: `${role}-prebuild`,
+          command: 'npm',
+          args: ['run', 'prebuild'],
+        })
+      );
+      assertCopyInputs(owned, current, role);
+      if (role === WEB_HOST_NEUTRAL_COPY_ROLE) {
+        const { prepareReactChrome } = await import('./web-host-react.mjs');
+        const prepared = await prepareReactChrome({ owned, bindings: current, copyRoot, env });
+        current = prepared.bindings;
+        children.push(...prepared.children);
+        neutral = { requestSha256: prepared.requestSha256, chromeSha256: prepared.chromeSha256 };
+        env = prepared.env;
+      }
+      const args = ['--ignore-scripts', 'run', 'build'];
+      if (role !== 'reference') args.push('--', '--config', join(copyRoot, WEB_HOST_WRAPPER));
+      children.push(
+        await runCopiedChild({ owned, copyRoot, env, label: `${role}-build`, command: 'npm', args })
+      );
+      current = freezeCopyInputs(owned, current, role);
+      if (role === WEB_HOST_NEUTRAL_COPY_ROLE)
+        neutral = {
+          ...neutral,
+          passesSha256: sha256(readFileSync(ownedPath(owned, WEB_HOST_NEUTRAL_PASSES))),
+        };
+      children.push(
+        await runCopiedChild({
+          owned,
+          copyRoot,
+          env,
+          label: `${role}-postbuild`,
+          command: 'npm',
+          args: ['run', 'postbuild'],
+        })
+      );
+      assertCopyInputs(owned, current, role);
+    }
+    if (
+      roles.some(
+        (role) => JSON.stringify(scriptOwners[role]) !== JSON.stringify(scriptOwners.reference)
+      )
+    )
+      throw new Error('Reference, control and neutral lifecycle owners differ');
+    for (const role of roles.filter((role) => role !== 'reference')) {
+      const copyRoot = copies[role];
+      assertCopyInputs(owned, current, role);
+      const env = copiedBuildEnvironment(
         owned,
         copyRoot,
-        env,
-        label: `${role}-postbuild`,
-        command: 'npm',
-        args: ['run', 'postbuild'],
-      })
-    );
-    assertCopyInputs(owned, current, role);
+        artifact,
+        pinnedMetadata,
+        webHostCopyRequest(request, role)
+      );
+      children.push(
+        await runCopiedChild({
+          owned,
+          copyRoot,
+          env,
+          label: `${role}-types`,
+          command: process.execPath,
+          args: [
+            'tools/run-web-tool.mjs',
+            'tsc',
+            '--project',
+            join(copyRoot, 'migration/probes/web-host/tsconfig.json'),
+          ],
+        })
+      );
+      if (role === WEB_HOST_NEUTRAL_COPY_ROLE) {
+        assertCopyInputs(owned, current, role);
+        children.push(
+          await runCopiedChild({
+            owned,
+            copyRoot,
+            env,
+            label: 'neutral-svelte-types',
+            command: process.execPath,
+            args: [
+              'tools/run-web-tool.mjs',
+              'svelte-check',
+              '--tsconfig',
+              join(copyRoot, 'migration/probes/web-host/tsconfig.json'),
+              '--fail-on-warnings',
+            ],
+          })
+        );
+      }
+    }
+    for (const role of roles) assertCopyInputs(owned, current, role);
+  } catch (error) {
+    error.webHostBuild = {
+      children,
+      bindings: current,
+      scriptOwners,
+      neutral,
+      failedChild: error.childRecord ?? null,
+    };
+    throw error;
   }
-  if (JSON.stringify(scriptOwners.reference) !== JSON.stringify(scriptOwners.control))
-    throw new Error('Reference and control lifecycle owners differ');
-  const copyRoot = copies.control;
-  assertCopyInputs(owned, current, 'control');
-  children.push(
-    await runCopiedChild({
-      owned,
-      copyRoot,
-      env: copiedBuildEnvironment(owned, copyRoot, artifact, pinnedMetadata),
-      label: 'control-types',
-      command: process.execPath,
-      args: [
-        'tools/run-web-tool.mjs',
-        'tsc',
-        '--project',
-        join(copyRoot, 'migration/probes/web-host/tsconfig.json'),
-      ],
-    })
-  );
-  for (const role of WEB_HOST_COPY_ROLES) assertCopyInputs(owned, current, role);
   return {
     children,
     bindings: current,
     scriptOwners,
+    neutral,
     invocation:
-      'both copies: npm run prebuild; input guard; npm --ignore-scripts run build (control adds --config); freeze inputs; npm run postbuild; input guard',
+      'every requested copy: actual npm prebuild; input guard; neutral-only reviewed SSR preparation; npm --ignore-scripts run build (wrapped copies add --config); freeze inputs; actual npm postbuild; input guard; scoped types',
   };
 }

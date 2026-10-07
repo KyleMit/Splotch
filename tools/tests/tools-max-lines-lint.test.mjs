@@ -15,8 +15,13 @@ const [, { max: defaultCap }] = (
 ).rules['max-lines'];
 
 const maxLinesMessages = async (fixture, lineCount) => {
-  const source = Array.from({ length: lineCount }, (_, i) => `export const n${i} = ${i};\n`);
-  const [result] = await eslint.lintText(source.join(''), { filePath: join(repoRoot, fixture) });
+  const svelte = fixture.endsWith('.svelte');
+  const lines = lineCount - (svelte ? 2 : 0);
+  const statements = Array.from({ length: lines }, (_, i) => `export const n${i} = ${i};\n`).join(
+    ''
+  );
+  const source = svelte ? `<script lang="ts">\n${statements}</script>\n` : statements;
+  const [result] = await eslint.lintText(source, { filePath: join(repoRoot, fixture) });
   return result.messages.filter((message) => message.ruleId === 'max-lines');
 };
 
@@ -32,6 +37,8 @@ describe('max-lines covers tools and retained web host sources at the web defaul
     'tools/asset-gen/lib/probe.ts',
     'tools/store-drawings/lib/probe.mjs',
     'migration/probes/web-host/host/probe.ts',
+    'migration/probes/web-host/src/ProbeControl.tsx',
+    'migration/probes/web-host/src/ProbeControl.svelte',
     'migration/probes/web-host/tests/probe.spec.ts',
   ])('rejects %s one line over the cap and accepts it at the cap', async (fixture) => {
     expect(await maxLinesMessages(fixture, defaultCap)).toEqual([]);

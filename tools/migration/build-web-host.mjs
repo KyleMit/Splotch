@@ -5,9 +5,8 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import {
-  WEB_HOST_COPY_ROLES,
-  assertWebHostVariant,
-  webHostArtifact,
+  webHostCopyRoles,
+  webHostRequest,
   WEB_HOST_INPUTS,
   WEB_HOST_RESULT,
   WEB_HOST_VARIANT,
@@ -22,7 +21,7 @@ import {
 } from './lib/web-host-ownership.mjs';
 import { freezeGitMetadata, pinBuildMetadata } from './lib/web-host-metadata.mjs';
 import { buildControlCopies } from './lib/web-host-build.mjs';
-import { collectControlEvidence } from './lib/web-host-evidence.mjs';
+import { collectWebHostEvidence } from './lib/web-host-evidence.mjs';
 import {
   captureInputBindings,
   withGeneratedInputs,
@@ -37,6 +36,7 @@ export function parseWebHostArgs(argv) {
     options: {
       artifact: { type: 'string', default: 'release' },
       variant: { type: 'string', default: WEB_HOST_VARIANT },
+      fixture: { type: 'string', default: 'matching' },
       'topology-sha': { type: 'string' },
       'topology-lock-sha256': { type: 'string' },
       'output-parent': { type: 'string', default: tmpdir() },
@@ -45,9 +45,16 @@ export function parseWebHostArgs(argv) {
     strict: true,
     allowPositionals: false,
   });
-  assertWebHostVariant(values.variant);
+  const request = webHostRequest({
+    variant: values.variant,
+    artifact: values.artifact,
+    fixture: values.fixture,
+    capacitor: 'false',
+    perfMarks: 'false',
+    harness: values.artifact === 'mechanism' ? 'true' : 'false',
+  });
   return {
-    artifact: webHostArtifact(values.artifact),
+    ...request,
     topologySha: values['topology-sha'],
     topologyLockSha256: values['topology-lock-sha256'],
     outputParent: values['output-parent'],
@@ -55,10 +62,10 @@ export function parseWebHostArgs(argv) {
   };
 }
 
-function materializeCopies(snapshot, modules, owned) {
+function materializeCopies(snapshot, modules, owned, variant) {
   const copies = {};
   const dependencies = {};
-  for (const role of WEB_HOST_COPY_ROLES) {
+  for (const role of webHostCopyRoles(variant)) {
     const root = ownedPath(owned, role);
     copySource(snapshot, root);
     dependencies[role] = copyDependencies(modules, root);
@@ -80,24 +87,27 @@ export async function buildWebHost(argv) {
   mkdirSync(ownedPath(owned, 'controls'));
   writeOwnedJson(owned, WEB_HOST_INPUTS, {
     artifact: options.artifact,
-    variant: WEB_HOST_VARIANT,
+    variant: options.variant,
+    fixture: options.fixture,
     node: process.version,
     snapshot,
     gitMetadata,
     borrowedBefore: before,
   });
   console.log(`Owned web-host artifact: ${owned.root}`);
+  let prepared;
   try {
-    const { copies, dependencies } = materializeCopies(snapshot, modules, owned);
-    const initialBindings = captureInputBindings(owned, snapshot);
+    const { copies, dependencies } = materializeCopies(snapshot, modules, owned, options.variant);
+    const initialBindings = captureInputBindings(owned, snapshot, options.variant);
     const pinned = await pinBuildMetadata(copies.control, gitMetadata);
     const bindings = withGeneratedInputs(
       initialBindings,
       await generatedSourcePaths(owned, initialBindings)
     );
-    const prepared = {
+    prepared = {
       artifact: options.artifact,
-      variant: WEB_HOST_VARIANT,
+      variant: options.variant,
+      fixture: options.fixture,
       node: process.version,
       snapshot,
       gitMetadata,
@@ -113,12 +123,14 @@ export async function buildWebHost(argv) {
       artifact: options.artifact,
       pinnedMetadata: pinned.env,
       bindings,
+      request: { variant: options.variant, artifact: options.artifact, fixture: options.fixture },
     });
     writeOwnedJson(owned, WEB_HOST_INPUTS, {
       ...prepared,
       bindings: built.bindings,
       scriptOwners: built.scriptOwners,
       invocation: built.invocation,
+      ...(options.variant === 'neutral-embedded' ? { neutral: built.neutral } : {}),
     });
     assertFinalInputBindings(owned, built.bindings);
     const [bundle, pwa] = await Promise.all([
@@ -126,13 +138,14 @@ export async function buildWebHost(argv) {
       import(pathToFileURL(join(copies.control, 'tools/check-pwa-precache.mjs')).href),
     ]);
     const owner = { bundle, pwa };
-    const evidence = collectControlEvidence(
+    const evidence = collectWebHostEvidence(
       owned,
-      copies.reference,
-      copies.control,
-      pinned,
-      owner,
-      options.artifact
+      {
+        ...prepared,
+        bindings: built.bindings,
+        ...(options.variant === 'neutral-embedded' ? { neutral: built.neutral } : {}),
+      },
+      owner
     );
     assertFinalInputBindings(owned, built.bindings);
     const after = borrowedWriteWitness(sourceRoot);
@@ -142,6 +155,7 @@ export async function buildWebHost(argv) {
       status: 'structural-build-only',
       reviewEvidenceEligible: !snapshot.provisional,
       artifact: options.artifact,
+      variant: options.variant,
       sourceSha: snapshot.sha,
       topologySha: snapshot.topologySha,
       children: built.children,
@@ -151,6 +165,43 @@ export async function buildWebHost(argv) {
     });
     return owned.root;
   } catch (error) {
+    let partial;
+    const state = error.webHostBuild;
+    if (prepared && state) {
+      const inputs = {
+        ...prepared,
+        bindings: state.bindings,
+        scriptOwners: state.scriptOwners,
+        ...(prepared.variant === 'neutral-embedded' ? { neutral: state.neutral } : {}),
+      };
+      writeOwnedJson(owned, WEB_HOST_INPUTS, inputs);
+      partial = {
+        children: state.children,
+        failedChild: state.failedChild,
+        inputsSha256: sha256(readFileSync(ownedPath(owned, WEB_HOST_INPUTS))),
+        reviewEvidenceEligible: false,
+      };
+      if (
+        prepared.variant === 'neutral-embedded' &&
+        state.failedChild?.label === 'neutral-postbuild'
+      ) {
+        try {
+          assertFinalInputBindings(owned, state.bindings);
+          const [bundle, pwa] = await Promise.all([
+            import(
+              pathToFileURL(join(prepared.copies.control, 'tools/check-bundle-budgets.mjs')).href
+            ),
+            import(
+              pathToFileURL(join(prepared.copies.control, 'tools/check-pwa-precache.mjs')).href
+            ),
+          ]);
+          partial.evidence = collectWebHostEvidence(owned, inputs, { bundle, pwa });
+          assertFinalInputBindings(owned, state.bindings);
+        } catch (captureError) {
+          partial.evidenceError = captureError.message;
+        }
+      }
+    }
     let isolation;
     try {
       const after = borrowedWriteWitness(sourceRoot);
@@ -162,6 +213,8 @@ export async function buildWebHost(argv) {
     }
     writeOwnedJson(owned, WEB_HOST_RESULT, {
       status: 'failed',
+      reviewEvidenceEligible: false,
+      partial: partial ?? null,
       isolation,
       error: error.message,
       child: error.childRecord ?? null,

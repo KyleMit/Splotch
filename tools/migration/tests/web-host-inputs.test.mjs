@@ -379,3 +379,22 @@ it('reads the emitted app-shell URL against the exact recorded nonce before arti
   writeFileSync(resultPath, resultBytes);
   expect(() => readWebHostArtifact(fixture.owned.root)).not.toThrow();
 });
+
+it('never accepts partial failed-build evidence as a completed serveable artifact', () => {
+  const fixture = completedFixture();
+  const result = JSON.parse(readFileSync(join(fixture.owned.root, WEB_HOST_RESULT), 'utf8'));
+  writeOwnedJson(fixture.owned, WEB_HOST_RESULT, {
+    ...result,
+    status: 'failed',
+    partial: { evidence: result.evidence, reviewEvidenceEligible: false },
+  });
+  for (const name of ['check', 'serve', 'test']) {
+    const result = caller(fixture, name);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/Only a completed, source-bound/);
+    expect(existsSync(fixture.childMarker)).toBe(false);
+    expect(existsSync(fixture.helperMarker)).toBe(false);
+    expect(existsSync(fixture.typesMarker)).toBe(false);
+  }
+});

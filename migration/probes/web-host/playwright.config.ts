@@ -9,7 +9,9 @@ import { WEB_HOST_ENV } from './host/contract';
 import { readWebHostArtifact } from '../../../tools/migration/lib/web-host-artifact.mjs';
 import { browserInvocationPaths } from '../../../tools/migration/lib/web-host-browser.mjs';
 
-const { owned, copyRoot, artifact } = readWebHostArtifact(process.env[WEB_HOST_ENV.artifactRoot]);
+const { owned, copyRoot, artifact, request } = readWebHostArtifact(
+  process.env[WEB_HOST_ENV.artifactRoot]
+);
 const invocation = browserInvocationPaths(owned, process.env[WEB_HOST_ENV.browserRun]);
 const port = resolvePlaywrightPort(process.env[WEB_HOST_ENV.port]);
 if (process.env[WEB_HOST_ENV.port] === undefined)
@@ -33,7 +35,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: invocation.reportDir, open: 'never' }]],
   projects: [
     {
-      name: 'retained-chromium',
+      name: `${request.variant}-chromium`,
       use: { ...devices['Desktop Chrome'], launchOptions: chromiumLaunchOptions() },
     },
   ],

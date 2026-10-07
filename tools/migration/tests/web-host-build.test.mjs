@@ -105,10 +105,10 @@ function dependencyFixture() {
   return { root, modules };
 }
 
-it('rejects unimplemented/unknown flags and distinguishes actual artifact classes', () => {
+it('rejects unknown flags and distinguishes actual artifact classes', () => {
   expect(parseWebHostArgs(['--artifact=mechanism', '--provisional']).artifact).toBe('mechanism');
   expect(parseWebHostArgs([]).artifact).toBe('release');
-  expect(() => parseWebHostArgs(['--variant=neutral-embedded'])).toThrow(/Only retained-control/);
+  expect(() => parseWebHostArgs(['--variant=other'])).toThrow(/Unsupported web-host variant/);
   expect(() => parseWebHostArgs(['--artfact=release'])).toThrow();
   expect(() => parseWebHostArgs(['--artifact=fast'])).toThrow(/release or mechanism/);
 });
@@ -133,9 +133,7 @@ it('exports actual committed bytes independently and detects changed borrowed in
 
 it('requires real topology ancestry and the exact reviewed lock', () => {
   const options = sourceFixture();
-  expect(() => freezeSource({ ...options, topologySha: undefined })).toThrow(
-    /Actual reviewed topology/
-  );
+  expect(() => freezeSource({ ...options, topologySha: undefined })).toThrow(/reviewed topology/);
   expect(() => freezeSource({ ...options, topologyLockSha256: '0'.repeat(64) })).toThrow(
     /digest mismatch/
   );
@@ -201,6 +199,7 @@ it('uses the actual copied version owner with frozen source Git and no copied Gi
     'web/appShellBuildNonce.ts',
     'tools/migration/lib/web-host-ownership.mjs',
     'migration/probes/web-host/host/contract.ts',
+    'migration/probes/web-host/src/probeProps.ts',
   ]) {
     mkdirSync(join(copy, path, '..'), { recursive: true });
     copyFileSync(join(ROOT, path), join(copy, path));

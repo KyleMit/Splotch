@@ -1,13 +1,17 @@
 import { lstatSync, realpathSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import {
-  WEB_HOST_COPY_ROLES,
+  WEB_HOST_VARIANT,
+  WEB_HOST_NEUTRAL_COPY_ROLE,
+  WEB_HOST_NEUTRAL_COPY_ROLES,
+  WEB_HOST_REACT_OUTPUT_PATHS,
+  webHostCopyRoles,
   WEB_HOST_OUTPUT_PATHS,
 } from '../../../migration/probes/web-host/host/contract.ts';
 import { fileInventory } from './web-host-files.mjs';
 import { canonicalDirectory, ownedPath, pathInside } from './web-host-ownership.mjs';
 
-const INPUT_SCHEMA_VERSION = 1;
+const INPUT_SCHEMA_VERSION = 2;
 const DEPENDENCY_SCRATCH_PATHS = ['node_modules/.vite', 'node_modules/.vite-temp'];
 const KIT_SUPPORT_PATH = 'web/.svelte-kit';
 const ROW_KEYS = ['bytes', 'kind', 'link', 'mode', 'path', 'sha256', 'target'];
@@ -57,7 +61,8 @@ function assertRows(rows) {
 }
 
 function assertRole(role) {
-  if (!WEB_HOST_COPY_ROLES.includes(role)) throw new Error(`Unsupported copy role: ${role}`);
+  if (!WEB_HOST_NEUTRAL_COPY_ROLES.includes(role))
+    throw new Error(`Unsupported copy role: ${role}`);
 }
 
 function assertKeys(value, keys, label) {
@@ -73,7 +78,7 @@ function assertKeys(value, keys, label) {
 function assertBindingShape(bindings) {
   assertKeys(
     bindings,
-    ['schemaVersion', 'sourcePaths', 'generatedPaths', 'roles'],
+    ['schemaVersion', 'variant', 'sourcePaths', 'generatedPaths', 'roles'],
     'input binding'
   );
   if (
@@ -90,19 +95,39 @@ function assertBindingShape(bindings) {
     )
       throw new Error('Bound input paths are not unique and sorted');
   }
-  assertKeys(bindings.roles, WEB_HOST_COPY_ROLES, 'copy roles');
-  for (const role of WEB_HOST_COPY_ROLES) {
+  const roles = webHostCopyRoles(bindings.variant);
+  assertKeys(bindings.roles, roles, 'copy roles');
+  for (const role of roles) {
     const record = bindings.roles[role];
     assertKeys(
       record,
-      record?.frozen === null
-        ? ['source', 'dependencies', 'scratchBefore', 'frozen']
-        : ['source', 'dependencies', 'scratchBefore', 'frozen', 'scratchAfter'],
+      [
+        ...(record?.frozen === null
+          ? ['source', 'dependencies', 'scratchBefore', 'frozen']
+          : ['source', 'dependencies', 'scratchBefore', 'frozen', 'scratchAfter']),
+        ...(role === WEB_HOST_NEUTRAL_COPY_ROLE ? ['react'] : []),
+      ],
       'copy binding'
     );
     assertRows(record.source);
     assertRows(record.dependencies);
     assertRows(record.scratchBefore);
+    if (role === WEB_HOST_NEUTRAL_COPY_ROLE) {
+      assertKeys(record.react, ['source', 'outputs'], 'React preparation binding');
+      if (record.react.source !== null) assertRows(record.react.source);
+      if (record.react.outputs !== null) {
+        assertRows(record.react.outputs);
+        if (
+          record.react.source === null ||
+          record.react.outputs
+            .map((row) => row.path)
+            .sort()
+            .join() !== [...WEB_HOST_REACT_OUTPUT_PATHS].sort().join() ||
+          record.react.outputs.some((row) => row.kind !== 'file')
+        )
+          throw new Error('React preparation omitted its frozen source or exact renderer outputs');
+      }
+    }
     if (record.frozen !== null) {
       assertKeys(record.frozen, ['source', 'support'], 'frozen copy binding');
       assertRows(record.frozen.source);
@@ -136,14 +161,28 @@ function outputKind(path) {
   return null;
 }
 
-function classifyRows(rows, bindings) {
+function classifyRows(rows, bindings, role) {
   const sourcePaths = new Set([...bindings.sourcePaths, ...bindings.generatedPaths]);
-  const grouped = { source: [], dependencies: [], support: [], scratch: [], product: [] };
+  const grouped = {
+    source: [],
+    dependencies: [],
+    support: [],
+    scratch: [],
+    product: [],
+    react: [],
+  };
   for (const row of rows) {
     const kind = outputKind(row.path);
     if (sourcePaths.has(row.path)) {
       if (kind) throw new Error(`Frozen source collides with generated output: ${row.path}`);
       grouped.source.push(row);
+    } else if (
+      role === WEB_HOST_NEUTRAL_COPY_ROLE &&
+      WEB_HOST_REACT_OUTPUT_PATHS.includes(row.path)
+    ) {
+      if (bindings.roles[role]?.react?.source == null)
+        throw new Error(`React output appeared before source freezing: ${row.path}`);
+      grouped.react.push(row);
     } else if (kind) grouped[kind].push(row);
     else if (insidePath(row.path, 'node_modules')) grouped.dependencies.push(row);
     else throw new Error(`Unregistered copied file: ${row.path}`);
@@ -177,15 +216,18 @@ function assertGeneratingSource(actual, original, generatedPaths, role) {
   }
 }
 
-export function captureInputBindings(owned, snapshot) {
+export function captureInputBindings(owned, snapshot, variant = WEB_HOST_VARIANT) {
   const bindings = {
     schemaVersion: INPUT_SCHEMA_VERSION,
+    variant,
     sourcePaths: snapshot.entries.map((row) => row.path).sort(),
     generatedPaths: [],
     roles: {},
   };
-  for (const role of WEB_HOST_COPY_ROLES) {
-    const rows = classifyRows(inventoryCopy(owned, role), bindings);
+  if (bindings.sourcePaths.some((path) => WEB_HOST_REACT_OUTPUT_PATHS.includes(path)))
+    throw new Error('Compiled React outputs cannot be maintained source inputs');
+  for (const role of webHostCopyRoles(variant)) {
+    const rows = classifyRows(inventoryCopy(owned, role), bindings, role);
     for (const expected of snapshot.entries) {
       const row = rows.source.find((entry) => entry.path === expected.path);
       if (
@@ -201,6 +243,7 @@ export function captureInputBindings(owned, snapshot) {
       dependencies: rows.dependencies,
       scratchBefore: rows.scratch,
       frozen: null,
+      ...(role === WEB_HOST_NEUTRAL_COPY_ROLE ? { react: { source: null, outputs: null } } : {}),
     };
   }
   return bindings;
@@ -210,7 +253,11 @@ export function withGeneratedInputs(bindings, paths) {
   assertBindingShape(bindings);
   for (const path of paths) {
     safePath(path);
-    if (outputKind(path) || insidePath(path, 'node_modules'))
+    if (
+      outputKind(path) ||
+      insidePath(path, 'node_modules') ||
+      WEB_HOST_REACT_OUTPUT_PATHS.includes(path)
+    )
       throw new Error(`Generator output collides with protected namespace: ${path}`);
   }
   if (new Set(paths).size !== paths.length) throw new Error('Duplicate generator output paths');
@@ -220,8 +267,16 @@ export function withGeneratedInputs(bindings, paths) {
 export function assertCopyInputs(owned, bindings, role) {
   assertBindingShape(bindings);
   assertRole(role);
-  const actual = classifyRows(inventoryCopy(owned, role), bindings);
+  if (!webHostCopyRoles(bindings.variant).includes(role))
+    throw new Error(`Copy role is outside its input binding: ${role}`);
+  const actual = classifyRows(inventoryCopy(owned, role), bindings, role);
   const expected = bindings.roles[role];
+  if (role === WEB_HOST_NEUTRAL_COPY_ROLE) {
+    if (expected.react.source !== null)
+      sameRows(actual.source, expected.react.source, role, 'React preparation source');
+    if (expected.react.outputs !== null)
+      sameRows(actual.react, expected.react.outputs, role, 'React renderer');
+  }
   sameRows(actual.dependencies, expected.dependencies, role, 'dependency');
   if (expected.frozen) {
     sameRows(actual.source, expected.frozen.source, role, 'source');
@@ -237,6 +292,8 @@ export function freezeCopyInputs(owned, bindings, role) {
       throw new Error(`Generator omitted output: ${role}/${path}`);
   }
   const record = bindings.roles[role];
+  if (role === WEB_HOST_NEUTRAL_COPY_ROLE && record.react.outputs === null)
+    throw new Error('Neutral build cannot freeze before its renderer outputs');
   return {
     ...bindings,
     roles: {
@@ -252,8 +309,49 @@ export function freezeCopyInputs(owned, bindings, role) {
 
 export function assertFinalInputBindings(owned, bindings) {
   assertBindingShape(bindings);
-  for (const role of WEB_HOST_COPY_ROLES) {
+  for (const role of webHostCopyRoles(bindings.variant)) {
     if (!bindings.roles[role].frozen) throw new Error(`Copied inputs are not frozen: ${role}`);
     assertCopyInputs(owned, bindings, role);
   }
+}
+
+export function freezeReactSourceInputs(owned, bindings) {
+  const role = WEB_HOST_NEUTRAL_COPY_ROLE;
+  const actual = assertCopyInputs(owned, bindings, role);
+  const record = bindings.roles[role];
+  if (record.react.source !== null || record.react.outputs !== null || actual.react.length)
+    throw new Error('React preparation source must be frozen once before compilation');
+  for (const path of bindings.generatedPaths)
+    if (!actual.source.some((row) => row.path === path && row.kind === 'file'))
+      throw new Error(`Generator omitted output: ${role}/${path}`);
+  return {
+    ...bindings,
+    roles: {
+      ...bindings.roles,
+      [role]: { ...record, react: { source: actual.source, outputs: null } },
+    },
+  };
+}
+
+export function freezeReactRendererInputs(owned, bindings) {
+  const role = WEB_HOST_NEUTRAL_COPY_ROLE;
+  const actual = assertCopyInputs(owned, bindings, role);
+  const record = bindings.roles[role];
+  if (
+    record.react.source === null ||
+    record.react.outputs !== null ||
+    actual.react
+      .map((row) => row.path)
+      .sort()
+      .join() !== [...WEB_HOST_REACT_OUTPUT_PATHS].sort().join() ||
+    actual.react.some((row) => row.kind !== 'file')
+  )
+    throw new Error('React compilation must emit its exact two owned renderer outputs once');
+  return {
+    ...bindings,
+    roles: {
+      ...bindings.roles,
+      [role]: { ...record, react: { ...record.react, outputs: actual.react } },
+    },
+  };
 }
