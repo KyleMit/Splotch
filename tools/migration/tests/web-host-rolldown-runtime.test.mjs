@@ -22,8 +22,8 @@ const RUNTIME_OWNER = 'migration/probes/web-host/host/rolldownRuntime.ts';
 const ENTRY_FIXTURE_SPECIFIER = './value.cjs';
 const DRIVER = String.raw`
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { chmodSync, linkSync, lstatSync, mkdtempSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const [copyRoot, ownedRoot, token, platform, graphOwner, runtimeOwner, evidenceOwner, htmlOwner, pageOwner, fileOwner, contractOwner] = process.argv.slice(2);
 const { build, VERSION, RUNTIME_MODULE_ID } = await import(pathToFileURL(join(copyRoot, 'node_modules/rolldown/dist/index.mjs')));
@@ -128,17 +128,50 @@ await build({ cwd: copyRoot, input: join(copyRoot, 'source/entry.js'), platform,
       } finally { writeFileSync(apiPath, apiBytes); }
     }
     const nativePath = join(copyRoot, source.producer.native.path);
-    const nativeBytes = readFileSync(nativePath);
+    const nativeBytes = readFileSync(nativePath), nativeStat = lstatSync(nativePath);
+    assert.ok(nativeStat.isFile() && nativeStat.nlink === 1);
+    const originalIdentity = [nativeStat.dev, nativeStat.ino, nativeStat.mode, nativeStat.nlink];
     const nativeBase = readFileSync(join(copyRoot, source.producer.base.path));
     const nativeIndex = nativeBytes.indexOf(nativeBase);
     assert.ok(nativeIndex >= 0);
+    const heldNativePath = join(mkdtempSync(join(dirname(nativePath), 'loaded-native-')), 'original.node');
+    const replacementPath = join(dirname(heldNativePath), 'replacement.node');
+    const alteredNative = Buffer.from(nativeBytes); alteredNative[nativeIndex] ^= 1;
+    const nativeControlErrors = [];
+    let originalHeld = false, replacementInstalled = false, replacementIdentity;
+    const nativeIdentity = path => {
+      const actual = lstatSync(path);
+      return [actual.dev, actual.ino, actual.mode, actual.nlink];
+    };
     try {
-      const alteredNative = Buffer.from(nativeBytes); alteredNative[nativeIndex] ^= 1;
-      writeFileSync(nativePath, alteredNative);
+      writeFileSync(replacementPath, alteredNative, { flag: 'wx', mode: nativeStat.mode & 0o777 });
+      chmodSync(replacementPath, nativeStat.mode & 0o777);
+      replacementIdentity = nativeIdentity(replacementPath);
+      assert.notDeepEqual(replacementIdentity, originalIdentity);
+      assert.throws(() => linkSync(replacementPath, nativePath), { code: 'EEXIST' }); checks++;
+      assert.deepEqual(nativeIdentity(nativePath), originalIdentity);
+      assert.deepEqual(readFileSync(nativePath), nativeBytes);
+      renameSync(nativePath, heldNativePath); originalHeld = true;
+      linkSync(replacementPath, nativePath); replacementInstalled = true;
+      unlinkSync(replacementPath);
       const changed = structuredClone(source);
       changed.producer.native = bindReactFile(copyRoot, source.producer.native.path);
       assert.throws(() => validate(changed), /selected native producer/); checks++;
-    } finally { writeFileSync(nativePath, nativeBytes); }
+    } catch (error) { nativeControlErrors.push(error); } finally {
+      if (originalHeld) {
+        try {
+          assert.deepEqual(nativeIdentity(heldNativePath), originalIdentity);
+          assert.deepEqual(readFileSync(heldNativePath), nativeBytes);
+          if (replacementInstalled) assert.deepEqual(nativeIdentity(nativePath), replacementIdentity, 'Occupied native control path');
+          else assert.throws(() => lstatSync(nativePath), { code: 'ENOENT' });
+          renameSync(heldNativePath, nativePath); originalHeld = false;
+          assert.deepEqual(nativeIdentity(nativePath), originalIdentity);
+          assert.deepEqual(readFileSync(nativePath), nativeBytes);
+          assert.deepEqual(validate(source), source); checks++;
+        } catch (error) { nativeControlErrors.push(error); }
+      }
+    }
+    if (nativeControlErrors.length) throw nativeControlErrors.length === 1 ? nativeControlErrors[0] : new AggregateError(nativeControlErrors, 'Native producer control and exact restoration failed');
     const nativeManifestPath = join(copyRoot, source.producer.nativeManifest.path);
     const nativeManifestBytes = readFileSync(nativeManifestPath);
     try {
@@ -343,7 +376,9 @@ console.log(JSON.stringify({ scope: 'Actual owned tiny Rolldown runtime capture/
 
 function fixture() {
   const parent = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-rolldown-runtime-')));
-  onTestFinished(() => rmSync(parent, { recursive: true, force: true }));
+  onTestFinished(({ task }) => {
+    if (task.result?.state === 'pass') rmSync(parent, { recursive: true, force: true });
+  });
   const owned = createOwnedArtifact(parent);
   const copyRoot = join(owned.root, 'neutral');
   mkdirSync(join(copyRoot, 'node_modules'), { recursive: true });
