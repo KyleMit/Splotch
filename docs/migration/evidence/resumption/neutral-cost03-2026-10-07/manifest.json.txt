@@ -1,0 +1,947 @@
+{
+  "schemaVersion": 1,
+  "scope": "Historical source09 source-only pass and actual source67 Cost03 hard startup/lazy failures plus separate collector/disposition/strict-reader refusals; no complete host/release/browser/architecture acceptance",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 915294,
+    "sha256": "7422e138caf30476da1c4044777df267bcdd165e6c18e13a2a157641f2079380",
+    "members": 116
+  },
+  "omittedPrivateInputs": {
+    "path": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/inputs.json",
+    "bytes": 145174447,
+    "sha256": "d290a48a529aae5d6e66a6249402e1231eaddecda85e695638e767306c19a07c",
+    "reason": "Complete private input inventory retained unchanged; focused historical packet does not supply a complete artifact"
+  },
+  "omittedPrivateData": "Full installed/source inventories and trees, raw source09 changed-cache payloads and unrelated artifact outputs remain in original private evidence; original digest bindings retained in copied receipts",
+  "members": [
+    {
+      "path": "copied-children/control-build.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/control-build.log.txt",
+      "bytes": 59174,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "c068615f696ec05842feff3e9d80bc0fd6a58b66a7641a64c1ecde5f3d12b058"
+    },
+    {
+      "path": "copied-children/control-postbuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/control-postbuild.log.txt",
+      "bytes": 1262,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "bbb6a75458c94ddbead27c5040193141b49b5de412638f365d780c77d2608a50"
+    },
+    {
+      "path": "copied-children/control-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/control-prebuild.log.txt",
+      "bytes": 2825,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04"
+    },
+    {
+      "path": "copied-children/neutral-build.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/neutral-build.log.txt",
+      "bytes": 59426,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "8bd007b47b3a0308dc2d81823bc3b68e03a279901eb1e82549c0880dc4650765"
+    },
+    {
+      "path": "copied-children/neutral-postbuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/neutral-postbuild.log.txt",
+      "bytes": 2226,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3b2737e148873e598d25a3b3c22d5a7e9dc17310dbfb84c612bdc3ebf15e95e1"
+    },
+    {
+      "path": "copied-children/neutral-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/neutral-prebuild.log.txt",
+      "bytes": 2825,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04"
+    },
+    {
+      "path": "copied-children/neutral-react-compile.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/neutral-react-compile.log.txt",
+      "bytes": 245,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "691412fd25e4fae889430b7beedc1f5e66bd196c396e862287a396918f26d9d9"
+    },
+    {
+      "path": "copied-children/neutral-react-render.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/neutral-react-render.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "copied-children/reference-build.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/reference-build.log.txt",
+      "bytes": 58562,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "ee47de6d73f8e44261a49a5d83a1703db303ee59f1013826fe923ac923504ada"
+    },
+    {
+      "path": "copied-children/reference-postbuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/reference-postbuild.log.txt",
+      "bytes": 1262,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "bbb6a75458c94ddbead27c5040193141b49b5de412638f365d780c77d2608a50"
+    },
+    {
+      "path": "copied-children/reference-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/controls/reference-prebuild.log.txt",
+      "bytes": 3034,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "6373f51b4060736ba329995c40a63a22b4699e834430f787af63d8bc5f0ac000"
+    },
+    {
+      "path": "copied-guard-owners/tools/check-build-version.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/check-build-version.mjs",
+      "bytes": 4764,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7c8182ac5d9d85c8fabd2989bc57851ca8b878480b72d68dc62e9416ecbd205c"
+    },
+    {
+      "path": "copied-guard-owners/tools/check-bundle-budgets.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/check-bundle-budgets.mjs",
+      "bytes": 11189,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "fc5ebccd1d853d6edae10aeb2518c964b1f1fb842a2a2b7c2ac536a460d4fbb2"
+    },
+    {
+      "path": "copied-guard-owners/tools/check-eager-error-bundle.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/check-eager-error-bundle.mjs",
+      "bytes": 4701,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "200c96cb9bb389804686e3468ddbcadfa06d0fd2cfe4b4d3eee7a140319bfe18"
+    },
+    {
+      "path": "copied-guard-owners/tools/check-pwa-precache.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/check-pwa-precache.mjs",
+      "bytes": 8083,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e965c79d8600d2c8b0280ef7f76edae7bc6281101ed24c6c7c1c4c0af3f2c960"
+    },
+    {
+      "path": "copied-guard-owners/tools/check-release-seams.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/check-release-seams.mjs",
+      "bytes": 9475,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "1d66f5b00f95a69d152b8bf2fcb740c3446635a21e388d6e620a7959d518b65b"
+    },
+    {
+      "path": "copied-guard-owners/tools/migration/gen-hosted-topology.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/migration/gen-hosted-topology.mjs",
+      "bytes": 2651,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "bf81b53ff2ccac5a21e113317c9973a171144828ffcba15ab61ddd0e7a0f0863"
+    },
+    {
+      "path": "copied-guard-owners/tools/mobile/check-static-bundle.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/tools/mobile/check-static-bundle.mjs",
+      "bytes": 16313,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "51ddb7753bcf927e3a2fe3039e355c27695e46673a7b121a8ba9467c81a43031"
+    },
+    {
+      "path": "copied-source/package.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/package.json",
+      "bytes": 123100,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "9b6ade86a4c7b421116874346e566f7c8bddea61d36ec1d6a6b050aeb52cd0c6"
+    },
+    {
+      "path": "copied-source/pnpm-lock.yaml",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/pnpm-lock.yaml",
+      "bytes": 519933,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "5384d18a9b13b4bb4bbe45e533b92afc709e1819dae561bfcaedc06b161dde4a"
+    },
+    {
+      "path": "cost-controller/attempt/after-failure-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/after-failure-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/attempt/after-failure-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/after-failure-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "cost-controller/attempt/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/attempt/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "cost-controller/attempt/failed-cost-guard-disposition.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/failed-cost-guard-disposition.stderr.log.txt",
+      "bytes": 931,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "ca93ab862dcbd181be9ced6e08670e4644ff922aaa6425d2b99cd9ced595d3ec"
+    },
+    {
+      "path": "cost-controller/attempt/failed-cost-guard-disposition.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/failed-cost-guard-disposition.stdout.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/attempt/release-cost-build.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/release-cost-build.stderr.log.txt",
+      "bytes": 2890,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e176706e53b758860cff64033ec02b69f988dd5bf075a291c4da018bef6db947"
+    },
+    {
+      "path": "cost-controller/attempt/release-cost-build.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/release-cost-build.stdout.log.txt",
+      "bytes": 566,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "fee932435d62bb4d815c15679172efc2496f3e1142edcd7b5122a97d8bc627f9"
+    },
+    {
+      "path": "cost-controller/attempt/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/attempt-01/result.json",
+      "bytes": 59880,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "c6f6787be5841ed771bd1de50c500903fb5cc7e2d2f74ee8d710f423acd9c694"
+    },
+    {
+      "path": "cost-controller/branch.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/branch.bin",
+      "bytes": 35,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "aa8ed83f5af19ee2ccf6865ab9ea90ca3aff2a7dd22685d9aa3421c630894765"
+    },
+    {
+      "path": "cost-controller/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-prepared-01/controller.py",
+      "bytes": 20438,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "b32d56c17563b090310c0be6932c0e6ac232aeef581a3bddaae9ae4b64f30079"
+    },
+    {
+      "path": "cost-controller/controller.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/controller.stderr.log.txt",
+      "bytes": 394,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "393ec15d85a75c8f345114866d10892750eead8d8dcf964a98b2c1e053b42f93"
+    },
+    {
+      "path": "cost-controller/controller.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/controller.stdout.log.txt",
+      "bytes": 183,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "8513babba5be828aa51cdd195b701ce083c4849f4614fb1dee43194ffd33deb0"
+    },
+    {
+      "path": "cost-controller/failed-cost-disposition.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/failed-cost-disposition.mjs",
+      "bytes": 5910,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "0e7d5d79ed9f95e2821893dc50f81398c5d686216c9553e937401ad8aa904578"
+    },
+    {
+      "path": "cost-controller/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/final-readback.json",
+      "bytes": 10331,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "c852a65b5c55316bac7e250cc8dbecf40b361b2cfc407b770759a014e5cd2380"
+    },
+    {
+      "path": "cost-controller/final-readback.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/final-readback.py",
+      "bytes": 5428,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "5cc3710444da5e04982fdf190227845df3c0ecb0ed272c619060fc185fa568da"
+    },
+    {
+      "path": "cost-controller/head.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/head.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e89eb2f10d40f081b46de83bf90e694bb3955804a47ed5d620e6cd7364ed8721"
+    },
+    {
+      "path": "cost-controller/prepared.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/prepared.json",
+      "bytes": 1697,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "f30fd4d834ab8ca64f05247c0e7137568b2922d053fe42dc2fcff0cb9d31b788"
+    },
+    {
+      "path": "cost-controller/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/profile.json",
+      "bytes": 6648,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "0d7f47b6d402c4b2d44b543a0af817dbd252933b1bf4572f2d7e6b285787c7bb"
+    },
+    {
+      "path": "cost-controller/read-failed-artifact.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/read-failed-artifact.mjs",
+      "bytes": 1240,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "b16d293a85148d8e8a71db21149a7800999d7e01af20e3f49acad2c56509a037"
+    },
+    {
+      "path": "cost-controller/staged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/staged-diff.bin",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/status.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/status.bin",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/strict-reader.stderr.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/strict-reader.stderr.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cost-controller/strict-reader.stdout.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/strict-reader.stdout.txt",
+      "bytes": 491,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "0001e08b0aa27559abef93ee21d675080170103a94e8700bed24285c9762a6c8"
+    },
+    {
+      "path": "cost-controller/tree.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/tree.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "12061f5c9f3c6bc35c60110a593b9e13cbf4a68260f91732681cb1ff0ebe289b"
+    },
+    {
+      "path": "cost-controller/unstaged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-03/unstaged-diff.bin",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "emitted-client/control/index.html",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/control/web/build/index.html",
+      "bytes": 181423,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "821e14b618e8711ccb99118f2f66bd025a9d1afcf5a61502f67ffdfa344931e2"
+    },
+    {
+      "path": "emitted-client/control/manifest.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/control/web/.svelte-kit/output/client/.vite/manifest.json",
+      "bytes": 39070,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "9981dffc50886d28ff1c1f4459c0ca9e4132d235d87e7e292fe5eb81baca2673"
+    },
+    {
+      "path": "emitted-client/neutral/_app/immutable/chunks/D3bxQ93X.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/build/_app/immutable/chunks/D3bxQ93X.js",
+      "bytes": 195816,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "f90de68e89bd4756738d635884e1e87e97450c0597626d4b3fdc5a14e33fe80f"
+    },
+    {
+      "path": "emitted-client/neutral/index.html",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/build/index.html",
+      "bytes": 185448,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "0a7372f7b700070b0c810e5255130d465c8ec927a647a9e725b0cb887e74180a"
+    },
+    {
+      "path": "emitted-client/neutral/manifest.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/client/.vite/manifest.json",
+      "bytes": 39697,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3e999a236ae2b3baa4737a6bc42c8999b23447ff1fa89fa1dd4a4abf30d995cd"
+    },
+    {
+      "path": "emitted-client/reference/index.html",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/reference/web/build/index.html",
+      "bytes": 181423,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "821e14b618e8711ccb99118f2f66bd025a9d1afcf5a61502f67ffdfa344931e2"
+    },
+    {
+      "path": "emitted-client/reference/manifest.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/reference/web/.svelte-kit/output/client/.vite/manifest.json",
+      "bytes": 39070,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "9981dffc50886d28ff1c1f4459c0ca9e4132d235d87e7e292fe5eb81baca2673"
+    },
+    {
+      "path": "emitted-server/chunks/ErrorScreen.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/ErrorScreen.js",
+      "bytes": 922,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "527aa5deb4a15fdaacf10fa7f61ddde014c10f14e15f5b0abe4451af876cea56"
+    },
+    {
+      "path": "emitted-server/chunks/ErrorScreen2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/ErrorScreen2.js",
+      "bytes": 88,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "233f5a615ac08b47077486aff12a8765f3d06c2109dacee3eb7122e53c6fe4cd"
+    },
+    {
+      "path": "emitted-server/chunks/ParentalGate.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/ParentalGate.js",
+      "bytes": 9651,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "4cda6506cc1b7bef88d1469ce3b322ac763eb897da6551a28d41d3dca587b970"
+    },
+    {
+      "path": "emitted-server/chunks/ParentalGate2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/ParentalGate2.js",
+      "bytes": 91,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "acfa70ac26712046889643c13dd8a863a72ff740df079338fd9b9a9c2c61fa8d"
+    },
+    {
+      "path": "emitted-server/chunks/SettingsModal.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/SettingsModal.js",
+      "bytes": 82365,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "62b0252d49d128c252d6e5a40045f2f5c571bf0ed9e8925d68894c0622121fee"
+    },
+    {
+      "path": "emitted-server/chunks/SettingsModal2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/SettingsModal2.js",
+      "bytes": 94,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "76220c12c4ca534c064102c6f088e32abbaea72e4c1404173d1a3f71265e12f3"
+    },
+    {
+      "path": "emitted-server/chunks/coloringPacks.svelte.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/coloringPacks.svelte.js",
+      "bytes": 121,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "9e1de645ad204b60c36d7fc2b99afd9867741dbc77134093fd77f595eb99a12b"
+    },
+    {
+      "path": "emitted-server/chunks/coloringPacks2.svelte.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/coloringPacks2.svelte.js",
+      "bytes": 2419,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "35e800d251bc5096f38ef10baa9b54f1691fa95db35083fa173151ca4b5e4c5c"
+    },
+    {
+      "path": "emitted-server/chunks/env.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/env.js",
+      "bytes": 289,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "47f8563f1baa12b86ab78ddd4c1fb3da8a58f838395fe89478aa6e7d55d646ad"
+    },
+    {
+      "path": "emitted-server/chunks/folderSave.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/folderSave.js",
+      "bytes": 322,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "f07e539ca85a7180bb53ed0397c266f0733aedaa8d91082af0de19852c1b34fd"
+    },
+    {
+      "path": "emitted-server/chunks/folderSave2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/folderSave2.js",
+      "bytes": 4118,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "677c317114a9ed8c93f0fbdafe978218a80cb78ce53b14fe30ab2b1172d0c18d"
+    },
+    {
+      "path": "emitted-server/chunks/internal.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/internal.js",
+      "bytes": 51144,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "8aa3bb1a603fb22afb769c2dfaf93e341f8d265d3518406ca1bb06bfe57e031b"
+    },
+    {
+      "path": "emitted-server/chunks/internal2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/internal2.js",
+      "bytes": 360,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "4fa3b4a5446f8011d2697d64c4d82dc7c4c1fedf6ae96786753e7812e045201a"
+    },
+    {
+      "path": "emitted-server/chunks/persistedState.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/persistedState.js",
+      "bytes": 2011,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "762e85e57a6ee586530c21b1e3cf6f4c06c0a99a888224366559fa1c1ba7f7c5"
+    },
+    {
+      "path": "emitted-server/chunks/persistedState2.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/persistedState2.js",
+      "bytes": 139,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3a510c660c0c8560005686e6520874ad7bb73f2ca6bd71ca92f7ba72584db445"
+    },
+    {
+      "path": "emitted-server/chunks/server.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/server.js",
+      "bytes": 581,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "4f1942e2f6bd0a68e164e0d558622239bbcbda7935bd9f979695987e5b50312f"
+    },
+    {
+      "path": "emitted-server/chunks/shared-server.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/chunks/shared-server.js",
+      "bytes": 603,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "b3f35eefd3bcfedb270f58b39d96d5293468b5816bf823a7025583ba0064b4ac"
+    },
+    {
+      "path": "emitted-server/env.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/env.js",
+      "bytes": 222,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "5164697ae79ab7319efd57b318a90159352b7f75a888e066708948d2e2662f67"
+    },
+    {
+      "path": "emitted-server/internal.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/output/server/internal.js",
+      "bytes": 488,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "4539f67179f9e1d7279276456e552e81ac4115d2e17b72def8648ba39eb61ec9"
+    },
+    {
+      "path": "facade-source/web/.svelte-kit/generated/server/internal.js",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/.svelte-kit/generated/server/internal.js",
+      "bytes": 16958,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "80f87cd2fc6378063d41da1e7f679e34e03f55e2878a735a4c3ed1bf91e1d5ed"
+    },
+    {
+      "path": "facade-source/web/src/lib/boot/persistedState.ts",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/boot/persistedState.ts",
+      "bytes": 4418,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "15144c9f65e8c81cd936f49939ce21ca90c1ce29f4a05e4849786e9091908a8b"
+    },
+    {
+      "path": "facade-source/web/src/lib/components/ErrorScreen.svelte",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/components/ErrorScreen.svelte",
+      "bytes": 3570,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "edc67f630450e585dfbbfeecc62fd30a8b04f80fa4e157b7d3c5eff0b045ee1a"
+    },
+    {
+      "path": "facade-source/web/src/lib/components/ParentalGate.svelte",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/components/ParentalGate.svelte",
+      "bytes": 12392,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3b1b5f55c19eafd67ec239ef6c5690c2cc6eb9ecf1144dfc3dd2b03feaffa204"
+    },
+    {
+      "path": "facade-source/web/src/lib/components/SettingsModal.svelte",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/components/SettingsModal.svelte",
+      "bytes": 14172,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "83c49f694c1cd944a6712551d8ea25d51787e93565a81fc379e7affbb1be776a"
+    },
+    {
+      "path": "facade-source/web/src/lib/drawing/folderSave.ts",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/drawing/folderSave.ts",
+      "bytes": 8937,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "ad61d1d9f49918ce3887d1ca1ea8e7605ba81a4804aeff9bb42ce2fcabdfcbc4"
+    },
+    {
+      "path": "facade-source/web/src/lib/state/coloringPacks.svelte.ts",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral/web/src/lib/state/coloringPacks.svelte.ts",
+      "bytes": 3770,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "5d4922c55889d16b03eca80ca916a70fdc20798a02fd11bc830b3b305dfd638f"
+    },
+    {
+      "path": "follow-up/output-bindings.json",
+      "sourcePath": "data-only existing output readback by prepare.py",
+      "bytes": 70739,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "582047854d424c809ec7bc24e65f1c5d336772e2dd3321f29e6f9cb8866d3045"
+    },
+    {
+      "path": "follow-up/source-associations.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-repair-01/source-associations.json",
+      "bytes": 15098,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "71da4aeeedd5bd20036128fb1f35c91dc7265536fa6bd3a3b044da93bc7c8f1a"
+    },
+    {
+      "path": "historical-source09/attempt/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/result.json",
+      "bytes": 1211998,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "b1746adfc8c8e23ea8f4b8279f0c8b20a215bc8bc0f06d851a6a9eaf9a958043"
+    },
+    {
+      "path": "historical-source09/channels/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "6a531ac73ab786abfc88e8d2247028402576f5ae8e70e257c027556da5c7ee78"
+    },
+    {
+      "path": "historical-source09/channels/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "historical-source09/channels/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "historical-source09/channels/controller.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/controller.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/controller.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/controller.stdout.log.txt",
+      "bytes": 208,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "989733f740a2974927a52023386105a6833bd895aa6c5793d715c656699f095a"
+    },
+    {
+      "path": "historical-source09/channels/full-browserless.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/full-browserless.stderr.log.txt",
+      "bytes": 32667,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7a9849893cbb701e7ba437330355db7e065e098c5a484948dc0737051c84d395"
+    },
+    {
+      "path": "historical-source09/channels/full-browserless.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/full-browserless.stdout.log.txt",
+      "bytes": 260397,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "625f673320b9284c6491a74b5f7a121ade796700e1a98bec8b5737f2ee7b5a1e"
+    },
+    {
+      "path": "historical-source09/channels/full-quality.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/full-quality.stderr.log.txt",
+      "bytes": 1796,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "22734df7e1fdc6d9bc67a8cf15abd2debe4430f275b793d5dc6d08e131894859"
+    },
+    {
+      "path": "historical-source09/channels/full-quality.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/full-quality.stdout.log.txt",
+      "bytes": 59062,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7504693d51bee73ff5ba01c199468050e5f8db618f06b913027fefeb68cf6a6a"
+    },
+    {
+      "path": "historical-source09/channels/registered-info.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/registered-info.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/registered-info.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/registered-info.stdout.log.txt",
+      "bytes": 99618,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3b112fae5687ab10b2c6cef2e3e917096a258aac88c74fedf0f40c5f0b3ec344"
+    },
+    {
+      "path": "historical-source09/channels/source-check.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-check.stderr.log.txt",
+      "bytes": 1642,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "bb00a6abf80a28f76bce5a709d317a2d02d13ec1bbec78afd9a6f2237ae5be12"
+    },
+    {
+      "path": "historical-source09/channels/source-check.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-check.stdout.log.txt",
+      "bytes": 1138,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "89fa5ecd84c8cd20cf18404a6bb77edb718a6a10a4b313bc7255fef2b2d83452"
+    },
+    {
+      "path": "historical-source09/channels/source-dead-code.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-dead-code.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/source-dead-code.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-dead-code.stdout.log.txt",
+      "bytes": 90,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "d192182b9a24d738542279d62d6ff3fa98211c01c732ce943a0398518c2a889f"
+    },
+    {
+      "path": "historical-source09/channels/source-lint.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-lint.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/source-lint.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/source-lint.stdout.log.txt",
+      "bytes": 34,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "historical-source09/channels/targeted-tools.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/targeted-tools.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "historical-source09/channels/targeted-tools.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/attempt-01/targeted-tools.stdout.log.txt",
+      "bytes": 5922,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "5fc2fd1f6b398d7c2cb8fc445accb94c4bfdf2f9c853168f4a5e920b20162740"
+    },
+    {
+      "path": "historical-source09/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/controller.py",
+      "bytes": 23126,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "622976c051da6fe76c730716f1bd770111ac6e845e9a65e35cec40c077f05ae1"
+    },
+    {
+      "path": "historical-source09/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/final-readback.json",
+      "bytes": 122442,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "c647d8bbe42642387909ab2ea374a0c7a17236b1ed161d4092c6542dafa01976"
+    },
+    {
+      "path": "historical-source09/final-readback.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/final-readback.py",
+      "bytes": 4488,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "d99f59852b3f838b3ce6c700b6adeee43eb48318b699b1f268bbbd1825328248"
+    },
+    {
+      "path": "historical-source09/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-09/profile.json",
+      "bytes": 7288,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "94e6b0f8d15fbd6df1b073ae2aa97ba295c789f67205552ccea1f3933b6ab5c0"
+    },
+    {
+      "path": "original-artifact/.splotch-web-host.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/.splotch-web-host.json",
+      "bytes": 152,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "ec29a25c2091ce4a25b6c7d0f18883c00336fe9224c4cde52eddfcf1234ed89c"
+    },
+    {
+      "path": "original-artifact/control-passes.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/control-passes.json",
+      "bytes": 211281,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "1164e20fee5a5a59673933cc4f9b199118db182708bf0297ee0f18a585fa8d64"
+    },
+    {
+      "path": "original-artifact/neutral-passes.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/neutral-passes.json",
+      "bytes": 942563,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "52a937825d3d15897180e8dcb196b67de35c2e62b45a8e422e5d24c1e27eae21"
+    },
+    {
+      "path": "original-artifact/react-chrome.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/react-chrome.json",
+      "bytes": 3281,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "b4e4a0239bf8fbd8757f0052dd2a564a9ec266a9c54f85fe0dd10b522a4e59a2"
+    },
+    {
+      "path": "original-artifact/react-render-request.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/react-render-request.json",
+      "bytes": 2277,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "740561495bdda251d69bf7c1c3cc0fbf8b788015941b16bf2d1bc7107b798b1c"
+    },
+    {
+      "path": "original-artifact/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-03/splotch-web-host-EfIhFi/result.json",
+      "bytes": 14860,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "6025982b0874b8b62ae5abbda32cbb3020174e6ad086b3aa7009e12744afa456"
+    },
+    {
+      "path": "source-publication/commit.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-03/commit.json",
+      "bytes": 5834,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "f52b57caf132f0d6932e7f0a07d07a6deed35c7ce846714b3e303ed64ef23af5"
+    },
+    {
+      "path": "source-publication/native-pr.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-03/native-pr.json",
+      "bytes": 2599,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "b9b476369d7507369c0ce0b65c01f780dcfc3581e5ca620fcb6ebd6e52ce8a6b"
+    }
+  ]
+}

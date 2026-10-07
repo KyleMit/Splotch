@@ -10,6 +10,7 @@ import { readRenderRequest, readRenderedChrome } from './chromeHtml.ts';
 import { pageOverlayPlugin, type PageOverlayBinding } from './pageOverlay.ts';
 import { captureReactGraph, assertReactGraph } from './reactGraph.ts';
 import { createRolldownRuntimeCapture } from './rolldownRuntime.ts';
+import { captureKitEnvConfig, type KitEnvConfig } from './kitEnvSource.ts';
 import {
   webHostRequest,
   WEB_HOST_ENV,
@@ -123,6 +124,7 @@ function neutralPlugins(owned: ReturnType<typeof ownedControl>): Plugin[] {
     process.env[WEB_HOST_ENV.renderRequestSha256]
   );
   let overlay: PageOverlayBinding | undefined;
+  let kitConfig: KitEnvConfig | undefined;
   let config: ResolvedConfig | undefined;
   const virtualId = `\0${WEB_HOST_CHROME_VIRTUAL_ID}`;
   const runtime = createRolldownRuntimeCapture(owned.copy, rolldownVersion);
@@ -153,14 +155,16 @@ function neutralPlugins(owned: ReturnType<typeof ownedControl>): Plugin[] {
         )
           throw new Error('Neutral wrapper changed the real Kit root/configuration');
         config = resolved;
+        kitConfig = captureKitEnvConfig(owned.copy, resolved);
       },
       async writeBundle(_options, bundle) {
-        if (!config || !overlay)
+        if (!config || !overlay || !kitConfig)
           throw new Error('Kit pass omitted its actual configuration or page overlay');
         const graph = await captureReactGraph({
           copyRoot: owned.copy,
           outputDirectory: resolve(config.root, config.build.outDir),
           stage: config.build.ssr ? 'kit-server' : 'kit-client',
+          kitConfig,
           overlay,
           bundle,
           plugin: this,

@@ -64,7 +64,7 @@ await build({ cwd: copyRoot, input: join(copyRoot, 'source/entry.js'), platform,
   output: { dir: join(copyRoot, 'output'), format: 'es', minify: true },
   plugins: [runtime.plugin, { name: 'real-runtime-graph-controls', async writeBundle(_options, bundle) {
     const request = { copyRoot, outputDirectory: join(copyRoot, 'output'), stage, overlay,
-      context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime };
+      context: REACT_PRODUCTION_CONTEXT, kitConfig: null, bundle, plugin: this, runtime };
     graph = await captureReactGraph(request);
     assert.deepEqual(assertReactGraph(copyRoot, graph, stage), graph); checks++;
     const module = graph.chunks.flatMap(chunk => chunk.modules).find(row => row.source.kind === 'rolldown-runtime');
@@ -203,6 +203,141 @@ await build({ cwd: copyRoot, input: join(copyRoot, 'source/entry.js'), platform,
   } }],
 });
 assert.ok(graph);
+if (platform === 'node') {
+  const { pathToFileURL } = await import('node:url');
+  const envOwner = join(graphOwner, '..', 'kitEnvSource.ts');
+  const { captureKitEnvConfig, bindKitEnvSource, assertKitEnvSource, assertActualKitEnvGenerator } = await import(pathToFileURL(envOwner));
+  const envModule = await import(pathToFileURL(join(copyRoot, 'node_modules/@sveltejs/kit/src/core/env.js')));
+  const { process_config } = await import(pathToFileURL(join(copyRoot, 'node_modules/@sveltejs/kit/src/core/config/index.js')));
+  const actualOptions = process_config({ kit: {} }, { cwd: join(copyRoot, 'web') });
+  const kitConfig = captureKitEnvConfig(copyRoot, { plugins: [{ name: 'vite-plugin-sveltekit-setup', api: { options: actualOptions } }] });
+  for (const changedOptions of [
+    { ...actualOptions, kit: { ...actualOptions.kit, files: { ...actualOptions.kit.files, src: join(copyRoot, 'alternate') } } },
+    { ...actualOptions, kit: { ...actualOptions.kit, experimental: { ...actualOptions.kit.experimental, explicitEnvironmentVariables: true } } },
+  ]) {
+    assert.throws(() => captureKitEnvConfig(copyRoot, { plugins: [{ name: 'vite-plugin-sveltekit-setup', api: { options: changedOptions } }] }), /fixed normalized config/); checks++;
+  }
+  assert.throws(() => captureKitEnvConfig(copyRoot, { plugins: [] }), /actual setup plugin/); checks++;
+  const envCode = envModule.create_sveltekit_env(null, {}, null);
+  await assertActualKitEnvGenerator(copyRoot, envCode); checks++;
+  await assert.rejects(assertActualKitEnvGenerator(copyRoot, envCode + '\n'), /actual generator disagrees/); checks++;
+  const envId = '\0virtual:__sveltekit/env';
+  const boundEnv = bindKitEnvSource(copyRoot, envId, envCode, kitConfig);
+  assert.ok(boundEnv); assert.deepEqual(assertKitEnvSource(copyRoot, envId, boundEnv), boundEnv); checks++;
+  for (const mutation of [envCode + '\n', envCode.replace('const variables = {};', 'const variables = { injected: true };')]) {
+    const changed = { ...boundEnv, code: mutation, sha256: chromeDigest(mutation) };
+    assert.throws(() => assertKitEnvSource(copyRoot, envId, changed), /bound generator/); checks++;
+  }
+  assert.throws(() => assertKitEnvSource(copyRoot, '\0unrelated-env', boundEnv), /binding/); checks++;
+  for (const key of ['sourceDirectory', 'explicitEnvironmentVariables', 'entry']) {
+    const changed = structuredClone(boundEnv); changed.config[key] = 'altered';
+    assert.throws(() => assertKitEnvSource(copyRoot, envId, changed), /fixed normalized config/); checks++;
+  }
+  for (const index of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+    const member = boundEnv.producer[index]; const path = join(copyRoot, member.path); const bytes = readFileSync(path);
+    try {
+      writeFileSync(path, Buffer.concat([bytes, Buffer.from('\n')]));
+      const changed = structuredClone(boundEnv); changed.producer[index] = bindReactFile(copyRoot, member.path);
+      assert.throws(() => assertKitEnvSource(copyRoot, envId, changed), /exact installed producer/); checks++;
+    } finally { writeFileSync(path, bytes); }
+  }
+  for (const index of [9, 10]) {
+    const member = boundEnv.producer[index]; const path = join(copyRoot, member.path); const bytes = readFileSync(path); const code = bytes.toString();
+    const mutations = index === 9 ? [
+      code.replace('kit: {', 'kit: { files: { src: "alternate" },'),
+      code.replace('const config =', 'let config ='),
+      code + '\nconfig.kit.files = { src: "alternate" };\n',
+      code + '\nconst alias = config; alias.kit.experimental = { explicitEnvironmentVariables: true };\n',
+      code.replace('kit: {', 'kit: { __proto__: { files: { src: "alternate" } },'),
+      code.replace('kit: {', 'kit: { __proto__: { experimental: { explicitEnvironmentVariables: true } },'),
+      code + '\nObject.prototype.files = { src: "alternate" };\n',
+    ] : [code.replace('sveltekit()', 'sveltekit({})'), code + '\nconst alias = sveltekit;\n'];
+    for (const mutation of mutations) {
+      assert.notEqual(mutation, code);
+      try {
+        writeFileSync(path, mutation);
+        const changed = structuredClone(boundEnv); changed.producer[index] = bindReactFile(copyRoot, member.path);
+        assert.throws(() => assertKitEnvSource(copyRoot, envId, changed), /exact installed producer/); checks++;
+      } finally { writeFileSync(path, bytes); }
+      assert.deepEqual(assertKitEnvSource(copyRoot, envId, boundEnv), boundEnv); checks++;
+    }
+  }
+  const explicitPath = join(copyRoot, 'web/src/env.ts');
+  try { writeFileSync(explicitPath, 'export const variables = {};');
+    assert.throws(() => assertKitEnvSource(copyRoot, envId, boundEnv), /actual explicit entry absence/); checks++;
+  } finally { (await import('node:fs')).unlinkSync(explicitPath); }
+  const reversedProducer = structuredClone(boundEnv); reversedProducer.producer.reverse();
+  assert.deepEqual(assertKitEnvSource(copyRoot, envId, reversedProducer), boundEnv); checks++;
+  const unrelatedProducer = structuredClone(boundEnv); unrelatedProducer.producer[1] = bindReactFile(copyRoot, 'source/entry.js');
+  assert.throws(() => assertKitEnvSource(copyRoot, envId, unrelatedProducer), /producer/); checks++;
+  const omittedProducer = structuredClone(boundEnv); omittedProducer.producer.pop();
+  assert.throws(() => assertKitEnvSource(copyRoot, envId, omittedProducer), /producer/); checks++;
+  const aliasedProducer = structuredClone(boundEnv); aliasedProducer.producer[1] = aliasedProducer.producer[0];
+  assert.throws(() => assertKitEnvSource(copyRoot, envId, aliasedProducer),
+    error => error instanceof Error && error.message === 'Duplicate React input binding: ' + boundEnv.producer[0].path); checks++;
+  assert.deepEqual(assertKitEnvSource(copyRoot, envId, boundEnv), boundEnv); checks++;
+  const fixtures = [
+    ['first.js', 'export const first = 1;'], ['second.js', 'export const second = 2;'],
+    ['third.js', 'export const third = 3;'], ['fourth.js', 'export const fourth = 4;'],
+  ];
+  for (const [name, code] of fixtures) writeFileSync(join(copyRoot, 'source', name), code);
+  const facadeInputs = Object.fromEntries(fixtures.map(([name]) => [name.slice(0, -3), join(copyRoot, 'source', name)]));
+  const bridgeRuntime = createRolldownRuntimeCapture(copyRoot, VERSION);
+  let bridgeGraph;
+  await build({ cwd: copyRoot, input: facadeInputs, platform: 'node', preserveEntrySignatures: 'strict',
+    output: { dir: join(copyRoot, 'bridge-output'), format: 'es', codeSplitting: { groups: [{ name: 'shared', test: /source\/.*\.js$/ }] } },
+    plugins: [bridgeRuntime.plugin, { name: 'actual-facade-capture', async writeBundle(_options, bundle) {
+      bridgeGraph = await captureReactGraph({ copyRoot, outputDirectory: join(copyRoot, 'bridge-output'), stage: 'ssr-renderer',
+        kitConfig: null, overlay: null, context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime: bridgeRuntime });
+      assert.deepEqual(assertReactGraph(copyRoot, bridgeGraph, 'ssr-renderer'), bridgeGraph); checks++;
+      const actualFacades = Object.values(bundle).filter(chunk => chunk.type === 'chunk' && !Object.keys(chunk.modules).length);
+      const actualFacade = actualFacades[0]; const originalFacadeId = actualFacade.facadeModuleId;
+      try {
+        actualFacade.facadeModuleId = actualFacades.find(chunk => chunk.facadeModuleId !== originalFacadeId).facadeModuleId;
+        await assert.rejects(captureReactGraph({ copyRoot, outputDirectory: join(copyRoot, 'bridge-output'), stage: 'ssr-renderer',
+          kitConfig: null, overlay: null, context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime: bridgeRuntime }), /actual compiler source exports/); checks++;
+      } finally { actualFacade.facadeModuleId = originalFacadeId; }
+      assert.deepEqual(await captureReactGraph({ copyRoot, outputDirectory: join(copyRoot, 'bridge-output'), stage: 'ssr-renderer',
+        kitConfig: null, overlay: null, context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime: bridgeRuntime }), bridgeGraph); checks++;
+      const facades = bridgeGraph.chunks.filter(chunk => !chunk.modules.length);
+      assert.equal(facades.length, 4); checks++;
+      for (const facade of facades) {
+        const targets = bridgeGraph.chunks.filter(target => facade.imports.includes(target.fileName));
+        assert.ok(targets.some(target => target.modules.some(module => module.id === facade.facade && module.renderedLength > 0))); checks++;
+      }
+    } }],
+  });
+  assert.ok(bridgeGraph);
+  const virtualRuntime = createRolldownRuntimeCapture(copyRoot, VERSION);
+  let virtualGraph;
+  await build({ cwd: copyRoot, input: { env: envId, first: facadeInputs.first }, platform: 'node', preserveEntrySignatures: 'strict',
+    output: { dir: join(copyRoot, 'env-output'), format: 'es', codeSplitting: { groups: [{ name: 'env-owner', test: id => id === envId || id === facadeInputs.first }] } },
+    plugins: [virtualRuntime.plugin, { name: 'actual-env-source', resolveId(id) { return id === envId ? id : null; }, load(id) { return id === envId ? envCode : null; } },
+      { name: 'actual-env-facade-capture', async writeBundle(_options, bundle) {
+        assert.ok(Object.values(bundle).some(chunk => chunk.type === 'chunk' && !Object.keys(chunk.modules).length && chunk.facadeModuleId === envId)); checks++;
+        virtualGraph = await captureReactGraph({ copyRoot, outputDirectory: join(copyRoot, 'env-output'), stage: 'ssr-renderer',
+          kitConfig, overlay: null, context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime: virtualRuntime });
+        assert.deepEqual(assertReactGraph(copyRoot, virtualGraph, 'ssr-renderer'), virtualGraph); checks++;
+        assert.ok(virtualGraph.chunks.some(chunk => !chunk.modules.length && chunk.facade === envId)); checks++;
+      } }],
+  });
+  const unknownId = '\0unrelated-env'; const unknownRuntime = createRolldownRuntimeCapture(copyRoot, VERSION);
+  await assert.rejects(build({ cwd: copyRoot, input: { env: unknownId, first: facadeInputs.first }, platform: 'node', preserveEntrySignatures: 'strict',
+    output: { dir: join(copyRoot, 'unknown-env-output'), format: 'es', codeSplitting: { groups: [{ name: 'unknown-owner', test: id => id === unknownId || id === facadeInputs.first }] } },
+    plugins: [unknownRuntime.plugin, { name: 'unrelated-virtual-source', resolveId(id) { return id === unknownId ? id : null; }, load(id) { return id === unknownId ? envCode : null; } },
+      { name: 'unrelated-virtual-facade-capture', async writeBundle(_options, bundle) {
+        assert.ok(Object.values(bundle).some(chunk => chunk.type === 'chunk' && !Object.keys(chunk.modules).length && chunk.facadeModuleId === unknownId)); checks++;
+        await captureReactGraph({ copyRoot, outputDirectory: join(copyRoot, 'unknown-env-output'), stage: 'ssr-renderer', kitConfig: null,
+          overlay: null, context: REACT_PRODUCTION_CONTEXT, bundle, plugin: this, runtime: unknownRuntime });
+      } }],
+  }), /qualified positive direct source/); checks++;
+  assert.ok(virtualGraph);
+  const changed = structuredClone(virtualGraph);
+  const owner = changed.chunks.flatMap(chunk => chunk.modules).find(module => module.id === envId);
+  owner.source = { kind: 'virtual', code: envCode, sha256: chromeDigest(envCode) };
+  assert.throws(() => assertReactGraph(copyRoot, changed, 'ssr-renderer'), /qualified positive direct source/); checks++;
+  assert.deepEqual(assertReactGraph(copyRoot, virtualGraph, 'ssr-renderer'), virtualGraph); checks++;
+}
 console.log(JSON.stringify({ scope: 'Actual owned tiny Rolldown runtime capture/reader and published-pass guards; no complete neutral host or release acceptance', platform, checks, runtime: graph.chunks.flatMap(chunk => chunk.modules).filter(row => row.source.kind === 'rolldown-runtime').map(row => ({ id: row.id, target: row.source.target, rawBytes: Buffer.byteLength(row.source.rawCode), renderedLength: row.renderedLength, producer: row.source.producer })) }));
 `;
 
@@ -228,7 +363,35 @@ function fixture() {
     }))
     .filter((row) => optional[row.package.name] === rolldownVersion);
   expect(selected).toHaveLength(1);
-  for (const name of ['vite', 'rolldown', '@rolldown/pluginutils', selected[0].package.name]) {
+  for (const name of [
+    'vite',
+    'picomatch',
+    'tinyglobby',
+    'fdir',
+    'rolldown',
+    '@rolldown/pluginutils',
+    selected[0].package.name,
+    '@sveltejs/kit',
+    'svelte',
+    '@jridgewell/gen-mapping',
+    '@jridgewell/remapping',
+    '@jridgewell/resolve-uri',
+    '@jridgewell/sourcemap-codec',
+    '@jridgewell/trace-mapping',
+    '@sveltejs/acorn-typescript',
+    'acorn',
+    'aria-query',
+    'axobject-query',
+    'esrap',
+    'is-reference',
+    'locate-character',
+    'magic-string',
+    'zimmerframe',
+    'devalue',
+    'esm-env',
+    'set-cookie-parser',
+    'kleur',
+  ]) {
     const target = join(copyRoot, 'node_modules', name);
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(ROOT, 'node_modules', name), target, { recursive: true });
@@ -247,6 +410,8 @@ function fixture() {
     join(copyRoot, 'web/src/routes/+page.svelte'),
     readFileSync(join(ROOT, 'web/src/routes/+page.svelte'))
   );
+  for (const name of ['svelte.config.js', 'vite.config.ts'])
+    cpSync(join(ROOT, 'web', name), join(copyRoot, 'web', name));
   const driver = join(parent, 'driver.mjs');
   writeFileSync(driver, DRIVER);
   return { owned, copyRoot, driver };

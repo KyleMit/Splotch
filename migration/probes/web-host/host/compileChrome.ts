@@ -63,6 +63,7 @@ async function compileOwnedChrome(): Promise<void> {
         copyRoot,
         outputDirectory,
         stage: 'ssr-renderer',
+        kitConfig: null,
         overlay: null,
         bundle,
         plugin: this,

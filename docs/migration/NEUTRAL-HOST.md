@@ -188,5 +188,53 @@ both actual runtime cases, but failed the existing import-resolution guard on tw
 imports. Its later gates were not run. The revised fixture construction produces the same child
 source bytes while preserving that guard. Fresh changed-source qualification remains pending.
 
+At the subsequent source09 checkpoint, all seven frozen source gates passed: registered info,
+external dead-code lint, 1066 targeted tests, check, lint, all15 Quality steps and all5 Browserless
+stages. Browserless included the complete tools tier once. Its214.961164-second controller retained
+all closed channels and actual changed-cache payloads before exact restoration; complete source,
+semantic Git metadata and installed-context equalities passed. That tested unit was published as
+67e13bbec7cf5ab92aeab6cfedd9ff7458d9005a with source59 and accepted records parents. This is source
+qualification; it does not establish host or release acceptance.
+
+Actual guarded cost03 completed neutral compile, render and Kit builds, then neutral postbuild
+returned1 with two unmodified hard shipping refusals:39 startup modulepreloads exceeded38, and the
+195816-byte lazy chunk exceeded75000. Reference and retained-control postbuild passed. The separate
+complete graph collector refused eight moduleless facade bridges with
+`Malformed React chunk contributors`. Consequently, the unchanged failed-disposition helper also
+returned1 because complete partial evidence was absent. Its strict completed-artifact reader
+independently refused check/serve. Those four outcomes remain distinct; complete cost disposition
+remains pending. Actual closed raw channels, source/installed/metadata equalities and owned-group
+release were preserved privately.
+
+The prepared bridge repair retains every actual emitted chunk and contributor. Moduleless chunks
+need pure named-import/local-export forwarding, actual bound direct target exports and a positive
+qualified facade contributor in that direct closure. Populated chunks retain their same-chunk source
+rule. Known Kit env facades additionally bind the actual normalized setup config, explicit entry
+absence, fixed installed producer and complete generated output; unknown virtual facade producers
+remain refused. Writer export qualification permits the actual surviving subset of source exports.
+Actual facade02 and facade03 failed while loading missing fixture dependency owners. Facade05
+reached intact producer readback and exposed an ordering mismatch; facade06 rejected a duplicate
+binding through the real owner but failed its test error predicate. Facade07 reached real compiler
+facade controls, then failed because its single-entry known-env fixture emitted no empty facade.
+Each failed attempt retains its original raw receipts and does not qualify the complete control
+suite. At the tiny10 checkpoint, both scoped test files passed all 20 tests and lint over eight code
+paths returned 0. Known and unrelated virtual fixtures each proved an actual emitted empty facade
+before capture or refusal; intact/restored producer and ordinary facade controls passed through the
+maintained owners. The run finished in 11.991661 seconds and retained closed channels, actual
+changed-cache bytes, exact restored installed/source/semantic Git identities and released groups.
+This scoped result does not qualify a complete host or browser mechanics. Full-source10 subsequently
+passed all seven source gates in 197.721486 seconds: info, dead-code lint, 1070 targeted tests,
+check, lint, all 15 Quality checks and all five Browserless stages. Browserless included the
+complete 7830-test tools tier once. Its closed outputs, released groups, actual saved cache bytes
+and exact restored source/installed/semantic Git identities qualified. The focused
+[source-only packet](evidence/resumption/neutral-facade-2026-10-07/README.md) preserves those
+original receipts; full source/installed trees and raw cache payloads remain private. The separate
+[historical cost03 packet](evidence/resumption/neutral-cost03-2026-10-07/README.md) preserves both
+hard cost failures and its partial collector/disposition/strict-reader refusals. It does not
+retrofit the old virtual env row or absent normalized setup capture; a complete current failed-cost
+capture needs a new artifact. Cost03 failures are preserved, and original8c still has one used round
+and two remaining. No failed host is served, no threshold is changed, and browser mechanics remain
+gated on an eligible artifact.
+
 Deployed CSP/PWA/API/admin/offline, physical/native/product fidelity and final architecture and
 release gates remain in the migration contract. F1 source acceptance remains a separate gate.

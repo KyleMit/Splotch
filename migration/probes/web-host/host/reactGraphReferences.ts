@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import type { ReactFileBinding } from './reactProduction.ts';
 import ts from 'typescript';
 
 export function emittedModuleReferences(code: string): string[] {
@@ -39,4 +42,46 @@ export function emittedModuleReferences(code: string): string[] {
   }
   visit(source);
   return [...references].sort();
+}
+
+export function assertGraphChunkEdges(
+  copyRoot: string,
+  chunks: {
+    fileName: string;
+    file: ReactFileBinding;
+    imports: string[];
+    dynamicImports: string[];
+    externals: { specifier: string }[];
+  }[]
+): void {
+  const outputNames = new Set(chunks.map((chunk) => chunk.fileName));
+  for (const chunk of chunks) {
+    const codeReferences = emittedModuleReferences(
+      readFileSync(join(copyRoot, chunk.file.path), 'utf8')
+    );
+    for (const specifier of codeReferences) {
+      const internal = specifier.startsWith('.')
+        ? chunks.find(
+            (target) =>
+              join(copyRoot, target.file.path) ===
+              resolve(dirname(join(copyRoot, chunk.file.path)), specifier)
+          )
+        : undefined;
+      if (
+        internal
+          ? ![...chunk.imports, ...chunk.dynamicImports].includes(internal.fileName)
+          : !chunk.externals.some((edge) => edge.specifier === specifier)
+      )
+        throw new Error('Emitted literal import omitted its source-bound graph edge');
+    }
+    const references = [...chunk.imports, ...chunk.dynamicImports];
+    const externalNames = chunk.externals.map((edge) => edge.specifier);
+    if (
+      new Set(externalNames).size !== externalNames.length ||
+      references.some(
+        (specifier) => !outputNames.has(specifier) && !externalNames.includes(specifier)
+      )
+    )
+      throw new Error('Chunk graph omitted a surviving external edge');
+  }
 }

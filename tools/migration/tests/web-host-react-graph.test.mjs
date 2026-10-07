@@ -264,3 +264,107 @@ it('requires positive actual contributions rather than zero-length retained modu
     }
   }
 });
+
+const BRIDGE_FIXTURE_SPECIFIER = './shared.mjs';
+const ABSENT_BRIDGE_FIXTURE_SPECIFIER = './absent.mjs';
+function bridgeFixture() {
+  const { root, graph } = fixture();
+  const target = graph.chunks[0];
+  const targetPath = 'output/shared.mjs';
+  write(root, targetPath, 'const value = 1; export { value as emitted };\n');
+  target.fileName = 'shared.mjs';
+  target.file = bindReactFile(root, targetPath);
+  const code =
+    'import { emitted as value } from ' +
+    JSON.stringify(BRIDGE_FIXTURE_SPECIFIER) +
+    '; export { value };\n';
+  write(root, 'output/entry.mjs', code);
+  const bridge = {
+    fileName: 'entry.mjs',
+    file: bindReactFile(root, 'output/entry.mjs'),
+    facade: target.facade,
+    modules: [],
+    imports: ['shared.mjs'],
+    dynamicImports: [],
+    externals: [],
+  };
+  graph.chunks.unshift(bridge);
+  return { root, graph, bridge, target, code };
+}
+
+it('preserves a source-bound pure facade and its actual positive direct contributor', () => {
+  const { root, graph } = bridgeFixture();
+  expect(assertReactGraph(root, graph, 'ssr-renderer')).toEqual(graph);
+  expect(graph.chunks[0].modules).toEqual([]);
+  expect(graph.chunks[1].modules[0].renderedLength).toBeGreaterThan(0);
+});
+
+it('rejects rehashed executable bodies and unbound bridge imports/exports, then restores the same graph', () => {
+  const { root, graph, bridge, code } = bridgeFixture();
+  const mutations = [
+    code + 'globalThis.effect = true;\n',
+    code + 'import(' + JSON.stringify(BRIDGE_FIXTURE_SPECIFIER) + ');\n',
+    'import ' + JSON.stringify(BRIDGE_FIXTURE_SPECIFIER) + '; export {};\n',
+    code.replace('emitted as value', 'missing as value'),
+    code.replace('export { value }', 'export { missing }'),
+    code.replace(BRIDGE_FIXTURE_SPECIFIER, ABSENT_BRIDGE_FIXTURE_SPECIFIER),
+    code.replace('export { value }', 'export * from ' + JSON.stringify(BRIDGE_FIXTURE_SPECIFIER)),
+    'import { emitted as value, emitted as unused } from ' +
+      JSON.stringify(BRIDGE_FIXTURE_SPECIFIER) +
+      '; export { value };\n',
+  ];
+  for (const mutation of mutations) {
+    write(root, bridge.file.path, mutation);
+    bridge.file = bindReactFile(root, bridge.file.path);
+    expect(() => assertReactGraph(root, graph, 'ssr-renderer')).toThrow(
+      /facade|Facade|literal import/
+    );
+    write(root, bridge.file.path, code);
+    bridge.file = bindReactFile(root, bridge.file.path);
+    expect(assertReactGraph(root, graph, 'ssr-renderer')).toEqual(graph);
+  }
+});
+
+it('rejects missing/wrong/nonpositive facade owners and omitted or invented bridge edges', () => {
+  const { root, graph, bridge, target } = bridgeFixture();
+  const original = structuredClone(graph);
+  for (const mutate of [
+    () => {
+      bridge.facade = null;
+    },
+    () => {
+      bridge.facade = 'source/unrelated.ts';
+    },
+    () => {
+      target.modules[0].renderedLength = 0;
+    },
+    () => {
+      bridge.imports = [];
+    },
+    () => {
+      bridge.imports.push('entry.mjs');
+    },
+    () => {
+      bridge.dynamicImports = ['shared.mjs'];
+    },
+    () => {
+      target.modules[0].source = { kind: 'virtual', code: '', sha256: 'a'.repeat(64) };
+    },
+  ]) {
+    mutate();
+    expect(() => assertReactGraph(root, graph, 'ssr-renderer')).toThrow();
+    Object.assign(bridge, structuredClone(original.chunks[0]));
+    Object.assign(target, structuredClone(original.chunks[1]));
+    expect(assertReactGraph(root, graph, 'ssr-renderer')).toEqual(original);
+  }
+});
+
+it('rejects a changed target export after rebinding its output bytes and restores the actual export', () => {
+  const { root, graph, target } = bridgeFixture();
+  write(root, target.file.path, 'const value = 1; export { value as different };\n');
+  target.file = bindReactFile(root, target.file.path);
+  expect(() => assertReactGraph(root, graph, 'ssr-renderer')).toThrow(/actual target export/);
+  write(root, target.file.path, 'const value = 1; export { value as emitted };\n');
+  target.file = bindReactFile(root, target.file.path);
+  expect(assertReactGraph(root, graph, 'ssr-renderer')).toEqual(graph);
+});

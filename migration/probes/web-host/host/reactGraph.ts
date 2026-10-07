@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { createRequire, isBuiltin } from 'node:module';
-import { emittedModuleReferences } from './reactGraphReferences.ts';
+import { emittedModuleReferences, assertGraphChunkEdges } from './reactGraphReferences.ts';
+import { assertChunkFacades } from './reactGraphFacade.ts';
+import {
+  bindKitEnvSource,
+  assertKitEnvSource,
+  assertActualKitEnvGenerator,
+  type KitEnvSource,
+  type KitEnvConfig,
+} from './kitEnvSource.ts';
 import type { Rolldown } from 'vite';
 import { chromeDigest } from './chromeHtml.ts';
 import {
@@ -27,7 +35,8 @@ export type ReactGraphStage = 'ssr-renderer' | 'kit-client' | 'kit-server';
 type ModuleSource =
   | { kind: 'file'; file: ReactFileBinding }
   | { kind: 'virtual'; code: string; sha256: string }
-  | RolldownRuntimeSource;
+  | RolldownRuntimeSource
+  | KitEnvSource;
 interface GraphModule {
   id: string;
   renderedLength: number;
@@ -92,7 +101,8 @@ function moduleSource(
   code: string | null,
   runtime: ReturnType<typeof createRolldownRuntimeCapture>,
   renderedCode: string | null,
-  stage: ReactGraphStage
+  stage: ReactGraphStage,
+  kitConfig: KitEnvConfig | null
 ): { id: string; source: ModuleSource } {
   const unwrapped = id.replace(/^\0/, '');
   const raw = unwrapped.split('?')[0];
@@ -103,6 +113,8 @@ function moduleSource(
       source: { kind: 'file', file },
     };
   }
+  const kitEnv = bindKitEnvSource(copyRoot, id, code, kitConfig);
+  if (kitEnv) return { id, source: kitEnv };
   const generated = runtime.source(id, renderedCode, stage);
   if (generated) return { id, source: generated };
   if (!id.startsWith('\0') || typeof code !== 'string')
@@ -133,6 +145,7 @@ export async function captureReactGraph(value: {
   outputDirectory: string;
   stage: ReactGraphStage;
   context: unknown;
+  kitConfig: KitEnvConfig | null;
   overlay: PageOverlayBinding | null;
   bundle: Rolldown.OutputBundle;
   plugin: Rolldown.PluginContext;
@@ -151,12 +164,24 @@ export async function captureReactGraph(value: {
           value.plugin.getModuleInfo(id)?.code ?? null,
           value.runtime,
           rendered.code,
-          value.stage
+          value.stage,
+          value.kitConfig
         );
         if (rendered.renderedLength > 0) assertReactContribution(source.id);
         return { ...source, renderedLength: rendered.renderedLength };
       })
       .sort((left, right) => left.id.localeCompare(right.id));
+    if (!modules.length) {
+      const facade = chunk.facadeModuleId && value.plugin.getModuleInfo(chunk.facadeModuleId);
+      if (
+        !facade ||
+        facade.id !== chunk.facadeModuleId ||
+        !chunk.exports.length ||
+        new Set(chunk.exports).size !== chunk.exports.length ||
+        chunk.exports.some((name) => !facade.exports.includes(name))
+      )
+        throw new Error('Facade bridge disagrees with its actual compiler source exports');
+    }
     const externals: GraphExternal[] = [];
     for (const specifier of [...new Set([...chunk.imports, ...chunk.dynamicImports])].sort()) {
       if (outputNames.has(specifier)) continue;
@@ -208,7 +233,8 @@ export async function captureReactGraph(value: {
             value.plugin.getModuleInfo(chunk.facadeModuleId)?.code ?? null,
             value.runtime,
             null,
-            value.stage
+            value.stage,
+            value.kitConfig
           ).id
         : null,
       modules,
@@ -218,15 +244,22 @@ export async function captureReactGraph(value: {
     });
   }
   if (!chunks.length) throw new Error('Missing contributing React graph chunks');
-  return {
-    schemaVersion: 1,
-    stage: value.stage,
-    outputDirectory: relative(value.copyRoot, value.outputDirectory),
-    context,
-    overlay: value.overlay,
-    packages: graphPackages(value.copyRoot, chunks),
-    chunks: chunks.sort((left, right) => left.file.path.localeCompare(right.file.path)),
-  };
+  for (const module of chunks.flatMap((chunk) => chunk.modules))
+    if (module.source.kind === 'kit-env')
+      await assertActualKitEnvGenerator(value.copyRoot, module.source.code);
+  return assertReactGraph(
+    value.copyRoot,
+    {
+      schemaVersion: 1,
+      stage: value.stage,
+      outputDirectory: relative(value.copyRoot, value.outputDirectory),
+      context,
+      overlay: value.overlay,
+      packages: graphPackages(value.copyRoot, chunks),
+      chunks: chunks.sort((left, right) => left.file.path.localeCompare(right.file.path)),
+    },
+    value.stage
+  );
 }
 
 function object(value: unknown, keys: string[]): Record<string, unknown> {
@@ -285,24 +318,28 @@ function graphModule(copyRoot: string, input: unknown, stage: ReactGraphStage): 
     sourceValue,
     sourceValue.kind === 'file'
       ? ['kind', 'file']
-      : sourceValue.kind === 'rolldown-runtime'
-        ? [
-            'kind',
-            'apiVersion',
-            'target',
-            'producer',
-            'rawCode',
-            'rawSha256',
-            'renderedCode',
-            'renderedSha256',
-          ]
-        : ['kind', 'code', 'sha256']
+      : sourceValue.kind === 'kit-env'
+        ? ['kind', 'config', 'producer', 'code', 'sha256']
+        : sourceValue.kind === 'rolldown-runtime'
+          ? [
+              'kind',
+              'apiVersion',
+              'target',
+              'producer',
+              'rawCode',
+              'rawSha256',
+              'renderedCode',
+              'renderedSha256',
+            ]
+          : ['kind', 'code', 'sha256']
   );
   if (kind.kind === 'file') {
     const [binding] = assertReactFileBindings(copyRoot, [kind.file]);
     if (module.id.replace(/^\0/, '').split('?')[0] !== binding.path)
       throw new Error('Contributor ID disagrees with its bound source');
     source = { kind: 'file', file: binding };
+  } else if (kind.kind === 'kit-env') {
+    source = assertKitEnvSource(copyRoot, module.id, sourceValue);
   } else if (kind.kind === 'rolldown-runtime') {
     source = assertRolldownRuntimeSource(
       copyRoot,
@@ -394,7 +431,6 @@ function graphChunk(
   if (
     !(row.facade === null || typeof row.facade === 'string') ||
     !Array.isArray(row.modules) ||
-    !row.modules.length ||
     !Array.isArray(row.externals)
   )
     throw new Error('Malformed React chunk contributors');
@@ -459,38 +495,8 @@ export function assertReactGraph(
   const chunks = value.chunks.map((chunk) => graphChunk(copyRoot, chunk, outputDirectory, stage));
   if (new Set(chunks.map((chunk) => chunk.file.path)).size !== chunks.length)
     throw new Error('Duplicate React graph output');
-  const outputNames = new Set(chunks.map((chunk) => chunk.fileName));
-  for (const chunk of chunks) {
-    const codeReferences = emittedModuleReferences(
-      readFileSync(join(copyRoot, chunk.file.path), 'utf8')
-    );
-    for (const specifier of codeReferences) {
-      const internal = specifier.startsWith('.')
-        ? chunks.find(
-            (target) =>
-              join(copyRoot, target.file.path) ===
-              resolve(dirname(join(copyRoot, chunk.file.path)), specifier)
-          )
-        : undefined;
-      if (
-        internal
-          ? ![...chunk.imports, ...chunk.dynamicImports].includes(internal.fileName)
-          : !chunk.externals.some((edge) => edge.specifier === specifier)
-      )
-        throw new Error('Emitted literal import omitted its source-bound graph edge');
-    }
-    const references = [...chunk.imports, ...chunk.dynamicImports];
-    const externalNames = chunk.externals.map((edge) => edge.specifier);
-    if (
-      new Set(externalNames).size !== externalNames.length ||
-      references.some(
-        (specifier) => !outputNames.has(specifier) && !externalNames.includes(specifier)
-      )
-    )
-      throw new Error('Chunk graph omitted a surviving external edge');
-    if (chunk.facade !== null && !chunk.modules.some((module) => module.id === chunk.facade))
-      throw new Error('Chunk facade omitted its source contributor');
-  }
+  assertGraphChunkEdges(copyRoot, chunks);
+  assertChunkFacades(copyRoot, chunks);
   if (!Array.isArray(value.packages))
     throw new Error('React graph omitted its participating package identities');
   const packages = value.packages.length ? assertReactFileBindings(copyRoot, value.packages) : [];

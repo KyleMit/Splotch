@@ -1,0 +1,15 @@
+{
+  "state": "prepared-not-published-all-member-bytes-qualified",
+  "manifestSha256": "32985d9dfb5a2b2a0b7416e71371a06c2e3e39cbabd171b32ff541420855daf7",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 915294,
+    "sha256": "7422e138caf30476da1c4044777df267bcdd165e6c18e13a2a157641f2079380",
+    "members": 116
+  },
+  "memberBytes": 5194261,
+  "source": "67e13bbec7cf5ab92aeab6cfedd9ff7458d9005a",
+  "copiedGuardOwnersByteEqualSourceAndAccepted": true,
+  "originalCostResultUnchanged": true,
+  "elapsedSeconds": 0.38250216701999307
+}
