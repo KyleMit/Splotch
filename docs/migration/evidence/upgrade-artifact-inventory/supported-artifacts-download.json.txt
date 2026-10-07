@@ -1,0 +1,242 @@
+{
+  "startedAtUtc": "2026-10-06T16:42:39.537596+00:00",
+  "owner": "parent integrator",
+  "pid": 67079,
+  "pgid": 67079,
+  "deadlineSeconds": 300,
+  "producerSha256": "7a32e8fe485358938895e72fbd5ba5b774a40fd8fda3b55391da80948447d07d",
+  "calls": [
+    {
+      "tag": "v1.6.0",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.6.0",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.6.0",
+        "--pattern",
+        "app-release.aab",
+        "--pattern",
+        "App.ipa"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:39.538028+00:00",
+      "pid": 67085,
+      "pgid": 67085,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:40.724514+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 552615870,
+          "name": "app-release.aab",
+          "bytes": 8796729,
+          "sha256": "73e02d686a95f799aa5ac2d4afb90f8b9ce92c4b21ade4a08c6cd113da79f1ab"
+        },
+        {
+          "assetId": 552615871,
+          "name": "App.ipa",
+          "bytes": 8481553,
+          "sha256": "35e897484cb9673eca9e8cdc3eda78bb2e87194c6b8473549e3dc7961694f134"
+        }
+      ]
+    },
+    {
+      "tag": "v1.5.0",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.5.0",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.5.0",
+        "--pattern",
+        "app-release.aab",
+        "--pattern",
+        "App.ipa"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:40.731726+00:00",
+      "pid": 67091,
+      "pgid": 67091,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:41.670643+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 512378066,
+          "name": "app-release.aab",
+          "bytes": 10135645,
+          "sha256": "de035008f748596b1fdd83453f35ad32db642ddf21648232a8bf5fed36570a01"
+        },
+        {
+          "assetId": 512378064,
+          "name": "App.ipa",
+          "bytes": 9807878,
+          "sha256": "b2443b1542dbd6ae4e55fbe7e99204fb19566c599dc05666c9fcd3dc359414a7"
+        }
+      ]
+    },
+    {
+      "tag": "v1.4.0",
+      "state": "reuse independently hash/size-qualified actual published bytes",
+      "qualifiedArtifacts": [
+        {
+          "assetId": 492744078,
+          "name": "app-release.aab",
+          "bytes": 44430280,
+          "sha256": "2c65d4ca791721f967a5528a2022963b7378faae6bc4b8379eddcea497d69ea8"
+        },
+        {
+          "assetId": 492744077,
+          "name": "App.ipa",
+          "bytes": 44565743,
+          "sha256": "fe3fe919a44de0c20288a092e0d7b550216c6fd5893bdd33b5cd08582ae98c82"
+        }
+      ]
+    },
+    {
+      "tag": "v1.3.0",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.3.0",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.3.0",
+        "--pattern",
+        "app-release.aab"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:41.752886+00:00",
+      "pid": 67097,
+      "pgid": 67097,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:42.655536+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 467299435,
+          "name": "app-release.aab",
+          "bytes": 16847072,
+          "sha256": "33be9872ed11deef78e2946df8556cdcdbea69d54c690698126fa858561fef9c"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.0",
+      "state": "no published binary assets; source/channel applicability remains pending"
+    },
+    {
+      "tag": "v1.1.0",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.1.0",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.1.0",
+        "--pattern",
+        "app-release.aab"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:42.662577+00:00",
+      "pid": 67102,
+      "pgid": 67102,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:43.533224+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 439548859,
+          "name": "app-release.aab",
+          "bytes": 7272973,
+          "sha256": "c048daa1d11c7c51b2744abd867bbe7715ae89e73a77ddd2e5a2197699e5e92a"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.1",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.0.1",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.0.1",
+        "--pattern",
+        "app-release.aab"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:43.536510+00:00",
+      "pid": 67107,
+      "pgid": 67107,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:44.352415+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 437588290,
+          "name": "app-release.aab",
+          "bytes": 9212540,
+          "sha256": "a0bc859e2447b00c61c3f20a9c09c381e1bb74a540ae855c21949939cbb6625a"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.0",
+      "command": [
+        "gh",
+        "release",
+        "download",
+        "v1.0.0",
+        "-R",
+        "KyleMit/Splotch",
+        "--dir",
+        "/private/tmp/splotch-resume-01a111b0/continuity-intake/artifacts/v1.0.0",
+        "--pattern",
+        "app-release.aab"
+      ],
+      "startedAtUtc": "2026-10-06T16:42:44.356481+00:00",
+      "pid": 67112,
+      "pgid": 67112,
+      "exitCode": 0,
+      "completedAtUtc": "2026-10-06T16:42:45.250855+00:00",
+      "stdoutBytes": 0,
+      "stderrBytes": 0,
+      "parentWaitedForOwnedChild": true,
+      "qualifiedArtifacts": [
+        {
+          "assetId": 437311601,
+          "name": "app-release.aab",
+          "bytes": 9212540,
+          "sha256": "a0bc859e2447b00c61c3f20a9c09c381e1bb74a540ae855c21949939cbb6625a"
+        }
+      ]
+    }
+  ],
+  "exitCode": 0,
+  "completedAtUtc": "2026-10-06T16:42:45.255051+00:00",
+  "elapsedSeconds": 5.717692209058441,
+  "claimLimits": [
+    "Read-only public artifact download and byte identity only; no signing/channel/install/runtime or upgrade acceptance",
+    "No artifact extraction or candidate/source mutation",
+    "All gh child handles belong to this finite downloader; credentials remain host-local"
+  ]
+}

@@ -1,0 +1,35 @@
+# Upgrade inventory disposition to implement
+
+Owner: parent integrator. Base f14966ee98563e3c569fbcb90beea6d9c684614a.
+Allowed source changes: UPGRADES.md, CAMPAIGN.md and the scoped evidence directory.
+Existing artifact-version/ZIP/native-version readers remain unchanged.
+
+Preserve conservative support for all eight tagged source classes and every distributed candidate.
+Add a separate observed artifact-version table: public tags are not compiled-source or channel
+identity. Retain literal oldest versionName "1.0" rather than normalizing it to "1.0.0". Preserve
+the four mismatched Android tag associations and v1.2.0 missing artifacts. Matching current
+v1.4.0–v1.6.0 embedded numbers do not establish compiled-source or store lineage.
+
+Document the actual old native pack namespace `${appVersion}-${resolution}`, the old status calls
+that delete other version directories, and non-destructive enumeration before any replacement
+status/retirement operation. Keep current resolution-only format as a separate source obligation.
+Record historical admin credential owners, lock-source discrepancies and absent committed Android
+resolved locks as unresolved installed-input/applicability requirements.
+
+Keep the oldest persistent-core fixture collapse narrowly bounded by exact eight-owner and lock
+comparison. Preserve the real build:cap/strip-native-assets delta and native release-version
+differences; do not collapse native builds or whole service/runtime acceptance.
+
+Freeze complete release/tag responses, unchanged-reader receipts, exact executed producers,
+intended corrupt-ZIP/wrong-tag/missing-owner/swapped-owner controls, restored positives and finite
+source manifest/search scope. Published binaries remain hash-qualified in durable host-local
+records and recoverable from exact public asset identities. A finite source/evidence capsule may
+preserve the newly frozen legacy blob bytes without committing release binaries.
+
+Plausible false pass: treating a matching version or tag lock as installed graph/source proof;
+calling legacy status with HEAD's version before preserving old books; comparing only HEAD keys;
+collapsing all oldest behavior because persistent core matches. Plausible false rejection: treating
+a tag/binary version mismatch as proof that every persisted format is incompatible, or treating an
+unexpected setup failure as an intended reader rejection. Independent original Claude review must challenge
+these claims and executed evidence before integration. No app/device/signing/runtime/continuity
+acceptance follows from this records unit.

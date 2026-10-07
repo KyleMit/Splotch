@@ -82,6 +82,8 @@ describe('exclusion classes', () => {
     ['package.json', 'root', '(root)'],
     ['experiments/native-architecture/src/ProbeApp.tsx', 'experiments/native-architecture', 'src'],
     ['experiments/native-architecture/package.json', 'experiments/native-architecture', '(root)'],
+    ['migration/probes/web-host/host/vite.config.ts', 'migration/probes', 'web-host'],
+    ['migration/probes/web-host/README.md', 'migration/probes', 'web-host'],
     ['docs/migration/evidence/native-topology-05/README.md', 'docs', 'migration'],
   ])('measures %s in %s / %s', (path, area, bucket) => {
     expect(classifyPath(path)).toEqual({ kind: 'measured', area, bucket });

@@ -1,0 +1,34 @@
+{
+  "owner": "retained_control",
+  "pid": 13238,
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/private/tmp/splotch-resume-01a111b0/retained/package-floor-evidence.py"
+  ],
+  "processStartIdentity": "13238 81283 13238 Tue Oct  6 14:50:17 2026     /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /private/tmp/splotch-resume-01a111b0/retained/package-floor-evidence.py",
+  "started": "2026-10-06T18:50:17.531890+00:00",
+  "deadlineSeconds": 600,
+  "state": "verified-complete",
+  "archiveAbsentBefore": true,
+  "preparedManifestSha256": "d2997ab71d32e841c25d241b98de91b53bf8ac9af9cf452183a2fd1475453e14",
+  "ownedChildren": [],
+  "sourceBefore": {
+    "head": "5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118",
+    "tree": "2c64a3869e9c1faf7df1e9adbfc01d9713f8215a",
+    "porcelain": ""
+  },
+  "selectedFiles": 413,
+  "rawBytes": 873325431,
+  "finished": "2026-10-06T18:52:01.044459+00:00",
+  "elapsedSeconds": 103.51501316705253,
+  "sourceAfter": {
+    "head": "5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118",
+    "tree": "2c64a3869e9c1faf7df1e9adbfc01d9713f8215a",
+    "porcelain": ""
+  },
+  "sourceUnchanged": true,
+  "decodedMembers": 413,
+  "archiveBytes": 11757568,
+  "archiveSha256": "a31ee2a2bedc365838b7616231ca42976c1ffed30cd08ea07e9a7f3e30d3c811",
+  "manifestSha256": "eb7d07534aa2938a2bc192974f63198635011c1d931a1a75dfaa6dc5b26bff79"
+}

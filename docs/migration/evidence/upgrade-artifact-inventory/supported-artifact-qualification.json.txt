@@ -1,0 +1,253 @@
+{
+  "observedAtUtc": "2026-10-06T16:44:55.199Z",
+  "nodeVersion": "v24.16.0",
+  "producerSha256": "caf45a42f95ba5dec984211e29722058e7a3006aceae3df033643814970472f2",
+  "rootSourceHead": "45a01d182b602f18e66bfc3fffdd0c4edf7339c6",
+  "inputs": {
+    "releaseInventorySha256": "0fd4bf5a0e734babebfe7cb4bbc83b9fd0cc7930b2ced72b10bbd9d9779ea17d",
+    "liveTagAssociationSha256": "ad12187547b95de219a39e7dd1133a1370972253ff8904b7378dfa68d5f0155b"
+  },
+  "sourceBefore": {
+    "tools/release/lib/artifact-version.mjs": "0bf50f616bab90efedf775f079dab77833939466093e72cb4a8bcba6304ecba3",
+    "tools/release/lib/zip.mjs": "ad8247d24adb97c188af83de112619d75b730a80f75cab93b1786ab1891a14f4",
+    "tools/release/lib/native-version.mjs": "b295ca0d9583e623f2934e83438ef6814ecd700c75fa9bf117c92c25db299ef8"
+  },
+  "sourceAfter": {
+    "tools/release/lib/artifact-version.mjs": "0bf50f616bab90efedf775f079dab77833939466093e72cb4a8bcba6304ecba3",
+    "tools/release/lib/zip.mjs": "ad8247d24adb97c188af83de112619d75b730a80f75cab93b1786ab1891a14f4",
+    "tools/release/lib/native-version.mjs": "b295ca0d9583e623f2934e83438ef6814ecd700c75fa9bf117c92c25db299ef8"
+  },
+  "results": [
+    {
+      "tag": "v1.6.0",
+      "taggedCommit": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+      "taggedGradleSha256": "60aa7728cc7f708aee4bea75a7b100be6a213c98944f19bb86c559ef1a204479",
+      "taggedAndroidVersion": {
+        "versionName": "1.6.0",
+        "versionCode": 8
+      },
+      "assets": [
+        {
+          "assetId": 552615870,
+          "name": "app-release.aab",
+          "bytes": 8796729,
+          "sha256": "73e02d686a95f799aa5ac2d4afb90f8b9ce92c4b21ade4a08c6cd113da79f1ab",
+          "actualEmbeddedVersion": {
+            "versionName": "1.6.0",
+            "versionCode": "8"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        },
+        {
+          "assetId": 552615871,
+          "name": "App.ipa",
+          "bytes": 8481553,
+          "sha256": "35e897484cb9673eca9e8cdc3eda78bb2e87194c6b8473549e3dc7961694f134",
+          "actualEmbeddedVersion": {
+            "versionName": "1.6.0",
+            "versionCode": "8"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.5.0",
+      "taggedCommit": "ad3702e44d384a2a7acc6dd497dc791df848c06a",
+      "taggedGradleSha256": "1d3bc46585623b346feda2d9fc161225a41fa65f0892ca9e94ca0da43d20db83",
+      "taggedAndroidVersion": {
+        "versionName": "1.5.0",
+        "versionCode": 7
+      },
+      "assets": [
+        {
+          "assetId": 512378066,
+          "name": "app-release.aab",
+          "bytes": 10135645,
+          "sha256": "de035008f748596b1fdd83453f35ad32db642ddf21648232a8bf5fed36570a01",
+          "actualEmbeddedVersion": {
+            "versionName": "1.5.0",
+            "versionCode": "7"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        },
+        {
+          "assetId": 512378064,
+          "name": "App.ipa",
+          "bytes": 9807878,
+          "sha256": "b2443b1542dbd6ae4e55fbe7e99204fb19566c599dc05666c9fcd3dc359414a7",
+          "actualEmbeddedVersion": {
+            "versionName": "1.5.0",
+            "versionCode": "7"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.4.0",
+      "taggedCommit": "4756b058f75d22e12d43fac7be5af70236c8be5c",
+      "taggedGradleSha256": "e5c26ff29f9cd1e63b75443017956b699695590a96dfc5ab1f56d807566c5e84",
+      "taggedAndroidVersion": {
+        "versionName": "1.4.0",
+        "versionCode": 6
+      },
+      "assets": [
+        {
+          "assetId": 492744078,
+          "name": "app-release.aab",
+          "bytes": 44430280,
+          "sha256": "2c65d4ca791721f967a5528a2022963b7378faae6bc4b8379eddcea497d69ea8",
+          "actualEmbeddedVersion": {
+            "versionName": "1.4.0",
+            "versionCode": "6"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        },
+        {
+          "assetId": 492744077,
+          "name": "App.ipa",
+          "bytes": 44565743,
+          "sha256": "fe3fe919a44de0c20288a092e0d7b550216c6fd5893bdd33b5cd08582ae98c82",
+          "actualEmbeddedVersion": {
+            "versionName": "1.4.0",
+            "versionCode": "6"
+          },
+          "releaseTagMatchesEmbeddedVersion": true,
+          "taggedAndroidVersionMatchesEmbeddedVersion": true,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.3.0",
+      "taggedCommit": "1a7113d0fdb38923d9283555190030ac866e2c53",
+      "taggedGradleSha256": "59b28b133eaf0e773ab349e0cda21344f4321d224ebeb5629e05e338b6549213",
+      "taggedAndroidVersion": {
+        "versionName": "1.3.0",
+        "versionCode": 5
+      },
+      "assets": [
+        {
+          "assetId": 467299435,
+          "name": "app-release.aab",
+          "bytes": 16847072,
+          "sha256": "33be9872ed11deef78e2946df8556cdcdbea69d54c690698126fa858561fef9c",
+          "actualEmbeddedVersion": {
+            "versionName": "1.2.0",
+            "versionCode": "4"
+          },
+          "releaseTagMatchesEmbeddedVersion": false,
+          "taggedAndroidVersionMatchesEmbeddedVersion": false,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.0",
+      "taggedCommit": "aaf24315dcef143e38ae2418bbfdb4a4d418eb4a",
+      "taggedGradleSha256": "e0578b24493c537c70b62778953c41605ca43a24a050c4d656e84684e3a73b7c",
+      "taggedAndroidVersion": {
+        "versionName": "1.2.0",
+        "versionCode": 4
+      },
+      "assets": [],
+      "missingPublishedBinary": true
+    },
+    {
+      "tag": "v1.1.0",
+      "taggedCommit": "2966e81dce4183e64dab8b9c1138b1bf1a99b224",
+      "taggedGradleSha256": "517c646785daec728783295ec73832b6bc4f8ef3bc448577e18c0d1b46a7f2f8",
+      "taggedAndroidVersion": {
+        "versionName": "1.1.0",
+        "versionCode": 3
+      },
+      "assets": [
+        {
+          "assetId": 439548859,
+          "name": "app-release.aab",
+          "bytes": 7272973,
+          "sha256": "c048daa1d11c7c51b2744abd867bbe7715ae89e73a77ddd2e5a2197699e5e92a",
+          "actualEmbeddedVersion": {
+            "versionName": "1.0.1",
+            "versionCode": "2"
+          },
+          "releaseTagMatchesEmbeddedVersion": false,
+          "taggedAndroidVersionMatchesEmbeddedVersion": false,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.1",
+      "taggedCommit": "c7091f351243fef6288b9ffdc70b1cc6112ee774",
+      "taggedGradleSha256": "5d7e4fc36677949ae970c229bfbe69ab7ae812562f29ceb56081c4d3bf087ffb",
+      "taggedAndroidVersion": {
+        "versionName": "1.0.1",
+        "versionCode": 2
+      },
+      "assets": [
+        {
+          "assetId": 437588290,
+          "name": "app-release.aab",
+          "bytes": 9212540,
+          "sha256": "a0bc859e2447b00c61c3f20a9c09c381e1bb74a540ae855c21949939cbb6625a",
+          "actualEmbeddedVersion": {
+            "versionName": "1.0",
+            "versionCode": "1"
+          },
+          "releaseTagMatchesEmbeddedVersion": false,
+          "taggedAndroidVersionMatchesEmbeddedVersion": false,
+          "sourceUnchanged": true
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.0",
+      "taggedCommit": "06f5bf94f367a9a0e697e49306a13eb053474dc5",
+      "taggedGradleSha256": "d1cb3f935f534d221243c57fb7c427d3a07347cb81e4423f293d882041607d27",
+      "taggedAndroidVersion": {
+        "versionName": "1.0.0",
+        "versionCode": 1
+      },
+      "assets": [
+        {
+          "assetId": 437311601,
+          "name": "app-release.aab",
+          "bytes": 9212540,
+          "sha256": "a0bc859e2447b00c61c3f20a9c09c381e1bb74a540ae855c21949939cbb6625a",
+          "actualEmbeddedVersion": {
+            "versionName": "1.0",
+            "versionCode": "1"
+          },
+          "releaseTagMatchesEmbeddedVersion": false,
+          "taggedAndroidVersionMatchesEmbeddedVersion": false,
+          "sourceUnchanged": true
+        }
+      ]
+    }
+  ],
+  "controls": {
+    "existingRealV140RejectingAndRestoredReceipt": "v140-artifact-qualification.json",
+    "sha256": "17b49ef9e72c35f4e09df53f629243efe0fd9d62be8521141774d434d7cbdafc",
+    "limit": "Rejecting control reuse is for the unchanged two artifact-reader owners; no new signed/install/upgrade claim"
+  },
+  "claimLimits": [
+    "Actual public published bytes and embedded versions; no installation, entitlement, signing lineage or store-channel acceptance",
+    "Android source version comparison uses actual tagged Gradle bytes and the current released version reader",
+    "iOS embedded version compared to shared tag/Android numbers only; iOS tagged project version, entitlements and source provenance need separate qualification",
+    "Matching embedded version never proves the binary was compiled from that tagged commit",
+    "Mismatched tag metadata is preserved rather than counted as an invalid-reader negative control",
+    "v1.2.0 has no published binary assets; conservative source/channel applicability remains pending"
+  ]
+}

@@ -1,4 +1,6 @@
-# Native architecture topology tools
+# Migration evidence tools
+
+## Native architecture topology tools
 
 `check:migration:native-topology` validates the private candidate's declared imports, released SDK
 alignment, native resolution and typed/Metro/autolinking configuration. It requires a reviewed full
@@ -78,3 +80,115 @@ coverage is recomputed from the complete prior resolution snapshot rather than t
 selection list. Actual released Expo search runs before resolve to expose duplicate realpaths;
 resolved native project, podspec and plugin directories must stay inside their candidate-owned
 package roots.
+
+## Retained web host control
+
+This capability owns isolated migration build/evidence callers. It does not choose a frontend,
+change the shipping host, install packages or certify performance.
+
+`migration:web-host:build` builds the unchanged SvelteKit web app twice: once through its retained
+Vite owner and once through the candidate-only Vite wrapper. Both run in independently owned
+source/dependency copies. `migration:web-host:check` rechecks a built copy's scoped types and
+structural comparison. `migration:web-host:test` drives the built copy's retained browser smoke. The
+browser config invokes `serve-web-host.mjs`; that private entry serves only an existing,
+source-bound owned artifact and refuses a missing explicit port.
+
+```sh
+npm run migration:web-host:build -- --topology-sha=<actual-reviewed05-commit> --topology-lock-sha256=<actual-reviewed05-lock-digest> --artifact=release
+npm run migration:web-host:check -- --artifact-root=<reported-owned-root>
+npm run migration:web-host:test -- --artifact-root=<reported-owned-root> --port=<unused-port> --browser-registry=<existing-absolute-registry>
+```
+
+The topology commit and lock digest are required execution inputs. Use the accepted identities in
+[the retained-control acceptance record](../../docs/migration/evidence/retained-control/README.md);
+they cannot be guessed from a predecessor. The active source must contain that commit and retain its
+exact lock. A frozen full dependency install must already exist and have the same installed lock;
+this runner never installs. Final evidence exports a clean committed source slice, records its real
+commit and source hashes, and derives version metadata through `web/buildVersion.ts`.
+`--provisional` permits local iteration with HEAD, binary patch and actual file hashes; it cannot
+supply final review evidence. `--artifact=mechanism` enables only the existing private harness, with
+performance marks disabled. It is distinct from the release artifact and cannot score release
+startup costs.
+
+Outputs are a new `splotch-web-host-*` temporary root (or under the explicitly separate existing
+`--output-parent`), a fresh ownership marker, frozen inputs, reference/control copies, both wrapper
+passes, output hashes, named child logs under `controls/*.log.txt` and a result. Emitted bytes must
+match after only the explicitly recorded owned-copy path prefix normalization; other differences
+fail. Both copies share one recorded UUIDv4 app-shell nonce, which the actual copied nonce owner
+honors only inside its verified marked artifact and copy. Ordinary builds derive fresh nonces
+without writing environment state; the shipping PWA postbuild guard refuses an ambient pin. Build
+and artifact readback check both emitted shell URLs against that exact recorded nonce. File kind and
+mode must match before a matching byte digest is accepted. Build time is identical pinned metadata,
+not normalized. pnpm source hardlinks are valid; destination files have independent inodes. Relative
+dependency links must resolve inside the dependency copy. Only copied `.bin` shim paths naming the
+original checkout are relocated, with before/after hashes recorded. No dependency preparation runs
+here. Each copy invokes the actual `prebuild`, then `npm --ignore-scripts run build`, then the
+actual `postbuild`, with input guards between stages. The control forwards only its wrapper config.
+npm owns each lifecycle event and script body; the staged invocation differs from one ordinary
+`npm run build`. Additional implicit pre/post hooks are rejected rather than skipped.
+
+Both copies bind all materialized source/dependency bytes, modes and symlink targets. Generated
+source paths come from the existing icon/release generators; those files and Kit support become
+frozen after Vite. Only the observed root Vite cache directories remain mutable. Readback guards run
+before copied modules or children and again after scoped types, before helper imports. Static and
+dynamic external chunk edges are checked alongside included modules. Each browser child gets a fresh
+empty owned transform cache and an owned temporary directory; `HOME` is inherited. The browser
+caller requires an explicit existing absolute `--browser-registry` directory and passes only that
+path through `PLAYWRIGHT_BROWSERS_PATH`. The ordinary launcher, channel and headless executable
+selection remain unchanged. A UUID invocation label has one environment owner; result and HTML
+report folders use that label, and successful/failed child records retain both paths. Each rerun
+preserves earlier screenshots, traces and reports. Directory identity is checked again before the
+child and recorded on success or failure; this does not certify browser bytes, version or engine.
+The harness does not install, download, clear or write this borrowed registry. Ordinary Playwright
+host validation may write its `DEPENDENCIES_VALIDATED` marker there. Owned profile/temp, XDG/NPM and
+transform paths remain separate. A `0`, relative or default Playwright registry setting must be
+supplied as its concrete original installed directory, never guessed after relocation.
+
+Invalid flags, missing/mismatched inputs, dirty final source, escaping links, replaced ownership,
+failed children, interrupted children and missing passes exit nonzero. Copied build/browser children
+have session-owned detached groups; active SIGINT/SIGTERM handlers request TERM and escalate after a
+bounded grace period, remove their listeners and retain failure receipts. An interrupted child is a
+failure even when its exit code is zero. Preview instead inherits the Playwright-owned webServer
+group, keeping Vite within ordinary Playwright teardown. No borrowed process or listener is stopped.
+Partial artifacts remain available for diagnosis; the tool never deletes borrowed folders or
+silently retries a failed build. Checks compare active source and borrowed output/dependency
+inventories before and after. The result's `structural-build-only` status carries pending browser,
+deployed CSP/PWA and physical acceptance. No comparison or guard is passing evidence until its
+recorded execution succeeds. A successful control does not establish a later React host's
+eligibility.
+
+Maintain boundary strings in the React-free build contract. Preserve the existing Kit config,
+routes, metadata, generators and shipping postbuild owners. Tool-helper guards live in this
+capability's tests; wrapper/browser sources live under `migration/probes/web-host`. Root discovery
+and the retained-control CI job register these callers over the accepted topology checkpoint. CI
+runs release build/check/browser, then mechanism build/check/browser twice, serially on one runner.
+The acceptance record owns the measured harness-cost derivation for its numeric job deadline.
+
+`gen:migration:hosted-topology` runs after all ordinary web postbuild guards. Only the exact
+nonproduction proof ref writes `web/build/migration-install-topology.json`; other builds return
+before reading evidence. Native builds and development servers have no static input to copy. A
+second writer refuses an existing path. The export contains the complete installed package and
+five-context resolution rows, reviewed input hashes, actual runtime identities and individually
+selected non-secret deploy identifiers. Its observation happens after the build. It proves no native
+candidate execution, performance, continuity or deployed application behavior.
+
+`check:migration:hosted-topology -- --artifact <downloaded-json> --commit <sha> --metadata <json> --transport <json>`
+requires the exact source checkout. The metadata file contains only `id`, `build_id`, `site_id`,
+`commit_ref`, `branch`, `context` and `state` from the supported deploy read. Fetch the file using
+the deploy-ID permalink, preserve its URL, status, content type and complete decoded body with byte
+count and SHA-256, and reject HTML or partial responses. Bind that transport receipt to the exact
+bytes supplied to the reader using a transport JSON file with exactly `url`, `status`,
+`contentType`, `bytes` and `sha256`. The reader requires the immutable deploy-ID URL, HTTP 200, JSON
+media type and matching complete decoded bytes. Transport and selected metadata remain
+operator-attested inputs, not authenticated proof on their own. The offline reader rechecks graph
+and deploy/source invariants against the contract bytes in that checkout; its receipt alone does not
+establish a physical package census for an arbitrary local JSON file. Completeness also requires the
+selected immutable response and its exact committed physical producer. Full deploy logs are optional
+corroboration; their availability cannot replace this reader or the complete downloaded graph. Raw
+metadata may contain tokens and stays host-local.
+
+The export owner changes when the production manifest, lock, candidate manifest, workspace, Netlify
+configuration, proof branch or postbuild ownership changes. Regenerate reviewed proof inputs before
+a fresh hosted run; do not rewrite historical execution evidence. Remove the export command and its
+proof-only hosted output after its complete evidence has transferred to the campaign's accepted
+topology record and a replacement owner has been reviewed.

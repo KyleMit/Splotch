@@ -1,6 +1,15 @@
+import {
+  APP_SHELL_PRECACHE_URL_PATTERN,
+  precacheUrlsFromSource,
+} from './lib/pwa-precache-source.mjs';
+export {
+  APP_SHELL_PRECACHE_URL_PATTERN,
+  precacheUrlsFromSource,
+} from './lib/pwa-precache-source.mjs';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { filesRecursively } from './lib/filesystem.mjs';
+import { assertAppShellNonceOwnership } from '../web/appShellBuildNonce.ts';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_DIR = join(ROOT, 'web/.svelte-kit/output/client');
@@ -11,9 +20,6 @@ const PRERENDERED_APP_SHELL_PATH = join(
 );
 const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
-// The prerendered home page, precached under the build-unique URL
-// web/src/lib/pwa/appShellRoute.ts builds; the test drift-guards the two.
-export const APP_SHELL_PRECACHE_URL_PATTERN = /^\/\?app-shell-build=[^&]+$/;
 const SERVED_ONLY_ASSET_URLS = new Set([
   'large-image.png',
   'web-app-manifest-192x192.png',
@@ -21,12 +27,6 @@ const SERVED_ONLY_ASSET_URLS = new Set([
 ]);
 // Leaves room for ordinary app growth while rejecting a second bundled coloring book.
 export const MAX_PWA_PRECACHE_BYTES = 12_000_000;
-
-export function precacheUrlsFromSource(source) {
-  return [...source.matchAll(/\{url:("(?:\\.|[^"\\])*"),revision:/g)].map((match) =>
-    JSON.parse(match[1])
-  );
-}
 
 // The navigation route's fallback plugin compiles the shell URL into its callbacks
 // as a string literal. The timeout callback answers a stalled launch and the error
@@ -156,6 +156,7 @@ export async function checkPwaPrecache({
   staticColoringDir = STATIC_COLORING_DIR,
   log = console.log,
 } = {}) {
+  assertAppShellNonceOwnership(process.env);
   if (!existsSync(swPath)) throw new Error(`Service worker does not exist: ${swPath}`);
   const serviceWorkerSource = readFileSync(swPath, 'utf8');
   const precacheUrls = precacheUrlsFromSource(serviceWorkerSource);

@@ -1,0 +1,162 @@
+{
+  "observedAt": "2026-10-06T18:47:26.239276+00:00",
+  "status": "original recorded conditional execution predicate fulfilled locally; new evidence-head CI and parent acceptance remain required",
+  "owner": "retained_control",
+  "sourceHead": "5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118",
+  "sourceTree": "2c64a3869e9c1faf7df1e9adbfc01d9713f8215a",
+  "acceptedBase": "794448fbf76276b76a910c167b5c2e0c4e1ea538",
+  "sourceRepairCommit": "3ae80bcef662c9aa141d7a3277ec9dde1e92268e",
+  "sourceRepairScope": [
+    "exact reviewer-prescribed explicit strip-types/disable-warning flags in actual shipping PWA postbuild step",
+    "one actual-script hygiene guard with sole-flag rejecting control and restored positive"
+  ],
+  "originalReview": {
+    "conversation": "b5bb0824-3f7a-4ad7-9e05-4e8e9af77333",
+    "round": 3,
+    "resumed": true,
+    "roundsUsed": 3,
+    "roundsRemaining": 0,
+    "sourceHead": "81f84eebaf71c3d178186137d9c2bb07f7e85209",
+    "base": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+    "publishedReview": 5432590230,
+    "publishedUrl": "https://github.com/KyleMit/Splotch/pull/2702#pullrequestreview-5432590230",
+    "originalVerdict": "not accepted yet; one blocking Node-floor defect",
+    "exactConditionalWording": "With that flag added, and a re-run of the touched postbuild path, I see no remaining reason to withhold acceptance of this retained-control scope.",
+    "noNewIndependentReviewRun": true,
+    "unrelatedLedgerUnchanged": true
+  },
+  "floorExecution": {
+    "node": "v22.13.0",
+    "childPathVersion": "v22.13.0",
+    "floorNodeSha256": "5c79f8e198fd2456ea6660aaa6be218f9f44747f2306c7d0f5f97b087b2f2dfc",
+    "npmCliSha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7",
+    "actualPostbuild": "node tools/check-release-seams.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-build-version.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-pwa-precache.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/check-static-bundle.mjs --web && node tools/check-bundle-budgets.mjs && node tools/check-eager-error-bundle.mjs",
+    "sourceSha": "5434e9d7ddd33ad1d2afdc7b8906aca24a8c8118",
+    "pinnedEnvKeySet": ["SPLOTCH_PINNED_APP_SHELL_NONCE", "SPLOTCH_PINNED_BUILD_METADATA"],
+    "pinnedNonce": "993dbbf2-1fac-45ce-a41e-78b064b9729e",
+    "artifactReadbackUnchanged": true,
+    "runtimeUnchanged": true,
+    "claimLimit": "Actual corrected release postbuild on declared Node floor; no deployed PWA/offline, RN/React, architecture or physical performance claim"
+  },
+  "floorQualification": {
+    "officialRelease": "https://nodejs.org/download/release/v22.13.0/",
+    "archive": "node-v22.13.0-darwin-arm64.tar.xz",
+    "publishedSha256": "71b0893ef6a55295994f38002fada15c9a76a3cedeb36745fde0403741d183c6",
+    "archiveBytes": 25153972,
+    "safeMembers": 5929,
+    "decodedRuntimeRows": 4811,
+    "negative": "actual Node22.13 current81 unflagged PWA checker fails ERR_UNKNOWN_FILE_EXTENSION naming appShellBuildNonce.ts; baseline f149 unflagged succeeds",
+    "restoration": "exact prescribed flags on same current source succeed; shipping ambient pin rejected for intended ownership reason; restored ordinary context succeeds",
+    "setupFailureDisposition": "two setup failures preserved separately; no failed setup counts as a negative or release pass"
+  },
+  "localGates": {
+    "quality": "all15checks pass0",
+    "browserless": "all5checks pass0; API42pass0fail",
+    "sevenPublicCalls": {
+      "exits": [0, 0, 0, 0, 0, 0, 0],
+      "actualTotalWallSeconds": 746.6369513749378,
+      "deadlineSeconds": 2100,
+      "controllerSha256": "c5fa5e9cbb45fcd30eacb125ea8057ae99b6a67a6df7bab8f96b44840485866a",
+      "sourceUnchanged": true,
+      "installedUnchanged": true,
+      "claimLimit": "harness execution cost only; no application latency or architecture/performance result"
+    }
+  },
+  "historicalEvidenceDisposition": {
+    "81and85": "immutable original source scopes; replaced for touched-input final local acceptance by5434 executions",
+    "22e": "immutable earlier81 CI merge/tree and complete exports; not new evidence-head CI",
+    "selectedHostedTopologyContract": "root package.json hash changed by legitimate flag correction; historical531/944 proofs remain immutable and do not qualify a current installed/topology contract"
+  },
+  "scopeLimits": [
+    "retained SvelteKit release/mechanism control harness only",
+    "no RN/React/shared UI recovery, architecture selection, deployed PWA/offline behavior, signed release or physical performance acceptance",
+    "parent owns cross-unit acceptance and merge; no fourth or fresh reviewer/reset"
+  ],
+  "completeReceipts": [
+    {
+      "path": "claude-round3-findings.json",
+      "bytes": 6023,
+      "sha256": "5b91e4b02a7dd93b9834188dadb80f4bbb8db302bf98756e54ff71f162fe1c76"
+    },
+    {
+      "path": "claude-round3-session.json",
+      "bytes": 835,
+      "sha256": "66b074aee9ef06cf7c8c45df0a585ebf73d0da977766d195e5e78626b011906b"
+    },
+    {
+      "path": "claude-round3-completion.json",
+      "bytes": 1107,
+      "sha256": "ad087439f060d1bc0c089140a7f5a664e7c788a4fa25362b0af1e1a0d78ba5a1"
+    },
+    {
+      "path": "node-floor/attempt-3/qualification-lease.json",
+      "bytes": 23061,
+      "sha256": "b1070de901e0acacf40603ffb3ff0491915158a3bd2fc4867c7c41a0530cd5c7"
+    },
+    {
+      "path": "node-floor/qualification-release.json",
+      "bytes": 1860,
+      "sha256": "967b321af0479ef62c467a0bde101bb117c7972ed47f9cd3ea5817cb97ecc1fe"
+    },
+    {
+      "path": "node-floor/scoped-static-3/guard-adoption.json",
+      "bytes": 983,
+      "sha256": "66778bab80540805cc04db1a2f7e8ce7d4798018342e31d03c01a57907cf0f9b"
+    },
+    {
+      "path": "node-floor/scoped-static-3/lease.json",
+      "bytes": 9488,
+      "sha256": "c0ace29cfcdd929df13b12d9f2cae77081429937b90d1151f326b4cca1eded11"
+    },
+    {
+      "path": "node-floor/scoped-static-release.json",
+      "bytes": 1113,
+      "sha256": "fa60024402069dc59931097f5ac1b7216221bc187fdafc041ffbd6af0409e1e5"
+    },
+    {
+      "path": "node-floor/composition.json",
+      "bytes": 7473,
+      "sha256": "658eb3a61fc788ae3fa7cb770b503126fa7145220e105a969670a33c3b9b6bc5"
+    },
+    {
+      "path": "node-floor/full-quality/invocation.json",
+      "bytes": 6966,
+      "sha256": "82dcb2c76023f81a35a8ced26b9f3c74869a218478eca6c82c48e6f571dcdba4"
+    },
+    {
+      "path": "node-floor/full-browserless/invocation.json",
+      "bytes": 7013,
+      "sha256": "099a501215976baa1c81e001f19d21ec570873666048fdec8bf3bbdc214b494a"
+    },
+    {
+      "path": "public-calls-node-floor/calls.json",
+      "bytes": 12733,
+      "sha256": "7e5d0b086fa0a477f113d69f62911e41c767a666761738bc09df54c673c17f70"
+    },
+    {
+      "path": "public-calls-node-floor/release.json",
+      "bytes": 992,
+      "sha256": "3dc0b3810eaf44817d51a2f312c4f502725f5d67a1008888e417815111b5fcf4"
+    },
+    {
+      "path": "public-calls-node-floor/nested-control-release.json",
+      "bytes": 13067,
+      "sha256": "d331a9a92579f0fe8a4cae07dc2ce532dbed5dd9757a2638a1d993e139b35d66"
+    },
+    {
+      "path": "node-floor/full-postbuild/condition.json",
+      "bytes": 3002367,
+      "sha256": "ddf3e05e0214a68bd1eccb6add3539e4a2b079363f89c396fd7c3a38ec456a38"
+    },
+    {
+      "path": "node-floor/full-postbuild/invocation.json",
+      "bytes": 8514,
+      "sha256": "d17eaac67e1dd274d4591031582b2cf00b51b7051113396b9a91871bf3f97ddb"
+    },
+    {
+      "path": "node-floor/full-postbuild/release.json",
+      "bytes": 1275,
+      "sha256": "4c1f61e3dc89466a68ac967c246f70c596b5449fe55de47831da193427573b4e"
+    }
+  ]
+}
