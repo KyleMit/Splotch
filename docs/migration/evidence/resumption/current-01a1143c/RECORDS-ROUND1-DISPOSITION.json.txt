@@ -16,7 +16,7 @@
     {
       "finding": "Historical handoff contradicts active register",
       "classification": "valid",
-      "change": "Added active-register supersession preface; historical body unchanged, SHA25642cb69cb7e15b1984b33a76074c5e6adcb187bb1cc2fb211b2fe85effa8f6d15."
+      "change": "Added active-register supersession preface; the exact bytes from line 9 through EOF equal the reviewed 8d3 file from line 3 through EOF: 18415 bytes, SHA256 1391291e9a922672d8ffd5e63491aab5270a14c832d5538aa4b7f19ad04c1fd6."
     },
     {
       "finding": "Index lock mtime overlaps parent Quality",
