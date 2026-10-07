@@ -18,7 +18,7 @@ evidence and the final unit; current scoped host checks do not qualify native co
 | -------- | ---------------------------------------- | ----------------------------------------------------- |
 | released | d8b86469f63c57a06a9de45664a42eea15b99eb0 | Real v1.6 writers and released format                 |
 | held     | ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 | Real later held-picture/pending-removal owners        |
-| reader   | 78d844ce36845e13690e2ca4ee7fcd645eb128d0 | Accepted shipping owners with a raw observation route |
+| reader   | cf0c4254d025094054d7ea7faab110da11c96243 | Accepted shipping owners with a raw observation route |
 
 All three sources declare native version 1.6.0/code 8. The executable scope is a same-version
 source-built reinstall. The producer reads Git objects rather than mutable checkout bytes. It

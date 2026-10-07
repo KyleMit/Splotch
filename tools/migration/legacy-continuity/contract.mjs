@@ -16,7 +16,7 @@ const NATIVE_VAULT_PREFERENCES = 'WSSecureStorageSharedPreferences';
 export const SOURCE_REVISIONS = Object.freeze({
   released: 'd8b86469f63c57a06a9de45664a42eea15b99eb0',
   held: 'ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4',
-  reader: '78d844ce36845e13690e2ca4ee7fcd645eb128d0',
+  reader: 'cf0c4254d025094054d7ea7faab110da11c96243',
 });
 export const FIXTURE_COMMANDS = Object.freeze([
   'raw',

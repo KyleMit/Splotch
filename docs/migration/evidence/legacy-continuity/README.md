@@ -10,6 +10,9 @@ The [resumed ownership repair](ownership-resumption/README.md) preserves the act
 intended EPERM refusals, the accidental lint failure and the repaired 60-control/source-gate
 results.
 
+The [current accepted composition](composed-resumption/README.md) binds the ordinary cf0 merge, 31
+unchanged reader owners and the passing current scoped, full Quality and Browserless gates.
+
 ## Complete historical records
 
 The [single capsule](history.tar.gz) contains all 521 packet members: the 474 historical files and

@@ -123,3 +123,24 @@ keeps the tested source identity explicit; it does not change the recorded deplo
 Original Claude final-round acceptance and final-head CI remain pending. No RN compilation,
 replacement UI, installed native app, physical comparison, continuity, signed upgrade, production
 deployment or final architecture acceptance follows from this unit.
+
+## Accepted publication and integration records
+
+PR2707 merged at 78d844ce36845e13690e2ca4ee7fcd645eb128d0 after actual original Claude final round3
+accepted head 34dc4650bf43a9fb12e7378bf4d73b6bc68ebb70. Both actual CI checkout
+dcdec1d040446fae924d29ded16ff172b1d84dad and integration have the reviewed tree
+ae69ebf1849dd6cfab317b4da7123e037fc0fb3a and exact base 709fadd68ecb802aa2c9daa3fc197ce8d072b23c /
+head 34dc4650bf43a9fb12e7378bf4d73b6bc68ebb70 parents. All four prior threads resolved; final CI
+completed 18 successful checks and five conditional skips. The complete retained job exported all
+690 lines / 58,592 UTF-8 bytes including BOM, and completed the seven serial calls within its named
+deadline. This is harness cost, not app latency.
+
+The additive [capsule](accepted-publication-records.tar.gz) and
+[manifest](accepted-publication-records-manifest.json) preserve 26 complete technical records:
+selected original final-review identity/verdict/release, supported public CI/GitHub metadata and
+logs, exact source attribution, and independent parent integration qualification. Its 48,979 bytes
+have SHA256 7f2f7fdd138c27ad10c0ca5e93cd7e9ca5052d27a44af3a19f464bb430b65923. Every safe regular
+member has independent canonical provenance and a digest/byte/mode record. Raw provider
+conversations/authentication/cache and physical payload are excluded. Earlier capsules remain
+unchanged. This records existing narrow acceptance and does not reopen the exhausted original review
+or accept later changed inputs, native/product/continuity/performance/release gates.

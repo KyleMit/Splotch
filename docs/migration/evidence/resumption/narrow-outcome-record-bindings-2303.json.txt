@@ -1,0 +1,88 @@
+{
+  "observedAtUtc": "2026-10-06T23:02:14.301469+00:00",
+  "scope": "Additive path/size/digest/mode discoverability for the unchanged22:38 parent receipt. Current file readback only; no consumer execution or expanded acceptance.",
+  "originalReceipt": {
+    "path": "docs/migration/evidence/resumption/narrow-outcomes-2238.json.txt",
+    "bytes": 2765,
+    "sha256": "0132cd36149608097afd552cff1e6571c8c10cd1128bcb16c6871cecea2f5faa"
+  },
+  "durableRoot": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0",
+  "records": [
+    {
+      "name": "nativeExecution",
+      "path": "native/android-qualification/gradle931/wrapper-vendor-mode-identity/reader.execution.json",
+      "bytes": 2319,
+      "sha256": "035c86916d494a6e3827fd291b32f26e7de6f4862420434f82521e8df0314b10",
+      "mode": "0o644"
+    },
+    {
+      "name": "nativeQualification",
+      "path": "native/android-qualification/gradle931/wrapper-vendor-mode-identity/recorded-outcome-qualification.json",
+      "bytes": 483326,
+      "sha256": "b4798a54162a71e09e3b8bd7c1b54cd8390526c813fb6be1565ab22d30fd52a9",
+      "mode": "0o644"
+    },
+    {
+      "name": "nativeRelease",
+      "path": "native/android-qualification/gradle931/wrapper-vendor-mode-identity/reader.release.json",
+      "bytes": 32573,
+      "sha256": "e30a0fba0a81e1d105cda53556b4c6599857eb2d70d0dbdebcc7f4465e171002",
+      "mode": "0o644"
+    },
+    {
+      "name": "nativeMirror",
+      "path": "native/android-qualification/gradle931/wrapper-vendor-mode-identity/outcome-durable-mirror.json",
+      "bytes": 10395,
+      "sha256": "080257a34f33709ca3c264707ecff07059d4524305293ca1d759434290321545",
+      "mode": "0o644"
+    },
+    {
+      "name": "neutralExecutionQualification",
+      "path": "neutral-host/frozen-physical-install-v3-01/attempt/execution-qualification.json",
+      "bytes": 16885,
+      "sha256": "bcd06b84d778492c41bbb77eae3f1ade55c3ca2e2037a0d8af9eeed8b1bc6515",
+      "mode": "0o444"
+    },
+    {
+      "name": "neutralResult",
+      "path": "neutral-host/frozen-physical-install-v3-01/attempt/result.json",
+      "bytes": 56106,
+      "sha256": "38146966ffba875685bada4f80b38b7c2cfca22dfd561973dc4222f6c0443429",
+      "mode": "0o444"
+    },
+    {
+      "name": "neutralRelease",
+      "path": "neutral-host/frozen-physical-install-v3-01/attempt/release.json",
+      "bytes": 9024,
+      "sha256": "c115396209589009c94bd535212c9b5c66560cfe545d1a07f794923847c54d57",
+      "mode": "0o444"
+    },
+    {
+      "name": "neutralMirror",
+      "path": "neutral-host/frozen-physical-install-v3-01/mirror-manifest.json",
+      "bytes": 32353,
+      "sha256": "d0a606feab92febadda654b856471163172c56dff501551e9c5cd5f9e8b74653",
+      "mode": "0o444"
+    }
+  ],
+  "nativeMirror": {
+    "members": 14,
+    "bytes": 527884,
+    "mode": "0o644",
+    "currentMembersReadAndVerified": true,
+    "independentRecordedSourceInodes": true,
+    "permissionEnforcedImmutabilityClaimed": false
+  },
+  "neutralMirror": {
+    "members": 57,
+    "bytes": 78524709,
+    "mode": "0444",
+    "scope": "Finite technical records, excluding installed/preserved runtime payload; original receipt retains its exact install/source/input scope"
+  },
+  "claimLimits": [
+    "Historical declared inputs only; relevant changed inputs must be requalified.",
+    "Read-only native qualification changes one private final mode expectation, does not relabel original failed runtime stage.",
+    "Physical installation is independent from executed host, product behavior, performance, native continuity and release acceptance.",
+    "No independent Claude round consumed or budget reset; F1 material changed-source independent acceptance remains held."
+  ]
+}
