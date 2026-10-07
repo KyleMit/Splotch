@@ -20,7 +20,7 @@ import {
   spoolActivityAt,
   writeJsonAtomic,
 } from './spool.mjs';
-import { runStreaming, STREAM_FAILURE } from './stream.mjs';
+import { runStreaming } from './stream.mjs';
 import { parseFindings } from './validate-findings.mjs';
 import {
   createDisposableWorktree,
@@ -135,12 +135,6 @@ export function rivalEnvironment(env, { session }) {
   // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
   // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
   return { ...env, TMPDIR: tmp, DPRINT_CACHE_DIR: join(tmp, 'dprint-cache') };
-}
-
-// Only the rival refusing the run is worth a second attempt; every other failure is either the
-// user's decision or a condition a retry would repeat — a vendor-recognized retired login included.
-export function isRetryableResumeFailure(error, vendor) {
-  return error?.code === STREAM_FAILURE.exited && !vendor?.isLoginFailure?.(error);
 }
 
 function resolveRepoRoot(cwd) {
@@ -293,7 +287,7 @@ export async function launch(
   const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
   const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
   // A question is one turn, not a review that a later round would verify.
-  let plan = question
+  const plan = question
     ? planRound(undefined)
     : planRound(readLedgerRecord(recordPath), { fresh: options.fresh, rival: vendor.rival });
 
@@ -370,18 +364,7 @@ export async function launch(
       });
     };
 
-    let state;
-    try {
-      state = await runRound();
-    } catch (error) {
-      // The rival's own session store can prune a recorded conversation — that is worth one fresh
-      // attempt. A cancelled run, a stalled run, and a lost audit log are not.
-      if (!plan.resume || !isRetryableResumeFailure(error, vendor)) throw error;
-      onProgress(`resume failed (${error.message.split('\n')[0]}); starting fresh`);
-      removeLedgerRecord(recordPath);
-      plan = planRound(undefined);
-      state = await runRound();
-    }
+    const state = await runRound();
     const done = finish(session, state, logPathForAttempt(session, attempt), {
       session,
       round: plan.round,

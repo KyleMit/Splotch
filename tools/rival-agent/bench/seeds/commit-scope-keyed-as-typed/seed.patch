@@ -74,4 +74,4 @@ index a7ab9fb1e..b2489f38f 100644
 +    expect(commit).not.toBe(branch);
    });
  
-   it('gives the one retry after a pruned resume its own stream log', () => {
+   it('keeps primary and historical retry stream paths distinct', () => {

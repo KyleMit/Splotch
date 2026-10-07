@@ -19,7 +19,7 @@ index 3883c89db..8d231f3f6 100644
    findings: 'findings.json',
    rawResult: 'rival-result.txt',
    log: 'rival.ndjson',
--  // The stream log is exclusively created, so the one retry after a pruned resume needs its own.
+-  // Historical retry streams retain a distinct path from the exclusively created primary log.
 -  retryLog: 'rival-retry.ndjson',
    packet: 'packet',
    requests: 'requests',
@@ -28,15 +28,14 @@ diff --git a/tools/rival-agent/tests/launch.test.mjs b/tools/rival-agent/tests/l
 index a7ab9fb1e..75d4219cb 100644
 --- a/tools/rival-agent/tests/launch.test.mjs
 +++ b/tools/rival-agent/tests/launch.test.mjs
-@@ -72,9 +72,8 @@ describe('shared launch arguments', () => {
+@@ -72,8 +72,7 @@ describe('shared launch arguments', () => {
      expect(byHead).not.toBe(branch);
    });
  
--  it('gives the one retry after a pruned resume its own stream log', () => {
+-  it('keeps primary and historical retry stream paths distinct', () => {
 -    expect(logPathForAttempt('/s', 1)).toBe('/s/rival.ndjson');
 -    expect(logPathForAttempt('/s', 2)).toBe('/s/rival-retry.ndjson');
 +  it('names the stream log inside the session', () => {
 +    expect(logPathForAttempt('/s')).toBe('/s/rival.ndjson');
    });
- 
-   // Retrying a run the user stopped would spend plan usage they just tried to stop. Only the rival
+ });

@@ -23,7 +23,7 @@ export const SESSION_FILES = Object.freeze({
   findings: 'findings.json',
   rawResult: 'rival-result.txt',
   log: 'rival.ndjson',
-  // The stream log is exclusively created, so the one retry after a pruned resume needs its own.
+  // Historical retry streams retain a distinct path from the exclusively created primary log.
   retryLog: 'rival-retry.ndjson',
   packet: 'packet',
   requests: 'requests',

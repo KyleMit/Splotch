@@ -51,7 +51,7 @@ outputs/<seq>.out   the full captured output the handler redirected into
 findings.json       the validated findings document, once the rival finishes
 done.json           written by the launcher when findings validated
 failed.json         written by the launcher when the rival exited without valid findings
-rival.ndjson        the raw stream log (rival-retry.ndjson for the one retry after a pruned resume)
+rival.ndjson        the raw stream log
 tmp/                the rival's private TMPDIR and dprint cache, kept out of the sandbox's reach of the spool root
 ```
 
@@ -99,6 +99,11 @@ reports on `origin`, and refuses with both commit ids when GitHub has not caught
 then. It refuses a PR scope outright when `origin` is not the GitHub repository `gh` reads, since a
 local or mirror remote could make an old head look settled. The poster refuses a head or base that
 moved since the review and never posts twice for one range.
+
+A failed reviewer resume stops the launch and preserves the original ledger, conversation and round
+count. It never automatically starts a fresh reviewer. A successful later resume advances that same
+conversation within its existing round budget; starting a new reviewer requires an explicit,
+authorized `--fresh` invocation.
 
 ## Sensitive findings and safe manual recovery
 
