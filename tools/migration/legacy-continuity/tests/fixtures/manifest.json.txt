@@ -1,0 +1,9 @@
+{
+  "revision": "d8b86469f63c57a06a9de45664a42eea15b99eb0",
+  "path": "web/src/lib/storageKeys.ts",
+  "blob": "ac270c6b75102dccba8d2ff3f14ef4177605256d",
+  "bytes": 2379,
+  "sha256": "3bb7007d7477b68ecc194ce2af82901a69b4b42b1adbfbd6d3f699c36f3a952a",
+  "mode": "100644",
+  "claim": "exact source input for guard test; no native execution or installed source association"
+}

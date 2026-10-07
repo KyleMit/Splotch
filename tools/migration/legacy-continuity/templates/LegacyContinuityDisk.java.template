@@ -1,0 +1,125 @@
+package art.splotch.app;
+
+import android.content.Context;
+import android.util.Base64;
+import android.util.Xml;
+import com.getcapacitor.JSObject;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import org.xmlpull.v1.XmlPullParser;
+
+final class LegacyContinuityDisk {
+    private static final int COPY_CHUNK_BYTES = 8_192;
+
+    private LegacyContinuityDisk() {}
+
+    private static byte[] bytes(File file) throws Exception {
+        try (FileInputStream input = new FileInputStream(file);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[COPY_CHUNK_BYTES];
+            int size;
+            while ((size = input.read(buffer)) != -1) output.write(buffer, 0, size);
+            return output.toByteArray();
+        }
+    }
+
+    private static String digest(byte[] data) throws Exception {
+        StringBuilder result = new StringBuilder();
+        for (byte value : MessageDigest.getInstance("SHA-256").digest(data)) {
+            result.append(String.format(java.util.Locale.ROOT, "%02x", value & 0xff));
+        }
+        return result.toString();
+    }
+
+    private static JSObject rows(byte[] bytes, String[] keys) throws Exception {
+        Set<String> requested = new HashSet<>(Arrays.asList(keys));
+        JSObject result = new JSObject();
+        XmlPullParser parser = Xml.newPullParser();
+        parser.setInput(new ByteArrayInputStream(bytes), null);
+        if (parser.nextTag() != XmlPullParser.START_TAG || !"map".equals(parser.getName())) {
+            throw new IllegalStateException("L0_SHARED_PREFS_XML_ROOT_INVALID");
+        }
+        while (parser.nextTag() == XmlPullParser.START_TAG) {
+            String type = parser.getName();
+            String name = parser.getAttributeValue(null, "name");
+            if (name == null) throw new IllegalStateException("L0_SHARED_PREFS_XML_NAME_MISSING");
+            String value;
+            if ("string".equals(type)) value = parser.nextText();
+            else if (Arrays.asList("boolean", "int", "long", "float").contains(type)) {
+                value = parser.getAttributeValue(null, "value");
+                if (value == null || parser.nextTag() != XmlPullParser.END_TAG) {
+                    throw new IllegalStateException("L0_SHARED_PREFS_XML_SCALAR_INVALID");
+                }
+            } else {
+                throw new IllegalStateException("L0_SHARED_PREFS_XML_TYPE_UNQUALIFIED: " + type);
+            }
+            if (requested.contains(name)) {
+                if (result.has(name)) throw new IllegalStateException("L0_SHARED_PREFS_XML_DUPLICATE_OWNED_KEY");
+                JSObject row = new JSObject();
+                row.put("kind", type);
+                row.put("value", value);
+                result.put(name, row);
+            }
+        }
+        if (!"map".equals(parser.getName())) throw new IllegalStateException("L0_SHARED_PREFS_XML_END_INVALID");
+        int tail;
+        while ((tail = parser.next()) != XmlPullParser.END_DOCUMENT) {
+            if (tail != XmlPullParser.TEXT || !parser.isWhitespace()) {
+                throw new IllegalStateException("L0_SHARED_PREFS_XML_TRAILING_DATA");
+            }
+        }
+        for (String key : keys) {
+            if (!result.has(key)) {
+                JSObject absent = new JSObject();
+                absent.put("kind", "absent");
+                absent.put("value", JSObject.NULL);
+                result.put(key, absent);
+            }
+        }
+        return result;
+    }
+
+    private static JSObject capture(File file, String[] keys) {
+        JSObject result = new JSObject();
+        result.put("path", file.getAbsolutePath());
+        result.put("present", file.exists());
+        if (!file.exists()) {
+            result.put("status", "absent");
+            return result;
+        }
+        try {
+            byte[] contents = bytes(file);
+            JSObject raw = new JSObject();
+            raw.put("kind", "buffer");
+            raw.put("bytes", contents.length);
+            raw.put("sha256", digest(contents));
+            raw.put("base64", Base64.encodeToString(contents, Base64.NO_WRAP));
+            result.put("raw", raw);
+            try {
+                result.put("rows", rows(contents, keys));
+                result.put("status", "parsed");
+            } catch (Exception error) {
+                result.put("status", "parse-refused");
+                result.put("parseError", error.toString());
+            }
+        } catch (Exception error) {
+            result.put("status", "capture-failed");
+            result.put("readError", error.toString());
+        }
+        return result;
+    }
+
+    static JSObject read(Context context, String group, String[] keys) {
+        File directory = new File(context.getApplicationInfo().dataDir, "shared_prefs");
+        JSObject result = new JSObject();
+        result.put("primary", capture(new File(directory, group + ".xml"), keys));
+        result.put("backup", capture(new File(directory, group + ".xml.bak"), keys));
+        return result;
+    }
+}

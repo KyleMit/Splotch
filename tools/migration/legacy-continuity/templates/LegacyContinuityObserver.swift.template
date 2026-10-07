@@ -1,0 +1,120 @@
+import Capacitor
+import Foundation
+import Security
+
+@objc(LegacyContinuityObserver)
+public class LegacyContinuityObserver: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "LegacyContinuityObserver"
+    public let jsName = "LegacyContinuityObserver"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "observe", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "observeDisk", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "corruptPreference", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "corruptVaultRow", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeOwnedAlias", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeOrphanRows", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "queryRefusal", returnType: CAPPluginReturnPromise)
+    ]
+    private let observedKeys = [@@OWNED_KEYS@@]
+    private let vaultAccounts = [@@VAULT_ACCOUNTS@@]
+    private let ownerKey = @@OWNER_KEY@@
+    private let volumeKey = @@VOLUME_KEY@@
+    private let preferencesGroup = @@PREFERENCES_GROUP@@
+    private var preferencesPrefix: String { preferencesGroup + "." }
+    private let wrongVolumeValue = 7
+
+    private func validNonce(_ call: CAPPluginCall, mutation: Bool) -> Bool {
+        guard let nonce = call.getString("nonce"),
+              nonce.range(of: "^[a-f0-9]{32}$", options: .regularExpression) != nil else {
+            call.reject("L0_NONCE_INVALID")
+            return false
+        }
+        if mutation && UserDefaults.standard.string(forKey: preferencesPrefix + ownerKey) != nonce {
+            call.reject("L0_OWNERSHIP_MARKER_MISMATCH")
+            return false
+        }
+        return true
+    }
+
+    private func safeAttribute(_ value: Any) -> Any {
+        if let data = value as? Data { return ["kind": "data", "base64": data.base64EncodedString()] }
+        if let date = value as? Date { return ["kind": "date", "value": ISO8601DateFormatter().string(from: date)] }
+        if let value = value as? String { return value }
+        if let value = value as? NSNumber { return value }
+        return ["kind": "unsupported", "type": String(describing: type(of: value))]
+    }
+
+    private func preferences() -> [String: Any] {
+        var result: [String: Any] = [:]
+        for key in observedKeys {
+            guard let value = UserDefaults.standard.object(forKey: preferencesPrefix + key) else {
+                result[key] = ["kind": "absent", "value": NSNull()]
+                continue
+            }
+            result[key] = ["kind": value is String ? "string" : "native-type",
+                           "nativeType": String(describing: type(of: value)), "value": safeAttribute(value)]
+        }
+        return result
+    }
+
+    private func keychain(_ account: String, invalidClass: Bool = false) -> [String: Any] {
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: account,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecReturnData as String: true,
+            kSecReturnAttributes as String: true
+        ]
+        if invalidClass { query[kSecClass as String] = "L0-invalid-class" }
+        var raw: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &raw)
+        var result: [String: Any] = ["status": Int(status), "confirmedAbsent": status == errSecItemNotFound,
+                                   "account": account, "queryClass": invalidClass ? "invalid" : "generic-password",
+                                   "serviceOmitted": true, "accessGroupOmitted": true, "synchronizableOmitted": true]
+        if let attributes = raw as? [String: Any] {
+            var captured: [String: Any] = [:]
+            for (name, value) in attributes { captured[name] = safeAttribute(value) }
+            result["attributes"] = captured
+            if let data = attributes[kSecValueData as String] as? Data {
+                result["dataBase64"] = data.base64EncodedString()
+                result["dataBytes"] = data.count
+                result["utf8"] = String(data: data, encoding: .utf8).map { $0 as Any } ?? NSNull()
+            } else if status == errSecSuccess { result["setupFailure"] = "L0_KEYCHAIN_DATA_MISSING" }
+        } else if status == errSecSuccess { result["setupFailure"] = "L0_KEYCHAIN_ATTRIBUTES_MISSING" }
+        return result
+    }
+
+    private func vault() -> [String: Any] {
+        Dictionary(uniqueKeysWithValues: vaultAccounts.map { ($0, keychain($0)) })
+    }
+
+    @objc public func observe(_ call: CAPPluginCall) {
+        guard validNonce(call, mutation: false) else { return }
+        call.resolve(["platform": "ios", "preferences": preferences(), "vault": vault(),
+                      "bundleId": Bundle.main.bundleIdentifier.map { $0 as Any } ?? NSNull()])
+    }
+
+    @objc public func corruptPreference(_ call: CAPPluginCall) {
+        guard validNonce(call, mutation: true) else { return }
+        UserDefaults.standard.set(wrongVolumeValue, forKey: preferencesPrefix + volumeKey)
+        call.resolve(preferences())
+    }
+
+    @objc public func observeDisk(_ call: CAPPluginCall) {
+        call.reject("L0_IOS_DISK_OBSERVATION_IS_HOST_PLIST_AND_RELAUNCH")
+    }
+
+    @objc public func corruptVaultRow(_ call: CAPPluginCall) { call.reject("L0_ANDROID_CONTROL_ONLY") }
+    @objc public func removeOwnedAlias(_ call: CAPPluginCall) { call.reject("L0_ANDROID_CONTROL_ONLY") }
+
+    @objc public func removeOrphanRows(_ call: CAPPluginCall) {
+        guard validNonce(call, mutation: true) else { return }
+        call.resolve(vault())
+    }
+
+    @objc public func queryRefusal(_ call: CAPPluginCall) {
+        guard validNonce(call, mutation: true) else { return }
+        call.resolve(["invalidQuery": keychain(vaultAccounts[0], invalidClass: true),
+                      "unchangedNormalQuery": keychain(vaultAccounts[0])])
+    }
+}

@@ -1,0 +1,137 @@
+from pathlib import Path
+import datetime,difflib,hashlib,json,os,shutil,subprocess,tarfile
+R=Path('/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch');S=Path('/private/tmp/splotch-resume-01a111b0/legacy-continuity-source');P=S/'compact-history';E=R/'docs/migration/evidence/legacy-continuity';C=Path('/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity')
+def h(b):return hashlib.sha256(b).hexdigest()
+def identity(p):
+ b=p.read_bytes();st=p.stat();return {'path':str(p),'bytes':len(b),'sha256':h(b),'mode':format(st.st_mode&0o777,'04o'),'device':st.st_dev,'inode':st.st_ino}
+manifest=json.loads((P/'history-members.json.txt').read_bytes());q=json.loads((P/'qualification.json.txt').read_bytes());assert q['canonicalCopiesUnchanged'] and q['sourceBeforeCleanupUnchanged'];assert q['memberManifest']['sha256']==h((P/'history-members.json.txt').read_bytes())
+paths=['tools/migration/legacy-continuity/tests/guards.test.mjs','tools/migration/legacy-continuity/README.md','docs/migration/evidence/legacy-continuity/README.md','docs/migration/CAMPAIGN.md']
+before={p:(R/p).read_bytes() for p in paths}
+for name,b in before.items():p=P/'before-maintained'/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b)
+g=R/paths[0];text=g.read_text();assert text.count("const TOOLS = resolve(import.meta.dirname, '..');")==1;text=text.replace("const TOOLS = resolve(import.meta.dirname, '..');","const CAPABILITY_ROOT = dirname(import.meta.dirname);").replace('join(TOOLS,','join(CAPABILITY_ROOT,');assert 'TOOLS' not in text;g.write_text(text)
+t=R/paths[1];text=t.read_text();text=text.replace('Read the frozen repaired plan and all twelve finding dispositions in\n`docs/migration/evidence/legacy-continuity/plan-repairs/`.','Read the frozen repaired plan and all twelve finding dispositions through the\n[complete evidence index](../../../docs/migration/evidence/legacy-continuity/README.md).')
+text=text.replace('The qualified manifest source and complete public responses are preserved in\n`docs/migration/evidence/legacy-continuity/sdk-binary-owner/`; its dated trust amendment retains\ncompiled-source association and native continuity as open gates.','The qualified manifest source and complete public responses are preserved in the\n[evidence capsule and member index](../../../docs/migration/evidence/legacy-continuity/README.md).\nIts dated SDK trust amendment retains compiled-source association and native continuity as open gates.')
+t.write_text(text)
+(E/'README.md').write_text('''# Source-built legacy continuity unit
+
+L0 owns finite disposable Capacitor source-fixture preparation and observation tools. It binds
+released v1.6.0, later held-picture and accepted-reader owners, then composes a literal observation
+route and native observers in owned copies. Replacement services and transactions remain later
+units. The [maintained tools](../../../../tools/migration/legacy-continuity/README.md) include their
+real guards and all finite templates.
+
+## Complete historical records
+
+The [single capsule](history.tar.gz) contains all 474 historical packet members, including source
+snapshots, plans, original review metadata/findings, SDK manifests, complete raw execution channels,
+intended controls, accidental failures and resource release. The
+[full member manifest](history-members.json.txt) records every safe relative member, byte length,
+SHA-256, mode and original independent canonical identity. The
+[qualification](history-qualification.json.txt) records complete archive/readback, an intended wrong
+member-hash refusal and restored positive; these are metadata controls. The
+[exact finite producer](history-producer.py.txt) follows the existing continuation capsule pattern.
+Historical Markdown is data inside the capsule; its original bytes and original canonical copies
+remain unchanged. The prior one-file raw projection retains its explicit path mapping and original
+manifest inside the capsule.
+
+The qualified owned extraction is at
+`/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history`. These host links open that
+exact verified extraction. On another host, verify the outer archive and every member against the
+manifest before extraction into a newly owned empty records directory. Never overlay the records
+onto product source or execute their captured scripts as part of recovery. The archive member field
+in the manifest is the portable lookup identity; absolute original paths and host links are
+provenance and local reading aids.
+
+| Record | Verified owned copy | Scope |
+| --- | --- | --- |
+| Repaired plan and twelve finding dispositions | [PLAN](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/plan-repairs/PLAN.md) | Controls the source fixture; original review identity remains intact |
+| Original independent review | [findings](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/plan-review/findings.json.txt) | Original Claude round one; no new review inferred |
+| Accepted-reader composition | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/accepted-composition-709/README.md) | Exact roles/configuration/Git source bytes at accepted 709 |
+| SDK binary owner | [amendment](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/sdk-binary-owner/sdk-binary-owner-amendment/TRUST-PLAN-AMENDMENT.md) | App source build links pinned precompiled SDK binaries; compiled-source association remains open |
+| Original source-only composition controls | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/source-composition/README.md) | Nine historical controls retain their original source inputs |
+| Own installation and first scoped failure | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/tools-gates-20261006200650/README.md) | Complete frozen install/JS graph; accidental lint failure preserved |
+| Scoped follow-up | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/tools-followup-20261006203134/README.md) | Eleven guards/checklint/role/flag controls passed at their recorded source |
+| First full Quality failure | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/full-final-gates-20261006204640/README.md) | Three accidental findings; Browserless not run |
+| Later Quality pass/Browserless failure | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/full-final-gates-retry-20261006210624/README.md) | All fifteen Quality stages passed; Browserless reached all five stages, with two tools failures |
+
+## Current frontier
+
+The last actual tested source was staged tree 1acae1d1600798e298f5e5dda6be138bf8445284 on
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. Quality exited zero in 46.629 seconds. Browserless
+exited one in 77.839 seconds: the copied historical CAMPAIGN links were scanned as live documents,
+and a capability-relative test path was classified as a repository-root walk. Complete outputs and
+the exact original receipt f5f69179abec6746093a7636f6b62962a94fa910126f77b209814d8efbb64cd9
+remain in the capsule. Unit coverage, asset generation, store-drawings and 42 API smoke assertions
+passed; subsequent role checks were halted. Source/runtime/semantic index and qualified installation
+reuse stayed unchanged, all four command groups and producer were absent, and SMOKE_PORT 5386 was
+free. These failures are accidental findings, not intended rejecting controls.
+
+The capability path uses its actual named parent-directory owner, while the real repository-root
+walk remains guarded. Historical records are consolidated without formatting their immutable bytes
+or suppressing documentation/format/path rules. These changed source/packaging inputs require fresh
+full Quality/Browserless and three role inspections before commit/push/PR/CI. Original Claude
+conversation 1b406e61-641e-4cf8-86fb-2b1cd7548469 has one used/two remaining substantive rounds.
+The actual PR-keyed adoption and original round-two implemented-source/trust challenge precede
+native execution; round three covers executed native evidence and final unit acceptance.
+
+Native compilation/install/runtime/effective-origin/profile, native installed graph and SDK compiled
+association, replacement transactions, deployed binary/source association, signed-channel upgrades,
+physical performance and final campaign completion remain open. Same-version source fixture
+mechanics cannot establish a released-channel upgrade.
+''')
+c=R/paths[3];text=c.read_text();lines=text.splitlines()
+for i,line in enumerate(lines):
+ if line.startswith('| Legacy continuity L0a/L0b '):
+  cols=line.split('|');assert len(cols)==7;cols[4]=' Scoped follow-up passed at its exact source. Later full Quality passed all 15 stages/exit 0; Browserless reached all five stages/exit 1 with exactly historical copied-document links and a capability-path anchor failure. Complete outputs/source/reuse and independent groups/port release preserved. One complete verified historical capsule preserves all 474 original members/canonical copies; actual capability parent anchor repaired. Fresh full Quality/Browserless/3 roles, commit/push/PR/CI and original r2 pending; no native/profile/channel/physical acceptance. ';lines[i]='|'.join(cols)
+text='\n'.join(lines)+'\n'
+for old in ['source-composition/README.md','tools-gates-20261006200650/README.md','tools-followup-20261006203134/README.md','full-final-gates-20261006204640/README.md']:
+ text=text.replace('evidence/legacy-continuity/'+old,'evidence/legacy-continuity/README.md#complete-historical-records')
+text+='''
+## L0 Browserless finding and complete history capsule
+
+Observed at 2026-10-06T21:11:00Z on isolated accepted base
+709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The later retry passed all fifteen Quality stages
+before Browserless reached all five stages and failed exactly two tools tests. The historical copied
+CAMPAIGN document had fifteen relative links whose original location was lost; the capability test
+path was incorrectly read as a repository-root walk. Complete raw channels and source/runtime/index/
+qualified-install reuse remain in the [historical records](evidence/legacy-continuity/README.md).
+The following three role calls were halted. Four command groups and producer 94478 were independently
+absent, with SMOKE_PORT 5386 free and no cleanup signal or unleased retry.
+
+The owner changed only its capability test anchor to the actual parent-directory owner and packaged
+all 474 historical members as one safe complete capsule. Every member byte/mode/hash, independent
+canonical original and new owned extraction was verified before redundant uncommitted unit copies
+were removed. Historical raw Markdown, manifests and canonical records remain unchanged; no rule
+was suppressed. Current tools/templates/tests and maintained documentation stay visible. Fresh
+changed-source full Quality/Browserless and three role positives need a parent-granted exclusive
+lease. Original Claude 1b remains one used/two remaining, with no new review/adoption/native or
+upgrade acceptance.
+'''
+c.write_text(text)
+# Prove exact payload and canonical/readback identities again at the mutation boundary.
+assert identity(P/'history.tar.gz')==manifest['archive']
+for row in manifest['entries']:
+ assert identity(Path(row['path']))=={k:row[k] for k in ['path','bytes','sha256','mode','device','inode']}
+ assert identity(Path(row['canonical']['path']))==row['canonical']
+ e=Path(manifest['ownedVerifiedExtractionRoot'])/row['member'];ei=identity(e)
+ assert all(ei[k]==row[k] for k in ['bytes','sha256','mode']) and (ei['device'],ei['inode'])!=(row['device'],row['inode'])
+canonical_new=C/'compact-history';canonical_new.mkdir(exist_ok=False)
+copies=[]
+for source,leaf in [(P/'history.tar.gz','history.tar.gz'),(P/'history-members.json.txt','history-members.json.txt'),(P/'qualification.json.txt','history-qualification.json.txt'),(S/'prepare-compact-history.py','history-producer.py.txt')]:
+ b=source.read_bytes();targets=[E/leaf,canonical_new/leaf]
+ for target in targets:
+  assert not target.exists();target.write_bytes(b);target.chmod(0o444);assert target.read_bytes()==b
+ assert targets[0].stat().st_ino!=targets[1].stat().st_ino
+ copies.append({'source':identity(source),'copies':[identity(p) for p in targets]})
+# Only new owned uncommitted files proven absent at HEAD are removed, after all archive checks.
+removed=[]
+for row in manifest['entries']:
+ p=Path(row['path']);assert p.is_relative_to(E) and identity(p)=={k:row[k] for k in ['path','bytes','sha256','mode','device','inode']};p.unlink();removed.append(row['member'])
+for d in sorted([p for p in E.rglob('*') if p.is_dir()],key=lambda p:len(p.parts),reverse=True):d.rmdir()
+for row in manifest['entries']:assert identity(Path(row['canonical']['path']))==row['canonical']
+changes=[]
+for name,b in before.items():
+ current=(R/name).read_bytes();changes.append({'path':name,'beforeBytes':len(b),'beforeSha256':h(b),'afterBytes':len(current),'afterSha256':h(current)})
+(P/'maintained-repair.diff.txt').write_text(''.join(''.join(difflib.unified_diff(b.decode().splitlines(True),(R/name).read_text().splitlines(True),fromfile='before/'+name,tofile='after/'+name)) for name,b in before.items()))
+receipt={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'capsuleCopies':copies,'removedOnlyVerifiedUncommittedMembers':removed,'canonicalOriginalsUnchanged':True,'maintainedChanges':changes,'producer':identity(Path(__file__)),'scope':'source-only repair/capsule composition; prior full failures immutable, no new tests/native/rival acceptance'}
+(P/'composition.json.txt').write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps({'removedHistoricalFiles':len(removed),'capsuleSha256':manifest['archive']['sha256'],'memberManifestSha256':h((P/'history-members.json.txt').read_bytes()),'changedMaintained':changes,'receipt':identity(P/'composition.json.txt')}))

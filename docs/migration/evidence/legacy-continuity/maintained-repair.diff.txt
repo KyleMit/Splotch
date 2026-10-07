@@ -1,0 +1,300 @@
+--- before/tools/migration/legacy-continuity/tests/guards.test.mjs
++++ after/tools/migration/legacy-continuity/tests/guards.test.mjs
+@@ -16,7 +16,7 @@
+ } from '../report-contract.mjs';
+ 
+ const ROOT = resolve(import.meta.dirname, '../../../..');
+-const TOOLS = resolve(import.meta.dirname, '..');
++const CAPABILITY_ROOT = dirname(import.meta.dirname);
+ const NONCE = 'a'.repeat(32);
+ const RECEIPT = 'b'.repeat(32);
+ const IMPORT_CONTROL_DEADLINE_MS = 5_000;
+@@ -40,7 +40,7 @@
+       const driver = join(owned, 'import-entry.mjs');
+       writeFileSync(
+         driver,
+-        `const module = await import(${JSON.stringify(join(TOOLS, 'run-fixture.mjs'))}); process.stdout.write(typeof module.runLegacyContinuity);`
++        `const module = await import(${JSON.stringify(join(CAPABILITY_ROOT, 'run-fixture.mjs'))}); process.stdout.write(typeof module.runLegacyContinuity);`
+       );
+       const result = execFileSync(process.execPath, [driver, '--unrecognized-import-argument'], {
+         encoding: 'utf8',
+@@ -67,7 +67,7 @@
+       execFileSync(
+         process.execPath,
+         [
+-          join(TOOLS, 'run-fixture.mjs'),
++          join(CAPABILITY_ROOT, 'run-fixture.mjs'),
+           'inspect',
+           '--source',
+           'foreign',
+@@ -104,7 +104,7 @@
+     const activity = 'android/app/src/main/java/art/splotch/app/MainActivity.java';
+     const controller = 'ios/App/App/MainViewController.swift';
+     const project = 'ios/App/App.xcodeproj/project.pbxproj';
+-    const templates = join(TOOLS, 'templates');
++    const templates = join(CAPABILITY_ROOT, 'templates');
+     const originals = new Map(
+       [activity, controller, project].map((path) => [path, readFileSync(join(ROOT, path))])
+     );
+--- before/tools/migration/legacy-continuity/README.md
++++ after/tools/migration/legacy-continuity/README.md
+@@ -5,11 +5,12 @@
+ implement replacement services or transactions. It does not accept a deployed binary association,
+ signed upgrade, physical lock/accessibility, pending-job transfer or timing comparison.
+ 
+-Read the frozen repaired plan and all twelve finding dispositions in
+-`docs/migration/evidence/legacy-continuity/plan-repairs/`. Original Claude conversation
+-1b406e61-641e-4cf8-86fb-2b1cd7548469 used one of three substantive rounds on the initial plan. The
+-implemented observer/route/configuration and trust plan must receive its remaining round-two
+-challenge before native execution. Round three covers executed evidence and the final unit.
++Read the frozen repaired plan and all twelve finding dispositions through the
++[complete evidence index](../../../docs/migration/evidence/legacy-continuity/README.md). Original
++Claude conversation 1b406e61-641e-4cf8-86fb-2b1cd7548469 used one of three substantive rounds on the
++initial plan. The implemented observer/route/configuration and trust plan must receive its remaining
++round-two challenge before native execution. Round three covers executed evidence and the final
++unit.
+ 
+ ## Source roles and preparation
+ 
+@@ -57,9 +58,10 @@
+ Cordova XCFramework binary targets. This app source build links those SDK binaries; npm source and
+ version labels cannot prove their compiled-source association. Preserve the exact archive checksums,
+ selected framework/interface bytes, resolved/link/load/runtime identities and actual owner controls.
+-The qualified manifest source and complete public responses are preserved in
+-`docs/migration/evidence/legacy-continuity/sdk-binary-owner/`; its dated trust amendment retains
+-compiled-source association and native continuity as open gates.
++The qualified manifest source and complete public responses are preserved in the
++[evidence capsule and member index](../../../docs/migration/evidence/legacy-continuity/README.md).
++Its dated SDK trust amendment retains compiled-source association and native continuity as open
++gates.
+ 
+ Use the real `build:cap`/`cap:sync` lifecycle and record every applicable gate's actual exit. Freeze
+ expected fixture outputs before running generators. Refuse unrelated native registration,
+--- before/docs/migration/evidence/legacy-continuity/README.md
++++ after/docs/migration/evidence/legacy-continuity/README.md
+@@ -1,46 +1,92 @@
+ # Source-built legacy continuity unit
+ 
+-L0 owns finite disposable Capacitor source-fixture preparation and observation tools. It preserves
+-exact released v1.6.0, later held-picture and accepted-reader source/configuration owners, then
+-composes a literal raw-observation route and registered native observers in owned copies. It does
+-not implement replacement services or transactions. Native
+-build/install/effective-origin/profile/runtime and signed-channel continuity remain later gates.
++L0 owns finite disposable Capacitor source-fixture preparation and observation tools. It binds
++released v1.6.0, later held-picture and accepted-reader owners, then composes a literal observation
++route and native observers in owned copies. Replacement services and transactions remain later
++units. The [maintained tools](../../../../tools/migration/legacy-continuity/README.md) include their
++real guards and all finite templates.
+ 
+-The implemented tools are in `tools/migration/legacy-continuity/`. The original Claude conversation
+-is 1b406e61-641e-4cf8-86fb-2b1cd7548469, one used/two remaining substantive rounds. The
+-[repaired plan and twelve finding dispositions](plan-repairs/PLAN.md) control the source unit;
+-original raw question/review identity is retained in `plan-review/`. The source-built app links
+-pinned precompiled Capacitor/Cordova SDKs, whose public
+-[binary-target manifest owner amendment](sdk-binary-owner/sdk-binary-owner-amendment/TRUST-PLAN-AMENDMENT.md)
+-keeps compiled-source association open.
++## Complete historical records
+ 
+-The [accepted-reader composition](accepted-composition-709/README.md) preserves all 25 tools through
+-the verified PR2702 fast-forward, actual source/profile declarations and complete source Git blobs.
+-Earlier nine source-only materialization/control receipts retain their original tool/overlay
+-identities. The [first tools lease](tools-gates-20261006200650/README.md) preserves complete own
+-frozen installation and the 2,063,317-byte JS graph plus the one accidental lint failure. The
+-[exact two-file repair](source-followup-plan/README.md) changes process error propagation and adds a
+-real aggregate-error/ownership guard. The
+-[later scoped follow-up](tools-followup-20261006203134/README.md) passes 11 guards/checklint/role
+-and intended-flag/restored controls at its exact recorded source, with equal input-qualified install
+-reuse and actual group/producer release.
++The [single capsule](history.tar.gz) contains all 474 historical packet members, including source
++snapshots, plans, original review metadata/findings, SDK manifests, complete raw execution channels,
++intended controls, accidental failures and resource release. The
++[full member manifest](history-members.json.txt) records every safe relative member, byte length,
++SHA-256, mode and original independent canonical identity. The
++[qualification](history-qualification.json.txt) records complete archive/readback, an intended wrong
++member-hash refusal and restored positive; these are metadata controls. The
++[exact finite producer](history-producer.py.txt) follows the existing continuation capsule pattern.
++Historical Markdown is data inside the capsule; its original bytes and original canonical copies
++remain unchanged. The prior one-file raw projection retains its explicit path mapping and original
++manifest inside the capsule.
+ 
+-These immutable packets retain exact raw output filenames and byte/mode/hash/independent-inode
+-manifests. Parent-verified source/root changes are bounded to L0 tools/templates, one root
+-script/description, two knip entries and this unit's current register row/dated transitions. The
+-next gates are full staged Quality/Browserless, commit/push/PR/CI and original round-two
+-implemented-source challenge. Round three remains for executed native evidence and final acceptance.
+-No native/device/physical performance, effective persistent-profile survival, replacement
+-transaction, deployed-binary association, signed upgrade or final campaign completion is established
+-here.
++The qualified owned extraction is at
++`/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history`. These host links open that
++exact verified extraction. On another host, verify the outer archive and every member against the
++manifest before extraction into a newly owned empty records directory. Never overlay the records
++onto product source or execute their captured scripts as part of recovery. The archive member field
++in the manifest is the portable lookup identity; absolute original paths and host links are
++provenance and local reading aids.
+ 
+-The [first full Quality failure](full-final-gates-20261006204640/README.md) reached all fifteen
+-steps and preserved three accidental findings; Browserless was not executed. The historical raw
+-proposal now has an
+-[explicit one-file raw projection](source-composition/raw-markdown-projection.json.txt) with exact
+-bytes/mode/inode and the original canonical copy retained. The
+-[complete projected-member inventory](source-composition/projected-members.json.txt) resolves all 53
+-original packet members without rewriting their historical manifests. Internal owning constants and
+-the Git reader remain private; the public fixture command is discovered from its root script, and
+-the exact nested test entry remains. These source repairs await new full Quality/Browserless and
+-three role inspections before commit/push/PR/rival adoption.
++| Record                                        | Verified owned copy                                                                                                                                     | Scope                                                                                            |
++| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
++| Repaired plan and twelve finding dispositions | [PLAN](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/plan-repairs/PLAN.md)                                                     | Controls the source fixture; original review identity remains intact                             |
++| Original independent review                   | [findings](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/plan-review/findings.json.txt)                                        | Original Claude round one; no new review inferred                                                |
++| Accepted-reader composition                   | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/accepted-composition-709/README.md)                                     | Exact roles/configuration/Git source bytes at accepted 709                                       |
++| SDK binary owner                              | [amendment](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/sdk-binary-owner/sdk-binary-owner-amendment/TRUST-PLAN-AMENDMENT.md) | App source build links pinned precompiled SDK binaries; compiled-source association remains open |
++| Original source-only composition controls     | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/source-composition/README.md)                                           | Nine historical controls retain their original source inputs                                     |
++| Own installation and first scoped failure     | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/tools-gates-20261006200650/README.md)                                   | Complete frozen install/JS graph; accidental lint failure preserved                              |
++| Scoped follow-up                              | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/tools-followup-20261006203134/README.md)                                | Eleven guards/checklint/role/flag controls passed at their recorded source                       |
++| First full Quality failure                    | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/full-final-gates-20261006204640/README.md)                              | Three accidental findings; Browserless not run                                                   |
++| Later Quality pass/Browserless failure        | [README](/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history/full-final-gates-retry-20261006210624/README.md)                        | All fifteen Quality stages passed; Browserless reached all five stages, with two tools failures  |
++
++A portable standard-library verification reads stored data without executing any captured source:
++
++```sh
++python3 - <<'PYVERIFY'
++import hashlib, json, pathlib, tarfile
++root = pathlib.Path('docs/migration/evidence/legacy-continuity')
++manifest = json.loads((root / 'history-members.json.txt').read_text())
++archive = root / manifest['file']
++assert archive.stat().st_size == manifest['archive']['bytes']
++assert hashlib.sha256(archive.read_bytes()).hexdigest() == manifest['archive']['sha256']
++with tarfile.open(archive, 'r:gz') as stored:
++    members = stored.getmembers()
++    rows = manifest['entries']
++    assert len(members) == len(rows) == manifest['memberCount']
++    assert len({member.name for member in members}) == len(members)
++    for member, row in zip(members, rows):
++        relative = pathlib.PurePosixPath(member.name)
++        assert not relative.is_absolute() and '..' not in relative.parts
++        assert '\\' not in member.name and '\x00' not in member.name
++        assert member.isreg() and not member.linkname and member.name == row['member']
++        assert member.size == row['bytes'] and member.mode == int(row['mode'], 8)
++        assert hashlib.sha256(stored.extractfile(member).read()).hexdigest() == row['sha256']
++print('Complete archive and member identities match')
++PYVERIFY
++```
++
++## Current frontier
++
++The last actual tested source was staged tree 1acae1d1600798e298f5e5dda6be138bf8445284 on
++709fadd68ecb802aa2c9daa3fc197ce8d072b23c. Quality exited zero in 46.629 seconds. Browserless exited
++one in 77.839 seconds: the copied historical CAMPAIGN links were scanned as live documents, and a
++capability-relative test path was classified as a repository-root walk. Complete outputs and the
++exact original receipt f5f69179abec6746093a7636f6b62962a94fa910126f77b209814d8efbb64cd9 remain in
++the capsule. Unit coverage, asset generation, store-drawings and 42 API smoke assertions passed;
++subsequent role checks were halted. Source/runtime/semantic index and qualified installation reuse
++stayed unchanged, all four command groups and producer were absent, and SMOKE_PORT 5386 was free.
++These failures are accidental findings, not intended rejecting controls.
++
++The capability path uses its actual named parent-directory owner, while the real repository-root
++walk remains guarded. Historical records are consolidated without formatting their immutable bytes
++or suppressing documentation/format/path rules. These changed source/packaging inputs require fresh
++full Quality/Browserless and three role inspections before commit/push/PR/CI. Original Claude
++conversation 1b406e61-641e-4cf8-86fb-2b1cd7548469 has one used/two remaining substantive rounds. The
++actual PR-keyed adoption and original round-two implemented-source/trust challenge precede native
++execution; round three covers executed native evidence and final unit acceptance.
++
++Native compilation/install/runtime/effective-origin/profile, native installed graph and SDK compiled
++association, replacement transactions, deployed binary/source association, signed-channel upgrades,
++physical performance and final campaign completion remain open. Same-version source fixture
++mechanics cannot establish a released-channel upgrade.
+--- before/docs/migration/CAMPAIGN.md
++++ after/docs/migration/CAMPAIGN.md
+@@ -66,16 +66,16 @@
+ 
+ ## Units and dependencies
+ 
+-| Unit                                                            | Owner and exact input                                                                                                                                                                                        | Dependencies / artifact root                                                                                                                                                                                                          | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Rival provenance                                                                                                                                                      |
+-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+-| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                                                                                               | capsules; durable root `preservation`                                                                                                                                                                                                 | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                                                                                                                                                                                                        | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction |
+-| F1 candidate import boundary                                    | import_boundary; composed 0ffbfad71c18b1bb284517011b30258298a0d283, repair 49c274e565ef8f9936b0a997a24f89a46b8ec3c7 over accepted f149                                                                       | Actual checker/candidate/frozen graph; durable `import-boundary`, PR2703                                                                                                                                                              | Published e4e9fc044d46d49c3565379a3e6419e8eff4af9d; 973 scoped tests/full Browserless and final-head hosted CI pass. Seven public threads resolved; actual consumer grammar probe found no new defect. Changed-source independent acceptance remains halted at exhausted budget; native expansion depends on acceptance                                                                                                                                                                                                                                                                  | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3 used / 0 remaining; no fresh/reset/fourth review authorized                 |
+-| Retained Svelte controls                                        | retained_control; published81f84eebaf71c3d178186137d9c2bb07f7e85209/tree957779386684564e864da7a9d79c0ed4ea9b32e3; local calls85c8                                                                            | Historical 8dd and qualified lock; durable `retained`, PR2702                                                                                                                                                                         | Source-bound final Quality/Browserless and all seven distinct public calls pass; source/index/complete borrowed graph unchanged, lease released. f149 composition and complete receipt archive published; ordinary hosted checks and shipping compiles pass, hosted seven-call job and original final review pending; 85c8 local receipt scope retained                                                                                                                                                                                                                                  | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual original round2 resumed; 2 used / 1 remaining; unrelated ledger preserved; fresh fallback blocks acceptance              |
+-| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8                                                                          | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                                                                                                                                                   | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance                                                                                                                                                                                     | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                              |
+-| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                                                                                          | explicit capture-session lease, actual devices and preregistration below; baseline banked separately                                                                                                                                  | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                                                                                                                                                                                                               | Review required before consequential probe and phase exit                                                                                                             |
+-| Continuity, neutral React host, vocabularies and faithful paper | parent owns published artifact/tag-source inventory at f149; remaining runnable owners assigned after preceding gates                                                                                        | PHASE-1 units 5–9; retained acceptance before real host; compilation before same-ID feasibility; durable `continuity-intake`                                                                                                          | PR2706 atbc17 published; original round1 confirms four records findings, repairs prepared. First-head CI guard failure preserved; changed-head review/CI/integration pending. Qualified102 legacy-provider files remain source-only. Preserved host preparation only; no React recovery, native continuity, faithful renderer or vocabulary runtime acceptance                                                                                                                                                                                                                           | Inventory original7816bd4e-769a-44d4-8755-6c9ff2cc3bb9;1used/2remain, review5432293756; implementation/phase exits retain their own budgets                           |
+-| Legacy continuity L0a/L0b                                       | preservation_verify; implemented isolated accepted base/reader 709fadd68ecb802aa2c9daa3fc197ce8d072b23c, released d8b86469f63c57a06a9de45664a42eea15b99eb0 and held ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 | Accepted PR2706 launch-owner records and PR2702 retained owners; qualified source-only provider/SPM binary-target manifests; own fixture graph/install/runtime and parent native lease remain dependencies; durable legacy-continuity | Scoped follow-up passed at its exact source. First full Quality reached all 15 steps/exit 1: immutable raw Markdown formatting/regeneration and six unused exports/redundant Knip entry; Browserless not executed. Complete failed-source/semantic-index/runtime/reuse and independent groups/port release preserved. Exact raw .md.txt projection keeps original bytes/mode/inode/canonical copy and all 53 members; internal exports/entry repaired. Fresh full Quality/Browserless/3 roles, commit/push/PR/CI and original r2 pending; no native/profile/channel/physical acceptance. | Original 1b406e61-641e-4cf8-86fb-2b1cd7548469; 1 used/2 remaining; future actual PR-keyed adoption preserves original identity/consumed round; no review launch/reset |
+-| Matched comparison, selected product and release                | parent final integrator                                                                                                                                                                                      | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                                                                                                                                                  | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Final Codex and Claude inventory review mandatory                                                                                                                     |
++| Unit                                                            | Owner and exact input                                                                                                                                                                                        | Dependencies / artifact root                                                                                                                                                                                                          | Actual states and next gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Rival provenance                                                                                                                                                      |
++| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
++| Preservation integration                                        | parent; 63c5f2f45a463774f50455041174f075abaa4af2 over dc08a90abc67b53124146bf288c80de0f9ffd1dd                                                                                                               | capsules; durable root `preservation`                                                                                                                                                                                                 | Verified and extracted; checkpoint committed/pushed; final-head CI passes; PR 2700 merged at aa507a74963adac35baed84c7ab2e13cdc12a946 after independent challenge                                                                                                                                                                                                                                                                                                                                                                                                                  | wrapper cb381ae2-3e6a-4b18-b551-dcededaad4a4; question round 1 complete; bbe89d5b-644f-4d4f-9366-e5156cebf4ea; preservation acceptance is distinct from F1 correction |
++| F1 candidate import boundary                                    | import_boundary; composed 0ffbfad71c18b1bb284517011b30258298a0d283, repair 49c274e565ef8f9936b0a997a24f89a46b8ec3c7 over accepted f149                                                                       | Actual checker/candidate/frozen graph; durable `import-boundary`, PR2703                                                                                                                                                              | Published e4e9fc044d46d49c3565379a3e6419e8eff4af9d; 973 scoped tests/full Browserless and final-head hosted CI pass. Seven public threads resolved; actual consumer grammar probe found no new defect. Changed-source independent acceptance remains halted at exhausted budget; native expansion depends on acceptance                                                                                                                                                                                                                                                            | bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 resumed, review5431448391; 3 used / 0 remaining; no fresh/reset/fourth review authorized                 |
++| Retained Svelte controls                                        | retained_control; published81f84eebaf71c3d178186137d9c2bb07f7e85209/tree957779386684564e864da7a9d79c0ed4ea9b32e3; local calls85c8                                                                            | Historical 8dd and qualified lock; durable `retained`, PR2702                                                                                                                                                                         | Source-bound final Quality/Browserless and all seven distinct public calls pass; source/index/complete borrowed graph unchanged, lease released. f149 composition and complete receipt archive published; ordinary hosted checks and shipping compiles pass, hosted seven-call job and original final review pending; 85c8 local receipt scope retained                                                                                                                                                                                                                            | b5bb0824-3f7a-4ad7-9e05-4e8e9af77333; actual original round2 resumed; 2 used / 1 remaining; unrelated ledger preserved; fresh fallback blocks acceptance              |
++| Released native structural candidate                            | native_structural; original maintained60/registration10 at dc08; source challenge snapshot 61da0b643c6aa5e7d71d5616ea86e02dd33bb8b8                                                                          | F1 acceptance before expansion, corrected native/toolchain inputs; durable `native`                                                                                                                                                   | Source-only intake preserved; original round1 NO-GO. Five official SDK archives verify size/vendorSHA1 and independently recordedSHA256; SDK20 single-package recognition and ten intended controls pass. Platform/build-tools/CMake extraction qualified; NDK extraction omitted an authenticated AppleDouble member and remains unaccepted. Slot released; candidate expansion waits F1 acceptance                                                                                                                                                                               | 7c940639-09e2-4236-961f-1122171cb5d8; wrapper 0c706372-a309-4754-888d-e149b301c23e; 1 used / 2 remaining                                                              |
++| Physical controls and common observer                           | parent until bounded owner assigned; fresh accepted source required                                                                                                                                          | explicit capture-session lease, actual devices and preregistration below; baseline banked separately                                                                                                                                  | Passive enumeration at15:58:35Z found0Androidtransports,0AppleUSB and0connected CoreDevices; remembered iPad unavailable. No capture lease, native causality or observer calibration accepted. Physical access blocks dependent gates only                                                                                                                                                                                                                                                                                                                                         | Review required before consequential probe and phase exit                                                                                                             |
++| Continuity, neutral React host, vocabularies and faithful paper | parent owns published artifact/tag-source inventory at f149; remaining runnable owners assigned after preceding gates                                                                                        | PHASE-1 units 5–9; retained acceptance before real host; compilation before same-ID feasibility; durable `continuity-intake`                                                                                                          | PR2706 atbc17 published; original round1 confirms four records findings, repairs prepared. First-head CI guard failure preserved; changed-head review/CI/integration pending. Qualified102 legacy-provider files remain source-only. Preserved host preparation only; no React recovery, native continuity, faithful renderer or vocabulary runtime acceptance                                                                                                                                                                                                                     | Inventory original7816bd4e-769a-44d4-8755-6c9ff2cc3bb9;1used/2remain, review5432293756; implementation/phase exits retain their own budgets                           |
++| Legacy continuity L0a/L0b                                       | preservation_verify; implemented isolated accepted base/reader 709fadd68ecb802aa2c9daa3fc197ce8d072b23c, released d8b86469f63c57a06a9de45664a42eea15b99eb0 and held ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 | Accepted PR2706 launch-owner records and PR2702 retained owners; qualified source-only provider/SPM binary-target manifests; own fixture graph/install/runtime and parent native lease remain dependencies; durable legacy-continuity | Scoped follow-up passed at its exact source. Later full Quality passed all 15 stages/exit 0; Browserless reached all five stages/exit 1 with exactly historical copied-document links and a capability-path anchor failure. Complete outputs/source/reuse and independent groups/port release preserved. One complete verified historical capsule preserves all 474 original members/canonical copies; actual capability parent anchor repaired. Fresh full Quality/Browserless/3 roles, commit/push/PR/CI and original r2 pending; no native/profile/channel/physical acceptance. | Original 1b406e61-641e-4cf8-86fb-2b1cd7548469; 1 used/2 remaining; future actual PR-keyed adoption preserves original identity/consumed round; no review launch/reset |
++| Matched comparison, selected product and release                | parent final integrator                                                                                                                                                                                      | all applicable CONTRACT / ACCEPTANCE / WEB-CONTRACT / UPGRADES gates                                                                                                                                                                  | Pending. No foundation choice, product replacement, signed upgrade, physical improvement or cutover accepted                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Final Codex and Claude inventory review mandatory                                                                                                                     |
+ 
+ Owners update this register at meaningful transitions, changed inputs, failures and handoffs.
+ Accepted units link source/PR receipts; do not multiply private packets or reuse stale results.
+@@ -212,9 +212,9 @@
+ 794448fbf76276b76a910c167b5c2e0c4e1ea538. The preservation_verify owner composed the accepted PR2706
+ launch-owner records and repaired all twelve original L0 findings before implementing the finite
+ source fixture/observer/configuration. Nine actual source-only composition controls have complete
+-receipts in [source composition](evidence/legacy-continuity/source-composition/README.md). Their old
+-tool/overlay identities remain historical: guarded entry, process ownership, ADB cleanup and raw
+-held-record transport changes require their own later gates. No fixture installation, native
++receipts in [source composition](evidence/legacy-continuity/README.md#complete-historical-records).
++Their old tool/overlay identities remain historical: guarded entry, process ownership, ADB cleanup
++and raw held-record transport changes require their own later gates. No fixture installation, native
+ build/execution, profile survival, signed upgrade or continuity acceptance is established. The
+ provisional install/check/lint lease was released unused while source repairs completed.
+ 
+@@ -243,7 +243,7 @@
+ and stopped immediately on one accidental ESLint no-unsafe-finally error. Own frozen install, full
+ JS graph,10scoped guards and check exited0; lint exited1. Exact original receipt and actual release
+ proof remain in
+-[first tools lease](evidence/legacy-continuity/tools-gates-20261006200650/README.md). All owned
++[first tools lease](evidence/legacy-continuity/README.md#complete-historical-records). All owned
+ groups were absent, source/runtime/index unchanged and no later role/flag control ran.
+ 
+ The parent reviewed the exact two-file repair before application: command and ownership errors are
+@@ -264,7 +264,7 @@
+ intended unknown-flag refusal/restored positive met their actual predicates. Complete final hashing
+ finished within 29.3179 seconds, source/runtime/index and before/after install reuse stayed
+ unchanged, and all eight command groups plus producer 66703 were absent.
+-[Exact follow-up receipts](evidence/legacy-continuity/tools-followup-20261006203134/README.md)
++[Exact follow-up receipts](evidence/legacy-continuity/README.md#complete-historical-records)
+ preserve complete channels, source identities and actual release. This transfers only the scoped
+ source/tool obligations; no native or channel outcome follows.
+ 
+@@ -281,7 +281,7 @@
+ unformatted Markdown; its immutable read-only copy correctly refused formatter mutation. Six
+ values/helpers had real internal consumers and unnecessary exports, and Knip already discovered the
+ fixture executable through its root script. Browserless was not executed. Complete
+-[failure/release evidence](evidence/legacy-continuity/full-final-gates-20261006204640/README.md)
++[failure/release evidence](evidence/legacy-continuity/README.md#complete-historical-records)
+ preserves the actual tested staged tree, unchanged source/semantic index/runtime/install reuse,
+ owned group/producer absence and free SMOKE_PORT. An additive mirror-scope amendment corrects the
+ mirror helper's inherited follow-up label; it does not change actual invocation bytes.
+@@ -293,3 +293,23 @@
+ the one path mapping. No formatter/dead-code rule was suppressed. Fresh final-source Quality, first
+ Browserless and three role inspections require a separately granted exclusive lease. Original Claude
+ 1b remains one used/two remaining; no PR/review/native acceptance follows these repairs.
++
++## L0 Browserless finding and complete history capsule
++
++Observed at 2026-10-06T21:15:10.600553+00:00 on isolated accepted base
++709fadd68ecb802aa2c9daa3fc197ce8d072b23c. The later retry passed all fifteen Quality stages before
++Browserless reached all five stages and failed exactly two tools tests. The historical copied
++CAMPAIGN document had fifteen relative links whose original location was lost; the capability test
++path was incorrectly read as a repository-root walk. Complete raw channels and source/runtime/index/
++qualified-install reuse remain in the [historical records](evidence/legacy-continuity/README.md).
++The following three role calls were halted. Four command groups and producer 94478 were
++independently absent, with SMOKE_PORT 5386 free and no cleanup signal or unleased retry.
++
++The owner changed only its capability test anchor to the actual parent-directory owner and packaged
++all 474 historical members as one safe complete capsule. Every member byte/mode/hash, independent
++canonical original and new owned extraction was verified before redundant uncommitted unit copies
++were removed. Historical raw Markdown, manifests and canonical records remain unchanged; no rule was
++suppressed. Current tools/templates/tests and maintained documentation stay visible. Fresh
++changed-source full Quality/Browserless and three role positives need a parent-granted exclusive
++lease. Original Claude 1b remains one used/two remaining, with no new review/adoption/native or
++upgrade acceptance.

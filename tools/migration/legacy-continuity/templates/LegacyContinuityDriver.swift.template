@@ -1,0 +1,110 @@
+import CryptoKit
+import Darwin
+import Foundation
+import WebKit
+
+final class LegacyContinuityDriver {
+    private static let commands: Set<String> = [@@COMMANDS@@]
+    private static let fixturePath = @@FIXTURE_PATH@@
+    private static let readyDeadlineSeconds: TimeInterval = 30
+    private static let pollIntervalSeconds: TimeInterval = 0.1
+    private let webView: WKWebView
+    private let started = Date()
+    private let nonce: String
+    private let command: String
+    private let receiptId: String
+
+    init?(webView: WKWebView) {
+        let arguments = ProcessInfo.processInfo.arguments
+        func argument(_ name: String) -> String? {
+            guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count,
+                  arguments.filter({ $0 == name }).count == 1 else { return nil }
+            return arguments[index + 1]
+        }
+        guard let nonce = argument("--splotch-l0-nonce"),
+              let command = argument("--splotch-l0-command"),
+              let receiptId = argument("--splotch-l0-receipt"),
+              nonce.range(of: "^[a-f0-9]{32}$", options: .regularExpression) != nil,
+              receiptId.range(of: "^[a-f0-9]{32}$", options: .regularExpression) != nil,
+              Self.commands.contains(command) else { return nil }
+        self.webView = webView
+        self.nonce = nonce
+        self.command = command
+        self.receiptId = receiptId
+        DispatchQueue.main.async { [weak self] in self?.waitForPage() }
+    }
+
+    private func waitForPage() {
+        guard Date().timeIntervalSince(started) < Self.readyDeadlineSeconds else {
+            finish(["status": "setup-failure", "reason": "L0_PAGE_READY_DEADLINE"])
+            return
+        }
+        guard webView.url?.path == Self.fixturePath,
+              webView.url?.host == "localhost", webView.url?.scheme == "capacitor" else {
+            scheduleNextPoll()
+            return
+        }
+        webView.callAsyncJavaScript("return Boolean(window.__SPLOTCH_L0__?.ready)", arguments: [:], in: nil, in: .page) { [weak self] result in
+            guard let self else { return }
+            if case .success(let value) = result, value as? Bool == true { self.runCommand() }
+            else { self.scheduleNextPoll() }
+        }
+    }
+
+    private func scheduleNextPoll() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.pollIntervalSeconds) { [weak self] in self?.waitForPage() }
+    }
+
+    private func runCommand() {
+        webView.callAsyncJavaScript("return await window.__SPLOTCH_L0__.run('raw', nonce)", arguments: ["nonce": nonce], in: nil, in: .page) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let value):
+                guard self.writeReport(["status": "completed", "value": value], phase: "raw") else { return }
+                if self.command == "raw" { self.finish(["status": "completed", "value": value]) }
+                else { self.executeCommand() }
+            case .failure(let error): self.finish(["status": "raw-failure", "error": String(describing: error)])
+            }
+        }
+    }
+
+    private func executeCommand() {
+        let script = "return await window.__SPLOTCH_L0__.run(command, nonce)"
+        webView.callAsyncJavaScript(script, arguments: ["nonce": nonce, "command": command], in: nil, in: .page) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let value): self.finish(["status": "completed", "value": value])
+            case .failure(let error): self.finish(["status": "command-failure", "error": String(describing: error)])
+            }
+        }
+    }
+
+    private func finish(_ value: [String: Any]) {
+        _ = writeReport(value, phase: "result")
+    }
+
+    private func writeReport(_ value: [String: Any], phase: String) -> Bool {
+        let result: [String: Any] = ["command": command, "nonce": nonce, "receiptId": receiptId, "phase": phase,
+                                   "pid": ProcessInfo.processInfo.processIdentifier,
+                                   "url": webView.url.map { $0.absoluteString as Any } ?? NSNull(),
+                                   "persistentDataStore": webView.configuration.websiteDataStore.isPersistent,
+                                   "result": value]
+        let target = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("splotch-l0-\(receiptId)-\(phase).json")
+        do {
+            guard !FileManager.default.fileExists(atPath: target.path), JSONSerialization.isValidJSONObject(result) else {
+                throw NSError(domain: "L0_RESULT_REFUSED", code: 1)
+            }
+            let bytes = try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
+            try bytes.write(to: target, options: .withoutOverwriting)
+            let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+            print("SPLOTCH_L0_RESULT \(receiptId) \(phase) \(bytes.count) \(digest)")
+            guard fflush(stdout) == 0 else { return false }
+            return true
+        } catch {
+            print("SPLOTCH_L0_RESULT_FAILURE \(receiptId) \(phase) \(String(describing: error))")
+            _ = fflush(stdout)
+            return false
+        }
+    }
+}

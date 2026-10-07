@@ -1,0 +1,11 @@
+export async function parsedSettings() {
+  const { settingsState } = await import('$lib/state/settings.svelte');
+  return {
+    sound: settingsState.soundEnabled,
+    volume: settingsState.soundVolume,
+    theme: settingsState.theme,
+    drawer: settingsState.toolDrawerEnabled,
+    coloring: settingsState.coloringBookEnabled,
+    ai: settingsState.aiImageEnabled,
+  };
+}

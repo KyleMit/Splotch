@@ -280,7 +280,8 @@
     "migration:web-host:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/migration/check-web-host.mjs",
     "migration:web-host:test": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/migration/test-web-host.mjs",
     "gen:migration:hosted-topology": "node tools/migration/gen-hosted-topology.mjs",
-    "check:migration:hosted-topology": "node tools/migration/check-hosted-topology.mjs"
+    "check:migration:hosted-topology": "node tools/migration/check-hosted-topology.mjs",
+    "migration:legacy-continuity": "node tools/migration/legacy-continuity/run-fixture.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -545,7 +546,8 @@
     "migration:web-host:check": "Recheck scoped types and structural evidence for an owned web control",
     "migration:web-host:test": "Run retained web control browser smokes on an explicit unused port",
     "gen:migration:hosted-topology": "Write the complete observed production graph into the fresh web publish directory only on the named Netlify proof branch",
-    "check:migration:hosted-topology": "Verify complete downloaded topology bytes offline against the exact source checkout and selected deploy metadata"
+    "check:migration:hosted-topology": "Verify complete downloaded topology bytes offline against the exact source checkout and selected deploy metadata",
+    "migration:legacy-continuity": "Prepare exact-source disposable Capacitor continuity fixtures and capture bounded owned local evidence; native commands require a parent-granted lease"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

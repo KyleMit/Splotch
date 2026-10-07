@@ -1,0 +1,49 @@
+{
+  "scope": "Only five independently reviewed derived metadata JSON text members; full original raw evidence remains private. Source-only qualification, no native execution or final review acceptance.",
+  "sourceHead": "dd2cf24337b9384cb2d6c5adbaac475280950144",
+  "pendingMergeHead": "ff90042ee807b04145bfb66d32c3704fd2b51c7d",
+  "qualifiedIndexTree": "3fe6f228c87a43a837abd03a016361e52847a9b5",
+  "independentDisclosureQualification": {
+    "executionPath": "/private/tmp/splotch-l0-native-execution-202610070306/source-public-disclosure-parent-v2.private.json",
+    "bytes": 1504,
+    "sha256": "43ffe0cc2b98ee04fc1d8bc8b5ac70676761ec4547af33a7cb5490ca76ee17f7",
+    "qualifiedPublicPayloadBytes": 161336
+  },
+  "archive": {
+    "file": "receipts.tar.gz",
+    "bytes": 18750,
+    "sha256": "ac8d657bcd8c9fb96c7bd56e49258bb7f5ba507c753673b46c0be37aaeecbf1a"
+  },
+  "members": [
+    {
+      "member": "outcomes.json.txt",
+      "bytes": 14342,
+      "sha256": "f7683201a8ce666f2255a64a4a6feb836b5f6c2dbbbf4b502fa5b2b700a01081",
+      "mode": "0644"
+    },
+    {
+      "member": "source-boundaries.json.txt",
+      "bytes": 19328,
+      "sha256": "935fa187b6350a8942f4120b5fac495024796a5e9f82d62eabb4ac572ea012ed",
+      "mode": "0644"
+    },
+    {
+      "member": "historical-source19.json.txt",
+      "bytes": 25323,
+      "sha256": "17dba82cbb8bf33af1f2b7bc23e5ea299bbfe8c14ec931f1c86a1674691610bf",
+      "mode": "0644"
+    },
+    {
+      "member": "raw-references.json.txt",
+      "bytes": 101320,
+      "sha256": "03bd4eae0eed58e86ca8fbaac29a1a341487cfb3e1c6278ce0f2ffdb1eea7ce7",
+      "mode": "0644"
+    },
+    {
+      "member": "disclosure-scope.json.txt",
+      "bytes": 1023,
+      "sha256": "5ef6daba205f2d6cd32aab04f8bd3e55a5e7dd5d1bd328f970c22c8f3ecbdad0",
+      "mode": "0644"
+    }
+  ]
+}

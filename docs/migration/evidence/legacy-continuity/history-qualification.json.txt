@@ -1,0 +1,4245 @@
+{
+  "archive": {
+    "path": "/private/tmp/splotch-resume-01a111b0/legacy-continuity-source/compact-history/history-521.tar.gz",
+    "bytes": 6921235,
+    "sha256": "fb6ac00dbaa4865602db7bd008a9142930967b826d6f06d39232fe66161bcd9b",
+    "mode": "0644",
+    "device": 16777230,
+    "inode": 218673976
+  },
+  "memberManifest": {
+    "path": "/private/tmp/splotch-resume-01a111b0/legacy-continuity-source/compact-history/history-521-members.json.txt",
+    "bytes": 527433,
+    "sha256": "661f8df1f725faa7b2ccbd5929de9e158e763f4e196af787ab36fae50dbbb340",
+    "mode": "0644",
+    "device": 16777230,
+    "inode": 218674536
+  },
+  "producer": {
+    "path": "/private/tmp/splotch-resume-01a111b0/legacy-continuity-source/append-success-history.py",
+    "bytes": 7323,
+    "sha256": "9617e69c5c0314df88ebd4382534a1ff81040f3d374e514a5780630f674c5369",
+    "mode": "0644",
+    "device": 16777230,
+    "inode": 218673974
+  },
+  "positive": {
+    "exitCode": 0,
+    "safeRegularUniqueMembers": 521
+  },
+  "wrongExpectedHashRefusal": {
+    "exitCode": 1,
+    "reason": "L0_CAPSULE_MEMBER_HASH",
+    "changedExpectedMember": "full-final-gates-compact-20261006212026/mirror-final-gates-compact.py.txt"
+  },
+  "restoredPositive": {
+    "exitCode": 0,
+    "safeRegularUniqueMembers": 521
+  },
+  "allCanonicalOriginalsUnchanged": true,
+  "exactGated474OriginalsUnchanged": {
+    "history.tar.gz": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity/compact-history/history.tar.gz",
+      "bytes": 6194560,
+      "sha256": "38f5f6619ee1adf6a8d666342f13b26e73d8275f487667f416a42575c8a8bbe9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218562079
+    },
+    "history-members.json.txt": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity/compact-history/history-members.json.txt",
+      "bytes": 399055,
+      "sha256": "a92eb8312ca52f35f80682427c881d1faf1b9bddbf4593eac49d9f65fbf71c81",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218562081
+    },
+    "history-qualification.json.txt": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity/compact-history/history-qualification.json.txt",
+      "bytes": 162936,
+      "sha256": "78e5ee5c94d5d091f1b942100469ae0fe81f04180540860347aa38832afb3825",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218562083
+    },
+    "history-producer.py.txt": {
+      "path": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a111b0/legacy-continuity/compact-history/history-producer.py.txt",
+      "bytes": 6232,
+      "sha256": "610da918e59b254b1427c3dd07125ba6d15010968c6022a42bb64a1e107afc07",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218562085
+    }
+  },
+  "newOwnedReadback": [
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/README.md",
+      "bytes": 4628,
+      "sha256": "ed98158f636bf1a1cc83e49e5d0fd3931459d3e7b39adf253831e311c11ccb4e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673979
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/adoption-template.json.txt",
+      "bytes": 258,
+      "sha256": "5afa070b3bba8651d0933af69ed0b010b4168a4eb32e5081dd9556c1eb976930",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673980
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/docs/migration/CAMPAIGN.md",
+      "bytes": 30131,
+      "sha256": "8bb517c09bfc3320cde00b1b4bf4feb29367d3b4352dbd97d112d25b170ddc54",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673984
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/knip.json",
+      "bytes": 2356,
+      "sha256": "e4050a05eef015dbf8c2848e3207f63930dab036c01e323473201f71924f5438",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673985
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/package.json",
+      "bytes": 121579,
+      "sha256": "25c5563deff73881a70354c2374a32dae77d3c0f5c52970f8b3cb7f11d45d9aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673986
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/review-round2-preparation/prompt.md",
+      "bytes": 7410,
+      "sha256": "8384dcedd022887e34e9aaab6008449914ac893f9c5301c44aa9520934f4c11a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673988
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/run-scoped-tools.py",
+      "bytes": 11927,
+      "sha256": "60df5dbacd046a6e1792c45f6cafd62bc7c054316f31582badea2bf982a9bdf6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673989
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/tools/migration/legacy-continuity/README.md",
+      "bytes": 14786,
+      "sha256": "9b420798d41f0febeb297b8e83d11b17911cbe1d0f3881c918f6c4a375d5bc2e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673993
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/tools/migration/legacy-continuity/contract.mjs",
+      "bytes": 3398,
+      "sha256": "ab8d897c3428b1d5f7929037239cd83004ffe583874f31b940d03316d17a516e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673994
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before/tools/migration/legacy-continuity/source-inputs.mjs",
+      "bytes": 4950,
+      "sha256": "3216b8f0d851e8953c49397776be9b9f39d0b47b8c6871c506cb50530fd2a6b3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673995
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before-root.diff.txt",
+      "bytes": 24584,
+      "sha256": "bd5cd486b001bf161c85146e976d56867aac9702f16442981272e0dc20dbaa2a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673996
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before-tools.diff.txt",
+      "bytes": 133020,
+      "sha256": "c449aa968b1b14cd64c2d69e14b4a612420aa1fb44db35c3ed11a707d94c09b9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673997
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before.index.identity.json.txt",
+      "bytes": 200,
+      "sha256": "f4500f396f34fb4954a1310b5cc5e33fc33eeb13e2fd8f1ace781f471fdd72ba",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673998
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/before.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218673999
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/changed-tool-inputs.diff.txt",
+      "bytes": 3765,
+      "sha256": "4364f5024e1569533f708e3877ca00168606e58348400c355c608d2fec26cae2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674000
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/compose-accepted-709.py.txt",
+      "bytes": 11153,
+      "sha256": "f182fdfa8e6922e620a2a6c6ec99cf0808758421281e80458b2bf6434ada0583",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674001
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/composition-receipt.json.txt",
+      "bytes": 9041,
+      "sha256": "009805b69f414f720d34de0603d5994b722a861905dfb62ce6b1eadbcc5867eb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674002
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/final.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674003
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/freeze-accepted-709.py.txt",
+      "bytes": 9262,
+      "sha256": "4c19971ceebd6bae1c12500092a3e5e581983ead17473c313ab67eac7780c5e7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674004
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/git-metadata-commands.json.txt",
+      "bytes": 110522,
+      "sha256": "6474b7989fed8c31f5346afcc3f8df883991905a25adc304a552f73cc91910a1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674005
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/incoming-paths.txt",
+      "bytes": 2704,
+      "sha256": "52bc5d177b811978f190450a1be39284a35803374c9b6d39220a2589fcaa1dd0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674006
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/manifest.json.txt",
+      "bytes": 81592,
+      "sha256": "3059703b5d038dd2efeaa9004f840c30b7e77b80f0d57fedfbadd344f2df14e3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674007
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/mirror-accepted-709.py.txt",
+      "bytes": 2014,
+      "sha256": "42f8feed076163708f294e7ce2bee830eae4a2854901bbc2e82b5d146abe4f72",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674008
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/review-request.json.txt",
+      "bytes": 3301,
+      "sha256": "887ab62fe57b7c9324338cd3e486b2e5c5da44057cfa79635e7bd70fbcc6b952",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674009
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/root-diff.txt",
+      "bytes": 25657,
+      "sha256": "58f4b5bbb489520f7e9464a5d6be0b8d24ac0cd8cfc3a4c532510ebee64586e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674010
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/round2-prompt-changed-inputs.diff.txt",
+      "bytes": 927,
+      "sha256": "7260843f2465e7e8fd18f461b3da834c94f11e918bbd6cc491112f2c8919de9b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674011
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/round2-prompt.md",
+      "bytes": 7601,
+      "sha256": "ec22fb8e1a056077864d78874211d65a7826b8033718ad797cdd5783cdd46f35",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674012
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/run-scoped-tools.py.txt",
+      "bytes": 11925,
+      "sha256": "4b8b32c12d7c74c8a7c487fc0e9e308850a4e178a13d07a5a491c63a5de9ba3e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674013
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-manifest.json.txt",
+      "bytes": 19372,
+      "sha256": "002767256119ce8e817f5acfb7e88a14f054971e07e14f93cac8540caea3a222",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674014
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/002fbf9fb5612b7a959e2661e605e2b248b0fdb732751bedba072db1034845ba.blob.txt",
+      "bytes": 1445,
+      "sha256": "002fbf9fb5612b7a959e2661e605e2b248b0fdb732751bedba072db1034845ba",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674016
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/02214a08eb7f345be0f3c441b18416ff5f25ece259fd7f07e88ab960f1945a6a.blob.txt",
+      "bytes": 7706,
+      "sha256": "02214a08eb7f345be0f3c441b18416ff5f25ece259fd7f07e88ab960f1945a6a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674017
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/09bba06be8c6b9a36440d58905ccb3c77471b8fab569c3189ebd715cd24d35ff.blob.txt",
+      "bytes": 12930,
+      "sha256": "09bba06be8c6b9a36440d58905ccb3c77471b8fab569c3189ebd715cd24d35ff",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674018
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/13c3546e93f98f0a3359575d3fd9e2952512d7dfdc712c9cea1e7dc7770bf459.blob.txt",
+      "bytes": 3321,
+      "sha256": "13c3546e93f98f0a3359575d3fd9e2952512d7dfdc712c9cea1e7dc7770bf459",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674019
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/1537a680254bfb4a7f392ba999d23742191ff9a9b56960fec45bcea94a15eca6.blob.txt",
+      "bytes": 3720,
+      "sha256": "1537a680254bfb4a7f392ba999d23742191ff9a9b56960fec45bcea94a15eca6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674020
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/15ad013955b233a336e5f5dac1e808555d8050a5e9b12ec8e70fe76dca083916.blob.txt",
+      "bytes": 2955,
+      "sha256": "15ad013955b233a336e5f5dac1e808555d8050a5e9b12ec8e70fe76dca083916",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674021
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/21325fd869bbe3dcf29612de2193fab944655c5d6acee75acb9836318c15b093.blob.txt",
+      "bytes": 175,
+      "sha256": "21325fd869bbe3dcf29612de2193fab944655c5d6acee75acb9836318c15b093",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674022
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/29ef9ca62c4d1bd37fd32ab75337d590d55bb37c59f22df00dd7c8835bd13e4c.blob.txt",
+      "bytes": 1357,
+      "sha256": "29ef9ca62c4d1bd37fd32ab75337d590d55bb37c59f22df00dd7c8835bd13e4c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674023
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/30a72ed4241874877eba3e1a96133ef2c8a80fc4d41fc019a52600ead09b4b96.blob.txt",
+      "bytes": 14139,
+      "sha256": "30a72ed4241874877eba3e1a96133ef2c8a80fc4d41fc019a52600ead09b4b96",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674024
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/363b565206e1051b53817a0e89100eef68bc7432149b9f5a2b25b0e94639f0d4.blob.txt",
+      "bytes": 2603,
+      "sha256": "363b565206e1051b53817a0e89100eef68bc7432149b9f5a2b25b0e94639f0d4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674025
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/3bb7007d7477b68ecc194ce2af82901a69b4b42b1adbfbd6d3f699c36f3a952a.blob.txt",
+      "bytes": 2379,
+      "sha256": "3bb7007d7477b68ecc194ce2af82901a69b4b42b1adbfbd6d3f699c36f3a952a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674026
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/3fb30cc349b3a05657a439b57dd80db8849084b41266295f174488b21cbd5394.blob.txt",
+      "bytes": 15647,
+      "sha256": "3fb30cc349b3a05657a439b57dd80db8849084b41266295f174488b21cbd5394",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674027
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/43a811852b9cc5d1d8dca2cd17aeb8266316a0ca96563e1e4c0fec9c12b658aa.blob.txt",
+      "bytes": 4608,
+      "sha256": "43a811852b9cc5d1d8dca2cd17aeb8266316a0ca96563e1e4c0fec9c12b658aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674028
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/450f8699bc33af6f944371283140a74a0b68288081dfa5713287dcbd6e9fea82.blob.txt",
+      "bytes": 7961,
+      "sha256": "450f8699bc33af6f944371283140a74a0b68288081dfa5713287dcbd6e9fea82",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674029
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/50e16046d76fe1ba6f27813d04bd648119c1c76f1b8efd2d854c7a350b00a11e.blob.txt",
+      "bytes": 16260,
+      "sha256": "50e16046d76fe1ba6f27813d04bd648119c1c76f1b8efd2d854c7a350b00a11e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674030
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/5ecb81104e4fa21d3d8f43252dc95e06b44fa41777f86331e37351d4550549cf.blob.txt",
+      "bytes": 2854,
+      "sha256": "5ecb81104e4fa21d3d8f43252dc95e06b44fa41777f86331e37351d4550549cf",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674031
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/5f0d8941227d1e5b13b585bc2caf93f1be8f6f6dbabfc58acd612d8e94aa763d.blob.txt",
+      "bytes": 957,
+      "sha256": "5f0d8941227d1e5b13b585bc2caf93f1be8f6f6dbabfc58acd612d8e94aa763d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674032
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757.blob.txt",
+      "bytes": 296,
+      "sha256": "600c60f2f230ba8dfa8aca4cc20e1a743ce8bfbc4974d341941ca2a71bfe7757",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674033
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/60aa7728cc7f708aee4bea75a7b100be6a213c98944f19bb86c559ef1a204479.blob.txt",
+      "bytes": 2756,
+      "sha256": "60aa7728cc7f708aee4bea75a7b100be6a213c98944f19bb86c559ef1a204479",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674034
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/61b378712f95d3d5c4aed8d0d754344fb8f58f6a8e0b6a6bae885e84874f43fa.blob.txt",
+      "bytes": 957,
+      "sha256": "61b378712f95d3d5c4aed8d0d754344fb8f58f6a8e0b6a6bae885e84874f43fa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674035
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/628c449eabd798f918eeb8a6ce47b72f64e148bf0ee335b8099d80975c0a4728.blob.txt",
+      "bytes": 406500,
+      "sha256": "628c449eabd798f918eeb8a6ce47b72f64e148bf0ee335b8099d80975c0a4728",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674036
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/6d8c7e25e66367cd5cef3bd0a9be4c9b971244e47af8447ead02935dc961933e.blob.txt",
+      "bytes": 11855,
+      "sha256": "6d8c7e25e66367cd5cef3bd0a9be4c9b971244e47af8447ead02935dc961933e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674037
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/6f5054a289e06c2e7d0c969a4ee5085ae0ec673855f287a4990b8b71d9ba839f.blob.txt",
+      "bytes": 2489,
+      "sha256": "6f5054a289e06c2e7d0c969a4ee5085ae0ec673855f287a4990b8b71d9ba839f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674038
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92.blob.txt",
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674039
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/71f6ee0122e98634696d51dd8aed9a11535fb0e19d5ab2cea74deb270d196cbe.blob.txt",
+      "bytes": 3037,
+      "sha256": "71f6ee0122e98634696d51dd8aed9a11535fb0e19d5ab2cea74deb270d196cbe",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674040
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/7b55e59e96b4ac689c390ac18f5acb88da335b93c9171e0c99e4516ce2282127.blob.txt",
+      "bytes": 1504,
+      "sha256": "7b55e59e96b4ac689c390ac18f5acb88da335b93c9171e0c99e4516ce2282127",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674041
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45.blob.txt",
+      "bytes": 2067,
+      "sha256": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674042
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/7fe24b582307cbb65f57ba2c4d0a3b493c522b8642924df2b23f727a6271ed6b.blob.txt",
+      "bytes": 25405,
+      "sha256": "7fe24b582307cbb65f57ba2c4d0a3b493c522b8642924df2b23f727a6271ed6b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674043
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195.blob.txt",
+      "bytes": 1220,
+      "sha256": "8e760d2b312aff02257a87d1284e540b9dd9c5f0e8783f6b1dcaa8914e282195",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674044
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/a335780736f5ea403744f58357ea8fe653ccdb9570213503fd8de3a65ea38193.blob.txt",
+      "bytes": 14545,
+      "sha256": "a335780736f5ea403744f58357ea8fe653ccdb9570213503fd8de3a65ea38193",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674045
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/a43bc43c360d11f95b3f7db80bdb667a89ed1170a92823d0253182021e3369b4.blob.txt",
+      "bytes": 3453,
+      "sha256": "a43bc43c360d11f95b3f7db80bdb667a89ed1170a92823d0253182021e3369b4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674046
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/a4ff3ed9fa51d41cb81e07f6cbf17ecc5ac90b003366d0f9f2b492348daa7760.blob.txt",
+      "bytes": 3134,
+      "sha256": "a4ff3ed9fa51d41cb81e07f6cbf17ecc5ac90b003366d0f9f2b492348daa7760",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674047
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/a63f4fe2c6cb42a7dd40d944d23d3584b6e70f1e134a660ee59e7e87446df4cb.blob.txt",
+      "bytes": 12852,
+      "sha256": "a63f4fe2c6cb42a7dd40d944d23d3584b6e70f1e134a660ee59e7e87446df4cb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674048
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/acd75c9bda9bce4e76eff9474f75b97072706e44e6a6f904494d9bfd0e5f44a5.blob.txt",
+      "bytes": 2545,
+      "sha256": "acd75c9bda9bce4e76eff9474f75b97072706e44e6a6f904494d9bfd0e5f44a5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674049
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/af0da679ed4eb4026b770cf40bb481a9230cc2c2193934e2ff6acec215b4bb32.blob.txt",
+      "bytes": 4415,
+      "sha256": "af0da679ed4eb4026b770cf40bb481a9230cc2c2193934e2ff6acec215b4bb32",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674050
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/b68d2fcb461b9b80d8e39bf0203b7cc7567bd018881509ab88be832f31e81219.blob.txt",
+      "bytes": 120061,
+      "sha256": "b68d2fcb461b9b80d8e39bf0203b7cc7567bd018881509ab88be832f31e81219",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674051
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/b707e280991c10b08a877abc240574b8f9b6d2af740ea23f7b562627d1606000.blob.txt",
+      "bytes": 1673,
+      "sha256": "b707e280991c10b08a877abc240574b8f9b6d2af740ea23f7b562627d1606000",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674052
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/baf80467f2604115e9ffe80b6dd2d3ac6ef270fb0ca1c4c11493fa64325df42d.blob.txt",
+      "bytes": 10851,
+      "sha256": "baf80467f2604115e9ffe80b6dd2d3ac6ef270fb0ca1c4c11493fa64325df42d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674053
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/bf13b5a3b8d6d122b7bb8990fe75a1f88a646e4e06af6e473a4a3bb40f7d5903.blob.txt",
+      "bytes": 122178,
+      "sha256": "bf13b5a3b8d6d122b7bb8990fe75a1f88a646e4e06af6e473a4a3bb40f7d5903",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674054
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/c157365828f51b5543f85c641a6e8c705cac60fa719acd333759fc7ff9581f05.blob.txt",
+      "bytes": 8689,
+      "sha256": "c157365828f51b5543f85c641a6e8c705cac60fa719acd333759fc7ff9581f05",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674055
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/c82c8295a2307d4f90eafcecf918bd3ed8e2cd426c8103bbb6460ceffd18e846.blob.txt",
+      "bytes": 16832,
+      "sha256": "c82c8295a2307d4f90eafcecf918bd3ed8e2cd426c8103bbb6460ceffd18e846",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674056
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/c8b57787a2817fa40d16753304de318b3993ace09b968e11d99cf791514b265a.blob.txt",
+      "bytes": 8499,
+      "sha256": "c8b57787a2817fa40d16753304de318b3993ace09b968e11d99cf791514b265a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674057
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/cae2b12e4d86b9066299fb78de5d6cd687126c68eced09db01335a9a0597bd09.blob.txt",
+      "bytes": 8280,
+      "sha256": "cae2b12e4d86b9066299fb78de5d6cd687126c68eced09db01335a9a0597bd09",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674058
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/cb381722f6ca63b2b2b1c931c05f26c12d298b96e780172b6595b695acf4524b.blob.txt",
+      "bytes": 101278,
+      "sha256": "cb381722f6ca63b2b2b1c931c05f26c12d298b96e780172b6595b695acf4524b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674059
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/d72af5545b5e9a0bf90eeb0359ae01ff994a634bb00a5b77c75aac0b12bb0063.blob.txt",
+      "bytes": 390039,
+      "sha256": "d72af5545b5e9a0bf90eeb0359ae01ff994a634bb00a5b77c75aac0b12bb0063",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674060
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/d8f1e6214b140bfb65fdab430d58fa969099936c541bf959a5c253c962999741.blob.txt",
+      "bytes": 2251,
+      "sha256": "d8f1e6214b140bfb65fdab430d58fa969099936c541bf959a5c253c962999741",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674061
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/dd67996a12cfa398539b8e8e7d253be070ef28f7a079d13da9ed2c05e4762bc7.blob.txt",
+      "bytes": 9204,
+      "sha256": "dd67996a12cfa398539b8e8e7d253be070ef28f7a079d13da9ed2c05e4762bc7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674062
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/e379c2dc002df35f192071abe7fff4767344c50f838514dba9169eee0ed8d5aa.blob.txt",
+      "bytes": 3019,
+      "sha256": "e379c2dc002df35f192071abe7fff4767344c50f838514dba9169eee0ed8d5aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674063
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/e51d24637aaa03ac468d87b1686ff80ed8b15859ee59bbcd87da6cca93b8351b.blob.txt",
+      "bytes": 17304,
+      "sha256": "e51d24637aaa03ac468d87b1686ff80ed8b15859ee59bbcd87da6cca93b8351b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674064
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f.blob.txt",
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674065
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/eb67ff4f8218fc1486cd7b2639ec13fd100535d717d0dfbf01ddad14bc93f1c9.blob.txt",
+      "bytes": 8619,
+      "sha256": "eb67ff4f8218fc1486cd7b2639ec13fd100535d717d0dfbf01ddad14bc93f1c9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674066
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/f425ab09bb574e5223ec1095180d42b57980cfe4a18619d188989b42fdf52ce3.blob.txt",
+      "bytes": 2360,
+      "sha256": "f425ab09bb574e5223ec1095180d42b57980cfe4a18619d188989b42fdf52ce3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674067
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/f4348a5febff8c90eda99ac1c0d1acc4bad1911ece2465cd3abed216087625b0.blob.txt",
+      "bytes": 12216,
+      "sha256": "f4348a5febff8c90eda99ac1c0d1acc4bad1911ece2465cd3abed216087625b0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674068
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/f7333669577d7f04c5e933c64bf0f059e0f8be50c88432115cc91df532e79117.blob.txt",
+      "bytes": 1658,
+      "sha256": "f7333669577d7f04c5e933c64bf0f059e0f8be50c88432115cc91df532e79117",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674069
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/fdf56d16cd7535f0a70b7ca80dcb4b9a8dfe36c2be072535a2fab7cca044cd8c.blob.txt",
+      "bytes": 12625,
+      "sha256": "fdf56d16cd7535f0a70b7ca80dcb4b9a8dfe36c2be072535a2fab7cca044cd8c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674070
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-objects/fe8b7c2408c6b8ee222ee0fadc123c75f19e438815638b58ea913232029771ff.blob.txt",
+      "bytes": 18862,
+      "sha256": "fe8b7c2408c6b8ee222ee0fadc123c75f19e438815638b58ea913232029771ff",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674071
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/source-profile-inputs.json.txt",
+      "bytes": 38456,
+      "sha256": "c29af0f8a288398b96acecd2294850666fe69f6601ecaadcb59d986198d7040b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674072
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/supervisor-changed-inputs.diff.txt",
+      "bytes": 1242,
+      "sha256": "a776975dadfe32c054d668dd27179eb8c9c1d0c8448ab768390a0e3858960985",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674073
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/accepted-composition-709/tools-diff.txt",
+      "bytes": 133792,
+      "sha256": "f0bec8bc591ea5dc510c5788509b099840c8feb7ebd0f867b3d8ef79fdbd75bd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674074
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/README.md",
+      "bytes": 3776,
+      "sha256": "a91a1434588ac0f0c9408068f1bf2ce2519c4b278c830d37fc66bb5a70f4da9a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674076
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/accidental-missing-owner.json.txt",
+      "bytes": 365,
+      "sha256": "2bde1d0181ff59c46c89d408c5f61005a1aaa44c019bb7951f63a479c2e91638",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674077
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/deadline-and-port.json.txt",
+      "bytes": 2395,
+      "sha256": "2ce7d8cf8b45b1586657fa6d6daab65155cd4111fe98ff8efbbe9912fb3068bc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674078
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/freeze-final-gate-inputs.py.txt",
+      "bytes": 6133,
+      "sha256": "b764b7674114c180e148fde83b9afe65300f34589717f0007d13309ed9b1fca4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674079
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/manifest.json.txt",
+      "bytes": 14838,
+      "sha256": "5ac9f5b1c355a9a2e4a7dff8f52a79107f8c7c23829a420186b0ec969126492a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674080
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/mirror-final-gate-preparation.py.txt",
+      "bytes": 1983,
+      "sha256": "4e0156f681f694d0b5274fe1a26b3b65532b80ddbe6af159f2e61d454ba2e453",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674081
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/preparation-inputs.json.txt",
+      "bytes": 1006,
+      "sha256": "a72936dfe23200886eb31063c874c0668249f0fd15b356a13f16316dcc83bab0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674082
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/prepare-final-gate-runner.py.txt",
+      "bytes": 9515,
+      "sha256": "84007eecf643acf9feab58ac5cd1c2f7b3707ab70f39a3adede483c9fb0a0ed8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674083
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/profile-reuse.json.txt",
+      "bytes": 1199,
+      "sha256": "61207911d2cab29d6603fcc1fcbb58bf9c23fbd86462201e14977b46f746f798",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674084
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/root-diff.txt",
+      "bytes": 28189,
+      "sha256": "ee293cec2143bb1cfe930249c438fe5a57bb7da7af55ff9e884e8afe38d3c67e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674085
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/round2-prompt.md",
+      "bytes": 8636,
+      "sha256": "516ae83f1d49a808b5590f1e13360beee3a6eab8da3634e1b7234d55eed469af",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674086
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/run-final-source-gates.py.txt",
+      "bytes": 17003,
+      "sha256": "130d72c89e1fdba03f72ff2b2603a63198efa6b745ffd11a423584542491244d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674087
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/scoped-receipt-reuse.json.txt",
+      "bytes": 813,
+      "sha256": "b6ddadb9482a1d2b72ce058a4c8a5db4238445fe497f000844a51eb6769eea6e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674088
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/smoke-port.before.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674089
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/smoke-port.before.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674090
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/source-manifest.json.txt",
+      "bytes": 140884,
+      "sha256": "1e547f764b4cae761ddcfa3874cba51284d8a670fba88dca7f4ad44810548e2a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674091
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/supervisor-relative-followup.diff.txt",
+      "bytes": 15992,
+      "sha256": "8f8b7ea0431be572c723dcaf3eb66a53b4ee5cefe4a11766414c2d86a979c3df",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674092
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/tools-diff.txt",
+      "bytes": 136984,
+      "sha256": "3f36a5fc5173f3fe77b4909ddc36bcd3385e93c29998bafde5af05b312c9535f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674093
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/final-gates-preparation/unit-readme.txt",
+      "bytes": 2614,
+      "sha256": "cfd3402bfa64c72d861273120c63e94d0de0476f3cdc398a05b76e681a009ecb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674094
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/README.md",
+      "bytes": 2361,
+      "sha256": "d1ba166362c74726c95120b63813389ed166770ce7a4497c0ebd774e2447c534",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674096
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/accidental-sandbox-release-probe.json.txt",
+      "bytes": 430,
+      "sha256": "dd1726338f477958fb887a655f2fe836ad864b6110148e2608ff801054cadb7b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674097
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.json.txt",
+      "bytes": 229120,
+      "sha256": "7578a42c857240f6bfe49153c6b51680db500561fdb645a0c64fed94a0989775",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674098
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.owned-source.diff.txt",
+      "bytes": 168078,
+      "sha256": "5cebefb1c993f1e28a72e81dce6d69c652222e69570489315f119fa0e1d10d48",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674099
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.stage.bin.txt",
+      "bytes": 1023840,
+      "sha256": "aa012d4f0dddba7da5146ee3668ce61516c813fd5fe73d937d7c3aa21a85349a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674100
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.staged-numstat.txt",
+      "bytes": 41675,
+      "sha256": "f0dc5f5b83f9b8ecb2e03873fb6507490fb94a9645ab453cd5ca3ff1485d58fe",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674101
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.status.bin.txt",
+      "bytes": 40761,
+      "sha256": "c08b4bff85e910cb6b8ab899d25edf98ce364a7e8fd139335fe61982775d64e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674102
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674103
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/after.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674104
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.json.txt",
+      "bytes": 229120,
+      "sha256": "42bc77f4bdc2a292952fea16a68185444c40e0258e5b58473f569f08fe7c39ca",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674105
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.owned-source.diff.txt",
+      "bytes": 168078,
+      "sha256": "5cebefb1c993f1e28a72e81dce6d69c652222e69570489315f119fa0e1d10d48",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674106
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.stage.bin.txt",
+      "bytes": 1023840,
+      "sha256": "aa012d4f0dddba7da5146ee3668ce61516c813fd5fe73d937d7c3aa21a85349a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674107
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.staged-numstat.txt",
+      "bytes": 41675,
+      "sha256": "f0dc5f5b83f9b8ecb2e03873fb6507490fb94a9645ab453cd5ca3ff1485d58fe",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674108
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.status.bin.txt",
+      "bytes": 40761,
+      "sha256": "c08b4bff85e910cb6b8ab899d25edf98ce364a7e8fd139335fe61982775d64e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674109
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674110
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/before.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674111
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/commands.json.txt",
+      "bytes": 6292,
+      "sha256": "180f1520d9127073c66fdacf874605fb2eed6a877223b14b5c0820b2d3936cca",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674112
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/install-reuse.after.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674113
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/install-reuse.before.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674114
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/lease.released.json.txt",
+      "bytes": 1514,
+      "sha256": "264748df9017cbaa4f34dc0d6a93ebcfca5a274069d512ea1899efec17d2da07",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674115
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/lease.started.json.txt",
+      "bytes": 2565,
+      "sha256": "954dd87bd15de6739c245c7138d0b2490f5d6c22c05388c75aa70627a4f3c6da",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674116
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/manifest.json.txt",
+      "bytes": 10371,
+      "sha256": "515792727a7053b5c8a12cd3d6c66931bd3152018da0c40bd74451c661eb8f2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674117
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/mirror-final-gates-failure.py.txt",
+      "bytes": 2115,
+      "sha256": "ccf4b2e2dedd883173e923bfbc967791e20320250be8d4f06cc2ceb4b9e8aafa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674118
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/mirror-manifest.json.txt",
+      "bytes": 31577,
+      "sha256": "938cac3c0cb81f1acdf798fac8a120a1cce879f35fe8654ec1884f3bcdff657d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674119
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/mirror-scope-amendment.json.txt",
+      "bytes": 924,
+      "sha256": "60946be0476465a84db878e61871411f86a8e653296eee88cec521f3a5319d47",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674120
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/producer-runtime.json.txt",
+      "bytes": 570,
+      "sha256": "3005f918db4f35886ecc2118844a8322dd11d4afc1caba7e4d99417301ffb398",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674121
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/quality.stderr.raw.txt",
+      "bytes": 2540,
+      "sha256": "4b13c65b2717749aa5510ba5a1e13d5c19a82d7b000f1129c87da439fae67503",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674122
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/quality.stdout.raw.txt",
+      "bytes": 61669,
+      "sha256": "32f99bc34146bc8d551e0222d94fea00af050bf42d2d3c98e7294434901fcf8f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674123
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/receipt.json.txt",
+      "bytes": 504245,
+      "sha256": "f69f8065e5bb22df9c3131f6cdbb8a82c8cf459f6499e8cdc93a8bebfa9f38fc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674124
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/release-final-source-lease.py.txt",
+      "bytes": 3148,
+      "sha256": "3b330e465fbf7a26b99a528fea8add4ac53d16049ab82b75c27ca55530dffd5f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674125
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/run-final-source-gates.py.txt",
+      "bytes": 17003,
+      "sha256": "130d72c89e1fdba03f72ff2b2603a63198efa6b745ffd11a423584542491244d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674126
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/run-scoped-tools-followup.py.txt",
+      "bytes": 14349,
+      "sha256": "d1e5d99c924a7c850b3953af8dd05d01656687cae570416a0e35881fef91b308",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674127
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port-after.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674128
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port-after.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674129
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port-before.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674130
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port-before.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674131
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port.after.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674132
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/smoke-port.before.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674133
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/supervisor.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674134
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-20261006204640/supervisor.stdout.raw.txt",
+      "bytes": 794,
+      "sha256": "c27da5b2667fb4fa8bf90ba5e76a34306d27a9449e7d7ff5d14a812f14b6e2ff",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674135
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/README.md",
+      "bytes": 2135,
+      "sha256": "0f21de0789636b6dc25ccdf8ec601a602945d1ab21ce776cf6481587da71daa2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674137
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.json.txt",
+      "bytes": 274222,
+      "sha256": "660a733b3efd3c16da85c0ad5ddbd36406fd8e8e0f11ad35f0501a5a150b716a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674138
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.owned-source.diff.txt",
+      "bytes": 170884,
+      "sha256": "28a60277da4f237d8fdcf139d9a4c241309bbef3f3fea3a08c0fc1130b0fa488",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674139
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.stage.bin.txt",
+      "bytes": 1034464,
+      "sha256": "84766fb35bf11a30065f3c17e1b925c86f5caf325224ef5693a5ef6a2460c7d6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674140
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.staged-numstat.txt",
+      "bytes": 48991,
+      "sha256": "53589247515d563a00bcfa7468b686a2a112ca74e4ed063c6b049c528f80a299",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674141
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.status.bin.txt",
+      "bytes": 47907,
+      "sha256": "83b7851913bd3bfc8cc528161cb8c1f814b776a03097c2b25e0d4ce864d73bb6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674142
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674143
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/after.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674144
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.json.txt",
+      "bytes": 274222,
+      "sha256": "8ded761614ecf0079bfbdd2009f1b4f1831304f37388e3c1ea951dbd98fbd606",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674145
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.owned-source.diff.txt",
+      "bytes": 170884,
+      "sha256": "28a60277da4f237d8fdcf139d9a4c241309bbef3f3fea3a08c0fc1130b0fa488",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674146
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.stage.bin.txt",
+      "bytes": 1034464,
+      "sha256": "84766fb35bf11a30065f3c17e1b925c86f5caf325224ef5693a5ef6a2460c7d6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674147
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.staged-numstat.txt",
+      "bytes": 48991,
+      "sha256": "53589247515d563a00bcfa7468b686a2a112ca74e4ed063c6b049c528f80a299",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674148
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.status.bin.txt",
+      "bytes": 47907,
+      "sha256": "83b7851913bd3bfc8cc528161cb8c1f814b776a03097c2b25e0d4ce864d73bb6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674149
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674150
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/before.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674151
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/browserless.stderr.raw.txt",
+      "bytes": 13102,
+      "sha256": "7bc8072bcbfdd86ccffc5a07a85c658a502a86a488c916910a54dfe79483b6f4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674152
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/browserless.stdout.raw.txt",
+      "bytes": 24940,
+      "sha256": "f8e70ed5fd685af692c2941d018d64b3615991ac9c1f3d18f75fa7d59e5a7036",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674153
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/commands.json.txt",
+      "bytes": 7791,
+      "sha256": "efaff49d14cad35f99c1dba750d995686837b12f0ba03b9e170e512508a47d9c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674154
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/exact-retry-producer.py.txt",
+      "bytes": 17836,
+      "sha256": "9ca3eaa26b8469aff4332f5ff317b16fa0ad556b86a3de8a493611ca6f89b6a1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674155
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/install-reuse.after.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674156
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/install-reuse.before.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674157
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/lease.released.json.txt",
+      "bytes": 1697,
+      "sha256": "ac47895d6f7d6cb492190044be9ebaf74ef71c9337e89ffb5e869445f988522b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674158
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/lease.started.json.txt",
+      "bytes": 2629,
+      "sha256": "0690a2a7f30f597e01175df21816f1eddfcf382da1b65e3e576aeebb70f7bd30",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674159
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/manifest.json.txt",
+      "bytes": 11323,
+      "sha256": "6cb2437bfd379aa9f99fb09d6d85acb7d537d935972233361cf6ac315aef7b65",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674160
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/mirror-final-gates-retry-failure.py.txt",
+      "bytes": 2203,
+      "sha256": "77b44d66d3b9ddcbcffcb02d6cc29291ea922af3c529aaf70d7c03cbc100ca04",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674161
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/mirror-manifest.json.txt",
+      "bytes": 32918,
+      "sha256": "806ae570e733e666f17d6b127314fbccc82eee67fbb84acbda51ec829dab21d3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674162
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/producer-runtime.json.txt",
+      "bytes": 570,
+      "sha256": "3005f918db4f35886ecc2118844a8322dd11d4afc1caba7e4d99417301ffb398",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674163
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/quality.stderr.raw.txt",
+      "bytes": 1786,
+      "sha256": "0c861c97d666de5fca9480bd5d186e544ac21a31f78b3370ac7294414fc41f1d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674164
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/quality.stdout.raw.txt",
+      "bytes": 58644,
+      "sha256": "51ee02ae9a84d01104b6ccfa0e9ba6386d4e8328dd0613f907fa9b57655b2401",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674165
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/receipt.json.txt",
+      "bytes": 599597,
+      "sha256": "f5f69179abec6746093a7636f6b62962a94fa910126f77b209814d8efbb64cd9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674166
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/release-final-source-lease.py.txt",
+      "bytes": 3203,
+      "sha256": "18a3c979c7cecf7208544eef38da0a72cb43845a670350c000d7457d2bc42ac7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674167
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/run-final-source-gates-retry.py.txt",
+      "bytes": 17836,
+      "sha256": "9ca3eaa26b8469aff4332f5ff317b16fa0ad556b86a3de8a493611ca6f89b6a1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674168
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port-after.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674169
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port-after.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674170
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port-before.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674171
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port-before.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674172
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port.after.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674173
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/smoke-port.before.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674174
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/supervisor.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674175
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-retry-20261006210624/supervisor.stdout.raw.txt",
+      "bytes": 915,
+      "sha256": "7174020fe4791328ab685f395e2bae7d54e36e6b48d5185085c7476590930fbc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674176
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/command.log.txt",
+      "bytes": 4101,
+      "sha256": "be1b3a042adf988720c1f710bbf341388db90d0f32049602083f1a7a8e859968",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674178
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/completed.json.txt",
+      "bytes": 4371,
+      "sha256": "42b1ef90f3e51ed1d25c5e8d2bd06ff932fbbe9db49c3686a6484c02ddebd48d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674179
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/controller.log.txt",
+      "bytes": 284,
+      "sha256": "b26a9e52e4adba475ba9bee1826207eb0afb4eb9d3bc86163b2ff26bfb145202",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674180
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/engine-selection.log.txt",
+      "bytes": 423,
+      "sha256": "9cae05c3a3c52398917c5bc3e8a7b8b758c78d44b56ec6827717024217d450a8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674181
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/heldprobe.mjs.txt",
+      "bytes": 2873,
+      "sha256": "d5c989337e9b4eb7f0de956f81879e997368c6767eaf05a5c0d576c91d3112e2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674182
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/identities-after.json.txt",
+      "bytes": 2158899,
+      "sha256": "eb8c6554a9d54bb3c8f58a839e1498f7d8182086c5cee96e430a5dea87deb311",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674183
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/identities-before.json.txt",
+      "bytes": 2158899,
+      "sha256": "eb8c6554a9d54bb3c8f58a839e1498f7d8182086c5cee96e430a5dea87deb311",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674184
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/lease.json.txt",
+      "bytes": 898,
+      "sha256": "0eed03c22537af1633f4db4d8d78cb55f09f93d656a6c73e8037a1878c8d47c1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674185
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/manifest.json.txt",
+      "bytes": 2911,
+      "sha256": "3c4b48c92d57232bb95f041d5ad5145ed34fd80ec96a5e3f668371666a2b2c45",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674186
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/outcomes.json.txt",
+      "bytes": 1864,
+      "sha256": "2ca006a9393ec4c85678cb09c6a9cc1a84d5daa857bae7d0fa57fe0cf0cfe61d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674187
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/read-held.js.txt",
+      "bytes": 1294,
+      "sha256": "b44bec6c19f98929249cc510374e5030d9c3904c28610744c52769792c65b980",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674188
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/run-held-mechanism.py.txt",
+      "bytes": 7317,
+      "sha256": "e4146bc804c639c11e77c2d9b09a84c3e525328199ac79e496ab2c38e2f80fc1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674189
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/helper-mechanism/started.json.txt",
+      "bytes": 3118,
+      "sha256": "3c480a7cf453549f2646ce0f3559a73cac1abec98380f06882b3360f9dd5e9b4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674190
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/PLAN.md",
+      "bytes": 18548,
+      "sha256": "521d2aaa408f6a1f23bb70099f7a7c3ae541fb3852ab8b99080c189aba465897",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674192
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/SDK-owner-boundaries.json.txt",
+      "bytes": 132466,
+      "sha256": "91d115ef4199c7a13ff47f29b61c2cc82b3f471d196037f21691a99e1d6327ec",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674193
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/SDK-route-report.md",
+      "bytes": 3226,
+      "sha256": "4573b1ca74e2bfb59ab8a6347bf551ec68b89cb3d20210521304009d09191992",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674194
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/SDK-source-manifest.json.txt",
+      "bytes": 147024,
+      "sha256": "644de6a137462f6966ea73af6ea55000f1a9f57dc13166c85e89ff632b1409cb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674195
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/finding-dispositions.md",
+      "bytes": 10842,
+      "sha256": "ea13006f8c641216f9f25b08b51ca190a9a821711a18a2cc2695a7066dac952b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674196
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/inspect-capacitor-route.log.txt",
+      "bytes": 1296,
+      "sha256": "4572469a3d2a711f7eb65f1ba4b7941c788b8f6ad8d9b22523ec96911af40955",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674197
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/inspect-capacitor-route.py.txt",
+      "bytes": 4160,
+      "sha256": "b01803535028d21d7592518c93568ebf655545a04865d53e69a39e3eb66ab0be",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674198
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/manifest.json.txt",
+      "bytes": 4765,
+      "sha256": "13c0dd8983c2325b2c3c4dd870133b162bcc3e4e62dd42ab2956695926a46ecc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674199
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/qualify-capacitor-route.log.txt",
+      "bytes": 568,
+      "sha256": "7a724f2d70ee0148b6ba8d029660c3243a9af23b33c381214d79001cfa2cdb5a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674200
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/qualify-capacitor-route.py.txt",
+      "bytes": 4451,
+      "sha256": "fb7081ec6d4ddeaa1d69107649092c40a425b05fae383814ea98283201feed3c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674201
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/reader-contrast.json.txt",
+      "bytes": 2760,
+      "sha256": "d9cc7e2101626923c9916c94e83ac77838754b9e16bb262cce7048335f98d741",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674202
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/sandbox-dns-failure.log.txt",
+      "bytes": 4609,
+      "sha256": "c556d99e7230c73f4f2febd167f4103bc639a41c562ad1526572530524c1b1e9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674203
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-repairs/theme-positive-check.json.txt",
+      "bytes": 2723,
+      "sha256": "eace15a79e11bab901486063f24416d37816a0f824240ff3cf61b55980c7e6a6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674204
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/additional-owner-inputs.json.txt",
+      "bytes": 2759,
+      "sha256": "1e132bf06a07c1c7eaf97685ee00ca4139261769c42e17370dc47bd65fc292bc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674206
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/claude-health.log.txt",
+      "bytes": 114,
+      "sha256": "57ec6fb2e9b824a64b1b769f6b81321f9ef45bddff232851ef0c83cc159d7a71",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674207
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/done.json.txt",
+      "bytes": 1684,
+      "sha256": "d9381e6c00f26d9bd2d0533ceb2d87710c149418811827c42c0a4e239a63a9b3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674208
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/findings.json.txt",
+      "bytes": 25715,
+      "sha256": "916689df95637f409824cbe9e6e577f753403a4758827cbef472c847d5c5028e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674209
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/manifest.json.txt",
+      "bytes": 5180,
+      "sha256": "f39605d6e3c3c09889d58b10c4fc2a86155afd60df077498fbd14311d9165cbd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674210
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/original-plan.md.txt",
+      "bytes": 22028,
+      "sha256": "c9a422bb9458148947a7b80aebc077dbb0259449175a8cf851fa1460b16b36bb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674211
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/original-source-manifest.json.txt",
+      "bytes": 37948,
+      "sha256": "1b53d68df1faab238137e4022e8067df2b785d8240d20a4cd060318a5a68da01",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674212
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/preparation.log.txt",
+      "bytes": 108,
+      "sha256": "9614a71445ab06a785c8eb9c0aa9fa1ce5593993fe2df4287352f9ce7da06185",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674213
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/prepare-review-inputs.py.txt",
+      "bytes": 3815,
+      "sha256": "dd25081e691b8c0148f84611c90960623c9bc6d3a7b8bbdd4d4c5ba6d16be00c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674214
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/question.md.txt",
+      "bytes": 10725,
+      "sha256": "80fc0bd115342f384ec24410f4f1e72c10990b1312b7983f25dd8e4770b2adf8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674215
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/review-inputs.json.txt",
+      "bytes": 58344,
+      "sha256": "dc222dc619159592a74fdf8c55cd55c2d7b3312e9e345feb7f14b291dace55b8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674216
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/reviewer-copy-verification.json.txt",
+      "bytes": 361,
+      "sha256": "8bab48217dd1e395ba66b2fc92fedb7b1d57b8d7d0b6bd7a69380a65b0b38df5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674217
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/session.json.txt",
+      "bytes": 878,
+      "sha256": "1bfc4ca1fc14d2cd2aa7129a83c69618b07f13f229661a489db6f2fe1ea0d379",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674218
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/plan-review/trusted-reviewer-producer-identities.json.txt",
+      "bytes": 1403,
+      "sha256": "00693352bcf634f57aef881f9daf4de3ffc8ca2f584b7df014c0df20ff9e765f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674219
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/README.md",
+      "bytes": 2870,
+      "sha256": "158c4395f42cacb820a0642d9fb620e3c711f9d7d5d6515725d9f4ad80daa17e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674221
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/applied-repair.json.txt",
+      "bytes": 2289,
+      "sha256": "5dba493bc440dc8dd7a3e62d5f8cf13814dbcb15d575230c0f8f877e40fd889f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674222
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/apply-quality-repair.py",
+      "bytes": 5139,
+      "sha256": "3c4012e9327766577bfdccf9f83e52fa0d05144d8fdc79eb740e083c4f0d418f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674223
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/callers-manifest.json.txt",
+      "bytes": 377245,
+      "sha256": "b14bdc4f9b4e78d4d0b8f7f8028fa1b9c023039adaa544413470694cfe924ee3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674224
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/callers.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674225
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/callers.stdout.raw.txt",
+      "bytes": 2498,
+      "sha256": "014f87d69cf6ddfd7a1c0a80b7ff35155cc6112b2d30e2bb512d0575c34cb191",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674226
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/canonical-manifests-unchanged.json.txt",
+      "bytes": 2318,
+      "sha256": "af5377fbc0266ffc902e7cc58c6c3a28e1399562999da0090b74f4006dadbb47",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674227
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/inventory-callers.py",
+      "bytes": 2437,
+      "sha256": "eb42c24038aa1b1ed1e969f3c45d4d7d766b0fb4867ff2b6367e425ef4ca7493",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674228
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/knip.json",
+      "bytes": 2511,
+      "sha256": "bc3c1f11b562411c63ea40f49d2c445329d18d849ce8ca5e82d9f762e02c0646",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674229
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/maintained-source.diff.txt",
+      "bytes": 1682,
+      "sha256": "e9f05927abbbfb6df4f69cafb778f4417f78ff8983bfdda866683090f7c7bdfd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674230
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/manifest.json.txt",
+      "bytes": 14632,
+      "sha256": "321de7121694e0558a0b04b09a480b431bb22b6afb8455070c065664681c713f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674231
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/mirror-quality-repair.py.txt",
+      "bytes": 2048,
+      "sha256": "5a868cbef6bfd34911b94712861d3d1ecaad1b2fa175bf6eeabd4713d52edd94",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674232
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/projection-proposal.json.txt",
+      "bytes": 4016,
+      "sha256": "f05aab5785578afa13cd20c25d35e7f10f95b692a5d8a17ca71d3b576c8017fe",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674233
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/retry-supervisor.diff.txt",
+      "bytes": 6748,
+      "sha256": "e40cad167c9508c155ce1934c04d096c7a1b73a027a2bf32cef184302ecb6424",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674234
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/round2-prompt.md",
+      "bytes": 9578,
+      "sha256": "fbff4c67c4d25387312d56fa5847d94c220ccc326f9ab709ff3186812c5e5d92",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674235
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/run-final-source-gates-retry.py.txt",
+      "bytes": 17836,
+      "sha256": "9ca3eaa26b8469aff4332f5ff317b16fa0ad556b86a3de8a493611ca6f89b6a1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674236
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/source-change-manifest.json.txt",
+      "bytes": 1732,
+      "sha256": "2cde0d3b97cff8905b21f321ad21294b70b808ac14a8786570549cf2cce906ab",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674237
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/tools/migration/legacy-continuity/contract.mjs",
+      "bytes": 3363,
+      "sha256": "16e1c219da10a3172285e61775ea7641dd0847f77513f50e00e8f91fd7e45fa9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674241
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair/tools/migration/legacy-continuity/source-inputs.mjs",
+      "bytes": 5176,
+      "sha256": "cda1ef8862b9db4bbe632db9423ae169a11813d934415d69fe43c6e4ee513b76",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674242
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/README.md",
+      "bytes": 3126,
+      "sha256": "832e0d5efed9e08787e094a8656e29fa3381e875bbee93c202105b015d11833e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674244
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/changed-existing-inputs.json.txt",
+      "bytes": 12915,
+      "sha256": "d433d64abc199bdf2f46d12b5cfccde5d018fae5f44a65ea9528262986a8e524",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674245
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/freeze-quality-repair-inputs.py.txt",
+      "bytes": 5893,
+      "sha256": "cd4d0479e2aab078f72b9d3034b12a3efec9861b5d403e40c5c7fc8dd94699aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674246
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/manifest.json.txt",
+      "bytes": 9902,
+      "sha256": "e6c24d281ee9e2d8947277224a7b5df9cf4914129089f76d7f6b436fa8b9a31f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674247
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/mirror-quality-repair-freeze.py.txt",
+      "bytes": 1976,
+      "sha256": "6d00fa1cd64e669e3dcb997d8f2d1d783e3d7d44e42e80ebe12f1c78aa001d51",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674248
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/preparation-inputs.json.txt",
+      "bytes": 1083,
+      "sha256": "cb64284ead01fec53372c0190e509e019b416f914fa9d410425c1271e5f0214f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674249
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/retry-supervisor.diff.txt",
+      "bytes": 6748,
+      "sha256": "e40cad167c9508c155ce1934c04d096c7a1b73a027a2bf32cef184302ecb6424",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674250
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/role-profile-inputs.json.txt",
+      "bytes": 1038,
+      "sha256": "bb34ab3e03f0dbccaafebcf93aeebc6281b108f36c235bdc7fce577d213680d8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674251
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/root-diff.txt",
+      "bytes": 30194,
+      "sha256": "ef3fc09d743346ae6a71449b47ad5313a958e242a4c227f941cc3e8ec6e1b7e2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674252
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/round2-prompt.md",
+      "bytes": 9578,
+      "sha256": "fbff4c67c4d25387312d56fa5847d94c220ccc326f9ab709ff3186812c5e5d92",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674253
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/run-final-source-gates-retry.py.txt",
+      "bytes": 17836,
+      "sha256": "9ca3eaa26b8469aff4332f5ff317b16fa0ad556b86a3de8a493611ca6f89b6a1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674254
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/source-manifest.json.txt",
+      "bytes": 168941,
+      "sha256": "04bae5557cce7e8d422e35c933af312510262506abe5667c37f708495c19d980",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674255
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/quality-repair-freeze/tools-diff.txt",
+      "bytes": 136942,
+      "sha256": "7262f1c166736ce56648eb4f2439d560f0ccb4d4cf27e326028ee4617f54c325",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674256
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/manifest.json.txt",
+      "bytes": 28663,
+      "sha256": "6f0096da72715106234ecd2e65780712652acd4f2079316ae6de795cfeb5f0b6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674258
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/mirror-sdk-owner-preparation.py.txt",
+      "bytes": 2559,
+      "sha256": "9c18b1f114b1f4f9c4e05bcd63e73257c2efbb174e8c0aaf49d9f7ff42501873",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674259
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/PLAN.md",
+      "bytes": 4694,
+      "sha256": "67133dd22473d1cba8277edd88f97ea8ffb3878ed7d1ec386b956f5b19d5e75f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674261
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/docs_migration_CAMPAIGN.md.owned-before.txt",
+      "bytes": 30131,
+      "sha256": "8bb517c09bfc3320cde00b1b4bf4feb29367d3b4352dbd97d112d25b170ddc54",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674262
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/knip.json.owned-before.txt",
+      "bytes": 2356,
+      "sha256": "e4050a05eef015dbf8c2848e3207f63930dab036c01e323473201f71924f5438",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674263
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/manifest.json.txt",
+      "bytes": 1437,
+      "sha256": "68f3e447f4a8d2cd8a6bf45af0d656f812da32dbb9420b2908dd27579804a09a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674264
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/package.json.owned-before.txt",
+      "bytes": 121579,
+      "sha256": "25c5563deff73881a70354c2374a32dae77d3c0f5c52970f8b3cb7f11d45d9aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674265
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/published-retained-paths.raw.txt",
+      "bytes": 2824,
+      "sha256": "243fdd7b95f9f489c9567804e3258ba16139528794b40375a8193cee42be772c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674266
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/published-retained-relevant.diff.txt",
+      "bytes": 8329,
+      "sha256": "0c67743c71751eb1f403717517ddf7102f2720bbacd802cf3d89159dd6893ba4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674267
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/rebase-preparation/published-source-contrast.json.txt",
+      "bytes": 12573,
+      "sha256": "28114f1ad1accf132faa680ff7597abe67ea946103039cd3a76f713bba8d95bc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674268
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/review-round2-preparation/adoption-template.json.txt",
+      "bytes": 258,
+      "sha256": "5afa070b3bba8651d0933af69ed0b010b4168a4eb32e5081dd9556c1eb976930",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674270
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/review-round2-preparation/prompt.md",
+      "bytes": 7410,
+      "sha256": "8384dcedd022887e34e9aaab6008449914ac893f9c5301c44aa9520934f4c11a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674271
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/sdk-binary-owner-amendment/REVIEW-STATE.json.txt",
+      "bytes": 1178,
+      "sha256": "927edfb1730dcb2918b42643ba41758cbb2684dcd238fa15117409b0118bc9c5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674273
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/sdk-binary-owner-amendment/SETUP-FAILURES.json.txt",
+      "bytes": 703,
+      "sha256": "36c95c63d144dd7a6d02ac19e05a903f438e53a822c0c482c22e06b68ab1984f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674274
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/sdk-binary-owner-amendment/TRUST-PLAN-AMENDMENT.md",
+      "bytes": 3582,
+      "sha256": "944d54c4ee55495e7b2d371c3126e51113671d770057a22cdb229869b3262b84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674275
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/sdk-binary-owner-amendment/round2-prompt-before.txt",
+      "bytes": 6975,
+      "sha256": "e62106ddd3f6ea644abd08bd3b5f577f0d4de08e6540f0ef748b08dbdad13d5d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674276
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/held.Package.resolved.json.txt",
+      "bytes": 957,
+      "sha256": "61b378712f95d3d5c4aed8d0d754344fb8f58f6a8e0b6a6bae885e84874f43fa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674278
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/held.Package.swift.txt",
+      "bytes": 2067,
+      "sha256": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674279
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/inputs.json.txt",
+      "bytes": 2694,
+      "sha256": "dae59066d76cca2b319199bbfb5ad256c7d3c1d3aa5088e2ca3e689cc17c3e4d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674280
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/0b6882e9a3288342aacf36348e5a94e4f1dd7b13.Package.swift.txt",
+      "bytes": 904,
+      "sha256": "d438f723a12d16a803aeb0b81d1160a04ead205f74614a2b97aa8965acf95a72",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674282
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/0b6882e9a3288342aacf36348e5a94e4f1dd7b13.commit.mcp.json.txt",
+      "bytes": 5019,
+      "sha256": "c48899bebbcc73f16caa9ec9df63c5c19ccc2a49462b0d6ad05cc93321d8b659",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674283
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/0b6882e9a3288342aacf36348e5a94e4f1dd7b13.package.mcp.json.txt",
+      "bytes": 1659,
+      "sha256": "820fb0c9042c7bfb673fb743a47f393a2ac434990be426a28bd6378d34ce92a8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674284
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/6afa7424fd2fcd8ca1e577478e8a00af284b7e82.Package.swift.txt",
+      "bytes": 904,
+      "sha256": "c8ea98ecd0ccbbb21403876c5104d0d21f31bd67f922545e8aecd757de4066b6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674285
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/6afa7424fd2fcd8ca1e577478e8a00af284b7e82.commit.mcp.json.txt",
+      "bytes": 5019,
+      "sha256": "fc2ccf6e6a55850c0032b5bcb4b0db97a83c8454e10a4cf6331a62d8a3391695",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674286
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/6afa7424fd2fcd8ca1e577478e8a00af284b7e82.package.mcp.json.txt",
+      "bytes": 1659,
+      "sha256": "188cac9a875eb69ebf6f0f126f5d3e378494acf20dbb4292c327da52d48c997b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674287
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary/initial-invalid-arguments.mcp.json.txt",
+      "bytes": 2907,
+      "sha256": "989eebfe41939b89654a1b1082e93e0c6f4633bb6bc6fb604d5bf9ae67fba363",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674288
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/primary-manifest-qualification.json.txt",
+      "bytes": 6910,
+      "sha256": "2ee1eb21570b8211be0ac651146d9b4e64b51407902904a97d136723fe94f6dd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674289
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/qualify-primary-manifests.py.txt",
+      "bytes": 4300,
+      "sha256": "880ea94e5a3571825b3fafdfe52206829d98a22bb6cf6320f21abf709aebb750",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674290
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/reader.Package.resolved.json.txt",
+      "bytes": 957,
+      "sha256": "61b378712f95d3d5c4aed8d0d754344fb8f58f6a8e0b6a6bae885e84874f43fa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674291
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/reader.Package.swift.txt",
+      "bytes": 2067,
+      "sha256": "7db8e8c39e38f9b0cc89d1a45c9236ebfc3292fe5f9a5e3fab9da0a2c91c6a45",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674292
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/released.Package.resolved.json.txt",
+      "bytes": 957,
+      "sha256": "5f0d8941227d1e5b13b585bc2caf93f1be8f6f6dbabfc58acd612d8e94aa763d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674293
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/sdk-binary-owner/spm-owner-inputs/released.Package.swift.txt",
+      "bytes": 2251,
+      "sha256": "d8f1e6214b140bfb65fdab430d58fa969099936c541bf959a5c253c962999741",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674294
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/README.md",
+      "bytes": 3260,
+      "sha256": "31fc8320332127675abc89f032893600aef6f910ecc671240477c787d8929212",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674296
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/copy-source.py.txt",
+      "bytes": 1743,
+      "sha256": "40d54de210a6c33758abade0762b589f4dbb1a1a70be8d471a7dcb98b3447b0f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674297
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/inspect-compose.py.txt",
+      "bytes": 3969,
+      "sha256": "73f1118e7af8a7b2e991a6303589d7107f121c06f2f22f01d0d3c530fbdd8eb3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674298
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/CAMPAIGN-L0-row-proposal.md.txt",
+      "bytes": 1055,
+      "sha256": "b0b4a276dcced8df463b5a812b445447b79d01e31ce6a848cfaaad17068df92f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674300
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/knip.json.diff.txt",
+      "bytes": 1569,
+      "sha256": "881b90b7fa792cd4abfa3f975172e347a4b5641a915846a0ffe573818a958bb5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674301
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/knip.json.proposed",
+      "bytes": 2432,
+      "sha256": "c861e0ec22d35ae2db20164134627ebfaf4129d807dcd72355d229ef49b406f6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674302
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/package.json.diff.txt",
+      "bytes": 135025,
+      "sha256": "98b5e7e55ef1e6d52e24824011e994160bfd0a8b73ba2d5b9151cebbdafbd60d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674303
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/package.json.proposed",
+      "bytes": 121942,
+      "sha256": "937f1f53ef943766bd12cdd1dc0786fd585ef0d05948118b9884a6d1e20fc46e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674304
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/receipt.json.txt",
+      "bytes": 1380,
+      "sha256": "399199e891f547482adc477d016b957e332ad34986889bdf75439e33390cc440",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674305
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/tools-diff-manifest.json.txt",
+      "bytes": 5954,
+      "sha256": "f6d4f4494b2a4d90e6b34f286dbcbe366b537f42141242043565f28563a922b7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674306
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/integration-proposal/tools-source.diff.txt",
+      "bytes": 119517,
+      "sha256": "a3f834434f11ebcc0ff8f9622f7a173b98295213385b26094afd2c9fb3c35cf3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674307
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/manifest.json.txt",
+      "bytes": 49669,
+      "sha256": "eb3665a025e928a9223fb0663ca8b34d72d31b9b2c3e03cb11d82327a4081cb1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674308
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/projected-members.json.txt",
+      "bytes": 60256,
+      "sha256": "55aaf95da48afe6d43686dd32169feb7fcc576257b72dbce6413f92bc92bfaca",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674309
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/commands.json.txt",
+      "bytes": 11727,
+      "sha256": "f318c2616bbf23f443c289b761dc67a0e2e57c7a195b8ddae44995839f4846ed",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674311
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/existing-root.started.json.txt",
+      "bytes": 391,
+      "sha256": "6a69d84d8692e562aad0e50e8d18190d04ce157b8948e0658339e2cbbcdc18d1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674312
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/existing-root.stderr.raw.txt",
+      "bytes": 924,
+      "sha256": "973a05a841d57490fae93c4cc1fe834e7a12b994f6ca82d273f206390e33ef7e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674313
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/existing-root.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674314
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-held.started.json.txt",
+      "bytes": 298,
+      "sha256": "3365b6e7b899f932d5df114f490d651f5634357b55408cd331656dcf41f73484",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674315
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-held.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674316
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-held.stdout.raw.txt",
+      "bytes": 24781,
+      "sha256": "55696527bc8a59a545bb6c3edfaaa46c9a0426593f0590a40647faaa5e0dfcb3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674317
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-reader.started.json.txt",
+      "bytes": 300,
+      "sha256": "d29b83d53afd76678ebb2d7f0c87d9b4e504d6a4f8120da23dc796b289afba21",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674318
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-reader.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674319
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-reader.stdout.raw.txt",
+      "bytes": 24785,
+      "sha256": "1f6b4488ef5fe1c2ff9f5ab2ddadbc4f6862bb685870e1fb25fde8cec078c69e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674320
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-released.started.json.txt",
+      "bytes": 302,
+      "sha256": "609514b6ca7517250ff2b53bb560402821ed8b58f0fda23dc4ac74cb07681446",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674321
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-released.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674322
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/inspect-released.stdout.raw.txt",
+      "bytes": 24200,
+      "sha256": "5d539936c48e2c34c0096f0d8b97b8c4bff4c54fe5ae1b2f1f9130a72f4d9efd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674323
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-held.started.json.txt",
+      "bytes": 387,
+      "sha256": "8abaa6f9dfe06b437a96c2cef8e2b6dbb1712e093cc8103b11842b425bda28fc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674324
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-held.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674325
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-held.stdout.raw.txt",
+      "bytes": 1571987,
+      "sha256": "186f955e4c9823544074dd06f3f81dba426a5298a91454f69cac373fb0c192cd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674326
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-reader.started.json.txt",
+      "bytes": 391,
+      "sha256": "a48dd2e69522501f2c390090ba07871dbcfb47fda1d5a88febdae7d2f67c5d3c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674327
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-reader.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674328
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-reader.stdout.raw.txt",
+      "bytes": 1680194,
+      "sha256": "7c4e9cdb53dd6b6ecaa1ccc987c8283cdf22b9b8b86880df15a20b98bd35c5e9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674329
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-released.started.json.txt",
+      "bytes": 395,
+      "sha256": "7f1b61c9ee59c54ce32685234fdbd458227446a1a42c9d5d92683007e9a74dff",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674330
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-released.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674331
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/materialize-released.stdout.raw.txt",
+      "bytes": 1222693,
+      "sha256": "2bce05042e44ac406ea5e749cb28173a4e8880b496abc5b2bcabe11389cd3382",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674332
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/receipt.json.txt",
+      "bytes": 17172,
+      "sha256": "5ed038f67fe54efb02f27a9d251d4b275de8888a1de5ffe145dd3ddb4e2d290b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674333
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/restored-reader.started.json.txt",
+      "bytes": 400,
+      "sha256": "ed1a06e99106c3a8361be819708a072b7a234acd2e32bca0778c560c6a6af8aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674334
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/restored-reader.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674335
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/restored-reader.stdout.raw.txt",
+      "bytes": 1680203,
+      "sha256": "0e5c28d9f74188220e0a153f7efee30279cb84a8702eb4d37425d643c2abc8d9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674336
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/wrong-role.started.json.txt",
+      "bytes": 341,
+      "sha256": "a228f50ab304ee133adc17016a891f17b3b8d8a66bd8f9cfd8165aa851881bd7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674337
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/wrong-role.stderr.raw.txt",
+      "bytes": 760,
+      "sha256": "078c812abce7a7a1f36275fbaba86d5620f202728e10a0d302b78968733b66cb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674338
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/qualified-source-controls/wrong-role.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674339
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/raw-markdown-projection.json.txt",
+      "bytes": 3689,
+      "sha256": "6953644d98fe88440ff136d8eb73cd30e61c5ca8ad3e3580d51db663ab76576d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674340
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/sandbox-setup-failure/SETUP-FAILURE.json.txt",
+      "bytes": 375,
+      "sha256": "2c5b9ab741e88851a424cb44d7fbae168d89b41d0fb73a1d74aaba7d67e9c85e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674342
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/sandbox-setup-failure/wrong-role.stderr.raw.txt",
+      "bytes": 760,
+      "sha256": "078c812abce7a7a1f36275fbaba86d5620f202728e10a0d302b78968733b66cb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674343
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/sandbox-setup-failure/wrong-role.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674344
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/source-copy-current.json.txt",
+      "bytes": 8387,
+      "sha256": "8094e3b857ceebcf95a5341d84f81fc4f2898a8390620cf963337fe72764e151",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674345
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/source-copy-first.json.txt",
+      "bytes": 8387,
+      "sha256": "383c497a8d9cdd2adb6928c228d6ef463c084ef7f41aaf499d2a86990b37736c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674346
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/commands.json.txt",
+      "bytes": 2473,
+      "sha256": "167be16f62cd8addbeb20e67037b14f912fff5a3e0cba505859d693b9488f011",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674348
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/inspect-released.started.json.txt",
+      "bytes": 302,
+      "sha256": "8dad3a6f870c19d64e36c7cafef6a00a952f0b87e1d932d549cfbef302cd0f6e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674349
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/inspect-released.stderr.raw.txt",
+      "bytes": 2621,
+      "sha256": "871e5e716d5cac928cf737d96b92266da6e946dd8785c7adda49dc2319e82771",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674350
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/inspect-released.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674351
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/source-inputs-failed-exact.mjs.txt",
+      "bytes": 4800,
+      "sha256": "2c4efed20f2f12e8e1acc98b690eb5bafacd514809fe7c687b5e0198baed9bed",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674352
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/wrong-role.started.json.txt",
+      "bytes": 341,
+      "sha256": "d2948e5bd518221df22ff725dd4e49155deb8e19630efdd13589e24e2a3c70c0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674353
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/wrong-role.stderr.raw.txt",
+      "bytes": 760,
+      "sha256": "078c812abce7a7a1f36275fbaba86d5620f202728e10a0d302b78968733b66cb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674354
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-composition/wrong-owner-setup-failure/wrong-role.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674355
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/README.md",
+      "bytes": 4102,
+      "sha256": "b663b4faad42d01073ef28f4175c065667dc32a2c35d00d1c79f0997d26120c6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674357
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/applied-repair.diff.txt",
+      "bytes": 5076,
+      "sha256": "8872eb474a2921e371d4a2b95d6a590944b4b15d27974925f8cd21526fee772b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674358
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/campaign-before.txt",
+      "bytes": 31268,
+      "sha256": "2f4ac22a5ca6bbd7cbe4595be115a11c81ca128cccead011a8f8644fa34dc285",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674359
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/campaign-owned-change.diff.txt",
+      "bytes": 9113,
+      "sha256": "201390f20b56c03124401ed6dad7f7734408cade8e52e5ff92d1035d7739054e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674360
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/final-source.diff.txt",
+      "bytes": 163678,
+      "sha256": "ad261cdf9405ec5ef36e98a06368922190d0399b16ec714720b43b5bdd370bdf",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674361
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/followup-supervisor.diff.txt",
+      "bytes": 10358,
+      "sha256": "53c8992ff037c81370d948a0b688211c594f03dde22eefba77bb321d6a30f1aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674362
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/manifest.json.txt",
+      "bytes": 12201,
+      "sha256": "0a3f3a8281188757a39c229440a599e6ab8510b9819afa03e6e1c7d503deb6fa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674363
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/mirror-followup-plan.py.txt",
+      "bytes": 1953,
+      "sha256": "88cdbe34649707523df034574401f21f08d216afba92b91d80343beff263d89c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674364
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/profile-reuse.json.txt",
+      "bytes": 927,
+      "sha256": "09b1dd1f1cadaab5b86af25d2648def5aa50acbd292b400032241fe2da2cf1ce",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674365
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/repair-proposal.json.txt",
+      "bytes": 1847,
+      "sha256": "d4303ba911884ea1411da4a1ca73033b9ce5cc42c13e26a84efbb6e80a4bb5c2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674366
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/review-request.json.txt",
+      "bytes": 2564,
+      "sha256": "f4a92c7cd33d62adb78c1cf7504cd8ab4c7f29eea9fd83939e3f3dc2f89e1f59",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674367
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/round2-prompt-before.txt",
+      "bytes": 7601,
+      "sha256": "ec22fb8e1a056077864d78874211d65a7826b8033718ad797cdd5783cdd46f35",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674368
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/round2-prompt.diff.txt",
+      "bytes": 1340,
+      "sha256": "45654bcfcef6f63a218f06d7be3f4f8c603babc3ce39c23ad780eaa90863d5b1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674369
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/round2-prompt.md",
+      "bytes": 8266,
+      "sha256": "649c4358afa4fa32b5a19857b14e8c75e07b1b8bcf963ebb43b4da605aabd1f2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674370
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/run-scoped-tools-followup.py.txt",
+      "bytes": 14349,
+      "sha256": "d1e5d99c924a7c850b3953af8dd05d01656687cae570416a0e35881fef91b308",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674371
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-followup-plan/source-manifest.json.txt",
+      "bytes": 39421,
+      "sha256": "4f521285e8c68e64a95afae032844b2e4d9c7a865a75703e51026bd74a8e61d4",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674372
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/README.md",
+      "bytes": 3191,
+      "sha256": "a6845dcc73d594add0e3ba38e6902eda2f976ea66a79ec7b081f08a53ae5c548",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674374
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/add-l0-process-controls.py.txt",
+      "bytes": 3292,
+      "sha256": "611434c66829b03927c4f1b25829ba44e71a6d4012eb0c49de0ae03eace50845",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674375
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/apply-root-integration.py.txt",
+      "bytes": 4862,
+      "sha256": "16f20b74c1b1004722910e430f89e0bfeea891e69f2a16ae187909a64d215c5f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674376
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/copy-source-v3.py.txt",
+      "bytes": 1746,
+      "sha256": "14f5661b364571b1f38f63df1bb5a8f8b2095855e6620f8dd597b1e7f67845f2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674377
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/manifest.json.txt",
+      "bytes": 11089,
+      "sha256": "63b32b834650c263a46d4567860de57a4d0ea0826e9956309051cb5289261c5f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674378
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/mirror-source-repairs.py.txt",
+      "bytes": 2252,
+      "sha256": "6d32597336c610242c76fb8880b098641023d0ee1b4fccb7659b19634f197dab",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674379
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/repair-l0-source.py.txt",
+      "bytes": 2113,
+      "sha256": "a49e36ab615d08bac330a3350dc1aa1e2053f1d61d91ba986f50d2ff78687e4d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674380
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/repair-l0-transport.py.txt",
+      "bytes": 6199,
+      "sha256": "125e51f765db46fd0a22e2db118d1e16b0ced0b8dec46cda77d3ef7e0519f7d1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674381
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/review-request.json.txt",
+      "bytes": 1956,
+      "sha256": "69827cf52ef819eadd8ed2844e52fdd39b450011411fdee13807d63b783a7ba8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674382
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/root-diff.txt",
+      "bytes": 24568,
+      "sha256": "d4035a7b7d733ad8e8f81709bac41f2639c326adf86a07e299c16c75f6a8e16a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674383
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/root-edit-receipt.json.txt",
+      "bytes": 1080,
+      "sha256": "361d0a9583d099307308c98eb9f951e8fffc3275757869e8f9732230e205ab9d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674384
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/run-scoped-tools.py.txt",
+      "bytes": 10258,
+      "sha256": "e78f19332997ae0066fe9c03316501f7a95088e57fc3ce4c9b7bff8653302b9e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674385
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/source-copy-v3.json.txt",
+      "bytes": 8388,
+      "sha256": "934033f255498cd1b8ee285f2b3eee4135bd6cb03c9fb0b8bf4e02ccc5340658",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674386
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/source-manifest.json.txt",
+      "bytes": 6920,
+      "sha256": "eb8d7127c5fefab6b36f16131c08bdb4d2c3828d8b0217a5269c390ae9892329",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674387
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/source-repairs/tools-diff.txt",
+      "bytes": 132972,
+      "sha256": "d40328cb3874aa923740bc8e8eaf2d402832e402d64700bbfc18be1b84f77f12",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674388
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/README.md",
+      "bytes": 2808,
+      "sha256": "6c074b0df7e2677f479652e66e205c06fe3b2aa14144af595ef5a87378d6654b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674390
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/after.diff.txt",
+      "bytes": 163678,
+      "sha256": "ad261cdf9405ec5ef36e98a06368922190d0399b16ec714720b43b5bdd370bdf",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674391
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/after.json.txt",
+      "bytes": 78462,
+      "sha256": "22a98f4c0c702e15ee6eecd946d65fbb1d29146c46e4199511061d6bbcb79ffb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674392
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/after.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674393
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/before.diff.txt",
+      "bytes": 163678,
+      "sha256": "ad261cdf9405ec5ef36e98a06368922190d0399b16ec714720b43b5bdd370bdf",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674394
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/before.json.txt",
+      "bytes": 78462,
+      "sha256": "22a98f4c0c702e15ee6eecd946d65fbb1d29146c46e4199511061d6bbcb79ffb",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674395
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/before.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674396
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/check.stderr.raw.txt",
+      "bytes": 1632,
+      "sha256": "f2ed55c018075e79919b5c6a272b18b6e9df1583cf2c5c95b98d241bca338be8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674397
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/check.stdout.raw.txt",
+      "bytes": 732,
+      "sha256": "11596f4044ef2491af38fd01ca45e93aff4a138d5e8cc110e30bcbfa9e45691b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674398
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/commands.json.txt",
+      "bytes": 12720,
+      "sha256": "1c1d68a289b0a41f01b3033f3b57e3b08e74fec1bbecd045c53ca335008eedf5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674399
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-held.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674400
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-held.stdout.raw.txt",
+      "bytes": 24781,
+      "sha256": "55696527bc8a59a545bb6c3edfaaa46c9a0426593f0590a40647faaa5e0dfcb3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674401
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-reader.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674402
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-reader.stdout.raw.txt",
+      "bytes": 25473,
+      "sha256": "bd09b426a8ac5d3a432ea2aeebc53db2c5226a281c5877905f847ff14fbe2bfd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674403
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-released.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674404
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/final-inspect-released.stdout.raw.txt",
+      "bytes": 24200,
+      "sha256": "5d539936c48e2c34c0096f0d8b97b8c4bff4c54fe5ae1b2f1f9130a72f4d9efd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674405
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/install-reuse.after.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674406
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/install-reuse.before.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674407
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/lease.released.json.txt",
+      "bytes": 1658,
+      "sha256": "eb1fb079b937b2f14124e415590e1fedf7348e9cb82f569cd9b87cde5977821a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674408
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/lease.started.json.txt",
+      "bytes": 1966,
+      "sha256": "0ff9263373a5afb4251e5f2e2bf82d5ded27c0b42e2d436a8532a83a82c620d6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674409
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/lint.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674410
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/lint.stdout.raw.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674411
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/manifest.json.txt",
+      "bytes": 10360,
+      "sha256": "580609da3090db0a8c7b3bf5ec8140d42afa1d729a16e0d0ba67f7ff573df780",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674412
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/mirror-manifest.json.txt",
+      "bytes": 27300,
+      "sha256": "74884a1df476ac1e1768f4323d627de91bc1fae0881e155b7c1edc9a042b4cc6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674413
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/mirror-tools-followup.py.txt",
+      "bytes": 2104,
+      "sha256": "a0f97c19a38b19c954ce8ad05f827921f87375dda4f39de458066305daa592c7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674414
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/receipt.json.txt",
+      "bytes": 197362,
+      "sha256": "9ebf199a7dc2bbe04adf54c8d47c5d0734a9d2a8549b385a107b646e3810d137",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674415
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/restored-flags.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674416
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/restored-flags.stdout.raw.txt",
+      "bytes": 25473,
+      "sha256": "bd09b426a8ac5d3a432ea2aeebc53db2c5226a281c5877905f847ff14fbe2bfd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674417
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/run-scoped-tools-followup.py.txt",
+      "bytes": 14349,
+      "sha256": "d1e5d99c924a7c850b3953af8dd05d01656687cae570416a0e35881fef91b308",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674418
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/scoped-guards.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674419
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/scoped-guards.stdout.raw.txt",
+      "bytes": 337,
+      "sha256": "a30fba5b0379a1e32a4f1defd6552dcfdf9a31722008375e6202ec57794f3c06",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674420
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/supervisor-absence.json.txt",
+      "bytes": 848,
+      "sha256": "ff0d96805986f55e0e8fe3e95d08372bd3b663189e46a0664961453abb8b21c2",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674421
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/unknown-flag.stderr.raw.txt",
+      "bytes": 1145,
+      "sha256": "32c75ad758748e820b938c199357858dc801e55babb53211955d5a728122792e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674422
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-followup-20261006203134/unknown-flag.stdout.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674423
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/README.md",
+      "bytes": 2722,
+      "sha256": "f6df73372c8bfccb78755096db4daca1ba46340c3a05437386a6c977d90a5d34",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674425
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/after.diff.txt",
+      "bytes": 159449,
+      "sha256": "b35c52dcb9ad462916fa351e5afb0c03cb7b92d67a8fa3504438b1199a2d1557",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674426
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/after.json.txt",
+      "bytes": 39329,
+      "sha256": "d2a2e14f07e3ce7d519c0cecf7241bf4d4ff8cb360dbe81ebc48a9f691b03f72",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674427
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/after.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674428
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/aparajita_capacitor-secure-storage.package.json.txt",
+      "bytes": 5620,
+      "sha256": "7c389bfe1fe7e347f061430926dcf22dc04fe68f5ba481b49a7394dd7ec2005f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674429
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/before.diff.txt",
+      "bytes": 159449,
+      "sha256": "b35c52dcb9ad462916fa351e5afb0c03cb7b92d67a8fa3504438b1199a2d1557",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674430
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/before.json.txt",
+      "bytes": 39329,
+      "sha256": "d2a2e14f07e3ce7d519c0cecf7241bf4d4ff8cb360dbe81ebc48a9f691b03f72",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674431
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/before.status.bin.txt",
+      "bytes": 1755,
+      "sha256": "b89daea1d0f28a55df39dfca9397c4a91dcbacf66f627ca91c4114a679ebc677",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674432
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/capacitor_android.package.json.txt",
+      "bytes": 811,
+      "sha256": "0f2a47b835f900bef22b1f40e369e33669bf112df89455a3164d5146aa2e7127",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674433
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/capacitor_cli.package.json.txt",
+      "bytes": 2228,
+      "sha256": "bad0fbf5d81a6e677cc98d64bc5c59872e8a77f6966d13e38392ffedda345504",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674434
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/capacitor_core.package.json.txt",
+      "bytes": 1953,
+      "sha256": "11d1fd06941f61fe4bb8425ee08f53d573c899334ad9165501c029a5b3600646",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674435
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/capacitor_ios.package.json.txt",
+      "bytes": 1086,
+      "sha256": "1f919db40a10e10216b94ad91a21271b58906b33159e55d18dec0af700742540",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674436
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/capacitor_preferences.package.json.txt",
+      "bytes": 2743,
+      "sha256": "4bd8fd8cd326301d7c68d03086825a2ad119481201cfb0c851c103a6a36f8bc0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674437
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/check.stderr.raw.txt",
+      "bytes": 1632,
+      "sha256": "f2ed55c018075e79919b5c6a272b18b6e9df1583cf2c5c95b98d241bca338be8",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674438
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/check.stdout.raw.txt",
+      "bytes": 732,
+      "sha256": "11596f4044ef2491af38fd01ca45e93aff4a138d5e8cc110e30bcbfa9e45691b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674439
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/commands.json.txt",
+      "bytes": 10464,
+      "sha256": "f9b82c0b2f850dee397b1d27bf43f3945d4e935fd2a328431cc653b1473168e1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674440
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/complete-installed-graph.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674441
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/complete-installed-graph.stdout.raw.txt",
+      "bytes": 2063317,
+      "sha256": "b8a867c8360d435378fd1715adfb6c952ea4ea12127becb9e0102043e4ba506e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674442
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/eslint.package.json.txt",
+      "bytes": 7789,
+      "sha256": "a747df3db3905b18b2acb3a6b12ef49659a8fc9055ce2a48057316b4aadf4248",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674443
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/frozen-ignored-install.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674444
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/frozen-ignored-install.stdout.raw.txt",
+      "bytes": 777,
+      "sha256": "c3344b19d3d779e8b5d9d621787d0ac02b1f9da405395073b10d4f345a987fb1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674445
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/installed-metadata.json.txt",
+      "bytes": 5925,
+      "sha256": "e48b1587c3961be4a883ee12150b5697670c5569954bb522403c9634cd754734",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674446
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/installed.modules.yaml.txt",
+      "bytes": 137748,
+      "sha256": "76f9ffc48a95302ceb3dde5841943f249b26774598082c1885ad8f92f8d302aa",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674447
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/installed.pnpm-lock.yaml.txt",
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674448
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/lease.released.json.txt",
+      "bytes": 1208,
+      "sha256": "b4bb9ebf393478ddf7fdc1cf06366e4ac2e9b414dd270448e1a8ab37e0642c67",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674449
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/lease.started.json.txt",
+      "bytes": 1878,
+      "sha256": "c045bc8da5f400be3595aeaeec85b630311bd64db1361155220f89ea6b811d2d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674450
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/lint.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674451
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/lint.stdout.raw.txt",
+      "bytes": 262,
+      "sha256": "83f7bc5b7cadb68a80744a7e6036e3ee584f1fe517add774ab305d4ce93c0ae6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674452
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/manifest.json.txt",
+      "bytes": 14963,
+      "sha256": "27a0730852d2c79ebebe92c1a04ca314e3270c3e17efd8e880a2670b876b17df",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674453
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/mirror-manifest.json.txt",
+      "bytes": 36184,
+      "sha256": "41c9af37f52f1190a81eda830efe73dc95006fe12a0118cc6c169cbf111c80d5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674454
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/mirror-tools-first-failure.py.txt",
+      "bytes": 2049,
+      "sha256": "232922fecff3774b46574e9a29eff9eca76c1cacd3926bbe1838230bb2279643",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674455
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/pnpm-version.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674456
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/pnpm-version.stdout.raw.txt",
+      "bytes": 8,
+      "sha256": "a8608bace4e3de4e6d8c1f809759eab6c60aa908a62f739089cab67e9c4955c6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674457
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/receipt.json.txt",
+      "bytes": 93411,
+      "sha256": "bf6bf2ccc51b4b1435ae0d56061d274d6adf8274e713cc82106420fd1b77a765",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674458
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/run-scoped-tools.py.txt",
+      "bytes": 11925,
+      "sha256": "4b8b32c12d7c74c8a7c487fc0e9e308850a4e178a13d07a5a491c63a5de9ba3e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674459
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/scoped-guards.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674460
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/scoped-guards.stdout.raw.txt",
+      "bytes": 348,
+      "sha256": "b89753001d2be85fb7e5cc809a7de3535be10a1e97ff6a5e56b6bc094713807b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674461
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/script-catalog.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674462
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/script-catalog.stdout.raw.txt",
+      "bytes": 99338,
+      "sha256": "a3cb1d20d819acdb5a9ef67f0ddf20226ad32df0d87d8a5b91807c28f239dbad",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674463
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/source.pnpm-lock.yaml.txt",
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674464
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/source.pnpm-workspace.yaml.txt",
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674465
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/svelte.package.json.txt",
+      "bytes": 5661,
+      "sha256": "5a0d57cb27afe0365075723a85b19123006e3c8f00a518283272773f52b9b2dc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674466
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/sveltejs_kit.package.json.txt",
+      "bytes": 4741,
+      "sha256": "4a12466ff8570bd0a141c8082e6acb6673af30ec53f6b5a38aa7718abe6e715f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674467
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/vite.package.json.txt",
+      "bytes": 5082,
+      "sha256": "fd3af4eaf4eecb2069f3e2715d6aaa2137d084a8a95097389523f52213c08094",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674468
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-gates-20261006200650/vitest.package.json.txt",
+      "bytes": 5447,
+      "sha256": "943ddc2cfd3676087e243b5adc450ea8c25ad941ba678b48a679b68f67ef297a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674469
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/README.md",
+      "bytes": 2623,
+      "sha256": "e68e1c59f2d0fc7b459513cbf770fc9363d21b002e9614df4f66d32ddf0e62df",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674471
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/add-l0-process-controls.py.txt",
+      "bytes": 3292,
+      "sha256": "611434c66829b03927c4f1b25829ba44e71a6d4012eb0c49de0ae03eace50845",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674472
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/copy-source-v4.py.txt",
+      "bytes": 1870,
+      "sha256": "e121ccebd3b7bdb1057d7987b9e1b002c0d605a15a9b9d09f50b406be0579275",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674473
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/freeze-final-source.py.txt",
+      "bytes": 4532,
+      "sha256": "33aa2ed1ff8728e9f265989e518072f65b8dbdf4f0030c8e88cc3a323ff474f0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674474
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/manifest.json.txt",
+      "bytes": 12803,
+      "sha256": "b1f7e36970b0bdadf9e3f47347225b0473da657a773d6731106123cee168beb7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674475
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/mirror-tools-lease-plan.py.txt",
+      "bytes": 2321,
+      "sha256": "7a37af87ca655a1590a262bbcae4be2d8b482dde5f5ae9ada8deccbdd28bed03",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674476
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/parent-repair-inputs.json.txt",
+      "bytes": 2669,
+      "sha256": "83b73c77ad0f7540e47fea7fbb47438c4addd4f31b9dd95cf4f4e9e0d09eced9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674477
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/parent-repairs-relative-first25.diff.txt",
+      "bytes": 27593,
+      "sha256": "8f65e7779ccb0cb3936be22f55e30dd4b099d5b48f3b02d592e255e734e700a6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674478
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/repair-l0-source.py.txt",
+      "bytes": 2113,
+      "sha256": "a49e36ab615d08bac330a3350dc1aa1e2053f1d61d91ba986f50d2ff78687e4d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674479
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/repair-l0-transport.py.txt",
+      "bytes": 6199,
+      "sha256": "125e51f765db46fd0a22e2db118d1e16b0ced0b8dec46cda77d3ef7e0519f7d1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674480
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/repair-supervisor-deadline.py.txt",
+      "bytes": 4141,
+      "sha256": "2af704f17c39bb35d0ee388cd5f41787def0ef0e1a70ad1e94590ed28cbc2a97",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674481
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/review-request.json.txt",
+      "bytes": 2605,
+      "sha256": "fe096de4152257fceb2484fdb5cf8e01e06dde81de440c63a5921eae8f00d09d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674482
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/root-diff.txt",
+      "bytes": 24584,
+      "sha256": "bd5cd486b001bf161c85146e976d56867aac9702f16442981272e0dc20dbaa2a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674483
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/run-scoped-tools.py.txt",
+      "bytes": 11927,
+      "sha256": "60df5dbacd046a6e1792c45f6cafd62bc7c054316f31582badea2bf982a9bdf6",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674484
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/source-copy-v4.json.txt",
+      "bytes": 8396,
+      "sha256": "6538abed3f595d5437da0c5591ffb3a7f7d637f954876de74ee5ca749cfb8ad1",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674485
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/source-manifest.json.txt",
+      "bytes": 7908,
+      "sha256": "f9351e9e9b017ec4076e2ae36aeaff9640328a5012af0d9beae33daf946490e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674486
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/tools-lease-plan/tools-diff.txt",
+      "bytes": 133020,
+      "sha256": "c449aa968b1b14cd64c2d69e14b4a612420aa1fb44db35c3ed11a707d94c09b9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674487
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/README.md",
+      "bytes": 2561,
+      "sha256": "a04cf83b01291ab17d3fc0fccac64db78dc4668bc2404642ea02c6f5f0de676f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674489
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.json.txt",
+      "bytes": 34149,
+      "sha256": "3aff6fe37019730ae64ddd4445ff17353ed97b7a4531e6baa89ad021905f711a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674490
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.owned-source.diff.txt",
+      "bytes": 177583,
+      "sha256": "f35e3c1879751c472cc0933e2dd3538f2e13fc6b36e0471e609e2fddb25ae3e7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674491
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.stage.bin.txt",
+      "bytes": 969218,
+      "sha256": "73611f44a2323927c12bbd99a0b7ad26bc5d629e4d45f8b77be231c70f6b1cd5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674492
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.staged-numstat.txt",
+      "bytes": 2640,
+      "sha256": "d2a791ad1b98b63431b98600afb4bff40ae97e26410238acea799bceb3a866e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674493
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.status.bin.txt",
+      "bytes": 2542,
+      "sha256": "56f49bcd0fd33a52a9a1f5f05daf3a20d177bd557b91afb8445c56159b20fb7d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674494
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674495
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/after.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674496
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.json.txt",
+      "bytes": 34149,
+      "sha256": "5c0372b881f7ad0724707376f4618ff6dda0cf951388d04439b526dc04c6218e",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674497
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.owned-source.diff.txt",
+      "bytes": 177583,
+      "sha256": "f35e3c1879751c472cc0933e2dd3538f2e13fc6b36e0471e609e2fddb25ae3e7",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674498
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.stage.bin.txt",
+      "bytes": 969218,
+      "sha256": "73611f44a2323927c12bbd99a0b7ad26bc5d629e4d45f8b77be231c70f6b1cd5",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674499
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.staged-numstat.txt",
+      "bytes": 2640,
+      "sha256": "d2a791ad1b98b63431b98600afb4bff40ae97e26410238acea799bceb3a866e0",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674500
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.status.bin.txt",
+      "bytes": 2542,
+      "sha256": "56f49bcd0fd33a52a9a1f5f05daf3a20d177bd557b91afb8445c56159b20fb7d",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674501
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.unstaged.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674502
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/before.untracked.bin.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674503
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/browserless.stderr.raw.txt",
+      "bytes": 8134,
+      "sha256": "a7fc9d343cc9be2de856ee51dbe0611db02f52a7fff46074f73f71307a1ba923",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674504
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/browserless.stdout.raw.txt",
+      "bytes": 24623,
+      "sha256": "6c5cd70cc73774a29c91ad2f79be9c15518319dae4ed2d171afaad9f48c2c3c9",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674505
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/commands.json.txt",
+      "bytes": 12857,
+      "sha256": "2acb5ec30ba3c0f4aeb3c81e94438db51a75c1404597bb63524f435ff817b370",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674506
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-held.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674507
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-held.stdout.raw.txt",
+      "bytes": 24781,
+      "sha256": "55696527bc8a59a545bb6c3edfaaa46c9a0426593f0590a40647faaa5e0dfcb3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674508
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-reader.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674509
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-reader.stdout.raw.txt",
+      "bytes": 25473,
+      "sha256": "bd09b426a8ac5d3a432ea2aeebc53db2c5226a281c5877905f847ff14fbe2bfd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674510
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-released.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674511
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/final-inspect-released.stdout.raw.txt",
+      "bytes": 24200,
+      "sha256": "5d539936c48e2c34c0096f0d8b97b8c4bff4c54fe5ae1b2f1f9130a72f4d9efd",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674512
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/install-reuse.after.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674513
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/install-reuse.before.json.txt",
+      "bytes": 9856,
+      "sha256": "51a0158954c54ab18977b7cd3f7692ed9e514c5941740d030796791e26fa0c22",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674514
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/lease.released.json.txt",
+      "bytes": 1991,
+      "sha256": "94be9db786bf0900bb759e51c8af4be11e2be7c75109b804736c118060a0a7ce",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674515
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/lease.started.json.txt",
+      "bytes": 2601,
+      "sha256": "3a05defda031c305dd141b366db6d1a8056b9ec6e4ef04e43ecea6bdd785d6e3",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674516
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/manifest.json.txt",
+      "bytes": 15042,
+      "sha256": "c2c530a4affc63c09e4f06bc6df5c0e1b271fd1a4a91ae9b3a1e319b58a58127",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674517
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/producer-runtime.json.txt",
+      "bytes": 570,
+      "sha256": "3005f918db4f35886ecc2118844a8322dd11d4afc1caba7e4d99417301ffb398",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674518
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/quality.stderr.raw.txt",
+      "bytes": 1786,
+      "sha256": "1c9249611cf1ea22d78727004708b06b2fec99fd1e01ec121ce7b9ca12f05f8b",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674519
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/quality.stdout.raw.txt",
+      "bytes": 58644,
+      "sha256": "51ee02ae9a84d01104b6ccfa0e9ba6386d4e8328dd0613f907fa9b57655b2401",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674520
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/receipt.json.txt",
+      "bytes": 106711,
+      "sha256": "c7dcf4b88cc8faab8ef10abbc3be137ee05a67e126bbbfd33ef929a75d9ee004",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674521
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/release-final-source-lease.py.txt",
+      "bytes": 3275,
+      "sha256": "1e1d53c36035143723c83f07b7480b8190b456a1d23dc6fa7c8acd8ea781d5ac",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674522
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/run-final-source-gates-compact.py.txt",
+      "bytes": 17825,
+      "sha256": "3d41aa0a1cad365bbb2f55506d3c7f0d089af95e8d4783860964c1cbb0973047",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674523
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port-after.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674524
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port-after.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674525
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port-before.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674526
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port-before.stdout.raw.txt",
+      "bytes": 137,
+      "sha256": "c7963ab19ab57941f02f86e53f264c8bffed3854997a8b35659b7ff05d93cc2f",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674527
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port.after.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674528
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/smoke-port.before.json.txt",
+      "bytes": 158,
+      "sha256": "85111352a4afce1240d9909da1af832eaafef0217baefdf94934d07c03dfbc84",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674529
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/source-role-held.json.txt",
+      "bytes": 480,
+      "sha256": "6f6aa215eb1063942580c876f91135749f4099b39e03f241cc6089e677f2589a",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674530
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/source-role-reader.json.txt",
+      "bytes": 482,
+      "sha256": "92370717fd2cb17ebe6d6f2f18b1f9fa43da96b3be594d24811cecc1a68674bc",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674531
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/source-role-released.json.txt",
+      "bytes": 484,
+      "sha256": "b0239582ec00407729020214a3966df6e23446d9105818e79bd7842836872c95",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674532
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/supervisor.stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674533
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/supervisor.stdout.raw.txt",
+      "bytes": 1259,
+      "sha256": "fa1964c18ca52bb9d41a1521b7d9e9d5d2d3004de148c1d183192a7924a30b21",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674534
+    },
+    {
+      "path": "/private/tmp/splotch-resume-01a111b0/records/legacy-continuity-history-521/full-final-gates-compact-20261006212026/mirror-final-gates-compact.py.txt",
+      "bytes": 2031,
+      "sha256": "3c8bf949927cec6a1a050b814b45cbdfcf38536859ac0575dd10dd0aa5cc247c",
+      "mode": "0444",
+      "device": 16777230,
+      "inode": 218674535
+    }
+  ],
+  "scope": "complete source/evidence capsule metadata controls, no source/provider/native/crypto execution"
+}

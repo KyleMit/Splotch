@@ -1,0 +1,40 @@
+--- before/run-final-source-gates-retry.py
++++ after/run-final-source-gates-compact.py
+@@ -3,8 +3,8 @@
+ 
+ REPO=Path('/Users/kylemit/.codex/worktrees/migration-legacy-continuity/Splotch')
+ SOURCE=Path('/private/tmp/splotch-resume-01a111b0/legacy-continuity-source')
+-MANIFEST=SOURCE/'quality-repair-freeze/source-manifest.json.txt'
+-FREEZE=SOURCE/'quality-repair-freeze/staged-freeze.json.txt'
++MANIFEST=SOURCE/'compact-history/source-manifest.json.txt'
++FREEZE=SOURCE/'compact-history/staged-freeze.json.txt'
+ SMOKE_PORT=5386
+ QUALITY_DEADLINE_SECONDS=300
+ BROWSERLESS_DEADLINE_SECONDS=480
+@@ -17,7 +17,7 @@
+ GIT_QUERY_SECONDS=15
+ FINALIZATION_RESERVE_SECONDS=60
+ POLL_SECONDS=.1
+-ART=SOURCE/('full-final-gates-retry-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S'))
++ART=SOURCE/('full-final-gates-compact-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S'))
+ PREVIOUS=SOURCE/'tools-gates-20261006200650'
+ PREVIOUS_RECEIPT_SHA='bf6bf2ccc51b4b1435ae0d56061d274d6adf8274e713cc82106420fd1b77a765'
+ 
+@@ -167,7 +167,7 @@
+  return {'previousArtifactRoot':str(PREVIOUS),'previousReceiptSha256':PREVIOUS_RECEIPT_SHA,'completeGraphBytes':len(graph),'completeGraphSha256':sha(graph),'dependencyInputs':dependencies,'runtime':snapshot['runtime'],'packages':packages,'installedLocks':locks,'scope':'reuse complete previous JS resolution/installation receipt after exact relevant input/runtime/direct package/lock-linker byte qualification; no list/install/catalog rerun or complete native/compiled SDK/library-byte association'}
+ 
+ ART.mkdir(exist_ok=False)
+-write('lease.started.json.txt',{'owner':'L0','scope':'repaired full final-source Quality and first Browserless local jobs, three actual role CLI positives, input-qualified previous installation/complete JS graph reuse and actual owned smoke-port checks; no install/list/catalog/native/candidate/static build/device/Playwright/performance/rival','startedAt':now(),'wholeDeadlineSeconds':WHOLE_DEADLINE_SECONDS,'jobDeadlinesSeconds':{'quality':QUALITY_DEADLINE_SECONDS,'browserless':BROWSERLESS_DEADLINE_SECONDS},'finalizationReserveSeconds':FINALIZATION_RESERVE_SECONDS,'gitQueryDeadlineSeconds':GIT_QUERY_SECONDS,'teardownPerSignalSeconds':TEARDOWN_SECONDS,'smokePort':SMOKE_PORT,'supervisor':observe(os.getpid()),'sourceManifest':file_identity(MANIFEST),'stagedFreeze':file_identity(FREEZE),'producer':file_identity(Path(__file__))})
++write('lease.started.json.txt',{'owner':'L0','scope':'compact current-source Quality and Browserless local jobs, three actual role CLI positives, input-qualified previous installation/complete JS graph reuse and actual owned smoke-port checks; no install/list/catalog/native/candidate/static build/device/Playwright/performance/rival','startedAt':now(),'wholeDeadlineSeconds':WHOLE_DEADLINE_SECONDS,'jobDeadlinesSeconds':{'quality':QUALITY_DEADLINE_SECONDS,'browserless':BROWSERLESS_DEADLINE_SECONDS},'finalizationReserveSeconds':FINALIZATION_RESERVE_SECONDS,'gitQueryDeadlineSeconds':GIT_QUERY_SECONDS,'teardownPerSignalSeconds':TEARDOWN_SECONDS,'smokePort':SMOKE_PORT,'supervisor':observe(os.getpid()),'sourceManifest':file_identity(MANIFEST),'stagedFreeze':file_identity(FREEZE),'producer':file_identity(Path(__file__))})
+ print(json.dumps({'artifactRoot':str(ART),'leaseSeconds':WHOLE_DEADLINE_SECONDS,'smokePort':SMOKE_PORT}),flush=True)
+ failure=None;before=None;after=None;reuse_before=None;reuse_after=None;port_before=None;port_after=None
+ try:
+@@ -196,7 +196,7 @@
+  except Exception as e:failure=(failure+'; ' if failure else '')+str(e)
+  unresolved=[r for r in rows if not r.get('groupAbsent')]
+  unchanged=bool(before and after and before['semanticIndexSha256']==after['semanticIndexSha256'] and before['stagedTree']==after['stagedTree'] and before['statusSha256']==after['statusSha256'] and before['ownedSourceDiffSha256']==after['ownedSourceDiffSha256'])
+- receipt={'completedAt':now(),'elapsedSeconds':time.monotonic()-whole_start,'scope':'repaired full local Quality/firstBrowserless and three actual role positives at frozen staged source plus qualified previous JS installation/graph reuse; not native continuity/effective profile/compiled SDK/channel/physical acceptance','failure':failure,'unresolvedOwnership':unresolved,'commands':rows,'before':before,'after':after,'installReuseBefore':reuse_before,'installReuseAfter':reuse_after,'sourceAndSemanticIndexUnchanged':unchanged,'rawIndexBytesUnchanged':bool(before and after and before['rawIndex']['sha256']==after['rawIndex']['sha256']),'smokePortBefore':port_before,'smokePortAfter':port_after,'smokePortAvailableAfter':bool(port_after and port_after['free']),'ownedCommandGroupsAbsent':not unresolved}
++ receipt={'completedAt':now(),'elapsedSeconds':time.monotonic()-whole_start,'scope':'compact current-source full local Quality/Browserless and three actual role positives at frozen staged source plus qualified previous JS installation/graph reuse; not native continuity/effective profile/compiled SDK/channel/physical acceptance','failure':failure,'unresolvedOwnership':unresolved,'commands':rows,'before':before,'after':after,'installReuseBefore':reuse_before,'installReuseAfter':reuse_after,'sourceAndSemanticIndexUnchanged':unchanged,'rawIndexBytesUnchanged':bool(before and after and before['rawIndex']['sha256']==after['rawIndex']['sha256']),'smokePortBefore':port_before,'smokePortAfter':port_after,'smokePortAvailableAfter':bool(port_after and port_after['free']),'ownedCommandGroupsAbsent':not unresolved}
+  try:
+   write('receipt.json.txt',receipt)
+   write('manifest.json.txt',{'files':[{**file_identity(p),'path':str(p.relative_to(ART))} for p in sorted(ART.rglob('*')) if p.is_file()]})

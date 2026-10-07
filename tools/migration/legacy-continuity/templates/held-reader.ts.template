@@ -1,0 +1,169 @@
+import { isCurrentHeldPicture } from './held-owner';
+import { fixtureConfig } from './fixture-config';
+
+const { database: DATABASE, store: STORE, key: KEY } = fixtureConfig.heldNamespace;
+const BASE64_CHUNK_BYTES = 8_192;
+
+type EncodedValue =
+  | { kind: 'null' | 'undefined' }
+  | { kind: 'string' | 'boolean' | 'number'; value: string | boolean }
+  | { kind: 'buffer'; bytes: number; base64: string; sha256: string }
+  | { kind: 'object' | 'array'; fields: Record<string, EncodedValue> }
+  | { kind: 'unsupported'; tag: string };
+
+type HeldObservation =
+  | { status: 'absent-database'; databases: IDBDatabaseInfo[] }
+  | { status: 'absent-record'; count: number }
+  | { status: 'invalid-source'; reason: 'missing-store'; stores: string[] }
+  | {
+      status: 'recognized-source' | 'invalid-source' | 'unsupported-source';
+      complete: boolean;
+      count: number;
+      key: IDBValidKey;
+      recognized: boolean[];
+      entryCount: number;
+      raw: EncodedValue;
+    };
+
+function hasUnsupported(value: EncodedValue): boolean {
+  if (value.kind === 'unsupported') return true;
+  if (value.kind === 'array' || value.kind === 'object')
+    return Object.values(value.fields).some(hasUnsupported);
+  return false;
+}
+
+async function encode(value: unknown, seen = new WeakSet<object>()): Promise<EncodedValue> {
+  if (value === null) return { kind: 'null' };
+  if (value === undefined) return { kind: 'undefined' };
+  if (typeof value === 'string' || typeof value === 'boolean') return { kind: typeof value, value };
+  if (typeof value === 'number')
+    return {
+      kind: 'number',
+      value: Object.is(value, -0) ? '-0' : String(value),
+    };
+  if (value instanceof ArrayBuffer) {
+    const bytes = new Uint8Array(value);
+    const segments: string[] = [];
+    for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_BYTES) {
+      segments.push(String.fromCharCode(...bytes.subarray(offset, offset + BASE64_CHUNK_BYTES)));
+    }
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', value));
+    return {
+      kind: 'buffer',
+      bytes: bytes.length,
+      base64: btoa(segments.join('')),
+      sha256: Array.from(hash, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+    };
+  }
+  if (typeof value !== 'object') return { kind: 'unsupported', tag: typeof value };
+  if (seen.has(value)) return { kind: 'unsupported', tag: 'cyclic-reference' };
+  const tag = Object.prototype.toString.call(value);
+  if (!Array.isArray(value) && tag !== '[object Object]') return { kind: 'unsupported', tag };
+  if (Object.getOwnPropertySymbols(value).length !== 0)
+    return { kind: 'unsupported', tag: 'symbol-properties' };
+  seen.add(value);
+  const fields: Record<string, EncodedValue> = Object.create(null);
+  for (const key of Object.getOwnPropertyNames(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !('value' in descriptor)) throw new Error('L0_HELD_ACCESSOR_REFUSED');
+    fields[key] = await encode(descriptor.value, seen);
+  }
+  seen.delete(value);
+  return { kind: Array.isArray(value) ? 'array' : 'object', fields };
+}
+
+function request<T>(value: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    value.onsuccess = () => resolve(value.result);
+    value.onerror = () => reject(value.error ?? new Error('L0_IDB_REQUEST_FAILED'));
+  });
+}
+
+async function openExisting(): Promise<{ db: IDBDatabase | null; databases: IDBDatabaseInfo[] }> {
+  if (typeof indexedDB.databases !== 'function') throw new Error('L0_IDB_ENUMERATION_UNQUALIFIED');
+  const databases = await indexedDB.databases();
+  if (!databases.some((entry) => entry.name === DATABASE)) return { db: null, databases };
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const opening = indexedDB.open(DATABASE);
+    let changed = false;
+    opening.onupgradeneeded = () => {
+      changed = true;
+      opening.transaction?.abort();
+    };
+    opening.onerror = () =>
+      reject(
+        changed
+          ? new Error('L0_IDB_LISTED_SOURCE_CHANGED')
+          : (opening.error ?? new Error('L0_IDB_OPEN_FAILED'))
+      );
+    opening.onblocked = () => reject(new Error('L0_IDB_OPEN_BLOCKED'));
+    opening.onsuccess = () => {
+      if (changed) {
+        opening.result.close();
+        reject(new Error('L0_IDB_LISTED_SOURCE_CHANGED'));
+      } else resolve(opening.result);
+    };
+  });
+  return { db, databases };
+}
+
+export async function readHeldRaw(): Promise<HeldObservation> {
+  const { db, databases } = await openExisting();
+  if (!db) return { status: 'absent-database', databases };
+  try {
+    if (!db.objectStoreNames.contains(STORE))
+      return {
+        status: 'invalid-source',
+        reason: 'missing-store',
+        stores: Array.from(db.objectStoreNames),
+      };
+    const tx = db.transaction(STORE, 'readonly');
+    const done = new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('L0_IDB_TRANSACTION_FAILED'));
+    });
+    const store = tx.objectStore(STORE);
+    const [[raw, count, key]] = await Promise.all([
+      Promise.all([request(store.get(KEY)), request(store.count(KEY)), request(store.getKey(KEY))]),
+      done,
+    ]);
+    if (count === 0 && key === undefined) return { status: 'absent-record', count };
+    if (count !== 1 || key !== KEY) throw new Error('L0_IDB_EXISTENCE_DISAGREEMENT');
+    const entries: unknown[] = Array.isArray(raw) ? raw : [raw];
+    const recognized = entries.map(isCurrentHeldPicture);
+    const encoded = await encode(raw);
+    const complete = !hasUnsupported(encoded);
+    return {
+      status: !complete
+        ? 'unsupported-source'
+        : recognized.every(Boolean)
+          ? 'recognized-source'
+          : 'invalid-source',
+      complete,
+      count,
+      key,
+      recognized,
+      entryCount: entries.length,
+      raw: encoded,
+    };
+  } finally {
+    db.close();
+  }
+}
+
+export async function putUndefinedHeldControl() {
+  const { db } = await openExisting();
+  if (!db) throw new Error('L0_HELD_CONTROL_REQUIRES_REAL_SEED');
+  try {
+    if (!db.objectStoreNames.contains(STORE)) throw new Error('L0_HELD_CONTROL_REQUIRES_REAL_SEED');
+    const tx = db.transaction(STORE, 'readwrite');
+    const done = new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('L0_IDB_CONTROL_WRITE_FAILED'));
+    });
+    tx.objectStore(STORE).put(undefined, KEY);
+    await done;
+  } finally {
+    db.close();
+  }
+}

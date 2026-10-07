@@ -1,0 +1,25 @@
+import { createUnsavedPictureStore } from '$lib/drawing/unsavedPictureStore';
+export { isStoredPicture as isCurrentHeldPicture } from '$lib/drawing/unsavedPictureStore';
+import { STORAGE_KEYS, writeBool, removeKey } from '$lib/storage';
+import { fixtureConfig } from './fixture-config';
+
+export async function seedHeld(nonce: string) {
+  const binary = atob(fixtureConfig.picture.base64);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  await createUnsavedPictureStore().write([
+    {
+      blob: new Blob([bytes], { type: 'image/png' }),
+      baseName: `l0-${nonce}`,
+      outcome: 'denied',
+      signature: `l0-${nonce}`,
+    },
+  ]);
+}
+
+export function falseHeldHint() {
+  writeBool(STORAGE_KEYS.unsavedPicturesHeld, false);
+}
+
+export function removeHeldHint() {
+  removeKey(STORAGE_KEYS.unsavedPicturesHeld);
+}

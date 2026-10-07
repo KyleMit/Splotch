@@ -1,0 +1,1402 @@
+{
+  "owner": "L0",
+  "at": "2026-10-07T03:48:25.732249+00:00",
+  "sourceHead": "5d739c9921a9c011a594eba9139eb1ea34538a36",
+  "qualifiedSourceTree": "8c7807d6ff0f114f0928cd27fd6dc74cd4abd630",
+  "scope": "true hosted Linux failure, separate deliberate rejection/restoration, exact passing repaired-source gates, fresh source-only producer requalification; no native execution or final acceptance",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 9333309,
+    "sha256": "5825393b9184a9d0c1934ab1979eff969cf1d332eb43df60f8496ed21e401b12"
+  },
+  "memberCount": 231,
+  "members": [
+    {
+      "path": "controls/hosted-linux-portability/command-evidence.before.mjs.txt",
+      "bytes": 14509,
+      "sha256": "6194994f9eee4686dd5527b8b28d8fd1925fcd336ebaaa145a4463a76ef9e78f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/intake-manifest.json.txt",
+      "bytes": 1570,
+      "sha256": "08f5ba9766f26f18ff86b92ae9e0f1441703455764cd9293486021466470d130",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/ios-command-outcome.before.mjs.txt",
+      "bytes": 6240,
+      "sha256": "2901dd8f36e8d25e69930fe85ecede88864ff16fd015b95c305cfc5602859727",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/job-metadata-native-fetch-refusal.json.txt",
+      "bytes": 400,
+      "sha256": "b1ca1b5cff42e30afd4af5110eeb01548ac25687a3ed1f233dd012ad5b7de4c5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/job112609681680.complete.raw.txt",
+      "bytes": 391686,
+      "sha256": "04392c735df42466adbd2dcccaef2c31532ad0b0d43a65fc0c409ddb8a20478a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/job112609681680.steps.json.txt",
+      "bytes": 1836,
+      "sha256": "23a6b17cb7945b4dbaa6188303809ca092e978d4c4c49780db180a5ee31b0c8a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/hosted-linux-portability/run37564712316.metadata.json.txt",
+      "bytes": 12407,
+      "sha256": "615f75fa013bdc4c5f06d3bfecb04dc8e87340f9d1a32ee82b404ea17caa9baa",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "85bf2a1013d40f35c7656ae7ebdca043256b9f43eac7d9dee5ac315580114176",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/lease.running.json.txt",
+      "bytes": 1392,
+      "sha256": "d605a610b10c182334c07a5f7f5200d809d15384b6d3d47fa18648066bcd9de0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/lease.started.json.txt",
+      "bytes": 749,
+      "sha256": "78d392d71f8c6e2db3d12ea5e92d7469499ba391f12867ae0ecb860d1552aa82",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/receipt.json.txt",
+      "bytes": 2664,
+      "sha256": "0e1e9d6f0e27340fc88584375cfa18f2bcb9b259a10e87506e32135560382dc1",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/stdout.raw.txt",
+      "bytes": 1575045,
+      "sha256": "2aeb290998b621a9d328bb292014a7f31b5b1542bf13a1442e3ca78d7493226f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-held/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "27acc0dfcec535dc7318544b2e62bbadfe84e390833bd373dbd1907ba7bae93d",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/lease.running.json.txt",
+      "bytes": 1406,
+      "sha256": "124ee0454dc16342149b8f52347f4e36407771f08bb3a2f659ac9cf5ac502a9a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/lease.started.json.txt",
+      "bytes": 755,
+      "sha256": "ada4b2a6126a385eef9615dbc0fbecffde5a55df55ba5b9df59a0823dfc63b99",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/receipt.json.txt",
+      "bytes": 2686,
+      "sha256": "747fb0449f32065763773aac0dfe7405efca7fdfe864c32e3a29713f4fd5446d",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/stdout.raw.txt",
+      "bytes": 1695490,
+      "sha256": "68bff2c9db313b0e78d118b67f158a5ab83820add9bc7d451c33a4c0e5e5b17a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-reader/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "4126ad430523fb0a1ecc2c2dc71ef72932a6beca45481801f4f7c84fd3a40114",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/lease.running.json.txt",
+      "bytes": 1420,
+      "sha256": "737038f6f7ad2d97512b9a68354836b1f6a0d4b9e64088f3f505a41ec0d0b2ae",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/lease.started.json.txt",
+      "bytes": 761,
+      "sha256": "552b814643ed608cade3da4377c1df3b0e8ab04cf1fbd5b6e39b2977413b46ea",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/receipt.json.txt",
+      "bytes": 2708,
+      "sha256": "b7f5bfb72eb14f2bd405495057601b45420caf0ac5598e676099e36b068ee536",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/stdout.raw.txt",
+      "bytes": 1224966,
+      "sha256": "ed217ef27cca7e982a5507df604ab62eb10524bc400baa209a52d99733b51fad",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/materialize-portable-released/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "22661fbaa78e312ee61b7b54b9cbfde566859c0fbd65463bcd0edc284c4b85db",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/lease.running.json.txt",
+      "bytes": 1252,
+      "sha256": "0780b5669095972e5c5f5fbc129f91964e1941c54147d8809a595d06647f652b",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/lease.started.json.txt",
+      "bytes": 715,
+      "sha256": "32da6429ad21dddbea5b49c0204729aa9b5ab9bb7aca48e2cf5d79470740779a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/receipt.json.txt",
+      "bytes": 2531,
+      "sha256": "fdd38771e1b088279a1bcd76d7637ba6feb7d2eaf54304a93a3cb9eb3741450f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/stderr.raw.txt",
+      "bytes": 12472,
+      "sha256": "5defb58c711ee44378b9b1d738d90e9e16a357c5fde35401daebdeb3391a43e9",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/stdout.raw.txt",
+      "bytes": 24878,
+      "sha256": "4b3966ee8ac19bfa797e2fb85158c1079e14592cba79560af63f6c4c0bb9f3e0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-browserless/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "90da23d14fb3c92971b5fcb3792f9238c50226d8d98d94c8cb87900151a7388b",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/lease.running.json.txt",
+      "bytes": 1373,
+      "sha256": "a9ff899620dbcf32097f62822a548bf2531d3e3af884d68afdc3ecf2d8862963",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/lease.started.json.txt",
+      "bytes": 740,
+      "sha256": "9f400f5b3509874ffb431e4d99ef721b31c9f92f28d17fef8cb015589910cc99",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/receipt.json.txt",
+      "bytes": 2628,
+      "sha256": "46b272ac4b8db0e36e78db763ea89ffcc2d35c39f4eceddeb07793bd49d174c3",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/stderr.raw.txt",
+      "bytes": 4338,
+      "sha256": "c718acae31472e03d431846da039032f88a56bd4ce03a3d511e68199dfd8e6ce",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/stdout.raw.txt",
+      "bytes": 350,
+      "sha256": "cd1910a786e7bc59703e22ca810184ae5da0921f26dd552251a781837346ca45",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-final-scoped/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "d56f70ccab33addb2d035cf79065a6df9b12d96c2fef6a41ca5b3b9c8392be6a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/lease.running.json.txt",
+      "bytes": 1263,
+      "sha256": "7b0ab042159784c52b7365ef9f235f6281fb64d3e072f274f91714565ab0c9bc",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/lease.started.json.txt",
+      "bytes": 726,
+      "sha256": "3a002211095ffd8ee6cb18b6772ba31f4bebbfb2514af8e951c0dd235e0f1f5a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/receipt.json.txt",
+      "bytes": 2592,
+      "sha256": "1c223e243be2eef59331ae21c0a6f5fadbcf1f58ebe3d84d3e17298ad30dc178",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/source.after.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/source.before.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/staged.before.diff.txt",
+      "bytes": 2918607,
+      "sha256": "2e97a59d3a540aeaadf83f2782f178faa7bd8382f7032f379e81396ecb0eea13",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/status.before.txt",
+      "bytes": 601,
+      "sha256": "e0d337033e206e199f06ec893cacc207711954cd09158b27c37bd9269a14e256",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/stdout.raw.txt",
+      "bytes": 131,
+      "sha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-final/unstaged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "5c0cbdde36147301ab54563a9f90dabb4c770564923971fd5a520d85cbe5d240",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/lease.running.json.txt",
+      "bytes": 1266,
+      "sha256": "5ac4a613baf47973a09176ee44f22eef300abbb54430b3c71c060de0762ba60e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/lease.started.json.txt",
+      "bytes": 729,
+      "sha256": "0503f82bed579114ec6c122e2e220dca25d0d458d929d7a68ff698deda7eed18",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/receipt.json.txt",
+      "bytes": 2608,
+      "sha256": "bfc1491a0697f9c56051d3a83b6227629ef0beed4f8a6161477b48d1137529d1",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/source.after.json.txt",
+      "bytes": 17498,
+      "sha256": "ae40986d08d139da44f269b259188e048fa847ca63e7c9006afe915efffac301",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/source.before.json.txt",
+      "bytes": 17498,
+      "sha256": "ae40986d08d139da44f269b259188e048fa847ca63e7c9006afe915efffac301",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/staged.before.diff.txt",
+      "bytes": 4740,
+      "sha256": "54fa53a99f2db267957016c0cc8880f6aa37860c9ee2708118e4ac1fbbcb6b6e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/status.before.txt",
+      "bytes": 601,
+      "sha256": "d9ce7adb65610b1307ca586f9f892bc71b615b2475d55ed91f69b8a33e56b0d4",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/stderr.raw.txt",
+      "bytes": 407,
+      "sha256": "1dbcb44192ac7ff7d282ae8c18b6479c0c9ca1563fe84f1e3e5af2716de61935",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/stdout.raw.txt",
+      "bytes": 71,
+      "sha256": "cfd29c767646210ecf11e2d586a331a117563721f63df46ab153d49552e89f1e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs-restored/unstaged.before.diff.txt",
+      "bytes": 10278,
+      "sha256": "9ec82c002e395f2e9ff15740fc2cf2bebb4d8d3cc9d0c7b422e44cae90aa3a2e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "fe3692dcdbfdc978fedd75e95abc3cdab1cfc9564a49bc119b5314ab0993ce5f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/lease.running.json.txt",
+      "bytes": 1257,
+      "sha256": "7d9bef91cc3075bd858d3af691cf7d1caaa35c8511aa5b7960494a7148e94954",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/lease.started.json.txt",
+      "bytes": 720,
+      "sha256": "421b08f6c3f4add6ff0e0dd119305b9156f75e3c5951a78a156642b60609b1b2",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/receipt.json.txt",
+      "bytes": 2563,
+      "sha256": "0b1d4ec8f673d0cf7300abe964b5794fae1185eebcb3b64c48a81480b028cdac",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/source.after.json.txt",
+      "bytes": 17325,
+      "sha256": "ccc192f95b8ca91311731c513098a00d6030376c1f10876bdaabdcc1f7a55779",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/source.before.json.txt",
+      "bytes": 17325,
+      "sha256": "ccc192f95b8ca91311731c513098a00d6030376c1f10876bdaabdcc1f7a55779",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/status.before.txt",
+      "bytes": 430,
+      "sha256": "24b110ec20f70d536d04ee46963938343acb77ae4cd2699bef5157fe2388b9b0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/stderr.raw.txt",
+      "bytes": 304,
+      "sha256": "bbe574450b0693dc90ef659a4c6bba61401178e1188ae3cd48d568dc1e6eec1c",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/stdout.raw.txt",
+      "bytes": 71,
+      "sha256": "cfd29c767646210ecf11e2d586a331a117563721f63df46ab153d49552e89f1e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-docrefs/unstaged.before.diff.txt",
+      "bytes": 10278,
+      "sha256": "9ec82c002e395f2e9ff15740fc2cf2bebb4d8d3cc9d0c7b422e44cae90aa3a2e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "ed841ab745eb403abebe433a6be2614de3242b0f2181e0d633deae1b0a2db540",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/lease.running.json.txt",
+      "bytes": 1483,
+      "sha256": "caf017d590baead3129a9adda441f16b5d9ae4b0bffd12d354667392003bd95c",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/lease.started.json.txt",
+      "bytes": 808,
+      "sha256": "4788595d967fc22363ec94d6d6b0b72274c6ce5d403a3f78be366eacc9e3fcfa",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/receipt.json.txt",
+      "bytes": 2808,
+      "sha256": "f24991d85b2d7700f5134bcb99cbb6da58e4a3526b9cb13e0cc2bcd29e26f253",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/source.after.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/source.before.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/staged.before.diff.txt",
+      "bytes": 2918607,
+      "sha256": "2e97a59d3a540aeaadf83f2782f178faa7bd8382f7032f379e81396ecb0eea13",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/status.before.txt",
+      "bytes": 601,
+      "sha256": "e0d337033e206e199f06ec893cacc207711954cd09158b27c37bd9269a14e256",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/stdout.raw.txt",
+      "bytes": 181,
+      "sha256": "0c57568a209dd7537b185e59d1fd47d709a0f999fb91fbc6721a2d5b48391265",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format-final/unstaged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "50d78d4d3f0cc12b91dc4f1df982b37cffd1121d39175e49423a8ac9eee1797f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/lease.running.json.txt",
+      "bytes": 1640,
+      "sha256": "1940d0485228012bc66b211b04d491dd316d5e53ebd1f5a9645bbc6aaee7caec",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/lease.started.json.txt",
+      "bytes": 861,
+      "sha256": "bbb6a95d13434b55bc6eafd735b52fe11411032dbea9189cb9c5ff0516bbec16",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/receipt.json.txt",
+      "bytes": 2941,
+      "sha256": "be882f8d5973c26f2a51b6a124125f15aa170ef7130e311a059dfd4775b5d949",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/source.after.json.txt",
+      "bytes": 17325,
+      "sha256": "ccc192f95b8ca91311731c513098a00d6030376c1f10876bdaabdcc1f7a55779",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/source.before.json.txt",
+      "bytes": 17325,
+      "sha256": "ccc192f95b8ca91311731c513098a00d6030376c1f10876bdaabdcc1f7a55779",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/status.before.txt",
+      "bytes": 430,
+      "sha256": "24b110ec20f70d536d04ee46963938343acb77ae4cd2699bef5157fe2388b9b0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/stdout.raw.txt",
+      "bytes": 251,
+      "sha256": "fea478bba643d17b4551ef2088a9657417db9450144cbf9cc451b17583beac88",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-format/unstaged.before.diff.txt",
+      "bytes": 10278,
+      "sha256": "9ec82c002e395f2e9ff15740fc2cf2bebb4d8d3cc9d0c7b422e44cae90aa3a2e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "624a2e7fe4e31b9c1414a78a236cf2dfe564666bb6ae1d6670def525a44d07a2",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/lease.running.json.txt",
+      "bytes": 1267,
+      "sha256": "ed7781e9223c4a82405eb1e674b665c3efc6a964fa9c8ff894a2f9e474b198af",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/lease.started.json.txt",
+      "bytes": 728,
+      "sha256": "3a897e0b99aedd312c04c9e100b79f606f879b31b67fedffe831ab56b4197ea0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/receipt.json.txt",
+      "bytes": 2600,
+      "sha256": "fc8063ba651aa4c45921d465930f7054a073019578c25484920b37e70f3c9a3e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/source.after.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/source.before.json.txt",
+      "bytes": 17498,
+      "sha256": "d4fae3720b227fedf87bec80b17479a0673524625143244028e75a3e68964c9e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/staged.before.diff.txt",
+      "bytes": 2918607,
+      "sha256": "2e97a59d3a540aeaadf83f2782f178faa7bd8382f7032f379e81396ecb0eea13",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/status.before.txt",
+      "bytes": 601,
+      "sha256": "e0d337033e206e199f06ec893cacc207711954cd09158b27c37bd9269a14e256",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/stdout.raw.txt",
+      "bytes": 144,
+      "sha256": "4ceccab94f5214ae80f93067aab07e1b74330542997dc2505e3a2c4d9d8d71cb",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown-final/unstaged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "e22bb26dbd7ce68fdb8808dc6d666aa1cf39df8faceca53f8206527ca74ead27",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/lease.running.json.txt",
+      "bytes": 1261,
+      "sha256": "8e5088f7c853289a124a77d742ba7ec9286191bfdb4cab25070ace0e0beb03ef",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/lease.started.json.txt",
+      "bytes": 722,
+      "sha256": "512174454cb21ac88776501aacd191d615197cd145ff5cec769f4282a7b1ec38",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/receipt.json.txt",
+      "bytes": 2570,
+      "sha256": "8175b8cee7128b8a3b723b63f7034b38df6d6d25d6cc4986862430bc2f29efd1",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/source.after.json.txt",
+      "bytes": 17498,
+      "sha256": "ae40986d08d139da44f269b259188e048fa847ca63e7c9006afe915efffac301",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/source.before.json.txt",
+      "bytes": 17498,
+      "sha256": "ae40986d08d139da44f269b259188e048fa847ca63e7c9006afe915efffac301",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/staged.before.diff.txt",
+      "bytes": 4740,
+      "sha256": "54fa53a99f2db267957016c0cc8880f6aa37860c9ee2708118e4ac1fbbcb6b6e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/status.before.txt",
+      "bytes": 601,
+      "sha256": "d9ce7adb65610b1307ca586f9f892bc71b615b2475d55ed91f69b8a33e56b0d4",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/stderr.raw.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/stdout.raw.txt",
+      "bytes": 144,
+      "sha256": "4ceccab94f5214ae80f93067aab07e1b74330542997dc2505e3a2c4d9d8d71cb",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-publication-markdown/unstaged.before.diff.txt",
+      "bytes": 10278,
+      "sha256": "9ec82c002e395f2e9ff15740fc2cf2bebb4d8d3cc9d0c7b422e44cae90aa3a2e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "66f2c8d46eab6c312217d69ce772c2e35e1cf15ef89b4e934d020aaef9424353",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/lease.running.json.txt",
+      "bytes": 1239,
+      "sha256": "960500251b5b0d7965b1c32d290ca6a806ccf571705eb7b37fa60bcfec626060",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/lease.started.json.txt",
+      "bytes": 708,
+      "sha256": "804248422649c4de98f9e51a8bbc22848108af54c3c2ad691fa9fda709d84096",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/receipt.json.txt",
+      "bytes": 2501,
+      "sha256": "efae5a2f0c85f16a97f7d97b6d321a001679e28531be68a9024bb5abc656a83e",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/source.after.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/source.before.json.txt",
+      "bytes": 17203,
+      "sha256": "2e1aa9ecc9db533812f72b7dea616108852869b86a2e0af565baad40b55b123f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/status.before.txt",
+      "bytes": 310,
+      "sha256": "d6785a2249b44c6b61d19169c3b1b300e704cf439e46a5484818f72c82718e11",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/stderr.raw.txt",
+      "bytes": 1786,
+      "sha256": "0c861c97d666de5fca9480bd5d186e544ac21a31f78b3370ac7294414fc41f1d",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/stdout.raw.txt",
+      "bytes": 58644,
+      "sha256": "56ce882dabf0bb97dc1b01bd0fd68f1c7ba410cd8d04c9f70808653777cc2add",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-quality/unstaged.before.diff.txt",
+      "bytes": 8879,
+      "sha256": "021f2d7a18a91485ed45bc316de7603546c92e593dbf8fe5c0f6874874cf4f05",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "34c83e057c20258143356e29f61f93682f727344972b17f3ed0e2df3fff1c52c",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/lease.running.json.txt",
+      "bytes": 1463,
+      "sha256": "99320e7857a7dd0d022535dd80315434f576650e1df6aa2a5f0a71528e77658a",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/lease.started.json.txt",
+      "bytes": 772,
+      "sha256": "df9decc145fa57664ab0bf601d09ba2a72b752842ccd86b7fbd1cbb8fc703e99",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/receipt.json.txt",
+      "bytes": 2730,
+      "sha256": "692990032c4fdc55b5784bffaab6fa2ad247c2675c2db276193ab04464d0f535",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/source.after.json.txt",
+      "bytes": 17042,
+      "sha256": "edb15445d59e3f9c598ef7ec47969b1802861a1a8e86a71b2885651e10297dd0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/source.before.json.txt",
+      "bytes": 17042,
+      "sha256": "edb15445d59e3f9c598ef7ec47969b1802861a1a8e86a71b2885651e10297dd0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/status.before.txt",
+      "bytes": 152,
+      "sha256": "b982d97ecadd8bbb3f160bcfc96eca06760f8883cd0ffef8b443fd475a725fd5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/stderr.raw.txt",
+      "bytes": 6299,
+      "sha256": "c98211773647162de1e968e5fa6417b189651917eb194fb9b1b0acd533adf837",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/stdout.raw.txt",
+      "bytes": 732,
+      "sha256": "5810cc45aaddd153916e7a4fb792fe56bf077bb907062184737dedef034ada17",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-pre-fix/unstaged.before.diff.txt",
+      "bytes": 1780,
+      "sha256": "c447e97f5f8d1e9e6c29da90c6c91b5e1bacba40764f4c6fa7c3c8c9e693ee34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "3e97d27099ff2f9e852fa507c00746268bdd6dd354f551fc0fa3be6b0e444dbe",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/lease.running.json.txt",
+      "bytes": 1464,
+      "sha256": "a3ef8353e380d9164c2e90b7dd9d24475639153ffef1df76ace6a0296dd1fccd",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/lease.started.json.txt",
+      "bytes": 773,
+      "sha256": "33d78df73ad26e16d33d302d986121f8165985eb0063a57d1a60381e3381bdf5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/receipt.json.txt",
+      "bytes": 2735,
+      "sha256": "c0677cbbbb345bbdd23aee36c677b1e049fa462f552981a893f5d8d49bd806a3",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/source.after.json.txt",
+      "bytes": 17149,
+      "sha256": "d005d528c5b17633678d300e70cd1488fb72a02e2f960a002f83a7fa266d76c5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/source.before.json.txt",
+      "bytes": 17149,
+      "sha256": "d005d528c5b17633678d300e70cd1488fb72a02e2f960a002f83a7fa266d76c5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/status.before.txt",
+      "bytes": 257,
+      "sha256": "7da0ebef888c5262d2ae2147ef0afb821a77d10775d678eafd4a424025343738",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/stderr.raw.txt",
+      "bytes": 3345,
+      "sha256": "7331c488ac0c3bc638c43b84c803606170bd55d103c8e9a7c7363a6661428ad0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/stdout.raw.txt",
+      "bytes": 374,
+      "sha256": "209256b64919df9b4ebb8d65e5c28474a2402efbf855f41e02ba3c8187f483fe",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-receipt-restored/unstaged.before.diff.txt",
+      "bytes": 5776,
+      "sha256": "97f2ebe21439a202c679676caa59c7e62ba40df1758ef06a7561e033be4b4290",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/lease.released.json.txt",
+      "bytes": 253,
+      "sha256": "db94374758f169ffb1893635ad86519bb969d8716de0afeafd1c78a08eda3ba2",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/lease.running.json.txt",
+      "bytes": 1367,
+      "sha256": "091b04f1a9b4f0460c9efe5c32f08e736ef4dc2a80ef890ede78c79cb8700930",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/lease.started.json.txt",
+      "bytes": 734,
+      "sha256": "49ba7da5af889b782ec77c42a3e0176074da3334f8ed74a9f6613c4218198db4",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/receipt.json.txt",
+      "bytes": 2598,
+      "sha256": "b20492413b91328cdde851918052e38069225900db740c0deb2a72347ed0599d",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/reuse.after.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/reuse.before.json.txt",
+      "bytes": 7528,
+      "sha256": "8c166eb283c3e9b48a7406e827ba165c6a13ddc6e720c943ea92198b888cdd34",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/source.after.json.txt",
+      "bytes": 17149,
+      "sha256": "d005d528c5b17633678d300e70cd1488fb72a02e2f960a002f83a7fa266d76c5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/source.before.json.txt",
+      "bytes": 17149,
+      "sha256": "d005d528c5b17633678d300e70cd1488fb72a02e2f960a002f83a7fa266d76c5",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/staged.before.diff.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/status.before.txt",
+      "bytes": 257,
+      "sha256": "7da0ebef888c5262d2ae2147ef0afb821a77d10775d678eafd4a424025343738",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/stderr.raw.txt",
+      "bytes": 3345,
+      "sha256": "7331c488ac0c3bc638c43b84c803606170bd55d103c8e9a7c7363a6661428ad0",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/stdout.raw.txt",
+      "bytes": 350,
+      "sha256": "e5588d395f8118f188fda7d413695373663bdab72f9cd0c3f14e92a295d79f6f",
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/portable-scoped/unstaged.before.diff.txt",
+      "bytes": 5776,
+      "sha256": "97f2ebe21439a202c679676caa59c7e62ba40df1758ef06a7561e033be4b4290",
+      "mode": "0o644"
+    },
+    {
+      "path": "maintained/README.md",
+      "bytes": 20776,
+      "sha256": "bc03997a061207142cc8f5f3b742f4a8c4a7db1d3b887cb97aac277260520b46",
+      "mode": "0o644"
+    },
+    {
+      "path": "maintained/command-evidence.mjs",
+      "bytes": 14682,
+      "sha256": "356525bc5f61c791fd337fe73f8d8b51fdb60d8f2e018c7f7e3dd75892ddd64c",
+      "mode": "0o644"
+    },
+    {
+      "path": "maintained/run-fixture.mjs",
+      "bytes": 2938,
+      "sha256": "7ff40ffb0396a13adc553a3b03492b27e1ddfeb4ea74becc7ceffdf627b722a5",
+      "mode": "0o644"
+    },
+    {
+      "path": "maintained/tests/ios-command-outcome.test.mjs",
+      "bytes": 8672,
+      "sha256": "0c3a0a8a7f3a17a8c9b306e789967faf864e53358236ca0ef77aaa3004983f99",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/build-portability-capsule.py",
+      "bytes": 3609,
+      "sha256": "54a1047a11d7a5153463c6e30cf1f65a9328800655a4e14b63b6dee328e94080",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/held-portable-materialized-baseline.json.txt",
+      "bytes": 1763828,
+      "sha256": "6dca4e2b915d60c2ba6381bbe378e26dec1147374b9e9032e757c2cfa81093fc",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/original-review-capacity-map.portable.json.txt",
+      "bytes": 11946,
+      "sha256": "a6e052183699df18617d53a46874527d5ce5e571ab98b24d95860b8e6330c742",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/portable-gate-summary.json.txt",
+      "bytes": 7134,
+      "sha256": "7bf525d5a88216af40d0dcc8efcdae5f582577e71756175052ae0a17e393731c",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/portable-publication-summary.json.txt",
+      "bytes": 19053,
+      "sha256": "8dc123a0a562bf7f66f6bd06d94672484285c1f7f89e9e4c001b41c2c035e7d9",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/prepare-owned.pure-before-full.py",
+      "bytes": 7215,
+      "sha256": "040cfda74ba9aa806c7488b721384aa2dfb4271ddc1214deffa623e300fb680b",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/prepare-owned.py",
+      "bytes": 7210,
+      "sha256": "d9e0475411cb1ffa05cb36e2355d5400f575d7349735a92ed41377a7864bc0c9",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/prepared-source-summary.portable.json.txt",
+      "bytes": 2019,
+      "sha256": "9b5450d2c1dad82f1a60dd1784c1ecc798aefb8bf4cea2204e649f0aca41b5da",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/producer-requalification.json.txt",
+      "bytes": 3128,
+      "sha256": "45a610773f9d570ed02f0488279515db7728f04b21af9dbcc62eec416479f448",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/reader-portable-materialized-baseline.json.txt",
+      "bytes": 1899045,
+      "sha256": "9db0527ffcf31362d433e6c287ec021466caf81f4aab08455a1739220aa9c82e",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/released-portable-materialized-baseline.json.txt",
+      "bytes": 1370321,
+      "sha256": "d25b6c767c8cd54227ba830a1e0dcc67fbea60d11163972361aee6f06b730a33",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualification/source-gate-lease.json.txt",
+      "bytes": 2402,
+      "sha256": "c9f0b506c9ddd39ec54f12856266c1829981d7483033c43153f9971164fc2e8c",
+      "mode": "0o644"
+    }
+  ],
+  "readback": "Every member byte/mode and full membership verified"
+}
