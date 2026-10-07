@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import {
   assertOriginIsPullRequestRepository,
   ledgerKeyFor,
-  logPathForAttempt,
   parseLaunchArgs,
   PR_HEAD_POLL_INTERVAL_MS,
   PR_HEAD_SETTLE_TIMEOUT_MS,
@@ -95,11 +94,6 @@ describe('shared launch arguments', () => {
     });
     expect(byHead).toBe(byShort);
     expect(byHead).not.toBe(branch);
-  });
-
-  it('keeps primary and historical retry stream paths distinct', () => {
-    expect(logPathForAttempt('/s', 1)).toBe('/s/rival.ndjson');
-    expect(logPathForAttempt('/s', 2)).toBe('/s/rival-retry.ndjson');
   });
 });
 

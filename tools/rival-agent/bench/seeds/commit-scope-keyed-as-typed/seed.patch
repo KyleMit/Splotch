@@ -49,7 +49,7 @@ index a7ab9fb1e..b2489f38f 100644
      const pr = ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'x' });
      expect(pr).toBe(
        ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'y' })
-@@ -54,22 +52,13 @@ describe('shared launch arguments', () => {
+@@ -54,21 +52,12 @@ describe('shared launch arguments', () => {
        ledgerKeyFor({ repoRoot, rival, scope: { kind: 'uncommitted' }, branch: 'x' })
      );
      expect(branch).not.toBe(pr);
@@ -73,5 +73,4 @@ index a7ab9fb1e..b2489f38f 100644
 -    expect(byHead).not.toBe(branch);
 +    expect(commit).not.toBe(branch);
    });
- 
-   it('keeps primary and historical retry stream paths distinct', () => {
+ });

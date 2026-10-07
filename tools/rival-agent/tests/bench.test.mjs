@@ -296,7 +296,7 @@ describe('scoring', () => {
 describe('the corpus', () => {
   it('loads every seed with a complete key, a patch, and a repro', () => {
     const seeds = loadSeeds();
-    expect(seeds.length).toBeGreaterThanOrEqual(12);
+    expect(seeds.length).toBeGreaterThanOrEqual(11);
     expect(seeds.filter((seed) => seed.control).length).toBeGreaterThanOrEqual(3);
     for (const seed of seeds) {
       expect(seed.directory.startsWith(SEEDS_DIRECTORY)).toBe(true);

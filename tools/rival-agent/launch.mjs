@@ -120,10 +120,6 @@ export function ledgerKeyFor({
   return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
 }
 
-export function logPathForAttempt(session, attempt) {
-  return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
-}
-
 // The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
 // anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
 // lives. Claude Code replaces its shell's TMPDIR with a directory of its own, so for that rival the
@@ -317,20 +313,18 @@ export async function launch(
       createdAt: new Date().toISOString(),
     });
   writeSessionRecord();
-  let attempt = 0;
+  const logPath = sessionPath(session, SESSION_FILES.log);
   let rivalSession;
 
   try {
     createDisposableWorktree(repoRoot, scope.head, worktree);
     writeReviewPacket(repoRoot, scope, packetDir);
     const runRound = async () => {
-      attempt += 1;
       writeSessionRecord();
       rivalSession = plan.resume
         ? { mode: 'resume', id: plan.resume }
         : { mode: 'create', id: vendor.newSessionId?.() };
       if (plan.resume) onProgress(`resuming reviewer ${plan.resume} for round ${plan.round}`);
-      const logPath = logPathForAttempt(session, attempt);
       onProgress(`stream log: ${logPath}`);
       const prompt = buildRivalPrompt({
         scope,
@@ -365,7 +359,7 @@ export async function launch(
     };
 
     const state = await runRound();
-    const done = finish(session, state, logPathForAttempt(session, attempt), {
+    const done = finish(session, state, logPath, {
       session,
       round: plan.round,
       scope,
@@ -386,7 +380,7 @@ export async function launch(
         reason: error.message,
         code: error.code,
         session,
-        logPath: logPathForAttempt(session, Math.max(attempt, 1)),
+        logPath,
       });
     }
     throw error;

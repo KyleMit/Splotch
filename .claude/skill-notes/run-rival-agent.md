@@ -11,6 +11,11 @@ swapped.
 
 ## Nothing to install
 
+The shared launcher's failed-resume path preserves the reviewer ledger and requires explicit
+authorization to start fresh. PR 2712 removed an automatic retry that discarded a pruned thread's
+identity and reset its round budget. The Claude operator reference is maintained directly in this
+registered provider package so its rounds guidance agrees with that failure behavior.
+
 Claude Code runs its Bash tool on the host, so the launcher, the broker CLI, and the poster run
 straight from the checkout. The Codex-side package needs a trusted install under `~/.local/libexec`
 because Codex's sandbox cannot read the Keychain holding the Claude login and the GitHub token; this
