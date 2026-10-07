@@ -1,11 +1,27 @@
 # Live migration campaign
 
-The maintainer resumed the full campaign on 2026-10-06 in Codex chat
-01a111b0-d64d-7c22-ab7d-865db89de7e2. The active goal covers the entire [contract](CONTRACT.md),
-including final product, physical, continuity, release and independent Codex/Claude completion
-gates. The parent integrator owns cross-unit decisions and acceptance. Prepared, executed, reviewed
-and integrated states remain distinct. This live register supersedes the pause status only; it does
-not alter historical evidence.
+The full migration goal is **paused**, unfinished, following the maintainer’s clean-stop request in
+Codex chat01a111b0-d64d-7c22-ab7d-865db89de7e2. The maintainer subsequently authorized durable
+records for a new session; implementation requires the next explicit human continuation instruction.
+Accepted integration remains cf0c4254d025094054d7ea7faab110da11c96243. The
+[continuation packet](../handoff/native-migration-continuation.md) and
+[additive pause records](evidence/resumption/paused-continuation/README.md) own the latest frontier.
+This preservation branch does not accept unfinished implementation or transfer a host/device lease.
+
+The full campaign covers the entire [contract](CONTRACT.md), including final product, physical,
+continuity, release and independent Codex/Claude gates. The parent integrator owns cross-unit
+choices and acceptance. Prepared, executed, reviewed, committed, pushed, CI and integrated states
+remain distinct. Dated observations below retain their original scopes.
+
+At the final pause, retained-control PR2702, inventory PR2706, hosted-export PR2707 and records
+PR2709 were integrated. F1 PR2703 remained draft with an exhausted original review budget; its
+changed final source lacked independent acceptance. L0 PR2708 remained draft with uncommitted
+repairs and a real pending78d merge; two unintended EPERM ownership failures halted its latest
+scoped suite before check/lint. Neutral50 source was staged atcf0, with installed-graph/source gates
+and original round two pending. Native repaired70 and current composition/runtime plans remained
+source-only. Physical, product, continuity, signed upgrade and release gates remained open. The
+immutable copied LIVE-UNITS.json and new member manifest in the pause records bind detailed owners,
+exact inputs, review identities/budgets and next gates without rewriting historical receipts.
 
 Live unit rows observed at 2026-10-06 22:38 UTC. The 20:37 rows remain historical at source
 34dc4650bf43a9fb12e7378bf4d73b6bc68ebb70. The dated repair and upgrade transitions below retain
