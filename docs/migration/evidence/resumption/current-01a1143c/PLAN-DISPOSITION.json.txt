@@ -31,7 +31,7 @@
     }
   ],
   "disposition": {
-    "neutral": "Measure qualified module signal and one actual release cost build before spending source round2 on honest source/disposition; no diagnostic-serving waiver. Current separate module diagnostic193583raw is a signal only.",
+    "neutral": "Measure qualified module signal and one actual release cost build before spending source round2 on honest source/disposition; no diagnostic-serving waiver. Earlier separate production module diagnostic193583raw is a runtime-only signal at its recorded source; neutral-module-diagnostic/README.md binds its original records, distinct from the historical193523-byte experiment.",
     "L0": "Same-ID read/held mechanics only; destination ordered transactions and pack/job obligations get separate proportional units. Check remaining original review capacity before native stage.",
     "Java21": "Shared artifact/payload/runtime trust prerequisite for L0, independent of held F1/N1; current550-row filesystem result is not runtime trust.",
     "N1": "No current candidate materialization or growth before F1; repaired7da needs original source challenge and later executed acceptance capacity.",

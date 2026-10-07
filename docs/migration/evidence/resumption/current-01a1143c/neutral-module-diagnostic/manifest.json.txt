@@ -1,0 +1,79 @@
+{
+  "scope": "Existing runtime-only production module diagnostic; inert archived bytes; not complete release cost, browser/native behavior or architectural acceptance",
+  "sourceHead": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "sourceStagedPatchSha256": "f7d458688b94ad568fa91bae4d7d7e35bc89892bc973016d26515e0f91155606",
+  "installedSnapshotRows": 64775,
+  "installedSnapshotSha256": "2a094cf9da2dcb7df22dc6c051360ac7ff0ffc97ce9a30c09ea0012f38783512",
+  "rawModuleBytes": 193583,
+  "rawModuleSha256": "49fc467ae010b8240808ac2a4d5c807bfefc4abfd916ddbf90816ece72601942",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 64994,
+    "sha256": "0a017fca3ffd2fa82b8ba48336642af32adac62fe269ab743d14baa790bff3c2"
+  },
+  "members": [
+    {
+      "path": "module-size.mjs.txt",
+      "originalRelativePath": "module-size.mjs",
+      "bytes": 5809,
+      "sha256": "25ebc1c23e57b062d483c87af91a97c44fca41a7a5ed3a47a59ea0bad0d636be",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size-command.json.txt",
+      "originalRelativePath": "module-size-command.json",
+      "bytes": 452,
+      "sha256": "b01e49aed8f17c1fba245d9389413b16519cd2d0797adcec74cda579e8100a51",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size.stdout.log.txt.txt",
+      "originalRelativePath": "module-size.stdout.log.txt",
+      "bytes": 477,
+      "sha256": "38e02a7e98d8ae7fc6349e2a9c68cf71915adda0581cd94253747df22a03e6ec",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size.stderr.log.txt.txt",
+      "originalRelativePath": "module-size.stderr.log.txt",
+      "bytes": 1060,
+      "sha256": "26e168cd9f8564923d0b62fd326337630d34d7291a71f37c9a20b7ee6d2fbfcd",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size-01/result.json.txt",
+      "originalRelativePath": "module-size-01/result.json",
+      "bytes": 5436,
+      "sha256": "52d7c2faede84cda3663ad03f77f1be15a37aca257dee7772d3c95131bee311b",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size-01/metafile.json.txt",
+      "originalRelativePath": "module-size-01/metafile.json",
+      "bytes": 3821,
+      "sha256": "79b583229f789d98cdc24ef579128ea7369d8772a253e6cf79c0d21f078e1d0c",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size-01/entry.js.txt",
+      "originalRelativePath": "module-size-01/entry.js",
+      "bytes": 191,
+      "sha256": "9cd12c94f98610b1a78d0742c3d52edd9548f885d8c2c80ea1b374e8257a1b05",
+      "mode": "0o644"
+    },
+    {
+      "path": "module-size-01/react-client.min.mjs.txt",
+      "originalRelativePath": "module-size-01/react-client.min.mjs",
+      "bytes": 193583,
+      "sha256": "49fc467ae010b8240808ac2a4d5c807bfefc4abfd916ddbf90816ece72601942",
+      "mode": "0o644"
+    }
+  ],
+  "limits": [
+    "Historical diagnostic source is cf0 plus its recorded staged patch, not published4f84 or later repaired source.",
+    "Metafile describes bundler inputs selected with production define, separately from Node runtime cache/load accounting.",
+    "Full installed snapshots, binaries and host/tool trust remain host-local; selected records do not establish independent reconstruction.",
+    "Output is one minified browser ESM entry, not the complete SvelteKit host or Vite chunks. The release guards remain required.",
+    "The older193523-byte experiment retains its original historical scope. No deterministic comparison or framework ranking follows."
+  ]
+}
