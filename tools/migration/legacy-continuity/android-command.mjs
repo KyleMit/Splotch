@@ -5,6 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { digest, FIXTURE_PATH } from './contract.mjs';
 import { capturedCommand, evidence } from './command-evidence.mjs';
 import { verifyPageReport } from './report-contract.mjs';
+import { installedAPKPath, coloringRootInventory } from './android-runtime-inputs.mjs';
 
 const PAGE_DEADLINE_MS = 30_000;
 const COMMAND_DEADLINE_MS = 30_000;
@@ -126,17 +127,8 @@ async function runtimeIdentity(context, adb) {
   assert.match(context.lease.device, /^emulator-\d+$/, 'L0_PHYSICAL_ANDROID_REFUSED');
   const name = (await adb(['emu', 'avd', 'name'])).toString().trim().split(/\r?\n/)[0];
   assert.equal(name, context.lease.deviceName, 'L0_ANDROID_DEVICE_OWNERSHIP_MISMATCH');
-  const paths = (await adb(['shell', 'pm', 'path', 'art.splotch.app']))
-    .toString()
-    .trim()
-    .split(/\r?\n/);
-  assert.equal(paths.length, 1, 'L0_SPLIT_APK_UNQUALIFIED');
-  assert.match(
-    paths[0],
-    /^package:\/data\/app\/[a-zA-Z0-9_./=+-]+\/base\.apk$/,
-    'L0_INSTALLED_APK_PATH_INVALID'
-  );
-  const apk = await adb(['exec-out', 'cat', paths[0].slice('package:'.length)]);
+  const path = installedAPKPath(await adb(['shell', 'pm', 'path', 'art.splotch.app']));
+  const apk = await adb(['exec-out', 'cat', path]);
   assert.equal(digest(apk), context.lease.artifactSha256, 'L0_INSTALLED_APK_CHANGED');
   const descendants = await adb([
     'exec-out',
@@ -144,9 +136,14 @@ async function runtimeIdentity(context, adb) {
     'art.splotch.app',
     'sh',
     '-c',
-    'if [ -d no_backup/coloring ]; then find no_backup/coloring -mindepth 1; fi',
+    "if [ -d no_backup/coloring ]; then printf 'L0_COLORING_ROOT_PRESENT\\n'; find no_backup/coloring -mindepth 1; else printf 'L0_COLORING_ROOT_ABSENT\\n'; fi",
   ]);
-  assert.equal(descendants.toString().trim(), '', 'L0A_PACK_OR_JOB_PRESENT');
+  evidence(
+    context,
+    'post-attach-coloring-inventory.json.txt',
+    JSON.stringify({ ...coloringRootInventory(descendants), commandId: context.calls.at(-1).id }) +
+      '\n'
+  );
   await adb(['shell', 'dumpsys', 'webviewupdate']);
   await adb(['shell', 'dumpsys', 'package', 'art.splotch.app']);
   await adb(['shell', 'dumpsys', 'jobscheduler']);

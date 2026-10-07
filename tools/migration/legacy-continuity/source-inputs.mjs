@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { SOURCE_REVISIONS, digest, sourceConfiguration } from './contract.mjs';
+import {
+  SOURCE_REVISIONS,
+  digest,
+  sourceConfiguration,
+  heldNamespaceConfiguration,
+} from './contract.mjs';
 
 const GIT_TIMEOUT_MS = 30_000;
 const MAX_GIT_OUTPUT_BYTES = 64 * 1024 * 1024;
@@ -29,6 +34,11 @@ const OWNER_PATHS = [
   'ios/App/App.xcodeproj/project.pbxproj',
   'ios/App/CapApp-SPM/Package.swift',
   'ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved',
+];
+
+const HELD_OWNER_PATHS = [
+  'web/src/lib/drawing/unsavedPictureStore.ts',
+  'web/src/lib/saveNaming.ts',
 ];
 
 const READER_BUILD_OWNER_PATHS = [
@@ -60,7 +70,10 @@ export function inspectSource(repo, role) {
     ...OWNER_PATHS,
     ...(role === 'released'
       ? []
-      : ['android/app/src/main/java/art/splotch/app/ColoringPackStorage.java']),
+      : [
+          'android/app/src/main/java/art/splotch/app/ColoringPackStorage.java',
+          ...HELD_OWNER_PATHS,
+        ]),
     ...(role === 'reader' ? READER_BUILD_OWNER_PATHS : []),
   ];
   const owners = paths.map((path) => {
@@ -68,7 +81,9 @@ export function inspectSource(repo, role) {
     const blob = gitBytes(repo, ['rev-parse', `${revision}:${path}`])
       .toString()
       .trim();
-    return { path, bytes: bytes.length, sha256: digest(bytes), blob };
+    const mode = gitBytes(repo, ['ls-tree', revision, '--', path]).toString().split(/\s+/)[0];
+    assert.ok(['100644', '100755'].includes(mode), 'L0_OWNER_MODE_UNQUALIFIED');
+    return { path, bytes: bytes.length, sha256: digest(bytes), blob, mode };
   });
   const read = (path) => gitBytes(repo, ['show', `${revision}:${path}`]).toString();
   const releasedStorageKeys = gitBytes(repo, [
@@ -80,6 +95,22 @@ export function inspectSource(repo, role) {
     read('web/src/lib/storageKeys.ts'),
     read('web/src/lib/secureStorage.ts'),
     releasedStorageKeys.toString()
+  );
+  const heldRevision = role === 'released' ? SOURCE_REVISIONS.held : revision;
+  const heldOwners = HELD_OWNER_PATHS.map((path) => {
+    const bytes = gitBytes(repo, ['show', `${heldRevision}:${path}`]);
+    return {
+      path,
+      bytes: bytes.length,
+      sha256: digest(bytes),
+      blob: gitBytes(repo, ['rev-parse', `${heldRevision}:${path}`])
+        .toString()
+        .trim(),
+      mode: gitBytes(repo, ['ls-tree', heldRevision, '--', path]).toString().split(/\s+/)[0],
+    };
+  });
+  configuration.heldNamespace = heldNamespaceConfiguration(
+    gitBytes(repo, ['show', `${heldRevision}:${HELD_OWNER_PATHS[0]}`]).toString()
   );
   const picturePath = 'web/static/favicon-96x96.png';
   const picture = gitBytes(repo, ['show', `${revision}:${picturePath}`]);
@@ -111,6 +142,11 @@ export function inspectSource(repo, role) {
     nativeConfig,
     configuration,
     owners,
+    heldFormatOwner: {
+      revision: heldRevision,
+      borrowedLaterNamespace: role === 'released',
+      owners: heldOwners,
+    },
     releasedKeyOwner: {
       revision: SOURCE_REVISIONS.released,
       path: 'web/src/lib/storageKeys.ts',

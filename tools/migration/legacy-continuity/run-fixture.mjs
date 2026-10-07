@@ -47,19 +47,18 @@ export async function runLegacyContinuity(argv) {
       for (const name of ['receipt', 'console', 'raw', 'result'])
         assert.ok(values[name], `L0_${name.toUpperCase()}_REQUIRED`);
     const context = commandContext({ ...values, platform });
+    let detail;
     try {
-      const detail = platform === 'android' ? await androidCommand(context) : iosReceipt(context);
-      finishEvidence(context, 'command-receipt-completed', detail ?? { command: values.command });
-      process.stdout.write(
-        JSON.stringify({
-          artifactRoot: context.root,
-          status: 'command-receipt-completed',
-        }) + '\n'
-      );
+      detail = platform === 'android' ? await androidCommand(context) : iosReceipt(context);
     } catch (error) {
       finishEvidence(context, 'failed; disposition requires actual failure reason', String(error));
       throw error;
     }
+    const status =
+      detail?.status === 'command-failure' ? 'command-failure' : 'command-receipt-completed';
+    finishEvidence(context, status, detail ?? { command: values.command });
+    process.stdout.write(JSON.stringify({ artifactRoot: context.root, status }) + '\n');
+    assert.notEqual(status, 'command-failure', 'L0_IOS_COMMAND_FAILED');
   }
 }
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   createWriteStream,
   existsSync,
@@ -11,6 +11,7 @@ import {
 import { basename, dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { assertNonce, digest, FIXTURE_COMMANDS } from './contract.mjs';
+import { spawnCommandGate } from './run-command-gate.mjs';
 
 const COMMAND_DEADLINE_MS = 10_000;
 const TEARDOWN_DEADLINE_MS = 2_000;
@@ -95,17 +96,29 @@ export function evidence(context, name, bytes) {
   return data;
 }
 
-function groupExists(pid) {
+function observeGroup(call) {
+  let observation;
   try {
-    process.kill(-pid, 0);
-    return true;
+    process.kill(-call.pid, 0);
+    observation = { status: 'present' };
   } catch (error) {
-    if (error.code === 'ESRCH') return false;
-    throw error;
+    observation =
+      error.code === 'ESRCH'
+        ? { status: 'absent' }
+        : { status: 'indeterminate', code: error.code ?? null, error: String(error) };
   }
+  call.groupObservations ??= [];
+  call.groupObservations.push({ at: new Date().toISOString(), ...observation });
+  return observation;
 }
 
-function processIdentity(pid) {
+function groupExists(call) {
+  const observation = observeGroup(call);
+  assert.notEqual(observation.status, 'indeterminate', 'L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
+  return observation.status === 'present';
+}
+
+function processIdentity(pid, timeoutMs) {
   try {
     const raw = execFileSync(
       '/bin/ps',
@@ -124,7 +137,7 @@ function processIdentity(pid) {
         '-o',
         'args=',
       ],
-      { encoding: 'utf8', timeout: COMMAND_DEADLINE_MS, env: { ...process.env, LC_ALL: 'C' } }
+      { encoding: 'utf8', timeout: timeoutMs, env: { ...process.env, LC_ALL: 'C' } }
     );
     const match = raw
       .trim()
@@ -152,7 +165,7 @@ function processIdentity(pid) {
 }
 
 function requireLiveOwner(call) {
-  const live = processIdentity(call.pid);
+  const live = processIdentity(call.pid, TEARDOWN_DEADLINE_MS);
   call.signalIdentityChecks ??= [];
   call.signalIdentityChecks.push({ at: new Date().toISOString(), live });
   assert.ok(
@@ -170,50 +183,96 @@ function requireLiveOwner(call) {
 }
 
 async function endGroup(call) {
-  if (!groupExists(call.pid)) return;
+  if (!groupExists(call)) return;
   requireLiveOwner(call);
   process.kill(-call.pid, 'SIGTERM');
   const deadline = Date.now() + TEARDOWN_DEADLINE_MS;
-  while (groupExists(call.pid) && Date.now() < deadline) await delay(POLL_INTERVAL_MS);
-  if (groupExists(call.pid)) {
+  while (groupExists(call) && Date.now() < deadline) await delay(POLL_INTERVAL_MS);
+  if (groupExists(call)) {
     requireLiveOwner(call);
     process.kill(-call.pid, 'SIGKILL');
   }
   const killDeadline = Date.now() + TEARDOWN_DEADLINE_MS;
-  while (groupExists(call.pid) && Date.now() < killDeadline) await delay(POLL_INTERVAL_MS);
-  assert.ok(!groupExists(call.pid), 'L0_OWNED_COMMAND_GROUP_REMAINS');
+  while (groupExists(call) && Date.now() < killDeadline) await delay(POLL_INTERVAL_MS);
+  assert.ok(!groupExists(call), 'L0_OWNED_COMMAND_GROUP_REMAINS');
+}
+
+async function beforeDeadline(promise, deadline) {
+  const remaining = deadline - Date.now();
+  assert.ok(remaining > 0, 'L0_COMMAND_DEADLINE');
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('L0_COMMAND_DEADLINE')), remaining);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function releaseCompletedGate(call, gate) {
+  const result = await beforeDeadline(gate.release(), Date.now() + TEARDOWN_DEADLINE_MS);
+  call.gateExit = result;
+  assert.equal(result.code, 0, 'L0_GATE_RELEASE_FAILED');
+  const observation = observeGroup(call);
+  call.naturalGroupChecks ??= [];
+  call.naturalGroupChecks.push({
+    at: new Date().toISOString(),
+    status: observation.status,
+    groupPresent:
+      observation.status === 'present' ? true : observation.status === 'absent' ? false : null,
+  });
+  assert.notEqual(observation.status, 'indeterminate', 'L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
+  if (observation.status === 'present') {
+    requireLiveOwner(call);
+    assert.fail('L0_NATURAL_TARGET_GROUP_REMAINS');
+  }
 }
 
 export async function capturedCommand(context, executable, args) {
+  const deadline = Date.now() + COMMAND_DEADLINE_MS;
   const id = String(context.calls.length + 1).padStart(3, '0');
   const stdoutName = `${id}.stdout.raw.txt`;
   const stderrName = `${id}.stderr.raw.txt`;
-  const out = createWriteStream(join(context.root, stdoutName), {
-    flags: 'wx',
-  });
-  const err = createWriteStream(join(context.root, stderrName), {
-    flags: 'wx',
-  });
+  const out = createWriteStream(join(context.root, stdoutName), { flags: 'wx' });
+  const err = createWriteStream(join(context.root, stderrName), { flags: 'wx' });
   const call = {
     id,
     executable,
     args,
     startedAt: new Date().toISOString(),
     deadlineMs: COMMAND_DEADLINE_MS,
+    deadlineAt: new Date(deadline).toISOString(),
   };
   context.calls.push(call);
-  const child = spawn(executable, args, {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
-  });
+  const gate = spawnCommandGate(call);
+  const child = gate.child;
   call.pid = child.pid;
+  const naturalEnd = { stdout: false, stderr: false };
+  child.stdout.once('end', () => {
+    naturalEnd.stdout = true;
+  });
+  child.stderr.once('end', () => {
+    naturalEnd.stderr = true;
+  });
   child.stdout.pipe(out);
   child.stderr.pipe(err);
-  const completed = new Promise((resolve, reject) => {
-    child.once('error', reject);
-    child.once('close', (code, signal) => resolve({ code, signal }));
-  });
-  completed.catch(() => {});
+  const destinations = [
+    { path: stdoutName, channel: 'stdout', stream: out, closed: false },
+    { path: stderrName, channel: 'stderr', stream: err, closed: false },
+  ];
+  const destinationClosed = destinations.map(
+    (destination) =>
+      new Promise((resolve) => {
+        destination.stream.once('close', () => {
+          destination.closed = true;
+          resolve();
+        });
+      })
+  );
   const outClosed = new Promise((resolve, reject) => {
     out.once('close', resolve);
     out.once('error', reject);
@@ -222,71 +281,131 @@ export async function capturedCommand(context, executable, args) {
     err.once('close', resolve);
     err.once('error', reject);
   });
-  let timer;
-  let output;
-  let commandError;
-  let ownershipError;
-  try {
+  for (const pending of [outClosed, errClosed]) pending.catch(() => {});
+  let cancelled = false;
+  let output, commandError, ownershipError, outputError;
+  const assertRunning = () => assert.ok(!cancelled && Date.now() < deadline, 'L0_COMMAND_DEADLINE');
+  const operation = async () => {
+    await gate.ready;
+    assertRunning();
+    const identityRemainingMs = deadline - Date.now();
+    assert.ok(identityRemainingMs > 0, 'L0_COMMAND_DEADLINE');
     call.identity = child.pid
-      ? processIdentity(child.pid)
+      ? processIdentity(child.pid, identityRemainingMs)
       : { status: 'unavailable', reason: 'L0_CHILD_NOT_SPAWNED' };
+    assertRunning();
     assert.ok(
       call.identity.status === 'observed' &&
         call.identity.ppid === process.pid &&
         call.identity.pgid === child.pid &&
-        call.identity.argv === [executable, ...args].join(' '),
+        call.identity.argv === [process.execPath, call.gatePath].join(' '),
       'L0_SPAWN_IDENTITY_UNQUALIFIED'
     );
-    const result = await Promise.race([
-      completed,
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('L0_COMMAND_DEADLINE')), COMMAND_DEADLINE_MS);
-      }),
-    ]);
+    await gate.start(executable, args);
+    assertRunning();
+    const result = await gate.result;
     call.exitCode = result.code;
     call.signal = result.signal;
-    await Promise.all([outClosed, errClosed]);
+    assertRunning();
     assert.equal(result.code, 0, `L0_COMMAND_EXIT_REFUSED: ${result.code}`);
+    await releaseCompletedGate(call, gate);
+    assertRunning();
+    await Promise.all([outClosed, errClosed]);
     output = readFileSync(join(context.root, stdoutName));
+    assertRunning();
+  };
+  try {
+    await beforeDeadline(Promise.race([operation(), gate.fault]), deadline);
   } catch (error) {
-    call.failure = String(error);
-    commandError = error;
+    if (
+      call.naturalGroupChecks?.at(-1)?.status &&
+      call.naturalGroupChecks.at(-1).status !== 'absent'
+    ) {
+      call.unresolvedOwnership = String(error);
+      ownershipError = error;
+    } else {
+      call.failure = String(error);
+      commandError = error;
+    }
   } finally {
-    clearTimeout(timer);
+    cancelled = true;
     try {
-      if (child.pid) await endGroup(call);
+      if (gate.terminal) await releaseCompletedGate(call, gate);
+      else if (child.pid) await endGroup(call);
     } catch (error) {
       call.unresolvedOwnership = String(error);
-      child.unref();
       ownershipError = error;
-    } finally {
-      child.stdout.unpipe(out);
-      child.stderr.unpipe(err);
-      child.stdout.destroy();
-      child.stderr.destroy();
-      out.end();
-      err.end();
-      await Promise.all([outClosed, errClosed]);
-      call.endedAt = new Date().toISOString();
-      call.groupAbsent = child.pid ? !groupExists(child.pid) : true;
-      for (const name of [stdoutName, stderrName]) {
-        const bytes = readFileSync(join(context.root, name));
-        context.artifacts.push({
-          path: name,
-          bytes: bytes.length,
-          sha256: digest(bytes),
-        });
-      }
-      writeFileSync(
-        join(context.root, 'commands.json.txt'),
-        JSON.stringify(context.calls, null, 2) + '\n'
-      );
     }
+    if (child.connected) child.disconnect();
+    child.unref();
+    call.channelEndBeforeFinalization = { ...naturalEnd };
+    child.stdout.unpipe(out);
+    child.stderr.unpipe(err);
+    child.stdout.destroy();
+    child.stderr.destroy();
+    out.end();
+    err.end();
+    try {
+      await beforeDeadline(Promise.all([outClosed, errClosed]), Date.now() + TEARDOWN_DEADLINE_MS);
+    } catch (error) {
+      call.outputFinalizationFailure = String(error);
+      outputError = error;
+      out.destroy();
+      err.destroy();
+      try {
+        await beforeDeadline(Promise.all(destinationClosed), Date.now() + TEARDOWN_DEADLINE_MS);
+      } catch (closeError) {
+        call.outputCloseFailure = String(closeError);
+        outputError = new AggregateError([error, closeError], 'L0_OUTPUT_FINALIZATION_UNSETTLED');
+      }
+    }
+    if (call.gateFailure && !commandError) commandError = new Error(call.gateFailure);
+    call.endedAt = new Date().toISOString();
+    const finalGroup = child.pid ? observeGroup(call) : { status: 'absent' };
+    call.groupAbsent = finalGroup.status === 'absent';
+    if (finalGroup.status === 'indeterminate') {
+      ownershipError ??= new Error('L0_PROCESS_GROUP_UNOBSERVABLE_NO_SIGNAL');
+      call.unresolvedOwnership ??= String(ownershipError);
+    }
+    call.targetResult = gate.terminal ?? null;
+    for (const destination of destinations) {
+      const { path: name, channel, closed } = destination;
+      if (!closed) {
+        call.unsettledOutputPaths ??= [];
+        call.unsettledOutputPaths.push({
+          path: name,
+          status: 'close-unsettled',
+          hashOmitted: true,
+        });
+        continue;
+      }
+      const bytes = readFileSync(join(context.root, name));
+      const natural = call.channelEndBeforeFinalization[channel];
+      const complete =
+        natural &&
+        gate.terminal?.kind === 'exit' &&
+        call.groupAbsent &&
+        !ownershipError &&
+        !outputError &&
+        !call.gateFailure &&
+        !call.failure?.includes('L0_COMMAND_DEADLINE');
+      context.artifacts.push({
+        path: name,
+        bytes: bytes.length,
+        sha256: digest(bytes),
+        complete,
+        streamCompletion: natural ? 'natural-eof' : 'forced-or-unsettled',
+      });
+    }
+    writeFileSync(
+      join(context.root, 'commands.json.txt'),
+      JSON.stringify(context.calls, null, 2) + '\n'
+    );
   }
-  if (commandError && ownershipError)
-    throw new AggregateError([commandError, ownershipError], 'L0_COMMAND_AND_OWNERSHIP_UNRESOLVED');
-  if (ownershipError) throw ownershipError;
-  if (commandError) throw commandError;
+  const failures = [commandError, ownershipError, outputError].filter(Boolean);
+  if (failures.length > 1)
+    throw new AggregateError(failures, 'L0_COMMAND_AND_OWNERSHIP_UNRESOLVED');
+  if (failures.length === 1) throw failures[0];
   return output;
 }
 

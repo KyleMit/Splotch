@@ -4,13 +4,19 @@ import { createHash } from 'node:crypto';
 export const FIXTURE_PATH = '/legacy-continuity.html';
 const FIXTURE_OWNER_KEY = 'splotch-l0-owner';
 const UNRELATED_SENTINEL_KEY = 'splotch-l0-unrelated';
+const HELD_UNDEFINED_OWNER_KEY = 'splotch-l0-held-undefined-owner';
+export const FIXTURE_DEBUG_SIGNING = Object.freeze({
+  propertiesName: '.splotch-l0-debug-signing.properties',
+  keystoreName: '.splotch-l0-debug.keystore',
+  alias: 'splotch-l0-owned',
+});
 const NATIVE_SECURE_PREFIX = 'capacitor-storage_';
 const NATIVE_PREFERENCES_GROUP = 'CapacitorStorage';
 const NATIVE_VAULT_PREFERENCES = 'WSSecureStorageSharedPreferences';
 export const SOURCE_REVISIONS = Object.freeze({
   released: 'd8b86469f63c57a06a9de45664a42eea15b99eb0',
   held: 'ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4',
-  reader: '709fadd68ecb802aa2c9daa3fc197ce8d072b23c',
+  reader: '78d844ce36845e13690e2ca4ee7fcd645eb128d0',
 });
 export const FIXTURE_COMMANDS = Object.freeze([
   'raw',
@@ -36,7 +42,9 @@ export const FIXTURE_COMMANDS = Object.freeze([
   'held-seed',
   'held-read',
   'held-false-hint',
+  'held-missing-hint',
   'held-undefined',
+  'held-restore-undefined',
   'cleanup',
 ]);
 
@@ -59,6 +67,22 @@ function sourceLiteral(source, name) {
   ];
   assert.equal(matches.length, 1, `L0_OWNER_LITERAL_CHANGED: ${name}`);
   return matches[0][1];
+}
+
+export function exposeHeldRecognizer(source) {
+  return replaceOnce(
+    source,
+    'function isStoredPicture(value: unknown): value is StoredPicture {',
+    'export function isStoredPicture(value: unknown): value is StoredPicture {'
+  );
+}
+
+export function heldNamespaceConfiguration(source) {
+  return {
+    database: sourceLiteral(source, 'DB_NAME'),
+    store: sourceLiteral(source, 'STORE'),
+    key: sourceLiteral(source, 'HELD_KEY'),
+  };
 }
 
 export function sourceConfiguration(role, storageKeys, secureStorage, releasedStorageKeys) {
@@ -91,6 +115,7 @@ export function sourceConfiguration(role, storageKeys, secureStorage, releasedSt
     path: FIXTURE_PATH,
     ownerKey: FIXTURE_OWNER_KEY,
     unrelatedKey: UNRELATED_SENTINEL_KEY,
+    heldUndefinedOwnerKey: HELD_UNDEFINED_OWNER_KEY,
     keys,
     legacyDrawerKey,
     extraKeys,
@@ -107,6 +132,7 @@ export function sourceConfiguration(role, storageKeys, secureStorage, releasedSt
         ...extraKeys,
         FIXTURE_OWNER_KEY,
         UNRELATED_SENTINEL_KEY,
+        HELD_UNDEFINED_OWNER_KEY,
       ]),
     ],
     vaultAccounts: secretNames.map((name) => NATIVE_SECURE_PREFIX + name),

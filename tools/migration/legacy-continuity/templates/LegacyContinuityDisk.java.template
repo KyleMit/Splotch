@@ -85,20 +85,41 @@ final class LegacyContinuityDisk {
         return result;
     }
 
-    static JSObject read(Context context, String group, String[] keys) throws Exception {
-        File directory = new File(context.getApplicationInfo().dataDir, "shared_prefs");
-        File file = new File(directory, group + ".xml");
-        File backup = new File(directory, group + ".xml.bak");
+    private static JSObject capture(File file, String[] keys) {
         JSObject result = new JSObject();
         result.put("path", file.getAbsolutePath());
-        result.put("filePresent", file.exists());
-        result.put("backupPresent", backup.exists());
-        if (!file.exists()) return result;
-        byte[] contents = bytes(file);
-        result.put("bytes", contents.length);
-        result.put("sha256", digest(contents));
-        result.put("base64", Base64.encodeToString(contents, Base64.NO_WRAP));
-        result.put("rows", rows(contents, keys));
+        result.put("present", file.exists());
+        if (!file.exists()) {
+            result.put("status", "absent");
+            return result;
+        }
+        try {
+            byte[] contents = bytes(file);
+            JSObject raw = new JSObject();
+            raw.put("kind", "buffer");
+            raw.put("bytes", contents.length);
+            raw.put("sha256", digest(contents));
+            raw.put("base64", Base64.encodeToString(contents, Base64.NO_WRAP));
+            result.put("raw", raw);
+            try {
+                result.put("rows", rows(contents, keys));
+                result.put("status", "parsed");
+            } catch (Exception error) {
+                result.put("status", "parse-refused");
+                result.put("parseError", error.toString());
+            }
+        } catch (Exception error) {
+            result.put("status", "capture-failed");
+            result.put("readError", error.toString());
+        }
+        return result;
+    }
+
+    static JSObject read(Context context, String group, String[] keys) {
+        File directory = new File(context.getApplicationInfo().dataDir, "shared_prefs");
+        JSObject result = new JSObject();
+        result.put("primary", capture(new File(directory, group + ".xml"), keys));
+        result.put("backup", capture(new File(directory, group + ".xml.bak"), keys));
         return result;
     }
 }

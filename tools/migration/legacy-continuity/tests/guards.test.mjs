@@ -5,8 +5,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { capturedCommand } from '../command-evidence.mjs';
+import { controlGroupObservation } from './process-group-observation.mjs';
 import { runLegacyContinuity } from '../run-fixture.mjs';
-import { digest, sourceConfiguration } from '../contract.mjs';
+import { digest, sourceConfiguration, heldNamespaceConfiguration } from '../contract.mjs';
 import { nativeOverlay } from '../native-overlay.mjs';
 import {
   verifyBuffers,
@@ -30,8 +31,14 @@ const readerKeys = () => readFileSync(join(ROOT, 'web/src/lib/storageKeys.ts'), 
 const secretOwner = () => readFileSync(join(ROOT, 'web/src/lib/secureStorage.ts'), 'utf8');
 const releasedKeys = () =>
   readFileSync(join(import.meta.dirname, 'fixtures/released-storageKeys.ts.txt'), 'utf8');
-const configuration = () =>
-  sourceConfiguration('reader', readerKeys(), secretOwner(), releasedKeys());
+const heldNamespace = () =>
+  heldNamespaceConfiguration(
+    readFileSync(join(ROOT, 'web/src/lib/drawing/unsavedPictureStore.ts'), 'utf8')
+  );
+const configuration = () => ({
+  ...sourceConfiguration('reader', readerKeys(), secretOwner(), releasedKeys()),
+  heldNamespace: heldNamespace(),
+});
 
 describe('legacy continuity source boundaries', () => {
   it('imports the real entry without parsing flags or executing commands', () => {
@@ -130,6 +137,14 @@ describe('legacy continuity source boundaries', () => {
         'bridge.registerPluginInstance(LegacyContinuityObserver())'
       );
       expect(positive[project]).toContain('LegacyContinuityDriver.swift in Sources');
+      const marker = configuration().heldUndefinedOwnerKey;
+      expect(configuration().observedKeys.filter((key) => key === marker)).toEqual([marker]);
+      expect(
+        positive['android/app/src/main/java/art/splotch/app/LegacyContinuityObserver.java']
+      ).toContain(JSON.stringify(marker));
+      expect(positive['ios/App/App/LegacyContinuityObserver.swift']).toContain(
+        JSON.stringify(marker)
+      );
       for (const [path, bytes] of originals) expect(readFileSync(join(owned, path))).toEqual(bytes);
     } finally {
       rmSync(owned, { recursive: true });
@@ -183,19 +198,29 @@ describe('legacy continuity report boundaries', () => {
     };
     const lostTag = structuredClone(positive);
     lostTag.raw.fields[0].fields.bytes = {};
-    expect(() => verifyHeldObservation(lostTag)).toThrow(/L0_ENCODED_KIND_MISSING/);
+    expect(() => verifyHeldObservation(lostTag, heldNamespace())).toThrow(
+      /L0_ENCODED_KIND_MISSING/
+    );
     const wrongTag = structuredClone(positive);
     wrongTag.raw.fields[0].fields.bytes = { kind: 'undefined' };
-    expect(() => verifyHeldObservation(wrongTag)).toThrow(/L0_HELD_RECOGNIZED_BYTES_MISSING/);
-    expect(() => verifyHeldObservation(positive)).not.toThrow();
-    expect(() => verifyHeldObservation({ status: 'absent-record', count: 1 })).toThrow(
-      /L0_HELD_ABSENCE_COUNT_CHANGED/
+    expect(() => verifyHeldObservation(wrongTag, heldNamespace())).toThrow(
+      /L0_HELD_RECOGNIZED_BYTES_MISSING/
     );
-    expect(() => verifyHeldObservation({ status: 'absent-record', count: 0 })).not.toThrow();
+    expect(() => verifyHeldObservation(positive, heldNamespace())).not.toThrow();
+    expect(() =>
+      verifyHeldObservation({ status: 'absent-record', count: 1 }, heldNamespace())
+    ).toThrow(/L0_HELD_ABSENCE_COUNT_CHANGED/);
+    expect(() =>
+      verifyHeldObservation({ status: 'absent-record', count: 0 }, heldNamespace())
+    ).not.toThrow();
   });
 
   it('refuses a wrong source, origin or normal boot and restores the positive', () => {
-    const input = { role: 'reader', revision: 'c'.repeat(40) };
+    const input = {
+      role: 'reader',
+      revision: 'c'.repeat(40),
+      configuration: { heldNamespace: heldNamespace() },
+    };
     const positive = {
       command: 'raw',
       nonce: NONCE,
@@ -270,20 +295,14 @@ describe('legacy continuity report boundaries', () => {
 });
 
 function groupExists(pid) {
-  try {
-    process.kill(-pid, 0);
-    return true;
-  } catch (error) {
-    if (error.code === 'ESRCH') return false;
-    throw error;
-  }
+  return controlGroupObservation(pid).status !== 'absent';
 }
 
 describe('legacy continuity command ownership', () => {
   it('preserves command and ownership failures before restoring a successful owned command', async () => {
     const owned = mkdtempSync(join(tmpdir(), 'splotch-l0-combined-process-control-'));
     const context = { root: owned, calls: [], artifacts: [] };
-    const exitScript = `setTimeout(() => process.exit(${PROCESS_CONTROL_FAILURE_CODE}), ${PROCESS_CONTROL_START_MS})`;
+    const exitScript = `process.exit(${PROCESS_CONTROL_FAILURE_CODE})`;
     const orphanScript = [
       "const { spawn } = require('node:child_process');",
       `setTimeout(() => spawn(process.execPath, ['-e', 'setTimeout(() => {}, ${PROCESS_CONTROL_CHILD_MS})'], {stdio: 'ignore'}), ${PROCESS_CONTROL_START_MS});`,
@@ -319,7 +338,7 @@ describe('legacy continuity command ownership', () => {
       expect(groupExists(call.pid)).toBe(false);
       const restored = await capturedCommand(context, process.execPath, [
         '-e',
-        `setTimeout(() => process.stdout.write('restored'), ${PROCESS_CONTROL_START_MS})`,
+        "process.stdout.write('restored')",
       ]);
       expect(restored.toString()).toBe('restored');
       expect(context.calls.at(-1).groupAbsent).toBe(true);
@@ -353,7 +372,7 @@ describe('legacy continuity command ownership', () => {
       expect(groupExists(call.pid)).toBe(false);
       const positive = await capturedCommand(context, process.execPath, [
         '-e',
-        `setTimeout(() => process.stdout.write('restored'), ${PROCESS_CONTROL_START_MS})`,
+        "process.stdout.write('restored')",
       ]);
       expect(positive.toString()).toBe('restored');
       expect(context.calls.at(-1).groupAbsent).toBe(true);

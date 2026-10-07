@@ -1,0 +1,39 @@
+def l0FixtureRoot = rootProject.projectDir.parentFile.canonicalFile
+def l0OwnerFile = new File(l0FixtureRoot, '.splotch-l0-owner.json')
+if (!l0FixtureRoot.path.startsWith('/private/tmp/') ||
+        !l0FixtureRoot.name.startsWith('splotch-legacy-continuity-') ||
+        !l0OwnerFile.isFile() || java.nio.file.Files.isSymbolicLink(l0OwnerFile.toPath())) {
+    throw new GradleException('L0_DEBUG_SIGNING_FIXTURE_OWNER_REQUIRED')
+}
+def l0Owner = new groovy.json.JsonSlurper().parse(l0OwnerFile)
+if (!(l0Owner instanceof Map) || l0Owner.unit != 'L0' || !(l0Owner.root instanceof String) ||
+        new File(l0Owner.root).canonicalFile != l0FixtureRoot) {
+    throw new GradleException('L0_DEBUG_SIGNING_FIXTURE_OWNER_MISMATCH')
+}
+if (rootProject.file('keystore.properties').exists()) {
+    throw new GradleException('L0_RELEASE_SIGNING_INPUT_REFUSED')
+}
+def l0PrivatePermissions = [java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+                          java.nio.file.attribute.PosixFilePermission.OWNER_WRITE] as Set
+def l0RequirePrivateFile = { name ->
+    def selected = new File(l0FixtureRoot, name)
+    if (!selected.isFile() || java.nio.file.Files.isSymbolicLink(selected.toPath()) ||
+            java.nio.file.Files.getPosixFilePermissions(selected.toPath()) != l0PrivatePermissions) {
+        throw new GradleException('L0_DEBUG_SIGNING_PRIVATE_INPUT_REQUIRED')
+    }
+    selected
+}
+def l0DebugPropertiesFile = l0RequirePrivateFile('__L0_DEBUG_propertiesName__')
+def l0DebugKeyFile = l0RequirePrivateFile('__L0_DEBUG_keystoreName__')
+def l0DebugKeyAlias = '__L0_DEBUG_alias__'
+def l0MaxPropertiesBytes = 4096
+if (l0DebugPropertiesFile.length() > l0MaxPropertiesBytes) {
+    throw new GradleException('L0_DEBUG_SIGNING_PROPERTIES_BOUND_EXCEEDED')
+}
+def l0DebugPasswords = new Properties()
+l0DebugPropertiesFile.withInputStream { l0DebugPasswords.load(it) }
+if (l0DebugPasswords.stringPropertyNames() != (['storePassword', 'keyPassword'] as Set) ||
+        l0DebugPasswords.values().any { !(it instanceof String) || !(it ==~ /[a-f0-9]{64}/) }) {
+    throw new GradleException('L0_DEBUG_SIGNING_PROPERTIES_INVALID')
+}
+

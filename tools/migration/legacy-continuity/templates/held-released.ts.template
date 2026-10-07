@@ -9,3 +9,7 @@ export async function seedHeld(_nonce: string): Promise<never> {
 export function falseHeldHint(): never {
   throw new Error('L0_RELEASED_HAS_NO_HELD_FORMAT');
 }
+
+export function removeHeldHint(): never {
+  throw new Error('L0_RELEASED_HAS_NO_HELD_FORMAT');
+}

@@ -12,7 +12,13 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
-import { FIXTURE_PATH, digest } from './contract.mjs';
+import {
+  FIXTURE_PATH,
+  FIXTURE_DEBUG_SIGNING,
+  digest,
+  exposeHeldRecognizer,
+  replaceOnce,
+} from './contract.mjs';
 import { nativeOverlay } from './native-overlay.mjs';
 import { inspectSource, sourceTree } from './source-inputs.mjs';
 
@@ -49,14 +55,46 @@ function verifyExtractedFiles(root, entries) {
   }
 }
 
+function debugSigningOverlay(root, read) {
+  const source = readFileSync(join(root, 'android/app/build.gradle'), 'utf8');
+  assert.doesNotMatch(
+    source,
+    /signingConfigs\.debug|^\s*debug\s*\{/m,
+    'L0_FIXTURE_DEBUG_OWNER_CHANGED'
+  );
+  let setup = read('debug-signing.gradle.template');
+  for (const [name, value] of Object.entries(FIXTURE_DEBUG_SIGNING)) {
+    setup = replaceOnce(setup, `__L0_DEBUG_${name}__`, value);
+  }
+  const signingBlock = `        debug {
+            storeFile l0DebugKeyFile
+            storePassword l0DebugPasswords['storePassword']
+            keyAlias l0DebugKeyAlias
+            keyPassword l0DebugPasswords['keyPassword']
+        }
+`;
+  return (
+    setup + replaceOnce(source, '    signingConfigs {\n', '    signingConfigs {\n' + signingBlock)
+  );
+}
+
 function fixtureOverlay(root, input) {
   const templates = join(import.meta.dirname, 'templates');
   const read = (name) => readFileSync(join(templates, name), 'utf8');
   const route = 'web/src/routes/legacy-continuity.html';
   const nativeConfig = structuredClone(input.nativeConfig);
   nativeConfig.server.appStartPath = FIXTURE_PATH;
+  const heldOwnerPath = 'web/src/lib/drawing/unsavedPictureStore.ts';
+  const heldOverlay =
+    input.role === 'released'
+      ? {}
+      : {
+          [heldOwnerPath]: exposeHeldRecognizer(readFileSync(join(root, heldOwnerPath), 'utf8')),
+        };
   return {
+    ...heldOverlay,
     'capacitor.config.json': JSON.stringify(nativeConfig, null, 2) + '\n',
+    'android/app/build.gradle': debugSigningOverlay(root, read),
     [`${route}/+page.svelte`]: read('page.svelte.template'),
     [`${route}/+page.ts`]: read('page.ts.template'),
     [`${route}/fixture-config.ts`]: `export const fixtureConfig = ${JSON.stringify(input.configuration, null, 2)} as const;\n`,

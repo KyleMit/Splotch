@@ -1,8 +1,7 @@
 import { isCurrentHeldPicture } from './held-owner';
+import { fixtureConfig } from './fixture-config';
 
-const DATABASE = 'splotch-unsaved-pictures';
-const STORE = 'held';
-const KEY = 'pictures';
+const { database: DATABASE, store: STORE, key: KEY } = fixtureConfig.heldNamespace;
 const BASE64_CHUNK_BYTES = 8_192;
 
 type EncodedValue =
@@ -80,37 +79,37 @@ function request<T>(value: IDBRequest<T>): Promise<T> {
   });
 }
 
-async function openExisting(): Promise<IDBDatabase | null> {
-  return new Promise((resolve, reject) => {
+async function openExisting(): Promise<{ db: IDBDatabase | null; databases: IDBDatabaseInfo[] }> {
+  if (typeof indexedDB.databases !== 'function') throw new Error('L0_IDB_ENUMERATION_UNQUALIFIED');
+  const databases = await indexedDB.databases();
+  if (!databases.some((entry) => entry.name === DATABASE)) return { db: null, databases };
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const opening = indexedDB.open(DATABASE);
-    let created = false;
+    let changed = false;
     opening.onupgradeneeded = () => {
-      created = true;
+      changed = true;
       opening.transaction?.abort();
     };
-    opening.onerror = () => {
-      if (created && opening.error?.name === 'AbortError') resolve(null);
-      else reject(opening.error ?? new Error('L0_IDB_OPEN_FAILED'));
-    };
+    opening.onerror = () =>
+      reject(
+        changed
+          ? new Error('L0_IDB_LISTED_SOURCE_CHANGED')
+          : (opening.error ?? new Error('L0_IDB_OPEN_FAILED'))
+      );
     opening.onblocked = () => reject(new Error('L0_IDB_OPEN_BLOCKED'));
     opening.onsuccess = () => {
-      if (created) {
+      if (changed) {
         opening.result.close();
-        reject(new Error('L0_IDB_CREATED_UNEXPECTEDLY'));
+        reject(new Error('L0_IDB_LISTED_SOURCE_CHANGED'));
       } else resolve(opening.result);
     };
   });
+  return { db, databases };
 }
 
 export async function readHeldRaw(): Promise<HeldObservation> {
-  const db = await openExisting();
-  if (!db) {
-    if (typeof indexedDB.databases !== 'function') throw new Error('L0_IDB_ABSENCE_UNQUALIFIED');
-    const databases = await indexedDB.databases();
-    if (databases.some((entry) => entry.name === DATABASE))
-      throw new Error('L0_IDB_ABSENCE_CREATED_DATABASE');
-    return { status: 'absent-database', databases };
-  }
+  const { db, databases } = await openExisting();
+  if (!db) return { status: 'absent-database', databases };
   try {
     if (!db.objectStoreNames.contains(STORE))
       return {
@@ -124,12 +123,10 @@ export async function readHeldRaw(): Promise<HeldObservation> {
       tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('L0_IDB_TRANSACTION_FAILED'));
     });
     const store = tx.objectStore(STORE);
-    const [raw, count, key] = await Promise.all([
-      request(store.get(KEY)),
-      request(store.count(KEY)),
-      request(store.getKey(KEY)),
+    const [[raw, count, key]] = await Promise.all([
+      Promise.all([request(store.get(KEY)), request(store.count(KEY)), request(store.getKey(KEY))]),
+      done,
     ]);
-    await done;
     if (count === 0 && key === undefined) return { status: 'absent-record', count };
     if (count !== 1 || key !== KEY) throw new Error('L0_IDB_EXISTENCE_DISAGREEMENT');
     const entries: unknown[] = Array.isArray(raw) ? raw : [raw];
@@ -155,7 +152,7 @@ export async function readHeldRaw(): Promise<HeldObservation> {
 }
 
 export async function putUndefinedHeldControl() {
-  const db = await openExisting();
+  const { db } = await openExisting();
   if (!db) throw new Error('L0_HELD_CONTROL_REQUIRES_REAL_SEED');
   try {
     if (!db.objectStoreNames.contains(STORE)) throw new Error('L0_HELD_CONTROL_REQUIRES_REAL_SEED');

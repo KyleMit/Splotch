@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 import WebKit
 
@@ -98,9 +99,11 @@ final class LegacyContinuityDriver {
             try bytes.write(to: target, options: .withoutOverwriting)
             let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
             print("SPLOTCH_L0_RESULT \(receiptId) \(phase) \(bytes.count) \(digest)")
+            guard fflush(stdout) == 0 else { return false }
             return true
         } catch {
             print("SPLOTCH_L0_RESULT_FAILURE \(receiptId) \(phase) \(String(describing: error))")
+            _ = fflush(stdout)
             return false
         }
     }

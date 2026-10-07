@@ -1,19 +1,7 @@
 import { createUnsavedPictureStore } from '$lib/drawing/unsavedPictureStore';
-import { isUnsavedStatus } from '$lib/saveNaming';
-import { STORAGE_KEYS, writeBool } from '$lib/storage';
+export { isStoredPicture as isCurrentHeldPicture } from '$lib/drawing/unsavedPictureStore';
+import { STORAGE_KEYS, writeBool, removeKey } from '$lib/storage';
 import { fixtureConfig } from './fixture-config';
-
-export function isCurrentHeldPicture(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false;
-  const record = value as Record<string, unknown>;
-  return (
-    record.bytes instanceof ArrayBuffer &&
-    typeof record.type === 'string' &&
-    typeof record.baseName === 'string' &&
-    isUnsavedStatus(record.outcome) &&
-    (record.signature === null || typeof record.signature === 'string')
-  );
-}
 
 export async function seedHeld(nonce: string) {
   const binary = atob(fixtureConfig.picture.base64);
@@ -30,4 +18,8 @@ export async function seedHeld(nonce: string) {
 
 export function falseHeldHint() {
   writeBool(STORAGE_KEYS.unsavedPicturesHeld, false);
+}
+
+export function removeHeldHint() {
+  removeKey(STORAGE_KEYS.unsavedPicturesHeld);
 }

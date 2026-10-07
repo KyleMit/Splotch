@@ -19,7 +19,7 @@ import {
 } from '$lib/secureStorage';
 import { fixtureConfig } from './fixture-config';
 import { readHeldRaw, putUndefinedHeldControl } from './held-reader';
-import { seedHeld, falseHeldHint } from './held-owner';
+import { seedHeld, falseHeldHint, removeHeldHint } from './held-owner';
 import { parsedSettings } from './settings-parser';
 
 interface NativeObservation {
@@ -142,6 +142,36 @@ async function requireOwnedHeld(nonce: string) {
   ) {
     throw new Error('L0_HELD_BYTES_MISMATCH');
   }
+}
+
+async function putOwnedUndefinedHeld(nonce: string) {
+  const marker = await Preferences.get({ key: fixtureConfig.heldUndefinedOwnerKey });
+  if (marker.value !== null) throw new Error('L0_HELD_CONTROL_MARKER_REQUIRES_ABSENCE');
+  await putUndefinedHeldControl();
+  await Preferences.set({ key: fixtureConfig.heldUndefinedOwnerKey, value: nonce });
+}
+
+async function restoreOwnedUndefinedHeld(nonce: string) {
+  const marker = await Preferences.get({ key: fixtureConfig.heldUndefinedOwnerKey });
+  if (marker.value !== nonce) throw new Error('L0_HELD_RESTORE_MARKER_MISMATCH');
+  const held = await readHeldRaw();
+  if (
+    !('raw' in held) ||
+    held.status !== 'invalid-source' ||
+    !held.complete ||
+    held.count !== 1 ||
+    held.key !== fixtureConfig.heldNamespace.key ||
+    held.entryCount !== 1 ||
+    held.recognized.length !== 1 ||
+    held.recognized[0] !== false ||
+    held.raw.kind !== 'undefined'
+  ) {
+    throw new Error('L0_HELD_RESTORE_REQUIRES_OWNED_UNDEFINED');
+  }
+  await seedHeld(nonce);
+  await requireOwnedHeld(nonce);
+  await Preferences.remove({ key: fixtureConfig.heldUndefinedOwnerKey });
+  return readHeldRaw();
 }
 
 async function requireOwner(nonce: string) {
@@ -332,11 +362,20 @@ async function executeOwned(command: Command, nonce: string): Promise<unknown> {
     await seedHeld(nonce);
     return readHeldRaw();
   }
-  if (command === 'held-false-hint' || command === 'held-undefined') {
+  if (command === 'held-restore-undefined') {
+    if (selectedRole() !== 'held') throw new Error('L0_HELD_WRITER_SOURCE_REQUIRED');
+    return restoreOwnedUndefinedHeld(nonce);
+  }
+  if (
+    command === 'held-false-hint' ||
+    command === 'held-missing-hint' ||
+    command === 'held-undefined'
+  ) {
     if (selectedRole() !== 'held') throw new Error('L0_HELD_CONTROL_SOURCE_REQUIRED');
     await requireOwnedHeld(nonce);
     if (command === 'held-false-hint') falseHeldHint();
-    else await putUndefinedHeldControl();
+    else if (command === 'held-missing-hint') removeHeldHint();
+    else await putOwnedUndefinedHeld(nonce);
     return readHeldRaw();
   }
   if (command === 'cleanup') {

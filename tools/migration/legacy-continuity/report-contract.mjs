@@ -58,10 +58,14 @@ function hasUnsupported(value) {
   );
 }
 
-export function verifyHeldObservation(value) {
+export function verifyHeldObservation(value, namespace) {
   assert.ok(value && typeof value === 'object', 'L0_HELD_OBSERVATION_MISSING');
   if (value.status === 'absent-database') {
     assert.ok(Array.isArray(value.databases), 'L0_HELD_DATABASE_ENUMERATION_MISSING');
+    assert.ok(
+      !value.databases.some((entry) => entry.name === namespace.database),
+      'L0_HELD_LISTED_DATABASE_NOT_ABSENT'
+    );
     return;
   }
   if (value.status === 'absent-record') {
@@ -79,7 +83,7 @@ export function verifyHeldObservation(value) {
   verifyEncodedValue(value.raw);
   assert.equal(value.complete, !hasUnsupported(value.raw), 'L0_HELD_COMPLETENESS_CHANGED');
   assert.equal(value.count, 1, 'L0_HELD_PRESENCE_COUNT_CHANGED');
-  assert.equal(value.key, 'pictures', 'L0_HELD_KEY_CHANGED');
+  assert.equal(value.key, namespace.key, 'L0_HELD_KEY_CHANGED');
   assert.ok(
     Array.isArray(value.recognized) &&
       value.recognized.every((entry) => typeof entry === 'boolean'),
@@ -119,18 +123,45 @@ export function verifyHeldObservation(value) {
   });
 }
 
+function verifyDiskObservation(value) {
+  assert.ok(value && typeof value === 'object', 'L0_DISK_OBSERVATION_MISSING');
+  for (const group of ['preferences', 'vault']) {
+    for (const name of ['primary', 'backup']) {
+      const file = value[group]?.[name];
+      assert.ok(file && typeof file === 'object', 'L0_DISK_FILE_OBSERVATION_MISSING');
+      assert.equal(typeof file.path, 'string', 'L0_DISK_FILE_PATH_MISSING');
+      assert.equal(typeof file.present, 'boolean', 'L0_DISK_FILE_PRESENCE_MISSING');
+      assert.ok(
+        ['absent', 'parsed', 'parse-refused', 'capture-failed'].includes(file.status),
+        'L0_DISK_FILE_STATUS_MISSING'
+      );
+      if (file.status === 'parsed' || file.status === 'parse-refused') {
+        assert.equal(file.present, true, 'L0_DISK_CAPTURE_PRESENCE_CHANGED');
+        assert.equal(file.raw?.kind, 'buffer', 'L0_DISK_RAW_BYTES_MISSING');
+        verifyBuffers(file.raw);
+      }
+      assert.notEqual(file.status, 'capture-failed', 'L0_DISK_CAPTURE_FAILED');
+      assert.notEqual(file.status, 'parse-refused', 'L0_DISK_PARSE_REFUSED');
+      if (file.status === 'absent') assert.equal(file.present, false, 'L0_DISK_ABSENCE_CHANGED');
+      else assert.ok(file.rows && typeof file.rows === 'object', 'L0_DISK_PARSED_ROWS_MISSING');
+    }
+  }
+}
+
 export function verifyPageReport(value, { command, nonce, input, platform }) {
   assert.equal(value.command, command, 'L0_COMMAND_IDENTITY_CHANGED');
   assert.equal(value.nonce, nonce, 'L0_NONCE_CHANGED');
   assert.equal(value.revision, input.revision, 'L0_PAGE_SOURCE_CHANGED');
   assert.equal(value.role, input.role, 'L0_PAGE_ROLE_CHANGED');
   verifyBuffers(value);
-  if (command.startsWith('held-')) verifyHeldObservation(value.result);
-  if (command === 'raw') verifyHeldObservation(value.result.held);
-  if (command === 'seed') verifyHeldObservation(value.result.snapshot.held);
+  if (command === 'disk' && platform === 'android') verifyDiskObservation(value.result);
+  const verifyHeld = (held) => verifyHeldObservation(held, input.configuration.heldNamespace);
+  if (command.startsWith('held-')) verifyHeld(value.result);
+  if (command === 'raw') verifyHeld(value.result.held);
+  if (command === 'seed') verifyHeld(value.result.snapshot.held);
   if (command === 'cleanup') {
-    verifyHeldObservation(value.result.held);
-    verifyHeldObservation(value.result.snapshot.held);
+    verifyHeld(value.result.held);
+    verifyHeld(value.result.snapshot.held);
   }
   if (command !== 'raw') return;
   assert.equal(value.result.native, true, 'L0_NATIVE_PAGE_REQUIRED');
