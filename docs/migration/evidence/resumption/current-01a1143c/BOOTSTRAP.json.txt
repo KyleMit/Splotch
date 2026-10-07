@@ -87,5 +87,30 @@
     }
   ],
   "resourceLeases": [],
-  "limits": "Resumption and verified preservation only; no implementation, native runtime, physical, continuity or release acceptance."
+  "limits": "Resumption and verified preservation only; no implementation, native runtime, physical, continuity or release acceptance.",
+  "L0WorkingStateClarification": {
+    "preservedStatusArchive": "../paused-continuation/git-frontiers.tar.gz",
+    "preservedStatusMember": "git-frontiers/legacy-status.bin.txt",
+    "preservedStatusBytes": 2730,
+    "preservedStatusSha256": "8680f322c4f06476ea07a1f183f3d8ff75c396b0f0fa5b15f0ee677927b339f4",
+    "preservedEntries": 47,
+    "additionalEntry": "?? tools/migration/legacy-continuity/tests/group-observation.test.mjs",
+    "reconstruction": "Append the literal additional entry and one NUL byte to the original NUL-terminated stream; exact2800-byte/48-entry result matches recorded bootstrap hash.",
+    "reconstructedStatusSha256": "eeeeb09b71ea61bbcc80e96f9a9ab08ca634f6afbc3a807f135122cbc54eea70",
+    "semanticIndexUnchanged": "287bb09bc0bb4753ff4512016df3211409eae6a861ee6ed3e9ea0f2fd8cdc52f",
+    "attribution": "L0 owner identifies the added path as the resumed EPERM rejecting/restored control introduced before its first pre-fix targeted run. Independent status reconstruction establishes the exact extra path.",
+    "metadataBirthtimeUtc": "2026-10-07T02:44:20.132787Z",
+    "metadataLimit": "Filesystem birthtime is metadata evidence only, not an original content capture.",
+    "earliestLocatedContentRecord": {
+      "path": "/private/tmp/splotch-l0-resumed-ownership-20261007024441/pre-fix.json.txt",
+      "bytes": 955,
+      "sha256": "7da554e8305d961c79dfe650d50e6dd0519053a54d7840c7cc58983451bb0096",
+      "scope": "Later pre-fix source/control binding; intended targeted rejection exit1 against unchanged command-evidence source. No bootstrap-time content substitution.",
+      "boundSourcePath": "tools/migration/legacy-continuity/tests/group-observation.test.mjs",
+      "boundSourceBytes": 3307,
+      "boundSourceSha256": "00fbf5aea3ab26c2940f8f36396d152191e4077b93ea1ad1350a4109ddaa9e00",
+      "publicReceipt": "L0-BOOTSTRAP-CONTROL.json.txt"
+    },
+    "scope": "The47-file recovery capsule remains the earlier preservation snapshot. Bootstrap recorded the resumed working state after one added untracked control; the status hash proves its path, not its bootstrap-time bytes."
+  }
 }
