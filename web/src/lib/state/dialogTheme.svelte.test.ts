@@ -4,7 +4,9 @@ import { setTheme } from './settings.svelte';
 import { createModal } from './modal.svelte';
 import { createDialogTheme } from './dialogTheme.svelte';
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveApiKey: vi.fn(async () => {}),
   loadApiKey: vi.fn(async () => null),
   clearApiKey: vi.fn(async () => {}),

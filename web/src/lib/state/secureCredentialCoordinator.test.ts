@@ -76,6 +76,7 @@ describe('createSecureCredentialCoordinator', () => {
     const state = { credential: '' };
     const coordinator = createSecureCredentialCoordinator(mirrorOf(state), async () => {});
 
+    await coordinator.setCredential('known');
     const hydration = coordinator.runHydration(
       (ownsHydration) =>
         new Promise<void>((resolve) => {

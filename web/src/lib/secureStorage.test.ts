@@ -36,8 +36,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 vi.mock('@aparajita/capacitor-secure-storage', async (importOriginal) => ({
-  KeychainAccess: (await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>())
-    .KeychainAccess,
+  ...(await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>()),
   SecureStorage: {
     set: async (
       name: string,
@@ -64,6 +63,7 @@ const ctrl = vi.hoisted(() => {
     rows,
     txPuts: [] as string[],
     failNextGet: false,
+    failNextDelete: false,
     holdNextGet: null as Promise<void> | null,
     abortNextTransaction: false,
     txGetOverride: null as ((key: string) => unknown) | null,
@@ -72,6 +72,7 @@ const ctrl = vi.hoisted(() => {
       rows.clear();
       state.txPuts.length = 0;
       state.failNextGet = false;
+      state.failNextDelete = false;
       state.holdNextGet = null;
       state.abortNextTransaction = false;
       state.txGetOverride = null;
@@ -101,6 +102,10 @@ vi.mock('./idb', () => {
       ctrl.rows.set(key, value);
     },
     async delete(_store: string, key: string) {
+      if (ctrl.failNextDelete) {
+        ctrl.failNextDelete = false;
+        throw new Error('transient idb removal failure');
+      }
       ctrl.rows.delete(key);
     },
     // Like idb, `done` is created eagerly, so an aborted transaction rejects it
@@ -214,17 +219,13 @@ describe('web save/load round trip', () => {
   it.each([
     ['a non-payload value', 'not-a-payload'],
     ['a malformed payload', { iv: new Uint8Array(12), data: 'not-an-array-buffer' }],
-  ])('warns and returns null when the secret row contains %s', async (_description, record) => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  ])('rejects when the secret row contains %s', async (_description, record) => {
     ctrl.rows.set(API_KEY_ROW, record);
 
-    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
-    expect(warn).toHaveBeenCalledOnce();
-    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
+    await expect(secureStorage.loadApiKey()).rejects.toThrow('Malformed secure-storage payload');
   });
 
-  it('warns and returns null when the persisted master key cannot decrypt the payload', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('rejects when the persisted master key cannot decrypt the payload', async () => {
     await secureStorage.saveApiKey('secret-key-123');
     const replacement = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
       'encrypt',
@@ -235,9 +236,7 @@ describe('web save/load round trip', () => {
     vi.resetModules();
     const freshTab = await import('./secureStorage');
 
-    await expect(freshTab.loadApiKey()).resolves.toBeNull();
-    expect(warn).toHaveBeenCalledOnce();
-    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
+    await expect(freshTab.loadApiKey()).rejects.toThrow();
   });
 
   it('clearApiKey removes the payload but keeps the master key for reuse', async () => {
@@ -255,6 +254,15 @@ describe('web save/load round trip', () => {
 
     expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
+  it('rejects a failed removal without losing the encrypted payload', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    ctrl.failNextDelete = true;
+
+    await expect(secureStorage.clearApiKey()).rejects.toThrow('transient idb removal failure');
+
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
   });
 
   it('keeps the API key and managed access code in distinct encrypted rows', async () => {
@@ -470,18 +478,11 @@ describe('skipping the vault when every row is known absent', () => {
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
   });
 
-  // The property the whole flag rests on. loadSecret turns an IndexedDB open,
-  // read or decrypt failure into `null`, so anything that decided "empty" from
-  // a returned value would mark the vault empty on a transient failure and hide
-  // a real credential for good.
   it('records nothing when the read fails rather than returns empty', async () => {
     await secureStorage.saveApiKey('secret-key-123');
     localStorage.removeItem(STORAGE_KEYS.secureVaultEmpty);
     ctrl.failNextGet = true;
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
-    warn.mockRestore();
+    await expect(secureStorage.loadApiKey()).rejects.toThrow('transient idb failure');
 
     expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
     // And the credential is still reachable on the next attempt.
@@ -499,12 +500,10 @@ describe('skipping the vault when every row is known absent', () => {
   });
 
   it('records nothing and leaves no unhandled rejection when the absence re-check aborts', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     ctrl.abortNextTransaction = true;
 
-    await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+    await expect(secureStorage.loadApiKey()).rejects.toThrow('transaction aborted');
 
-    expect(warn).toHaveBeenCalledWith('Secure storage load failed', expect.any(Error));
     expect(localStorage.getItem(STORAGE_KEYS.secureVaultEmpty)).toBeNull();
   });
 

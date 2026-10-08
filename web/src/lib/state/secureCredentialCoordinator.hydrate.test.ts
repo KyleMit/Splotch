@@ -7,7 +7,9 @@ const secureStore = vi.hoisted(() => ({
   accessCode: null as string | null,
 }));
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveApiKey: vi.fn(),
   loadApiKey: vi.fn(),
   clearApiKey: vi.fn(),
@@ -16,7 +18,8 @@ vi.mock('../secureStorage', () => ({
   clearAccessCode: vi.fn(),
 }));
 
-vi.mock('../idb', () => ({
+vi.mock('../idb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../idb')>()),
   requestPersistentStorage: vi.fn(async () => false),
 }));
 
@@ -44,7 +47,7 @@ const CREDENTIALS = [
     load: loadApiKey,
     clear: clearApiKey,
     hydrate: hydrateApiKey,
-    set: (value: string) => setAiUserApiKey(value),
+    set: setAiUserApiKey,
     live: () => settingsState.aiUserApiKey,
     mirror: settingsState.mirrorAiUserApiKey,
   },
@@ -56,7 +59,7 @@ const CREDENTIALS = [
     load: loadAccessCode,
     clear: clearAccessCode,
     hydrate: hydrateAiAccessToken,
-    set: (value: string) => setAiAccessToken(value),
+    set: setAiAccessToken,
     live: () => settingsState.aiAccessToken,
     mirror: settingsState.mirrorAiAccessToken,
   },
@@ -88,9 +91,8 @@ beforeEach(() => {
   installSecureStore();
 });
 
-// Each module wires one coordinator, and a hydration that rejects latches it
-// into refusing every later write until a hydration completes. A clean
-// hydration here keeps that latch inside the test that set it.
+// Each module wires one coordinator. A failed read can leave its stored value unknown and protect
+// later writes; a clean hydration keeps that state inside the test that established it.
 afterEach(async () => {
   localStorage.clear();
   installSecureStore();
@@ -154,6 +156,38 @@ describe.each(CREDENTIALS)('$name boot hydration', (credential) => {
 
     expect(live()).toBe('legacy-credential');
     expect(secureStore[slot]).toBe('legacy-credential');
+    expect(localStorage.getItem(legacyKey)).toBeNull();
+  });
+
+  it('retains completed fallback persistence as the baseline for a superseding abandoned replacement', async () => {
+    vi.mocked(load).mockRejectedValueOnce(new Error('transient read'));
+    await expect(hydrate()).rejects.toThrow('transient read');
+    localStorage.setItem(legacyKey, 'fallback-credential');
+    const writing = Promise.withResolvers<void>();
+    const releaseWrite = Promise.withResolvers<void>();
+    vi.mocked(save).mockImplementationOnce(async (value) => {
+      writing.resolve();
+      await releaseWrite.promise;
+      secureStore[slot] = value;
+    });
+    const hydration = hydrate();
+    await writing.promise;
+    let owned = true;
+    vi.mocked(save).mockImplementationOnce(async (value) => {
+      secureStore[slot] = value;
+      owned = false;
+    });
+    const replacement = set('abandoned', () => owned);
+    releaseWrite.resolve();
+    await hydration;
+    await expect(replacement).resolves.toBe(false);
+    expect(live()).toBe('');
+    expect(secureStore[slot]).toBe('fallback-credential');
+    expect(vi.mocked(save).mock.calls.map(([value]) => value)).toEqual([
+      'fallback-credential',
+      'abandoned',
+      'fallback-credential',
+    ]);
     expect(localStorage.getItem(legacyKey)).toBeNull();
   });
 
