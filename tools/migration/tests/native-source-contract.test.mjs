@@ -38,6 +38,7 @@ const materializerToolPaths = [
   'tools/migration/lib/native-template-transforms.mjs',
   'tools/migration/lib/native-source-contract.mjs',
   'tools/migration/lib/native-apple-scene.mjs',
+  'tools/migration/lib/native-gemfile.mjs',
   'tools/migration/lib/native-source-files.mjs',
 ];
 const umaskChild = `
@@ -116,7 +117,7 @@ async function materializerFixture() {
     `${CANDIDATE_DIRECTORY}/alignment.json`,
     JSON.stringify(alignment)
   );
-  for (const path of ['package.json', NATIVE_CONTRACT.entry])
+  for (const path of ['package.json', NATIVE_CONTRACT.entry, 'Gemfile'])
     writeMaterializerFixture(
       fixtureRoot,
       `${CANDIDATE_DIRECTORY}/${path}`,

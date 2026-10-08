@@ -2,6 +2,7 @@ import { realpathSync } from 'node:fs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { assertNativeSourceContract, NATIVE_CONTRACT } from './lib/native-source-contract.mjs';
 import { readExpoSceneSupport } from './lib/native-apple-scene.mjs';
+import { readCandidateGemfile } from './lib/native-gemfile.mjs';
 import {
   readNativeCandidateRoot,
   readCandidateEntry,
@@ -16,6 +17,7 @@ export function runNativeCandidateCheck(argv) {
   const manifest = readTemplateManifest(root);
   const files = readMaintainedNativeFiles(candidate, manifest);
   const { packageManifest, indexSource } = readCandidateEntry(candidate);
+  const gemfile = readCandidateGemfile(candidate);
   assertNativeSourceContract(files, packageManifest, indexSource);
   const expoSceneSources = readExpoSceneSupport(
     candidate,
@@ -28,6 +30,7 @@ export function runNativeCandidateCheck(argv) {
     template: manifest.template,
     sourceContract: true,
     expoSceneSources,
+    gemfile,
   };
 }
 

@@ -44,6 +44,20 @@ source contracts, not installed SDK selection, merged dependency manifests, comp
 floors or screen presentation. The topology05 checker retains ownership of dependency, Metro and
 autolinking evidence.
 
+`Gemfile` is a maintained manual source, independently owned by
+`tools/migration/lib/native-gemfile.mjs`; the Expo archive does not generate it. It starts from the
+[released React Native 0.86.3 Gemfile](https://raw.githubusercontent.com/facebook/react-native/v0.86.3/Gemfile)
+and substitutes exactly Ruby3.4.11, CocoaPods1.16.2 and xcodeproj1.27.0. The released xcodeproj cap
+below1.26 conflicts with
+[CocoaPods1.16.2's minimum1.27](https://raw.githubusercontent.com/CocoaPods/CocoaPods/1.16.2/cocoapods.gemspec).
+The other ActiveSupport/concurrent-ruby constraints and four explicit Ruby3.4 library consumers
+remain. The source checker authenticates the complete manual bytes and refuses a missing, changed or
+aliased file. Its rejecting and restored controls do not resolve or execute gems. Actual
+Ruby/OpenSSL/Psych/native gem compatibility, locked graph authentication, project parsing and
+generation remain separate execution gates; xcodeproj1.27.0's constants do not prove Xcode27
+compatibility. A future gem caller must disable actual HOME gem and Bundler configuration loading
+through released supported options before resolving its reviewed graph.
+
 Android Release requires four candidate signing properties declared by `RELEASE_SIGNING_PROPERTIES`
 and the external filename `RELEASE_KEYSTORE_NAME`. It uses R8, resource shrinking and optimize
 ProGuard rules. No keystore is stored here; the later owned Release caller must validate the signing

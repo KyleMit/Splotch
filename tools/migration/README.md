@@ -86,6 +86,12 @@ template provenance and source contracts. It takes no arguments, performs no nat
 after the live topology guard in Quality. Additional native files are refused; native build and pod
 writers require an independent owned disposable source copy.
 
+The checker also authenticates the separately maintained manual candidate `Gemfile` through
+`lib/native-gemfile.mjs`. That owner pins the complete source bytes and the proposed Ruby/CocoaPods/
+xcodeproj versions; it claims no gem resolution or native compatibility. The template archive and
+materializer do not own or emit this file. Its source departure and pending runtime/configuration
+gates are recorded in `experiments/native-architecture/NATIVE-SOURCES.md`.
+
 `gen:migration:native-candidate -- --archive=<reviewed-template.tgz>` authenticates one explicit
 regular archive against the maintained manifest and derives candidate-only sources. An exact
 destination remains unchanged, including exact producer modes; incomplete destinations or maintained
