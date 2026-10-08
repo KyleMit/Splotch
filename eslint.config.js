@@ -391,7 +391,11 @@ export default tseslint.config(
     // empirically: candidate rules were run over the real repo and only kept where the code
     // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
     // here without new evidence.
-    files: ['**/*.{ts,mts,mjs,js,svelte}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
+    files: [
+      '**/*.{ts,mts,mjs,js,svelte}',
+      'experiments/native-architecture/**/*.{tsx,cjs}',
+      'migration/probes/web-host/**/*.tsx',
+    ],
     plugins: { [DISABLE_DIRECTIVES_PLUGIN_NAME]: disableDirectivesPlugin },
     rules: {
       // A suppression names its rules and says why, and one that suppresses nothing fails —
@@ -457,7 +461,11 @@ export default tseslint.config(
     // never-reassigned (hundreds of false positives), so .svelte / .svelte.ts / .svelte.js get
     // the rune-aware svelte/prefer-const in the svelte-files block instead. This split is what
     // makes the rule adoptable at all.
-    files: ['**/*.{ts,mts,mjs,js}', 'experiments/native-architecture/**/*.{tsx,cjs}'],
+    files: [
+      '**/*.{ts,mts,mjs,js}',
+      'experiments/native-architecture/**/*.{tsx,cjs}',
+      'migration/probes/web-host/**/*.tsx',
+    ],
     ignores: ['**/*.svelte.ts', '**/*.svelte.js'],
     rules: { 'prefer-const': 'error' },
   },
@@ -604,7 +612,7 @@ export default tseslint.config(
     files: [
       'web/src/**',
       'web/tests/**',
-      'migration/probes/web-host/**/*.ts',
+      'migration/probes/web-host/**/*.{ts,tsx,svelte}',
       'tools/**/*.{mjs,js,ts}',
       'experiments/native-architecture/**/*.{ts,tsx,cjs}',
     ],
@@ -660,6 +668,7 @@ export default tseslint.config(
       'web/src/**/*.ts',
       'web/src/**/*.svelte',
       'experiments/native-architecture/src/**/*.{ts,tsx}',
+      'migration/probes/web-host/**/*.{ts,tsx,svelte}',
     ],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
@@ -907,7 +916,10 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
-    files: ['experiments/native-architecture/src/**/*.{ts,tsx}'],
+    files: [
+      'experiments/native-architecture/src/**/*.{ts,tsx}',
+      'migration/probes/web-host/src/**/*.{ts,tsx}',
+    ],
     rules: {
       'no-restricted-syntax': ['error', NAMED_EXPORTS_ONLY],
     },

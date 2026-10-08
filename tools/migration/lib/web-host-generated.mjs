@@ -2,7 +2,7 @@ import ts from 'typescript';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { WEB_HOST_COPY_ROLES } from '../../../migration/probes/web-host/host/contract.ts';
+import { webHostCopyRoles } from '../../../migration/probes/web-host/host/contract.ts';
 import { assertCopyInputs } from './web-host-inputs.mjs';
 
 const ICON_GENERATOR_PATH = 'tools/icons/gen-icon-names.mjs';
@@ -50,7 +50,7 @@ function iconOutputPath(root) {
 }
 
 export async function generatedSourcePaths(owned, bindings) {
-  for (const role of WEB_HOST_COPY_ROLES) assertCopyInputs(owned, bindings, role);
+  for (const role of webHostCopyRoles(bindings.variant)) assertCopyInputs(owned, bindings, role);
   const root = join(owned.root, 'control');
   const release = await import(pathToFileURL(join(root, RELEASE_GENERATOR_PATH)).href);
   return [iconOutputPath(root), ...release.releaseNoteOutputPaths(release.readReleases())].sort();

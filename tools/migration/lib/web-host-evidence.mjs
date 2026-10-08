@@ -1,4 +1,5 @@
 import { compareProductBytes } from './web-host-comparison.mjs';
+import { assertNeutralEvidence } from '../../../migration/probes/web-host/host/neutralEvidence.ts';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -132,7 +133,7 @@ function assertOutputShape(reference, control) {
     throw new Error('Retained wrapper changed shipping host sources');
 }
 
-export function collectControlEvidence(owned, referenceRoot, controlRoot, pinned, owner, artifact) {
+function collectControlEvidence(owned, referenceRoot, controlRoot, pinned, owner, artifact) {
   assertPinnedBuildMetadata(pinned);
   const passes = JSON.parse(readFileSync(join(owned.root, WEB_HOST_PASSES), 'utf8'));
   assertControlGraphs(passes, { controlRoot, artifact });
@@ -157,6 +158,47 @@ export function collectControlEvidence(owned, referenceRoot, controlRoot, pinned
       'deployed CSP/PWA',
       'physical floors and performance',
       'full candidate startup accounting and React mechanics',
+    ],
+  };
+}
+
+export function collectWebHostEvidence(owned, inputs, owner) {
+  const retained = collectControlEvidence(
+    owned,
+    inputs.copies.reference,
+    inputs.copies.control,
+    inputs.pinned,
+    owner,
+    inputs.artifact
+  );
+  if (inputs.variant !== 'neutral-embedded') return retained;
+  const copyRoot = inputs.copies.neutral;
+  const neutralProof = assertNeutralEvidence({ owned, copyRoot, ...inputs.neutral });
+  if (
+    JSON.stringify(neutralProof.renderRequest.request) !==
+    JSON.stringify({
+      variant: inputs.variant,
+      artifact: inputs.artifact,
+      fixture: inputs.fixture,
+    })
+  )
+    throw new Error('Neutral evidence disagrees with its artifact request');
+  const neutral = buildInventory(copyRoot, owner);
+  if (neutral.version.version !== inputs.pinned.metadata.appVersion)
+    throw new Error('Neutral emitted version disagrees with pinned metadata');
+  if (JSON.stringify(neutral.hostSources) !== JSON.stringify(retained.control.hostSources))
+    throw new Error('Neutral build changed maintained shipping host sources');
+  return {
+    ...retained,
+    neutral,
+    neutralProof,
+    neutralComparison:
+      'complete neutral output inventories and shipping bundle measurements; retained calibration preserved; intentional neutral bytes are not normalized or declared equal',
+    neutralCostScope:
+      'unmodified measureWebBundle plus complete emitted inventories, including prerender HTML and client JS; eager-error byte union and candidate ceiling evaluation remain separate pending owners',
+    pending: [
+      ...retained.pending,
+      'neutral hydration/recovery/modal/route and strict candidate cost disposition',
     ],
   };
 }

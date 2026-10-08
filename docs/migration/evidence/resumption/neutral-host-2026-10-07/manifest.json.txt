@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 1,
+  "scope": "Historical source54 gates/publication, actual pre-neutral cost failure, actual caller controls and durable scoped regressions; no current full source, host, browser, release or architecture acceptance",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 291868,
+    "sha256": "1e1ec2e5191a2fd146f377286ab8d4bfabe69c1617f9e97f5f6a20e968b764f4",
+    "members": 93
+  },
+  "members": [
+    {
+      "path": "actual-cost01/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-prepared-01/controller.py",
+      "bytes": 20438,
+      "sha256": "b32d56c17563b090310c0be6932c0e6ac232aeef581a3bddaae9ae4b64f30079"
+    },
+    {
+      "path": "actual-cost01/controls/after-failure-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/after-failure-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "actual-cost01/controls/after-failure-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/after-failure-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "actual-cost01/controls/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "actual-cost01/controls/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "actual-cost01/controls/failed-cost-guard-disposition.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/failed-cost-guard-disposition.stderr.log.txt",
+      "bytes": 931,
+      "sha256": "ca93ab862dcbd181be9ced6e08670e4644ff922aaa6425d2b99cd9ced595d3ec"
+    },
+    {
+      "path": "actual-cost01/controls/failed-cost-guard-disposition.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/failed-cost-guard-disposition.stdout.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "actual-cost01/controls/release-cost-build.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/release-cost-build.stderr.log.txt",
+      "bytes": 2900,
+      "sha256": "542b5dde6362046edd531240b020ad57b11fcb01fb34bb93cf95dba9fb085192"
+    },
+    {
+      "path": "actual-cost01/controls/release-cost-build.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/release-cost-build.stdout.log.txt",
+      "bytes": 566,
+      "sha256": "b484fc36d1f45bb91b978c51185fcded02dea2b6a602dfb82858c10a06a56a0f"
+    },
+    {
+      "path": "actual-cost01/copied-controls/control-build.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/control-build.log.txt",
+      "bytes": 59174,
+      "sha256": "6b571e26fe3c92e7ccc19e3eb5e82fbe3d3a55b7841637093ff1ced825a924dd"
+    },
+    {
+      "path": "actual-cost01/copied-controls/control-postbuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/control-postbuild.log.txt",
+      "bytes": 1262,
+      "sha256": "ea0e88c2d3d0ac7b57009de574ed4ccf9c633f311a55c18353649c0c73b0853a"
+    },
+    {
+      "path": "actual-cost01/copied-controls/control-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/control-prebuild.log.txt",
+      "bytes": 2825,
+      "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04"
+    },
+    {
+      "path": "actual-cost01/copied-controls/neutral-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/neutral-prebuild.log.txt",
+      "bytes": 2825,
+      "sha256": "a012f45679c954821427ca8213ac0776b9cac3f6ee2808f94131542ba07c304d"
+    },
+    {
+      "path": "actual-cost01/copied-controls/neutral-react-compile.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/neutral-react-compile.log.txt",
+      "bytes": 245,
+      "sha256": "f634649d5213394deb1ce3b6294b6d286f973622013481d5dfec49f3e5657ce6"
+    },
+    {
+      "path": "actual-cost01/copied-controls/neutral-react-render.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/neutral-react-render.log.txt",
+      "bytes": 1154,
+      "sha256": "feead6414c14c8b523a728985ed2cce9e3769b853b403e94ed9a1d5a78d7ba57"
+    },
+    {
+      "path": "actual-cost01/copied-controls/reference-build.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/reference-build.log.txt",
+      "bytes": 58562,
+      "sha256": "764c609cf26a7b510ede524bceb53921032aff67ecf5f7c2eef6332257f77a5d"
+    },
+    {
+      "path": "actual-cost01/copied-controls/reference-postbuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/reference-postbuild.log.txt",
+      "bytes": 1262,
+      "sha256": "ea0e88c2d3d0ac7b57009de574ed4ccf9c633f311a55c18353649c0c73b0853a"
+    },
+    {
+      "path": "actual-cost01/copied-controls/reference-prebuild.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/controls/reference-prebuild.log.txt",
+      "bytes": 3034,
+      "sha256": "f1a3b7b0362ebd8e04fbbc7b9d8ec85362b1b9f8d04537afd3e0a10bfab17b78"
+    },
+    {
+      "path": "actual-cost01/failed-artifact-result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-artifacts-01/splotch-web-host-nDCmKg/result.json",
+      "bytes": 11225,
+      "sha256": "f67b803deef30ec29c77d0e90fb4a6fb0d58e591ce01aaf81fc85f69b98a300e"
+    },
+    {
+      "path": "actual-cost01/failed-disposition.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/failed-cost-disposition.mjs",
+      "bytes": 5910,
+      "sha256": "0e7d5d79ed9f95e2821893dc50f81398c5d686216c9553e937401ad8aa904578"
+    },
+    {
+      "path": "actual-cost01/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/final-readback.json",
+      "bytes": 3506,
+      "sha256": "49d4fe7301313165ea04049afe9fe23b6f25c865a5ab5aacc3fe2e604527f95a"
+    },
+    {
+      "path": "actual-cost01/prepared-02.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/prepared-02.json",
+      "bytes": 3467,
+      "sha256": "4bd14fdd305081024dab3628ac1a8c8c3533856f42acdb282bf0ec4a676ab22e"
+    },
+    {
+      "path": "actual-cost01/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/profile.json",
+      "bytes": 5873,
+      "sha256": "6cb715972763d9dd7d64edc3dde9cd57d07ef9e06dbba9437770e8e9d90a2e24"
+    },
+    {
+      "path": "actual-cost01/react-cache-development.stderr.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-development.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "actual-cost01/react-cache-development.stdout.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-development.stdout.txt",
+      "bytes": 3404,
+      "sha256": "95f3214f814a20f989612e2dfb75c9b8944b01f8a8354e57a28b75a69336ff37"
+    },
+    {
+      "path": "actual-cost01/react-cache-inspection.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-inspection.json",
+      "bytes": 1937,
+      "sha256": "d2338204a2ce603fd0ce686f7576b65eca2bb0bdb47e4d0ec89106a2672d7b98"
+    },
+    {
+      "path": "actual-cost01/react-cache-inspection.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-inspection.mjs",
+      "bytes": 1598,
+      "sha256": "ce01888e0f876413ccb6a365901427927684647d5de82d89a08f9c38078dec46"
+    },
+    {
+      "path": "actual-cost01/react-cache-production.stderr.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-production.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "actual-cost01/react-cache-production.stdout.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/react-cache-production.stdout.txt",
+      "bytes": 3616,
+      "sha256": "2c2c524373293ccac2036642417c73d98e4fa9c006423c816f75128e1ed0043a"
+    },
+    {
+      "path": "actual-cost01/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/release-cost-01/attempt-01/result.json",
+      "bytes": 55050,
+      "sha256": "5489aa491afb51474f6d33fae75be1ceaddd25da497f3ffdfc1bf39e9e161817"
+    },
+    {
+      "path": "caller-controls01/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/controller.py",
+      "bytes": 20442,
+      "sha256": "6a069a39d3682685800070e6174e92dd7a28eadb8bc139cbc04d335f87c4d9c1"
+    },
+    {
+      "path": "caller-controls01/controls/actual-react-caller-controls.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/actual-react-caller-controls.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "caller-controls01/controls/actual-react-caller-controls.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/actual-react-caller-controls.stdout.log.txt",
+      "bytes": 413,
+      "sha256": "04365c017056578c1eede2ac89400d8f3241a569ab7ddf2eb4d955119779582f"
+    },
+    {
+      "path": "caller-controls01/controls/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "caller-controls01/controls/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "caller-controls01/controls/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "caller-controls01/controls/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "caller-controls01/copied-controls/actual-production.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/splotch-web-host-R7qDOa/controls/actual-production.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "caller-controls01/copied-controls/inherited-production.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/splotch-web-host-bAzdJI/controls/inherited-production.log.txt",
+      "bytes": 1151,
+      "sha256": "2893b1d88a0c3da2a75bb579a77c8c83d049009c6b849fff76e6094b2c3cf718"
+    },
+    {
+      "path": "caller-controls01/copied-controls/real-development.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/splotch-web-host-zqLB0t/controls/real-development.log.txt",
+      "bytes": 1151,
+      "sha256": "b51e2ad62384b4d945f6edf558ff67b9bd3a0ef38e6535707278e43c65bb4b37"
+    },
+    {
+      "path": "caller-controls01/copied-controls/restored-production.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/splotch-web-host-Kze4uo/controls/restored-production.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "caller-controls01/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/final-readback.json",
+      "bytes": 1751,
+      "sha256": "841cbb7e85d3d6fb7360c61a47260e1deef5fa1a08aeef7f063035d2734dd396"
+    },
+    {
+      "path": "caller-controls01/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/profile.json",
+      "bytes": 5022,
+      "sha256": "5268950f9308eae1d54de09c68de25a9daa2d89fbbf8654a15ea08f95667a605"
+    },
+    {
+      "path": "caller-controls01/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/attempt-01/result.json",
+      "bytes": 31310,
+      "sha256": "51f91e0a3a2d78ad26b267eac1f9f8d15baa1b32f7735b1fb9c543a085b64985"
+    },
+    {
+      "path": "caller-controls01/run-controls.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/run-react-caller-controls.mjs",
+      "bytes": 7108,
+      "sha256": "598db04de41dd47a8deae83e1ab02b33e235f9d4293bd6dc6890015cb94be417"
+    },
+    {
+      "path": "caller-controls01/summary.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-caller-controls-01/summary.json",
+      "bytes": 19269,
+      "sha256": "bf5dcbcd82188174ad4c8bb8ac0f4fb9fad4acbe95769fa47be771e351823067"
+    },
+    {
+      "path": "durable-regressions01/actual-test-cache-after.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/actual-test-cache-after.bin",
+      "bytes": 1392,
+      "sha256": "1c595f63700b9fbf8f585f303c5781117b547c65998ce53bdc5f87ed183c3a42"
+    },
+    {
+      "path": "durable-regressions01/cache-restoration.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/cache-restoration.json",
+      "bytes": 1304,
+      "sha256": "07951eea73698a687e2ace938f83c2c345cad26ad440c814bdec1f2b4a72b660"
+    },
+    {
+      "path": "durable-regressions01/controls/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/controls/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "043f1f48aa6588e23f3f184964be1f9776b4994c0c4d5a797b37478dc604cbe0"
+    },
+    {
+      "path": "durable-regressions01/controls/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/controls/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "durable-regressions01/controls/five-path-eslint.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/five-path-eslint.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/controls/five-path-eslint.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/five-path-eslint.stdout.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/controls/five-targeted-react-tests.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/five-targeted-react-tests.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/controls/five-targeted-react-tests.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/five-targeted-react-tests.stdout.log.txt",
+      "bytes": 1468,
+      "sha256": "d5562e26477a334854233d0d062e2b1b22cbd549e3c13d61b2af7ee618959d67"
+    },
+    {
+      "path": "durable-regressions01/post-restoration-qualification.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/post-restoration-qualification.json",
+      "bytes": 2769,
+      "sha256": "295e2eeb36452dac529c147aa06480b60efce7ec1ff0dbda9526eb1fd97a776d"
+    },
+    {
+      "path": "durable-regressions01/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/profile.json",
+      "bytes": 6141,
+      "sha256": "74dc2aef4555934f822686c411a90de52a7c33cc8fa4c4a1729811aa04243a6c"
+    },
+    {
+      "path": "durable-regressions01/restored-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/restored-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "durable-regressions01/restored-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/restored-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "durable-regressions01/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/react-regression-tests-01/attempt-01/result.json",
+      "bytes": 43174,
+      "sha256": "9dad6472c0a8261714328871520b9eb49720956c8a2d04bf04079e514341ca22"
+    },
+    {
+      "path": "qualified-repaired-source/migration/probes/web-host/host/renderChrome.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/renderChrome.ts",
+      "bytes": 2493,
+      "sha256": "676b3d247bed60b835ed034d9bdb246ad22fbc4e798e9467338b9e7d3325e20f"
+    },
+    {
+      "path": "qualified-repaired-source/tools/migration/lib/web-host-build.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/lib/web-host-build.mjs",
+      "bytes": 10788,
+      "sha256": "7401d0120d2c08fc6c81c3e6b53460383f4e93433a89b83741aa735166197533"
+    },
+    {
+      "path": "qualified-repaired-source/tools/migration/lib/web-host-react.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/lib/web-host-react.mjs",
+      "bytes": 3530,
+      "sha256": "03b8c65967957a72d49d1487c15e181f18fcc48b92e0cda0f48465b3d785deda"
+    },
+    {
+      "path": "qualified-repaired-source/tools/migration/tests/web-host-react-evidence.test.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/tests/web-host-react-evidence.test.mjs",
+      "bytes": 5333,
+      "sha256": "f88df82f13516000a843b3eb5c7195df09e50b4504c427573a5872548df485c2"
+    },
+    {
+      "path": "qualified-repaired-source/tools/migration/tests/web-host-react-render.test.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/tests/web-host-react-render.test.mjs",
+      "bytes": 5722,
+      "sha256": "b0a102182fc6fae9668125f411e87f7d9d96426ecec8c4a5356a35b936b5e75b"
+    },
+    {
+      "path": "source-publication/native-ci-02.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-01/native-ci-02.json",
+      "bytes": 2162,
+      "sha256": "591de761024b1804f086fbcac28259361be7d3736c0049a5fef52d81071f6a0c"
+    },
+    {
+      "path": "source-publication/native-ci-jobs-02.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-01/native-ci-jobs-02.json",
+      "bytes": 35643,
+      "sha256": "1e86299461aa8523e9c8ad42a02c09ef82ec0a3a171f61800cf2af043b32ed9c"
+    },
+    {
+      "path": "source-publication/native-retained-job-112616504705.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-01/native-retained-job-112616504705.log.txt",
+      "bytes": 66684,
+      "sha256": "a7673e9e8e1b4df195d361361d1638403a3de5daf33f4a675b4f0599cafc181b"
+    },
+    {
+      "path": "source-publication/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-01/result.json",
+      "bytes": 2625,
+      "sha256": "b92ff6dcca33ff134a0cd3be45bdab722cae7a3f38d1fb076764825aa6c4a5bc"
+    },
+    {
+      "path": "source-publication/source-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/source-publication-01/source-readback.json",
+      "bytes": 2327,
+      "sha256": "21369eea06db0032847b62183b84c6db4fe392bbd2c505fc200c8193266719e3"
+    },
+    {
+      "path": "source05/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/controller.py",
+      "bytes": 21623,
+      "sha256": "539395ad70111400f1cc21ae37a1c31a901f95cada33b971eb648f9e50ce09e2"
+    },
+    {
+      "path": "source05/controls/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "ee26fd615725b12884578f922d492df914c2b02b2b54726fb5be87423e2d01c6"
+    },
+    {
+      "path": "source05/controls/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "source05/controls/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "source05/controls/full-browserless.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/full-browserless.stderr.log.txt",
+      "bytes": 32667,
+      "sha256": "13f66d881e9f38279be382a17620905e000f5018337d848e89f1f54bda27e69a"
+    },
+    {
+      "path": "source05/controls/full-browserless.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/full-browserless.stdout.log.txt",
+      "bytes": 260409,
+      "sha256": "61cb946507fd071cd7d61cac69b78f5708095dbcf8d370f49d791a2f4bab07e5"
+    },
+    {
+      "path": "source05/controls/full-quality.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/full-quality.stderr.log.txt",
+      "bytes": 1796,
+      "sha256": "cb17a5b1bf078602a1106d269654cef6ae4e17e84c16d8c85da83be692f36d80"
+    },
+    {
+      "path": "source05/controls/full-quality.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/full-quality.stdout.log.txt",
+      "bytes": 59062,
+      "sha256": "7504693d51bee73ff5ba01c199468050e5f8db618f06b913027fefeb68cf6a6a"
+    },
+    {
+      "path": "source05/controls/registered-info.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/registered-info.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/registered-info.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/registered-info.stdout.log.txt",
+      "bytes": 99618,
+      "sha256": "3b112fae5687ab10b2c6cef2e3e917096a258aac88c74fedf0f40c5f0b3ec344"
+    },
+    {
+      "path": "source05/controls/source-check.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/source-check.stderr.log.txt",
+      "bytes": 1642,
+      "sha256": "30845c8a5679131bb1bcee03b9c0e020d1f14b925b7f9a54214110faa70bbc7c"
+    },
+    {
+      "path": "source05/controls/source-check.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/source-check.stdout.log.txt",
+      "bytes": 1138,
+      "sha256": "89fa5ecd84c8cd20cf18404a6bb77edb718a6a10a4b313bc7255fef2b2d83452"
+    },
+    {
+      "path": "source05/controls/source-lint.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/source-lint.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/source-lint.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/source-lint.stdout.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "source05/controls/targeted-tools.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/targeted-tools.stderr.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "source05/controls/targeted-tools.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/targeted-tools.stdout.log.txt",
+      "bytes": 4508,
+      "sha256": "4abe837a501b5dd0ec3ad26b5cce7eaa1a14f04bb5693eabcbe5df5dfc103766"
+    },
+    {
+      "path": "source05/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/profile.json",
+      "bytes": 6442,
+      "sha256": "8b1aaa64e061d9af91f42641ff538de4ebbf53b6a960d342b7cdd8fb16c5c737"
+    },
+    {
+      "path": "source05/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/attempt-01/result.json",
+      "bytes": 1085033,
+      "sha256": "783e3f4f232d2c3e0a5fe8caf5e454caa91314dbcf428b1fedbfbd638cd9a01c"
+    },
+    {
+      "path": "source05/staged-source.diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-05/staged-diff.bin",
+      "bytes": 268431,
+      "sha256": "d84c1051e247c7fd2af019a79f472629d88f6da5b5808e9d0ca610991dfd3b0f"
+    }
+  ],
+  "omittedExternalInputs": "Full private installed inventories, tracked-file inventories and Git metadata witnesses remain bound by original receipts; they are not inside this focused public packet. No rival/auth/automation ledger is copied."
+}

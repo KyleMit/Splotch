@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "all added/changed lock package artifacts, all platforms",
   "baselineLockSha256": "9cc9e2efbb1efa0877e07ce548f78b1490cea9a225b0e2d235017788c33e1353",
-  "candidateLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "candidateLockSha256": "5384d18a9b13b4bb4bbe45e533b92afc709e1819dae561bfcaedc06b161dde4a",
   "selectedArtifacts": [
     {
       "key": "@babel/plugin-proposal-decorators@7.29.7",
@@ -271,6 +271,10 @@
     {
       "key": "@types/istanbul-reports@3.0.4",
       "integrity": "sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ=="
+    },
+    {
+      "key": "@types/react-dom@19.2.3",
+      "integrity": "sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ=="
     },
     {
       "key": "@types/react@19.2.2",
@@ -901,6 +905,10 @@
       "integrity": "sha512-ePrwPfxAnB+7hgnEr8vpKxL9cmnp7F322t8oqcPshbIQQhDKgFDW4tjhF2wjVbdXF9O/nyuy3sQWd9JGpiLPvA=="
     },
     {
+      "key": "react-dom@19.2.3",
+      "integrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg=="
+    },
+    {
       "key": "react-is@18.3.1",
       "integrity": "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg=="
     },
@@ -1073,8 +1081,7 @@
       "integrity": "sha512-eLTh0kA8uHceqesPqSE+VvO1CDDJWMwlQfB6LuN6T8w6MaDJ8Txm8P7s5cHD0miF0V+GGTZrDQfxPZQVsur33w=="
     }
   ],
-  "inspectedArtifacts": 267,
-  "inspectionWorkers": 4,
+  "inspectedArtifacts": 269,
   "complete": true,
   "rows": [
     {
@@ -2276,6 +2283,22 @@
       "registryIntegrity": "sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ==",
       "hasInstallScript": null,
       "metadataContradiction": false,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "@types/react-dom@19.2.3",
+      "name": "@types/react-dom",
+      "version": "19.2.3",
+      "integrity": "sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==",
+      "tarball": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.3.tgz",
+      "registryIntegrity": "sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==",
+      "hasInstallScript": null,
       "engines": {},
       "metadataHooks": {},
       "hooks": {},
@@ -5157,6 +5180,22 @@
       "disposition": "no-install-hooks"
     },
     {
+      "key": "react-dom@19.2.3",
+      "name": "react-dom",
+      "version": "19.2.3",
+      "integrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==",
+      "tarball": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.3.tgz",
+      "registryIntegrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
       "key": "react-is@18.3.1",
       "name": "react-is",
       "version": "18.3.1",
@@ -5953,14 +5992,19 @@
       "disposition": "no-install-hooks"
     }
   ],
-  "rootReview": {
-    "decision": "registry-only frozen full install released; no new true verdict",
-    "acceptedAt": "2026-10-06T04:35:55.911627+00:00",
-    "prepareSourceReview": "prepare-source-review.json",
-    "unknownInstallHooks": "stop",
-    "sourceTypeChanges": "git/path require renewed review"
+  "historicalRootReview": {
+    "selectedInventorySha256": "c425e65eec49e6e6b1c35fe102faf386a524e3b60d00cd8ba1d3f96008258361",
+    "candidateLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+    "rowCount": 267,
+    "review": {
+      "decision": "registry-only frozen full install released; no new true verdict",
+      "acceptedAt": "2026-10-06T04:35:55.911627+00:00",
+      "prepareSourceReview": "prepare-source-review.json",
+      "unknownInstallHooks": "stop",
+      "sourceTypeChanges": "git/path require renewed review"
+    }
   },
-  "supplementalArchiveAudit": {
+  "historicalSupplementalArchiveAudit": {
     "scope": "Same selected integrity-verified archives; root .hooks capability audited after first strict frozen full install",
     "command": [
       "npm",
@@ -5980,5 +6024,17 @@
     "archiveCodeExecuted": false,
     "rootHookFileCount": 0,
     "log": "controls/supplemental-archive-audit.log.txt"
+  },
+  "historicalInspectionWorkers": 4,
+  "currentInputProvenance": {
+    "unchangedHistoricalRowCount": 267,
+    "newArchiveKeys": ["@types/react-dom@19.2.3", "react-dom@19.2.3"],
+    "fullMemberFactsSha256": "6cc23556eb34d232c8afa82bd0e603d205fe6a83ab527268ebfe8fdb84774d4a",
+    "archiveAndSelectionQualificationOwner": "tools/migration/lib/archive-inventory.mjs and tools/migration/lib/topology-policy.mjs",
+    "newRowsIndependentSourceAcceptance": false,
+    "originalConversationId": "8c229c08-f640-4bb6-bf08-6953253da0ee",
+    "roundsUsed": 1,
+    "roundsRemaining": 2,
+    "scope": "Current input refresh only; unchanged historical review covers its exact 267 rows, not the two new rows or the current host/source/product. The bound controller publishes this proposal only after actual integrity/parser/full-selection controls pass; complete execution receipts remain separate."
   }
 }

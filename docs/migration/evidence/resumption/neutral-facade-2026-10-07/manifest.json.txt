@@ -1,0 +1,590 @@
+{
+  "schemaVersion": 1,
+  "scope": "Original tiny10 scoped controls plus current full10 source-only gates passed; no complete host/release-cost/browser/architecture acceptance. Original Cost03 remains a partial failed artifact and the old env row remains virtual. No original review ledger/auth/signing or private transcripts copied.",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 340991,
+    "sha256": "cf4c989cae19c6ec3597eff36bcc17e6fd539cfe072a249cdfb3a0a639778bc4",
+    "members": 72
+  },
+  "omittedPrivateEvidence": "Complete source and installed inventories/trees plus raw cache payloads retained privately; copied original records bind their exact identities",
+  "temporaryFixtureArtifactLimit": "The maintained tests assert actual tiny compiler output and rejecting/restored controls; their temporary fixture trees are cleaned by the test owner. This package is not a preserved complete host artifact.",
+  "members": [
+    {
+      "path": "auxiliary/actual-live-lookup-refusal.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/launch-observation-first-match-failure.private.json",
+      "bytes": 382,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "cea62e213ffe621ce06760e6b43525307173d739e27eb0fbc1aacb71cb575a93"
+    },
+    {
+      "path": "frozen-source/docs/migration/NEUTRAL-HOST.md",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/docs/migration/NEUTRAL-HOST.md",
+      "bytes": 19142,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "c457622f783790e7b147face9582b3482ccb33998c090927d85527e31e4f24e6"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/compileChrome.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/compileChrome.ts",
+      "bytes": 3809,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "090253520cac252499b61160430f50f3b841ac60620421a1b9e91941658cb013"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/kitEnvSource.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/kitEnvSource.ts",
+      "bytes": 7535,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e421eb9fa068a2edce87fcd599401e70248c3498c497533b2d72a1f9c8c111d6"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/reactGraph.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/reactGraph.ts",
+      "bytes": 19104,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "70c2bf11201bd3d6dc3c59f624150e364c66e7170a1bada292bb87945bccd346"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/reactGraphFacade.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/reactGraphFacade.ts",
+      "bytes": 5583,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "dd285193234c63395bb1e66124228ec0dd0340d0c2196e93d5361be486612a1d"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/reactGraphReferences.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/reactGraphReferences.ts",
+      "bytes": 2977,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "148626f24b3c95f671d27a202b503f2683b45b5ed66e8b968cc166d72a4002a3"
+    },
+    {
+      "path": "frozen-source/migration/probes/web-host/host/vite.config.ts",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/migration/probes/web-host/host/vite.config.ts",
+      "bytes": 7788,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "c3781259c230a9ef4a9118b3239ca0a8562d2f5f86fc64ab19b125fa1be780b2"
+    },
+    {
+      "path": "frozen-source/tools/migration/tests/web-host-react-graph.test.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/tests/web-host-react-graph.test.mjs",
+      "bytes": 14788,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "cb7a1a840a78f2089dc7d9331f7c23963bac5ffd801c750d155d024efcd0499c"
+    },
+    {
+      "path": "frozen-source/tools/migration/tests/web-host-rolldown-runtime.test.mjs",
+      "sourcePath": "/Users/kylemit/.codex/worktrees/migration-retained-controls/Splotch/tools/migration/tests/web-host-rolldown-runtime.test.mjs",
+      "bytes": 29654,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "2e8ace31c52561dc90597f4a1954a42834e2dbecc7789a49514e681f17f12e28"
+    },
+    {
+      "path": "full10/attempt-01/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/result.json",
+      "bytes": 1228012,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "738363d1d2c2af2021127cc8277a24a4647906a75cf6bffd5624385f266c5730"
+    },
+    {
+      "path": "full10/branch.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/branch.bin",
+      "bytes": 35,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "aa8ed83f5af19ee2ccf6865ab9ea90ca3aff2a7dd22685d9aa3421c630894765"
+    },
+    {
+      "path": "full10/channels/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "688a2e94d7bb38f17cc44ae166847da345aa15698c1fb0a998bbd3e442b0db7b"
+    },
+    {
+      "path": "full10/channels/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "full10/channels/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "full10/channels/controller.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/controller.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/controller.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/controller.stdout.log.txt",
+      "bytes": 210,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "244221274bdf3bf57735540e9b63f9d64fa66d5c4dbf2a25c58661f836172946"
+    },
+    {
+      "path": "full10/channels/full-browserless.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/full-browserless.stderr.log.txt",
+      "bytes": 32667,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3975c0b4622328572f1c3ee53bfe626c502e12d9925f818f46102b22d1a66499"
+    },
+    {
+      "path": "full10/channels/full-browserless.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/full-browserless.stdout.log.txt",
+      "bytes": 260363,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "77270a8cdc88bd2bf9708da033d3946634fea87cd335a23b1d80772980082bca"
+    },
+    {
+      "path": "full10/channels/full-quality.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/full-quality.stderr.log.txt",
+      "bytes": 1796,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "22734df7e1fdc6d9bc67a8cf15abd2debe4430f275b793d5dc6d08e131894859"
+    },
+    {
+      "path": "full10/channels/full-quality.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/full-quality.stdout.log.txt",
+      "bytes": 59062,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7504693d51bee73ff5ba01c199468050e5f8db618f06b913027fefeb68cf6a6a"
+    },
+    {
+      "path": "full10/channels/registered-info.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/registered-info.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/registered-info.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/registered-info.stdout.log.txt",
+      "bytes": 99618,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3b112fae5687ab10b2c6cef2e3e917096a258aac88c74fedf0f40c5f0b3ec344"
+    },
+    {
+      "path": "full10/channels/source-check.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-check.stderr.log.txt",
+      "bytes": 1642,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "bb00a6abf80a28f76bce5a709d317a2d02d13ec1bbec78afd9a6f2237ae5be12"
+    },
+    {
+      "path": "full10/channels/source-check.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-check.stdout.log.txt",
+      "bytes": 1138,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "89fa5ecd84c8cd20cf18404a6bb77edb718a6a10a4b313bc7255fef2b2d83452"
+    },
+    {
+      "path": "full10/channels/source-dead-code.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-dead-code.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/source-dead-code.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-dead-code.stdout.log.txt",
+      "bytes": 90,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "d192182b9a24d738542279d62d6ff3fa98211c01c732ce943a0398518c2a889f"
+    },
+    {
+      "path": "full10/channels/source-lint.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-lint.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/source-lint.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/source-lint.stdout.log.txt",
+      "bytes": 34,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "full10/channels/targeted-tools.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/targeted-tools.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "full10/channels/targeted-tools.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/attempt-01/targeted-tools.stdout.log.txt",
+      "bytes": 5939,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "2e51bcdb865daf2bb1d4aee561f7769a6d3b0a7eae8b903eca5ccd5cf8c062df"
+    },
+    {
+      "path": "full10/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/controller.py",
+      "bytes": 23126,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "622976c051da6fe76c730716f1bd770111ac6e845e9a65e35cec40c077f05ae1"
+    },
+    {
+      "path": "full10/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/final-readback.json",
+      "bytes": 122524,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "1a4f2ea716625d14309990992d3381eed04bce9d64eed0b544178d600a2869b6"
+    },
+    {
+      "path": "full10/final-readback.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/final-readback.py",
+      "bytes": 4488,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "d99f59852b3f838b3ce6c700b6adeee43eb48318b699b1f268bbbd1825328248"
+    },
+    {
+      "path": "full10/head.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/head.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e89eb2f10d40f081b46de83bf90e694bb3955804a47ed5d620e6cd7364ed8721"
+    },
+    {
+      "path": "full10/prepared.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/prepared.json",
+      "bytes": 13369,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "012c7f128893f9cfdfa401b962fac8d15c134efbde47c7bb742f85b12e51b646"
+    },
+    {
+      "path": "full10/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/profile.json",
+      "bytes": 11177,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "f9da8c160cc2727c980d26ba0ff17f43338a64e0a71ff341475da394f61bfd7f"
+    },
+    {
+      "path": "full10/staged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/staged-diff.bin",
+      "bytes": 50695,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "598e6627ed3245984529c146614fb1a66c741c07631041ba7a0269d14717e0ea"
+    },
+    {
+      "path": "full10/status.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/status.bin",
+      "bytes": 459,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e88a018ee6432f6572c6474f9b529944feba37139b710cf1f01a6eea9bded6c8"
+    },
+    {
+      "path": "full10/tree.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/tree.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "12061f5c9f3c6bc35c60110a593b9e13cbf4a68260f91732681cb1ff0ebe289b"
+    },
+    {
+      "path": "full10/unstaged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/full-source-10/unstaged-diff.bin",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "producer-source-bindings/generator-complete-closure-03.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-repair-01/generator-complete-closure-03.json",
+      "bytes": 513043,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "13719d479adad656f389c9bb9ae95c104b14a34fafeb2881b0bf7ca6583aeb62"
+    },
+    {
+      "path": "producer-source-bindings/inspect-complete-generator-closure-03.mjs",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-repair-01/inspect-complete-generator-closure-03.mjs",
+      "bytes": 5986,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "056fbac7cadcf52197859e1b598ddd28ac356d5611aa53c841130c605861dca5"
+    },
+    {
+      "path": "producer-source-bindings/source-associations.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-repair-01/source-associations.json",
+      "bytes": 15098,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "71da4aeeedd5bd20036128fb1f35c91dc7265536fa6bd3a3b044da93bc7c8f1a"
+    },
+    {
+      "path": "qualification/source-only-summary.json",
+      "sourcePath": "Narrow data-only summary of closed actual owner receipts by prepare.py",
+      "bytes": 4802,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "659b84b72c6d61110ded4a099cc940a6d3a14500bc6d4aebaaf444f001a5087c"
+    },
+    {
+      "path": "tiny10/attempt-01/result.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/result.json",
+      "bytes": 86899,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "58db2eca9777ae5becb1b3e0774945447b947e963704f0985065097e3ff5c562"
+    },
+    {
+      "path": "tiny10/branch.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/branch.bin",
+      "bytes": 35,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "aa8ed83f5af19ee2ccf6865ab9ea90ca3aff2a7dd22685d9aa3421c630894765"
+    },
+    {
+      "path": "tiny10/channels/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/after-before-cache-restoration-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/after-before-cache-restoration-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "165de82d85803f74c9493288836b9785bf58a5c3fbe70b354704802b0dabc8c2"
+    },
+    {
+      "path": "tiny10/channels/after-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/after-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/after-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/after-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "tiny10/channels/before-installed-observer.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/before-installed-observer.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/before-installed-observer.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/before-installed-observer.stdout.log.txt",
+      "bytes": 655,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "7864a52ff1a7cad2946cd4c4a4ed3db5e27bb2420b6cfdeeaf5e124aab9edd35"
+    },
+    {
+      "path": "tiny10/channels/controller.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/controller.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/controller.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/controller.stdout.log.txt",
+      "bytes": 218,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "9d50358a4166aa3c781960780e5e26b449e01867000e5cd6d1d9b61dcc777cd0"
+    },
+    {
+      "path": "tiny10/channels/eight-path-eslint.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/eight-path-eslint.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/eight-path-eslint.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/eight-path-eslint.stdout.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/runtime-and-graph-tests.stderr.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/runtime-and-graph-tests.stderr.log.txt",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tiny10/channels/runtime-and-graph-tests.stdout.log.txt",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/attempt-01/runtime-and-graph-tests.stdout.log.txt",
+      "bytes": 1077,
+      "mode": 420,
+      "originalMode": 420,
+      "sha256": "24503100733d209600fc57de5b2cdaf48c9cd250ea02719e9e8948649694e86b"
+    },
+    {
+      "path": "tiny10/controller.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/controller.py",
+      "bytes": 23176,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "a95499536bc0af0d699fd9c447142b240022f768fd9f46410ba97da0823dba32"
+    },
+    {
+      "path": "tiny10/final-readback.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/final-readback.json",
+      "bytes": 4896,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "b47e48f2f7daa4220f2da67f4ce03a565ec44d4ac580c5db4f79ea4dbc072cbf"
+    },
+    {
+      "path": "tiny10/final-readback.py",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/final-readback.py",
+      "bytes": 4533,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "822397b3c2bc9b7d026eb5e96b34bb30d89faa95cf444a631cb2653f7cc670c0"
+    },
+    {
+      "path": "tiny10/head.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/head.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e89eb2f10d40f081b46de83bf90e694bb3955804a47ed5d620e6cd7364ed8721"
+    },
+    {
+      "path": "tiny10/prepared.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/prepared.json",
+      "bytes": 7994,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "8629a2d78479d673682fa35ac06e82f3da4e222214249beb9e5ab6143bdcba42"
+    },
+    {
+      "path": "tiny10/profile.json",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/profile.json",
+      "bytes": 8295,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "5fd514dde03665f034a5e6b92e76cfa626bb512cb83120f390c624957f4397e6"
+    },
+    {
+      "path": "tiny10/staged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/staged-diff.bin",
+      "bytes": 50167,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "ca4937b1eed245b297cdc22dbf42aac872a8d1b2ac12b41e7b9728519e7144a8"
+    },
+    {
+      "path": "tiny10/status.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/status.bin",
+      "bytes": 459,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e88a018ee6432f6572c6474f9b529944feba37139b710cf1f01a6eea9bded6c8"
+    },
+    {
+      "path": "tiny10/tree.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/tree.bin",
+      "bytes": 41,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "12061f5c9f3c6bc35c60110a593b9e13cbf4a68260f91732681cb1ff0ebe289b"
+    },
+    {
+      "path": "tiny10/unstaged-diff.bin",
+      "sourcePath": "/private/tmp/splotch-neutral-resume-670_yiah/facade-controls-10/unstaged-diff.bin",
+      "bytes": 0,
+      "mode": 420,
+      "originalMode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

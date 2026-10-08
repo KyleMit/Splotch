@@ -40,14 +40,16 @@ export async function testWebHost(argv) {
   if (values.port === undefined)
     throw new Error('Select an explicit unused --port before starting the owned control preview');
   const port = parseNumberFlag('port', values.port, TCP_PORT);
-  const { owned, inputs, artifact, copyRoot } = readWebHostArtifact(values['artifact-root']);
+  const { owned, inputs, artifact, copyRoot, request, publicationEnvironment } =
+    readWebHostArtifact(values['artifact-root']);
   const registry = requireBrowserRegistry(values['browser-registry']);
   const invocation = createBrowserInvocation(owned);
   const env = freshBrowserEnvironment(
     owned,
     withBrowserRegistry(
       {
-        ...copiedBuildEnvironment(owned, copyRoot, artifact, inputs.pinned.env),
+        ...copiedBuildEnvironment(owned, copyRoot, artifact, inputs.pinned.env, request),
+        ...publicationEnvironment,
         [WEB_HOST_ENV.port]: String(port),
         [WEB_HOST_ENV.browserRun]: invocation.label,
         SPLOTCH_E2E_PORT: String(port),
@@ -81,7 +83,7 @@ export async function testWebHost(argv) {
   }
   writeBrowserChildRecord(owned, record, registry, invocation);
   console.log(
-    `Retained browser smoke completed for ${artifact}; full host, deployed and physical acceptance remain pending`
+    `${request.variant} browser smoke completed for ${artifact}; full host, deployed and physical acceptance remain pending`
   );
 }
 

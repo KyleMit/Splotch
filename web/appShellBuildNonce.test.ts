@@ -60,6 +60,7 @@ function ownedFixture() {
     'web/appShellBuildNonce.ts',
     'tools/migration/lib/web-host-ownership.mjs',
     'migration/probes/web-host/host/contract.ts',
+    'migration/probes/web-host/src/probeProps.ts',
   ]) {
     const target = join(copy, path);
     mkdirSync(join(target, '..'), { recursive: true });

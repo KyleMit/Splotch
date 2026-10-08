@@ -1,0 +1,111 @@
+.splotch-probe-island {
+  --probe-width-max: 22rem;
+
+  position: fixed;
+  inset-inline-start: calc((100% + var(--palette-landscape-width)) / 2);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(
+    var(--probe-width-max),
+    calc(100% - var(--palette-landscape-width) - 2 * var(--space-4))
+  );
+  z-index: var(--z-canvas-chrome);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--text);
+  pointer-events: none;
+}
+
+.splotch-probe-chrome {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--float-border);
+  border-radius: var(--radius-lg);
+  background: var(--float-surface);
+  box-shadow: var(--float-shadow);
+  pointer-events: auto;
+}
+
+.splotch-probe-swatch {
+  display: block;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+}
+
+.splotch-probe-status {
+  margin: 0;
+  color: var(--text);
+}
+
+.splotch-probe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.splotch-probe-button {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.splotch-probe-button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.splotch-probe-button:focus-visible {
+  outline: var(--border-width) solid var(--brand);
+  outline-offset: var(--space-1);
+}
+
+.splotch-probe-button:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+}
+
+.splotch-probe-dialog {
+  width: calc(100vw - 2 * var(--modal-gutter));
+  max-width: var(--probe-width-max);
+  max-height: calc(100dvh - 2 * var(--modal-gutter));
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.splotch-probe-dialog-content {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.splotch-probe-dialog-content h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-lg);
+}
+
+.splotch-probe-refusal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  cursor: pointer;
+}
+
+@media (orientation: portrait) {
+  .splotch-probe-island {
+    inset-inline-start: 50%;
+    width: min(var(--probe-width-max), calc(100% - 2 * var(--space-4)));
+  }
+}

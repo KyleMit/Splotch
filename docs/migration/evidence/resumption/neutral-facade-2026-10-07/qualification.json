@@ -1,0 +1,81 @@
+{
+  "state": "prepared-not-published-all-member-bytes-qualified",
+  "manifestSha256": "cd88318b29654ca045b14e1b14bb1101d251f78db12bd301a6ac6c008870bd5b",
+  "archive": {
+    "path": "receipts.tar.gz",
+    "bytes": 340991,
+    "sha256": "cf4c989cae19c6ec3597eff36bcc17e6fd539cfe072a249cdfb3a0a639778bc4",
+    "members": 72
+  },
+  "memberBytes": 2757978,
+  "sourceOnly": true,
+  "allMembersByteVerified": true,
+  "allArchivedMembersRegular": true,
+  "elapsedSeconds": 0.057252374943345785,
+  "proofs": {
+    "tiny10": {
+      "sourceRows": 8484,
+      "sourceBytes": 1219072425,
+      "individualExits": [
+        ["before-installed-observer", 0],
+        ["runtime-and-graph-tests", 0],
+        ["eight-path-eslint", 0],
+        ["after-before-cache-restoration-installed-observer", 0],
+        ["after-installed-observer", 0]
+      ],
+      "elapsedSeconds": 11.991661333013326,
+      "observedGroups": [49977, 49996, 50022, 50141, 50162, 50188],
+      "allObservedGroupsAbsent": true,
+      "sourceAndMetadataEqual": true,
+      "completeInstalledContextsEqual": true,
+      "changedCachePayloadCount": 1,
+      "changedCachePayloadBytes": 1303,
+      "rawChangedCacheRetainedPrivately": true,
+      "resultSha256": "58db2eca9777ae5becb1b3e0774945447b947e963704f0985065097e3ff5c562",
+      "readbackSha256": "b47e48f2f7daa4220f2da67f4ce03a565ec44d4ac580c5db4f79ea4dbc072cbf",
+      "privateParentClosureSha256": "d18807b736f866f08fa66472dfbafc27c96a232341f845c7ff0c8a6c77d16fe6",
+      "smokePort": null
+    },
+    "full10": {
+      "sourceRows": 8484,
+      "sourceBytes": 1219072948,
+      "individualExits": [
+        ["before-installed-observer", 0],
+        ["registered-info", 0],
+        ["source-dead-code", 0],
+        ["targeted-tools", 0],
+        ["source-check", 0],
+        ["source-lint", 0],
+        ["full-quality", 0],
+        ["full-browserless", 0],
+        ["after-before-cache-restoration-installed-observer", 0],
+        ["after-installed-observer", 0]
+      ],
+      "elapsedSeconds": 197.72148583293892,
+      "observedGroups": [
+        370, 380, 703, 1216, 1217, 1585, 4170, 4707, 5187, 5729, 6203, 6807, 7138, 7436, 7440, 7441,
+        7665, 7985, 8026, 8411, 8564, 8766, 11174, 11370, 12319, 13080, 13891, 15461, 18150, 22845,
+        22869, 22896, 54614, 54633, 54721, 54752, 54786, 55495, 55696, 55707, 55739, 55837, 55869,
+        55901, 55975, 55976, 56046, 56047, 56049, 56239, 56255, 56295, 56422, 56588, 56682, 56769,
+        56796, 57019, 57136, 58685, 60150, 69219, 71910, 72161, 73638, 76053, 81292, 81892, 82981,
+        99588, 99589, 99896
+      ],
+      "allObservedGroupsAbsent": true,
+      "sourceAndMetadataEqual": true,
+      "completeInstalledContextsEqual": true,
+      "changedCachePayloadCount": 160,
+      "changedCachePayloadBytes": 7880432,
+      "rawChangedCacheRetainedPrivately": true,
+      "resultSha256": "738363d1d2c2af2021127cc8277a24a4647906a75cf6bffd5624385f266c5730",
+      "readbackSha256": "1a4f2ea716625d14309990992d3381eed04bce9d64eed0b544178d600a2869b6",
+      "privateParentClosureSha256": "19975fcaffd13fc30c5cecc8c26d1d69f283febc18bdead4542020d0c9102198",
+      "smokePort": {
+        "address": "127.0.0.1",
+        "port": 64176,
+        "observedUnusedAtUtc": "2026-10-07T07:28:49.314514+00:00",
+        "reservationAfterProbeCloseClaimed": false,
+        "rebindPassedAtUtc": "2026-10-07T07:30:10.602285+00:00"
+      }
+    }
+  }
+}
