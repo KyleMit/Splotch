@@ -1,8 +1,7 @@
 diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
-index 1aa16d32c..1d36d0fe7 100644
 --- a/tools/rival-agent/launch.mjs
 +++ b/tools/rival-agent/launch.mjs
-@@ -208,8 +208,6 @@ export async function launch(
+@@ -337,8 +337,6 @@
    onProgress(`session: ${session}`);
    for (const note of notes) onProgress(note);
  
@@ -11,11 +10,11 @@ index 1aa16d32c..1d36d0fe7 100644
    const writeSessionRecord = () =>
      writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
        id,
-@@ -224,7 +222,6 @@ export async function launch(
+@@ -354,7 +352,6 @@
        branch,
        createdAt: new Date().toISOString(),
      });
 -  writeSessionRecord();
    const logPath = sessionPath(session, SESSION_FILES.log);
    let rivalSession;
- 
+   let authorizationClaim;

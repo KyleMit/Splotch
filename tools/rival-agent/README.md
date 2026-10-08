@@ -153,3 +153,50 @@ Do not alter the reviewed range to disguise the original review as one of differ
 Installed Codex publishers gain these checks only after the trusted canonical checkout contains the
 change and its normal `npm run run-claude:install` procedure refreshes the installed bytes. Do not
 copy a PR worktree's publisher over the trusted wrapper to review that same PR.
+
+### One explicit extra round
+
+An exhausted PR can continue once in its original conversation only when the human user explicitly
+asks for that extra substantive round. Pass `--round-authorization-file <absolute path>` to the same
+launcher and PR scope. It is incompatible with `--fresh`, `--end-session`, a question, and non-PR
+scopes. The default cap remains `MAX_ROUNDS`; a continuation cannot authorize a fifth round.
+
+The file is strict JSON, an absolute regular file capped at 256 KiB. Its schema is:
+
+```json
+{
+  "schemaVersion": 1,
+  "repoRoot": "/absolute/original/checkout",
+  "pullRequest": 7,
+  "rival": "claude",
+  "rivalSessionId": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+  "ledgerSha256": "<sha256 of the exact existing ledger file bytes>",
+  "priorRounds": 3,
+  "authorizedRound": 4,
+  "authorization": {
+    "kind": "direct-human-message",
+    "quote": "<exact direct human authorization>",
+    "source": "<durable chat and user-message reference>",
+    "recordedAt": "2026-10-08T00:00:00.000Z"
+  }
+}
+```
+
+Use the original checkout path, PR, rival, conversation id, and existing ledger digest. Unknown
+fields, mismatches, missing or corrupt ledgers, prior grants, and replay fail closed. The quote and
+source record provenance; they do not authenticate themselves. The native handler must verify them
+against the direct human message, and host execution still goes through its normal approval
+boundary. An agent's inferred approval or a quote from the reviewed worktree is not authorization.
+
+The launcher writes an owner-only claim under the ledger's `round-authorizations/` directory with
+exclusive creation before setup. A setup failure before the stream invocation releases that claim
+and leaves the ledger unchanged. Immediately before the stream invocation it durably marks the claim
+started; it then stays consumed even if the rival fails. Renaming the file or replacing its quote
+cannot replay it. A stopped process can leave a reserved claim; never delete one to force a retry.
+Preserve the evidence and ask for a separate disposition of that interrupted attempt.
+
+A completed extra round preserves the original conversation, advances its count, and appends the
+full authorization, its file digest, and the complete prior ledger record to the ledger, session,
+and result. A refused or failed resume preserves the original ledger bytes and never creates a new
+reviewer. The disposable worktree cleanup still runs if claim cleanup fails; cleanup diagnostics do
+not replace the original launch failure.

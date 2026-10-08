@@ -253,3 +253,17 @@ anything else is read from the launcher.
   cached, and ten to twelve minutes; a repo-wide question has not been tried.
 * The ten-minute stall budget with nothing outstanding and the one-hour budget for a pending request
   are both set by argument rather than measurement. Neither has fired outside a test.
+
+## Explicit human disposition of an exhausted PR
+
+The ordinary three-round cap remains the review-quality budget. A human can authorize one additional
+substantive PR round in the same original conversation without resetting that budget. A strict file
+binds the original checkout, PR, vendor, conversation, exact ledger digest and prior count to the
+one permitted next round. The exact human quote and durable chat source are evidence for the native
+handler and its approval boundary, not a self-authenticating credential.
+
+A ledger-bound exclusive claim prevents concurrent launches and replay even when the grant file is
+renamed. Pre-stream provisioning failures release a reserved claim; stream invocation consumes it
+conservatively even on failure. The complete prior ledger record stays embedded in the successful
+extra-round record so its historical range and provenance are not overwritten by the new head. No
+environment override, ledger rewrite, fresh reviewer, or fifth-round grant is part of this path.

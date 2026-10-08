@@ -12,6 +12,14 @@ import {
   removeLedgerRecord,
 } from './ledger.mjs';
 import { readPullRequest, REPOSITORY } from './post-review.mjs';
+import {
+  assertAuthorizationOptions,
+  assertAuthorizedResult,
+  claimRoundAuthorization,
+  planAuthorizedRound,
+  releaseUnstartedRoundAuthorization,
+  startRoundAuthorization,
+} from './round-authorization.mjs';
 import { buildRivalPrompt, readPromptFile } from './prompt.mjs';
 import {
   createSessionDirectory,
@@ -41,7 +49,7 @@ const SCP_GITHUB_REMOTE = /^git@github\.com:(.+)$/i;
 const GITHUB_URL_PROTOCOLS = new Set(['https:', 'ssh:']);
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
-  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
+  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--round-authorization-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
 
 // The one argument vocabulary both launchers share; a vendor validates `model` itself because the
 // two CLIs name models differently.
@@ -57,6 +65,7 @@ export function parseLaunchArgs(argv) {
       uncommitted: { type: 'boolean', default: false },
       'question-file': { type: 'string' },
       'prompt-file': { type: 'string' },
+      'round-authorization-file': { type: 'string' },
       cwd: { type: 'string' },
       model: { type: 'string' },
       effort: { type: 'string' },
@@ -76,7 +85,7 @@ export function parseLaunchArgs(argv) {
   const effort = values.effort ?? 'high';
   if (!EFFORTS.has(effort)) throw new Error(`unsupported effort: ${effort}`);
   const kind = scopes[0] ?? 'base';
-  return {
+  const options = {
     scope: {
       kind,
       base: kind === 'base' ? (values.base ?? DEFAULT_BASE_REF) : undefined,
@@ -85,12 +94,15 @@ export function parseLaunchArgs(argv) {
     },
     questionFile: values['question-file'],
     promptFile: values['prompt-file'],
+    roundAuthorizationFile: values['round-authorization-file'],
     cwd: values.cwd ?? process.cwd(),
     model: values.model,
     effort,
     fresh: values.fresh,
     endSession: values['end-session'],
   };
+  assertAuthorizationOptions(options);
+  return options;
 }
 
 const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
@@ -252,6 +264,25 @@ function finish(session, state, logPath, extra) {
   return done;
 }
 
+function cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress }) {
+  const errors = [];
+  for (const cleanup of [
+    () => releaseUnstartedRoundAuthorization(authorizationClaim),
+    () => removeDisposableWorktree(repoRoot, worktree),
+  ]) {
+    try {
+      cleanup();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (failure) {
+    for (const error of errors) onProgress(`review cleanup failed: ${error.message}`);
+  } else if (errors.length > 0) {
+    throw new AggregateError(errors, 'review resource cleanup failed');
+  }
+}
+
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
 // `reducer`, `toolBoundary` (what the rival's own sandboxed shell can and cannot do, in the
@@ -264,6 +295,7 @@ export async function launch(
   vendor,
   { onProgress = (line) => process.stderr.write(`${line}\n`) } = {}
 ) {
+  assertAuthorizationOptions(options);
   const { env, notes = [] } = vendor.prepare();
   const repoRoot = resolveRepoRoot(options.cwd);
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
@@ -282,10 +314,20 @@ export async function launch(
   const model = vendor.resolveModel(options.model);
   const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
   const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
+  const record = readLedgerRecord(recordPath);
   // A question is one turn, not a review that a later round would verify.
-  const plan = question
-    ? planRound(undefined)
-    : planRound(readLedgerRecord(recordPath), { fresh: options.fresh, rival: vendor.rival });
+  const plan =
+    options.roundAuthorizationFile !== undefined
+      ? planAuthorizedRound(options.roundAuthorizationFile, {
+          repoRoot,
+          scope: options.scope,
+          rival: vendor.rival,
+          recordPath,
+          record,
+        })
+      : question
+        ? planRound(undefined)
+        : planRound(record, { fresh: options.fresh, rival: vendor.rival });
 
   const scope = await resolveLaunchScope(repoRoot, options.scope);
   scope.range = `${scope.base}...${scope.head}`;
@@ -308,6 +350,7 @@ export async function launch(
       packetDir,
       round: plan.round,
       resumed: Boolean(plan.resume),
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
       repoRoot,
       branch,
       createdAt: new Date().toISOString(),
@@ -315,8 +358,13 @@ export async function launch(
   writeSessionRecord();
   const logPath = sessionPath(session, SESSION_FILES.log);
   let rivalSession;
+  let authorizationClaim;
+  let failure;
 
   try {
+    if (plan.roundAuthorization) {
+      authorizationClaim = claimRoundAuthorization(recordPath, plan.roundAuthorization, session);
+    }
     createDisposableWorktree(repoRoot, scope.head, worktree);
     writeReviewPacket(repoRoot, scope, packetDir);
     const runRound = async () => {
@@ -338,16 +386,18 @@ export async function launch(
         toolBoundary: vendor.toolBoundary,
         executionMode: vendor.executionMode,
       });
+      const args = vendor.buildArgs({
+        worktree,
+        session,
+        packetDir,
+        model,
+        effort: options.effort,
+        rivalSession,
+      });
+      if (authorizationClaim) startRoundAuthorization(authorizationClaim, recordPath);
       return runStreaming({
         command: vendor.command,
-        args: vendor.buildArgs({
-          worktree,
-          session,
-          packetDir,
-          model,
-          effort: options.effort,
-          rivalSession,
-        }),
+        args,
         cwd: worktree,
         env: rivalEnvironment(env, { session }),
         stdin: prompt,
@@ -359,10 +409,12 @@ export async function launch(
     };
 
     const state = await runRound();
+    if (authorizationClaim) assertAuthorizedResult(authorizationClaim, recordPath, state);
     const done = finish(session, state, logPath, {
       session,
       round: plan.round,
       scope,
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
     });
     if (!question) {
       recordRound(recordPath, {
@@ -371,10 +423,12 @@ export async function launch(
         base: scope.base,
         head: scope.head,
         rival: vendor.rival,
+        roundAuthorization: plan.roundAuthorization,
       });
     }
     return done;
   } catch (error) {
+    failure = error;
     if (!existsSync(sessionPath(session, SESSION_FILES.failed))) {
       writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), {
         reason: error.message,
@@ -385,7 +439,7 @@ export async function launch(
     }
     throw error;
   } finally {
-    removeDisposableWorktree(repoRoot, worktree);
+    cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress });
   }
 }
 

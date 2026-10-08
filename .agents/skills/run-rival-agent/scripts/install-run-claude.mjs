@@ -23,7 +23,7 @@ const coreDirectory = join(repositoryRoot, 'tools/rival-agent');
 // Exported so the drift guard can normalize homedir()-based paths on noncanonical hosts.
 export const EXPECTED_HOME = '/Users/kylemit';
 const EXPECTED_REPOSITORY_ROOT = '/Users/kylemit/Code/Splotch';
-export const MANIFEST_VERSION = 7;
+export const MANIFEST_VERSION = 8;
 
 // One directory holds the whole trusted install: the vendor-neutral core copied verbatim and the
 // Codex-side package files with their core imports repointed at their new siblings. The health
@@ -39,6 +39,7 @@ export const CORE_FILES = Object.freeze([
   'worktree.mjs',
   'stream.mjs',
   'ledger.mjs',
+  'round-authorization.mjs',
   'prompt.mjs',
   'rival-prompt.md',
   'rival-prompt-hybrid.md',
