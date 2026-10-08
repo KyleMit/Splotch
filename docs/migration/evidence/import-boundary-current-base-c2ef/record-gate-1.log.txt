@@ -1,0 +1,8 @@
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false docs/migration/evidence/import-boundary-current-base-c2ef/README.md
+

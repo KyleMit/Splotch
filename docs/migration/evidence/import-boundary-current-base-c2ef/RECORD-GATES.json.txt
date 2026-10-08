@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "source": "4ab37d6097eaa2e4371789562bb5efa84738b28e",
+  "recordsOnlyPaths": [
+    "docs/migration/evidence/import-boundary-current-base-c2ef/README.md",
+    "docs/migration/evidence/import-boundary-current-base-c2ef/SOURCE-GATES.json.txt",
+    "docs/migration/evidence/import-boundary-current-base-c2ef/c2ef-composition.tar.gz",
+    "docs/migration/evidence/import-boundary-current-base-c2ef/ff900-composition.tar.gz"
+  ],
+  "nonRecordSourceEqualToPassedSource": true,
+  "records": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "format:md:check",
+        "--",
+        "docs/migration/evidence/import-boundary-current-base-c2ef/README.md"
+      ],
+      "startedAt": "2026-10-08T06:22:24.698097+00:00",
+      "finishedAt": "2026-10-08T06:22:24.836957+00:00",
+      "exit": 0,
+      "log": "record-gate-1.log.txt",
+      "logBytes": 212,
+      "logSha256": "74a426f779382847ca9bc1843ef01e34601f6c74e3c9284d86c3a2dbab1cb31e"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "check:doc-refs"
+      ],
+      "startedAt": "2026-10-08T06:22:24.837022+00:00",
+      "finishedAt": "2026-10-08T06:22:25.070983+00:00",
+      "exit": 0,
+      "log": "record-gate-2.log.txt",
+      "logBytes": 131,
+      "logSha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "startedAt": "2026-10-08T06:22:25.071005+00:00",
+      "finishedAt": "2026-10-08T06:22:25.090693+00:00",
+      "exit": 0,
+      "log": "record-gate-3.log.txt",
+      "logBytes": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "fullTierReuse": "No non-record source or dependency change after passed composition; current full-tier receipt retains source identity; no unchanged full-tier rerun"
+}
