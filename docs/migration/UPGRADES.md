@@ -397,16 +397,17 @@ consumed reservation even if distribution or review fails. The current writer on
 files; remote channel/reservation reconciliation is a required preceding step, not a capability it
 already implements. Marketing-version/channel rules require the corresponding store inventory.
 
-| Scenario                                 | Acceptance                                                                                                                                                                          | Status  |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Applicable channel sources and artifacts | Actual supported installations update in place; store history, signing lineage, digests and embedded versions are verified. Legacy format imports are retired.                      | Pending |
-| Fresh initialization and old work        | Candidate starts with valid new-product defaults/data; surviving prior workers/callbacks cannot publish stale content, bypass policy or corrupt candidate state.                    | Pending |
-| New-app storage and credentials          | Candidate-created data and secure credentials survive their declared lifecycle and later product updates; denied/full/locked/unreadable storage and interrupted writes fail safely. | Pending |
-| Partly spent installation grant          | Source/replacement pseudonyms match and the server retains spent allowance in the tested signing channel.                                                                           | Pending |
-| New-app failed-save pictures             | Candidate holds exact bytes through failure/interruption/Settings return/repeated launch and later product updates without loss or duplicate saving.                                | Pending |
-| New-app coloring content/work            | Selected starter/downloaded content works offline; verified publication hides corrupt/incomplete books; disable/remove/background cancellation cannot restore stale work.           | Pending |
-| Services/lifecycle and floors            | Back, gates, Pencil, photo denial/recovery, orientation, audio, connectivity and background/rotation behavior pass on declared floors and optimized physical release targets.       | Pending |
-| Channel/version reservation              | Local update mechanics and actual store lineage are separately verified; reviewed integration artifacts consume reserved monotonically increasing native versions.                  | Pending |
+| Scenario                                 | Acceptance                                                                                                                                                                                 | Status  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| Applicable channel sources and artifacts | Actual supported installations update in place; store history, signing lineage, digests and embedded versions are verified. Legacy format imports are retired.                             | Pending |
+| Fresh initialization and old work        | Candidate starts with valid new-product defaults/data; surviving prior workers/callbacks cannot publish stale content, bypass policy or corrupt candidate state.                           | Pending |
+| Abandoned credential security            | Known sensitive abandoned entries are removed/invalidated or retained behind reviewed protection/risk disposition; interrupted cleanup and late restoration cannot expose/reactivate them. | Pending |
+| New-app storage and credentials          | Candidate-created data and secure credentials survive their declared lifecycle and later product updates; denied/full/locked/unreadable storage and interrupted writes fail safely.        | Pending |
+| Partly spent installation grant          | Source/replacement pseudonyms match and the server retains spent allowance in the tested signing channel.                                                                                  | Pending |
+| New-app failed-save pictures             | Candidate holds exact bytes through failure/interruption/Settings return/repeated launch and later product updates without loss or duplicate saving.                                       | Pending |
+| New-app coloring content/work            | Selected starter/downloaded content works offline; verified publication hides corrupt/incomplete books; disable/remove/background cancellation cannot restore stale work.                  | Pending |
+| Services/lifecycle and floors            | Back, gates, Pencil, photo denial/recovery, orientation, audio, connectivity and background/rotation behavior pass on declared floors and optimized physical release targets.              | Pending |
+| Channel/version reservation              | Local update mechanics and actual store lineage are separately verified; reviewed integration artifacts consume reserved monotonically increasing native versions.                         | Pending |
 
 Physical access, signing/channel history, native dependency compatibility, applicable
 source-artifact association and the replacement audio implementation are unverified. Host tool
