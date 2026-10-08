@@ -83,7 +83,20 @@ npm run run-claude:install
 ```
 
 Rerun the installer only when the policy check or an escalated health check reports missing or stale
-installation state.
+installation state. If the existing Codex config and rules already pass and only trusted wrapper
+bytes changed, refresh the package from the independently verified canonical source without
+rewriting policy:
+
+```sh
+cd /Users/kylemit/Code/Splotch
+node .agents/skills/run-rival-agent/scripts/install-run-claude.mjs
+```
+
+Run that fixed canonical package installer through host/escalated execution, then verify the config
+and rules stayed byte-identical and rerun the normal policy check and escalated health probe. A
+package-only refresh keeps the installed entry-point paths and loaded policy unchanged, so it needs
+no restart. Never install from the reviewed worktree or copy files directly over the trusted
+package.
 
 ## Host execution
 
@@ -205,12 +218,20 @@ report it.
 
 The first review of a PR, branch, or commit opens a fresh reviewer conversation. Later reviews of
 the same unit **resume it**, so round two verifies whether its own earlier findings were addressed
-rather than meeting the code cold. Three rounds is the budget; `--fresh` starts over and
+rather than meeting the code cold. Three rounds is the default budget; `--fresh` starts over and
 `--end-session` deletes the conversation's transcript and the ledger record:
 
 ```sh
 /Users/kylemit/.local/libexec/splotch-rival-agent/launch-claude.mjs --end-session --pr <n>
 ```
+
+For an exhausted PR, an explicit direct human authorization can permit one additional substantive
+round in that same conversation. Use `--round-authorization-file <absolute path>` with the original
+`--cwd` and `--pr`; verify the quote and chat provenance yourself. The strict bindings, schema,
+consumption and failure contract are in
+[the shared core reference](../../../tools/rival-agent/README.md#one-explicit-extra-round). Never
+use fresh, end, a question, a new checkout key, or a ledger edit to substitute for this
+authorization.
 
 ## Options
 
