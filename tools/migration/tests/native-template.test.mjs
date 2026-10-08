@@ -48,6 +48,7 @@ function directory() {
 function write(rootPath, path, bytes, mode = 0o644) {
   mkdirSync(join(rootPath, path, '..'), { recursive: true });
   writeFileSync(join(rootPath, path), bytes, { mode });
+  chmodSync(join(rootPath, path), mode);
 }
 
 afterEach(() => fixtureDirectories.splice(0).forEach((path) => rmSync(path, { recursive: true })));
