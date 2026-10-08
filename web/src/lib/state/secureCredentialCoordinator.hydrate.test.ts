@@ -91,9 +91,8 @@ beforeEach(() => {
   installSecureStore();
 });
 
-// Each module wires one coordinator, and a hydration that rejects latches it
-// into refusing every later write until a hydration completes. A clean
-// hydration here keeps that latch inside the test that set it.
+// Each module wires one coordinator. A failed read can leave its stored value unknown and protect
+// later writes; a clean hydration keeps that state inside the test that established it.
 afterEach(async () => {
   localStorage.clear();
   installSecureStore();

@@ -210,7 +210,7 @@ describe.each(CREDENTIALS)(
     });
 
     it.each(['late success', 'transient failure', 'unreadable failure'])(
-      'protects an initial read superseded by an abandoned write: %s',
+      'preserves readable data when an initial read is superseded by an abandoned write: %s',
       async (outcome) => {
         native.rows.set(slot, 'stored-credential');
         const coordinator = createSecureCredentialCoordinator({ read, write: mirror }, save);
@@ -238,11 +238,18 @@ describe.each(CREDENTIALS)(
         await settled;
         await expect(write).resolves.toBe(false);
         expect(read()).toBe('');
-        expect(native.rows.get(slot)).toBe('stored-credential');
-        expect(native.set).not.toHaveBeenCalled();
-        expect(native.remove).not.toHaveBeenCalled();
+        const stored = outcome === 'unreadable failure' ? undefined : 'stored-credential';
+        expect(native.rows.get(slot)).toBe(stored);
+        const writes =
+          outcome === 'late success'
+            ? ['abandoned', 'stored-credential']
+            : outcome === 'unreadable failure'
+              ? ['abandoned']
+              : [];
+        expect(native.set.mock.calls.map(([, value]) => value)).toEqual(writes);
+        expect(native.remove.mock.calls).toEqual(outcome === 'unreadable failure' ? [[slot]] : []);
         await coordinator.hydrate({ load, legacyKey });
-        expect(read()).toBe('stored-credential');
+        expect(read()).toBe(stored ?? '');
       }
     );
 

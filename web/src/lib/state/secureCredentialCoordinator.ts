@@ -30,7 +30,7 @@ export function createSecureCredentialCoordinator(
   // Keep secure writes ordered so an older save already in flight cannot finish
   // after a replacement and become the credential restored on the next launch.
   let writeQueue = Promise.resolve();
-  // A rejected read may hide a valid secret behind an empty mirror. Only an owned read or write
+  // A rejected read may hide a valid secret behind an empty mirror. A queued physical read or write
   // establishes the rollback value; definitely unreadable data has no usable value to preserve.
   let storedValue: StoredValue = { kind: 'uninitialized' };
 
@@ -95,19 +95,19 @@ export function createSecureCredentialCoordinator(
         storedValue = storedValueProof;
       };
       const rememberStoredValue = (value: string) => {
-        if (ownsHydration()) rememberPersistedValue(value);
+        if (ownsHydration() || storedValue.kind !== 'known') rememberPersistedValue(value);
       };
       try {
         await operation(ownsHydration, rememberStoredValue, rememberPersistedValue);
       } catch (error) {
-        if (ownsHydration()) {
+        if (ownsHydration() || storedValue.kind !== 'known') {
           storedValue =
             storedValueProof ??
             (error instanceof UnreadableSecretError ? { kind: 'unreadable' } : { kind: 'unknown' });
         }
         throw error;
       }
-      // A stale read cannot establish a baseline; completed mutations record their proof separately.
+      // UI ownership cannot infer an unread physical value from the mirror.
       if (ownsHydration())
         storedValue = storedValueProof ?? { kind: 'known', value: mirror.read() };
     });
@@ -120,6 +120,7 @@ export function createSecureCredentialCoordinator(
   function hydrate({ load, legacyKey, isRetired }: StoredCredential) {
     return runHydration(async (ownsHydration, rememberStoredValue, rememberPersistedValue) => {
       let stored = await load();
+      rememberStoredValue(stored ?? '');
       const legacy = readString(legacyKey, '');
       if (!ownsHydration()) return;
 
@@ -130,8 +131,6 @@ export function createSecureCredentialCoordinator(
       }
 
       if (legacy) removeKey(legacyKey);
-
-      rememberStoredValue(stored ?? '');
 
       if (mirror.read() || !ownsHydration() || !stored) return;
       if (isRetired?.(stored)) {
