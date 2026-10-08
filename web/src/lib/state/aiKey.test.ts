@@ -7,7 +7,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // secureCredentialCoordinator.hydrate.test.ts.
 const secureStore = vi.hoisted(() => ({ apiKey: null as string | null }));
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveApiKey: vi.fn(async (value: string) => {
     secureStore.apiKey = value;
   }),
@@ -17,7 +19,8 @@ vi.mock('../secureStorage', () => ({
   }),
 }));
 
-vi.mock('../idb', () => ({
+vi.mock('../idb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../idb')>()),
   requestPersistentStorage: vi.fn(async () => false),
 }));
 
@@ -104,7 +107,7 @@ describe('setAiUserApiKey', () => {
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
-    settingsState.mirrorAiUserApiKey('prior-key');
+    await setAiUserApiKey('prior-key');
     secureStore.apiKey = 'prior-key';
 
     let ownsRequest = true;

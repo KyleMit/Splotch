@@ -27,7 +27,9 @@ vi.mock('@capacitor/screen-orientation', () => ({
   ScreenOrientation: { lock, unlock: vi.fn(async () => {}) },
 }));
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveApiKey: vi.fn(async () => {}),
   loadApiKey: vi.fn(async () => null),
   clearApiKey: vi.fn(async () => {}),
@@ -35,7 +37,10 @@ vi.mock('../secureStorage', () => ({
   loadAccessCode: vi.fn(async () => null),
   clearAccessCode: vi.fn(async () => {}),
 }));
-vi.mock('../idb', () => ({ requestPersistentStorage: vi.fn(async () => false) }));
+vi.mock('../idb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../idb')>()),
+  requestPersistentStorage: vi.fn(async () => false),
+}));
 vi.mock('../state/saveFolder.svelte', () => ({ hydrateSaveFolder: vi.fn() }));
 
 import { STORAGE_KEYS } from '../storage';

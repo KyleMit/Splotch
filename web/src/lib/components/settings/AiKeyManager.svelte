@@ -46,10 +46,8 @@
       // to make another one.
       checkUnavailable: "We couldn't check that key just now. Please try again.",
     },
-    // Secure storage that failed once stays unavailable until the app starts
-    // again: the coordinator refuses writes while the stored value is unknown,
-    // and only a fresh launch re-runs hydration. Retrying in place cannot clear
-    // that, so the copy asks for the restart instead.
+    // A failed read can leave the stored value unknown, so the coordinator refuses writes
+    // until hydration retries on a fresh launch. Proven unreadable data can be replaced.
     saveFailed: {
       apiKey:
         'Your key works, but could not be saved securely on this device. Close and reopen Splotch, then try again.',
