@@ -22,6 +22,14 @@ rival. The standalone poster relies on the launcher having verified the session'
 In the checkout there is no manifest and nothing to verify — the checkout is the source. The
 reviewed worktree is untrusted material, and the installed wrappers import nothing from it.
 
+A package-only refresh is supported by the fixed canonical
+`.agents/skills/run-rival-agent/scripts/install-run-claude.mjs` entry point. It validates the
+trusted checkout and rewrites the installed package and shims without touching Codex config or
+rules. Use it only after the changed source was independently reviewed and canonical bytes were
+verified; escalate this installer, prove config/rules stayed byte-identical, then rerun policy and
+health checks. With the same installed entry-point paths and already-loaded policy, this refresh
+needs no restart. The full `run-claude:install` path remains the one-time policy setup.
+
 ## What the rival can do
 
 The rival runs as `claude --print` with:
@@ -90,7 +98,7 @@ normally authenticates through the Keychain. The health probe additionally requi
 
 A review is keyed to the checkout plus the PR number, the commit, or the branch, and the Claude
 session id is recorded owner-only under `~/.config/splotch-rival-agent/ledger/`. Three rounds is the
-budget. `--end-session` deletes the conversation's transcript and sidecar directory under
+default budget. `--end-session` deletes the conversation's transcript and sidecar directory under
 `~/.claude/projects/` — only for an id the ledger holds, which only ever holds ids this launcher
 issued — and removes the record.
 
@@ -101,3 +109,12 @@ the escalation boundary. A denial remains a real stop or safer-path signal; neve
 Run `npm run run-claude:policy:check` before use. Use
 `codex execpolicy check --rules ~/.codex/rules/default.rules --pretty < command.txt` to inspect the
 effective decisions after installation.
+
+One additional substantive round for an exhausted PR requires explicit direct human authorization
+through `--round-authorization-file`, binding the original checkout, PR, rival, conversation,
+existing ledger bytes, and one next round. The quote and durable chat source are provenance checked
+by the native handler, not self-authenticating authority. The owner-only ledger claim prevents
+concurrent launch and replay; stream invocation consumes it even if the rival fails. The successful
+record retains the complete prior ledger and authorization evidence. The default cap is unchanged,
+and neither a reset nor a fifth round is supported by a grant. See the schema and failure contract
+in [the core reference](../../../../tools/rival-agent/README.md#one-explicit-extra-round).

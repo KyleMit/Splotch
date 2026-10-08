@@ -23,6 +23,10 @@ base and nonzero once the patch is applied, and a control's must exit zero both 
 refuses to launch a rival on a seed that fails that check; drop such a seed rather than lower the
 bar.
 
+The `retry-reuses-log-path` seed was retired when failed resumes stopped retrying. Its repro called
+a second-attempt helper directly, but production could no longer reach that attempt, so scoring it
+would reward a false positive. Historical results remain tied to their original corpus and base.
+
 A run creates one bench worktree per cell at `--base` (default `main`), applies the seed, launches
 the rival on the worktree's uncommitted scope with `--fresh`, serves the broker itself, scores the
 findings against the key, removes the ledger record and the worktree, and writes one JSON per cell

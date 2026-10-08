@@ -149,7 +149,8 @@ report it in the chat reply.
 The first review of a PR, branch, or commit opens a fresh reviewer. Later reviews of the same unit
 **resume it**, so round two verifies whether its own earlier findings were addressed rather than
 meeting the code cold. The launcher prints `resuming reviewer <thread> for round <n>` and the result
-carries `round`. Three rounds is the budget; after that the launcher refuses until you start over:
+carries `round`. Three rounds is the default budget; after that the launcher refuses without an
+explicit continuation or fresh-review disposition:
 
 ```bash
 npm run --silent rival:launch -- --fresh --pr <n>
@@ -161,6 +162,14 @@ npm run --silent rival:launch -- --end-session --pr <n>
 
 Use `--fresh` when the work moves on to something unrelated or when you want an opinion uncoloured
 by earlier rounds. A question (`--question-file`) is always a fresh, unrecorded turn.
+
+For an exhausted PR, an explicit direct human authorization can permit one additional substantive
+round in that same conversation. Use `--round-authorization-file <absolute path>` with the original
+`--cwd` and `--pr`; verify the quote and chat provenance yourself. The strict bindings, schema,
+consumption and failure contract are in
+[the shared core reference](../../../tools/rival-agent/README.md#one-explicit-extra-round). Never
+use fresh, end, a question, a new checkout key, or a ledger edit to substitute for this
+authorization.
 
 ## Options
 

@@ -1,9 +1,8 @@
 diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
-index 1aa16d32c..b4381a659 100644
 --- a/tools/rival-agent/launch.mjs
 +++ b/tools/rival-agent/launch.mjs
-@@ -84,29 +84,15 @@ export function parseLaunchArgs(argv) {
-   };
+@@ -105,29 +105,15 @@
+   return options;
  }
  
 -const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
@@ -49,7 +48,7 @@ index a7ab9fb1e..b2489f38f 100644
      const pr = ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'x' });
      expect(pr).toBe(
        ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'y' })
-@@ -54,22 +52,13 @@ describe('shared launch arguments', () => {
+@@ -54,21 +52,12 @@ describe('shared launch arguments', () => {
        ledgerKeyFor({ repoRoot, rival, scope: { kind: 'uncommitted' }, branch: 'x' })
      );
      expect(branch).not.toBe(pr);
@@ -73,5 +72,4 @@ index a7ab9fb1e..b2489f38f 100644
 -    expect(byHead).not.toBe(branch);
 +    expect(commit).not.toBe(branch);
    });
- 
-   it('gives the one retry after a pruned resume its own stream log', () => {
+ });
