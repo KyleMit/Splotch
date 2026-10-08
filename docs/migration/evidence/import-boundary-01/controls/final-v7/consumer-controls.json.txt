@@ -1,0 +1,2437 @@
+{
+  "sourceInputs": "source-inputs.json",
+  "oldSourceHead": "ecdd26f93849a8a26542536be82e63068c662749",
+  "compositionHead": "3470e0b410e86909486e5bee876a8239d45ad5f3",
+  "versions": {
+    "babel": "7.29.7",
+    "typescript": "6.0.3",
+    "babelPresetExpo": "57.0.13"
+  },
+  "configurationResults": [
+    {
+      "name": "A1-nested-export-alias",
+      "source": "const c = (module.exports = { presets: [require.resolve('babel-preset-expo')] });\nObject.assign(c, { plugins: ['babel-plugin-react-compiler'] });\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/A1-nested-export-alias/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: babel.config.cjs uses unsupported configuration export alias"
+      },
+      "consumer": {
+        "passed": true,
+        "result": [
+          "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+        ]
+      },
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "A2-destructured-export-alias",
+      "source": "const { plugins } = (module.exports = { presets: [require.resolve('babel-preset-expo')], plugins: [] });\nplugins.push('babel-plugin-react-compiler');\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/A2-destructured-export-alias/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: babel.config.cjs uses unsupported configuration export alias"
+      },
+      "consumer": {
+        "passed": true,
+        "result": [
+          "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+        ]
+      },
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "nested-app.config.ts",
+      "source": "export const apiBase = 'https://example.invalid';\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/nested-app.config.ts/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/config/app.config.ts has no supported literal configuration export"
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/config/app.config.ts",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "consumer": {
+        "passed": true,
+        "result": "export var apiBase='https://example.invalid';"
+      },
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "nested-babel.config.ts",
+      "source": "export const apiBase = 'https://example.invalid';\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/nested-babel.config.ts/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/config/babel.config.ts has no supported literal configuration export"
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/config/babel.config.ts",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "consumer": {
+        "passed": true,
+        "result": "export var apiBase='https://example.invalid';"
+      },
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "nested-.babelrc.ts",
+      "source": "export const apiBase = 'https://example.invalid';\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/nested-.babelrc.ts/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/config/.babelrc.ts has no supported literal configuration export"
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/config/.babelrc.ts",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "consumer": {
+        "passed": true,
+        "result": "export var apiBase='https://example.invalid';"
+      },
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    }
+  ],
+  "jsxResults": [
+    {
+      "name": "default-automatic",
+      "source": "export const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/default-automatic/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"react/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/default-automatic/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "leading-block",
+      "source": "/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-block/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"splotch-owned-jsx-runtime-probe/jsx-runtime\";\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-block/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "leading-line",
+      "source": "// @jsxImportSource splotch-owned-jsx-runtime-probe\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-line/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\n// @jsxImportSource splotch-owned-jsx-runtime-probe\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-line/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "after-import-block",
+      "source": "import { Fragment } from 'react';\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = <>pragma positions</>;\nvoid Fragment;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/after-import-block/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 15,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment}from'react';import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});void Fragment;",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nimport { Fragment } from 'react';\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\nvoid Fragment;\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/after-import-block/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "later-block",
+      "source": "export const probe = <>pragma positions</>;\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/later-block/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/later-block/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "later-line",
+      "source": "export const probe = <>pragma positions</>;\n// @jsxImportSource splotch-owned-jsx-runtime-probe\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/later-line/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/later-line/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "leading-ts-extra-token",
+      "source": "/** @jsxImportSource splotch-owned-jsx-runtime-probe trailing */\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-ts-extra-token/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"react/jsx-runtime\";export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"splotch-owned-jsx-runtime-probe/jsx-runtime\";\n/** @jsxImportSource splotch-owned-jsx-runtime-probe trailing */\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/leading-ts-extra-token/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "string-lookalike",
+      "source": "export const text = '/** @jsxImportSource splotch-owned-jsx-runtime-probe */';\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/string-lookalike/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"react/jsx-runtime\";export var text='/** @jsxImportSource splotch-owned-jsx-runtime-probe */';export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const text = '/** @jsxImportSource splotch-owned-jsx-runtime-probe */';\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/string-lookalike/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "template-lookalike",
+      "source": "export const text = `/** @jsxImportSource splotch-owned-jsx-runtime-probe */`;\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/template-lookalike/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"react/jsx-runtime\";export var text=`/** @jsxImportSource splotch-owned-jsx-runtime-probe */`;export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const text = `/** @jsxImportSource splotch-owned-jsx-runtime-probe */`;\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/template-lookalike/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "jsx-text-lookalike",
+      "source": "import { Text } from 'react-native';\nexport const probe = <Text>/** @jsxImportSource splotch-owned-jsx-runtime-probe */</Text>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/jsx-text-lookalike/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 15,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 15,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "babelOutput": "import{Text}from'react-native';import{jsx as _jsx}from\"react/jsx-runtime\";export var probe=_jsx(Text,{children:\"/** @jsxImportSource splotch-owned-jsx-runtime-probe */\"});",
+      "tsOutput": "import { jsx as _jsx } from \"react/jsx-runtime\";\nimport { Text } from 'react-native';\nexport const probe = _jsx(Text, { children: \"/** @jsxImportSource splotch-owned-jsx-runtime-probe */\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/jsx-text-lookalike/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "jsx-expression-comment",
+      "source": "export const probe = <>{/* @jsxImportSource splotch-owned-jsx-runtime-probe */}</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/jsx-expression-comment/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var probe=_jsx(_Fragment,{});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const probe = _jsx(_Fragment, {});\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/jsx-expression-comment/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "empty-block-comment",
+      "source": "export function noop() { /* @jsxImportSource splotch-owned-jsx-runtime-probe */ }\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/empty-block-comment/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export function noop(){}export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport function noop() { }\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/empty-block-comment/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "template-expression-comment",
+      "source": "export const text = `value ${/* @jsxImportSource splotch-owned-jsx-runtime-probe */ 1}`;\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/template-expression-comment/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": false,
+        "error": "AssertionError [ERR_ASSERTION]: src/PragmaHelper.tsx uses unsupported per-file JSX import source"
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"splotch-owned-jsx-runtime-probe/jsx-runtime\";export var text=`value ${1}`;export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const text = `value ${ /* @jsxImportSource splotch-owned-jsx-runtime-probe */1}`;\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/template-expression-comment/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    },
+    {
+      "name": "regex-lookalike",
+      "source": "export const pattern = /@jsxImportSource splotch-owned-jsx-runtime-probe/;\nexport const probe = <>pragma positions</>;\n",
+      "candidate": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/regex-lookalike/candidate",
+      "baseline": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "old": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "current": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/PragmaHelper.tsx",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 14,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "babelOutput": "import{Fragment as _Fragment,jsx as _jsx}from\"react/jsx-runtime\";export var pattern=/@jsxImportSource splotch-owned-jsx-runtime-probe/;export var probe=_jsx(_Fragment,{children:\"pragma positions\"});",
+      "tsOutput": "import { Fragment as _Fragment, jsx as _jsx } from \"react/jsx-runtime\";\nexport const pattern = /@jsxImportSource splotch-owned-jsx-runtime-probe/;\nexport const probe = _jsx(_Fragment, { children: \"pragma positions\" });\n",
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "hoistedOwner": "/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/consumers/regex-lookalike/node_modules/splotch-owned-jsx-runtime-probe/jsx-runtime.js",
+      "restored": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Metro string module references (including babelTransformerPath and minifierPath) and alternate config lookup are not scanned; Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      }
+    }
+  ],
+  "currentExpoMetroDefault": {
+    "babelTransformerPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@expo/metro-config/build/babel-transformer.js",
+    "enableBabelRCLookup": null
+  },
+  "sourceInputsUnchanged": true,
+  "status": " M tools/migration/README.md\n M tools/migration/lib/candidate-imports.mjs\n M tools/migration/lib/candidate-references.mjs\n M tools/migration/tests/candidate-configs.test.mjs\n M tools/migration/tests/candidate-imports.test.mjs\n"
+}

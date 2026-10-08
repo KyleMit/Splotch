@@ -1,0 +1,75 @@
+import { createHash } from 'node:crypto';
+import { spawn, execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, openSync, closeSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { join } from 'node:path';
+
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const artifactRoot = '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v3';
+const deadlineMs = 30 * 60 * 1000;
+const port = Number(readFileSync(join(artifactRoot, 'free-port.txt'), 'utf8').trim());
+const prior = JSON.parse(readFileSync(join(worktree, 'docs/migration/evidence/import-boundary-01/source-inputs.json')));
+const files = Object.fromEntries(Object.keys(prior.files).map((file) => {
+  const bytes = readFileSync(join(worktree, file));
+  return [file, { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }];
+}));
+const source = {
+  schemaVersion: 1,
+  sourceBase: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).trim(),
+  identity: 'sourceBase plus exact SHA256 file inputs; uncommitted source during execution',
+  runtime: { version: process.version, executable: process.execPath },
+  files,
+};
+writeFileSync(join(artifactRoot, 'source-inputs.json'), `${JSON.stringify(source, null, 2)}\n`);
+const server = createServer();
+await new Promise((resolve, reject) => server.once('error', reject).listen(port, '127.0.0.1', resolve));
+await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+const receiptPath = join(artifactRoot, 'browserless-lease.json');
+const receipt = {
+  schemaVersion: 1,
+  owner: '/root/import_boundary',
+  resource: 'exclusive host Browserless tier',
+  worktree,
+  sourceInputs: 'source-inputs.json',
+  command: `SMOKE_PORT=${port} npm run test:browserless`,
+  port,
+  portUnusedImmediatelyBeforeLaunch: true,
+  startedAt: new Date().toISOString(),
+  deadlineMs,
+  launcherPid: process.pid,
+  releaseCondition: 'command exits and its owned process group is gone and smoke port binds again',
+  status: 'running',
+};
+const fd = openSync(join(artifactRoot, 'browserless.log.txt'), 'w');
+const child = spawn('npm', ['run', 'test:browserless'], {
+  cwd: worktree, env: { ...process.env, SMOKE_PORT: String(port) }, stdio: ['ignore', fd, fd], detached: true,
+});
+receipt.childPid = child.pid;
+receipt.processGroup = child.pid;
+writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify(receipt));
+const timer = setTimeout(() => {
+  receipt.deadlineExceededAt = new Date().toISOString();
+  receipt.ownedChildStillPendingAtTermination = child.exitCode === null && child.signalCode === null;
+  if (receipt.ownedChildStillPendingAtTermination) process.kill(-child.pid, 'SIGTERM');
+}, deadlineMs);
+const outcome = await new Promise((resolve, reject) => {
+  child.once('error', reject);
+  child.once('exit', (exitCode, signal) => resolve({ exitCode, signal }));
+});
+clearTimeout(timer);
+closeSync(fd);
+receipt.finishedAt = new Date().toISOString();
+receipt.outcome = outcome;
+try { process.kill(-child.pid, 0); receipt.ownedProcessGroupGone = false; }
+catch (error) { receipt.ownedProcessGroupGone = error.code === 'ESRCH'; }
+const releaseServer = createServer();
+try {
+  await new Promise((resolve, reject) => releaseServer.once('error', reject).listen(port, '127.0.0.1', resolve));
+  await new Promise((resolve, reject) => releaseServer.close((error) => error ? reject(error) : resolve()));
+  receipt.smokePortReleased = true;
+} catch (error) { receipt.smokePortReleased = false; receipt.releaseError = { code: error.code, message: error.message }; }
+receipt.status = receipt.ownedProcessGroupGone && receipt.smokePortReleased ? 'released' : 'needs_owned_process_inspection';
+writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify(receipt));
+process.exitCode = outcome.exitCode ?? 1;

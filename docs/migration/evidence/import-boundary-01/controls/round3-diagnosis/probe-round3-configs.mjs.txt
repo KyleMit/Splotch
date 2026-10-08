@@ -1,0 +1,65 @@
+import assert from 'node:assert/strict';
+import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { assertDeclaredCandidateImports } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs';
+
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const evidence = '/private/tmp/splotch-resume-01a111b0/import-boundary/round3-diagnosis';
+const require = createRequire(join(worktree, 'package.json'));
+const babel = require('@babel/core');
+mkdirSync(evidence, { recursive: true });
+const review = '/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-rival-agent/f1b367cc-2958-42d4-8483-a59b0ade9a12';
+for (const name of ['findings.json', 'session.json', 'done.json']) cpSync(join(review, name), join(evidence, name));
+const variants = [
+  { name: 'A1-nested-export-alias', file: 'babel.config.cjs', source: "const c = (module.exports = { presets: [require.resolve('babel-preset-expo')] });\nObject.assign(c, { plugins: ['babel-plugin-react-compiler'] });\n", consumer: 'config' },
+  { name: 'A2-destructured-export-alias', file: 'babel.config.cjs', source: "const { plugins } = (module.exports = { presets: [require.resolve('babel-preset-expo')], plugins: [] });\nplugins.push('babel-plugin-react-compiler');\n", consumer: 'config' },
+  ...['app.config.ts', 'babel.config.ts', '.babelrc.ts'].map((name) => ({ name: `nested-${name}`, file: `src/config/${name}`, source: "export const apiBase = 'https://example.invalid';\n", consumer: 'source' })),
+];
+function capture(operation) { try { return { passed: true, result: operation() }; } catch (error) { return { passed: false, error: String(error) }; } }
+const results = [];
+for (const variant of variants) {
+  const candidate = join(evidence, variant.name, 'candidate');
+  mkdirSync(join(evidence, variant.name), { recursive: true });
+  cpSync(join(worktree, 'experiments/native-architecture'), candidate, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+  symlinkSync(join(worktree, 'node_modules'), join(candidate, 'node_modules'));
+  const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+  const path = join(candidate, variant.file);
+  mkdirSync(join(candidate, 'src/config'), { recursive: true });
+  const originalConfig = readFileSync(join(candidate, 'babel.config.cjs'), 'utf8');
+  const baseline = capture(() => assertDeclaredCandidateImports(candidate, manifest));
+  writeFileSync(path, variant.source);
+  const guard = capture(() => assertDeclaredCandidateImports(candidate, manifest));
+  const options = { babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate, envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true } };
+  const consumer = capture(() => variant.consumer === 'config'
+    ? babel.loadPartialConfig({ ...options, filename: join(candidate, 'src/ProbeApp.tsx') }).options.plugins.map((item) => item.file?.resolved)
+    : babel.transformFileSync(path, options).code);
+  let typecheck;
+  if (variant.consumer === 'source') {
+    const process = spawnSync(globalThis.process.execPath, [join(worktree, 'node_modules/typescript/bin/tsc'), '--project', join(candidate, 'tsconfig.json'), '--noEmit'], { cwd: candidate, encoding: 'utf8', timeout: 30000 });
+    typecheck = { status: process.status, stdout: process.stdout, stderr: process.stderr };
+    writeFileSync(join(evidence, variant.name, 'typecheck.log.txt'), process.stdout + process.stderr);
+  }
+  if (variant.consumer === 'config') writeFileSync(path, originalConfig);
+  else { const { unlinkSync } = await import('node:fs'); unlinkSync(path); }
+  const restored = capture(() => assertDeclaredCandidateImports(candidate, manifest));
+  results.push({ ...variant, candidate, baseline, guard, consumer, typecheck, restored });
+}
+const receipt = { head: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).stdout.trim(), babel: babel.version, results, status: spawnSync('git', ['status', '--short'], { cwd: worktree, encoding: 'utf8' }).stdout };
+writeFileSync(join(evidence, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+for (const result of results) {
+  assert.equal(result.baseline.passed, true);
+  assert.equal(result.consumer.passed, true);
+  assert.equal(result.restored.passed, true);
+  if (result.consumer === 'config') { throw new Error('unreachable'); }
+  if (result.name.startsWith('A')) {
+    assert.equal(result.guard.passed, true);
+    assert.ok(result.consumer.result.some((path) => path?.includes('babel-plugin-react-compiler')));
+  } else {
+    assert.equal(result.guard.passed, false);
+    assert.match(result.guard.error, /has no supported literal configuration export/);
+    assert.equal(result.typecheck.status, 0);
+  }
+}
+console.log(JSON.stringify({ evidence, head: receipt.head, results: results.map(({ name, guard, consumer, typecheck, restored }) => ({ name, guard, consumer, typecheck: typecheck?.status, restored: restored.passed })), status: receipt.status }, null, 2));

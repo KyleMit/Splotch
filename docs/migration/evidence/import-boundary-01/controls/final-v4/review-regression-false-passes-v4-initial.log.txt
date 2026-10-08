@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/candidate-imports.test.mjs tools/migration/tests/candidate-configs.test.mjs -t covers both Expo JSON forms|visibly refuses unestablished dependency configuration|visibly refuses Babel JSON|refuses a local tsconfig alias|refuses semantic configuration aliases|rejects an extensionless app import --reporter=json --outputFile=/private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-passes-v4.json
+
+JSON report written to /private/tmp/splotch-resume-01a111b0/import-boundary/review-regression-false-passes-v4.json

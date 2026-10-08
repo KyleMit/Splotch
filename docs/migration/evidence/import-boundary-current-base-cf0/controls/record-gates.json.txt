@@ -1,0 +1,37 @@
+{
+  "sourceInputs": "source-inputs.json",
+  "sourceCommit": "9d21d4c621beb3ddeaa5e348f7e08789300ccc55",
+  "records": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "start": "2026-10-07T03:01:09.979Z",
+      "finish": "2026-10-07T03:01:21.383Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "invariantError": null,
+      "log": "record-format.log.txt"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "test:tools",
+        "--",
+        "tools/tests/doc-references.test.mjs",
+        "tools/tests/tool-specifier-resolution.test.mjs"
+      ],
+      "start": "2026-10-07T03:01:21.394Z",
+      "finish": "2026-10-07T03:01:21.830Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "invariantError": null,
+      "log": "record-guards.log.txt"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "tool": "exec_command/write_stdin",
+  "sessionId": 16112,
+  "launcherPid": 11317,
+  "childPid": 11342,
+  "processGroup": 11342,
+  "owner": "/root/import_boundary",
+  "sandbox": "approved host escalation",
+  "startedAt": "2026-10-06T16:01:32.934Z"
+}

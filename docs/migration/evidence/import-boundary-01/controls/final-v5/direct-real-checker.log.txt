@@ -1,0 +1,23 @@
+
+> splotch@1.6.0 check:migration:native-topology
+> node tools/migration/check-native-topology.mjs
+
+
+AssertionError [ERR_ASSERTION]: src/index.ts imports undeclared yaml
+    at assertPackageReference (file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs:133:10)
+    at assertReference (file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs:158:5)
+    at assertDeclaredCandidateImports (file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs:205:5)
+    at checkNativeTopology (file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/check-native-topology.mjs:39:28)
+    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/check-native-topology.mjs:97:38
+    at runMain (file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/lib/proc.mjs:32:3)
+    at file:///Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/check-native-topology.mjs:96:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:633:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}

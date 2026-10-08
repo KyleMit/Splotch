@@ -1,0 +1,319 @@
+{
+  "testedSource": "working revision over 5ecb23f7c1372c848788d80ee76503ddd7dd9cc7",
+  "sourceInputs": "final-v4/source-inputs.json",
+  "runtime": {
+    "version": "v24.16.0",
+    "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node"
+  },
+  "typescript": {
+    "version": "6.0.3",
+    "implementationSha256": "569177652966bd528c319171c7dd22860dbf72bde116cbc4f644f1d02bb12e39",
+    "owner": "getExtendsConfigPath / getExtendedConfig: fileExists, .json suffix fallback, normalized lexical path cache and containing-directory context"
+  },
+  "setupCorrection": "Initial named cases inherited include paths relative to nested/foreign configs and produced TS18003; top config now explicitly retains actual app src includes. v1 remains separate setup evidence.",
+  "records": [
+    {
+      "name": "baseline",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-CsW7zz",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-owned",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-0B8qjs",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "config.json",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 16,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-directory-collision",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-dAhweM",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "config.json",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 16,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-generated-directory-collision",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-NS2pz6",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "dist.json",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 16,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "outside-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-CAPGAs",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json imports ../foreign.json escapes candidate ownership: /private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-CAPGAs/foreign.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "excluded-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-SNpwWs",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json imports ./dist/config.json enters excluded candidate output: dist/config.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "canonical-outside-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-0aYSdP",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json resolves ./safe.json escapes candidate ownership: /private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-0aYSdP/foreign.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "canonical-excluded-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-pPr2HA",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json resolves ./safe.json enters excluded candidate output: dist/config.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "one-local-alias-declared-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-56Vlj8",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "deep/alias.json uses unsupported symlinked local tsconfig\n+ actual - expected\n\n+ '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-56Vlj8/candidate/deep/alias.json'\n- '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-56Vlj8/candidate/base.json'\n"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "one-local-alias-undeclared-node-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aMnKAf",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "deep/alias.json uses unsupported symlinked local tsconfig\n+ actual - expected\n\n+ '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aMnKAf/candidate/deep/alias.json'\n- '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aMnKAf/candidate/base.json'\n"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "ordered-local-alias-undeclared-node-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-PQVYKG",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "deep/alias.json uses unsupported symlinked local tsconfig\n+ actual - expected\n\n+ '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-PQVYKG/candidate/deep/alias.json'\n- '/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-PQVYKG/candidate/base.json'\n"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ],
+  "scope": "Finite real candidate config-boundary controls; static guard and actual typecheck only. No worktree source edits or native/performance execution."
+}

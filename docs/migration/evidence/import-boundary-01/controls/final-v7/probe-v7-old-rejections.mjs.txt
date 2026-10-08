@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
+import { assertDeclaredCandidateImports as oldGuard } from '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/old-ecdd/candidate-imports.mjs';
+const root = '/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7';
+const input = JSON.parse(readFileSync(join(root, 'consumer-controls.json')));
+const results = [];
+function capture(name, operation) {
+  try { operation(); return { name, assertionPassed: true }; }
+  catch (error) { return { name, assertionPassed: false, error: String(error), code: error.code }; }
+}
+for (const item of input.configurationResults) {
+  const manifest = JSON.parse(readFileSync(join(item.candidate, 'package.json')));
+  const path = join(item.candidate, item.name.startsWith('A') ? 'babel.config.cjs' : `src/config/${item.name.slice('nested-'.length)}`);
+  const original = item.name.startsWith('A') ? readFileSync(path, 'utf8') : null;
+  writeFileSync(path, item.source);
+  results.push(capture(item.name, () => item.name.startsWith('A')
+    ? assert.throws(() => oldGuard(item.candidate, manifest), /unsupported configuration export alias/)
+    : assert.doesNotThrow(() => oldGuard(item.candidate, manifest))));
+  if (original) writeFileSync(path, original); else unlinkSync(path);
+}
+for (const item of input.jsxResults.filter((item) => !item.current.passed)) {
+  const manifest = JSON.parse(readFileSync(join(item.candidate, 'package.json')));
+  const path = join(item.candidate, 'src/PragmaHelper.tsx');
+  writeFileSync(path, item.source);
+  results.push(capture(item.name, () => assert.throws(() => oldGuard(item.candidate, manifest), /unsupported per-file JSX import source/)));
+  unlinkSync(path);
+}
+for (const result of results) {
+  assert.equal(result.assertionPassed, false, result.name);
+  assert.equal(result.code, 'ERR_ASSERTION', result.name);
+  assert.match(result.error, result.name.startsWith('nested-') ? /has no supported literal configuration export/ : /Missing expected exception/);
+}
+writeFileSync(join(root, 'old-rejection-controls.json'), `${JSON.stringify({ source: input.oldSourceHead, results, count: results.length }, null, 2)}\n`);
+console.log(JSON.stringify({ count: results.length, intendedMissingRejects: results.filter((item) => !item.name.startsWith('nested-')).length, intendedFalseRejections: results.filter((item) => item.name.startsWith('nested-')).length }));

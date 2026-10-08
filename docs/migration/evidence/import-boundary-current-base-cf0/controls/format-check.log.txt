@@ -1,0 +1,17 @@
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+Compiling /Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@dprint/markdown/plugin.wasm
+Compiling /Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@dprint/typescript/plugin.wasm
+Compiling /Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@dprint/json/plugin.wasm

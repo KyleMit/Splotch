@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';
+import { spawnSync, execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join } from 'node:path';
+const worktree='/Users/kylemit/.codex/worktrees/3218/Splotch';const artifactRoot='/private/tmp/splotch-f1-current-base-01a1143c';const input=JSON.parse(readFileSync(join(artifactRoot,'source-inputs.json')));
+const sha=b=>createHash('sha256').update(b).digest('hex');const verify=()=>{for(const[path,row]of Object.entries(input.files))assert.equal(sha(readFileSync(join(worktree,path))),row.sha256,path);};
+const records=[];verify();
+for(const[label,args]of [['record-format',['run','format:check']],['record-guards',['run','test:tools','--','tools/tests/doc-references.test.mjs','tools/tests/tool-specifier-resolution.test.mjs']]]){const start=new Date().toISOString();const p=spawnSync('npm',args,{cwd:worktree,encoding:'utf8',timeout:180000,env:{...process.env,DPRINT_CACHE_DIR:join(artifactRoot,'dprint-cache')}});const log=label+'.log.txt';writeFileSync(join(artifactRoot,log),p.stdout+p.stderr);let invariantError=null;try{verify();}catch(error){invariantError=String(error);}records.push({command:['npm',...args],start,finish:new Date().toISOString(),exitCode:p.status,signal:p.signal,error:p.error?.message??null,invariantError,log});writeFileSync(join(artifactRoot,'record-gates.json'),JSON.stringify({sourceInputs:'source-inputs.json',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:worktree,encoding:'utf8'}).trim(),records},null,2)+'\n');console.log(JSON.stringify(records.at(-1)));if(p.status!==0||invariantError){process.exitCode=1;break;}}

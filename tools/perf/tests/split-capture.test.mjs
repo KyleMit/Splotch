@@ -1,8 +1,6 @@
-import { spawn } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { connect } from 'node:net';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -72,6 +70,10 @@ import {
   stalePageFailure,
 } from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
+import {
+  interruptHandBackFixture,
+  HAND_BACK_TEST_TIMEOUT_MS,
+} from './fixtures/signal-hand-back-harness.mjs';
 
 const directories = [];
 
@@ -2203,46 +2205,16 @@ describe('the Android driver hands the rotation back as it found it', () => {
     // while the final hand-back's own child runs: removing the listeners first
     // let Node's default kill the hand-back halfway, and removing them straight
     // after it dropped the queued signal so the capture carried on to exit 0.
-    const killProcessGroup = (pid) => {
-      try {
-        process.kill(-pid, 'SIGKILL');
-      } catch (error) {
-        if (error.code !== 'ESRCH') throw error;
-      }
-    };
-
-    it('finishes the hand-back and exits 130 on a Ctrl-C during it', async () => {
-      const dir = mkdtempSync(join(tmpdir(), 'hand-back-signal-'));
-      const marker = join(dir, 'handing-back');
-      const child = spawn(
-        process.execPath,
-        [fileURLToPath(new URL('./fixtures/signal-during-hand-back.mjs', import.meta.url)), marker],
-        { detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
-      );
-      let stdout = '';
-      child.stdout.on('data', (chunk) => (stdout += chunk));
-      child.stderr.resume();
-      // 'close', not 'exit': stdout can still hold unread output when 'exit'
-      // fires. The hand-back's `sleep` runs on spawnSync's own pipes, so it
-      // cannot hold these open.
-      const closed = new Promise((resolve) =>
-        child.on('close', (code, signal) => resolve({ code, signal }))
-      );
-      try {
-        await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10_000 });
-
-        process.kill(-child.pid, 'SIGINT');
-
-        expect(await closed).toEqual({ code: 130, signal: null });
-        expect(stdout).toContain('hand-back ended SIGINT');
-        expect(stdout).not.toContain('capture carried on');
-      } finally {
-        // The fixture's `sleep` outlives a failed assertion; reap the group.
-        killProcessGroup(child.pid);
-        await closed;
-        rmSync(dir, { recursive: true, force: true });
-      }
-    });
+    it(
+      'finishes the hand-back and exits 130 on a Ctrl-C during it',
+      async ({ signal }) => {
+        const { status, stdout, diagnostics } = await interruptHandBackFixture(signal);
+        expect(status, diagnostics).toEqual({ code: 130, signal: null });
+        expect(stdout, diagnostics).toContain('hand-back ended SIGINT');
+        expect(stdout, diagnostics).not.toContain('capture carried on');
+      },
+      HAND_BACK_TEST_TIMEOUT_MS
+    );
   });
 });
 

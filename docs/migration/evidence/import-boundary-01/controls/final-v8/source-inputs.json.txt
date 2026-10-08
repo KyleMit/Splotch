@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "sourceBase": "c7f7eab6d387e4d8a0ee129b9c025e0225f4eb6b",
+  "compositionHead": "3470e0b410e86909486e5bee876a8239d45ad5f3",
+  "identity": "Exact SHA256 post-round3 combined repair including bounded Babel option refusal; final-head review authorization and CI remain required",
+  "runtime": {
+    "version": "v24.16.0",
+    "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node"
+  },
+  "files": {
+    "tools/migration/check-native-topology.mjs": {
+      "bytes": 3672,
+      "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17"
+    },
+    "tools/migration/lib/native-identity.mjs": {
+      "bytes": 6302,
+      "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd"
+    },
+    "tools/migration/lib/candidate-imports.mjs": {
+      "bytes": 8737,
+      "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7"
+    },
+    "tools/migration/lib/candidate-references.mjs": {
+      "bytes": 18705,
+      "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40"
+    },
+    "tools/migration/tests/candidate-imports.test.mjs": {
+      "bytes": 15283,
+      "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98"
+    },
+    "tools/migration/README.md": {
+      "bytes": 6508,
+      "sha256": "5c25838b5cd0539688d6c9552d1fcbc47428874e4adbc3c2b0bc682e5f5eccef"
+    },
+    "package.json": {
+      "bytes": 121297,
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9"
+    },
+    "pnpm-lock.yaml": {
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+    },
+    "pnpm-workspace.yaml": {
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+    },
+    "experiments/native-architecture/alignment.json": {
+      "bytes": 890,
+      "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b"
+    },
+    "experiments/native-architecture/app.json": {
+      "bytes": 142,
+      "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8"
+    },
+    "experiments/native-architecture/babel.config.cjs": {
+      "bytes": 135,
+      "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62"
+    },
+    "experiments/native-architecture/metro.config.cjs": {
+      "bytes": 106,
+      "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c"
+    },
+    "experiments/native-architecture/package.json": {
+      "bytes": 288,
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"
+    },
+    "experiments/native-architecture/scripts/check-transform.cjs": {
+      "bytes": 1552,
+      "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb"
+    },
+    "experiments/native-architecture/src/ProbeApp.tsx": {
+      "bytes": 159,
+      "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248"
+    },
+    "experiments/native-architecture/src/index.ts": {
+      "bytes": 119,
+      "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474"
+    },
+    "experiments/native-architecture/tsconfig.json": {
+      "bytes": 153,
+      "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+    },
+    "tools/migration/tests/candidate-configs.test.mjs": {
+      "bytes": 15825,
+      "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f"
+    },
+    "tools/migration/tests/candidate-fixtures.mjs": {
+      "bytes": 1933,
+      "sha256": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9"
+    }
+  },
+  "trackedToolInputs": {
+    "count": 861,
+    "sha256": "eaa1fe4d9620327fa3f5b24fd103b45622fd230eee55242a9e0ae11c81ede6e3",
+    "enumeration": "git ls-files tools filtered to .mjs; includes every final fixture source"
+  }
+}
