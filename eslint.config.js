@@ -306,7 +306,7 @@ const TOOLS_GRANDFATHERED_MAX_LINES = {
   'tools/perf/tests/performance-matrix.test.mjs': 2393,
   'tools/perf/tests/real-screen.test.mjs': 1403,
   'tools/perf/tests/rescore-captures.test.mjs': 837,
-  'tools/perf/tests/split-capture.test.mjs': 2126,
+  'tools/perf/tests/split-capture.test.mjs': 2105,
   'tools/perf/tests/undo-scenarios.test.mjs': 626,
   'tools/perf/tests/xcuitest-actions.test.mjs': 1795,
   'tools/perf/web/run-undo-scenarios.mjs': 1081,

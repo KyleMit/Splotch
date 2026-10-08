@@ -6,9 +6,14 @@ This document defines acceptance work. It records requirements and existing evid
 passing verdict for a replacement application. Architecture alternatives remain open until Phase 1.
 Every replacement-native validation below is pending.
 
-The authoritative product glossary is [Architecture: UI elements](../ARCHITECTURE.md#ui-elements).
-Implementation plans expand these requirement families into concrete cases before changing them. A
-material behavioral difference needs a reviewed decision and a corresponding contract update.
+The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) governs
+applicability. The product glossary is [Architecture: UI elements](../ARCHITECTURE.md#ui-elements).
+Implementation plans expand these requirement families into concrete cases before changing them.
+Full drawing fidelity, crayon/Magic, history/undo, coloring, ordering, audio and applicable product
+capabilities remain required. Exact old layouts, gesture choreography, sections and UI paths are
+design references; the new product may implement different flows. A concrete feature or substantive
+behavior change needs pair review, an explicit inventory disposition and a corresponding contract
+update. No capability is silently dropped under an old-UI parity waiver.
 
 ## Test classification
 
@@ -16,7 +21,7 @@ Classify every existing test relevant to a migrated area before replacing its im
 
 | Classification           | Treatment                                                                                                              |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Portable requirement     | Preserve the observable behavior; reuse domain fixtures and assertions where practical.                                |
+| Portable requirement     | Verify the applicable new-product behavior; reuse domain fixtures and assertions where practical.                      |
 | Web-specific requirement | Retain coverage on web, including browser, PWA, keyboard, routing, and server behavior.                                |
 | Implementation guard     | Replace a DOM, Svelte, Canvas, or Capacitor mechanism check with a guard for the same risk in the chosen architecture. |
 | Retired requirement      | Record the reason, affected targets, replacement coverage, and reviewed decision.                                      |
@@ -26,11 +31,15 @@ Do not count an unchanged web test as proof of replacement-native behavior. The 
 not navigate product flows or establish drawing, persistence, accessibility, or lifecycle parity.
 The [testing guide](../TESTING.md) owns the existing suite roles and CI boundaries.
 
-## Product scenarios and applicability
+## Product inventory and reference scenarios
 
 Web includes supported browser tabs and installed PWAs. Android and iOS mean shipping app targets;
 device-specific capabilities remain conditional. Test both orientations and themes where the
-behavior applies, including compact phone and wider tablet layouts.
+behavior applies, including compact phone and wider tablet layouts. Each new-product implementation
+plan maps every relevant capability below to its chosen flows and tests. Specific old UI gestures,
+layout names and setting arrangements in the reference scenarios do not impose old-UI parity; the
+underlying drawing, reliability, safety, accessibility and service risks remain covered. A feature
+change is recorded and reviewed rather than marked passed or casually declared inapplicable.
 
 | Requirement family               | Acceptance scenario                                                                                                                                                                                                                                                              | Targets                                                                            | Existing sources                                                                                                                                                                                                                                        | Replacement-native validation                          |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -115,42 +124,36 @@ Ordinary drawing and undo currently have a demonstrated navigation, remount, and
 They are not promised to survive process termination or a cold launch. Do not infer durable drawing
 persistence from the distinct persisted unsaved-picture recovery feature.
 
-Acceptance must cover updates from each supported source release in the
-[native upgrade inventory](UPGRADES.md), plus a clean installation. Include the oldest supported
-store build, the latest store build at cutover, and releases shipped during the campaign. Record
-which sources share a migration path before combining cases. Reinstalling with cleared data is not
-an upgrade test.
+Acceptance covers clean installation and applicable same-identity distributed-source updates in
+[UPGRADES.md](UPGRADES.md). Verify signing/channel installability and safe fresh initialization
+without requiring legacy settings, credentials, pictures or pack/job imports. Reinstalling with
+cleared data is not an in-place update test. Historical format inventories remain reference
+evidence. Include the oldest actual distributed source, latest source at cutover and sources
+distributed during the campaign, with evidence before combining equivalent update paths.
 
-* Preserve app identity, signing continuity, version progression, and supported installation paths.
-* Inventory keys, namespaces, formats, and removal records from each supported release tree; the
-  current [key list](../../web/src/lib/storageKeys.ts) is not a complete shipped-version inventory.
-  Distinguish shipped stores from features added during the campaign.
-* Recover native WebView localStorage at its legacy origin as the live settings copy, with
-  Preferences as eviction fallback; preserve the release-specific reconciliation policy. Exercise
-  stale Preferences with a newer local value, failed mirror writes, evicted local values, and
-  incomplete removals. Where removal records exist, reconcile both copies and honor later writes
-  that supersede a removal before importing. Preserve web localStorage choices separately.
-* Preserve historical [secure-vault names and formats](../../web/src/lib/secureStorage.ts); failed
-  migration must leave recoverable copies intact.
-* Retain the existing installation identity and free-generation eligibility; migration must not
-  reset the grant.
-* Preserve installed coloring files, verification markers, storage paths, pending jobs, and
-  background-session ownership.
-* Recover [held unsaved pictures](../../web/src/lib/state/saveFailure.svelte.test.ts) and their
-  retry state from each source release that contains that feature.
-* Preserve web IndexedDB, chosen save-folder access where applicable, and PWA caches/update
-  recovery.
-* Exercise denied/full/unreadable storage and interrupted migration without silently discarding
-  existing data.
-* Verify restart, reconnect, and later hydration cannot overwrite newer credentials or resurrect
-  removed settings.
+* Preserve app identity, signing continuity, version progression and supported installation paths.
+* Keep existing installation allowance identity and server authorization; dropping beta preferences
+  does not authorize a new free-generation grant.
+* Across web/PWA and both native targets, prove the narrow
+  [abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security), including
+  safe interruption and late restoration. It neither imports old credentials nor mandates wholesale
+  deletion of inert drawing/pack data.
+* Prove reliable new-app storage, secure credentials, exact failed-save picture retention/retry and
+  declared offline content behavior, including denied/full/unreadable storage.
+* Protect data created by the new product across its later updates. Ordinary ink/history retain
+  their declared lifecycle contract; durable cold-launch drawing is not silently promised.
+* Stop or safely reconcile surviving old background work so it cannot publish stale content or
+  bypass new policy. Preserving its old job identity or completed legacy content is not required.
+* Verify restart, reconnect and late work cannot overwrite newer candidate state or resurrect
+  removed settings. New-app permissions, lifecycle and interrupted recovery remain required.
 
 The [native guide](../MOBILE/native.md),
 [durable restore test](../../web/src/lib/storage.restore.integration.test.ts),
 [reconciliation](../../web/src/lib/storage.hydrate.test.ts),
 [removal recovery](../../web/src/lib/storage.test.ts), and
 [credential hydration scenarios](../../web/src/lib/state/secureCredentialCoordinator.hydrate.test.ts)
-anchor these responsibilities. All replacement-native upgrade checks are pending.
+provide reference implementations for these risks, not a requirement to copy their stores or import
+their legacy records. All replacement-native update and service checks are pending.
 
 ## Measurement acceptance
 
