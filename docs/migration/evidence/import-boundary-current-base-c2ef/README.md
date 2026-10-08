@@ -47,3 +47,9 @@ root and qualified inputs; recorded paths are historical, not write or stop auth
 No native compile, mount, drawing, physical comparison, product, upgrade or release outcome is
 established. Metro-generated/string references, alternate configuration lookup and native
 provider-context sources retain their explicit separate owners.
+
+The [record-check history](record-checks-history.tar.gz) preserves three initial record-check
+channels and the later whitespace failure. A raw formatter log had a trailing blank line; the worker
+committed before reading that check result. The packaging repair archives those exact captured bytes
+and removes their direct text copies. It changes no executable source or prior evidence. Final
+packet formatting, references and whitespace are rechecked before publication.

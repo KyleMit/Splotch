@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "createdAt": "2026-10-08T06:22:47.174609+00:00",
+  "createdAt": "2026-10-08T06:24:52.500501+00:00",
   "owner": "/root/f1_composition",
   "passedSource": "4ab37d6097eaa2e4371789562bb5efa84738b28e",
   "passedTree": "6e17c8a69857586a441e9d583ab01da9c97e4f09",
   "files": [
     {
       "path": "README.md",
-      "bytes": 3549,
-      "sha256": "fca5c0fbbba9e5cb828cbc400c15d90e274829ec84a552ec1117853226907269"
+      "bytes": 4020,
+      "sha256": "f4667bcf160e160f147e2f65c81dbb88eb31a507b7f79afca6236b6dc82201d5"
     },
     {
       "path": "RECORD-GATES.json.txt",
-      "bytes": 1884,
-      "sha256": "067b58940db2b2a03069e0698dfcbf26939e54f10fb86231acdd17b2488c659d"
+      "bytes": 2649,
+      "sha256": "67b337380342d91546b1697a703972798c1c99d01c7a92093e593b5c8f948b24"
     },
     {
       "path": "SOURCE-GATES.json.txt",
@@ -31,19 +31,9 @@
       "sha256": "34ff8caf64a9d55433f86eeee4014b7d3e9987b3f6e2fded6e4848fad6447c29"
     },
     {
-      "path": "record-gate-1.log.txt",
-      "bytes": 212,
-      "sha256": "74a426f779382847ca9bc1843ef01e34601f6c74e3c9284d86c3a2dbab1cb31e"
-    },
-    {
-      "path": "record-gate-2.log.txt",
-      "bytes": 131,
-      "sha256": "9858b9af1eb12adf04e99b6a2490d862bdf7d5ea96349c09a93d8aef3e6b3c10"
-    },
-    {
-      "path": "record-gate-3.log.txt",
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "path": "record-checks-history.tar.gz",
+      "bytes": 1583,
+      "sha256": "4d6d4e2da9175c7a7d7ba061f8f8732fc089ec98aefc7db573b6e77a6cc09ca2"
     }
   ],
   "archives": [
@@ -58,9 +48,15 @@
       "bytes": 915890,
       "sha256": "b491ee991a7fe181885c59433700c13f21cfaf33b4c21fb01b245c6a9cad28da",
       "verifiedMembers": 13
+    },
+    {
+      "path": "record-checks-history.tar.gz",
+      "bytes": 1583,
+      "sha256": "4d6d4e2da9175c7a7d7ba061f8f8732fc089ec98aefc7db573b6e77a6cc09ca2",
+      "verifiedMembers": 7
     }
   ],
-  "allPacketPathsNotIgnored": true,
+  "rawFormatterWhitespaceDisposition": "Exact raw bytes retained in record-check history archive; initial direct text packaging failure remains historical.",
   "independentAcceptance": false,
   "reviewRoundSpent": false
 }
