@@ -87,6 +87,9 @@ jobs:
       - name: Native candidate topology
         run: npm run check:migration:native-topology
 
+      - name: Maintained native candidate sources
+        run: npm run check:migration:native-candidate
+
       # CSS lint (stylelint, stylelint.config.js): every <style> block and
       # hand-authored .css file in the repo, minus the generated and promoted
       # output named in its ignoreFiles. The rule set is grown one measured

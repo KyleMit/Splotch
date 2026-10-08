@@ -3,7 +3,7 @@
   "candidateDirectory": "experiments/native-architecture",
   "packageManager": "pnpm@11.22.0",
   "lockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
-  "rootManifestSha256": "efa4f1b8cb58803e2b09f91304f4507978047ca1c8dcf45044c620e45a4d5249",
+  "rootManifestSha256": "2f34502e3f9f63adcec04e04cb94387f1a282f6e4d797861351ba17b3db831fc",
   "candidateManifestSha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
   "workspaceSha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
   "netlifyConfigSha256": "8676a4fbcf39087a1ffe835b145c1d47925122fafa678cfa0dd166aa78c0922b",
