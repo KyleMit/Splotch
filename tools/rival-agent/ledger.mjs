@@ -73,8 +73,12 @@ export function planRound(record, { fresh = false, rival } = {}) {
   return { round: record.rounds + 1, resume: record.rivalSessionId, previous: record };
 }
 
-export function recordRound(path, { record, rivalSessionId, base, head, rival }) {
+export function recordRound(
+  path,
+  { record, rivalSessionId, base, head, rival, roundAuthorization }
+) {
   writeLedgerRecord(path, {
+    ...(roundAuthorization ? { ...record, roundAuthorization } : {}),
     rival,
     rivalSessionId: record?.rivalSessionId ?? rivalSessionId,
     rounds: (record?.rounds ?? 0) + 1,

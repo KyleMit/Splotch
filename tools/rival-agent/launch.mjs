@@ -12,6 +12,14 @@ import {
   removeLedgerRecord,
 } from './ledger.mjs';
 import { readPullRequest, REPOSITORY } from './post-review.mjs';
+import {
+  assertAuthorizationOptions,
+  assertAuthorizedResult,
+  claimRoundAuthorization,
+  planAuthorizedRound,
+  releaseUnstartedRoundAuthorization,
+  startRoundAuthorization,
+} from './round-authorization.mjs';
 import { buildRivalPrompt, readPromptFile } from './prompt.mjs';
 import {
   createSessionDirectory,
@@ -20,7 +28,7 @@ import {
   spoolActivityAt,
   writeJsonAtomic,
 } from './spool.mjs';
-import { runStreaming, STREAM_FAILURE } from './stream.mjs';
+import { runStreaming } from './stream.mjs';
 import { parseFindings } from './validate-findings.mjs';
 import {
   createDisposableWorktree,
@@ -41,7 +49,7 @@ const SCP_GITHUB_REMOTE = /^git@github\.com:(.+)$/i;
 const GITHUB_URL_PROTOCOLS = new Set(['https:', 'ssh:']);
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
-  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
+  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--round-authorization-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
 
 // The one argument vocabulary both launchers share; a vendor validates `model` itself because the
 // two CLIs name models differently.
@@ -57,6 +65,7 @@ export function parseLaunchArgs(argv) {
       uncommitted: { type: 'boolean', default: false },
       'question-file': { type: 'string' },
       'prompt-file': { type: 'string' },
+      'round-authorization-file': { type: 'string' },
       cwd: { type: 'string' },
       model: { type: 'string' },
       effort: { type: 'string' },
@@ -76,7 +85,7 @@ export function parseLaunchArgs(argv) {
   const effort = values.effort ?? 'high';
   if (!EFFORTS.has(effort)) throw new Error(`unsupported effort: ${effort}`);
   const kind = scopes[0] ?? 'base';
-  return {
+  const options = {
     scope: {
       kind,
       base: kind === 'base' ? (values.base ?? DEFAULT_BASE_REF) : undefined,
@@ -85,12 +94,15 @@ export function parseLaunchArgs(argv) {
     },
     questionFile: values['question-file'],
     promptFile: values['prompt-file'],
+    roundAuthorizationFile: values['round-authorization-file'],
     cwd: values.cwd ?? process.cwd(),
     model: values.model,
     effort,
     fresh: values.fresh,
     endSession: values['end-session'],
   };
+  assertAuthorizationOptions(options);
+  return options;
 }
 
 const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
@@ -120,10 +132,6 @@ export function ledgerKeyFor({
   return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
 }
 
-export function logPathForAttempt(session, attempt) {
-  return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
-}
-
 // The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
 // anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
 // lives. Claude Code replaces its shell's TMPDIR with a directory of its own, so for that rival the
@@ -135,12 +143,6 @@ export function rivalEnvironment(env, { session }) {
   // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
   // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
   return { ...env, TMPDIR: tmp, DPRINT_CACHE_DIR: join(tmp, 'dprint-cache') };
-}
-
-// Only the rival refusing the run is worth a second attempt; every other failure is either the
-// user's decision or a condition a retry would repeat — a vendor-recognized retired login included.
-export function isRetryableResumeFailure(error, vendor) {
-  return error?.code === STREAM_FAILURE.exited && !vendor?.isLoginFailure?.(error);
 }
 
 function resolveRepoRoot(cwd) {
@@ -262,6 +264,25 @@ function finish(session, state, logPath, extra) {
   return done;
 }
 
+function cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress }) {
+  const errors = [];
+  for (const cleanup of [
+    () => releaseUnstartedRoundAuthorization(authorizationClaim),
+    () => removeDisposableWorktree(repoRoot, worktree),
+  ]) {
+    try {
+      cleanup();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (failure) {
+    for (const error of errors) onProgress(`review cleanup failed: ${error.message}`);
+  } else if (errors.length > 0) {
+    throw new AggregateError(errors, 'review resource cleanup failed');
+  }
+}
+
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
 // `reducer`, `toolBoundary` (what the rival's own sandboxed shell can and cannot do, in the
@@ -274,6 +295,7 @@ export async function launch(
   vendor,
   { onProgress = (line) => process.stderr.write(`${line}\n`) } = {}
 ) {
+  assertAuthorizationOptions(options);
   const { env, notes = [] } = vendor.prepare();
   const repoRoot = resolveRepoRoot(options.cwd);
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
@@ -292,10 +314,20 @@ export async function launch(
   const model = vendor.resolveModel(options.model);
   const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
   const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
+  const record = readLedgerRecord(recordPath);
   // A question is one turn, not a review that a later round would verify.
-  let plan = question
-    ? planRound(undefined)
-    : planRound(readLedgerRecord(recordPath), { fresh: options.fresh, rival: vendor.rival });
+  const plan =
+    options.roundAuthorizationFile !== undefined
+      ? planAuthorizedRound(options.roundAuthorizationFile, {
+          repoRoot,
+          scope: options.scope,
+          rival: vendor.rival,
+          recordPath,
+          record,
+        })
+      : question
+        ? planRound(undefined)
+        : planRound(record, { fresh: options.fresh, rival: vendor.rival });
 
   const scope = await resolveLaunchScope(repoRoot, options.scope);
   scope.range = `${scope.base}...${scope.head}`;
@@ -318,25 +350,29 @@ export async function launch(
       packetDir,
       round: plan.round,
       resumed: Boolean(plan.resume),
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
       repoRoot,
       branch,
       createdAt: new Date().toISOString(),
     });
   writeSessionRecord();
-  let attempt = 0;
+  const logPath = sessionPath(session, SESSION_FILES.log);
   let rivalSession;
+  let authorizationClaim;
+  let failure;
 
   try {
+    if (plan.roundAuthorization) {
+      authorizationClaim = claimRoundAuthorization(recordPath, plan.roundAuthorization, session);
+    }
     createDisposableWorktree(repoRoot, scope.head, worktree);
     writeReviewPacket(repoRoot, scope, packetDir);
     const runRound = async () => {
-      attempt += 1;
       writeSessionRecord();
       rivalSession = plan.resume
         ? { mode: 'resume', id: plan.resume }
         : { mode: 'create', id: vendor.newSessionId?.() };
       if (plan.resume) onProgress(`resuming reviewer ${plan.resume} for round ${plan.round}`);
-      const logPath = logPathForAttempt(session, attempt);
       onProgress(`stream log: ${logPath}`);
       const prompt = buildRivalPrompt({
         scope,
@@ -350,16 +386,18 @@ export async function launch(
         toolBoundary: vendor.toolBoundary,
         executionMode: vendor.executionMode,
       });
+      const args = vendor.buildArgs({
+        worktree,
+        session,
+        packetDir,
+        model,
+        effort: options.effort,
+        rivalSession,
+      });
+      if (authorizationClaim) startRoundAuthorization(authorizationClaim, recordPath);
       return runStreaming({
         command: vendor.command,
-        args: vendor.buildArgs({
-          worktree,
-          session,
-          packetDir,
-          model,
-          effort: options.effort,
-          rivalSession,
-        }),
+        args,
         cwd: worktree,
         env: rivalEnvironment(env, { session }),
         stdin: prompt,
@@ -370,22 +408,13 @@ export async function launch(
       });
     };
 
-    let state;
-    try {
-      state = await runRound();
-    } catch (error) {
-      // The rival's own session store can prune a recorded conversation — that is worth one fresh
-      // attempt. A cancelled run, a stalled run, and a lost audit log are not.
-      if (!plan.resume || !isRetryableResumeFailure(error, vendor)) throw error;
-      onProgress(`resume failed (${error.message.split('\n')[0]}); starting fresh`);
-      removeLedgerRecord(recordPath);
-      plan = planRound(undefined);
-      state = await runRound();
-    }
-    const done = finish(session, state, logPathForAttempt(session, attempt), {
+    const state = await runRound();
+    if (authorizationClaim) assertAuthorizedResult(authorizationClaim, recordPath, state);
+    const done = finish(session, state, logPath, {
       session,
       round: plan.round,
       scope,
+      ...(plan.roundAuthorization ? { roundAuthorization: plan.roundAuthorization } : {}),
     });
     if (!question) {
       recordRound(recordPath, {
@@ -394,21 +423,23 @@ export async function launch(
         base: scope.base,
         head: scope.head,
         rival: vendor.rival,
+        roundAuthorization: plan.roundAuthorization,
       });
     }
     return done;
   } catch (error) {
+    failure = error;
     if (!existsSync(sessionPath(session, SESSION_FILES.failed))) {
       writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), {
         reason: error.message,
         code: error.code,
         session,
-        logPath: logPathForAttempt(session, Math.max(attempt, 1)),
+        logPath,
       });
     }
     throw error;
   } finally {
-    removeDisposableWorktree(repoRoot, worktree);
+    cleanLaunchResources({ authorizationClaim, repoRoot, worktree, failure, onProgress });
   }
 }
 
