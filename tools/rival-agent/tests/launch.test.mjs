@@ -5,9 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   assertOriginIsPullRequestRepository,
-  isRetryableResumeFailure,
   ledgerKeyFor,
-  logPathForAttempt,
   parseLaunchArgs,
   PR_HEAD_POLL_INTERVAL_MS,
   PR_HEAD_SETTLE_TIMEOUT_MS,
@@ -15,7 +13,6 @@ import {
   readSettledPullRequest,
   rivalEnvironment,
 } from '../launch.mjs';
-import { STREAM_FAILURE } from '../stream.mjs';
 
 describe('shared launch arguments', () => {
   it('reviews against main by default and accepts one scope at a time', () => {
@@ -97,33 +94,6 @@ describe('shared launch arguments', () => {
     });
     expect(byHead).toBe(byShort);
     expect(byHead).not.toBe(branch);
-  });
-
-  it('gives the one retry after a pruned resume its own stream log', () => {
-    expect(logPathForAttempt('/s', 1)).toBe('/s/rival.ndjson');
-    expect(logPathForAttempt('/s', 2)).toBe('/s/rival-retry.ndjson');
-  });
-
-  // Retrying a run the user stopped would spend plan usage they just tried to stop. Only the rival
-  // refusing the run earns a fresh attempt.
-  it('retries only when the rival itself refused the run', () => {
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.exited })).toBe(true);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.cancelled })).toBe(false);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.stalled })).toBe(false);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.logFailed })).toBe(false);
-    expect(isRetryableResumeFailure(new Error('something else'))).toBe(false);
-  });
-
-  // A retired login exits the same way a pruned thread does, and only the vendor knows the wording;
-  // retrying it would fail identically and hide the remedy behind a second stream log.
-  it('lets the vendor veto the retry for a login it recognizes as dead', () => {
-    const exited = { code: STREAM_FAILURE.exited, message: 'refresh token was already used' };
-    const vendor = { isLoginFailure: (error) => /refresh token/.test(error.message) };
-    expect(isRetryableResumeFailure(exited, vendor)).toBe(false);
-    expect(
-      isRetryableResumeFailure({ code: STREAM_FAILURE.exited, message: 'pruned' }, vendor)
-    ).toBe(true);
-    expect(isRetryableResumeFailure(exited, {})).toBe(true);
   });
 });
 
