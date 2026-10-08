@@ -35,6 +35,20 @@ import { STORAGE_KEYS } from './storageKeys';
 const API_KEY = 'gemini-api-key';
 const MANAGED_ACCESS_CODE = 'managed-access-code';
 
+// Android reports broad osError codes with the Java exception's simple name; other OS errors
+// include transient locked-store and I/O failures that do not prove the payload is lost.
+const UNREADABLE_ANDROID_STORAGE_MESSAGES = new Set([
+  'An OS error occurred (AEADBadTagException)',
+  'An OS error occurred (KeyPermanentlyInvalidatedException)',
+]);
+
+export class UnreadableSecretError extends Error {
+  constructor(message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = 'UnreadableSecretError';
+  }
+}
+
 // Every name parameter takes a SecretName, so a secret missing from this list
 // does not compile. Left off it, a secret would still save, but loadSecret
 // would skip the vault once every listed name was known absent, hiding it
@@ -204,10 +218,17 @@ async function webLoad(name: SecretName) {
     await noteSecretAbsentUnlessSaved(name);
     return null;
   }
-  if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
+  if (!isSecretPayload(record)) throw new UnreadableSecretError('Malformed secure-storage payload');
   const { key } = await getMasterKey();
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
-  return new TextDecoder().decode(plain);
+  try {
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
+    return new TextDecoder().decode(plain);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'OperationError') {
+      throw new UnreadableSecretError('The stored credential cannot be decrypted', error);
+    }
+    throw error;
+  }
 }
 
 async function webClear(name: SecretName) {
@@ -227,7 +248,7 @@ interface SecureBackend {
 // a runtime check it can't tree-shake.
 async function selectBackend(): Promise<SecureBackend> {
   if (__IS_CAPACITOR__ && isNative()) {
-    const { SecureStorage, KeychainAccess } = await getPlugin();
+    const { SecureStorage, KeychainAccess, StorageError, StorageErrorType } = await getPlugin();
     return {
       // No iCloud Keychain sync and device-only access, passed on every write
       // rather than inherited from the plugin's defaults so an upgrade cannot
@@ -237,8 +258,20 @@ async function selectBackend(): Promise<SecureBackend> {
       save: (name, value) =>
         SecureStorage.set(name, value, undefined, false, KeychainAccess.whenUnlockedThisDeviceOnly),
       load: async (name) => {
-        const value = await SecureStorage.get(name);
-        return typeof value === 'string' ? value : null;
+        try {
+          const value = await SecureStorage.get(name);
+          return typeof value === 'string' ? value : null;
+        } catch (error) {
+          if (
+            error instanceof StorageError &&
+            (error.code === StorageErrorType.invalidData ||
+              (error.code === StorageErrorType.osError &&
+                UNREADABLE_ANDROID_STORAGE_MESSAGES.has(error.message)))
+          ) {
+            throw new UnreadableSecretError('The stored credential cannot be read', error);
+          }
+          throw error;
+        }
       },
       clear: async (name) => {
         await SecureStorage.remove(name);
@@ -313,7 +346,7 @@ async function saveSecret(name: SecretName, value: string) {
   removeKey(STORAGE_KEYS.secureVaultEmpty);
 }
 
-/** Read a named secret back, or null if absent. Rejects when storage cannot be read. */
+/** Read a secret or null if absent. UnreadableSecretError permits replacement; other failures reject. */
 async function loadSecret(name: SecretName) {
   if (!browser) return null;
   // Opening the web vault imports `idb` and creates the database. For a device

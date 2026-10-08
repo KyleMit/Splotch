@@ -4,7 +4,9 @@ import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 const secureStore = vi.hoisted(() => ({ accessCode: null as string | null }));
 const ROUTER_HISTORY_STATE = { 'sveltekit:index': 7 };
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveAccessCode: vi.fn(async (value: string) => {
     secureStore.accessCode = value;
   }),
@@ -14,7 +16,8 @@ vi.mock('../secureStorage', () => ({
   }),
 }));
 
-vi.mock('../idb', () => ({
+vi.mock('../idb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../idb')>()),
   requestPersistentStorage: vi.fn(async () => false),
 }));
 

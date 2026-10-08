@@ -25,7 +25,9 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
-vi.mock('../secureStorage', () => ({
+vi.mock('../secureStorage', async (importOriginal) => ({
+  UnreadableSecretError: (await importOriginal<typeof import('../secureStorage')>())
+    .UnreadableSecretError,
   saveApiKey: vi.fn(async (value: string) => {
     secureStore.apiKey = value;
   }),
@@ -42,7 +44,8 @@ vi.mock('../secureStorage', () => ({
   }),
 }));
 
-vi.mock('../idb', () => ({
+vi.mock('../idb', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../idb')>()),
   requestPersistentStorage: vi.fn(async () => false),
 }));
 

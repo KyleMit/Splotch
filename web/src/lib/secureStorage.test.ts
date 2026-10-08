@@ -36,8 +36,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 vi.mock('@aparajita/capacitor-secure-storage', async (importOriginal) => ({
-  KeychainAccess: (await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>())
-    .KeychainAccess,
+  ...(await importOriginal<typeof import('@aparajita/capacitor-secure-storage')>()),
   SecureStorage: {
     set: async (
       name: string,
