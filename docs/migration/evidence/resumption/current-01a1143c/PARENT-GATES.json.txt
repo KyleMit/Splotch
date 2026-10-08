@@ -1,0 +1,164 @@
+{
+  "scope": "Parent records applicable publication gates; source code unchanged; no implementation, build, native, physical or migration-completion acceptance",
+  "failedAttempt": {
+    "root": "installed-mismatch",
+    "outerExit": 1,
+    "QualityExit": 1,
+    "failedChecks": [
+      "check:migration:native-topology",
+      "lint:dead"
+    ],
+    "reason": "This checkout was bootstrapped for a different ref and had no candidate Expo/Forge installed; before/after tracked source and installed metadata remained equal. This is an unintended setup failure."
+  },
+  "repair": {
+    "command": [
+      "pnpm",
+      "install",
+      "--frozen-lockfile",
+      "--prefer-offline"
+    ],
+    "exit": 0,
+    "sourceAndLockChanged": false,
+    "downloadedPackages": 0,
+    "baseline": "installed metadata frozen again after the intentional installation change; metadata equality is not exhaustive payload authentication"
+  },
+  "passingAttempt": {
+    "outerExit": 0,
+    "Quality": {
+      "exit": 0,
+      "individualChecks": 15
+    },
+    "fullTools": {
+      "exit": 0,
+      "filesPassed": 329,
+      "testsPassed": 7726
+    },
+    "sourceUnchanged": true,
+    "installedMetadataAfterInstallUnchanged": true,
+    "allOwnedGroupsAbsent": true,
+    "resultSha256": "6c5d8fffe9641684e37894f4bf23670b1707545a5fa8ea38ba1cd5d74bf0f439"
+  },
+  "laterRecordsOnlyChanges": "Subsequent inert capsules/register/receipts require fresh format/document guards; they do not change the source code exercised by the full gates.",
+  "archive": {
+    "path": "PARENT-GATES.tar.gz",
+    "bytes": 1730924,
+    "sha256": "2af545bc9ec8ba46aab05405016db98cce046747c0813dbd78d2a932f3923f41"
+  },
+  "memberCount": 19,
+  "members": [
+    {
+      "path": "installed-mismatch/.splotch-web-host.json",
+      "bytes": 94,
+      "sha256": "9a3ea9ead48888df8fa60c7ba51cbc63c203bbc05e93ae7a14303cd1771cd641",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/controls/check-quality.log.txt",
+      "bytes": 7698,
+      "sha256": "b5fbd909e027ff134da01a83585eea4fcb6ff212a57203e7d309094b3b52a392",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/installed.after.json.txt",
+      "bytes": 1074,
+      "sha256": "c25d549b784e18186063690cd32f69ca133d847da5068aa91b68bc5f56c6af36",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/installed.before.json.txt",
+      "bytes": 1074,
+      "sha256": "c25d549b784e18186063690cd32f69ca133d847da5068aa91b68bc5f56c6af36",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/result.json.txt",
+      "bytes": 1560,
+      "sha256": "35526708d15b0617fd18e695327986dd628e66760776b1429226ae7a1805443a",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/source.after.json.txt",
+      "bytes": 1491128,
+      "sha256": "f8c0fa58192552fc33fabc4aef0efecc8ad2d9eb4422d2e6ace2cee5e83c735c",
+      "mode": "0o644"
+    },
+    {
+      "path": "installed-mismatch/source.before.json.txt",
+      "bytes": 1491128,
+      "sha256": "f8c0fa58192552fc33fabc4aef0efecc8ad2d9eb4422d2e6ace2cee5e83c735c",
+      "mode": "0o644"
+    },
+    {
+      "path": "parent-gates-before.mjs.txt",
+      "bytes": 4857,
+      "sha256": "1146228987f0482e9aefa541b592e8d758fe57ee2eab5a4f8ce85e0e9e120203",
+      "mode": "0o644"
+    },
+    {
+      "path": "parent-gates-install-repair.mjs.txt",
+      "bytes": 5407,
+      "sha256": "bc4490a8860db12b6585c9c17cc6c12995ffd0293a633698be19262b4253f2b3",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/.splotch-web-host.json",
+      "bytes": 94,
+      "sha256": "ebcc827eada0b845175c975d09f221344324020ac772e15a60ac580d3662ce94",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/controls/check-quality.log.txt",
+      "bytes": 57256,
+      "sha256": "b72077ee348f678722cf5eb5ea29f69d7d9dcae15cebfa4cfaae58f073c904be",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/controls/install-workspace.log.txt",
+      "bytes": 453,
+      "sha256": "700e25949cd840a3f2d689f3276c06318a23849fb7040711d67fab2e249c13bb",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/controls/test-tools.log.txt",
+      "bytes": 5613,
+      "sha256": "569b2ba96bd2d3f7b792867818548da8675e6042fde71114789a4279e3e2b52e",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/installed.after-install.json.txt",
+      "bytes": 1074,
+      "sha256": "c78b422bc8b29be19194ab6a55fa763e9f6b1cbf2a4a1a757583b3ce2c440f65",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/installed.after.json.txt",
+      "bytes": 1074,
+      "sha256": "c78b422bc8b29be19194ab6a55fa763e9f6b1cbf2a4a1a757583b3ce2c440f65",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/installed.before.json.txt",
+      "bytes": 1074,
+      "sha256": "c25d549b784e18186063690cd32f69ca133d847da5068aa91b68bc5f56c6af36",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/result.json.txt",
+      "bytes": 3726,
+      "sha256": "6c5d8fffe9641684e37894f4bf23670b1707545a5fa8ea38ba1cd5d74bf0f439",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/source.after.json.txt",
+      "bytes": 1491128,
+      "sha256": "cf953720e5ddf8433da5391b80c4492cc9d672497975375afb26abe708afe2a8",
+      "mode": "0o644"
+    },
+    {
+      "path": "qualified-install-and-gates/source.before.json.txt",
+      "bytes": 1491128,
+      "sha256": "cf953720e5ddf8433da5391b80c4492cc9d672497975375afb26abe708afe2a8",
+      "mode": "0o644"
+    }
+  ]
+}

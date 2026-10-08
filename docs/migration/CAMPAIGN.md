@@ -1,11 +1,91 @@
 # Live migration campaign
 
-The maintainer resumed the full campaign on 2026-10-06 in Codex chat
-01a111b0-d64d-7c22-ab7d-865db89de7e2. The active goal covers the entire [contract](CONTRACT.md),
-including final product, physical, continuity, release and independent Codex/Claude completion
-gates. The parent integrator owns cross-unit decisions and acceptance. Prepared, executed, reviewed
-and integrated states remain distinct. This live register supersedes the pause status only; it does
-not alter historical evidence.
+The maintainer explicitly resumed the full campaign in Codex chat
+01a1143c-91f7-79e0-95cf-006a16467c64 on 2026-10-06 (America/New_York). The goal is **active**. The
+parent owns integration, acceptance, dependencies and resource leases. The
+[bootstrap receipt](evidence/resumption/current-01a1143c/BOOTSTRAP.json.txt) binds fetched refs,
+capsule verification, actual source locations and original review budgets. Preservation is not
+implementation acceptance. The dated pause records below remain immutable history.
+
+## Current executable register
+
+Accepted integration: cf0c4254d025094054d7ea7faab110da11c96243. Records base:
+74e0f5c5e75b1594433a67a69d9647cfa667911c. Shipping main: ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4.
+No architecture destination is selected. This executable register is a frozen observation at
+2026-10-07T04:25:03Z; later runs retain their own source and receipt identities.
+
+| Unit                                        | Owner and exact source                                                                                                                                                      | State and dependencies                                                                                                                                                                                                                                                                                                                                                                  | Next executable gate                                                                                                                                                                      | Artifacts and original review budget                                                                                                                                                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1 import ownership                         | f1_composition; PR2703 ecb3175fea206a284487cee54c0986663c9ef6be; ordinary source merge 9d21d4c621beb3ddeaa5e348f7e08789300ccc55 over e4e9 and cf0                           | Current composition/scoped/static/Browserless and exact-tree hosted CI pass; independent acceptance held because changed grammar exceeds final conditional review                                                                                                                                                                                                                       | Human disposition for an additional original-conversation round; no dependent RN growth                                                                                                   | [Current composition](https://github.com/KyleMit/Splotch/blob/ecb3175fea206a284487cee54c0986663c9ef6be/docs/migration/evidence/import-boundary-current-base-cf0/README.md); bbe89d5b-644f-4d4f-9366-e5156cebf4ea, 3 used / 0 remaining                              |
+| L0 continuity                               | l0_continuity; draft PR2708 dd2cf24337b9384cb2d6c5adbaac475280950144, parent5d739; tree32aa3bda6cbe051593eff22bb8a1c02fa13c76c2                                             | Published portability repair passes62 scoped controls, all15 Quality checks, all5 Browserless tiers and exact-head hosted Tests/Native compile/ADR checks; original hosted Linux failure preserved; fresh same-ID/held native mechanics executing under finite lease; reads/build acceptance pending                                                                                    | Qualify native consumers and execute same-ID/held mechanics, then final original review; destination transactions remain separate                                                         | [Published gates](https://github.com/KyleMit/Splotch/blob/dd2cf24337b9384cb2d6c5adbaac475280950144/docs/migration/evidence/legacy-continuity/hosted-portability/README.md); 1b406e61-641e-4cf8-86fb-2b1cd7548469, 2 used / 1 remaining, no repair/re-review reserve |
+| Neutral React host                          | neutral_host; draft PR2711 source 4f84efa7966ade0b6852dea9f3a2487de1478761, parent cf0, tree ccb4a1155692f9f6f6cb11575e815b116329b6a4                                       | Published 54-file source passes 1046 targeted tests, check, lint, Quality and Browserless; both copied fixture dependencies repaired; prior failures remain preserved. Actual release-cost run failed before neutral measurement because an unloaded development cache entry was treated as loaded; hosted retained control refused stale dc08/705b pins while other source jobs passed | Narrow actual-loaded-module and partial-evidence controls, changed-source gates and fresh guarded cost run, then original source/disposition challenge; failed artifacts cannot be served | [Source PR](https://github.com/KyleMit/Splotch/pull/2711); host-local source05 receipts, pending public packet; 8c229c08-f640-4bb6-bf08-6953253da0ee, 1 used / 2 remaining; raw75000 lazy ceiling remains hard                                                      |
+| Shared Java21 qualification                 | native_qualification; official signed Temurin21 matched all550 installed rows; final actual Java21 runtime e00afdebe20d926e380bf21a07b0cb55b62d44eeec2db14af99a631061ed6de8 | Final frozen acquisition/authentication/runtime passed; real signature and wrong-Java controls restored; earlier failures remain separate; exact395-member public capsule verified                                                                                                                                                                                                      | L0 must qualify its own keytool/SDK/Gradle consumers under a separate lease                                                                                                               | [Qualified shared tooling](evidence/shared-java21/README.md); no N1 review budget spent or native-runtime acceptance implied                                                                                                                                        |
+| N1 native qualification                     | native_qualification; maintained dc08a90abc67b53124146bf288c80de0f9ffd1dd dirty70; repaired tree7da00012890a72e46eb5cdc390dab8c63f0035a3 remains separate                   | Source-only; all70 repaired members verified, 19 maintained/repaired differences preserved; F1 holds candidate growth; changed7da source exceeds original round-two scope                                                                                                                                                                                                               | Current accepted composition, legitimate independent source challenge and then optimized RN compile/mount/draw when dependencies and original review capacity permit                      | [Pause capsules](evidence/resumption/paused-continuation/README.md); 7c940639-09e2-4236-961f-1122171cb5d8, 2 used / 1 remaining; sequential source and executed acceptance need legitimate capacity disposition                                                     |
+| Physical calibration and current causality  | Parent with native_qualification resource enumeration                                                                                                                       | Fresh adb inventory empty; physical iPad unavailable; available simulators establish mechanics only                                                                                                                                                                                                                                                                                     | Re-enumerate available hardware at execution transition, lease devices, calibrate common whole-screen visible/readiness observer and refresh shipping controls                            | [Baseline](BASELINE.md), [measurement contract](CONTRACT.md#measurement-and-performance-contract); no current physical acceptance                                                                                                                                   |
+| Product, architecture, upgrades and release | Parent; accepted contract and current shipping owners                                                                                                                       | All applicable final gates remain open; depends on qualified consumers and matched evidence                                                                                                                                                                                                                                                                                             | Faithful product mechanisms/screens, ordered continuity transactions, burden decision, reviewed ADR, signed channels/artifacts and final Codex/Claude review                              | [Completion contract](CONTRACT.md#migration-completion), [acceptance](ACCEPTANCE.md), [web](WEB-CONTRACT.md), [upgrades](UPGRADES.md); no completion claim                                                                                                          |
+
+Current host lease: L0 owns sequential nonproduction native consumers from04:23:19Z to06:23:19Z,
+with180 seconds reserved for cleanup and full-command admission before each launch. The neutral
+caller/evidence regression and its78 tests/targeted lint released; its strict installed-cache
+equality failed, exact cache restoration and a distinct postqualification passed. Changed-source
+full gates and a fresh neutral cost run remain queued. Its actual cost build exited1 before neutral
+measurement; reference and retained postbuild guards passed. All14 observed groups released and
+final channels match; this is an unintended loader failure, not a neutral cost rejection. L0
+changed-source full gates, the neutral timeout controls, shared Java21 completion and parent records
+gates released their observed groups. Parent Quality passed all15 checks and full tools passed7726
+tests after the exact frozen installation repaired a stale workspace; the earlier failure remains
+separate. L0 native fixture execution is granted within the stated lease.
+Candidate/browser/performance/physical workloads remain ungranted. Only owned verified handles may
+be stopped. Workers finalize outputs before binding manifests and report individual exits. The
+parent independently verified L0's196 new capsule members and finalized raw gate channels, plus
+F1's26 new members, individual gates and records-only source delta. These checks do not provide
+independent unit acceptance. The parent also verified neutral source05's 18 closed raw channels,
+individual exits and committed semantic source patch. The
+[Codex records review](evidence/resumption/current-01a1143c/CODEX-RECORDS-REVIEW.json.txt) found no
+blocking preservation findings; its standalone-mode wording clarification is resolved. The
+supplemental
+[Codex records review](evidence/resumption/current-01a1143c/CODEX-RECORDS-SUPPLEMENT.json.txt)
+verified the Java and parent-gate capsules at8589fdd886a1d5a35472147f0774f8a9e0be3e8f without
+findings; its scope excludes its own receipt and later metadata. Parent records remain draft PR2710
+and stay off integration until exact-current Claude review and publication gates. The
+[parent gates](evidence/resumption/current-01a1143c/PARENT-GATES.json.txt) preserve the initial
+installed-workspace failure, frozen repair and actual passing full checks.
+
+The
+[independent resumption-plan challenge](evidence/resumption/current-01a1143c/PLAN-DISPOSITION.json.txt)
+reviewed the immutable records at74, not implementation or this PR diff. Its corrections separate L0
+read mechanics from destination transactions, make Java21 trust a shared prerequisite, keep N1
+materialization held, and move actual release-host cost measurement before neutral
+source/disposition review. The earlier separate
+[193583-byte production module diagnostic](evidence/resumption/current-01a1143c/neutral-module-diagnostic/README.md)
+is a runtime-only signal at its recorded source, distinct from the historical193523-byte experiment.
+The complete neutral released host remains unmeasured. Parent records stay off integration until
+independently reviewed.
+
+## Historical paused frontier
+
+The full migration goal is **paused**, unfinished, following the maintainer’s clean-stop request in
+Codex chat01a111b0-d64d-7c22-ab7d-865db89de7e2. The maintainer subsequently authorized durable
+records for a new session; implementation requires the next explicit human continuation instruction.
+Accepted integration remains cf0c4254d025094054d7ea7faab110da11c96243. The
+[continuation packet](../handoff/native-migration-continuation.md) and
+[additive pause records](evidence/resumption/paused-continuation/README.md) own the latest frontier.
+This preservation branch does not accept unfinished implementation or transfer a host/device lease.
+
+The full campaign covers the entire [contract](CONTRACT.md), including final product, physical,
+continuity, release and independent Codex/Claude gates. The parent integrator owns cross-unit
+choices and acceptance. Prepared, executed, reviewed, committed, pushed, CI and integrated states
+remain distinct. Dated observations below retain their original scopes.
+
+At the final pause, retained-control PR2702, inventory PR2706, hosted-export PR2707 and records
+PR2709 were integrated. F1 PR2703 remained draft with an exhausted original review budget; its
+changed final source lacked independent acceptance. L0 PR2708 remained draft with uncommitted
+repairs and a real pending78d merge; two unintended EPERM ownership failures halted its latest
+scoped suite before check/lint. Neutral50 source was staged atcf0, with installed-graph/source gates
+and original round two pending. Native repaired70 and current composition/runtime plans remained
+source-only. Physical, product, continuity, signed upgrade and release gates remained open. The
+immutable copied LIVE-UNITS.json and new member manifest in the pause records bind detailed owners,
+exact inputs, review identities/budgets and next gates without rewriting historical receipts.
 
 Live unit rows observed at 2026-10-06 22:38 UTC. The 20:37 rows remain historical at source
 34dc4650bf43a9fb12e7378bf4d73b6bc68ebb70. The dated repair and upgrade transitions below retain

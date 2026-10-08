@@ -1,0 +1,23 @@
+{
+  "reviewer": "bounded Codex subagent /root/handoff_inventory",
+  "scope": "Independent record integrity and cold continuation clarity only; no Claude or implementation acceptance",
+  "unchangedCapsules": 5,
+  "unchangedMembers": 651,
+  "standaloneRecords": 15,
+  "actualWorkingSourceRows": 97,
+  "nestedRepairedNativeRows": 70,
+  "checks": [
+    "outer identities/safe regular member membership/bytes/modes",
+    "every selected member matches original bytes/modes",
+    "neutral50 and legacy47 unchanged HEAD/status/semantic index/pending MERGE_HEAD",
+    "relative links and substantive budgets",
+    "finite excluded-filename and credential-pattern scan"
+  ],
+  "findings": [
+    "Missing original neutral R1 public metadata: subsequently captured exact four independently inspected hashes",
+    "Validation receipt link: subsequently created"
+  ],
+  "claimLimits": "Original private provider state and hardware remain unverified; current implementation and campaign remain paused/unaccepted",
+  "finalCorrectionReadback": "Independent reviewer confirmed exact four original neutral R1 bytes/modes and historical scope; both findings closed. Unchanged651 plus four newly inspected members; no remaining finding within reviewed preservation scope.",
+  "gitMetadataStorage": "Eight original standalone Git records were subsequently archived byte-for-byte; parent compared every prior standalone hash/mode before removing only owned duplicate files."
+}
