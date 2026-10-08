@@ -1,19 +1,23 @@
 # Migration progress checklist
 
-The maintainer resumed the full campaign on 2026-10-06. The [live campaign register](CAMPAIGN.md)
-tracks current execution and acceptance; the dated checklist below preserves the pause frontier.
+The maintainer resumed the full campaign on 2026-10-06. The
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-08) tracks current source,
+review dependencies and acceptance; host-local CURRENT mirrors pending execution and lease receipts.
+Accepted technical evidence remains committed or publicly linked. The dated checklist below
+preserves the pause frontier.
 
 ## Current milestone rebaseline, 2026-10-08
 
 The [fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy-only data
-transfer and exact old-UI layout/flow parity. Substantive product fidelity and applicable
-capabilities remain required until a concrete feature change receives pair review. No framework is
-selected.
+transfer and exact old-UI layout/flow parity across web/PWA, Android and iOS. Substantive product
+fidelity and applicable capabilities remain required until a concrete feature change receives pair
+review. No framework is selected.
 
 1. Observable new drawing candidate: actual paper/ink, controls, undo and exported output after its
    applicable source gates. The observed retained Svelte consumer remains reference evidence.
 2. Complete drawing fidelity and new-app service slices: crayon/Magic, input/order/history, audio,
-   reliable saving/recovery, permissions, offline behavior and lifecycle.
+   reliable saving/recovery, permissions, offline behavior, lifecycle and narrow
+   [abandoned-credential security](CONTRACT.md#abandoned-credential-security).
 3. Fair matched architecture evidence and burden decision, with calibrated physical comparisons
    where required and a reviewed foundation ADR before production ownership moves.
 4. Complete integrated product, tuned physical release evidence, signed/channel update

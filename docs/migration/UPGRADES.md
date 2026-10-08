@@ -12,6 +12,13 @@ They do not waive current secure storage, authorization, permissions, failed-sav
 offline/lifecycle, background-work safety or release quality. Later updates protect data created by
 the new product; the fresh-start exception applies to the beta-to-new-product transition.
 
+Native fresh initialization must satisfy the narrow
+[abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security): known
+abandoned sensitive entries are removed/invalidated or retained behind a reviewed protection/risk
+disposition, with safe failure/interruption and no later reactivation. Installation allowance
+identity remains intact. This does not revive source-by-source credential transfer, the full L0
+import matrix/iOS-reader workload, or broad deletion of inert drawing/pack data.
+
 ## Identity, compatibility, and release owners
 
 The production application identity belongs to [capacitor.config.json](../../capacitor.config.json).

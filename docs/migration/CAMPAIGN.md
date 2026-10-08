@@ -7,39 +7,69 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
+## Current public status, 2026-10-08
+
+Accepted integration remains ff90042ee807b04145bfb66d32c3704fd2b51c7d after
+[records PR 2710](https://github.com/KyleMit/Splotch/pull/2710), reviewed source
+276e8e241e4660164590990381f2732cf2dcbf89. Shipping main's last recorded source is
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. No framework is selected and no migrated drawing candidate
+is accepted. This public planning snapshot distinguishes accepted public evidence from pending
+source, local observations and review work.
+
+| Unit                     | Public or preserved source                                                                                                                                                                                                                         | Original review budget                                | Pending gate                                                                                                                                                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fresh-start scope        | [PR 2714](https://github.com/KyleMit/Splotch/pull/2714), round-one reviewed deb209b089aaa0a133ad87807820a22bfd596752; repairs in this branch                                                                                                       | 1 used / 2 remaining                                  | Original review of these dispositions, exact-head CI and integration                                                                                                                                             |
+| Reviewer boundary        | [PR 2712](https://github.com/KyleMit/Splotch/pull/2712), reviewed 9bcd430053f428b2bfd017836a809b3c813b5fa8; [final original review](https://github.com/KyleMit/Splotch/pull/2712#pullrequestreview-5452197011) has zero findings/unverified claims | 3 used / 0 remaining                                  | [Tests run 37734542534](https://github.com/KyleMit/Splotch/actions/runs/37734542534) still awaits Retained control; fourteen other applicable jobs succeeded. Exact-head CI and acceptance/merge remain required |
+| F1 import ownership      | [PR 2703](https://github.com/KyleMit/Splotch/pull/2703), published ecb3175fea206a284487cee54c0986663c9ef6be; later composition is pending local work                                                                                               | 3 prior used / 1 additional authorized and unspent    | Accepted additive reviewer support, exact current composition and original substantive round four before dependent RN growth                                                                                     |
+| L0 continuity            | [PR 2708](https://github.com/KyleMit/Splotch/pull/2708), f69d16258a18e6920de76081f6f87e942961de55                                                                                                                                                  | 2 used / 1 remaining                                  | Preserve bounded evidence; legacy-only full import/iOS-reader work stays held; new-app security and service proof remains required                                                                               |
+| Neutral host             | [PR 2711](https://github.com/KyleMit/Splotch/pull/2711), 968a3bd25b51c4f69a75df7869e2006ebf930622                                                                                                                                                  | 1 used / 2 remaining                                  | Original source review and actual React adoption/recovery/host costs; observed Svelte ink/export remains local reference evidence                                                                                |
+| N1 qualification         | Preserved repaired tree identifier 7da00012890a72e46eb5cdc390dab8c63f0035a3; object absent locally, source authenticated by the [pause capsule](evidence/resumption/paused-continuation/README.md)                                                 | 2 used / 1 remaining                                  | Current accepted-source composition/challenge, then optimized compile/mount/draw; F1-dependent growth held                                                                                                       |
+| Hand-back signal         | [PR 2713](https://github.com/KyleMit/Splotch/pull/2713), d4dafa8fe790a299935f54035d93c5dda76e536e                                                                                                                                                  | 0 completed / round one in progress; 3 ordinary total | First independent review is running, not accepted; local/CI checks do not accept the unit                                                                                                                        |
+| Physical/product/release | [Contract](CONTRACT.md), [acceptance](ACCEPTANCE.md), [baseline](BASELINE.md), [web](WEB-CONTRACT.md), [updates](UPGRADES.md)                                                                                                                      | Final independent inventory review required           | Matched hardware access/calibration, full fidelity/services, foundation decision, integrated tuning and signed/channel final gates                                                                               |
+
+This committed register owns public campaign status and acceptance. Update it at consequential
+source, review, dependency and acceptance transitions. Commit or publicly link exact technical
+receipts, review dispositions and applicable CI before using them for acceptance. Host-local CURRENT
+mirrors draft execution, pending plans and lease receipts; it does not override this public register
+or turn a local observation into accepted evidence. Reconcile actual leases at execution time;
+historical lease rows grant no current ownership. No runtime or physical lease is granted by this
+documentation change. The original three F1 rounds and every other unit's budget/provenance remain
+preserved.
+
 ## Fresh-start scope transition, 2026-10-08
 
 The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) records the
-maintainer's direct instruction in chat 01a11a00-2498-72f0-8d73-f32ff01f328c. It retires legacy-only
-beta data transfer and exact old-UI parity; substantive drawing fidelity, applicable new-product
-capabilities, service reliability, fair alternatives and final evidence gates remain required. No
-framework, candidate or pending source unit is accepted by this records change.
+maintainer's direct instruction on 2026-10-08. It applies across web/PWA, Android and iOS and
+retires legacy-only beta data transfer and exact old-UI parity; substantive drawing fidelity,
+applicable new-product capabilities, service reliability, fair alternatives and final evidence gates
+remain required. No framework, candidate or pending source unit is accepted by this records change.
 
 The verified integration base for this reconciliation is ff90042ee807b04145bfb66d32c3704fd2b51c7d,
-tree baa0d1cef9b6ee2ddceb623f8359ecea218a880c. The host-local
-`logs/migration-resumption-01a1143c/CURRENT-CAMPAIGN.json.txt` owns later executable frontiers and
-leases; the dated register below is preserved history. The canonical checkout's temporary
-reviewer-installation branch is not a product integration base.
+tree baa0d1cef9b6ee2ddceb623f8359ecea218a880c. The public status above owns current acceptance;
+host-local CURRENT mirrors pending execution and leases. The dated register below is preserved
+history. The canonical checkout's temporary reviewer-installation branch is not a product
+integration base.
 
-The maintainer separately authorized F1 review:
+The maintainer separately authorized F1 review in the direct user instruction dated 2026-10-08:
 
-> I authorize one additional substantive F1 review round for PR2703 in the ORIGINAL Claude
-> conversation bbe89d5b-644f-4d4f-9366-e5156cebf4ea. Preserve its three prior rounds and provenance.
-> Use a legitimate budget disposition; do not reset the ledger, substitute a fresh reviewer, rename
-> the repair, or reopen exhausted PR2697.
+> I authorize one additional substantive F1 review round for PR2703
 
-This authorizes one additional round in that original conversation, after a legitimate disposition.
-Three prior rounds remain used; the newly authorized round is unspent at this scope transition. F1
-acceptance remains pending, dependent RN source growth keeps its acceptance gate, and every other
-unit's original budget and provenance remain unchanged. This does not reopen PR2697.
+This excerpt authorizes one additional round in the original F1 conversation, after a legitimate
+budget disposition, preserving its three prior rounds and provenance. No ledger reset, fresh
+reviewer, renamed repair or reopening of exhausted PR2697 is authorized. Exact direct-message and
+original-conversation provenance remains in the handler's private authorization receipt. Three prior
+rounds remain used; the newly authorized round is unspent at this scope transition. F1 acceptance
+remains pending, dependent RN source growth keeps its acceptance gate, and every other unit's
+original budget and provenance remain unchanged. This does not reopen PR2697.
 
 Prioritize an observable new drawing candidate after its applicable source gates: real ink,
 controls, undo and export. Then complete fidelity/service slices, fair matched foundation checks,
 integrated tuning and target release evidence. The existing visible Svelte consumer is reference
 evidence, not a migrated drawing candidate. L0's legacy-only import matrix and old iOS secret,
 held-picture and pack/job transfer work are retired future requirements; preserve their completed
-and failed evidence. New-app saving, recovery, permission, lifecycle and security work remains. No
-defensible percentage or calendar completion estimate follows from preparatory foundations.
+and failed evidence. New-app saving, recovery, permission, lifecycle and narrow abandoned-credential
+security work remains. No defensible percentage or calendar completion estimate follows from
+preparatory foundations.
 
 ## Frozen executable register, 2026-10-07
 

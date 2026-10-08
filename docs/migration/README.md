@@ -1,14 +1,18 @@
 # Product UI migration
 
-Live execution resumed on 2026-10-06. The [campaign register](CAMPAIGN.md) owns current status, unit
-dependencies, evidence and resource leases; the pause checkpoint below remains historical.
+Live execution resumed on 2026-10-06. The
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-08) owns current status,
+source/review dependencies and acceptance. Host-local CURRENT mirrors pending draft execution and
+lease receipts; accepted evidence stays committed or publicly linked. The pause checkpoint below
+remains historical.
 
 This campaign delivers the migration tracked by
 [epic 2690](https://github.com/KyleMit/Splotch/issues/2690). The maintainer authorized Codex and
 Claude to make decisions and complete the work autonomously, with independent review throughout. The
 goal is a complete, integrated, tuned new drawing product across web, Android, and iOS. The
 [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy beta
-data transfer and exact old-UI parity while retaining substantive product and release obligations.
+data transfer and exact old-UI parity across web/PWA, Android and iOS while retaining substantive
+product, narrow credential security and release obligations.
 
 React Native mobile with a shared web-capable product UI remains an architecture hypothesis. No
 framework is selected; the [contract](CONTRACT.md)'s structural and evidence checks govern the
@@ -42,6 +46,10 @@ unproved comparison evidence is recorded honestly and cannot complete unmet fina
   embedded-code residual.
 * [Magic work witness](MAGIC-WITNESS.md): causal observation, action-read boundaries and the
   diagnostic-only observer epoch.
+
+Publish consequential source/review/acceptance transitions in the public register with exact source
+and evidence bindings before relying on them. Local pending plans and lease observations do not
+establish public acceptance.
 
 The fresh-start scope governs applicability across these documents. They define pending
 requirements, not claims that a candidate already passes. Existing tests and ADRs remain

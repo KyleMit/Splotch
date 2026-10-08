@@ -9,11 +9,11 @@ cannot.
 ## Fresh-start execution scope
 
 The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy
-beta data import and exact old-UI layout/flow parity. Build toward observable new drawing after
-applicable source acceptance, then full crayon/Magic/history/audio and new-app service reliability.
-A working minimal drawing milestone is not full-product acceptance. Feature changes need concrete
-pair review; no framework or current pending source unit is selected or accepted by the scope
-change.
+beta data import and exact old-UI layout/flow parity across web/PWA, Android and iOS. Build toward
+observable new drawing after applicable source acceptance, then full crayon/Magic/history/audio and
+new-app service reliability. A working minimal drawing milestone is not full-product acceptance.
+Feature changes need concrete pair review; no framework or current pending source unit is selected
+or accepted by the scope change.
 
 Unit 6 below owns new-app storage/service feasibility instead of historical import feasibility.
 References to continuity in the comparison rules mean applicable new-app lifecycle/data reliability
@@ -139,9 +139,12 @@ comparison results; update those records only through reviewed evidence.
    no old WebView/settings/secret/picture import fixture is required. Prove safe fresh
    initialization under the existing app ID/local signing scope and safe cancellation or
    reconciliation of surviving prior work. Installation allowance identity remains
-   server-authoritative. These checks do not establish Play/TestFlight signing/channel
-   installability, physical floor behavior or full-product release readiness. Complete channel
-   updates and later updates of new-product data remain final gates in [UPGRADES.md](UPGRADES.md).
+   server-authoritative. Prove the bounded
+   [abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security) without
+   restoring old transfer/readers or deleting unrelated inert data. These checks do not establish
+   Play/TestFlight signing/channel installability, physical floor behavior or full-product release
+   readiness. Complete channel updates and later updates of new-product data remain final gates in
+   [UPGRADES.md](UPGRADES.md).
 7. **Vocabulary-neutral web host.** Start embedded SvelteKit, using its actual released
    history/state/worker owners and a prerendered minimal React chrome with a real HTML dialog and
    retained paper sibling. This is a lower-change implementation order, not a verdict. Add root

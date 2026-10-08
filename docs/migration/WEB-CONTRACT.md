@@ -7,7 +7,16 @@ The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scop
 beta settings/data import and exact old-UI layout/flow parity. Named old controls and settings below
 are reference implementations of the applicable startup, safe-drawing, accessibility and lifecycle
 risks, not required UI arrangements. The selected new-product inventory owns its concrete flows;
-substantive capabilities and web/security/hosted contracts remain required.
+substantive capabilities and web/security/hosted contracts remain required. The direct authorization
+includes browser tabs and installed PWAs; public hosting does not establish a separate excluded
+audience or require another fresh-start authorization.
+
+Web/PWA fresh initialization must satisfy
+[abandoned-credential security](CONTRACT.md#abandoned-credential-security): remove/invalidate known
+abandoned sensitive entries or retain them only behind a reviewed protection/risk disposition,
+without exposing or reactivating them. This does not restore legacy settings/data transfer or
+require broad deletion of inert drawings/books/cache data. Safe shell/update recovery and active-ink
+protection remain required.
 
 The shared product UI is a candidate architecture. React Native Web and React Strict DOM must prove
 the browser contracts below before the foundation choice becomes final. Web cutover has its own

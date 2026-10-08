@@ -13,18 +13,20 @@ warrants a separately reviewed change; see
 
 ### Authoritative fresh-start scope
 
-On 2026-10-08 the maintainer gave this direct instruction in Codex chat
-01a11a00-2498-72f0-8d73-f32ff01f328c:
+On 2026-10-08 the maintainer gave this direct instruction:
 
 > A fresh start is acceptable for the roughly ten beta users. Prioritize the new drawing product
 > rather than legacy settings/data migration or old-app UI parity. Retain reliable new-app
 > saving/exporting, permissions, lifecycle, security and release quality. Reconcile the
 > authoritative contract accordingly. No framework is selected.
 
-This scope replaces earlier mandatory legacy-transfer and exact old-UI parity requirements in the
-migration documents. Historical source inventories, failed attempts, accepted units and review
-provenance retain their original identities and claim limits. Retirement is a scope disposition, not
-a passing validation result or permission to change the shipping app before target cutover.
+This scope applies to the full campaign: web browser tabs and installed PWAs, Android and iOS.
+Public hosting does not create a platform exception or establish a separate non-beta audience beyond
+the maintainer's stated roughly ten beta users. It replaces earlier mandatory legacy-transfer and
+exact old-UI parity requirements in the migration documents. Historical source inventories, failed
+attempts, accepted units and review provenance retain their original identities and claim limits.
+Retirement is a scope disposition, not a passing validation result or permission to change the
+shipping app before target cutover.
 
 In the remaining rules, continuity means applicable new-app data/lifecycle reliability and native
 update installability. Fidelity and visual semantics retain substantive drawing/output requirements;
@@ -48,6 +50,21 @@ service slices, matched foundation evidence, integrated tuning and target releas
 transfer work is not a prerequisite. Existing source-acceptance dependencies still apply to the
 units that consume them; scope reconciliation does not accept F1 or another pending unit. Physical
 hardware gates comparison and release, rather than independent structural builds.
+
+### Abandoned credential security
+
+Fresh initialization on every target must not expose or reactivate known abandoned sensitive
+credentials, or indefinitely leave them under weaker protection. Name the affected credential
+locations and protections, then remove/invalidate applicable abandoned entries or retain them only
+behind a reviewed protection/risk disposition. Prove interrupted cleanup and late restoration cannot
+expose or reactivate them; failures need a safe, explicit outcome. Keep installation allowance
+identity and server authorization intact.
+
+This is a narrow security requirement, not legacy credential transfer or data parity. It does not
+reopen the old source-by-source transfer matrix, full L0 import workload or iOS reader work, and it
+does not require broad deletion of isolated inert drawings or coloring-pack data. Retained inert
+data alone does not establish a new secret exposure. Any additional deletion requirement needs a
+concrete affected security or lifecycle boundary and a reviewed disposition.
 
 The architecture review at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 reached conditional agreement:
 React Native mobile plus a shared web-capable UI is the leading candidate. The mobile performance

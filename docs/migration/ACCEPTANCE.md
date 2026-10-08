@@ -134,6 +134,10 @@ distributed during the campaign, with evidence before combining equivalent updat
 * Preserve app identity, signing continuity, version progression and supported installation paths.
 * Keep existing installation allowance identity and server authorization; dropping beta preferences
   does not authorize a new free-generation grant.
+* Across web/PWA and both native targets, prove the narrow
+  [abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security), including
+  safe interruption and late restoration. It neither imports old credentials nor mandates wholesale
+  deletion of inert drawing/pack data.
 * Prove reliable new-app storage, secure credentials, exact failed-save picture retention/retry and
   declared offline content behavior, including denied/full/unreadable storage.
 * Protect data created by the new product across its later updates. Ordinary ink/history retain
