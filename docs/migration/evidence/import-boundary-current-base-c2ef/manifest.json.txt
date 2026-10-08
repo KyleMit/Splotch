@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-08T06:24:52.500501+00:00",
+  "owner": "/root/f1_composition",
+  "passedSource": "4ab37d6097eaa2e4371789562bb5efa84738b28e",
+  "passedTree": "6e17c8a69857586a441e9d583ab01da9c97e4f09",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4020,
+      "sha256": "f4667bcf160e160f147e2f65c81dbb88eb31a507b7f79afca6236b6dc82201d5"
+    },
+    {
+      "path": "RECORD-GATES.json.txt",
+      "bytes": 2649,
+      "sha256": "67b337380342d91546b1697a703972798c1c99d01c7a92093e593b5c8f948b24"
+    },
+    {
+      "path": "SOURCE-GATES.json.txt",
+      "bytes": 935,
+      "sha256": "cbe5ddd2e5846d800291e870e6834dbf1cf5753deef16db809edbf0107b3ec52"
+    },
+    {
+      "path": "c2ef-composition.tar.gz",
+      "bytes": 915890,
+      "sha256": "b491ee991a7fe181885c59433700c13f21cfaf33b4c21fb01b245c6a9cad28da"
+    },
+    {
+      "path": "ff900-composition.tar.gz",
+      "bytes": 16250,
+      "sha256": "34ff8caf64a9d55433f86eeee4014b7d3e9987b3f6e2fded6e4848fad6447c29"
+    },
+    {
+      "path": "record-checks-history.tar.gz",
+      "bytes": 1583,
+      "sha256": "4d6d4e2da9175c7a7d7ba061f8f8732fc089ec98aefc7db573b6e77a6cc09ca2"
+    }
+  ],
+  "archives": [
+    {
+      "path": "ff900-composition.tar.gz",
+      "bytes": 16250,
+      "sha256": "34ff8caf64a9d55433f86eeee4014b7d3e9987b3f6e2fded6e4848fad6447c29",
+      "verifiedMembers": 16
+    },
+    {
+      "path": "c2ef-composition.tar.gz",
+      "bytes": 915890,
+      "sha256": "b491ee991a7fe181885c59433700c13f21cfaf33b4c21fb01b245c6a9cad28da",
+      "verifiedMembers": 13
+    },
+    {
+      "path": "record-checks-history.tar.gz",
+      "bytes": 1583,
+      "sha256": "4d6d4e2da9175c7a7d7ba061f8f8732fc089ec98aefc7db573b6e77a6cc09ca2",
+      "verifiedMembers": 7
+    }
+  ],
+  "rawFormatterWhitespaceDisposition": "Exact raw bytes retained in record-check history archive; initial direct text packaging failure remains historical.",
+  "independentAcceptance": false,
+  "reviewRoundSpent": false
+}

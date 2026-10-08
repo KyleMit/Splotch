@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/doc-references.test.mjs tools/tests/tool-specifier-resolution.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/3218/Splotch/tools
+
+
+ Test Files  2 passed (2)
+      Tests  897 passed (897)
+   Start at  23:01:21
+   Duration  232ms (tests 67%, import 23%, transform 9%, worker 1%)
+

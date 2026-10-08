@@ -1,0 +1,141 @@
+{
+  "acceptedBase": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "currentRecordsCheckout": "63c5f2f45a463774f50455041174f075abaa4af2",
+  "currentIntegrationRef": "dc08a90abc67b53124146bf288c80de0f9ffd1dd",
+  "checkerPath": "tools/migration/lib/native-identity.mjs",
+  "checkerSha256": "2a591f2c8ca45be03a06c31a3c379ff74a87cb20195eddb4992ce52e58295825",
+  "checkerMatchesLiveRecordsCheckout": true,
+  "candidateSourceHashes": {
+    "experiments/native-architecture/alignment.json": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b",
+    "experiments/native-architecture/app.json": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8",
+    "experiments/native-architecture/babel.config.cjs": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62",
+    "experiments/native-architecture/metro.config.cjs": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c",
+    "experiments/native-architecture/package.json": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+    "experiments/native-architecture/scripts/check-transform.cjs": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb",
+    "experiments/native-architecture/src/ProbeApp.tsx": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248",
+    "experiments/native-architecture/src/index.ts": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+    "experiments/native-architecture/tsconfig.json": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+  },
+  "donor": {
+    "root": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch",
+    "source": "8ddfc04053ccdf285c2f6fd7c2b75e745a9d2fc6",
+    "status": "",
+    "nodeModules": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules",
+    "identities": [
+      {
+        "name": "typescript",
+        "version": "6.0.3",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/typescript/package.json",
+        "manifestSha256": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9"
+      },
+      {
+        "name": "yaml",
+        "version": "2.9.1",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/yaml/package.json",
+        "manifestSha256": "1c6441703d8204a23ded0d37ddf57c3b69d821dc392f20852d1f605bb9b8861c"
+      },
+      {
+        "name": "expo",
+        "version": "57.0.26",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/expo/package.json",
+        "manifestSha256": "66b890eae23ba960afcfa67ec5aa5ea5ebe0ea1eaed0ad713cb828a717cd7355"
+      },
+      {
+        "name": "react",
+        "version": "19.2.3",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/react/package.json",
+        "manifestSha256": "c383aced6a67c8d06f02996015c0a163e78532a330a96dff1ccfd107b00ab326"
+      },
+      {
+        "name": "react-native",
+        "version": "0.86.3",
+        "manifestPath": "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/react-native/package.json",
+        "manifestSha256": "416224a4e7caf2ee1f8f9bead8508d0b608feed745371ce0a8f0e2cafa16d144"
+      }
+    ]
+  },
+  "runtime": {
+    "version": "v24.16.0",
+    "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node"
+  },
+  "root": "/private/tmp/splotch-resume-01a111b0/import-boundary",
+  "manifestDeclaresYaml": false,
+  "outcomes": [
+    {
+      "name": "original-five-source-positive",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "original-actual-tsconfig-positive",
+      "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "args": [
+        "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/typescript/bin/tsc",
+        "--project",
+        "/private/tmp/splotch-resume-01a111b0/import-boundary/candidate/tsconfig.json",
+        "--noEmit"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "name": "direct-yaml-rejecting-control",
+      "passed": false,
+      "error": {
+        "name": "AssertionError",
+        "message": "src/index.ts imports undeclared yaml"
+      }
+    },
+    {
+      "name": "direct-restored-positive",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "reachable-local-yaml-counterexample",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "reachable-actual-tsconfig-counterexample",
+      "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "args": [
+        "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/typescript/bin/tsc",
+        "--project",
+        "/private/tmp/splotch-resume-01a111b0/import-boundary/candidate/tsconfig.json",
+        "--noEmit"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "name": "reachable-restored-positive",
+      "passed": true,
+      "error": null
+    },
+    {
+      "name": "restored-actual-tsconfig-positive",
+      "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "args": [
+        "/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch/node_modules/typescript/bin/tsc",
+        "--project",
+        "/private/tmp/splotch-resume-01a111b0/import-boundary/candidate/tsconfig.json",
+        "--noEmit"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "",
+      "error": null
+    }
+  ],
+  "restoredEntrySha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+  "originalEntrySha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+  "scope": "Exact accepted checker and all original candidate files; real candidate tsconfig with borrowed retained-worktree full dependency tree. No install, full topology/Quality, native compilation, mount, physical timing or upgrade claim."
+}

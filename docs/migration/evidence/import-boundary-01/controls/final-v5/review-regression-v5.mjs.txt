@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
+const worktree='/Users/kylemit/.codex/worktrees/3218/Splotch';
+const artifactRoot='/private/tmp/splotch-resume-01a111b0/import-boundary';
+const oldHead='ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24';
+const paths=['tools/migration/lib/candidate-imports.mjs','tools/migration/lib/candidate-references.mjs'];
+const buffers=paths.map(path=>readFileSync(join(worktree,path)));
+const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+const results=[];
+try {
+ for(const path of paths){const old=spawnSync('git',['show',`${oldHead}:${path}`],{cwd:worktree});assert.equal(old.status,0);writeFileSync(join(worktree,path),old.stdout);}
+ for(const [name,pattern,expected] of [
+ ['false-passes','covers both Expo JSON forms|visibly refuses unestablished dependency configuration|visibly refuses Babel JSON|refuses a local tsconfig alias|refuses semantic configuration aliases|rejects an extensionless app import','expected [Function] to throw an error'],
+ ['false-rejections','accepts an explicitly declared bare','expected [Function] to not throw an error']
+ ]){
+ const output=join(artifactRoot,`review-regression-${name}-v5.json`);
+ const command=['run','test:tools','--','tools/migration/tests/candidate-imports.test.mjs','tools/migration/tests/candidate-configs.test.mjs','-t',pattern,'--reporter=json',`--outputFile=${output}`];
+ const process=spawnSync('npm',command,{cwd:worktree,encoding:'utf8',timeout:30000});
+ writeFileSync(join(artifactRoot,`review-regression-${name}-v5.log.txt`),`${process.stdout}${process.stderr}`);
+ assert.equal(process.status,1);
+ const report=JSON.parse(readFileSync(output));
+ const failed=report.testResults.flatMap(file=>file.assertionResults).filter(test=>test.status==='failed');
+ assert.ok(failed.length); const preexistingRejects=failed.filter(test=>test.failureMessages.some(message=>message.includes('expected [Function] to throw error including'))); const intended=failed.filter(test=>!preexistingRejects.includes(test)); assert.equal(preexistingRejects.length,name==='false-passes'?3:0); for(const test of intended)assert.ok(test.failureMessages.every(message=>message.includes(expected)),test.fullName); for(const test of preexistingRejects)assert.ok(test.failureMessages.every(message=>message.includes('imports undeclared')),test.fullName);
+ results.push({name,command,exitCode:process.status,failedCount:failed.length,intendedCount:intended.length,preexistingRejects:preexistingRejects.map(test=>({fullName:test.fullName,messages:test.failureMessages})),failures:failed.map(test=>({fullName:test.fullName,messages:test.failureMessages})),intendedAssertion:expected});
+ }
+} finally {paths.forEach((path,index)=>writeFileSync(join(worktree,path),buffers[index]));}
+paths.forEach((path,index)=>assert.equal(hash(readFileSync(join(worktree,path))),hash(buffers[index])));
+writeFileSync(join(artifactRoot,'review-regression-v5.json'),JSON.stringify({oldHead,results,restoredSource:paths.map((path,index)=>({path,sha256:hash(buffers[index])})),restoreVerified:true},null,2)+'\n');
+console.log(JSON.stringify(results.map(({name,failedCount,intendedCount,preexistingRejects,intendedAssertion})=>({name,failedCount,intendedCount,preexistingRejectCount:preexistingRejects.length,intendedAssertion}))));

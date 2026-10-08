@@ -1,0 +1,369 @@
+{
+  "versions": {
+    "typescript": "6.0.3",
+    "babel": "7.29.7",
+    "babelPresetExpo": "57.0.13"
+  },
+  "actualCompilerOptions": {
+    "allowJs": false,
+    "esModuleInterop": true,
+    "jsx": 4,
+    "lib": [
+      "lib.dom.d.ts",
+      "lib.esnext.d.ts"
+    ],
+    "module": 200,
+    "moduleDetection": 3,
+    "moduleResolution": 100,
+    "customConditions": [
+      "react-native"
+    ],
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "target": 99,
+    "strict": true,
+    "configFilePath": "/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma-positions/candidate/tsconfig.json"
+  },
+  "results": [
+    {
+      "name": "default-automatic",
+      "source": "export const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [],
+      "babelReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "leading-block",
+      "source": "/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [
+        [
+          "jsximportsource",
+          {
+            "arguments": {
+              "factory": "splotch-owned-jsx-runtime-probe"
+            },
+            "range": {
+              "kind": 3,
+              "pos": 0,
+              "end": 55,
+              "hasTrailingNewLine": true
+            }
+          }
+        ]
+      ],
+      "babelComments": [
+        {
+          "type": "CommentBlock",
+          "value": "* @jsxImportSource splotch-owned-jsx-runtime-probe ",
+          "start": 0,
+          "end": 55
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "leading-line",
+      "source": "// @jsxImportSource splotch-owned-jsx-runtime-probe\nexport const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [
+        {
+          "type": "CommentLine",
+          "value": " @jsxImportSource splotch-owned-jsx-runtime-probe",
+          "start": 0,
+          "end": 51
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "after-import-block",
+      "source": "import { Fragment } from 'react';\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\nexport const probe = <>pragma positions</>;\nvoid Fragment;\n",
+      "guardReferences": [
+        {
+          "specifier": "react",
+          "kind": "import"
+        }
+      ],
+      "tsPragmas": [],
+      "babelComments": [
+        {
+          "type": "CommentBlock",
+          "value": "* @jsxImportSource splotch-owned-jsx-runtime-probe ",
+          "start": 34,
+          "end": 89
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "react",
+          "kind": "import"
+        },
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        },
+        {
+          "specifier": "react",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "later-block",
+      "source": "export const probe = <>pragma positions</>;\n/** @jsxImportSource splotch-owned-jsx-runtime-probe */\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [
+        {
+          "type": "CommentBlock",
+          "value": "* @jsxImportSource splotch-owned-jsx-runtime-probe ",
+          "start": 44,
+          "end": 99
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "later-line",
+      "source": "export const probe = <>pragma positions</>;\n// @jsxImportSource splotch-owned-jsx-runtime-probe\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [
+        {
+          "type": "CommentLine",
+          "value": " @jsxImportSource splotch-owned-jsx-runtime-probe",
+          "start": 44,
+          "end": 95
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "leading-ts-extra-token",
+      "source": "/** @jsxImportSource splotch-owned-jsx-runtime-probe trailing */\nexport const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [
+        [
+          "jsximportsource",
+          {
+            "arguments": {
+              "factory": "splotch-owned-jsx-runtime-probe"
+            },
+            "range": {
+              "kind": 3,
+              "pos": 0,
+              "end": 64,
+              "hasTrailingNewLine": true
+            }
+          }
+        ]
+      ],
+      "babelComments": [
+        {
+          "type": "CommentBlock",
+          "value": "* @jsxImportSource splotch-owned-jsx-runtime-probe trailing ",
+          "start": 0,
+          "end": 64
+        }
+      ],
+      "babelReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "splotch-owned-jsx-runtime-probe/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "string-lookalike",
+      "source": "export const text = '/** @jsxImportSource splotch-owned-jsx-runtime-probe */';\nexport const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [],
+      "babelReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "template-lookalike",
+      "source": "export const text = `/** @jsxImportSource splotch-owned-jsx-runtime-probe */`;\nexport const probe = <>pragma positions</>;\n",
+      "guardReferences": [],
+      "tsPragmas": [],
+      "babelComments": [],
+      "babelReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "jsx-text-lookalike",
+      "source": "import { Text } from 'react-native';\nexport const probe = <Text>/** @jsxImportSource splotch-owned-jsx-runtime-probe */</Text>;\n",
+      "guardReferences": [
+        {
+          "specifier": "react-native",
+          "kind": "import"
+        }
+      ],
+      "tsPragmas": [],
+      "babelComments": [],
+      "babelReferences": [
+        {
+          "specifier": "react-native",
+          "kind": "import"
+        },
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        }
+      ],
+      "tsReferences": [
+        {
+          "specifier": "react/jsx-runtime",
+          "kind": "import"
+        },
+        {
+          "specifier": "react-native",
+          "kind": "import"
+        }
+      ],
+      "typecheck": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ],
+  "status": ""
+}

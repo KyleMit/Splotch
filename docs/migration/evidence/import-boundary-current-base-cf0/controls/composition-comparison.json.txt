@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "preparationHead": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+  "acceptedBase": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "commonBase": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "historicalSourceInputReceipt": "../import-boundary-01/controls/final-v8/source-inputs.json.txt",
+  "historicalSourceInputSha256": "978d8feb5b50f657d00f371bb4bec74295a2a7cee8dd8bed364a789d9acb9377",
+  "inputComparisons": {
+    "tools/migration/check-native-topology.mjs": {
+      "historical": {
+        "bytes": 3672,
+        "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17"
+      },
+      "current": {
+        "bytes": 3672,
+        "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17"
+      },
+      "equal": true
+    },
+    "tools/migration/lib/native-identity.mjs": {
+      "historical": {
+        "bytes": 6302,
+        "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd"
+      },
+      "current": {
+        "bytes": 6302,
+        "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd"
+      },
+      "equal": true
+    },
+    "tools/migration/lib/candidate-imports.mjs": {
+      "historical": {
+        "bytes": 8737,
+        "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7"
+      },
+      "current": {
+        "bytes": 8737,
+        "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7"
+      },
+      "equal": true
+    },
+    "tools/migration/lib/candidate-references.mjs": {
+      "historical": {
+        "bytes": 18705,
+        "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40"
+      },
+      "current": {
+        "bytes": 18705,
+        "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40"
+      },
+      "equal": true
+    },
+    "tools/migration/tests/candidate-imports.test.mjs": {
+      "historical": {
+        "bytes": 15283,
+        "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98"
+      },
+      "current": {
+        "bytes": 15283,
+        "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98"
+      },
+      "equal": true
+    },
+    "tools/migration/README.md": {
+      "historical": {
+        "bytes": 6508,
+        "sha256": "5c25838b5cd0539688d6c9552d1fcbc47428874e4adbc3c2b0bc682e5f5eccef"
+      },
+      "current": {
+        "bytes": 15765,
+        "sha256": "bccdd774a507f0a04d18ae4e0670476b250cfee9703ce3c82111b80d8a7423f0"
+      },
+      "equal": false
+    },
+    "package.json": {
+      "historical": {
+        "bytes": 121297,
+        "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9"
+      },
+      "current": {
+        "bytes": 122815,
+        "sha256": "efa4f1b8cb58803e2b09f91304f4507978047ca1c8dcf45044c620e45a4d5249"
+      },
+      "equal": false
+    },
+    "pnpm-lock.yaml": {
+      "historical": {
+        "bytes": 518383,
+        "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+      },
+      "current": {
+        "bytes": 518383,
+        "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+      },
+      "equal": true
+    },
+    "pnpm-workspace.yaml": {
+      "historical": {
+        "bytes": 4827,
+        "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+      },
+      "current": {
+        "bytes": 4827,
+        "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/alignment.json": {
+      "historical": {
+        "bytes": 890,
+        "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b"
+      },
+      "current": {
+        "bytes": 890,
+        "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/app.json": {
+      "historical": {
+        "bytes": 142,
+        "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8"
+      },
+      "current": {
+        "bytes": 142,
+        "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/babel.config.cjs": {
+      "historical": {
+        "bytes": 135,
+        "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62"
+      },
+      "current": {
+        "bytes": 135,
+        "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/metro.config.cjs": {
+      "historical": {
+        "bytes": 106,
+        "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c"
+      },
+      "current": {
+        "bytes": 106,
+        "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/package.json": {
+      "historical": {
+        "bytes": 288,
+        "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"
+      },
+      "current": {
+        "bytes": 288,
+        "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/scripts/check-transform.cjs": {
+      "historical": {
+        "bytes": 1552,
+        "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb"
+      },
+      "current": {
+        "bytes": 1552,
+        "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/src/ProbeApp.tsx": {
+      "historical": {
+        "bytes": 159,
+        "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248"
+      },
+      "current": {
+        "bytes": 159,
+        "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/src/index.ts": {
+      "historical": {
+        "bytes": 119,
+        "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474"
+      },
+      "current": {
+        "bytes": 119,
+        "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474"
+      },
+      "equal": true
+    },
+    "experiments/native-architecture/tsconfig.json": {
+      "historical": {
+        "bytes": 153,
+        "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+      },
+      "current": {
+        "bytes": 153,
+        "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+      },
+      "equal": true
+    },
+    "tools/migration/tests/candidate-configs.test.mjs": {
+      "historical": {
+        "bytes": 15825,
+        "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f"
+      },
+      "current": {
+        "bytes": 15825,
+        "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f"
+      },
+      "equal": true
+    },
+    "tools/migration/tests/candidate-fixtures.mjs": {
+      "historical": {
+        "bytes": 1933,
+        "sha256": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9"
+      },
+      "current": {
+        "bytes": 1933,
+        "sha256": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9"
+      },
+      "equal": true
+    }
+  },
+  "dependencyDeclarationsAndRuntimeFloorsEqual": true,
+  "installedManifestComparisons": [
+    {
+      "name": "typescript",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/typescript/package.json",
+      "version": "6.0.3",
+      "sha256": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9",
+      "currentSha256": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9",
+      "equal": true
+    },
+    {
+      "name": "expo",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/expo/package.json",
+      "version": "57.0.26",
+      "sha256": "66b890eae23ba960afcfa67ec5aa5ea5ebe0ea1eaed0ad713cb828a717cd7355",
+      "currentSha256": "66b890eae23ba960afcfa67ec5aa5ea5ebe0ea1eaed0ad713cb828a717cd7355",
+      "equal": true
+    },
+    {
+      "name": "react",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/react/package.json",
+      "version": "19.2.3",
+      "sha256": "c383aced6a67c8d06f02996015c0a163e78532a330a96dff1ccfd107b00ab326",
+      "currentSha256": "c383aced6a67c8d06f02996015c0a163e78532a330a96dff1ccfd107b00ab326",
+      "equal": true
+    },
+    {
+      "name": "react-native",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/react-native/package.json",
+      "version": "0.86.3",
+      "sha256": "416224a4e7caf2ee1f8f9bead8508d0b608feed745371ce0a8f0e2cafa16d144",
+      "currentSha256": "416224a4e7caf2ee1f8f9bead8508d0b608feed745371ce0a8f0e2cafa16d144",
+      "equal": true
+    },
+    {
+      "name": "@expo/config",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@expo/config/package.json",
+      "version": "57.0.9",
+      "sha256": "9f20bdbaa3bb1d8ae644e252aea9879257920832df557f462cf365aa1cfa4c64",
+      "currentSha256": "9f20bdbaa3bb1d8ae644e252aea9879257920832df557f462cf365aa1cfa4c64",
+      "equal": true
+    },
+    {
+      "name": "@babel/core",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@babel/core/package.json",
+      "version": "7.29.7",
+      "sha256": "6c2893db41b54a1c03ba68e676aa3ea987db9a5c9b9a3a3aa2e8d0d9a63066c4",
+      "currentSha256": "6c2893db41b54a1c03ba68e676aa3ea987db9a5c9b9a3a3aa2e8d0d9a63066c4",
+      "equal": true
+    },
+    {
+      "name": "metro-resolver",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/metro-resolver/package.json",
+      "version": "0.84.5",
+      "sha256": "2547e0c696af191328cc6c863413d7408a1a31f1988662adc5f2f33610f73add",
+      "currentSha256": "2547e0c696af191328cc6c863413d7408a1a31f1988662adc5f2f33610f73add",
+      "equal": true
+    },
+    {
+      "name": "yaml",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/yaml/package.json",
+      "version": "2.9.1",
+      "sha256": "1c6441703d8204a23ded0d37ddf57c3b69d821dc392f20852d1f605bb9b8861c",
+      "currentSha256": "1c6441703d8204a23ded0d37ddf57c3b69d821dc392f20852d1f605bb9b8861c",
+      "equal": true
+    }
+  ],
+  "historicalPacket": {
+    "manifest": "../import-boundary-01/manifest.json",
+    "sha256": "6e324b3f0b49048e70c96f36230fa774e113e7fd7e33ac32add5e29ea90a5848",
+    "verifiedMembers": 275,
+    "allEqual": true
+  },
+  "trackedToolEnumeration": {
+    "historical": {
+      "count": 861,
+      "sha256": "eaa1fe4d9620327fa3f5b24fd103b45622fd230eee55242a9e0ae11c81ede6e3",
+      "enumeration": "git ls-files tools filtered to .mjs; includes every final fixture source"
+    },
+    "current": {
+      "count": 891,
+      "sha256": "562a9ac4ff8fc29e8cf9943b85bea25211f78c0d2171bf750449eb003c375d2d"
+    }
+  },
+  "semanticIndexEntriesSha256": "8f1c87bec816444c28e51035048910d2040769b06aaef317bb62a1703ba121e6",
+  "receiptDisposition": {
+    "historicalStaticScopedFull": "cannot establish current accepted-base gate; package check/postbuild owners, lint discovery, source enumeration and source tree changed; rerun current gates",
+    "historicalActualConsumer": "retains historical observations only; current scanner/candidate/config/lock and installed package manifests match, no new installed executable census was present in old receipts",
+    "independentReview": "HELD; original bbe89d5b-644f-4d4f-9366-e5156cebf4ea used 3, remaining 0; no exception authorized"
+  }
+}

@@ -1,0 +1,13 @@
+
+⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+Error: No projects matched the filter "tools".
+    at Vitest._attachProjectServers (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.C-uw7tH9.js:20615:22)
+    at Vitest._start (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/index.C-uw7tH9.js:20470:3)
+    at createVitest (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/cli-api.DL4Bd7Vh.js:29:3)
+    at prepareVitest (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/cli-api.DL4Bd7Vh.js:421:14)
+    at startVitest (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/cli-api.DL4Bd7Vh.js:340:14)
+    at start (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/cac.BLbEtnDd.js:2370:15)
+    at CAC.run (file:///Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/vitest/dist/chunks/cac.BLbEtnDd.js:2346:2)
+
+
+

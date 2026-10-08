@@ -1,0 +1,90 @@
+{
+  "source": "ecdd26f93849a8a26542536be82e63068c662749",
+  "results": [
+    {
+      "name": "A1-nested-export-alias",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "A2-destructured-export-alias",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "nested-app.config.ts",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Got unwanted exception.\nActual message: \"src/config/app.config.ts has no supported literal configuration export\"",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "nested-babel.config.ts",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Got unwanted exception.\nActual message: \"src/config/babel.config.ts has no supported literal configuration export\"",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "nested-.babelrc.ts",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Got unwanted exception.\nActual message: \"src/config/.babelrc.ts has no supported literal configuration export\"",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "leading-block",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "leading-line",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "after-import-block",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "later-block",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "later-line",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "leading-ts-extra-token",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "jsx-expression-comment",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "empty-block-comment",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    },
+    {
+      "name": "template-expression-comment",
+      "assertionPassed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+      "code": "ERR_ASSERTION"
+    }
+  ],
+  "count": 14
+}

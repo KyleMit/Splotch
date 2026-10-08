@@ -1,0 +1,123 @@
+{
+  "records": [
+    {
+      "name": "unicode-escaped-direct-yaml",
+      "source": "import { parse } from '\\u0079aml';\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp",
+        "yaml"
+      ],
+      "guardPassed": false,
+      "error": "src/index.ts imports undeclared yaml",
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "static-template-require",
+      "source": "require(`yaml`);\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "static-template-dynamic-import",
+      "source": "import(`yaml`);\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "element-access-require-resolve",
+      "source": "require['resolve']('yaml');\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "typescript-import-equals",
+      "source": "import yaml = require('yaml');\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "typescript-import-type",
+      "source": "type YamlOptions = import('yaml').ParseOptions;\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "computed-dynamic-import",
+      "source": "const moduleName = 'yaml';\nimport(moduleName);\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "lexical-local-escape",
+      "source": "import '../../foreign-source/helper.ts';\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp",
+        "../../foreign-source/helper.ts"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "local-node-modules-bypass",
+      "source": "import '../node_modules/yaml';\n",
+      "parseDiagnostics": [],
+      "specifiers": [
+        "expo",
+        "./ProbeApp",
+        "../node_modules/yaml"
+      ],
+      "guardPassed": true,
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result for this variant."
+    },
+    {
+      "name": "reachable-source-symlink-escape",
+      "guardPassed": true,
+      "sourceTarget": "/private/tmp/splotch-resume-01a111b0/import-boundary/foreign-source/helper.ts",
+      "error": null,
+      "claim": "Syntactic guard only; no typecheck/runtime result."
+    }
+  ],
+  "allRestoredPositives": true
+}

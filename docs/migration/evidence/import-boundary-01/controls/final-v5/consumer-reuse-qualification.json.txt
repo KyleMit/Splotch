@@ -1,0 +1,83 @@
+{
+  "scope": "Reuse installed Expo/Babel/Metro/TS source-scoped consumer receipts after test-fixture construction change only; no full-tier reuse",
+  "from": "controls/final-v4/source-inputs.json",
+  "to": "controls/final-v5/source-inputs.json",
+  "relevantInputs": {
+    "tools/migration/check-native-topology.mjs": {
+      "bytes": 3672,
+      "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17"
+    },
+    "tools/migration/lib/native-identity.mjs": {
+      "bytes": 6302,
+      "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd"
+    },
+    "tools/migration/lib/candidate-imports.mjs": {
+      "bytes": 8542,
+      "sha256": "3966a741bcc0afe5493bdda0ec2a1b58b5d81b6a81892d9532fa5448c29e66a5"
+    },
+    "tools/migration/lib/candidate-references.mjs": {
+      "bytes": 15215,
+      "sha256": "51f20b17f62a4f791dff84d56390426df6f4f2bf1dfb6bab7667562274c6baeb"
+    },
+    "tools/migration/README.md": {
+      "bytes": 5376,
+      "sha256": "1a1962eba684bd666d2b162d3a26b74dc821b4731012a31e902087299574eec0"
+    },
+    "package.json": {
+      "bytes": 121297,
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9"
+    },
+    "pnpm-lock.yaml": {
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92"
+    },
+    "pnpm-workspace.yaml": {
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f"
+    },
+    "experiments/native-architecture/alignment.json": {
+      "bytes": 890,
+      "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b"
+    },
+    "experiments/native-architecture/app.json": {
+      "bytes": 142,
+      "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8"
+    },
+    "experiments/native-architecture/babel.config.cjs": {
+      "bytes": 135,
+      "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62"
+    },
+    "experiments/native-architecture/metro.config.cjs": {
+      "bytes": 106,
+      "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c"
+    },
+    "experiments/native-architecture/package.json": {
+      "bytes": 288,
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370"
+    },
+    "experiments/native-architecture/scripts/check-transform.cjs": {
+      "bytes": 1552,
+      "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb"
+    },
+    "experiments/native-architecture/src/ProbeApp.tsx": {
+      "bytes": 159,
+      "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248"
+    },
+    "experiments/native-architecture/src/index.ts": {
+      "bytes": 119,
+      "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474"
+    },
+    "experiments/native-architecture/tsconfig.json": {
+      "bytes": 153,
+      "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60"
+    }
+  },
+  "allRelevantInputsEqual": true,
+  "receipts": [
+    "controls/final-v4/config-consumers-v4.json.txt",
+    "controls/final-v4/tsconfig-boundaries-v4.json.txt",
+    "controls/final-v4/config-positives-v4.json.txt",
+    "controls/final-v4/expo-duplicate-v4-final.json.txt"
+  ],
+  "installedIdentityBasis": "Same frozen lock install; final-v5 Browserless independently records before/after installed manifest identities"
+}

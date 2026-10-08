@@ -1,0 +1,7 @@
+{
+  "exitCode": 1,
+  "errorCode": "ERR_PACKAGE_PATH_NOT_EXPORTED",
+  "message": "Package subpath './src/resolve.js' is not defined by exports in metro-resolver/package.json",
+  "failedOperation": "metadata path require.resolve after consumer and guard assertions",
+  "disposition": "Use resolved exported entry dirname to read exact sibling installed implementation; no consumer or guard change; not a negative control"
+}

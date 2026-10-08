@@ -1,0 +1,1 @@
+{"evidence":"/private/tmp/splotch-resume-01a111b0/import-boundary/final-v7/nested-json","results":[{"name":"babel.config.json","guard":true,"typecheck":0},{"name":".babelrc.json","guard":true,"typecheck":0},{"name":"app.config.json","guard":true,"typecheck":0}]}

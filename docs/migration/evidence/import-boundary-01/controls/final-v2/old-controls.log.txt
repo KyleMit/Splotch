@@ -1,0 +1,6 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/candidate-imports.test.mjs -t refuses app imports|keeps canonical app roles|treats dot-prefixed bare|rejects direct and reachable|rejects undeclared (import-equals|static-template|element-resolve|import-type|JSDoc)|discovers previously unlisted|rejects malformed package expo/\.\./yaml|rejects Node builtin node:fs|rejects (tsconfig.json|app.json|babel.config.cjs) configuration|rejects dotfile Babel JSON --reporter json --outputFile /private/tmp/splotch-resume-01a111b0/import-boundary/final-v2/old-control-results.json
+
+JSON report written to /private/tmp/splotch-resume-01a111b0/import-boundary/final-v2/old-control-results.json
+

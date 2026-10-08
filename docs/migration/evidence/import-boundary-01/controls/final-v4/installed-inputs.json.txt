@@ -1,0 +1,57 @@
+{
+  "nodeVersion": "v24.16.0",
+  "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+  "pnpmVersion": "11.22.0",
+  "frozenLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "installedGraph": [
+    {
+      "name": "typescript",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/typescript/package.json",
+      "version": "6.0.3",
+      "sha256": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9"
+    },
+    {
+      "name": "expo",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/expo/package.json",
+      "version": "57.0.26",
+      "sha256": "66b890eae23ba960afcfa67ec5aa5ea5ebe0ea1eaed0ad713cb828a717cd7355"
+    },
+    {
+      "name": "react",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/react/package.json",
+      "version": "19.2.3",
+      "sha256": "c383aced6a67c8d06f02996015c0a163e78532a330a96dff1ccfd107b00ab326"
+    },
+    {
+      "name": "react-native",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/react-native/package.json",
+      "version": "0.86.3",
+      "sha256": "416224a4e7caf2ee1f8f9bead8508d0b608feed745371ce0a8f0e2cafa16d144"
+    },
+    {
+      "name": "@expo/config",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@expo/config/package.json",
+      "version": "57.0.9",
+      "sha256": "9f20bdbaa3bb1d8ae644e252aea9879257920832df557f462cf365aa1cfa4c64"
+    },
+    {
+      "name": "@babel/core",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@babel/core/package.json",
+      "version": "7.29.7",
+      "sha256": "6c2893db41b54a1c03ba68e676aa3ea987db9a5c9b9a3a3aa2e8d0d9a63066c4"
+    },
+    {
+      "name": "metro-resolver",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/metro-resolver/package.json",
+      "version": "0.84.5",
+      "sha256": "2547e0c696af191328cc6c863413d7408a1a31f1988662adc5f2f33610f73add"
+    },
+    {
+      "name": "yaml",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/yaml/package.json",
+      "version": "2.9.1",
+      "sha256": "1c6441703d8204a23ded0d37ddf57c3b69d821dc392f20852d1f605bb9b8861c"
+    }
+  ],
+  "qualification": "Same owned frozen lock installation, no dependency changes since complete installed topology receipt"
+}

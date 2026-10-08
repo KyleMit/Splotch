@@ -1,0 +1,14 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-imports.test.mjs
+  113:3  error  Test has no assertions  vitest/expect-expect
+  148:3  error  Test has no assertions  vitest/expect-expect
+  168:3  error  Test has no assertions  vitest/expect-expect
+  178:3  error  Test has no assertions  vitest/expect-expect
+  289:3  error  Test has no assertions  vitest/expect-expect
+
+✖ 5 problems (5 errors, 0 warnings)
+

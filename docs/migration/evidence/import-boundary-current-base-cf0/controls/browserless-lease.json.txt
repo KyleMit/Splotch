@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/f1_composition",
+  "resource": "exclusive full Browserless tier",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "sourceInputs": "source-inputs.json",
+  "preparationHead": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+  "acceptedBase": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "composedSemanticTree": "47974292ac6870f1bd842998cc2e23aab99d6d0e",
+  "semanticIndexEntriesSha256": "8f1c87bec816444c28e51035048910d2040769b06aaef317bb62a1703ba121e6",
+  "command": [
+    "npm",
+    "run",
+    "test:browserless"
+  ],
+  "smokePort": 5300,
+  "portUnusedImmediatelyBeforeLaunch": true,
+  "startedAt": "2026-10-07T02:58:07.135Z",
+  "deadlineMs": 600000,
+  "deadlineBasis": "Parent scheduled 600 s bound after L0 release; historical equivalent full tier measured 77.063 s",
+  "installedInputs": "installed-inputs.json",
+  "trackedWorkingtree": {
+    "count": 8673,
+    "bytes": 1188065048,
+    "sha256": "b75f2a1b22d352d7bd71f5c8d300bdc5a97740cfd5bf7f1da94ea5f3a6ef1a74"
+  },
+  "launcherPid": 51083,
+  "releaseCondition": "Child completed; owned detached group gone; smoke port binds again",
+  "status": "released-success",
+  "childPid": 51191,
+  "processGroup": 51191,
+  "finishedAt": "2026-10-07T02:59:30.354Z",
+  "outcome": {
+    "exitCode": 0,
+    "signal": null,
+    "error": null
+  },
+  "invariants": {
+    "sourceInputs": {
+      "passed": true
+    },
+    "trackedTools": {
+      "passed": true
+    },
+    "semanticIndex": {
+      "passed": true
+    },
+    "completeTrackedWorkingtree": {
+      "passed": true
+    },
+    "installedManifests": {
+      "passed": true
+    },
+    "headAndMergeHead": {
+      "passed": true
+    },
+    "workingtreeMatchesIndex": {
+      "passed": true
+    }
+  },
+  "ownedProcessGroupGone": true,
+  "smokePortReleased": true,
+  "gatesPassed": true
+}

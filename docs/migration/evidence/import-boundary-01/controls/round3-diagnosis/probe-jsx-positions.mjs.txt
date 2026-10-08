@@ -1,0 +1,89 @@
+import assert from 'node:assert/strict';
+import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { candidateSourceReferences } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-references.mjs';
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const evidence = '/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma-positions-v2';
+const candidate = join(evidence, 'candidate');
+const packageName = 'splotch-owned-jsx-runtime-probe';
+const require = createRequire(join(worktree, 'package.json'));
+const babel = require('@babel/core');
+const ts = require('typescript');
+mkdirSync(evidence, { recursive: true });
+cpSync(join(worktree, 'experiments/native-architecture'), candidate, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+symlinkSync(join(worktree, 'node_modules'), join(candidate, 'node_modules'));
+cpSync('/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma/node_modules', join(evidence, 'node_modules'), { recursive: true });
+const file = join(candidate, 'src/PragmaPositions.tsx');
+const jsx = 'export const probe = <>pragma positions</>;\n';
+const annotation = `@jsxImportSource ${packageName}`;
+const variants = [
+  ['default-automatic', jsx],
+  ['leading-block', `/** ${annotation} */\n${jsx}`],
+  ['leading-line', `// ${annotation}\n${jsx}`],
+  ['after-import-block', `import { Fragment } from 'react';\n/** ${annotation} */\n${jsx}void Fragment;\n`],
+  ['later-block', `${jsx}/** ${annotation} */\n`],
+  ['later-line', `${jsx}// ${annotation}\n`],
+  ['leading-ts-extra-token', `/** ${annotation} trailing */\n${jsx}`],
+  ['string-lookalike', `export const text = '/** ${annotation} */';\n${jsx}`],
+  ['template-lookalike', `export const text = \`/** ${annotation} */\`;\n${jsx}`],
+  ['jsx-text-lookalike', `import { Text } from 'react-native';\nexport const probe = <Text>/** ${annotation} */</Text>;\n`],
+  ['jsx-expression-comment', `export const probe = <>{/* ${annotation} */}</>;\n`],
+  ['empty-block-comment', `export function noop() { /* ${annotation} */ }\n${jsx}`],
+  ['template-expression-comment', `export const text = \`value \${/* ${annotation} */ 1}\`;\n${jsx}`],
+  ['regex-lookalike', `export const pattern = /@jsxImportSource ${packageName}/;\n${jsx}`],
+];
+function hasJsxImportSourcePragma(ast, source) {
+  if (ast.pragmas.has('jsximportsource')) return true;
+  const literals = [];
+  function visit(node) {
+    if (ts.isStringLiteralLike(node) || ts.isRegularExpressionLiteral(node) || ts.isJsxText(node) || [ts.SyntaxKind.TemplateHead, ts.SyntaxKind.TemplateMiddle, ts.SyntaxKind.TemplateTail].includes(node.kind))
+      literals.push({ start: node.getStart(ast), end: node.end });
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  literals.sort((left, right) => left.start - right.start);
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false);
+  function gap(start, end) {
+    scanner.setText(source, start, end - start);
+    for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+      if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) {
+        const suffix = token === ts.SyntaxKind.MultiLineCommentTrivia ? 2 : 0;
+        const comment = source.slice(scanner.getTokenPos() + 2, scanner.getTextPos() - suffix);
+        if (/^\s*(?:\*\s*)?@jsxImportSource\s+(\S+)\s*$/m.test(comment)) return true;
+      }
+    }
+    return false;
+  }
+  let start = 0;
+  for (const literal of literals) {
+    if (gap(start, literal.start)) return true;
+    start = literal.end;
+  }
+  return gap(start, source.length);
+}
+const configFile = join(candidate, 'tsconfig.json');
+const options = ts.getParsedCommandLineOfConfigFile(configFile, {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: (diagnostic) => { throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')); } }).options;
+const results = [];
+for (const [name, source] of variants) {
+  writeFileSync(file, source);
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const babelOutput = babel.transformFileSync(file, { ast: true, babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate, envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true } });
+  const emittedTs = ts.transpileModule(source, { fileName: file, compilerOptions: options });
+  const typecheck = spawnSync(process.execPath, [join(worktree, 'node_modules/typescript/bin/tsc'), '--project', configFile, '--noEmit'], { cwd: candidate, encoding: 'utf8', timeout: 30000 });
+  writeFileSync(join(evidence, `${name}.typecheck.log.txt`), typecheck.stdout + typecheck.stderr);
+  writeFileSync(join(evidence, `${name}.source.txt`), source);
+  writeFileSync(join(evidence, `${name}.babel-output.txt`), babelOutput.code);
+  writeFileSync(join(evidence, `${name}.typescript-output.txt`), emittedTs.outputText);
+  results.push({ name, source, proposedFence: hasJsxImportSourcePragma(ast, source), guardReferences: candidateSourceReferences(source, 'src/PragmaPositions.tsx'), tsPragmas: [...ast.pragmas], babelComments: babelOutput.ast.comments?.map(({ type, value, start, end }) => ({ type, value, start, end })), babelReferences: candidateSourceReferences(babelOutput.code, 'output.js'), tsReferences: candidateSourceReferences(emittedTs.outputText, 'output.js'), typecheck: { status: typecheck.status, stdout: typecheck.stdout, stderr: typecheck.stderr } });
+}
+const { unlinkSync } = await import('node:fs');
+unlinkSync(file);
+const receipt = { versions: { typescript: ts.version, babel: babel.version, babelPresetExpo: require('babel-preset-expo/package.json').version }, actualCompilerOptions: options, results, status: spawnSync('git', ['status', '--short'], { cwd: worktree, encoding: 'utf8' }).stdout };
+writeFileSync(join(evidence, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+for (const result of results) {
+  assert.equal(result.typecheck.status, 0, result.name);
+  assert.equal(result.proposedFence, [...result.babelReferences, ...result.tsReferences].some(({ specifier }) => specifier.startsWith(packageName)), result.name);
+}
+console.log(JSON.stringify({ evidence, results: results.map(({ name, proposedFence, babelReferences, tsReferences, typecheck }) => ({ name, proposedFence, babelReferences, tsReferences, typecheck: typecheck.status })), status: receipt.status }, null, 2));

@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/candidate-imports.test.mjs tools/migration/tests/candidate-configs.test.mjs tools/migration/tests/ownership.test.mjs tools/migration/tests/production-closure.test.mjs tools/migration/tests/forge-mitigation.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/3218/Splotch/tools
+
+
+ Test Files  5 passed (5)
+      Tests  126 passed (126)
+   Start at  11:59:13
+   Duration  523ms (import 44%, tests 43%, transform 12%)
+

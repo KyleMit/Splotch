@@ -1,0 +1,22 @@
+import {mkdtempSync,mkdirSync,cpSync,symlinkSync,writeFileSync,readFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {assertDeclaredCandidateImports} from './tools/migration/lib/native-identity.mjs';
+const worktree=process.cwd();
+const root=mkdtempSync('/private/tmp/splotch-resume-01a111b0/import-boundary/config-rootdirs-');
+const candidate=join(root,'candidate');
+cpSync('experiments/native-architecture',candidate,{recursive:true,filter:p=>!p.includes('/node_modules')});
+symlinkSync(join(worktree,'node_modules'),join(root,'node_modules'));
+symlinkSync(join(worktree,'node_modules'),join(candidate,'node_modules'));
+mkdirSync(join(root,'foreign'));
+writeFileSync(join(root,'foreign/Extra.ts'),"import { parse } from 'yaml'; parse('x: 1');\n");
+const config=JSON.parse(readFileSync(join(candidate,'tsconfig.json')));
+config.compilerOptions.rootDirs=['./src','../foreign'];
+writeFileSync(join(candidate,'tsconfig.json'),JSON.stringify(config));
+writeFileSync(join(candidate,'src/index.ts'),readFileSync(join(candidate,'src/index.ts'))+"\nimport './Extra';\n");
+const manifest=JSON.parse(readFileSync(join(candidate,'package.json')));
+let scanner;try{scanner={passed:true,result:assertDeclaredCandidateImports(candidate,manifest)}}catch(e){scanner={passed:false,message:e.message}}
+const tsc=spawnSync(process.execPath,[join(worktree,'node_modules/typescript/bin/tsc'),'--project',join(candidate,'tsconfig.json'),'--noEmit'],{encoding:'utf8',timeout:30000});
+const receipt={root,sourceInputs:'final-v2/source-inputs.json',scanner,tsc:{exitCode:tsc.status,signal:tsc.signal,error:tsc.error?.message??null,stdout:tsc.stdout,stderr:tsc.stderr},scope:'Candidate config resolution alias can select foreign source; guard/typecheck only.'};
+writeFileSync('/private/tmp/splotch-resume-01a111b0/import-boundary/rootdirs-counterexample.json',JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify(receipt));

@@ -1,0 +1,29 @@
+import hashlib,json,pathlib,re,subprocess,shutil,datetime
+w=pathlib.Path('/Users/kylemit/.codex/worktrees/3218/Splotch');a=pathlib.Path('/private/tmp/splotch-f1-current-base-01a1143c');target=w/'docs/migration/evidence/import-boundary-current-base-cf0'
+def git(*args):return subprocess.check_output(['git',*args],cwd=w)
+def sha(b):return hashlib.sha256(b).hexdigest()
+def write(name,o):(a/name).write_text(json.dumps(o,indent=2)+'\n')
+source=json.loads((a/'source-inputs.json').read_bytes());lease=json.loads((a/'browserless-lease.json').read_bytes());gates=json.loads((a/'static-gates.json').read_bytes())
+assert len(gates['records'])==5 and all(r['exitCode']==0 and r['invariantError'] is None for r in gates['records'])
+assert lease['status']=='released-success' and lease['gatesPassed'] and lease['ownedProcessGroupGone'] and lease['smokePortReleased']
+head=git('rev-parse','HEAD').decode().strip();tree=git('rev-parse','HEAD^{tree}').decode().strip();parents=git('show','-s','--format=%P','HEAD').decode().strip().split()
+assert parents==[source['preparationHead'],source['acceptedBase']];assert tree==lease['composedSemanticTree'];assert sha(git('ls-files','--stage','-z'))==lease['semanticIndexEntriesSha256'];assert git('status','--porcelain').decode()==''
+files={}
+for p,row in source['files'].items():
+ b=(w/p).read_bytes();committed=git('show',f'{head}:{p}');assert sha(b)==row['sha256'] and b==committed;files[p]={**row,'workingtreeEqualsExecuted':True,'committedEqualsExecuted':True}
+write('committed-composition.json',{'schemaVersion':1,'verifiedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceCommit':head,'parents':parents,'tree':tree,'executedSourceInputs':'source-inputs.json','sourceInputsSha256':sha((a/'source-inputs.json').read_bytes()),'executedSemanticTreeEqualsCommittedTree':True,'semanticIndexEntriesSha256':lease['semanticIndexEntriesSha256'],'currentCommittedIndexEntriesEqual':True,'files':files,'staticGateRecordsSha256':sha((a/'static-gates.json').read_bytes()),'finalizedBrowserlessLeaseSha256':sha((a/'browserless-lease.json').read_bytes()),'acceptance':'HELD; original 3 used/0 remaining; no review-budget exception; exact final-head CI and parent disposition remain pending'})
+assert not target.exists();(target/'controls').mkdir(parents=True)
+raw=['source-inputs.json','composition-comparison.json','incoming-survey.json','static-gates.json','static-lease.json','installed-inputs.json','browserless-lease.json','committed-composition.json','prepare.py','run-current-gates.mjs','run-browserless.mjs','finalize-packet.py']
+logs=['scoped.log.txt','check.log.txt','lint.log.txt','format-check.log.txt','check-migration-native-topology.log.txt','browserless.log.txt','free-port.txt']
+for name in raw:shutil.copyfile(a/name,target/'controls'/(name+'.txt'))
+for name in logs:shutil.copyfile(a/name,target/'controls'/name)
+full='The current full Browserless tier passes all five stages: 4,471 app, 45 SSR, 298 asset,\n22 store, 7,866 tool and 42 API checks. Its numeric exit is zero; no signal, interruption or\ninvariant failure occurred. The measured leased run duration was 83.219 seconds.'
+readme=(a/'packet-README.md').read_text().replace('FULL_TIER_RESULT',full).replace('This packet qualifies an ordinary Git composition','Committed merge source: '+head+'.\n\nThis packet qualifies an ordinary Git composition');(target/'README.md').write_text(readme)
+campaign=w/'docs/migration/CAMPAIGN.md';text=campaign.read_text();rows=text.splitlines();found=[i for i,r in enumerate(rows) if r.startswith('| F1 candidate import boundary')];assert len(found)==1
+i=found[0];cells=rows[i].split('|');assert len(cells)==7
+cells[2]=' import_boundary; current accepted-base merge '+head+' over e4e9 + cf0; same F1 scanner/candidate bytes '
+cells[3]=' Actual checker/candidate/frozen graph; durable `import-boundary`; [current composition](evidence/import-boundary-current-base-cf0/README.md), draft PR2703 '
+cells[4]=' Current cf0 composition prepared with no source repair or grammar expansion. 1,004 scoped tests, check/lint/format/public topology and all five full Browserless stages pass; 275 historical packet members preserved. Current final-head CI remains pending. Independent changed-source acceptance is HELD; native expansion still depends on it '
+cells[5]=' bbe89d5b-644f-4d4f-9366-e5156cebf4ea; actual original round3 review 5431448391 covered ecdd; 3 used / 0 remaining; no fourth/fresh/reset review or budget exception authorized '
+rows[i]='|'.join(cells);campaign.write_text('\n'.join(rows)+'\n')
+print(json.dumps({'packet':str(target),'sourceCommit':head,'parents':parents,'tree':tree,'controls':len(raw)+len(logs),'acceptance':'HELD'}))

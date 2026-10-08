@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import ts from 'typescript';
+import { assertDeclaredCandidateImports, dependencySpecifiers } from './accepted-native-identity.mjs';
+
+const root = import.meta.dirname;
+const candidate = join(root, 'candidate');
+const manifest = JSON.parse(readFileSync(join(candidate, 'package.json'), 'utf8'));
+const path = join(candidate, 'src/index.ts');
+const original = readFileSync(path, 'utf8');
+const variants = [
+  ['unicode-escaped-direct-yaml', "import { parse } from '\\u0079aml';\n", false],
+  ['static-template-require', 'require(`yaml`);\n', true],
+  ['static-template-dynamic-import', 'import(`yaml`);\n', true],
+  ['element-access-require-resolve', "require['resolve']('yaml');\n", true],
+  ['typescript-import-equals', "import yaml = require('yaml');\n", true],
+  ['typescript-import-type', "type YamlOptions = import('yaml').ParseOptions;\n", true],
+  ['computed-dynamic-import', "const moduleName = 'yaml';\nimport(moduleName);\n", true],
+  ['lexical-local-escape', "import '../../foreign-source/helper.ts';\n", true],
+  ['local-node-modules-bypass', "import '../node_modules/yaml';\n", true],
+];
+const records = [];
+for (const [name, extra, expectedPass] of variants) {
+  const source = original + extra;
+  const ast = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  assert.equal(ast.parseDiagnostics.length, 0, `${name}: accidental syntax error`);
+  writeFileSync(path, source);
+  let error = null;
+  try { assertDeclaredCandidateImports(candidate, manifest); }
+  catch (cause) { error = cause.message; }
+  assert.equal(error === null, expectedPass, `${name}: wrong baseline disposition`);
+  records.push({ name, source: extra, parseDiagnostics: [], specifiers: dependencySpecifiers(source, path), guardPassed: error === null, error, claim: 'Syntactic guard only; no typecheck/runtime result for this variant.' });
+  writeFileSync(path, original);
+  assertDeclaredCandidateImports(candidate, manifest);
+}
+const foreign = join(root, 'foreign-source');
+mkdirSync(foreign, { recursive: true });
+writeFileSync(join(foreign, 'helper.ts'), "import 'yaml';\n");
+symlinkSync(join(foreign, 'helper.ts'), join(candidate, 'src/SymlinkHelper.ts'));
+writeFileSync(path, `${original}\nimport './SymlinkHelper';\n`);
+assertDeclaredCandidateImports(candidate, manifest);
+records.push({ name: 'reachable-source-symlink-escape', guardPassed: true, sourceTarget: join(foreign, 'helper.ts'), error: null, claim: 'Syntactic guard only; no typecheck/runtime result.' });
+writeFileSync(path, original);
+rmSync(join(candidate, 'src/SymlinkHelper.ts'));
+assertDeclaredCandidateImports(candidate, manifest);
+writeFileSync(join(root, 'literal-controls.json'), `${JSON.stringify({ records, allRestoredPositives: true }, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({ records, allRestoredPositives: true }, null, 2)}\n`);
