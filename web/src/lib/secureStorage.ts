@@ -251,12 +251,8 @@ async function selectBackend(): Promise<SecureBackend> {
 // Which web-vault rows a successful read has found absent, so boot can skip
 // opening the database once every row is accounted for.
 //
-// Recorded *only* from inside webLoad, past the point where a throw would have
-// left. That placement is the safety property: loadSecret turns an IndexedDB
-// open, read or decrypt failure into `null`, so anything deciding "empty" from
-// a returned value cannot tell a missing row from an unreadable one, and would
-// permanently hide a credential that was briefly unreadable. A read that fails
-// records nothing and leaves the vault unknown.
+// Recorded only after a successful absence re-check inside webLoad. An open,
+// read or decrypt failure proves nothing about absence and leaves the vault unknown.
 //
 // Unknown always means "open it": the flag can only ever save a read, never
 // stand in for one.
@@ -317,7 +313,7 @@ async function saveSecret(name: SecretName, value: string) {
   removeKey(STORAGE_KEYS.secureVaultEmpty);
 }
 
-/** Read a named secret back, or null if none is stored. Never throws. */
+/** Read a named secret back, or null if absent. Rejects when storage cannot be read. */
 async function loadSecret(name: SecretName) {
   if (!browser) return null;
   // Opening the web vault imports `idb` and creates the database. For a device
@@ -326,27 +322,18 @@ async function loadSecret(name: SecretName) {
   // spent on a guaranteed miss. Native keeps its secrets in the platform store,
   // which this flag says nothing about, so the skip is web-only.
   if (!isNative() && secureVaultKnownEmpty()) return null;
-  try {
-    const backend = await selectBackend();
-    return await backend.load(name);
-  } catch (err) {
-    console.warn('Secure storage load failed', err);
-    return null;
-  }
+  const backend = await selectBackend();
+  return backend.load(name);
 }
 
-/** Remove a named secret. Best-effort; never throws. */
+/** Remove a named secret. Rejects when storage cannot complete the removal. */
 async function clearSecret(name: SecretName) {
   if (!browser) return;
   // Back to unknown rather than to empty: the other secret may still be in
   // there, and only a read can say.
   removeKey(STORAGE_KEYS.secureVaultEmpty);
-  try {
-    const backend = await selectBackend();
-    await backend.clear(name);
-  } catch {
-    // best-effort
-  }
+  const backend = await selectBackend();
+  await backend.clear(name);
 }
 
 // The parent's own AI provider API key (BYOK).
