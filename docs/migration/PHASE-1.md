@@ -6,7 +6,22 @@ verdict is certified by this plan. The migration contract remains authoritative.
 topology and minimal templates can proceed while physical devices are unavailable; comparison timing
 cannot.
 
-## What the review changed
+## Fresh-start execution scope
+
+The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy
+beta data import and exact old-UI layout/flow parity. Build toward observable new drawing after
+applicable source acceptance, then full crayon/Magic/history/audio and new-app service reliability.
+A working minimal drawing milestone is not full-product acceptance. Feature changes need concrete
+pair review; no framework or current pending source unit is selected or accepted by the scope
+change.
+
+Unit 6 below owns new-app storage/service feasibility instead of historical import feasibility.
+References to continuity in the comparison rules mean applicable new-app lifecycle/data reliability
+and same-identity update installability. The retired old-origin, secure-entry, held-picture and
+pack-job transfer matrix is not a prerequisite. Other ordering, observer, structural, security,
+burden, review and final release gates keep their existing meaning and limits.
+
+## Historical review dispositions
 
 The leading direction remains React Native mobile and shared web-capable product UI. The current
 SvelteKit/Capacitor app, native paper within it, and the two shared web vocabularies remain real
@@ -39,7 +54,8 @@ The second review preserved those dispositions and refined eight remaining point
 * Transfer only identical paper evidence to a production hybrid; verify changed backends and host
   glue.
 * Measure the native build of the intended shared UI vocabulary in the complete screen.
-* Check applicable held-picture and download-job read feasibility before selection.
+* The historical review required held-picture and download-job reads before selection; the
+  fresh-start scope retires those transfer-only requirements and replaces unit 6 accordingly.
 * Build the read-only Magic witness before deciding whether suppression is warranted.
 * Count worker construction independently and separate cold-worker/warm-worker cases.
 * Compare later harness controls with ordinary PERF_MARKS controls before attributing suppression
@@ -117,18 +133,15 @@ comparison results; update those records only through reviewed evidence.
    export cut and one page-plus-undo transaction with delayed work and a known fixture before full
    crayon/Magic investment. Start with an attached receiver; a pre-React host is a conditional
    first-ink remedy.
-6. **Early local same-ID continuity.** Build an applicable released fixture and seed disposable
-   emulator/simulator installs, then update in place with the same local identity/key.
-   Non-destructively read real Android https://localhost and iOS capacitor://localhost WebView
-   origins/profiles, primary localStorage, independent Preferences, released-setter Keychain and
-   Keystore-wrapped secrets. A retained narrow WebView reader is acceptable. No raw browser-database
-   parsing, source scrubbing or accessibility rewrite. Before foundation selection, read
-   held-picture IndexedDB records seeded by a current-main same-ID fixture that contains that store;
-   this is unreleased-source feasibility. Enumerate the released fixture's actual pack files,
-   markers, jobs and background-session ownership and demonstrate the preservation/reconciliation
-   path. Both readers must reach the actual legacy origin/profile. These checks do not establish
-   Play/TestFlight, physical entitlement/lock behavior, transactional import or the complete
-   supported-source matrix.
+6. **Early new-app storage and service feasibility.** Exercise real save/export consumers,
+   permission denial, secure credential read/write failures, exact unsaved-picture retention/retry
+   and background/rotation teardown on disposable installations. Use data created by the candidate;
+   no old WebView/settings/secret/picture import fixture is required. Prove safe fresh
+   initialization under the existing app ID/local signing scope and safe cancellation or
+   reconciliation of surviving prior work. Installation allowance identity remains
+   server-authoritative. These checks do not establish Play/TestFlight signing/channel
+   installability, physical floor behavior or full-product release readiness. Complete channel
+   updates and later updates of new-product data remain final gates in [UPGRADES.md](UPGRADES.md).
 7. **Vocabulary-neutral web host.** Start embedded SvelteKit, using its actual released
    history/state/worker owners and a prerendered minimal React chrome with a real HTML dialog and
    retained paper sibling. This is a lower-change implementation order, not a verdict. Add root
@@ -184,14 +197,14 @@ comparison results; update those records only through reviewed evidence.
 
 Native paper mechanics are independent of web vocabulary selection; full RN UI comparison depends on
 the selected vocabulary or measures each survivor. Hardware availability does not block structural
-builds, package isolation, host ownership, local continuity or validator mechanics. It does block
-physical calibration, final native comparison and release approval; no simulated score substitutes
-for those obligations.
+builds, package isolation, host ownership, new-app service feasibility or validator mechanics. It
+does block physical calibration, final native comparison and release approval; no simulated score
+substitutes for those obligations.
 
 ## Common invariants and final gates
 
 A setting, paper state and persisted source has one active owner. Preserve installation identity,
-source data and signed-channel lineage; native experiments do not alter root Capacitor trees or
+new-app data and signed-channel lineage; native experiments do not alter root Capacitor trees or
 store versions. No unknown install script receives blanket approval. CocoaPods/Ruby are recurring
 RN-bearing obligations; the planned trunk publication freeze does not stop existing
 CDN/local/vendored builds, and current dates/dependency sources must be rechecked when relevant.
@@ -206,7 +219,7 @@ Intermediate web/native parity is a comparison floor. Final target cutover and m
 preserve ADR0156/ADR0175: no unexplained scoreable physical release-row reds and evidence inside the
 owning age limit. An inherited failure stays outstanding until faithfully recaptured or explained by
 scoped verified evidence. Preserve ADR0173's physical stroke-commit obligation and validate its
-replacement against the installed candidate. Full source/channel upgrades, audio parity,
+replacement against the installed candidate. Applicable same-identity channel updates, full audio,
 permissions, offline/lifecycle failures, full-app resource/thermal/long-session evidence and
 integrated tuning remain required before cutover.
 

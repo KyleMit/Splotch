@@ -6,12 +6,13 @@ dependencies, evidence and resource leases; the pause checkpoint below remains h
 This campaign delivers the migration tracked by
 [epic 2690](https://github.com/KyleMit/Splotch/issues/2690). The maintainer authorized Codex and
 Claude to make decisions and complete the work autonomously, with independent review throughout. The
-goal is a complete, integrated, tuned product across web, Android, and iOS, with existing-user
-continuity.
+goal is a complete, integrated, tuned new drawing product across web, Android, and iOS. The
+[authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy beta
+data transfer and exact old-UI parity while retaining substantive product and release obligations.
 
-The working direction is React Native mobile with a shared web-capable product UI. It remains an
-architecture hypothesis until the [contract](CONTRACT.md)'s structural and evidence checks support
-it. Native drawing inside Capacitor and retention of the current Svelte/Capacitor product remain
+React Native mobile with a shared web-capable product UI remains an architecture hypothesis. No
+framework is selected; the [contract](CONTRACT.md)'s structural and evidence checks govern the
+choice. Native drawing inside Capacitor and retention of the current Svelte/Capacitor product remain
 explicit outcomes. React Native Web and React Strict DOM are candidates for the shared web
 vocabulary; neither is selected. Flutter and separate native UIs remain conditional alternatives. A
 complete React DOM rewrite is not a prerequisite to native work. Retention with unresolved costs or
@@ -28,10 +29,11 @@ unproved comparison evidence is recorded honestly and cannot complete unmet fina
 * [Migration contract](CONTRACT.md): scope, decisions, phase exits, and completion evidence.
 * [Legacy baseline inventory](BASELINE.md): exact banked provenance, scoring limits and outstanding
   current controls.
-* [Product acceptance](ACCEPTANCE.md): behaviors and scenarios that the selected implementation must
-  preserve.
+* [Product acceptance](ACCEPTANCE.md): substantive capabilities, new-app behavior and scenarios that
+  the selected implementation must satisfy; old UI arrangements remain design references.
 * [Web contract](WEB-CONTRACT.md): startup, hosting, security, navigation, and offline boundaries.
-* [Upgrade contract](UPGRADES.md): native services, persisted data, and same-identity upgrade proof.
+* [Upgrade contract](UPGRADES.md): new-app services/data, safe fresh initialization, and
+  same-identity signed update proof; legacy import inventories remain historical reference.
 * [Phase 1 implementation sequence](PHASE-1.md): bounded units, evidence dependencies and review
   dispositions.
 * [Plain drawing defaults](RENDERER-DEFAULTS.md): the first shared-owner extraction and its
@@ -41,9 +43,10 @@ unproved comparison evidence is recorded honestly and cannot complete unmet fina
 * [Magic work witness](MAGIC-WITNESS.md): causal observation, action-read boundaries and the
   diagnostic-only observer epoch.
 
-These documents define pending requirements, not claims that a candidate already passes. Existing
-tests and ADRs remain authoritative until a reviewed change replaces or amends them. Keep evidence
-linked from the work ledger instead of changing an unchecked requirement into an assertion.
+The fresh-start scope governs applicability across these documents. They define pending
+requirements, not claims that a candidate already passes. Existing tests and ADRs remain
+authoritative until a reviewed change replaces or amends them. Keep evidence linked from the work
+ledger instead of changing an unchecked requirement into an assertion.
 
 ## Branch and review discipline
 
@@ -105,4 +108,5 @@ Update this ledger in each reviewed unit. Preserve failures and rejected assumpt
 dispositions. Main continues moving during the campaign: reconcile its product changes into the
 integration branch at phase boundaries and before cutover, using `reconcile-with-main`, and refresh
 dependencies after dependency changes. A new shipping feature joins the acceptance inventory before
-the selected implementation can claim parity.
+the selected implementation can claim complete product acceptance, with any concrete feature change
+reviewed and recorded.

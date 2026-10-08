@@ -3,6 +3,12 @@
 **Status:** Draft acceptance contract; replacement validation is pending. Linked code and tests
 describe the shipping implementation's obligations, not evidence that a replacement meets them.
 
+The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy
+beta settings/data import and exact old-UI layout/flow parity. Named old controls and settings below
+are reference implementations of the applicable startup, safe-drawing, accessibility and lifecycle
+risks, not required UI arrangements. The selected new-product inventory owns its concrete flows;
+substantive capabilities and web/security/hosted contracts remain required.
+
 The shared product UI is a candidate architecture. React Native Web and React Strict DOM must prove
 the browser contracts below before the foundation choice becomes final. Web cutover has its own
 gate, independent of native cutover or native performance gains.
@@ -53,10 +59,10 @@ Evidence: [early boot](../../web/src/lib/drawing/earlyBoot.ts),
 
 ### Correct first paint
 
-Portrait and landscape geometry, persisted theme, toolbar style, drawer visibility, enabled
-controls, and button scale paint correctly before hydration. Defaults remain safe when storage is
-unavailable. Hydration must not introduce a visible settings correction or replace accepted ink.
-Above-floor paint enhancements retain their documented fallback behavior.
+Portrait and landscape geometry and the new product's theme, controls and persisted appearance paint
+correctly before hydration. Defaults remain safe when storage is unavailable. Hydration must not
+introduce a visible settings correction or replace accepted ink. Above-floor paint enhancements
+retain their documented fallback behavior.
 
 Evidence: [pre-paint seed](../../web/src/app.html),
 [first-paint checks](../../web/tests/first-paint.spec.ts), and
@@ -75,10 +81,12 @@ Owners: [budget constants](../../tools/check-bundle-budgets.mjs),
 
 ### Offline content and installation
 
-Preserve installed PWA identity, app-shell recovery, starter content, installed downloadable books,
-responsive-image canonical fallback, and cached informational pages. First-visit service worker
-registration waits for the stroke and idle gates; repeat visits can resume interrupted installation
-without requiring new strokes. Native artifact caching remains a separate concern.
+Preserve installed PWA identity, app-shell recovery, starter content, new-product installed
+downloadable books, responsive-image canonical fallback, and cached informational pages. Legacy
+books/cache/settings transfer is retired; safe shell/update recovery remains required. First-visit
+service worker registration waits for the stroke and idle gates; repeat visits can resume
+interrupted installation without requiring new strokes. Native artifact caching remains a separate
+concern.
 
 Evidence: [PWA build configuration](../../web/vite.config.ts),
 [app-shell route](../../web/src/lib/pwa/appShellRoute.ts), and
@@ -162,4 +170,4 @@ and [test-tier boundaries](../TESTING.md).
 Begin with portable contracts and a separate candidate entry while the shipping application stays
 runnable. Port integrated areas in reviewable slices with one owner for each setting and DOM
 subtree. Web replacement remains pending until these structural proofs and the complete, tuned
-application's parity and performance evidence pass.
+application's applicable product acceptance and performance evidence pass.

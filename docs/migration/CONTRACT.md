@@ -5,11 +5,49 @@
 Select the drawing product architecture across web, Android, and iOS through the Codex/Claude pair,
 and replace UI and client behavior where the selected design requires it. The registered retention
 outcomes may retain the current Svelte/Capacitor product; report that as retention rather than a
-completed UI replacement. Preserve the complete product, existing-user data, hosted API contracts,
-and visual character. Keep the current product runnable until each target is ready. Retain
+completed UI replacement. Deliver the complete new drawing product, hosted API contracts, and
+substantive drawing fidelity. Keep the current product runnable until each target is ready. Retain
 SvelteKit/Netlify for hosted APIs, admin, and informational routes unless a concrete requirement
 warrants a separately reviewed change; see
 [ADR-0001](../adrs/0001-sveltekit-dual-adapter-strategy.md).
+
+### Authoritative fresh-start scope
+
+On 2026-10-08 the maintainer gave this direct instruction in Codex chat
+01a11a00-2498-72f0-8d73-f32ff01f328c:
+
+> A fresh start is acceptable for the roughly ten beta users. Prioritize the new drawing product
+> rather than legacy settings/data migration or old-app UI parity. Retain reliable new-app
+> saving/exporting, permissions, lifecycle, security and release quality. Reconcile the
+> authoritative contract accordingly. No framework is selected.
+
+This scope replaces earlier mandatory legacy-transfer and exact old-UI parity requirements in the
+migration documents. Historical source inventories, failed attempts, accepted units and review
+provenance retain their original identities and claim limits. Retirement is a scope disposition, not
+a passing validation result or permission to change the shipping app before target cutover.
+
+In the remaining rules, continuity means applicable new-app data/lifecycle reliability and native
+update installability. Fidelity and visual semantics retain substantive drawing/output requirements;
+they do not require copying old chrome. Matched comparisons still use equivalent required content
+and workloads, and a concrete product change must be reviewed before changing their fixtures.
+
+| Requirement                                                                                                   | Current disposition                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Legacy settings, preferences, secure credentials, held pictures, installed packs and native admin credentials | Import and preservation are retired requirements for the fresh-start transition. No source-by-source data fixture, old WebView reader, credential hardening transaction or old held-picture import is required solely to transfer beta data.                                                                    |
+| Legacy download jobs and background sessions                                                                  | Preservation and successor mapping are retired. A same-identity replacement must still stop or safely reconcile surviving work so stale callbacks, files or sessions cannot corrupt the new app or bypass its policies.                                                                                         |
+| Old UI layout and flows                                                                                       | Exact sections, layout, choreography, settings choices and interaction paths are design references. The new product may choose different UI and flows without reproducing old UI parity.                                                                                                                        |
+| Substantive product capabilities                                                                              | Full drawing fidelity, crayon/Magic, input, history/undo, coloring, ordering, audio and applicable full-product functions remain in the acceptance inventory. A concrete feature change needs a pair-reviewed product decision and an explicit inventory disposition; fresh start is no blanket feature waiver. |
+| New-app data and services                                                                                     | Reliable saves/exports, exact failed-save recovery, permissions, secure credentials, offline behavior, lifecycle, accessibility and failure handling remain required for the selected product. Later updates protect data created by that product.                                                              |
+| Hosted web/API/admin                                                                                          | Applicable startup, CSP, PWA, browser, navigation, admin and server contracts remain. Supported installed clients retain their API/CORS contracts while they depend on them.                                                                                                                                    |
+| Native distribution                                                                                           | Existing app identity, signing lineage, monotonic release versions, supported floors, channel installability, privacy and release quality remain required. Same-identity updates may initialize fresh app data; clean installs alone do not prove update installability.                                        |
+| Architecture and evidence                                                                                     | No framework is selected. Fair alternatives, source/toolchain security, calibrated matched comparisons, burden rules, physical final gates, independent review and exact-head release evidence remain required.                                                                                                 |
+
+The next product milestone is an observable drawing candidate: runnable paper, real ink, controls,
+undo and exported output, with exact source and claim limits. Follow it with full fidelity and
+service slices, matched foundation evidence, integrated tuning and target release gates. Legacy-only
+transfer work is not a prerequisite. Existing source-acceptance dependencies still apply to the
+units that consume them; scope reconciliation does not accept F1 or another pending unit. Physical
+hardware gates comparison and release, rather than independent structural builds.
 
 The architecture review at ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 reached conditional agreement:
 React Native mobile plus a shared web-capable UI is the leading candidate. The mobile performance
@@ -100,9 +138,9 @@ Review and run bounded checks for:
 * A shared web vocabulary: React Native Web or React Strict DOM can satisfy prerendered startup,
   accepted pre-hydration ink, renderer ownership, CSP, themes, browser Back, accessibility, and PWA
   contracts. Assess real adapter and bundle costs. The hosted backend remains independent.
-* Native continuity: legacy secure entries and preferences are readable without destructive writes;
-  installation identity and entitlements match; pending WebView pictures can be recovered; download
-  lifecycle identities have a preservation or reconciliation path.
+* New-app service and update feasibility: saves, secure credentials, permissions, lifecycle and
+  failure recovery have real consumers; installation identity and entitlements match; stale prior
+  work cannot corrupt the fresh app. Legacy-data import is not a foundation prerequisite.
 
 Apply the same mechanism and fidelity bar to both native candidates, and allow bounded tuning before
 interpreting early timing. Where fresh controls retain motivating costs, a candidate is eligible
@@ -291,13 +329,14 @@ exact head's applicable CI, and merge into the integration branch. Review the ph
 adding the next foundation. Preserve a durable work ledger and all rejected assumptions.
 
 Web, Android, and iOS have independent readiness gates. Keep a shipping reference and staged
-candidate until that target earns parity and measured readiness. Validate upgrades from the
-supported signed source-artifact matrix in [UPGRADES.md](UPGRADES.md) with the same app identity,
-not solely clean installs or different-ID development apps. Record each distribution channel's
-signing proof and allocate candidate build numbers through the existing release owner alongside
-main's release train. Inventory evolving main features and migrate them before declaring parity.
-Keep old hosted API/CORS/download contracts working while supported installed clients still depend
-on them.
+candidate until that target earns applicable product acceptance and measured readiness. Validate
+same-identity updates from the applicable distributed source/channel inventory in
+[UPGRADES.md](UPGRADES.md), including safe fresh initialization, rather than relying solely on clean
+installs or different-ID development apps. Record each distribution channel's signing proof and
+allocate candidate build numbers through the existing release owner alongside main's release train.
+Inventory evolving main features and review their new-product disposition before claiming complete
+acceptance. Keep old hosted API/CORS/download contracts working while supported installed clients
+still depend on them.
 
 ## Migration completion
 
@@ -308,9 +347,10 @@ retention decision:
    hosted/server responsibilities are explicit. Every applicable acceptance scenario maps to passing
    tests of that implementation or reproducible physical/manual evidence. Retained UI is not
    reported as replaced. No feature is silently deferred.
-2. Both same-identity native upgrade paths preserve the upgrade inventory. Offline, rejected
-   permissions, failed saves, interrupted work, and lifecycle recovery pass. Floor-device behavior
-   and all introduced dependencies/permissions are accounted for.
+2. Both same-identity native update paths satisfy the active identity, signing/channel and
+   fresh-initialization contract. New-app offline, rejected permissions, failed saves, interrupted
+   work, and lifecycle recovery pass. Floor-device behavior and all introduced
+   dependencies/permissions are accounted for.
 3. Full integrated and tuned performance satisfies the measurement contract, including fresh
    physical release-gate evidence and improvements where primary native problems remain in fresh
    controls. A genuine no-residual outcome follows its registered rule and claims no unproved

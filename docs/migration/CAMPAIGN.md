@@ -7,7 +7,41 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current executable register
+## Fresh-start scope transition, 2026-10-08
+
+The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) records the
+maintainer's direct instruction in chat 01a11a00-2498-72f0-8d73-f32ff01f328c. It retires legacy-only
+beta data transfer and exact old-UI parity; substantive drawing fidelity, applicable new-product
+capabilities, service reliability, fair alternatives and final evidence gates remain required. No
+framework, candidate or pending source unit is accepted by this records change.
+
+The verified integration base for this reconciliation is ff90042ee807b04145bfb66d32c3704fd2b51c7d,
+tree baa0d1cef9b6ee2ddceb623f8359ecea218a880c. The host-local
+`logs/migration-resumption-01a1143c/CURRENT-CAMPAIGN.json.txt` owns later executable frontiers and
+leases; the dated register below is preserved history. The canonical checkout's temporary
+reviewer-installation branch is not a product integration base.
+
+The maintainer separately authorized F1 review:
+
+> I authorize one additional substantive F1 review round for PR2703 in the ORIGINAL Claude
+> conversation bbe89d5b-644f-4d4f-9366-e5156cebf4ea. Preserve its three prior rounds and provenance.
+> Use a legitimate budget disposition; do not reset the ledger, substitute a fresh reviewer, rename
+> the repair, or reopen exhausted PR2697.
+
+This authorizes one additional round in that original conversation, after a legitimate disposition.
+Three prior rounds remain used; the newly authorized round is unspent at this scope transition. F1
+acceptance remains pending, dependent RN source growth keeps its acceptance gate, and every other
+unit's original budget and provenance remain unchanged. This does not reopen PR2697.
+
+Prioritize an observable new drawing candidate after its applicable source gates: real ink,
+controls, undo and export. Then complete fidelity/service slices, fair matched foundation checks,
+integrated tuning and target release evidence. The existing visible Svelte consumer is reference
+evidence, not a migrated drawing candidate. L0's legacy-only import matrix and old iOS secret,
+held-picture and pack/job transfer work are retired future requirements; preserve their completed
+and failed evidence. New-app saving, recovery, permission, lifecycle and security work remains. No
+defensible percentage or calendar completion estimate follows from preparatory foundations.
+
+## Frozen executable register, 2026-10-07
 
 Accepted integration: cf0c4254d025094054d7ea7faab110da11c96243. Records base:
 74e0f5c5e75b1594433a67a69d9647cfa667911c. Shipping main: ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4.

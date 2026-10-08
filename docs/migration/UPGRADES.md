@@ -1,8 +1,16 @@
 # Native services and upgrade acceptance
 
-This inventory defines what the replacement Android and iOS applications must preserve. It is a
-contract for implementation and verification; every acceptance result below is pending. Development
-apps installed beside the shipped app provide useful isolation but cannot establish upgrade safety.
+The [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) governs this
+contract. Android and iOS replacements must satisfy new-app service/data reliability, same-identity
+signed update installability and safe fresh initialization. Legacy beta settings/data import is
+retired. Every active acceptance result below is pending. Development apps installed beside the
+shipped app provide useful isolation but cannot establish update installability.
+
+Legacy inventories and import procedures below remain historical reference, including their exact
+source/artifact observations. Their historical pending status is not an active data-transfer gate.
+They do not waive current secure storage, authorization, permissions, failed-save recovery,
+offline/lifecycle, background-work safety or release quality. Later updates protect data created by
+the new product; the fresh-start exception applies to the beta-to-new-product transition.
 
 ## Identity, compatibility, and release owners
 
@@ -24,7 +32,19 @@ workflows belong to [the Android guide](../MOBILE/android.md) and [the iOS guide
 Preserve those owners rather than maintaining a second release version or application-ID registry in
 the new application.
 
-## Supported upgrade sources
+Freeze the oldest actual distributed source, latest source at cutover and every source distributed
+during the campaign, with artifact digests/embedded versions, signing/entitlements and channel
+history. Cover supported skipped-update paths; combine sources only with evidence of equivalent
+signing, installability and initialization behavior. Missing distribution history does not establish
+that nobody installed a source. This active update inventory is required even though its legacy
+settings/data import fixtures are retired.
+
+## Historical legacy-source inventory
+
+The source-by-source import matrix and preservation instructions in this section are retired under
+the fresh-start scope. Its byte/tag/source facts remain unchanged. Active channel proof below uses
+actual supported distribution history and applicable installed sources for signing, update
+installability and safe initialization; it does not require every historical format import fixture.
 
 The source set includes skipped releases, not only the immediately preceding build. The
 [published release inventory](https://api.github.com/repos/KyleMit/Splotch/releases?per_page=100)
@@ -123,7 +143,12 @@ while v1.2.0–v1.4.0 declares secure `admin-session`. Record historical bundle 
 web/admin applicability before retiring those owners; current native policy cannot answer that
 historical question.
 
-## Persistent data inventory
+## Historical persistent-data import inventory
+
+The transfer obligations and legacy read/hardening procedures in this section are retired
+requirements. They remain reference for any consciously selected import feature, which would need
+its own bounded plan and evidence. New-app credentials still require secure storage and tested
+failure/lock behavior; new-app failed-save pictures still require exact durable recovery.
 
 | Data                       | Source location and format                                                                                                                                                    | Replacement obligation                                                                                                             |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -221,6 +246,12 @@ those accepted in ADR-0105.
 
 ## Coloring storage and lifecycle continuity
 
+Legacy pack/file/job preservation and successor mapping described below are retired requirements.
+The source facts remain reference for safe fresh initialization: surviving workers, launch hooks and
+background callbacks must be cancelled or safely reconciled before they can affect new-app policy or
+data. New-product pack integrity, offline content, cancellation and lifecycle behavior remain active
+acceptance obligations; they do not require adopting the old directories or sessions.
+
 The [frozen released owners](evidence/upgrade-artifact-inventory/README.md) at both v1.5.0 and
 v1.6.0 use `coloring/<appVersion-resolution>/<bookId>`. Their nativeStore helper passes
 `${manifest.appVersion}-${manifest.resolution}` to native status/install/remove. Android's released
@@ -309,30 +340,20 @@ native runtime. Preserve
 [the reviewed privacy inventory](../../tools/mobile/privacy-permission-inventory.json) and
 [compliance decisions](../MOBILE/compliance.md) when selecting replacement dependencies.
 
-## Early local continuity feasibility
+## Early new-app storage and service feasibility
 
-After the minimum native template, prove read feasibility with a disposable prior-source fixture
-updated in place to the candidate under the same app ID and local signing scope. Use that release's
-real setters/parsers and native locks to seed applicable settings and secure entries. Read the
-WebView at its actual effective origin/profile, localStorage as the live copy, independent
-Preferences and the released secure namespaces. A retained narrow WebView reader is acceptable; raw
-database parsing and destructive source changes are not. This check may reject an unreadable design
-before full renderer investment.
+After the minimum native template, use real candidate-created data and service consumers to prove
+save/export ordering, permission denial, secure read/write failure, exact failed-save picture
+retention/retry and lifecycle teardown. Update a disposable installation in place under the same app
+ID/local signing scope to verify safe fresh initialization and old-work cancellation/reconciliation.
+Follow the existing identity/version owners, record actual source/build/consumer identities and
+observed outcomes without exposing credentials, and keep installation allowance authorization
+intact.
 
-Record source/candidate versions, identity/entitlements, origin/profile, fixture format and observed
-values without exposing secrets. Follow the existing identity/version owners. Before foundation
-selection, also seed held-picture records with the same app ID from a current-main source that
-actually contains that store. Read its real IndexedDB bytes, metadata and missing/stale hints
-through the retained reader; record this as unreleased source feasibility. For the applicable
-released fixture, enumerate coloring-pack files, verification markers, job identities and
-background-session ownership, and document the preservation/reconciliation path without deleting or
-restarting source work. A scheme handler/profile configuration must demonstrably reach the legacy
-WebView origin.
-
-This local check does not establish physical lock/accessibility behavior, Play/TestFlight lineage,
-transactional import, later source formats or the full source matrix below. Retaining the hybrid
-WebView eases continuity only when its effective origin/profile and native namespaces actually
-remain compatible. All full signed acceptance results remain pending.
+Legacy WebView origin/profile, settings/secret/picture imports and old job successor mapping are not
+required. Local checks do not establish Play/TestFlight lineage, physical floors/lock behavior or
+complete service/release acceptance. Full signed/channel and new-app reliability gates remain
+pending.
 
 ## Same-ID signed upgrade evidence
 
@@ -343,18 +364,18 @@ certificate/ team and keychain entitlements, channel, OS/device, seeded state, o
 artifact links. Read-only fixtures supplement in-place previous-artifact upgrades; they do not
 replace them.
 
-| Channel                                                                                                                        | What it proves                                                                    | Remaining requirement                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Android tag-built previous APK and integration candidate APK, both signed with the same local upload key and production app ID | Native data/Keystore/WebView continuity across the implementation change          | Matching local upload keys does not establish matching the Play-held app-signing key or prove a Play-installed app can update. |
-| Android existing Play install to a reviewed candidate on a Play testing track under the existing app                           | Actual Play signing lineage, server allowance and store-installed data continuity | Verify existing certificate/lineage and track history; internal app sharing re-signs with another key and is not this proof.   |
-| iOS tag-built previous and integration candidate, same registered app ID/team/access groups and compatible device provisioning | Data, Keychain and WebView continuity across the implementation change            | Does not establish App Store/TestFlight distribution; confirm the oldest actual distributed source separately.                 |
-| iOS existing distributed install to candidate through TestFlight under the existing App Store Connect record                   | Actual distribution/app/keychain continuity                                       | Verify distribution history, signing entitlements and in-place update; installability/review status is separate evidence.      |
+| Channel                                                                                                                         | What it proves                                                          | Remaining requirement                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Android applicable previous APK and integration candidate APK, both signed with the same local upload key and production app ID | Local same-identity update installability and safe fresh initialization | Matching local upload keys does not establish matching the Play-held app-signing key or prove a Play-installed app can update.                   |
+| Android existing Play install to a reviewed candidate on a Play testing track under the existing app                            | Actual Play signing lineage, server allowance and update installability | Verify certificate/lineage, track history and safe new-app initialization; internal app sharing re-signs with another key and is not this proof. |
+| iOS applicable previous and integration candidate, same registered app ID/team/access groups and compatible device provisioning | Local same-identity update installability and safe fresh initialization | Does not establish App Store/TestFlight distribution; confirm applicable actual distributed sources separately.                                  |
+| iOS existing distributed install to candidate through TestFlight under the existing App Store Connect record                    | Actual distribution/app identity and update installability              | Verify distribution history, signing entitlements and in-place update; installability/review status is separate evidence.                        |
 
 [Play App Signing](https://developer.android.com/studio/publish/app-signing),
 [internal sharing signing](https://support.google.com/googleplay/android-developer/answer/9844679),
 [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/).
 Signing and distribution-channel validation remain pending; a local upload-key fixture is useful
-continuity evidence but cannot be relabeled a store-lineage pass.
+update evidence but cannot be relabeled a store-lineage pass.
 
 Before any candidate upload, reconcile the latest main release values, consumed values in both store
 consoles and all campaign reservations. Reserve a unique monotonic value above that shared maximum
@@ -369,21 +390,18 @@ consumed reservation even if distribution or review fails. The current writer on
 files; remote channel/reservation reconciliation is a required preceding step, not a capability it
 already implements. Marketing-version/channel rules require the corresponding store inventory.
 
-| Scenario                          | Acceptance                                                                                                                                                                               | Status  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Source matrix and artifacts       | Each applicable source class upgrades; any collapse has format evidence; store history, digests and embedded versions are verified.                                                      | Pending |
-| Conflicting live/durable settings | Newer local choices win; missing local values recover from Preferences; stale/missing mirror and interrupted local export do not bypass gates.                                           | Pending |
-| Pending/superseded removals       | Applicable source tombstones union; a newer local write survives; absent local/pending deletion cannot restore stale durable data; concurrent settlements preserve later requests.       | Pending |
-| Untombstoned removal ambiguity    | Released absent-local/present-durable cases follow reviewed source recovery/vault precedence; evidence states what cannot be inferred.                                                   | Pending |
-| Secure/plaintext credentials      | Released iOS accessibility loads and hardens atomically; update/read failures retain recovery; successful secure persistence precedes plaintext scrub; source-specific removals survive. | Pending |
-| Partly spent installation grant   | Source/replacement pseudonyms match and the server retains spent allowance in the tested signing channel.                                                                                | Pending |
-| Held failed-save pictures         | Applicable sources retain exact bytes through upgrade/interruption/Settings return/repeated launch without loss or duplication.                                                          | Pending |
-| Installed/partial coloring books  | Applicable sources keep complete offline books; corrupt/incomplete books stay hidden; unchanged content is retained.                                                                     | Pending |
-| Background work during upgrade    | Source scheduling/session identifiers resume or reconcile safely; disabling/removing cancels work without stale restoration callbacks.                                                   | Pending |
-| Services/lifecycle and floors     | Back, gates, Pencil, photo denial/recovery, orientation, audio, connectivity and background/rotation behavior pass on declared floors and optimized physical release targets.            | Pending |
-| Channel/version reservation       | Local continuity and actual store lineage are separately verified; reviewed integration artifacts consume reserved monotonically increasing native versions.                             | Pending |
+| Scenario                                 | Acceptance                                                                                                                                                                          | Status  |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Applicable channel sources and artifacts | Actual supported installations update in place; store history, signing lineage, digests and embedded versions are verified. Legacy format imports are retired.                      | Pending |
+| Fresh initialization and old work        | Candidate starts with valid new-product defaults/data; surviving prior workers/callbacks cannot publish stale content, bypass policy or corrupt candidate state.                    | Pending |
+| New-app storage and credentials          | Candidate-created data and secure credentials survive their declared lifecycle and later product updates; denied/full/locked/unreadable storage and interrupted writes fail safely. | Pending |
+| Partly spent installation grant          | Source/replacement pseudonyms match and the server retains spent allowance in the tested signing channel.                                                                           | Pending |
+| New-app failed-save pictures             | Candidate holds exact bytes through failure/interruption/Settings return/repeated launch and later product updates without loss or duplicate saving.                                | Pending |
+| New-app coloring content/work            | Selected starter/downloaded content works offline; verified publication hides corrupt/incomplete books; disable/remove/background cancellation cannot restore stale work.           | Pending |
+| Services/lifecycle and floors            | Back, gates, Pencil, photo denial/recovery, orientation, audio, connectivity and background/rotation behavior pass on declared floors and optimized physical release targets.       | Pending |
+| Channel/version reservation              | Local update mechanics and actual store lineage are separately verified; reviewed integration artifacts consume reserved monotonically increasing native versions.                  | Pending |
 
-Physical access, signing/channel history, native dependency compatibility, legacy artifact recovery
-and the replacement audio implementation are unverified. Host tool availability and published
-artifacts do not establish their acceptance. Resolve these through canonical mobile/ capture/release
-workflows while independent implementation work proceeds.
+Physical access, signing/channel history, native dependency compatibility, applicable
+source-artifact association and the replacement audio implementation are unverified. Host tool
+availability and published artifacts do not establish their acceptance. Resolve these through
+canonical mobile/ capture/release workflows while independent implementation work proceeds.
