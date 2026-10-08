@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/import_boundary",
+  "resource": "exclusive host Browserless tier",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "sourceInputs": "source-inputs.json",
+  "command": "SMOKE_PORT=5300 npm run test:browserless",
+  "port": 5300,
+  "portUnusedImmediatelyBeforeLaunch": true,
+  "startedAt": "2026-10-06T16:37:44.342Z",
+  "deadlineMs": 600000,
+  "deadlineBasis": "Parent granted a 600-second final tier bound; prior positive full tier measured 75.067 seconds, providing about eightfold headroom on the same exclusive host and unchanged installation",
+  "installedInputs": "installed-inputs.json",
+  "index": {
+    "path": "/Users/kylemit/Code/Splotch/.git/worktrees/Splotch13/index",
+    "sha256": "e44f3d572238d1dbd228298b2e57cee5575890a24fa227335e2a97040ba8d224",
+    "entriesSha256": "6318f0215a547d6a143d1bf257872fb4668fe2dbc7fcd3282b6c1db2e356c033",
+    "sha256After": "e44f3d572238d1dbd228298b2e57cee5575890a24fa227335e2a97040ba8d224"
+  },
+  "trackedWorkingtree": {
+    "count": 8477,
+    "bytes": 1151732336,
+    "sha256": "c5a7fb13f9b2dcd13628f1bf7f434186b6bf7bafc1fc742aa834831217727a36"
+  },
+  "launcherPid": 74350,
+  "releaseCondition": "command exits and its owned process group is gone and smoke port binds again",
+  "status": "released",
+  "childPid": 74398,
+  "processGroup": 74398,
+  "sourceAndInstalledInputsUnchanged": true,
+  "gitTrackedToolInputsUnchanged": true,
+  "gitIndexUnchanged": true,
+  "completeTrackedWorkingtreeUnchanged": true,
+  "finishedAt": "2026-10-06T16:39:00.850Z",
+  "outcome": {
+    "exitCode": 0,
+    "signal": null
+  },
+  "ownedProcessGroupGone": true,
+  "smokePortReleased": true
+}

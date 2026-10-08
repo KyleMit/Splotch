@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "owner": "/root/import_boundary",
+  "resource": "exclusive host Browserless tier",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "sourceInputs": "source-inputs.json",
+  "sourceCommit": "49c274e565ef8f9936b0a997a24f89a46b8ec3c7",
+  "acceptedBase": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "actualHead": "0ffbfad71c18b1bb284517011b30258298a0d283",
+  "actualTree": "b8e78a7a64c43284700f95e1ede5d8230640afcd",
+  "relevantInputEquality": "composition-equality.json",
+  "command": "SMOKE_PORT=5300 npm run test:browserless",
+  "port": 5300,
+  "portUnusedImmediatelyBeforeLaunch": true,
+  "startedAt": "2026-10-06T16:59:51.609Z",
+  "deadlineMs": 600000,
+  "deadlineBasis": "Parent granted a 600-second final tier bound; prior positive full tier measured 76.508 seconds, providing about eightfold headroom on the same exclusive host and unchanged installation",
+  "installedInputs": "installed-inputs.json",
+  "index": {
+    "path": "/Users/kylemit/Code/Splotch/.git/worktrees/Splotch13/index",
+    "sha256": "4d3e2f0ef155e2dcc740f864d0c0c9e4ea09bf75d335f40146f88961b2853569",
+    "entriesSha256": "6a5f51ef0729a37d83e6efe2bb44ef3035d7f8801c230436e7468226daba840b",
+    "sha256After": "4d3e2f0ef155e2dcc740f864d0c0c9e4ea09bf75d335f40146f88961b2853569"
+  },
+  "trackedWorkingtree": {
+    "count": 8570,
+    "bytes": 1152781999,
+    "sha256": "b349dbb3d5f2219febfdc9d85df7528b5cc46fa5e404af035cf8d6012fdb1943"
+  },
+  "launcherPid": 80451,
+  "releaseCondition": "command exits and its owned process group is gone and smoke port binds again",
+  "status": "released",
+  "childPid": 80521,
+  "processGroup": 80521,
+  "gitHeadUnchanged": true,
+  "sourceAndInstalledInputsUnchanged": true,
+  "gitTrackedToolInputsUnchanged": true,
+  "gitIndexUnchanged": true,
+  "completeTrackedWorkingtreeUnchanged": true,
+  "finishedAt": "2026-10-06T17:01:08.672Z",
+  "outcome": {
+    "exitCode": 0,
+    "signal": null
+  },
+  "ownedProcessGroupGone": true,
+  "smokePortReleased": true
+}

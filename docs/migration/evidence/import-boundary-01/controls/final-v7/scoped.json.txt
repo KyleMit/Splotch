@@ -1,0 +1,20 @@
+{
+  "sourceInputs": "source-inputs.json",
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tools/migration/tests/candidate-imports.test.mjs",
+    "tools/migration/tests/candidate-configs.test.mjs",
+    "tools/migration/tests/ownership.test.mjs",
+    "tools/migration/tests/production-closure.test.mjs",
+    "tools/migration/tests/forge-mitigation.test.mjs",
+    "tools/tests/tool-specifier-resolution.test.mjs"
+  ],
+  "start": "2026-10-06T16:33:22.494Z",
+  "finish": "2026-10-06T16:33:23.368Z",
+  "exitCode": 0,
+  "error": null,
+  "sourceInputsUnchanged": true
+}

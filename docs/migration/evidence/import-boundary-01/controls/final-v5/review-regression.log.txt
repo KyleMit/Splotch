@@ -1,0 +1,1 @@
+[{"name":"false-passes","failedCount":21,"intendedCount":18,"preexistingRejectCount":3,"intendedAssertion":"expected [Function] to throw an error"},{"name":"false-rejections","failedCount":4,"intendedCount":4,"preexistingRejectCount":0,"intendedAssertion":"expected [Function] to not throw an error"}]

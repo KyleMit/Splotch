@@ -1,0 +1,92 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const root = import.meta.dirname;
+const repository = '/Users/kylemit/Code/Splotch';
+const accepted = 'dc08a90abc67b53124146bf288c80de0f9ffd1dd';
+const donor = '/Users/kylemit/.codex/worktrees/migration-retained-web/Splotch';
+const candidateRelative = 'experiments/native-architecture';
+const probe = join(root, 'candidate');
+const checkerPath = 'tools/migration/lib/native-identity.mjs';
+const hash = (value) => createHash('sha256').update(value).digest('hex');
+const git = (...args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8' }).trim();
+const source = (path) => execFileSync('git', ['show', `${accepted}:${path}`], { cwd: repository });
+const write = (path, bytes) => {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, bytes);
+};
+rmSync(probe, { recursive: true, force: true });
+const files = git('ls-tree', '-r', '--name-only', accepted, candidateRelative).split('\n');
+const sourceHashes = {};
+for (const file of files) {
+  const bytes = source(file);
+  sourceHashes[file] = hash(bytes);
+  write(join(probe, file.slice(candidateRelative.length + 1)), bytes);
+}
+write(join(root, 'accepted-native-identity.mjs'), source(checkerPath));
+rmSync(join(root, 'node_modules'), { force: true });
+symlinkSync(join(donor, 'node_modules'), join(root, 'node_modules'));
+symlinkSync(join(donor, 'node_modules'), join(probe, 'node_modules'));
+const { assertDeclaredCandidateImports } = await import(pathToFileURL(join(root, 'accepted-native-identity.mjs')));
+const manifest = JSON.parse(readFileSync(join(probe, 'package.json'), 'utf8'));
+const entry = readFileSync(join(probe, 'src/index.ts'), 'utf8');
+const outcomes = [];
+function check(name, expectedPass) {
+  let error = null;
+  try { assertDeclaredCandidateImports(probe, manifest); }
+  catch (cause) { error = { name: cause.name, message: cause.message }; }
+  assert.equal(error === null, expectedPass, `${name}: wrong guard disposition`);
+  const outcome = { name, passed: error === null, error };
+  outcomes.push(outcome);
+  return outcome;
+}
+function typecheck(name) {
+  const args = [join(donor, 'node_modules/typescript/bin/tsc'), '--project', join(probe, 'tsconfig.json'), '--noEmit'];
+  const result = spawnSync(process.execPath, args, { encoding: 'utf8', timeout: 30000 });
+  const outcome = { name, executable: process.execPath, args, exitCode: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr, error: result.error?.message ?? null };
+  assert.equal(result.status, 0, `${name}: typecheck setup/fixture error`);
+  outcomes.push(outcome);
+}
+check('original-five-source-positive', true);
+typecheck('original-actual-tsconfig-positive');
+write(join(probe, 'src/index.ts'), `${entry}\nimport { parse } from 'yaml';\nparse('x: 1');\n`);
+assert.match(check('direct-yaml-rejecting-control', false).error.message, /^src\/index\.ts imports undeclared yaml$/);
+write(join(probe, 'src/index.ts'), entry);
+check('direct-restored-positive', true);
+write(join(probe, 'src/index.ts'), `${entry}\nimport './Extra';\n`);
+write(join(probe, 'src/Extra.ts'), "import { parse } from 'yaml';\nparse('x: 1');\n");
+check('reachable-local-yaml-counterexample', true);
+typecheck('reachable-actual-tsconfig-counterexample');
+write(join(probe, 'src/index.ts'), entry);
+rmSync(join(probe, 'src/Extra.ts'));
+check('reachable-restored-positive', true);
+typecheck('restored-actual-tsconfig-positive');
+const require = createRequire(join(donor, 'package.json'));
+const identity = (name) => {
+  const manifestPath = realpathSync(require.resolve(`${name}/package.json`));
+  return { name, version: JSON.parse(readFileSync(manifestPath, 'utf8')).version, manifestPath, manifestSha256: hash(readFileSync(manifestPath)) };
+};
+const receipt = {
+  acceptedBase: accepted,
+  currentRecordsCheckout: git('rev-parse', 'HEAD'),
+  currentIntegrationRef: git('rev-parse', 'origin/codex/native-migration'),
+  checkerPath,
+  checkerSha256: hash(source(checkerPath)),
+  checkerMatchesLiveRecordsCheckout: hash(source(checkerPath)) === hash(readFileSync(join(repository, checkerPath))),
+  candidateSourceHashes: sourceHashes,
+  donor: { root: donor, source: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: donor, encoding: 'utf8' }).trim(), status: execFileSync('git', ['status', '--porcelain'], { cwd: donor, encoding: 'utf8' }), nodeModules: realpathSync(join(donor, 'node_modules')), identities: ['typescript', 'yaml', 'expo', 'react', 'react-native'].map(identity) },
+  runtime: { version: process.version, executable: process.execPath },
+  root,
+  manifestDeclaresYaml: Object.hasOwn(manifest.devDependencies, 'yaml'),
+  outcomes,
+  restoredEntrySha256: hash(readFileSync(join(probe, 'src/index.ts'))),
+  originalEntrySha256: hash(entry),
+  scope: 'Exact accepted checker and all original candidate files; real candidate tsconfig with borrowed retained-worktree full dependency tree. No install, full topology/Quality, native compilation, mount, physical timing or upgrade claim.'
+};
+write(join(root, 'reproduction.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);

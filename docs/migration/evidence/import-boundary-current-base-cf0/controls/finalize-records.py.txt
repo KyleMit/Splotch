@@ -1,0 +1,18 @@
+import hashlib,json,pathlib,re,subprocess,shutil,datetime
+w=pathlib.Path('/Users/kylemit/.codex/worktrees/3218/Splotch');a=pathlib.Path('/private/tmp/splotch-f1-current-base-01a1143c');p=w/'docs/migration/evidence/import-boundary-current-base-cf0'
+def git(*args):return subprocess.check_output(['git',*args],cwd=w)
+def sha(b):return hashlib.sha256(b).hexdigest()
+head=git('rev-parse','HEAD').decode().strip();assert head=='9d21d4c621beb3ddeaa5e348f7e08789300ccc55';assert not git('diff','--name-only').decode()
+records=json.loads((a/'record-gates.json').read_bytes());assert len(records['records'])==2 and all(r['exitCode']==0 and r['invariantError'] is None for r in records['records'])
+paths=git('diff','--cached','--name-only').decode().splitlines();assert all(x=='docs/migration/CAMPAIGN.md' or x.startswith('docs/migration/evidence/import-boundary-current-base-cf0/') for x in paths)
+old=git('show',head+':docs/migration/CAMPAIGN.md').decode();new=(w/'docs/migration/CAMPAIGN.md').read_text()
+def normalized_foreign(t):return [' '.join(row.split()) for row in t.splitlines() if not row.startswith('| F1 candidate import boundary')]
+assert normalized_foreign(old)==normalized_foreign(new)
+source=json.loads((a/'source-inputs.json').read_bytes());assert all(sha((w/f).read_bytes())==row['sha256'] for f,row in source['files'].items())
+tools=git('ls-files','tools').decode().strip().split('\n');tools=[x for x in tools if x.endswith('.mjs')];assert sha(('\n'.join(tools)+'\n').encode())==source['trackedToolInputs']['sha256']
+packet=w/'docs/migration/evidence/import-boundary-01';manifest=json.loads((packet/'manifest.json').read_bytes());assert all(sha((packet/r['path']).read_bytes())==r['sha256'] and (packet/r['path']).stat().st_size==r['bytes'] for r in manifest['files'])
+qual={'schemaVersion':1,'verifiedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceCommit':head,'executedSemanticTree':'47974292ac6870f1bd842998cc2e23aab99d6d0e','recordOnlyPaths':paths,'allNonRecordPathsEqualPassedMergeSource':True,'currentInputCount':len(source['files']),'allInputsEqualPassedMergeSource':True,'trackedToolInputsEqual':True,'incomingNonF1CampaignRowsUnchanged':True,'originalPacketMembersVerifiedUnchanged':len(manifest['files']),'recordGates':'record-gates.json.txt','acceptance':'HELD; no budget exception; parent final CI/review/provenance/integration still required'}
+(p/'controls/records-only-qualification.json.txt').write_text(json.dumps(qual,indent=2)+'\n')
+for name in ['record-gates.json','run-record-gates.mjs','finalize-records.py']:shutil.copyfile(a/name,p/'controls'/(name+'.txt'))
+for name in ['record-format.log.txt','record-guards.log.txt']:shutil.copyfile(a/name,p/'controls'/name)
+print(json.dumps({'recordOnlyPaths':len(paths),'sourceInputsUnchanged':len(source['files']),'foreignCampaignRowsUnchanged':True,'historicalMembers':len(manifest['files']),'records':records['records']}))

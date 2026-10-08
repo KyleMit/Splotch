@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-08T06:21:01.256855+00:00",
+  "head": "4ab37d6097eaa2e4371789562bb5efa84738b28e",
+  "tree": "6e17c8a69857586a441e9d583ab01da9c97e4f09",
+  "parents": [
+    "7c4331f570b75119ef48afbeb9c995ae3ad91055",
+    "c2ef44c35e2909bfc017368f1c422e6de42882a7"
+  ],
+  "semanticIndexMatchesPassedSource": true,
+  "allTrackedSourceUnchangedBeforeAfter": true,
+  "sourceInputSha256": "f00380ab4b4e04b033750b6c167f00ff45aafb965cf9e96703f519a57fab0543",
+  "gatesSha256": "742d4a4bf79d90eed2121809f0eca3c6f6f413bf158d6a9e682f167d932b1edf",
+  "leaseSha256": "ed051b7b23b9f0a1186315f321c66e46df5ef695c5b07e1e6f96e259a3cc82ad",
+  "counts": {
+    "app": 4471,
+    "ssr": 45,
+    "asset": 298,
+    "store": 22,
+    "tools": 7914,
+    "api": 42
+  },
+  "allGateNumericExits": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "reviewLaunch": false,
+  "reviewRoundSpent": false,
+  "accepted": false,
+  "published": false
+}

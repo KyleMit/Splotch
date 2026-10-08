@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { spawn, execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, openSync, closeSync, lstatSync, readlinkSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { join } from 'node:path';
+const worktree='/Users/kylemit/.codex/worktrees/3218/Splotch';
+const artifactRoot='/private/tmp/splotch-f1-current-base-01a1143c';
+const deadlineMs=600000;
+const source=JSON.parse(readFileSync(join(artifactRoot,'source-inputs.json')));
+const sha=(bytes)=>createHash('sha256').update(bytes).digest('hex');
+const git=(args)=>execFileSync('git',args,{cwd:worktree});
+const head=git(['rev-parse','HEAD']).toString().trim();
+const mergeHead=git(['rev-parse','MERGE_HEAD']).toString().trim();
+assert.equal(head,source.preparationHead);assert.equal(mergeHead,source.acceptedBase);
+assert.equal(git(['diff','--name-only']).toString(),'');
+const semanticTree=git(['write-tree']).toString().trim();
+const indexEntriesSha256=()=>sha(git(['ls-files','--stage','-z']));
+const frozenIndex=indexEntriesSha256();
+const verifySource=()=>{for(const[path,{sha256}]of Object.entries(source.files))assert.equal(sha(readFileSync(join(worktree,path))),sha256,path);};
+const trackedTools=()=>{const p=git(['ls-files','tools']).toString().trim().split('\n').filter(p=>p.endsWith('.mjs'));return{count:p.length,sha256:sha(p.join('\n')+'\n')};};
+const verifyTools=()=>assert.deepEqual(trackedTools(),{count:source.trackedToolInputs.count,sha256:source.trackedToolInputs.sha256});
+function trackedWorkingtree(){const paths=git(['ls-files','-z']).toString().split('\0').filter(Boolean).sort();const digest=createHash('sha256');let bytes=0;for(const path of paths){const p=join(worktree,path);const b=lstatSync(p).isSymbolicLink()?Buffer.from(readlinkSync(p)):readFileSync(p);bytes+=b.length;digest.update(`${path}\0${sha(b)}\n`);}return{count:paths.length,bytes,sha256:digest.digest('hex')};}
+verifySource();verifyTools();const trackedInputs=trackedWorkingtree();
+const require=createRequire(join(worktree,'package.json'));
+const installedGraph=['typescript','expo','react','react-native','@expo/config','@babel/core','metro-resolver','yaml'].map(name=>{const manifestPath=require.resolve(`${name}/package.json`);const bytes=readFileSync(manifestPath);return{name,manifestPath,version:JSON.parse(bytes).version,sha256:sha(bytes)};});
+const installedInput={nodeVersion:process.version,executable:process.execPath,pnpmVersion:execFileSync('pnpm',['--version'],{cwd:worktree,encoding:'utf8'}).trim(),frozenLockSha256:source.files['pnpm-lock.yaml'].sha256,installedGraph,qualification:'Existing owned frozen full installation; lock and declarations unchanged; package manifests rechecked; no new installed executable census claim'};
+writeFileSync(join(artifactRoot,'installed-inputs.json'),JSON.stringify(installedInput,null,2)+'\n');
+const port=Number(execFileSync('npm',['--silent','run','show:free-port'],{cwd:worktree,encoding:'utf8'}).trim());assert.ok(Number.isInteger(port)&&port>0);
+writeFileSync(join(artifactRoot,'free-port.txt'),String(port)+'\n');
+async function bindProbe(){const server=createServer();await new Promise((resolve,reject)=>server.once('error',reject).listen(port,'127.0.0.1',resolve));await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+await bindProbe();
+const receiptPath=join(artifactRoot,'browserless-lease.json');
+const receipt={schemaVersion:1,owner:'/root/f1_composition',resource:'exclusive full Browserless tier',worktree,sourceInputs:'source-inputs.json',preparationHead:head,acceptedBase:mergeHead,composedSemanticTree:semanticTree,semanticIndexEntriesSha256:frozenIndex,command:['npm','run','test:browserless'],smokePort:port,portUnusedImmediatelyBeforeLaunch:true,startedAt:new Date().toISOString(),deadlineMs,deadlineBasis:'Parent scheduled 600 s bound after L0 release; historical equivalent full tier measured 77.063 s',installedInputs:'installed-inputs.json',trackedWorkingtree:trackedInputs,launcherPid:process.pid,releaseCondition:'Child completed; owned detached group gone; smoke port binds again',status:'running'};
+const persist=()=>writeFileSync(receiptPath,JSON.stringify(receipt,null,2)+'\n');
+const fd=openSync(join(artifactRoot,'browserless.log.txt'),'w');
+const child=spawn('npm',['run','test:browserless'],{cwd:worktree,env:{...process.env,SMOKE_PORT:String(port)},stdio:['ignore',fd,fd],detached:true});receipt.childPid=child.pid;receipt.processGroup=child.pid;persist();console.log(JSON.stringify({status:'running',port,childPid:child.pid,composedSemanticTree:semanticTree}));
+let forceTimer;
+const terminate=(reason)=>{receipt.terminationReason=reason;receipt.terminationRequestedAt=new Date().toISOString();persist();if(child.exitCode===null&&child.signalCode===null){try{process.kill(-child.pid,'SIGTERM');}catch(error){receipt.terminationError=String(error);}forceTimer=setTimeout(()=>{try{process.kill(-child.pid,'SIGKILL');receipt.forceTerminationAt=new Date().toISOString();persist();}catch(error){receipt.forceTerminationError=String(error);}},5000);}};
+const interrupt=()=>terminate('owned runner interrupted');process.once('SIGINT',interrupt);process.once('SIGTERM',interrupt);
+const timer=setTimeout(()=>terminate('deadline exceeded'),deadlineMs);
+const outcome=await new Promise(resolve=>{child.once('error',error=>resolve({exitCode:null,signal:null,error:String(error)}));child.once('exit',(exitCode,signal)=>resolve({exitCode,signal,error:null}));});
+clearTimeout(timer);clearTimeout(forceTimer);process.removeListener('SIGINT',interrupt);process.removeListener('SIGTERM',interrupt);closeSync(fd);
+receipt.finishedAt=new Date().toISOString();receipt.outcome=outcome;receipt.invariants={};
+const check=(name,fn)=>{try{fn();receipt.invariants[name]={passed:true};}catch(error){receipt.invariants[name]={passed:false,error:String(error)};}};
+check('sourceInputs',verifySource);check('trackedTools',verifyTools);check('semanticIndex',()=>assert.equal(indexEntriesSha256(),frozenIndex));check('completeTrackedWorkingtree',()=>assert.deepEqual(trackedWorkingtree(),trackedInputs));check('installedManifests',()=>{for(const row of installedGraph)assert.equal(sha(readFileSync(row.manifestPath)),row.sha256,row.name);});check('headAndMergeHead',()=>{assert.equal(git(['rev-parse','HEAD']).toString().trim(),head);assert.equal(git(['rev-parse','MERGE_HEAD']).toString().trim(),mergeHead);});check('workingtreeMatchesIndex',()=>assert.equal(git(['diff','--name-only']).toString(),''));
+try{process.kill(-child.pid,0);receipt.ownedProcessGroupGone=false;}catch(error){receipt.ownedProcessGroupGone=error.code==='ESRCH';}
+try{await bindProbe();receipt.smokePortReleased=true;}catch(error){receipt.smokePortReleased=false;receipt.releaseError=String(error);}
+receipt.gatesPassed=outcome.exitCode===0&&!receipt.terminationReason&&Object.values(receipt.invariants).every(row=>row.passed);
+receipt.status=receipt.ownedProcessGroupGone&&receipt.smokePortReleased?(receipt.gatesPassed?'released-success':'released-failure'):'needs-owned-process-inspection';persist();console.log(JSON.stringify({status:receipt.status,outcome:receipt.outcome,invariants:receipt.invariants,ownedProcessGroupGone:receipt.ownedProcessGroupGone,smokePortReleased:receipt.smokePortReleased}));process.exitCode=receipt.gatesPassed&&receipt.status==='released-success'?0:1;

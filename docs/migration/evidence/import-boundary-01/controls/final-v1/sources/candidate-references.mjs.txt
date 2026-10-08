@@ -1,0 +1,252 @@
+import assert from 'node:assert/strict';
+import { extname } from 'node:path';
+import ts from 'typescript';
+
+const SCRIPT_KINDS = {
+  '.js': ts.ScriptKind.JS,
+  '.mjs': ts.ScriptKind.JS,
+  '.cjs': ts.ScriptKind.JS,
+  '.jsx': ts.ScriptKind.JSX,
+  '.ts': ts.ScriptKind.TS,
+  '.mts': ts.ScriptKind.TS,
+  '.cts': ts.ScriptKind.TS,
+  '.tsx': ts.ScriptKind.TSX,
+};
+
+export function isRelativeCandidateSpecifier(specifier) {
+  return (
+    specifier === '.' ||
+    specifier === '..' ||
+    specifier.startsWith('./') ||
+    specifier.startsWith('../')
+  );
+}
+
+function accessName(node) {
+  if (ts.isPropertyAccessExpression(node)) return node.name.text;
+  if (ts.isElementAccessExpression(node) && ts.isStringLiteralLike(node.argumentExpression))
+    return node.argumentExpression.text;
+  return null;
+}
+
+function requireResolve(node) {
+  return (
+    accessName(node) === 'resolve' &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === 'require'
+  );
+}
+
+function moduleCall(node) {
+  return (
+    node.kind === ts.SyntaxKind.ImportKeyword ||
+    (ts.isIdentifier(node) && node.text === 'require') ||
+    requireResolve(node)
+  );
+}
+
+function literalReference(node, file) {
+  assert.ok(node && ts.isStringLiteralLike(node), `${file} uses unsupported computed import`);
+  return { specifier: node.text, kind: 'import' };
+}
+
+function babelSpecifier(specifier, vocabulary, file) {
+  if (isRelativeCandidateSpecifier(specifier) || specifier.startsWith('module:'))
+    return specifier.replace(/^module:/, '');
+  assert.ok(
+    new RegExp(`^(?:@[^/]+/)?babel-${vocabulary}-`).test(specifier) ||
+      specifier.startsWith(`@babel/${vocabulary}-`),
+    `${file} uses unsupported Babel alias ${specifier}; use require.resolve with a declared package`
+  );
+  return specifier;
+}
+
+function configurationReferences(node, file) {
+  const babel = /(?:^|\/)(?:babel\.config\.|\.babelrc\.)/.test(file);
+  const expo = /(?:^|\/)app\.config\./.test(file);
+  if (!babel && !expo) return [];
+  const property = ts.isComputedPropertyName(node.name) ? node.name.expression : node.name;
+  assert.ok(
+    !ts.isComputedPropertyName(node.name) || ts.isStringLiteralLike(property),
+    `${file} uses unsupported computed configuration property`
+  );
+  const name = ts.isIdentifier(property) || ts.isStringLiteralLike(property) ? property.text : null;
+  if (!(babel && (name === 'presets' || name === 'plugins')) && !(expo && name === 'plugins'))
+    return [];
+  assert.ok(
+    ts.isPropertyAssignment(node) && ts.isArrayLiteralExpression(node.initializer),
+    `${file} uses unsupported ${name} configuration`
+  );
+  const references = [];
+  for (const element of node.initializer.elements) {
+    const target = ts.isArrayLiteralExpression(element) ? element.elements[0] : element;
+    if (ts.isCallExpression(target) && requireResolve(target.expression)) continue;
+    assert.ok(target && ts.isStringLiteralLike(target), `${file} uses unsupported ${name} entry`);
+    const specifier = babel
+      ? babelSpecifier(target.text, name === 'presets' ? 'preset' : 'plugin', file)
+      : target.text;
+    references.push({ specifier, kind: 'import' });
+  }
+  return references;
+}
+
+function assertNoResolutionAlias(node, file) {
+  assert.ok(
+    !(ts.isIdentifier(node) && node.text === 'createRequire') &&
+      accessName(node) !== 'createRequire',
+    `${file} uses unsupported createRequire resolution`
+  );
+  if (accessName(node) === 'resolve' && ts.isMetaProperty(node.expression))
+    assert.fail(`${file} uses unsupported import.meta.resolve`);
+  if (
+    ts.isBindingElement(node) &&
+    (node.propertyName?.text ?? node.name.text) === 'resolve' &&
+    ts.isVariableDeclaration(node.parent.parent) &&
+    node.parent.parent.initializer &&
+    ts.isMetaProperty(node.parent.parent.initializer)
+  )
+    assert.fail(`${file} uses unsupported import.meta.resolve alias`);
+  if (ts.isIdentifier(node) && node.text === 'require') {
+    const parent = node.parent;
+    assert.ok(
+      (ts.isCallExpression(parent) && parent.expression === node) ||
+        (requireResolve(parent) &&
+          ts.isCallExpression(parent.parent) &&
+          parent.parent.expression === parent),
+      `${file} uses unsupported require alias`
+    );
+  }
+  if (accessName(node) === 'require') assert.fail(`${file} uses unsupported require member`);
+}
+
+export function candidateSourceReferences(source, file) {
+  const ast = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    SCRIPT_KINDS[extname(file)]
+  );
+  assert.equal(ast.parseDiagnostics.length, 0, `${file} has invalid source syntax`);
+  const references = [
+    ...ast.referencedFiles.map(({ fileName }) => ({ specifier: fileName, kind: 'local' })),
+    ...ast.typeReferenceDirectives.map(({ fileName }) => ({ specifier: fileName, kind: 'types' })),
+  ];
+  function visit(node) {
+    assertNoResolutionAlias(node, file);
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier)
+      references.push(literalReference(node.moduleSpecifier, file));
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference))
+      references.push(literalReference(node.moduleReference.expression, file));
+    if (ts.isImportTypeNode(node)) {
+      assert.ok(ts.isLiteralTypeNode(node.argument), `${file} uses unsupported import type`);
+      references.push(literalReference(node.argument.literal, file));
+    }
+    if (ts.isCallExpression(node) && moduleCall(node.expression)) {
+      assert.ok(
+        !requireResolve(node.expression) || node.arguments.length === 1,
+        `${file} uses unsupported provider-context require.resolve; native materialization owns that boundary`
+      );
+      references.push(literalReference(node.arguments[0], file));
+    }
+    if (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node))
+      references.push(...configurationReferences(node, file));
+    ts.forEachChild(node, visit);
+    for (const doc of node.jsDoc ?? []) visit(doc);
+  }
+  visit(ast);
+  return references;
+}
+
+export function readCandidateTsconfig(source, file) {
+  const parsed = ts.parseConfigFileTextToJson(file, source);
+  assert.ok(!parsed.error, `${file} has invalid tsconfig syntax`);
+  const config = parsed.config;
+  assert.ok(
+    config && typeof config === 'object' && !Array.isArray(config),
+    `${file} has invalid tsconfig`
+  );
+  const references = [];
+  const localExtends = [];
+  for (const specifier of config.extends === undefined ? [] : [config.extends].flat()) {
+    assert.equal(typeof specifier, 'string', `${file} has unsupported tsconfig extends`);
+    references.push({ file, specifier, kind: 'import' });
+    if (isRelativeCandidateSpecifier(specifier)) localExtends.push(specifier);
+  }
+  assert.ok(
+    config.compilerOptions === undefined ||
+      (config.compilerOptions &&
+        typeof config.compilerOptions === 'object' &&
+        !Array.isArray(config.compilerOptions)),
+    `${file} has invalid compilerOptions`
+  );
+  const options = config.compilerOptions ?? {};
+  for (const name of ['paths', 'typeRoots', 'baseUrl'])
+    assert.equal(options[name], undefined, `${file} uses unsupported tsconfig ${name} ownership`);
+  assert.ok(
+    options.types === undefined || Array.isArray(options.types),
+    `${file} types must be an array`
+  );
+  for (const specifier of options.types ?? []) {
+    assert.equal(typeof specifier, 'string', `${file} has unsupported type reference`);
+    references.push({ file, specifier, kind: 'types' });
+  }
+  if (options.jsxImportSource !== undefined) {
+    assert.equal(
+      typeof options.jsxImportSource,
+      'string',
+      `${file} has unsupported JSX import source`
+    );
+    references.push({ file, specifier: options.jsxImportSource, kind: 'import' });
+  }
+  assert.ok(
+    config.references === undefined || Array.isArray(config.references),
+    `${file} references must be an array`
+  );
+  const localTargets = (config.references ?? []).map((reference) => reference?.path);
+  for (const name of ['files', 'include']) {
+    assert.ok(
+      config[name] === undefined || Array.isArray(config[name]),
+      `${file} ${name} must be an array`
+    );
+    localTargets.push(...(config[name] ?? []));
+  }
+  for (const target of localTargets) {
+    assert.equal(typeof target, 'string', `${file} has unsupported local project reference`);
+    references.push({ file, specifier: target, kind: 'local' });
+  }
+  return { references, localExtends };
+}
+
+export function readCandidateJsonConfig(source, file) {
+  const parsed = ts.parseConfigFileTextToJson(file, source);
+  assert.ok(!parsed.error, `${file} has invalid JSON configuration`);
+  const config = parsed.config;
+  assert.ok(
+    config && typeof config === 'object' && !Array.isArray(config),
+    `${file} has invalid JSON configuration`
+  );
+  const babel = /(?:^|\/)(?:\.babelrc(?:\.json)?|babel\.config\.json)$/.test(file);
+  const groups = babel
+    ? [
+        ['preset', config.presets ?? []],
+        ['plugin', config.plugins ?? []],
+      ]
+    : [['plugin', config.expo?.plugins ?? []]];
+  const references = [];
+  for (const [vocabulary, entries] of groups) {
+    assert.ok(
+      Array.isArray(entries),
+      `${file} ${vocabulary} configuration must be a literal array`
+    );
+    for (const entry of entries) {
+      const target = Array.isArray(entry) ? entry[0] : entry;
+      assert.equal(typeof target, 'string', `${file} has unsupported ${vocabulary} entry`);
+      references.push({
+        specifier: babel ? babelSpecifier(target, vocabulary, file) : target,
+        kind: 'import',
+      });
+    }
+  }
+  return references;
+}

@@ -1,0 +1,57 @@
+{
+  "sourceInputs": "source-inputs.json",
+  "records": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "start": "2026-10-06T16:32:21.595Z",
+      "finish": "2026-10-06T16:32:27.061Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "check.log.txt"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "start": "2026-10-06T16:32:27.061Z",
+      "finish": "2026-10-06T16:32:43.339Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "lint.log.txt"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "start": "2026-10-06T16:32:43.339Z",
+      "finish": "2026-10-06T16:32:55.247Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "format-check.log.txt"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "check:migration:native-topology"
+      ],
+      "start": "2026-10-06T16:32:55.247Z",
+      "finish": "2026-10-06T16:33:01.821Z",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "log": "check-migration-native-topology.log.txt"
+    }
+  ]
+}

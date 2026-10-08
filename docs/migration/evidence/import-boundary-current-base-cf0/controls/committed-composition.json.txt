@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-07T03:00:25.074142+00:00",
+  "sourceCommit": "9d21d4c621beb3ddeaa5e348f7e08789300ccc55",
+  "parents": [
+    "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+    "cf0c4254d025094054d7ea7faab110da11c96243"
+  ],
+  "tree": "47974292ac6870f1bd842998cc2e23aab99d6d0e",
+  "executedSourceInputs": "source-inputs.json",
+  "sourceInputsSha256": "45a26c97fcf16ed7610ab931dc02878ec8335896d3d3d659e3c4db774c7de971",
+  "executedSemanticTreeEqualsCommittedTree": true,
+  "semanticIndexEntriesSha256": "8f1c87bec816444c28e51035048910d2040769b06aaef317bb62a1703ba121e6",
+  "currentCommittedIndexEntriesEqual": true,
+  "files": {
+    "tools/migration/check-native-topology.mjs": {
+      "bytes": 3672,
+      "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/lib/native-identity.mjs": {
+      "bytes": 6302,
+      "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/lib/candidate-imports.mjs": {
+      "bytes": 8737,
+      "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/lib/candidate-references.mjs": {
+      "bytes": 18705,
+      "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/tests/candidate-imports.test.mjs": {
+      "bytes": 15283,
+      "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/README.md": {
+      "bytes": 15765,
+      "sha256": "bccdd774a507f0a04d18ae4e0670476b250cfee9703ce3c82111b80d8a7423f0",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "package.json": {
+      "bytes": 122815,
+      "sha256": "efa4f1b8cb58803e2b09f91304f4507978047ca1c8dcf45044c620e45a4d5249",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "pnpm-lock.yaml": {
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "pnpm-workspace.yaml": {
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/alignment.json": {
+      "bytes": 890,
+      "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/app.json": {
+      "bytes": 142,
+      "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/babel.config.cjs": {
+      "bytes": 135,
+      "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/metro.config.cjs": {
+      "bytes": 106,
+      "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/package.json": {
+      "bytes": 288,
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/scripts/check-transform.cjs": {
+      "bytes": 1552,
+      "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/src/ProbeApp.tsx": {
+      "bytes": 159,
+      "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/src/index.ts": {
+      "bytes": 119,
+      "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "experiments/native-architecture/tsconfig.json": {
+      "bytes": 153,
+      "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/tests/candidate-configs.test.mjs": {
+      "bytes": 15825,
+      "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/migration/tests/candidate-fixtures.mjs": {
+      "bytes": 1933,
+      "sha256": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "eslint.config.js": {
+      "bytes": 45969,
+      "sha256": "cdee57bdcd71f7b33511df9467728959150d0c583dcc41d0a7637096ab2d2657",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "knip.json": {
+      "bytes": 2449,
+      "sha256": "9d4cf6a67dde07510aa19db8cc5f5ad07cf4d6ef26b8248a1de691bbb17195d4",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "knip.production.json": {
+      "bytes": 1196,
+      "sha256": "cf8bf46543564f5dcb015721c825bb53f9e64de6d0d57841b44ef045e6d91b5c",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "web/tsconfig.json": {
+      "bytes": 1587,
+      "sha256": "e8dea4e9e02346edd8591ac10271410e04c539f3a109d27e09285c7498e22061",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "netlify/tsconfig.json": {
+      "bytes": 308,
+      "sha256": "7b7a7a1201cd0e1ba2dcac98ccfed1f93a98b34f787773545ccd749f0d730ea5",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "tools/vitest.config.mjs": {
+      "bytes": 825,
+      "sha256": "bc9c75f21d2f4f8eb48773f57e8ca75f64161d843926713cbf1062f9cef09afa",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    "web/vite.config.ts": {
+      "bytes": 12930,
+      "sha256": "09bba06be8c6b9a36440d58905ccb3c77471b8fab569c3189ebd715cd24d35ff",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    },
+    ".github/workflows/test.yml": {
+      "bytes": 37683,
+      "sha256": "5186c3685f9b82d9bb5b8fec5753326851841c588c0a7d67bf38c92e6a2cfcff",
+      "workingtreeEqualsExecuted": true,
+      "committedEqualsExecuted": true
+    }
+  },
+  "staticGateRecordsSha256": "2267354f291a7eff5184f7ef3771dd5a34dc9096d080e67cfb9ec650dff19e09",
+  "finalizedBrowserlessLeaseSha256": "a1bee19830617b0084b44129c70edb292463e05f30fc88b94f80a8e1d34816e8",
+  "acceptance": "HELD; original 3 used/0 remaining; no review-budget exception; exact final-head CI and parent disposition remain pending"
+}

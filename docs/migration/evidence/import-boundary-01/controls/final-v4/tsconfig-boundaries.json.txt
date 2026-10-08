@@ -1,0 +1,304 @@
+{
+  "testedSource": "ee7c3c24dfbcbbb683189f7bd30be6e7191d9b24",
+  "sourceInputs": "final-v3/source-inputs.json",
+  "runtime": {
+    "version": "v24.16.0",
+    "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node"
+  },
+  "typescript": {
+    "version": "6.0.3",
+    "implementationSha256": "569177652966bd528c319171c7dd22860dbf72bde116cbc4f644f1d02bb12e39",
+    "owner": "getExtendsConfigPath / getExtendedConfig: fileExists, .json suffix fallback, normalized lexical path cache and containing-directory context"
+  },
+  "setupCorrection": "Initial named cases inherited include paths relative to nested/foreign configs and produced TS18003; top config now explicitly retains actual app src includes. v1 remains separate setup evidence.",
+  "records": [
+    {
+      "name": "baseline",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-Sb2ysj",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-owned",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-FEauyv",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 16,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-directory-collision",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-YdZPyc",
+      "scanner": {
+        "passed": false,
+        "name": "Error",
+        "code": "EISDIR",
+        "message": "EISDIR: illegal operation on a directory, read"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "extensionless-generated-directory-collision",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-FunYWO",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json imports ./dist enters excluded candidate output: dist"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "outside-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aCp86v",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json imports ../foreign escapes candidate ownership: /private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aCp86v/foreign"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "excluded-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-xYrXIJ",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "tsconfig.json imports ./dist/config enters excluded candidate output: dist/config"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "canonical-outside-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-RUh0p2",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "safe.json escapes candidate ownership: /private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-RUh0p2/foreign.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "canonical-excluded-json-fallback",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-FGTDLM",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "safe.json enters excluded candidate output: dist/config.json"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "one-local-alias-declared-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-aPWPre",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 17,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "one-local-alias-undeclared-node-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-z4aV19",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "code": "ERR_ASSERTION",
+        "message": "deep/next.json imports undeclared @types/node"
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "ordered-local-alias-undeclared-node-types",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/tsconfig-boundary-ic8bTV",
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 18,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files, tsconfig dependency references and Expo JSON plugins",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ],
+  "scope": "Finite real candidate config-boundary controls; static guard and actual typecheck only. No worktree source edits or native/performance execution."
+}

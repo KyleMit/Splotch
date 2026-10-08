@@ -1,0 +1,8 @@
+{
+  "errorCode": "EPERM",
+  "operation": "loopback bind for free port and prelaunch proof",
+  "exitCode": 1,
+  "workloadStarted": false,
+  "ownedChildProcesses": [],
+  "disposition": "Host loopback capability requires approved escalation; no tier ran and no negative-control claim"
+}

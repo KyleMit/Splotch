@@ -1,0 +1,8 @@
+{
+  "tool": "exec_command/write_stdin",
+  "sessionId": 35422,
+  "launcherPid": 74350,
+  "childPid": 74398,
+  "processGroup": 74398,
+  "completed": true
+}

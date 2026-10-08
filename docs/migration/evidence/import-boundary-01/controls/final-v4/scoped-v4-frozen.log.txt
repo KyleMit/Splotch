@@ -1,0 +1,36 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/migration/tests/candidate-imports.test.mjs tools/migration/tests/candidate-configs.test.mjs tools/migration/tests/ownership.test.mjs tools/migration/tests/production-closure.test.mjs tools/migration/tests/forge-mitigation.test.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/3218/Splotch/tools
+
+ ❯ migration/tests/candidate-configs.test.mjs (48 tests | 1 failed) 308ms
+   ❯ candidate configuration dependency ownership (48)
+     × refuses unsupported literal configuration key shapes: Object.prototype.plugins=['expo-font']; module.exports={}; 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  migration/tests/candidate-configs.test.mjs > candidate configuration dependency ownership > refuses unsupported literal configuration key shapes: Object.prototype.plugins=['expo-font']; module.exports={};
+AssertionError: expected [Function] to throw error including 'unsupported configuration prototype' but got 'app.config.cjs uses unsupported plugi…'
+
+Expected: "unsupported configuration prototype"
+Received: "app.config.cjs uses unsupported plugins member operation"
+
+ ❯ expectRejectedMutationAndRestore migration/tests/candidate-fixtures.mjs:42:71
+     40|     const original = readFileSync(join(candidate, path), 'utf8');
+     41|     write(candidate, path, source);
+     42|     expect(() => assertDeclaredCandidateImports(candidate, manifest)).…
+       |                                                                       ^
+     43|     write(candidate, path, original);
+     44|     expect(() => assertDeclaredCandidateImports(candidate, manifest)).…
+ ❯ migration/tests/candidate-configs.test.mjs:193:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 125 passed (126)
+   Start at  11:56:03
+   Duration  565ms (tests 45%, import 42%, transform 12%)
+

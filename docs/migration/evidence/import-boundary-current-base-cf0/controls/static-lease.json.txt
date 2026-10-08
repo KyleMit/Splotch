@@ -1,0 +1,20 @@
+{
+  "owner": "/root/f1_composition",
+  "resource": "exclusive sequential F1 current-base gates",
+  "worktree": "/Users/kylemit/.codex/worktrees/3218/Splotch",
+  "preparationHead": "e4e9fc044d46d49c3565379a3e6419e8eff4af9d",
+  "acceptedBase": "cf0c4254d025094054d7ea7faab110da11c96243",
+  "sourceInputs": "source-inputs.json",
+  "semanticIndexEntriesSha256": "8f1c87bec816444c28e51035048910d2040769b06aaef317bb62a1703ba121e6",
+  "trackedWorkingtree": {
+    "count": 8673,
+    "bytes": 1188065048,
+    "sha256": "b75f2a1b22d352d7bd71f5c8d300bdc5a97740cfd5bf7f1da94ea5f3a6ef1a74"
+  },
+  "startedAt": "2026-10-07T02:57:15.485Z",
+  "authorizedBy": "Parent scheduled lease after L0 full-host release; native/neutral builds paused",
+  "status": "complete-static-host-lease-retained-for-browserless",
+  "finishedAt": "2026-10-07T02:58:01.128Z",
+  "sourceAndSemanticIndexUnchanged": true,
+  "invariantError": null
+}

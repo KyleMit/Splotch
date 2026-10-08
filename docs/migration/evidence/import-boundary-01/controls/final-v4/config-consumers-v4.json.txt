@@ -1,0 +1,287 @@
+{
+  "testedSource": "working revision over 5ecb23f7c1372c848788d80ee76503ddd7dd9cc7",
+  "sourceInputs": "final-v4/source-inputs.json",
+  "runtime": {
+    "version": "v24.16.0",
+    "executable": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node"
+  },
+  "identities": [
+    {
+      "name": "@expo/config",
+      "version": "57.0.9",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@expo/config/package.json",
+      "manifestSha256": "9f20bdbaa3bb1d8ae644e252aea9879257920832df557f462cf365aa1cfa4c64"
+    },
+    {
+      "name": "@babel/core",
+      "version": "7.29.7",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/@babel/core/package.json",
+      "manifestSha256": "6c2893db41b54a1c03ba68e676aa3ea987db9a5c9b9a3a3aa2e8d0d9a63066c4"
+    },
+    {
+      "name": "expo-font",
+      "version": "57.0.4",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/expo-font/package.json",
+      "manifestSha256": "ad2dd07d792d6a6f3fd0f374e459356c2fbcc749645175743ab32bb4be56c5f7"
+    },
+    {
+      "name": "babel-plugin-react-compiler",
+      "version": "1.0.0",
+      "manifestPath": "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/package.json",
+      "manifestSha256": "23261a357f5db715637849e4e93e48269907ce720698b89ac333d9eddddb0ccd"
+    }
+  ],
+  "records": [
+    {
+      "name": "current-positive",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-Q6WjIa",
+      "file": null,
+      "source": null,
+      "scanner": {
+        "passed": true,
+        "result": {
+          "scannedCandidateFiles": [
+            "app.json",
+            "babel.config.cjs",
+            "metro.config.cjs",
+            "scripts/check-transform.cjs",
+            "src/ProbeApp.tsx",
+            "src/index.ts",
+            "tsconfig.json"
+          ],
+          "localTsconfigFiles": [
+            "tsconfig.json"
+          ],
+          "dependencyReferences": 13,
+          "generatedSubpathExclusions": [
+            "node_modules",
+            ".git",
+            ".expo",
+            "dist",
+            "android/.gradle",
+            "android/.cxx",
+            "android/build",
+            "android/app/.cxx",
+            "android/app/build",
+            "ios/Pods",
+            "ios/build"
+          ],
+          "dependencyDirectoryExclusion": "node_modules at any candidate depth",
+          "scope": "All maintained candidate JS/TS files and finite literal Babel, Expo and tsconfig dependency references",
+          "nonCoverage": "Podfile/Gradle provider-context commands remain owned by PHASE-1 native source, materialization and toolchain qualification; arbitrary native-language/config execution is not scanned"
+        }
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-Q6WjIa/candidate/app.json",
+          "dynamicConfigPath": null,
+          "plugins": []
+        },
+        "babel": {
+          "config": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-Q6WjIa/candidate/babel.config.cjs",
+          "plugins": [],
+          "presets": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-preset-expo/build/index.js"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "flat-Expo-font",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-J8hTLg",
+      "file": "app.json",
+      "source": "{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.json imports undeclared expo-font"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-J8hTLg/candidate/app.json",
+          "dynamicConfigPath": null,
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "preferred-static-Expo-font",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-9eTulu",
+      "file": "app.config.json",
+      "source": "{\"expo\":{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}}",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.config.json imports undeclared expo-font"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-9eTulu/candidate/app.config.json",
+          "dynamicConfigPath": null,
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Babel-member-assignment",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-rXPmXn",
+      "file": "babel.config.cjs",
+      "source": "const base={presets:[require.resolve('babel-preset-expo')]};base.plugins=['babel-plugin-react-compiler'];module.exports=base;",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "babel.config.cjs uses unsupported plugins member operation"
+      },
+      "consumer": {
+        "babel": {
+          "config": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-rXPmXn/candidate/babel.config.cjs",
+          "plugins": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+          ],
+          "presets": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-preset-expo/build/index.js"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Expo-member-spread",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-FsCJiB",
+      "file": "app.config.js",
+      "source": "module.exports=({config})=>{config.plugins=[...(config.plugins??[]),'expo-font'];return config;};",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.config.js uses unsupported plugins member operation"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-FsCJiB/candidate/app.json",
+          "dynamicConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-FsCJiB/candidate/app.config.js",
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Babel-member-push",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-nKvLXp",
+      "file": "babel.config.cjs",
+      "source": "const base={presets:[require.resolve('babel-preset-expo')],plugins:[]};base.plugins.push('babel-plugin-react-compiler');module.exports=base;",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "babel.config.cjs uses unsupported plugins member operation"
+      },
+      "consumer": {
+        "babel": {
+          "config": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-nKvLXp/candidate/babel.config.cjs",
+          "plugins": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+          ],
+          "presets": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-preset-expo/build/index.js"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Expo-list-alias",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-od1YiZ",
+      "file": "app.config.js",
+      "source": "const config={name:'x',slug:'x',plugins:[]};const list=config.plugins;list.push('expo-font');module.exports=config;",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.config.js uses unsupported plugins member operation"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-od1YiZ/candidate/app.json",
+          "dynamicConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-od1YiZ/candidate/app.config.js",
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Expo-computed-member",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-v88gS3",
+      "file": "app.config.js",
+      "source": "const config={name:'x',slug:'x'};config['plu'+'gins']=['expo-font'];module.exports=config;",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.config.js uses unsupported computed configuration mutation"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-v88gS3/candidate/app.json",
+          "dynamicConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-v88gS3/candidate/app.config.js",
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Expo-opaque-encoded-export",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-d4xOl7",
+      "file": "app.config.js",
+      "source": "module.exports=JSON.parse('{\"name\":\"x\",\"slug\":\"x\",\"plugins\":[\"expo-font\"]}');",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "app.config.js uses unsupported opaque configuration export"
+      },
+      "consumer": {
+        "expo": {
+          "staticConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-d4xOl7/candidate/app.json",
+          "dynamicConfigPath": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-d4xOl7/candidate/app.config.js",
+          "plugins": [
+            "expo-font"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    },
+    {
+      "name": "Babel-opaque-encoded-export",
+      "root": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-efXVRc",
+      "file": "babel.config.cjs",
+      "source": "module.exports=JSON.parse('{\"presets\":[\"babel-preset-expo\"],\"plugins\":[\"babel-plugin-react-compiler\"]}');",
+      "scanner": {
+        "passed": false,
+        "name": "AssertionError",
+        "message": "babel.config.cjs uses unsupported opaque configuration export"
+      },
+      "consumer": {
+        "babel": {
+          "config": "/private/tmp/splotch-resume-01a111b0/import-boundary/config-consumer-efXVRc/candidate/babel.config.cjs",
+          "plugins": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-plugin-react-compiler/dist/index.js"
+          ],
+          "presets": [
+            "/Users/kylemit/.codex/worktrees/3218/Splotch/node_modules/babel-preset-expo/build/index.js"
+          ]
+        }
+      },
+      "restoredGuardPassed": true
+    }
+  ],
+  "scope": "Actual installed Expo selection/reduction and Babel configuration consumers in owned scratch. No native project, compile, draw, device or performance execution."
+}

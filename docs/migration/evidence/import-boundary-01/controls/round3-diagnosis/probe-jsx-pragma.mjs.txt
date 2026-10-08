@@ -1,0 +1,99 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { assertDeclaredCandidateImports } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-imports.mjs';
+import { candidateSourceReferences } from '/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/lib/candidate-references.mjs';
+
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const evidence = '/private/tmp/splotch-resume-01a111b0/import-boundary/jsx-pragma';
+const candidate = join(evidence, 'candidate');
+const packageName = 'splotch-owned-jsx-runtime-probe';
+const runtimeDirectory = join(evidence, 'node_modules', packageName);
+const fixtureFile = join(candidate, 'src/PragmaHelper.tsx');
+const sourceInput = JSON.parse(readFileSync(join(worktree, 'docs/migration/evidence/import-boundary-01/source-inputs.json')));
+const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const sourceBefore = Object.fromEntries(Object.keys(sourceInput.inputs ?? sourceInput.files ?? {}).map((path) => [path, sha(readFileSync(join(worktree, path)))]));
+const require = createRequire(join(worktree, 'package.json'));
+const babel = require('@babel/core');
+const ts = require('typescript');
+mkdirSync(evidence, { recursive: true });
+cpSync(join(worktree, 'experiments/native-architecture'), candidate, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+symlinkSync(join(worktree, 'node_modules'), join(candidate, 'node_modules'));
+mkdirSync(runtimeDirectory, { recursive: true });
+writeFileSync(join(runtimeDirectory, 'package.json'), JSON.stringify({ name: packageName, version: '1.0.0', type: 'module', exports: { './jsx-runtime': { types: './jsx-runtime.d.ts', default: './jsx-runtime.js' } } }, null, 2));
+writeFileSync(join(runtimeDirectory, 'jsx-runtime.d.ts'), 'export namespace JSX { interface Element { marker: string; } interface IntrinsicElements { probe: { value: string }; } }\nexport function jsx(type: unknown, props: unknown): JSX.Element;\nexport const jsxs: typeof jsx;\nexport const Fragment: unique symbol;\n');
+writeFileSync(join(runtimeDirectory, 'jsx-runtime.js'), 'export function jsx(type, props) { return { marker: "owned-hoisted-runtime", type, props }; }\nexport const jsxs = jsx;\nexport const Fragment = Symbol.for("owned-hoisted-fragment");\n');
+const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+const entry = join(candidate, 'src/index.ts');
+const originalEntry = readFileSync(entry, 'utf8');
+const source = `/** @jsxImportSource ${packageName} */\nexport const probe = <probe value="jsx pragma probe" />;\n`;
+function capture(name, operation) {
+  try { return { name, passed: true, result: operation() }; }
+  catch (error) { return { name, passed: false, error: String(error) }; }
+}
+function tsc(name, args) {
+  const result = spawnSync(process.execPath, [join(worktree, 'node_modules/typescript/bin/tsc'), '--project', join(candidate, 'tsconfig.json'), ...args], { encoding: 'utf8', cwd: candidate, timeout: 30000 });
+  writeFileSync(join(evidence, `${name}.log.txt`), result.stdout + result.stderr);
+  return { name, status: result.status, signal: result.signal, error: result.error?.message, stdout: result.stdout, stderr: result.stderr };
+}
+const baselineGuard = capture('baseline guard', () => assertDeclaredCandidateImports(candidate, manifest));
+const baselineTsc = tsc('baseline-typecheck', ['--noEmit']);
+writeFileSync(fixtureFile, source);
+writeFileSync(entry, `${originalEntry}\nimport { probe } from './PragmaHelper';\nvoid probe;\n`);
+const reachableGuard = capture('undeclared reachable pragma guard', () => assertDeclaredCandidateImports(candidate, manifest));
+const references = candidateSourceReferences(source, 'src/PragmaHelper.tsx');
+const actualTsc = tsc('undeclared-pragma-typecheck', ['--noEmit']);
+const emittedTsc = tsc('undeclared-pragma-emit', ['--noEmit', 'false', '--outDir', join(evidence, 'ts-output'), '--rootDir', join(candidate, 'src')]);
+const tsOutput = readFileSync(join(evidence, 'ts-output/PragmaHelper.js'), 'utf8');
+const babelResult = babel.transformFileSync(fixtureFile, {
+  ast: true, babelrc: false, configFile: join(candidate, 'babel.config.cjs'), cwd: candidate,
+  envName: 'production', caller: { name: 'splotch-native-topology', platform: 'ios', supportsStaticESM: true },
+});
+writeFileSync(join(evidence, 'babel-output.mjs.txt'), babelResult.code);
+const emittedFile = join(candidate, 'src/PragmaHelper.emitted.mjs');
+writeFileSync(emittedFile, babelResult.code);
+const resolved = createRequire(fixtureFile).resolve(`${packageName}/jsx-runtime`);
+const runtime = await import(pathToFileURL(emittedFile).href);
+assert.equal(runtime.probe.marker, 'owned-hoisted-runtime');
+assert.equal(realpathSync(resolved), join(runtimeDirectory, 'jsx-runtime.js'));
+const declaredManifest = { ...manifest, devDependencies: { ...manifest.devDependencies, [packageName]: '1.0.0' } };
+const declaredGuard = capture('declared pragma guard', () => assertDeclaredCandidateImports(candidate, declaredManifest));
+const directFile = join(candidate, 'src/PragmaHelper.direct.ts');
+writeFileSync(directFile, `import '${packageName}/jsx-runtime';\n`);
+const directGuard = capture('literal runtime import guard', () => assertDeclaredCandidateImports(candidate, manifest));
+const { unlinkSync } = await import('node:fs');
+unlinkSync(directFile);
+unlinkSync(emittedFile);
+unlinkSync(fixtureFile);
+writeFileSync(entry, originalEntry);
+const restoredGuard = capture('restored guard', () => assertDeclaredCandidateImports(candidate, manifest));
+const restoredTsc = tsc('restored-typecheck', ['--noEmit']);
+const effective = ts.parseJsonConfigFileContent(ts.readConfigFile(join(candidate, 'tsconfig.json'), ts.sys.readFile).config, ts.sys, candidate);
+const summary = {
+  head: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: worktree, encoding: 'utf8' }).stdout.trim(),
+  candidate, packageName, declaredInCandidate: Object.hasOwn(manifest.devDependencies, packageName),
+  source, references, compilerOptions: { jsx: ts.JsxEmit[effective.options.jsx], module: ts.ModuleKind[effective.options.module], noEmit: effective.options.noEmit },
+  versions: { typescript: ts.version, babel: babel.version, babelPresetExpo: require('babel-preset-expo/package.json').version },
+  baselineGuard, baselineTsc, reachableGuard, actualTsc, emittedTsc, tsOutput, babelOutput: babelResult.code,
+  resolved, runtime: runtime.probe, declaredGuard, directGuard, restoredGuard, restoredTsc,
+  restoredEntryMatches: readFileSync(entry, 'utf8') === originalEntry,
+  worktreeStatus: spawnSync('git', ['status', '--short'], { cwd: worktree, encoding: 'utf8' }).stdout,
+  sourceBefore,
+  sourceAfter: Object.fromEntries(Object.keys(sourceBefore).map((path) => [path, sha(readFileSync(join(worktree, path)))])),
+};
+writeFileSync(join(evidence, 'receipt.json'), `${JSON.stringify(summary, null, 2)}\n`);
+assert.equal(baselineTsc.status, 0);
+assert.equal(actualTsc.status, 0);
+assert.equal(emittedTsc.status, 0);
+assert.equal(restoredTsc.status, 0);
+assert.equal(reachableGuard.passed, true);
+assert.equal(directGuard.passed, false);
+assert.match(directGuard.error, /imports undeclared/);
+assert.match(babelResult.code, new RegExp(`${packageName}/jsx-runtime`));
+assert.match(tsOutput, new RegExp(`${packageName}/jsx-runtime`));
+assert.deepEqual(summary.sourceBefore, summary.sourceAfter);
+console.log(JSON.stringify({ evidence, candidate, head: summary.head, actualTsc: actualTsc.status, emittedTsc: emittedTsc.status, guardMissConfirmed: reachableGuard.passed, references, resolved, runtime: runtime.probe, directGuard, restoredEntryMatches: summary.restoredEntryMatches, worktreeStatus: summary.worktreeStatus }, null, 2));

@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const worktree = '/Users/kylemit/.codex/worktrees/3218/Splotch';
+const artifactRoot = '/private/tmp/splotch-resume-01a111b0/import-boundary';
+const require = createRequire(join(worktree, 'package.json'));
+const { getConfig } = require('@expo/config');
+const { loadPartialConfig } = require('@babel/core');
+const { assertDeclaredCandidateImports } = await import(pathToFileURL(join(worktree, 'tools/migration/lib/native-identity.mjs')));
+const cases = [
+  ['current-positive', null, null, 'both'],
+  ['flat-Expo-font', 'app.json', '{"name":"x","slug":"x","plugins":["expo-font"]}', 'expo'],
+  ['preferred-static-Expo-font', 'app.config.json', '{"expo":{"name":"x","slug":"x","plugins":["expo-font"]}}', 'expo'],
+  ['Babel-member-assignment', 'babel.config.cjs', "const base={presets:[require.resolve('babel-preset-expo')]};base.plugins=['babel-plugin-react-compiler'];module.exports=base;", 'babel'],
+  ['Expo-member-spread', 'app.config.js', "module.exports=({config})=>{config.plugins=[...(config.plugins??[]),'expo-font'];return config;};", 'expo'],
+  ['Babel-member-push', 'babel.config.cjs', "const base={presets:[require.resolve('babel-preset-expo')],plugins:[]};base.plugins.push('babel-plugin-react-compiler');module.exports=base;", 'babel'],
+  ['Expo-list-alias', 'app.config.js', "const config={name:'x',slug:'x',plugins:[]};const list=config.plugins;list.push('expo-font');module.exports=config;", 'expo'],
+  ['Expo-computed-member', 'app.config.js', "const config={name:'x',slug:'x'};config['plu'+'gins']=['expo-font'];module.exports=config;", 'expo'],
+  ['Expo-opaque-encoded-export', 'app.config.js', `module.exports=JSON.parse('{"name":"x","slug":"x","plugins":["expo-font"]}');`, 'expo'],
+  ['Babel-opaque-encoded-export', 'babel.config.cjs', `module.exports=JSON.parse('{"presets":["babel-preset-expo"],"plugins":["babel-plugin-react-compiler"]}');`, 'babel'],
+];
+const records = [];
+for (const [name, file, source, consumer] of cases) {
+  const root = mkdtempSync(join(artifactRoot, 'config-consumer-'));
+  const candidate = join(root, 'candidate');
+  cpSync(join(worktree, 'experiments/native-architecture'), candidate, { recursive: true, filter: (path) => !path.includes('/node_modules') });
+  symlinkSync(join(worktree, 'node_modules'), join(candidate, 'node_modules'));
+  const manifest = JSON.parse(readFileSync(join(candidate, 'package.json')));
+  assertDeclaredCandidateImports(candidate, manifest);
+  const original = file && (() => { try { return readFileSync(join(candidate, file)); } catch (error) { assert.equal(error.code, 'ENOENT'); return null; } })();
+  if (file) writeFileSync(join(candidate, file), source);
+  let scanner;
+  try { scanner = { passed: true, result: assertDeclaredCandidateImports(candidate, manifest) }; }
+  catch (error) { scanner = { passed: false, name: error.name, message: error.message }; }
+  const result = {};
+  if (consumer === 'expo' || consumer === 'both') {
+    const config = getConfig(candidate);
+    result.expo = { staticConfigPath: config.staticConfigPath, dynamicConfigPath: config.dynamicConfigPath, plugins: config.exp.plugins ?? [] };
+  }
+  if (consumer === 'babel' || consumer === 'both') {
+    const config = loadPartialConfig({ cwd: candidate, root: candidate, filename: join(candidate, 'src/ProbeApp.tsx') });
+    result.babel = { babelrc: config.babelrc, config: config.config, plugins: config.options.plugins.map((plugin) => plugin.file?.resolved), presets: config.options.presets.map((preset) => preset.file?.resolved) };
+  }
+  if (file) {
+    if (original) writeFileSync(join(candidate, file), original);
+    else rmSync(join(candidate, file));
+    assertDeclaredCandidateImports(candidate, manifest);
+  }
+  records.push({ name, root, file, source, scanner, consumer: result, restoredGuardPassed: true });
+}
+const identities = ['@expo/config', '@babel/core', 'expo-font', 'babel-plugin-react-compiler'].map((name) => {
+  const path = require.resolve(`${name}/package.json`);
+  const bytes = readFileSync(path);
+  return { name, version: JSON.parse(bytes).version, manifestPath: path, manifestSha256: createHash('sha256').update(bytes).digest('hex') };
+});
+const receipt = { testedSource: 'working revision over 5ecb23f7c1372c848788d80ee76503ddd7dd9cc7', sourceInputs: 'final-v4/source-inputs.json', runtime: { version: process.version, executable: process.execPath }, identities, records, scope: 'Actual installed Expo selection/reduction and Babel configuration consumers in owned scratch. No native project, compile, draw, device or performance execution.' };
+writeFileSync(join(artifactRoot, 'config-consumers-v4.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+console.log(JSON.stringify(records.map(({ name, scanner, consumer, restoredGuardPassed }) => ({ name, guardPass: scanner.passed, message: scanner.message, consumer, restoredGuardPassed }))));

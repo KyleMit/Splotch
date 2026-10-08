@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-06T16:54:00.236Z",
+  "sourceCommit": "49c274e565ef8f9936b0a997a24f89a46b8ec3c7",
+  "composedHead": "0ffbfad71c18b1bb284517011b30258298a0d283",
+  "composedTree": "b8e78a7a64c43284700f95e1ede5d8230640afcd",
+  "acceptedBase": "f14966ee98563e3c569fbcb90beea6d9c684614a",
+  "originalExecutedInputs": "../final-v8/source-inputs.json",
+  "originalInputSha256": "978d8feb5b50f657d00f371bb4bec74295a2a7cee8dd8bed364a789d9acb9377",
+  "relevantInputCount": 20,
+  "files": {
+    "tools/migration/check-native-topology.mjs": {
+      "bytes": 3672,
+      "sha256": "a93d2ce5357ee7c83d19aeb5590fd209c4a51790fc4b56fa0f3379faf8017c17",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/lib/native-identity.mjs": {
+      "bytes": 6302,
+      "sha256": "1b959db357d7cb47d23c9a0bfb526fe13f08f53798bcf6f8609505d8b9fc0cdd",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/lib/candidate-imports.mjs": {
+      "bytes": 8737,
+      "sha256": "83e8fe7fcaa2995b81bcae867d6ea44d8469a666dc8b11c13d905264600010d7",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/lib/candidate-references.mjs": {
+      "bytes": 18705,
+      "sha256": "c8bf63c0447a6bbfa0025a91b10cd1d495c621d6b64f0532cc0cd2e3d3779e40",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/tests/candidate-imports.test.mjs": {
+      "bytes": 15283,
+      "sha256": "2cfae596f6e5ad838823be14c2d2380e138c0c07db5bdaf45aaaa16a211f5f98",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/README.md": {
+      "bytes": 6508,
+      "sha256": "5c25838b5cd0539688d6c9552d1fcbc47428874e4adbc3c2b0bc682e5f5eccef",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "package.json": {
+      "bytes": 121297,
+      "sha256": "7348b31a67caeecb68b44e4fee005513a4902f125cf874b33d34ed539a5bded9",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "pnpm-lock.yaml": {
+      "bytes": 518383,
+      "sha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "pnpm-workspace.yaml": {
+      "bytes": 4827,
+      "sha256": "eb44406255e205d6f86002d54d2ad5423b07b0cd84607442c1a9ce113c70c65f",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/alignment.json": {
+      "bytes": 890,
+      "sha256": "1e748945216654c1ab22fc0ee1c0b77bca4cb0a9f49cc056ccbb05418a2bb79b",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/app.json": {
+      "bytes": 142,
+      "sha256": "a9662c1338ff507bee697d570ef85f85f8db958137484dd178edc716ce1098b8",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/babel.config.cjs": {
+      "bytes": 135,
+      "sha256": "e7254b855eeba8efe9d7a300c1d520c97993c7695c073fbe8aea13f773395a62",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/metro.config.cjs": {
+      "bytes": 106,
+      "sha256": "0d2906cd24cc51269fbca472f3f68ab2fd79ad2347f301745811363270943d7c",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/package.json": {
+      "bytes": 288,
+      "sha256": "6f95082dbd8f2ac5df2ddf34603e4f41c256f56b2813919731e3a5af8521c370",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/scripts/check-transform.cjs": {
+      "bytes": 1552,
+      "sha256": "9acbc6e455823ebf1a2257c91bc87929f092f19b5922236ffc14c1a9246b62bb",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/src/ProbeApp.tsx": {
+      "bytes": 159,
+      "sha256": "445898cf9548060360a52d2ed44431ccacfcb0601967789d74e7add47209f248",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/src/index.ts": {
+      "bytes": 119,
+      "sha256": "f7a9ce66c31312b28afa422a699a3eeae83068a553b20217e11b1c8c0d015474",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "experiments/native-architecture/tsconfig.json": {
+      "bytes": 153,
+      "sha256": "caa6455603ad732c0c49317143799d55571f3c2bd01ee768c72e7a53ab9b8e60",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/tests/candidate-configs.test.mjs": {
+      "bytes": 15825,
+      "sha256": "8a2c4f8ffa819e841262c11bb4192b204c593aabc1fa894c58ef658d4131a69f",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    },
+    "tools/migration/tests/candidate-fixtures.mjs": {
+      "bytes": 1933,
+      "sha256": "212ca77d00b250bbdf0a69a0081f85f4ced5d9fa283ea29275a401db9989fbf9",
+      "workingtreeMatches": true,
+      "sourceCommitMatches": true,
+      "composedHeadMatches": true
+    }
+  },
+  "trackedToolInputs": {
+    "count": 861,
+    "sha256": "eaa1fe4d9620327fa3f5b24fd103b45622fd230eee55242a9e0ae11c81ede6e3",
+    "enumeration": "git ls-files tools filtered to .mjs; includes every final fixture source"
+  },
+  "recordOnlyCompositionPaths": [
+    "docs/migration/BURDEN.md",
+    "docs/migration/CAMPAIGN.md",
+    "docs/migration/evidence/resumption/burden-accepted-integration.json.txt",
+    "docs/migration/evidence/resumption/burden-final-head-ci-metadata.json.txt",
+    "docs/migration/evidence/resumption/live-transition-1627.json.txt"
+  ],
+  "scope": "Source20, candidate/config/package/lock and tracked-tool enumeration equal before and after accepted records-only integration; scoped/static/actual consumer evidence is reused only for these matching inputs. Complete workingtree and final CI identity are separate final gates.",
+  "review": {
+    "actualConversationId": "bbe89d5b-644f-4d4f-9366-e5156cebf4ea",
+    "used": 3,
+    "remaining": 0,
+    "reviewedSource": "ecdd26f93849a8a26542536be82e63068c662749",
+    "currentSourceIndependentAcceptance": "not established; parent must disposition required approval/provenance exception"
+  }
+}

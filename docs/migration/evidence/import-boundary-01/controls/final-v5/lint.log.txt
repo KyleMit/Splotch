@@ -1,0 +1,10 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/Users/kylemit/.codex/worktrees/3218/Splotch/tools/migration/tests/candidate-configs.test.mjs
+  7:9  warning  'candidate' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (0 errors, 1 warning)
+
