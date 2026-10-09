@@ -1,0 +1,124 @@
+{
+  "PR": "https://github.com/KyleMit/Splotch/pull/2718",
+  "finalReviewHead": "d1225d202e5bb7b2e925870fce5964d798b47ed7",
+  "CIActualSource": "944788da322876bfa2577cf4b0e87f662187c2f2",
+  "CIActualSourceParents": [
+    "d11f99c8b2470a1f9af397180728014890a25a5b",
+    "d1225d202e5bb7b2e925870fce5964d798b47ed7"
+  ],
+  "sameSourceTree": "a7ded5191abea0b190795c5bf307e27285958f80",
+  "checkpoint": "c0ca2f6dc7d7d385ecb2307c7fda91605dab240d",
+  "lockSha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+  "workflowBlob": "54d78d6a92e52186a5866b6363f84ebb78d63f0a",
+  "CI": {
+    "success": 18,
+    "skipped": 5,
+    "failed": 0,
+    "pending": 0,
+    "run": 37881689559,
+    "retainedJob": 113662986539,
+    "browserlessJob": 113662986422,
+    "combinedStatusContexts": []
+  },
+  "serialCalls": {
+    "order": [
+      "release build",
+      "release check",
+      "release browser",
+      "mechanism build",
+      "mechanism check",
+      "mechanism browser1",
+      "mechanism browser2"
+    ],
+    "allSevenPublicCallExits": 0,
+    "exitEvidence": "Unchanged actual YAML shell runs set -euo pipefail; completed step5 success plus2 artifact markers/2 check completions/3 browser completions. Each call is piped through tee under pipefail.",
+    "events": [
+      "2026-10-09T04:01:08.0977723Z Owned web-host artifact: /home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D",
+      "2026-10-09T04:06:57.8382128Z Structural control checked: /home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D; committed source; remaining acceptance stays pending",
+      "2026-10-09T04:09:05.2670820Z Retained browser smoke completed for release; full host, deployed and physical acceptance remain pending",
+      "2026-10-09T04:09:08.3417665Z Owned web-host artifact: /home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h",
+      "2026-10-09T04:14:52.4896704Z Structural control checked: /home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h; committed source; remaining acceptance stays pending",
+      "2026-10-09T04:16:59.3716676Z Retained browser smoke completed for mechanism; full host, deployed and physical acceptance remain pending",
+      "2026-10-09T04:19:05.8979804Z Retained browser smoke completed for mechanism; full host, deployed and physical acceptance remain pending"
+    ],
+    "started": "2026-10-09T04:01:04.0278107Z",
+    "completed": "2026-10-09T04:19:05.8979804Z",
+    "elapsedSeconds": 1081.8701697
+  },
+  "retainedArtifacts": [
+    {
+      "id": 11595595104,
+      "name": "retained-web-host-release-1",
+      "size_in_bytes": 15150905,
+      "url": "https://api.github.com/repos/KyleMit/Splotch/actions/artifacts/11595595104",
+      "archive_download_url": "https://api.github.com/repos/KyleMit/Splotch/actions/artifacts/11595595104/zip",
+      "expired": false,
+      "created_at": "2026-10-09T04:19:07Z",
+      "expires_at": "2026-10-16T04:19:06Z",
+      "updated_at": "2026-10-09T04:19:07Z",
+      "digest": "sha256:e629674d6f007af875ffcc786f956c3c134b4e307b0dde7a44a95bd7e9ae0d6b",
+      "workflow_run": {
+        "id": 37881689559,
+        "repository_id": 1138315402,
+        "head_repository_id": 1138315402,
+        "head_branch": "codex/handlebars-security-fix",
+        "head_sha": "d1225d202e5bb7b2e925870fce5964d798b47ed7"
+      }
+    },
+    {
+      "id": 11595485635,
+      "name": "retained-web-host-mechanism-1",
+      "size_in_bytes": 15551915,
+      "url": "https://api.github.com/repos/KyleMit/Splotch/actions/artifacts/11595485635",
+      "archive_download_url": "https://api.github.com/repos/KyleMit/Splotch/actions/artifacts/11595485635/zip",
+      "expired": false,
+      "created_at": "2026-10-09T04:19:09Z",
+      "expires_at": "2026-10-16T04:19:07Z",
+      "updated_at": "2026-10-09T04:19:09Z",
+      "digest": "sha256:86a665c9b7191b20f10e56f6c7e08bbf7f0079abad3266f79acdecd45b022cbf",
+      "workflow_run": {
+        "id": 37881689559,
+        "repository_id": 1138315402,
+        "head_repository_id": 1138315402,
+        "head_branch": "codex/handlebars-security-fix",
+        "head_sha": "d1225d202e5bb7b2e925870fce5964d798b47ed7"
+      }
+    }
+  ],
+  "verifiedContents": "RETAINED-PROOF-CONTENT-SUMMARY.json",
+  "memberIdentities": "export-member-manifest.json",
+  "fullRetainedLog": "host-local (not committed; see durableSameMacCopies)",
+  "fullInputsLocation": "Complete96,243,530B release and96,243,540B mechanism inputs remain in verified ZIPs; their SHA256 values match result.inputsSha256. All46 regular ZIP members read and CRC/SHA checked. Other exported records/browser evidence retained under export/.",
+  "history": {
+    "failedFirstCI": "/private/tmp/splotch-handlebars-retained-ci-diagnosis-01a11a00/DIAGNOSIS.json",
+    "initialLockValidation": "/private/tmp/splotch-handlebars-security-fix-01a11a00/COMPACT-VALIDATION.json",
+    "checkpointRepair": "/private/tmp/splotch-handlebars-security-proof-repair-01a11a00/VALIDATION-RECEIPT.json",
+    "R2DocFix": "/private/tmp/splotch-handlebars-review-doc-fix-01a11a00/VALIDATION-RECEIPT.json"
+  },
+  "limits": [
+    "No retry/dispatch/review/merge or source/ledger mutation",
+    "Root alone owns final original Claude R3",
+    "Normal merge must preserve checkpoint ancestry",
+    "Retained host CI scope; no native candidate drawing/framework/performance/deployed or physical acceptance",
+    "No broad borrowed-system/process graph claim; recorded17 groups ended without escalation under existing owned-group poll semantics",
+    "Transport download references retained host-locally; do not need them after digest-bound ZIP retrieval"
+  ],
+  "closureSemanticsSource": {
+    "tools/migration/lib/web-host-processes.mjs": {
+      "sha256": "037750247c955d59b54babd7b50f8de07dc89613d688717793284c2847720514",
+      "gitBlob": "c22fe8ce2d813335b2e2909d8c2c25d011565ab0",
+      "unchangedOwner": "AcceptedF1 source unchanged by this unit; read only to interpret exported records"
+    },
+    "tools/migration/lib/web-host-build.mjs": {
+      "sha256": "d338127ba990bf2cb5f134c3fc652f9e41c4afbf05a5ff3ce60b4fe4f6abe904",
+      "gitBlob": "cb219545a8cd6976fdd18b14469365cc11ad532b",
+      "unchangedOwner": "AcceptedF1 source unchanged by this unit; read only to interpret exported records"
+    },
+    "tools/migration/lib/web-host-dependencies.mjs": {
+      "sha256": "146ee3f1cf903590eb4d2231143dd78c123b5789b6f29aabd92511033f22c4f3",
+      "gitBlob": "042ed49a8f399411f7a35f73b65edcb367a39c7f",
+      "unchangedOwner": "AcceptedF1 source unchanged by this unit; read only to interpret exported records"
+    }
+  },
+  "durableSameMacCopies": "Canonical host-local logs/migration-resumption-01a11a00/security-final-accepted-20261009-0438; original ZIPs, summaries, native readback and original review receipts verified and retained before CI expiry"
+}
