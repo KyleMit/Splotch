@@ -1,9 +1,5 @@
-import { Text, View } from 'react-native';
+import { DrawingScreen } from './DrawingScreen';
 
 export function ProbeApp() {
-  return (
-    <View>
-      <Text>Native architecture probe</Text>
-    </View>
-  );
+  return <DrawingScreen />;
 }
