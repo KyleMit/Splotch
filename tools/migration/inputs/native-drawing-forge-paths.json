@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "scope": "N1 first drawing slice save/share roots; accepted Forge mitigation unchanged",
+  "roots": [
+    {
+      "name": "expo-file-system",
+      "entry": {
+        "specifier": "57.0.7",
+        "version": "57.0.7(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))"
+      },
+      "artifactKey": "expo-file-system@57.0.7",
+      "artifact": {
+        "resolution": {
+          "integrity": "sha512-1vkZRadOsIputFDBcclqBa1pO3iXOO6iIsdqJipQWw4V5TSnWgmRTuOF7ro8IzrVue+PHbum++KCG3Tawem4cg=="
+        },
+        "peerDependencies": {
+          "expo": "*",
+          "react-native": "*"
+        }
+      },
+      "snapshotKey": "expo-file-system@57.0.7(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))",
+      "snapshot": {
+        "dependencies": {
+          "expo": "57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+          "react-native": "0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)"
+        }
+      },
+      "installedManifestSha256": "db1d8ced7ce04e7daf4e55c3fd543bfbe42e32aa5e192bbb8ae4bda98de50069"
+    },
+    {
+      "name": "expo-sharing",
+      "entry": {
+        "specifier": "57.0.22",
+        "version": "57.0.22(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)"
+      },
+      "artifactKey": "expo-sharing@57.0.22",
+      "artifact": {
+        "resolution": {
+          "integrity": "sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg=="
+        },
+        "peerDependencies": {
+          "expo": "*",
+          "react": "*",
+          "react-native": "*"
+        }
+      },
+      "snapshotKey": "expo-sharing@57.0.22(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+      "snapshot": {
+        "dependencies": {
+          "@expo/config-plugins": "57.0.9(supports-color@10.2.2)(typescript@6.0.3)",
+          "@expo/config-types": "57.0.2",
+          "@expo/plist": "0.8.1",
+          "expo": "57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+          "react": "19.2.3",
+          "react-native": "0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)"
+        },
+        "transitivePeerDependencies": ["supports-color", "typescript"]
+      },
+      "installedManifestSha256": "64f84d0b7208c437e9e1052c1af9b91fc3b604124770cf4825c299ae248bcc3d"
+    }
+  ]
+}

@@ -3,7 +3,14 @@ import {
   createPngCapture,
   createStrokeInput,
 } from '../../experiments/native-architecture/src/drawing/interactions.ts';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  addStroke,
+  createHistory,
+  emptyDrawing,
+  MAX_POINTS,
+  parseDrawing,
+  undoDrawing,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 
 describe('native drawing interaction ownership', () => {
   it('ignores an expired export callback after a new capture starts', async () => {
@@ -48,5 +55,20 @@ describe('native drawing interaction ownership', () => {
     expect(input.sample('finger A', { x: 80, y: 90 })).toBeNull();
     expect(input.sample('finger B', { x: 80, y: 90 })).toBeNull();
     expect(input.finish()).toBeNull();
+  });
+
+  it('releases capped input and preserves save, undo, and the next stroke after a refused sample', () => {
+    const input = createStrokeInput();
+    const draft = input.start('finger A', 'Blue', 'pencil', { x: 10, y: 20 });
+    draft.points = Array.from({ length: MAX_POINTS }, () => ({ x: 10, y: 20 }));
+    expect(() => input.sample('finger A', { x: 30, y: 40 })).toThrow('Lift your finger');
+    const finished = input.finish('finger A', { x: 50, y: 60 });
+    expect(finished.points).toHaveLength(MAX_POINTS);
+    expect(input.identifier()).toBeUndefined();
+    const committed = addStroke(createHistory(), finished);
+    expect(parseDrawing(JSON.parse(JSON.stringify(committed.drawing)))).toEqual(committed.drawing);
+    expect(undoDrawing(committed).drawing).toEqual(emptyDrawing());
+    input.start('finger B', 'Purple', 'marker', { x: 70, y: 80 });
+    expect(input.finish('finger B', { x: 90, y: 100 }).points).toHaveLength(2);
   });
 });

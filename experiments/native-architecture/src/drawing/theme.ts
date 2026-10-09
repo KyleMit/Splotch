@@ -1,6 +1,31 @@
-import { scale, themes } from '../../../../web/src/lib/design/tokens';
+// The candidate import boundary excludes shipping web source; native-drawing-tokens.test.mjs pins this projection.
+export const DRAWING_THEME = {
+  surface: '#ffffff',
+  borderWarm: '#ddd6cc',
+  textStrong: '#333',
+  text: '#474747',
+  textSoft: '#666',
+  brandWash: '#ede7f6',
+  brandSolid: '#7c50bb',
+  paper: '#fcfbf8',
+  paperMargin: '#f1efeb',
+} as const;
 
-export const DRAWING_THEME = themes.light;
+const scale = {
+  space1: '4px',
+  space2: '8px',
+  space3: '12px',
+  space4: '16px',
+  radiusMd: '12px',
+  radiusLg: '16px',
+  fontSizeSm: '14px',
+  fontSizeMd: '16px',
+  fontSizeXl: '22px',
+  fontWeightSemibold: '600',
+  fontWeightBold: '700',
+  scrimPill: 'rgb(23 23 29 / 72%)',
+} as const;
+
 // The released React Native Web color parser requires comma-separated rgba syntax.
 export const DRAWING_SCRIM = scale.scrimPill.replace(
   /^rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)$/,

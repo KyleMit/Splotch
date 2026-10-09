@@ -1,5 +1,12 @@
-import type { PaletteLabel } from '../../../../web/src/lib/palette';
-import { appendPoint, type Brush, type Drawing, type Point, type Stroke } from './model';
+import type { PaletteLabel } from './palette';
+import {
+  appendPoint,
+  MAX_POINTS,
+  type Brush,
+  type Drawing,
+  type Point,
+  type Stroke,
+} from './model';
 
 export function createStrokeInput() {
   let current: { identifier: string; stroke: Stroke } | null = null;
@@ -19,11 +26,11 @@ export function createStrokeInput() {
     },
     finish(identifier?: string, point?: Point): Stroke | null {
       if (!current || (identifier !== undefined && identifier !== current.identifier)) return null;
-      const stroke = point
-        ? { ...current.stroke, points: appendPoint(current.stroke.points, point, true) }
-        : current.stroke;
+      const stroke = current.stroke;
       current = null;
-      return stroke;
+      return point && stroke.points.length < MAX_POINTS
+        ? { ...stroke, points: appendPoint(stroke.points, point, true) }
+        : stroke;
     },
     identifier(): string | undefined {
       return current?.identifier;

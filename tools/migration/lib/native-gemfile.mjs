@@ -6,7 +6,7 @@ export const NATIVE_GEMFILE_OWNER = Object.freeze({
   path: 'Gemfile',
   ownership: 'maintained-manual-source',
   upstream: 'https://raw.githubusercontent.com/facebook/react-native/v0.86.3/Gemfile',
-  sourceSha256: 'a9868ca6554512b9396327a77cca8e61fe32c34d21a3ee7c6f5cb99b7340e353',
+  sourceSha256: 'c3148d004533ff2007b1f0173376b78ee7a00d0b7ee231c7932a0734f3e469f8',
   ruby: '3.4.11',
   cocoapods: '1.16.2',
   xcodeproj: '1.27.0',

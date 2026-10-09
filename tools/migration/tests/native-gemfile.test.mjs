@@ -46,7 +46,8 @@ describe('manual native Gemfile source owner', () => {
   it('retains released compatibility constraints and explicit Ruby 3.4 library consumers', () => {
     expect(source).toContain("gem 'activesupport', '>= 6.1.7.5', '< 7.1.0'");
     expect(source).toContain("gem 'concurrent-ruby', '<= 1.3.4'");
-    for (const name of ['bigdecimal', 'logger', 'benchmark', 'mutex_m'])
+    expect(source).toContain("gem 'json', '< 3'");
+    for (const name of ['bigdecimal', 'logger', 'benchmark', 'mutex_m', 'nkf'])
       expect(source).toContain(`gem '${name}'\n`);
   });
 

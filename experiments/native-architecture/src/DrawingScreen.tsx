@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { paletteHex, type PaletteLabel } from '../../../web/src/lib/palette';
+import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface } from './drawing/DrawingSurface';

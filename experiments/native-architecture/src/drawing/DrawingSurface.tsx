@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { paletteHex, type PaletteLabel } from '../../../../web/src/lib/palette';
+import { paletteHex, type PaletteLabel } from './palette';
 import {
   BRUSHES,
   PAPER_HEIGHT,
@@ -154,14 +154,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
 
     function finish(event?: GestureResponderEvent) {
       const identifier = input.identifier();
-      const stroke = input.finish(
-        identifier,
-        event && identifier !== undefined ? point(event, identifier) : undefined
-      );
-      if (!stroke) return;
+      if (identifier === undefined) return;
+      const stroke = input.finish(identifier, event ? point(event, identifier) : undefined);
       setDraft(null);
       propsRef.current.onDrawingChange(false);
-      propsRef.current.onStroke(stroke);
+      if (stroke) propsRef.current.onStroke(stroke);
     }
 
     function ready() {

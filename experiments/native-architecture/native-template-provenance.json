@@ -184,7 +184,7 @@
       "sourceSha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
       "target": "ios/HelloWorld.xcodeproj/project.pbxproj",
       "change": "candidate-apple-identity-and-bundling",
-      "targetSha256": "a2b57ca72b530ef07ec673435ee0faba75695af26b66b94cbe8e8989bad1cded",
+      "targetSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065",
       "mode": "0o644"
     },
     {
