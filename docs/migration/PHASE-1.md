@@ -96,12 +96,28 @@ The second review preserved those dispositions and refined eight remaining point
 
 ## Bounded units and dependencies
 
-Each consequential unit receives scoped independent review, an exact-head diff/evidence review and
-applicable CI before joining the integration branch. The handler can implement and exercise routine
+Each unit receives scoped Claude review, an exact-head diff/evidence review and applicable CI before
+joining the integration branch. Within a unit, the handler can implement and exercise routine
 feature increments before that review; consolidate concrete source and results for the original
-reviewer within the unit's remaining capacity. Units may progress independently; they do not confer
-another unit's evidence. No budget reset, replacement reviewer or renamed exhausted repair follows
-from this ordering change.
+reviewer within the unit's remaining capacity. Codex subagents do not replace Claude review. Units
+may progress independently; they do not confer another unit's evidence. No budget reset, replacement
+reviewer or renamed exhausted repair follows from this ordering change.
+
+N1's reserved original round covers its recovered template/package/platform source and the first
+drawing slice: strokes, color/brush, undo, clear, PNG export and local save/reopen. Develop and try
+that slice first. Hold the reserved round until the exact resulting source and results for the
+claimed N1 structural scope are ready, including the optimized both-OS builds required for that
+scope. The earlier development checkpoint does not require or consume that final round. N1's
+remaining findings, failed attempts and unresolved obligations stay attached to N1; exhaustion
+requires a legitimate human budget disposition before another substantive N1 round.
+
+Later crayon/Magic, coloring, history/page, audio and service features are subsequent units with
+their own bounded changed behavior, source range, dependency on accepted N1 source and original
+Claude review identity. Register each unit's scope and budget before its first review. A new unit
+cannot relabel N1 findings, repair an exhausted N1 defect under a fresh reviewer, or count
+incomplete N1 evidence as accepted. Review and applicable CI precede each integration merge; later
+feature units do not move N1's unused or consumed capacity. This separates real new product work
+from a renamed repair without forcing the full product into one review.
 
 Register the contract's causal limits, observer fallback and burden ranges before remedies or
 comparison results; update those records only through reviewed evidence.

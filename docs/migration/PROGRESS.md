@@ -1,12 +1,27 @@
 # Migration progress checklist
 
 The maintainer resumed the full campaign on 2026-10-06. The
-[public campaign register](CAMPAIGN.md#current-public-status-2026-10-08) tracks current source,
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-09) tracks current source,
 review dependencies and acceptance; host-local CURRENT mirrors pending execution and lease receipts.
 Accepted technical evidence remains committed or publicly linked. The dated checklist below
 preserves the pause frontier.
 
-## Current milestone rebaseline, 2026-10-08
+## Current functional development milestone, 2026-10-09
+
+The [functional development sequence](PHASE-1.md#functional-development-sequence) owns execution
+order: useful drawing, controls, undo, clear, PNG export and local save/reopen first, with supported
+development feedback. The phone development checkpoint is 2026-10-11 03:00 UTC, or a concrete
+device/signing blocker with a runnable emulator/simulator build and demonstration. Actual running
+feature evidence is pending; the campaign remains active and incomplete. Follow it with full
+fidelity/services, fair architecture evidence, integrated tuning and final readiness.
+
+F1's single additional original round was consumed and its exact composition accepted and merged;
+the current public register owns the source and review bindings. N1 retains 2 used / 1 reserved; its
+first drawing slice and structural evidence retain that original review identity. No framework is
+selected and all applicable final gates remain. The dated rebaseline below records an earlier
+frontier and does not set current F1 status or implementation ordering.
+
+## Historical milestone rebaseline, 2026-10-08
 
 The [fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy-only data
 transfer and exact old-UI layout/flow parity across web/PWA, Android and iOS. Substantive product

@@ -371,11 +371,13 @@ and tokens where selected; keep render surfaces, native services, and web semant
 adapters. A setting or DOM subtree has one active owner. Do not make the current Svelte facade a
 native dependency: it imports SvelteKit/rune state and owns browser canvas objects.
 
-For each bounded increment, the lead writes an implementation plan with alternatives and done-when
-evidence; Claude reviews it. Implement, run appropriate checks and real-app validation, then open
-the unit PR promptly and obtain Claude's diff/evidence review. Resolve material findings, verify the
-exact head's applicable CI, and merge into the integration branch. Review the phase outcome before
-adding the next foundation. Preserve a durable work ledger and all rejected assumptions.
+After foundation selection, for each bounded ownership increment, the lead writes an implementation
+plan with alternatives and done-when evidence; Claude reviews it. Isolated pre-selection routine
+feature construction follows the functional development priority and each unit's integration review
+gate. Implement, run appropriate checks and real-app validation, then open the unit PR promptly and
+obtain Claude's diff/evidence review. Resolve material findings, verify the exact head's applicable
+CI, and merge into the integration branch. Review the phase outcome before adding the next
+foundation. Preserve a durable work ledger and all rejected assumptions.
 
 Web, Android, and iOS have independent readiness gates. Keep a shipping reference and staged
 candidate until that target earns applicable product acceptance and measured readiness. Validate

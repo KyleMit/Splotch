@@ -43,6 +43,14 @@ does not reset a ledger, substitute a reviewer, rename an exhausted repair or re
 own consequential source and review transition must be recorded before integration. The full
 [completion contract](CONTRACT.md#migration-completion) remains unmet.
 
+This committed register owns public campaign status and acceptance. Record consequential source,
+review, dependency and acceptance transitions with exact evidence before relying on them. Host-local
+CURRENT mirrors pending execution and leases; it does not override the public register or establish
+accepted evidence. Reconcile actual resource ownership at execution time and record owned handles;
+historical lease rows grant no current ownership. The documentation change itself grants no runtime,
+device or signing lease. The maintainer's separate development authorization governs supported local
+work. These standing authority, recording and lease rules remain current under this section.
+
 ## Historical public status, 2026-10-08
 
 Public source and CI observation: 2026-10-08T06:13:12.044Z; scope round two completed at
