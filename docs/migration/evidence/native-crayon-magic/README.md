@@ -80,10 +80,10 @@ f61f0c842abd2c4d4ab0eb1f3058786d245c444a is an ancestor of the composed N1 depen
 The final N1 composition was source-only: merge inspection and `git diff --check` passed, and the
 lock SHA256 remains unchanged. No installation or execution check ran on that final composition.
 
-The own installed dependency tree predates that security lock update. No installation ran during the
-source-composition windows; a new frozen installation, exact-source browser/native output, and the
-applicable full tier remain pending a coordinated resource window. These source checks do not
-certify that installed graph or accept N1.
+The installed dependency tree predated that security lock update during the source-composition
+windows. Those windows ran no installation or execution check and did not certify the installed
+graph or accept N1. The later execution window below refreshed and checked the owned graph; native
+brush output remains pending.
 
 Rejecting controls temporarily changed committed source, ran the actual artwork output suite, and
 restored only that source file before the next control. Each failed at a substantive pixel
@@ -121,3 +121,45 @@ node tools/migration/probe-native-brushes.mjs \
 
 The caller starts no server. Its Chromium input proves browser mechanics only. Native output,
 new-product source acceptance and physical release gates remain pending.
+
+## Exact-source execution window
+
+The local window began at 2026-10-09 05:52:15 UTC from clean
+beb08769890cccb04d82fdcdd6c3cc431140aa09, with the final N1 dependency and unchanged lock named
+above. The initial sandbox process inventory was refused; the host inventory was then recorded
+privately. The own `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile` refresh
+passed without lock changes, lifecycle scripts or pnpmfile execution. Both `node_modules` and the
+SVG package resolve inside this worktree, without foreign mutable links.
+
+The initial format check rejected ledger wrapping. The first complete tools run rejected two new
+feature test specifiers: an extensionless renderer mock and a candidate-context escape embedded as a
+test-file import literal. Both failures remain in `current-window/`. The corrected mock names its
+`.tsx` source; the escape fixture declares its candidate-relative `.ts` specifier before injecting
+it into all five modules. The accepted specifier fence and F1 scanner/refusals remain unchanged. The
+focused output, ownership and specifier controls passed 899 tests after repair.
+
+Current source checks, lint, formatting, candidate TypeScript and maintained native-source
+qualification passed. The justified complete tools rerun passed 349 files and 8,131 tests with two
+workers. Its corrected source is eea3fd64898bc8bc08fc7f67fdfa7c031ca9597d.
+
+The actual browser caller ran that clean source from 05:59:49.509 through 05:59:55.095 UTC on the
+selected unused port 5300, using two Metro workers. Grain left 19.6% paper on the first Crayon pass
+and 7% after same-color buildup. The blue/yellow crossing had 92 green-leading pixels. Magic samples
+differed across the paper and matched the corresponding exported samples. Clear/Undo and save/reopen
+produced identical paper screenshots. The real 1024×768 downloaded PNG retained grain, the mixed
+crossing and Magic. Its SHA256 is 06e338e48843dcf6c81d9026ea738f6e918a22390cdd90dfbd883ae4f1086968.
+Opening a saved picture with a negative Crayon seed was refused, and the existing picture remained
+pixel-identical. After settling, the page-error list was empty. Actual images and the source-bound
+report are in `current-browser/`.
+
+The browser driver exited 0 and closed its browser. Owned Expo handle 67415, PID/process group
+69561, exited 0 after interruption at 06:00:26 UTC. The subsequent process/listener check found
+neither that process nor a port 5300 listener. All owned execution handles are closed; no foreign
+listener was terminated. The terminal receipt is `current-window/terminal.json`.
+
+Native planning only inspected N1's supported Release recipe and existing qualifying Ruby/Pod,
+JDK/SDK and disposable-signing provenance. The next grant must create this unit's own source-bound
+generated native project, Pods/cache and outputs, without mutating N1's retained tree. Actual
+standalone brush drawing, save/reopen, PNG/share and restart output on both native platforms remain
+required before publication or the original new-unit review. No native compile, performance run,
+reviewer operation or acceptance merge ran in this window.

@@ -1,0 +1,52 @@
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+from /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/docs/migration/evidence/native-crayon-magic/README.md:
+ 4  4| is·e836b73ac2731fd7e22853a5b334f7403ea4cfea.·The·original·N1·source/evidence,·source-boundary
+ 5  5| repairs,·review·and·acceptance·remain·owned·by·N1;·this·unit·neither·accepts·nor·repairs·that
+ 6  6| dependency.·The·initial·feature·composition·used·the·published·N1·dependency
+    7|-20b51012a9bb3daa1314cab1d8c276cc9eb8a977.·Three·import-only·merge·conflicts
+    8|-retain·the·new·brush·implementation·and·use·N1's·candidate-local·palette.·The·new·`Ink`·renderer
+    9|-uses·that·same·palette·owner.·The·N1·projection,·native·recipes,·package·declarations·and·security
+   10|-repairs·are·unchanged·by·the·feature·composition.
+ 7   |+20b51012a9bb3daa1314cab1d8c276cc9eb8a977.·Three·import-only·merge·conflicts·retain·the·new·brush
+ 8   |+implementation·and·use·N1's·candidate-local·palette.·The·new·`Ink`·renderer·uses·that·same·palette
+ 9   |+owner.·The·N1·projection,·native·recipes,·package·declarations·and·security·repairs·are·unchanged·by
+10   |+the·feature·composition.
+11 11| 
+12 12| The·final·dependency·composition·uses·the·exact·published·N1·source
+   13|-64af9ba7c32b785dcef71ce7d9e3549f392cf5e5·and·checkpoint
+   14|-ff248625efa72215354b83c44f892ae9e5ecdfba.·Its·single·source·conflict·retains·N1's·private·tuning
+   15|-constants·and·this·unit's·four-brush·owner·and·version·2·save·model.·N1·remains·unaccepted.·The
+   16|-original·feature·commits,·browser·artifacts·and·rejecting·controls·remain·preserved.
+13   |+64af9ba7c32b785dcef71ce7d9e3549f392cf5e5·and·checkpoint·ff248625efa72215354b83c44f892ae9e5ecdfba.
+14   |+Its·single·source·conflict·retains·N1's·private·tuning·constants·and·this·unit's·four-brush·owner
+15   |+and·version·2·save·model.·N1·remains·unaccepted.·The·original·feature·commits,·browser·artifacts·and
+16   |+rejecting·controls·remain·preserved.
+17 17| 
+18 18| The·existing·positive·scanned-source·expectation·adds·only·the·five·actual·production·brush·modules.
+19 19| The·accepted·F1·scanner/refusal·logic·and·input·boundaries·are·unchanged.·New·feature·tests·make
+...
+70 70| brush/rainbow·rejection,·and·preserved·first-slice·saves.·Full·applicable·checks·and·native·output
+71 71| remain·pending.
+72 72| 
+   73|-After·the·initial·N1·composition,·candidate·TypeScript,·`npm·run·check`,·and·`npm·run·lint`
+   74|-passed·with·no·ESLint·warning.·The·permitted·focused·composition·set·passed·109·tests·across·brush
+73   |+After·the·initial·N1·composition,·candidate·TypeScript,·`npm·run·check`,·and·`npm·run·lint`·passed
+74   |+with·no·ESLint·warning.·The·permitted·focused·composition·set·passed·109·tests·across·brush
+75 75| behavior/output/history,·token·projections,·the·real·candidate·import·inventory,·and·all·five·new
+76 76| module·escape-and-restore·controls.·The·composed·lock·SHA256·is
+77 77| 9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57.·The·security·commit
+--
+Found 1 not formatted file. Run dprint fmt to fix.
