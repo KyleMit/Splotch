@@ -584,7 +584,7 @@
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "openai": "^7.23.0",
+    "openai": "^7.28.0",
     "sharp": "^0.35.5",
     "svelte": "^5.57.1",
     "vite": "^8.3.1",
