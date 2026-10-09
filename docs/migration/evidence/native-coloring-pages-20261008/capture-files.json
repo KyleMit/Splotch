@@ -1,8 +1,8 @@
 [
   {
     "path": "README.md",
-    "sha256": "593b4a5e778d93fe7d08044d104b565b6d544059a60da42b823eb4e52ead8f26",
-    "bytes": 7313
+    "sha256": "1da24b84198cfacd3310b71985b9f6d8a0c31745e6169cf1ed9c463fb3f26a9e",
+    "bytes": 7874
   },
   {
     "path": "before-source.json.txt",
@@ -53,6 +53,21 @@
     "path": "controls/format-check.log.txt",
     "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b",
     "bytes": 289
+  },
+  {
+    "path": "controls/full-tools-window.json",
+    "sha256": "4bfd4c0d4fb4c197e849b9d8a8defd731871638b85651bf4fd5e5650e45f3f00",
+    "bytes": 218
+  },
+  {
+    "path": "controls/full-tools.log.txt",
+    "sha256": "29a5e4cfa3e79abee1e63e0bb4f99fe29dffac1e3ca63d8d2e30f991bdd9ea90",
+    "bytes": 14069
+  },
+  {
+    "path": "controls/inherited-failure-diagnosis.json",
+    "sha256": "b3d36ac9890e922ae0428df51d5c72480a8550a0d897add08989cbf337bcb670",
+    "bytes": 2502
   },
   {
     "path": "controls/negative-controls.json",

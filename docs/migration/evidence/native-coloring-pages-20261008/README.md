@@ -54,9 +54,15 @@ failures, not deliberate negative controls. The turtle path-count miss was a smo
 Uncommitted intermediate scripts were edited in place and are not represented as exact retained
 source snapshots.
 
-The full tools tier and publication remain pending the coordinated native-build window at this
-evidence checkpoint. Review and campaign registration are owned by the root session; this document
-does not consume or reset N1/F1 reviewer identities or budgets.
+The bounded full tools window ran from 04:06:10.484 to 04:07:35.511 UTC on 2026-10-09, then the
+owned process group was terminated at the 85-second bound with exit 124. The suite did not finish.
+The [window receipt](controls/full-tools-window.json) and
+[partial output](controls/full-tools.log.txt) are preserved. Read-only
+[diagnosis](controls/inherited-failure-diagnosis.json) identifies inherited N1 candidate-import and
+Forge-path policy failures, with no sandbox/file-path refusal. No inherited guard or N1 source was
+changed under this page unit. Publication and the final applicable tier remain pending exact N1
+source composition and a coordinated native-build window. Review and campaign registration are owned
+by the root session; this document does not consume or reset N1/F1 reviewer identities or budgets.
 
 ## Running captures
 

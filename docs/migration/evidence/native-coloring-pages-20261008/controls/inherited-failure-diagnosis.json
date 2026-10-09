@@ -1,0 +1,40 @@
+{
+  "sourceHead": "9e13b589bb331ffc08e2a08de5be891beb96d795",
+  "sourceBase": "ae4038f200f47d3b8f7f508c49c51a86197c8066",
+  "inspection": "Read-only direct calls of existing source-policy functions; no test rerun or guard edit.",
+  "candidate": {
+    "name": "AssertionError",
+    "message": "src/DrawingScreen.tsx imports ../../../web/src/lib/palette escapes candidate ownership",
+    "baseContainsSameEdge": true,
+    "cause": "The first native drawing slice imports the shipping palette outside the isolated candidate. Existing fixtures copy this whole candidate and inherit the same policy rejection; restored positive controls cannot reach their intended assertions.",
+    "partialSuiteFailures": {
+      "candidate-configs": 70,
+      "candidate-imports": 64
+    },
+    "separateInventoryObservation": "The first positive source inventory still pins seven Probe-only files. After the existing ownership rejection is reconciled, N1\u2019s actual file inventory and the new page inventory must be reflected by their respective owners."
+  },
+  "forge": {
+    "name": "AssertionError",
+    "message": "Unsupported forge importer or dependency path",
+    "expectedPathCount": 4,
+    "actualPathCount": 8,
+    "extraPaths": [
+      "experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge",
+      "experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+      "experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge"
+    ],
+    "cause": "The first native slice added expo-file-system and expo-sharing; their peer routes add these four paths. The exact four-path source-policy expectation was not changed by the page unit."
+  },
+  "classification": "Inherited N1 source/graph policy failures, not sandbox/EPERM, installed-script execution or native provider compilation failures.",
+  "unchangedFromBase": [
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "experiments/native-architecture/package.json",
+    "tools/migration/lib/candidate-imports.mjs",
+    "tools/migration/lib/forge-mitigation.mjs",
+    "tools/migration/tests/candidate-imports.test.mjs",
+    "tools/migration/tests/candidate-configs.test.mjs"
+  ],
+  "repairDisposition": "No inherited guards or N1 source were edited. Root and the same N1 owner coordinate the inherited obligations. No acceptance or full-tier pass is claimed."
+}
