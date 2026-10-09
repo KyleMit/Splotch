@@ -1,0 +1,77 @@
+{
+  "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "tree": "6e174d2a1b33cb08a7cd9ca09bb68b28862fdf2e",
+  "historicalReference": "before-historical-ae403.png is actual ae403 capture; it is not the current accepted9f64 baseline",
+  "assets": [
+    {
+      "name": "before-historical-ae403.png",
+      "source": "ae4038f200f47d3b8f7f508c49c51a86197c8066",
+      "bytes": 25799,
+      "sha256": "88271a421429b672993253f76dbfc3da6230854e584c6c43b20628915de98122",
+      "gitBlob": "2e3bc74a34c759ce0ea4706c536d65e146cc1b29",
+      "mode": "100644"
+    },
+    {
+      "name": "picker.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 38911,
+      "sha256": "9781a3cfb9295cb2be519ebcb09a862057466f8081f868965ed2f28b1759febd",
+      "gitBlob": "555f09341f849b0c22c98932fe8bb1078f7c5c7e",
+      "mode": "100644"
+    },
+    {
+      "name": "picker-phone.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 49619,
+      "sha256": "e3811f8f6aafa86bed2397d9fe83387a3bac12ca356cee81f4e553309b7ca790",
+      "gitBlob": "e47f3aa12278a6422b497b373de9fd740eb82915",
+      "mode": "100644"
+    },
+    {
+      "name": "blank.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 29896,
+      "sha256": "680a86a09972c990529bfc9604357700e584a1a62527d09c562c1bfcef05c9d9",
+      "gitBlob": "2fa2be4a0566f79990bf88fd8f92460c35f140ab",
+      "mode": "100644"
+    },
+    {
+      "name": "sunshine.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 46127,
+      "sha256": "d3ba76d82b33a7f621ac3ad6e04a625eaf2c1c39ad2caab50d55e9363ca1b575",
+      "gitBlob": "aaab288c4a4baa8f61da32c8d3721dbfd197c96c",
+      "mode": "100644"
+    },
+    {
+      "name": "flower-painted.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 55385,
+      "sha256": "4e7a1c1df29ea5f43e2d859d7a597109502fc340a54fa16639eee241c77abf82",
+      "gitBlob": "327ac83240a9e2b71193236463dacc3ffa7bbd3f",
+      "mode": "100644"
+    },
+    {
+      "name": "turtle.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 61062,
+      "sha256": "8b0e26fbc3cbb584b09a838812399d6102a7f78a79d83a8da05e7eb8adf6fc5a",
+      "gitBlob": "c359842c85f409c625fff702c19ea9643a3455a1",
+      "mode": "100644"
+    },
+    {
+      "name": "flower-painted.png.export.png",
+      "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+      "bytes": 56173,
+      "sha256": "1da4f6cdb9ff315b51e9e82ba23a3bf39dcedb8a96eeed5bee610b40e24baeb0",
+      "gitBlob": "4200ffc79f0604050f16332b8ec027acbef656b9",
+      "mode": "100644"
+    }
+  ],
+  "supplemental": [
+    "saved-picture.json",
+    "v1-resaved-picture.json",
+    "browser-validation.json"
+  ]
+}

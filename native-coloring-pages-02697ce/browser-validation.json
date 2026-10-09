@@ -1,0 +1,96 @@
+{
+  "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "tree": "6e174d2a1b33cb08a7cd9ca09bb68b28862fdf2e",
+  "productionBundle": {
+    "sha256": "c8605de41c7fcf01f0d8ba8362642f18f5979493ca50a4938b73c2c41a0ae9be",
+    "bytes": 463118,
+    "dev": false,
+    "minify": true
+  },
+  "browser": {
+    "attempts": 1,
+    "exitCode": 0,
+    "seconds": 5.880651375046,
+    "checks": [
+      "visible named picker and all choices",
+      "selected page under real green marker stroke",
+      "page change plus undo restores page and paint",
+      "clear preserves selected page and undo restores paint",
+      "blank selection clears page and paint atomically and undo restores both",
+      "save, reload, reopen exact page and stroke SVG",
+      "PNG contains selected outline and expected green paint pixels",
+      "corrupt saved page has an in-dialog alert and preserves live picture plus undo history",
+      "denied save preserves live picture plus undo history",
+      "genuine v1 new-app save reopens exact Pencil path on selected blank paper",
+      "phone picker fits and all page targets exceed 52px",
+      "modal backdrop uses the actual design-token color"
+    ],
+    "pageErrors": []
+  },
+  "png": {
+    "name": "flower-painted.png.export.png",
+    "sha256": "1da4f6cdb9ff315b51e9e82ba23a3bf39dcedb8a96eeed5bee610b40e24baeb0",
+    "bytes": 56173,
+    "width": 1024,
+    "height": 768,
+    "allThreeChannels": true,
+    "tolerance": 3,
+    "GreenRgb": [
+      140,
+      200,
+      100
+    ],
+    "GreenPixels": 4861,
+    "outlineRgb": [
+      51,
+      51,
+      51
+    ],
+    "outlinePixels": 15713,
+    "independentExactRgbCounts": {
+      "Green": 4859,
+      "outline": 15518
+    },
+    "headerAndChunkCrcsVerified": true
+  },
+  "rawSavedJsonSha256": "fc70fb48213193435e12470a4b7553817025a4ba51cd01e7d28516d664f5f148",
+  "v1ResavedJsonSha256": "cc3d01e8dcdf593d23b47484c2e95f1ac0f9ebb2850a8776b7ab171089173ad4",
+  "firstReadinessFailure": {
+    "reason": "Expo localhost listened on IPv6; prior IPv4 readiness URL refused until180-second lease expired",
+    "browserAttemptsInFailedPhase": 0,
+    "preserved": true
+  },
+  "qualification": {
+    "focusedFiles": 7,
+    "focusedTests": 115,
+    "candidateTypesExit": 0,
+    "repositoryCheckExit": 0,
+    "formatExit": 0,
+    "lintExit": 0,
+    "fullToolsFiles": 350,
+    "fullToolsTests": 8160,
+    "fullToolsExit": 0,
+    "meaningfulMutations": [
+      "Clear loses page",
+      "page change retains paint",
+      "storage accepts foreign page"
+    ],
+    "mutationsFailedAndRestored": true,
+    "pixelVerifierControlsPassed": 4,
+    "initialFailuresPreserved": [
+      "Missing generated SvelteKit type configuration; ordinary check/precheck generated it",
+      "External react-native-svg Flow syntax reached real screen harness; only renderer mock corrected"
+    ]
+  },
+  "native": {
+    "android": "UNRUN for this page feature",
+    "ios": "UNRUN for this page feature"
+  },
+  "review": {
+    "used": 0,
+    "remaining": 3,
+    "launched": false
+  },
+  "frameworkSelected": false
+}
