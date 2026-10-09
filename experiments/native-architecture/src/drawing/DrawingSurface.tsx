@@ -1,4 +1,13 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { paletteHex } from './palette';
@@ -6,9 +15,14 @@ import { BRUSHES, PAPER_HEIGHT, PAPER_WIDTH, strokePath, type Drawing, type Stro
 import { DRAWING_THEME } from './theme';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
+import { createPaperGeometry } from './paperGeometry';
+import { measurePaper } from './measurePaper';
 
 const EXPORT_TIMEOUT_MS = 10_000;
-export type DrawingSurfaceHandle = { capturePng: (snapshot: Drawing) => Promise<string> };
+export type DrawingSurfaceHandle = {
+  capturePng: (snapshot: Drawing) => Promise<string>;
+  refreshGeometry: () => void;
+};
 type Props = ContactDrawingProps & {
   drawing: Drawing;
 };
@@ -60,19 +74,16 @@ function Artwork({
   );
 }
 
-function usePngExport(ref: Ref<DrawingSurfaceHandle>) {
+function usePngExport() {
   const captures = useRef(createPngCapture()).current;
   const [exportRequest, setExportRequest] = useState<PngCaptureRequest | null>(null);
   const exportSvg = useRef<Svg>(null);
-  useImperativeHandle(
-    ref,
-    () => ({
-      capturePng(snapshot) {
-        const request = captures.begin(snapshot);
-        setExportRequest(request);
-        return request.promise;
-      },
-    }),
+  const capturePng = useCallback(
+    (snapshot: Drawing) => {
+      const request = captures.begin(snapshot);
+      setExportRequest(request);
+      return request.promise;
+    },
     [captures]
   );
 
@@ -105,28 +116,31 @@ function usePngExport(ref: Ref<DrawingSurfaceHandle>) {
     };
   }, [exportRequest]);
 
-  return { exportRequest, exportSvg };
+  return { capturePng, exportRequest, exportSvg };
 }
 
 function useContactDrawing(props: Props) {
   const propsRef = useRef(props);
   propsRef.current = props;
-  const size = useRef({ width: 0, height: 0 });
+  const paper = useRef<View>(null);
+  const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
+  const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
   const [drafts, setDrafts] = useState<readonly Stroke[]>([]);
   const input = useRef(
-    createContactResponder(
-      () => propsRef.current,
-      () => size.current,
-      setDrafts
-    )
+    createContactResponder(() => propsRef.current, geometry.current, setDrafts)
   ).current;
 
-  useEffect(
-    () => () => {
+  inputRef.current = input;
+  const refreshGeometry = useCallback(() => {
+    geometry.refresh((complete) => measurePaper(paper.current, complete));
+  }, [geometry]);
+  useLayoutEffect(() => {
+    refreshGeometry();
+    return () => {
       input.detach();
-    },
-    [input]
-  );
+      geometry.clear();
+    };
+  }, [input, geometry, refreshGeometry]);
 
   const responder = useRef(
     PanResponder.create({
@@ -143,29 +157,27 @@ function useContactDrawing(props: Props) {
     })
   ).current;
 
-  function layout(next: { width: number; height: number }) {
-    if (next.width !== size.current.width || next.height !== size.current.height) input.resize();
-    size.current = next;
-  }
-
-  return { drafts, layout, responder };
+  return { drafts, paper, refreshGeometry, responder };
 }
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
-    const { drafts, layout, responder } = useContactDrawing(props);
-    const { exportRequest, exportSvg } = usePngExport(ref);
+    const { drafts, paper, refreshGeometry, responder } = useContactDrawing(props);
+    const { capturePng, exportRequest, exportSvg } = usePngExport();
+    useImperativeHandle(ref, () => ({ capturePng, refreshGeometry }), [
+      capturePng,
+      refreshGeometry,
+    ]);
 
     return (
       <View style={styles.container}>
         <View
+          ref={paper}
           accessibilityLabel="Drawing paper"
           testID="drawing-paper"
           pointerEvents="box-only"
           style={styles.paper}
-          onLayout={({ nativeEvent }) => {
-            layout(nativeEvent.layout);
-          }}
+          onLayout={refreshGeometry}
           {...responder.panHandlers}
         >
           <Artwork drawing={props.drawing} drafts={drafts} />

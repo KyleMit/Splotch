@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
@@ -8,7 +8,7 @@ import {
   MAX_POINTS,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const native = vi.hoisted(() => ({ handlers: null, layout: null }));
+const native = vi.hoisted(() => ({ handlers: null, layout: null, width: 1024, height: 768 }));
 
 vi.mock('react-native', () => ({
   findNodeHandle: (target) => target,
@@ -19,10 +19,15 @@ vi.mock('react-native', () => ({
     },
   },
   StyleSheet: { create: (styles) => styles },
-  View({ children, onLayout, pointerEvents }) {
+  View: forwardRef(({ children, onLayout, pointerEvents }, ref) => {
+    useImperativeHandle(ref, () => ({
+      measure(callback) {
+        callback(0, 0, native.width, native.height, 40, 800);
+      },
+    }));
     if (onLayout) native.layout = onLayout;
     return createElement('div', { 'data-pointer-events': pointerEvents }, children);
-  },
+  }),
 }));
 
 vi.mock('react-native-svg', () => ({
@@ -49,7 +54,15 @@ vi.mock('react-native-svg', () => ({
 const PAPER_TARGET = {};
 
 function touch(identifier, x, y) {
-  return { identifier, locationX: x, locationY: y, target: PAPER_TARGET, timestamp: 100 };
+  return {
+    identifier,
+    locationX: x,
+    locationY: y,
+    pageX: x + 40,
+    pageY: y + 800,
+    target: PAPER_TARGET,
+    timestamp: 100,
+  };
 }
 
 function event(touches, changedTouches = touches) {
@@ -93,6 +106,8 @@ function send(callback, input) {
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  native.width = 1024;
+  native.height = 768;
   native.handlers = null;
   native.layout = null;
   container = globalThis.document.createElement('div');

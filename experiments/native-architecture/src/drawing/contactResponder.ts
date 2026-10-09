@@ -3,6 +3,7 @@ import { createContactCohort } from './contactCohort';
 import { paperPoint, type Brush, type Drawing, type Stroke } from './model';
 import type { PaletteLabel } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
+import { paperLocation, type PaperFrame } from './paperGeometry';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
@@ -14,19 +15,19 @@ export type ContactDrawingProps = {
   onError: (error: unknown) => void;
 };
 
-type PaperSize = { width: number; height: number };
 type Contact = { startedAt: number | null; state: 'accepted' | 'awaiting-start' | 'ignored' };
-type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'locationX' | 'locationY'>;
+type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY'>;
 const INTERRUPTED_TOUCH_MESSAGE = 'That touch was interrupted. Lift and try again.';
 
-function insidePaper(touch: NativeTouchEvent, size: PaperSize): boolean {
+function insidePaper(touch: NativeTouchEvent, frame: PaperFrame | null): boolean {
+  const point = paperLocation(touch, frame);
   return (
-    Number.isFinite(touch.locationX) &&
-    Number.isFinite(touch.locationY) &&
-    touch.locationX >= 0 &&
-    touch.locationX <= size.width &&
-    touch.locationY >= 0 &&
-    touch.locationY <= size.height
+    frame !== null &&
+    point !== null &&
+    point.x >= 0 &&
+    point.x <= frame.width &&
+    point.y >= 0 &&
+    point.y <= frame.height
   );
 }
 
@@ -48,7 +49,7 @@ class ContactResponder {
 
   constructor(
     private readonly current: () => ContactDrawingProps,
-    private readonly size: () => PaperSize,
+    private readonly frame: () => PaperFrame | null,
     private readonly showDrafts: (drafts: readonly Stroke[]) => void
   ) {}
 
@@ -59,8 +60,7 @@ class ContactResponder {
   }
 
   ready() {
-    const size = this.size();
-    return !this.current().disabled && size.width > 0 && size.height > 0;
+    return !this.current().disabled && this.frame() !== null;
   }
 
   private reconcile(event: GestureResponderEvent) {
@@ -83,10 +83,12 @@ class ContactResponder {
   private sample(touch: ContactSample, endpoint = false) {
     if (this.contacts.get(touch.identifier)?.state !== 'accepted') return;
     try {
-      const size = this.size();
+      const frame = this.frame();
+      const point = paperLocation(touch, frame);
+      if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
       this.input.sample(
         touch.identifier,
-        paperPoint(touch.locationX, touch.locationY, size.width, size.height),
+        paperPoint(point.x, point.y, frame.width, frame.height),
         endpoint
       );
     } catch (error) {
@@ -107,8 +109,8 @@ class ContactResponder {
               proven: touch.timestamp > (contact.startedAt ?? Infinity),
               touch: {
                 identifier: touch.identifier,
-                locationX: touch.locationX,
-                locationY: touch.locationY,
+                pageX: touch.pageX,
+                pageY: touch.pageY,
               },
             },
           ]
@@ -148,7 +150,7 @@ class ContactResponder {
         !lifetime.starting ||
         this.paperTarget === null ||
         touch.target !== this.paperTarget ||
-        !insidePaper(touch, this.size())
+        !insidePaper(touch, this.frame())
       )
         continue;
       if (!starting.has(touch.identifier)) {
@@ -163,12 +165,14 @@ class ContactResponder {
   private accept(touch: NativeTouchEvent, contact: Contact) {
     try {
       const current = this.current();
-      const size = this.size();
+      const frame = this.frame();
+      const point = paperLocation(touch, frame);
+      if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
       this.input.start(
         touch.identifier,
         current.color,
         current.brush,
-        paperPoint(touch.locationX, touch.locationY, size.width, size.height),
+        paperPoint(point.x, point.y, frame.width, frame.height),
         current.currentDrawing()
       );
       contact.state = 'accepted';
@@ -326,8 +330,8 @@ class ContactResponder {
 
 export function createContactResponder(
   current: () => ContactDrawingProps,
-  size: () => PaperSize,
+  frame: () => PaperFrame | null,
   showDrafts: (drafts: readonly Stroke[]) => void
 ) {
-  return new ContactResponder(current, size, showDrafts);
+  return new ContactResponder(current, frame, showDrafts);
 }

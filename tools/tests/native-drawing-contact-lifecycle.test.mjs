@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
@@ -10,7 +10,7 @@ import {
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const native = vi.hoisted(() => ({ handlers: null, layout: null }));
+const native = vi.hoisted(() => ({ handlers: null, layout: null, width: 1024, height: 768 }));
 
 vi.mock('react-native', () => ({
   findNodeHandle: (target) => target,
@@ -21,10 +21,15 @@ vi.mock('react-native', () => ({
     },
   },
   StyleSheet: { create: (styles) => styles },
-  View({ children, onLayout }) {
+  View: forwardRef(({ children, onLayout }, ref) => {
+    useImperativeHandle(ref, () => ({
+      measure(callback) {
+        callback(0, 0, native.width, native.height, 40, 800);
+      },
+    }));
     if (onLayout) native.layout = onLayout;
     return createElement('div', null, children);
-  },
+  }),
 }));
 
 vi.mock('react-native-svg', () => ({
@@ -99,11 +104,15 @@ function send(callback, input, followStart = true) {
 }
 
 function layout(width = 1024, height = 768) {
+  native.width = width;
+  native.height = height;
   act(() => native.layout({ nativeEvent: { layout: { width, height } } }));
 }
 
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  native.width = 1024;
+  native.height = 768;
   native.handlers = null;
   native.layout = null;
   container = globalThis.document.createElement('div');
@@ -180,6 +189,7 @@ describe('mounted Fabric contact lifetimes and Android admission', () => {
       const regrant = event([touch(0, 50, 60, 300)], undefined, { 0: 100 });
       send('onPanResponderGrant', regrant);
       regrant.nativeEvent.touches[0].locationX = 999;
+      regrant.nativeEvent.touches[0].pageX = 1039;
       if (next === 'Move')
         send('onPanResponderMove', event([touch(0, 70, 80, 400)], undefined, { 0: 100 }));
       send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }));
