@@ -110,6 +110,7 @@ maintained reader rejects every additional native path and names the path; it do
 acceptance from Git or formatter ignores. No generated-output directory allowlist is maintained.
 Candidate resource JSON belongs to Prettier; the scoped re-includes preserve shipping exclusions.
 Native formats without a registered parser retain their exact template/recipe bytes. Toolchains,
-caches and DerivedData belong outside every checkout. Gem/pod locks, graphics dependencies,
-provisioning, optimized native compilation and mounted output remain separate reviewed units. No
-installed or native execution receipt is included in this source unit.
+caches and DerivedData belong outside every checkout. Committed Gemfile and Gemfile.lock source
+bytes are authenticated by the maintained source owner. Resolved gem graph authentication, Pod
+locks, graphics dependencies, provisioning, optimized native compilation and mounted output remain
+separate execution gates. No installed or native execution receipt is included in this source unit.
