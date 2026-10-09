@@ -9,10 +9,13 @@ import {
   View,
 } from 'react-native';
 import { paletteHex, type PaletteLabel } from './drawing/palette';
+import { ColoringPagePicker } from './ColoringPagePicker';
+import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface } from './drawing/DrawingSurface';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
-import { BRUSHES, clearDrawing, undoDrawing, type Brush } from './drawing/model';
+import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
+import type { History } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
 
 const COLORS: readonly PaletteLabel[] = [
@@ -57,7 +60,9 @@ function Action({
 export function DrawingScreen() {
   const {
     history,
-    setHistory,
+    clear,
+    undo,
+    setPreparing,
     color,
     setColor,
     brush,
@@ -69,6 +74,9 @@ export function DrawingScreen() {
     pictures,
     setPictures,
     surface,
+    pagePickerOpen,
+    setPagePickerOpen,
+    choosePage,
     disabled,
     report,
     finishStroke,
@@ -103,39 +111,27 @@ export function DrawingScreen() {
             </Pressable>
           ))}
         </View>
-        <View style={styles.toolbar}>
-          {(Object.keys(BRUSHES) as Brush[]).map((key) => (
-            <Pressable
-              key={key}
-              accessibilityRole="button"
-              accessibilityLabel={BRUSHES[key].label}
-              accessibilityState={{ selected: key === brush, disabled }}
-              disabled={disabled}
-              onPress={() => setBrush(key)}
-              style={[styles.action, key === brush && styles.chosenBrush]}
-            >
-              <Text style={styles.actionText}>{BRUSHES[key].label}</Text>
-            </Pressable>
-          ))}
-          <Action
-            label="Undo"
-            disabled={disabled || history.undo.length === 0}
-            onPress={() => setHistory(undoDrawing)}
-          />
-          <Action
-            label="Clear"
-            disabled={disabled || history.drawing.strokes.length === 0}
-            onPress={() => setHistory(clearDrawing)}
-          />
-        </View>
+        <DrawingTools
+          history={history}
+          brush={brush}
+          disabled={disabled}
+          onBrush={setBrush}
+          onPages={() => setPagePickerOpen(true)}
+          onUndo={undo}
+          onClear={() => {
+            void clear();
+          }}
+        />
+        <Text style={styles.subtitle}>{COLORING_PAGES[history.drawing.pageId].label}</Text>
         <DrawingSurface
           ref={surface}
           drawing={history.drawing}
           color={color}
           brush={brush}
-          disabled={busy || pictures !== null}
+          disabled={busy || pictures !== null || pagePickerOpen}
           onStroke={finishStroke}
           onDrawingChange={setDrawing}
+          onPreparingChange={setPreparing}
           onError={report}
         />
         <View style={styles.toolbar}>
@@ -163,6 +159,13 @@ export function DrawingScreen() {
           </Text>
         </View>
       </ScrollView>
+      {pagePickerOpen ? (
+        <ColoringPagePicker
+          selected={history.drawing.pageId}
+          onChoose={choosePage}
+          onClose={() => setPagePickerOpen(false)}
+        />
+      ) : null}
       <SavedPictures
         pictures={pictures}
         busy={busy}
@@ -171,6 +174,45 @@ export function DrawingScreen() {
         onClose={() => setPictures(null)}
       />
     </SafeAreaView>
+  );
+}
+
+function DrawingTools({
+  history,
+  brush,
+  disabled,
+  onBrush,
+  onPages,
+  onUndo,
+  onClear,
+}: {
+  history: History;
+  brush: Brush;
+  disabled: boolean;
+  onBrush: (brush: Brush) => void;
+  onPages: () => void;
+  onUndo: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <View style={styles.toolbar}>
+      <Action label="Coloring pages" disabled={disabled} onPress={onPages} />
+      {BRUSH_ORDER.map((key) => (
+        <Pressable
+          key={key}
+          accessibilityRole="button"
+          accessibilityLabel={BRUSHES[key].label}
+          accessibilityState={{ selected: key === brush, disabled }}
+          disabled={disabled}
+          onPress={() => onBrush(key)}
+          style={[styles.action, key === brush && styles.chosenBrush]}
+        >
+          <Text style={styles.actionText}>{BRUSHES[key].label}</Text>
+        </Pressable>
+      ))}
+      <Action label="Undo" disabled={disabled || history.undo.length === 0} onPress={onUndo} />
+      <Action label="Clear" disabled={disabled} onPress={onClear} />
+    </View>
   );
 }
 

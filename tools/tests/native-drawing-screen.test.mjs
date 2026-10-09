@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
@@ -8,7 +8,7 @@ import {
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn() }));
+const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn(), lock: vi.fn() }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
@@ -47,6 +47,12 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('react-native-svg', () => ({
+  default: ({ children }) => createElement('svg', null, children),
+  Rect: () => null,
+  Path: () => null,
+}));
+
 const STROKE = {
   color: 'Purple',
   brush: 'marker',
@@ -57,8 +63,13 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onStroke }, _ref) =>
-    createElement(
+  DrawingSurface: forwardRef(({ drawing, onStroke }, ref) => {
+    useImperativeHandle(ref, () => ({
+      lockInput: files.lock,
+      capturePng: vi.fn(),
+      captureInk: vi.fn(),
+    }));
+    return createElement(
       'button',
       {
         'data-testid': 'paper',
@@ -66,8 +77,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
         onClick: () => onStroke(STROKE),
       },
       'Draw fixture stroke'
-    )
-  ),
+    );
+  }),
 }));
 
 function createScreen() {
@@ -104,6 +115,7 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.list.mockReturnValue(pictures);
   files.open.mockReset();
+  files.lock.mockReset().mockReturnValue(() => {});
   screen = createScreen();
   screen.mount();
 });
@@ -114,6 +126,21 @@ afterEach(() => {
 });
 
 describe('saved-picture failure feedback', () => {
+  it('retains artwork and refuses file access when active input cannot be locked', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Pictures');
+    files.lock.mockImplementationOnce(() => {
+      throw new Error('Finish drawing before using this control.');
+    });
+    await screen.click('Open picture from Good picture');
+    expect(files.open).not.toHaveBeenCalled();
+    expect(screen.paper()).toBe(original);
+    expect(screen.dialog().querySelector('[role="alert"]').textContent).toBe(
+      'Finish drawing before using this control.'
+    );
+  });
+
   it.each(['corrupt', 'missing'])(
     'shows %s refusal inside the open dialog and preserves history',
     async (failure) => {
