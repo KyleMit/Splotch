@@ -167,6 +167,7 @@ export function DrawingScreen() {
       <SavedPictures
         pictures={pictures}
         busy={busy}
+        notice={notice}
         onOpen={openPicture}
         onClose={() => setPictures(null)}
       />
@@ -177,11 +178,13 @@ export function DrawingScreen() {
 function SavedPictures({
   pictures,
   busy,
+  notice,
   onOpen,
   onClose,
 }: {
   pictures: SavedPicture[] | null;
   busy: boolean;
+  notice: string;
   onOpen: (picture: SavedPicture) => Promise<void>;
   onClose: () => void;
 }) {
@@ -198,6 +201,11 @@ function SavedPictures({
       <View style={styles.modalBackdrop}>
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>Your pictures</Text>
+          {notice ? (
+            <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.notice}>
+              {notice}
+            </Text>
+          ) : null}
           <ScrollView style={styles.pictureList}>
             {pictures?.length ? (
               pictures.map((picture) => (

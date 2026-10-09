@@ -153,7 +153,10 @@ async function main() {
     }, saved);
     await pick('Pictures');
     await page.getByRole('button', { name: /Open picture from/ }).click();
-    await page.getByText('This saved picture contains an invalid brush.').waitFor();
+    await page
+      .getByRole('alert')
+      .filter({ hasText: 'This saved picture contains an invalid brush.' })
+      .waitFor();
     await pick('Close');
     assert.ok(snapshot.equals(await paper.screenshot()));
     report.checks.corruptSeedRetainsPicture = true;

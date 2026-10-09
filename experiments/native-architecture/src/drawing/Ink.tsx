@@ -14,6 +14,8 @@ import { CrayonGlaze } from './CrayonGlaze';
 import { PAPER_HEIGHT, PAPER_WIDTH, strokePath, type Point, type Stroke } from './model';
 
 const CRAYON_TEXTURES = CRAYON_BANDS.map((band) => crayonTexture(band.coverage));
+// Native painters clip translated content to a fixed tile; wrapping preserves the seeded phase.
+const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
 function Shape({
   points,
@@ -59,11 +61,17 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                   patternUnits="userSpaceOnUse"
                   width={CRAYON_TILE_PX}
                   height={CRAYON_TILE_PX}
-                  patternTransform={`translate(${phase.x} ${phase.y})`}
+                  patternContentUnits="userSpaceOnUse"
                 >
-                  {CRAYON_TEXTURES[bandIndex].map((path, shade) => (
-                    <Path key={shade} d={path} fill={waxColor(color, shade)} />
-                  ))}
+                  {CRAYON_TILE_OFFSETS.flatMap((x) =>
+                    CRAYON_TILE_OFFSETS.map((y) => (
+                      <G key={`${x},${y}`} transform={`translate(${phase.x + x} ${phase.y + y})`}>
+                        {CRAYON_TEXTURES[bandIndex].map((path, shade) => (
+                          <Path key={shade} d={path} fill={waxColor(color, shade)} />
+                        ))}
+                      </G>
+                    ))
+                  )}
                 </Pattern>
               ))}
             </Defs>
