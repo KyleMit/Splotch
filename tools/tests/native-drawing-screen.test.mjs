@@ -10,7 +10,7 @@ import {
 
 const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn() }));
 
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles', () => ({
+vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
   savePicture: vi.fn(),
@@ -52,7 +52,7 @@ const STROKE = {
   ],
 };
 
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface', () => ({
+vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: forwardRef(({ drawing, onStroke }, _ref) =>
     createElement(
       'button',
