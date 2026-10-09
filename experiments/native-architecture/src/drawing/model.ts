@@ -1,4 +1,4 @@
-import { PALETTE_COLORS, type PaletteLabel } from '../../../../web/src/lib/palette';
+import { PALETTE_COLORS, type PaletteLabel } from './palette';
 import { INITIAL_RAINBOW, MAGIC_RAINBOW_COUNT, MAX_CRAYON_SEED, type Brush } from './brushes';
 
 export const PAPER_WIDTH = 1024;

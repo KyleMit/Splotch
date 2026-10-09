@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, expect } from '@playwright/test';
 import sharp from 'sharp';
-import { paletteHex } from '../../web/src/lib/palette.ts';
+import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
 const DEFAULT_URL = 'http://localhost:5300';
 const DEFAULT_OUTPUT = '/private/tmp/splotch-drawing-dev-checkpoint-01a11a00';

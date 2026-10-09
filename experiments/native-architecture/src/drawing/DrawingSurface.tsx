@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
-import type { PaletteLabel } from '../../../../web/src/lib/palette';
+import type { PaletteLabel } from './palette';
 import {
   PAPER_HEIGHT,
   PAPER_WIDTH,

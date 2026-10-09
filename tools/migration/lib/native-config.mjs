@@ -91,7 +91,16 @@ export function assertExpoModuleSources(modules, ownership) {
   }
 }
 
+export function assertDevelopmentPlatforms(platforms) {
+  assert.deepEqual(
+    platforms,
+    ['android', 'ios', 'web'],
+    'Unsupported drawing development platforms'
+  );
+}
+
 export function inspectNativeConfig(root, candidate, identities, lock) {
+  assertDevelopmentPlatforms(readJson(join(candidate, 'app.json')).expo?.platforms);
   const require = createRequire(join(candidate, 'package.json'));
   const metro = require(join(candidate, 'metro.config.cjs'));
   assertMetroOwnership(metro, root, candidate);
@@ -99,7 +108,7 @@ export function inspectNativeConfig(root, candidate, identities, lock) {
   const { getConfig } = require(identities.expoConfig.directory);
   const config = getConfig(candidate, { skipSDKVersionRequirement: true });
   assert.equal(config.exp._internal.projectRoot, candidate);
-  assert.deepEqual(config.exp.platforms, ['android', 'ios']);
+  assertDevelopmentPlatforms(config.exp.platforms);
   assert.equal(
     config.exp.android?.package,
     undefined,
@@ -116,7 +125,7 @@ export function inspectNativeConfig(root, candidate, identities, lock) {
     'Workspace server-root ownership changed'
   );
   const entries = Object.fromEntries(
-    ['android', 'ios'].map((platform) => [
+    config.exp.platforms.map((platform) => [
       platform,
       paths.resolveEntryPoint(candidate, { platform }),
     ])

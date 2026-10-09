@@ -164,13 +164,15 @@ expo.useLegacyPackaging=false
 
 function appleBundlePhase() {
   return `set -eu
-if [ "$CONFIGURATION" != Release ]; then
-  echo "Candidate bundle phase requires Release" >&2
-  exit 1
-fi
-if ${APPLE_BUNDLE_OVERRIDES.map((name) => `[ -n "\${${name}:-}" ]`).join(' || ')}; then
-  echo "Candidate bundling overrides are forbidden" >&2
-  exit 1
+case "$CONFIGURATION" in
+  Debug|Release) ;;
+  *) echo "Candidate bundle phase requires Debug or Release" >&2; exit 1 ;;
+esac
+if [ "$CONFIGURATION" = Release ]; then
+  if ${APPLE_BUNDLE_OVERRIDES.map((name) => `[ -n "\${${name}:-}" ]`).join(' || ')}; then
+    echo "Candidate bundling overrides are forbidden" >&2
+    exit 1
+  fi
 fi
 case "\${USE_HERMES:-true}" in
   true) export USE_HERMES=true ;;

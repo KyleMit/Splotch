@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { PaletteLabel } from '../../../web/src/lib/palette';
+import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { addStroke, commitDrawing, createHistory, type Stroke } from './drawing/model';
 import type { Brush } from './drawing/brushes';

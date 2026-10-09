@@ -23,7 +23,7 @@ function verifyNativeTransform(ast) {
 assert.equal(process.argv.length, 2, 'check-transform accepts no arguments');
 
 const projectRoot = realpathSync(join(__dirname, '..'));
-const filename = join(projectRoot, 'src', 'ProbeApp.tsx');
+const filename = join(projectRoot, 'src', 'DrawingScreen.tsx');
 const result = babel.transformFileSync(filename, {
   ast: true,
   babelrc: false,

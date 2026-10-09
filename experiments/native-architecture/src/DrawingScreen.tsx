@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { paletteHex, type PaletteLabel } from '../../../web/src/lib/palette';
+import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { DrawingSurface } from './drawing/DrawingSurface';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';

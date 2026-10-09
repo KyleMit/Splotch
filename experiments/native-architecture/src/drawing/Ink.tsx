@@ -1,6 +1,6 @@
 import { useId, useMemo } from 'react';
 import { Circle, Defs, G, LinearGradient, Path, Pattern, Stop } from 'react-native-svg';
-import { paletteHex } from '../../../../web/src/lib/palette';
+import { paletteHex } from './palette';
 import { BRUSHES, rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
