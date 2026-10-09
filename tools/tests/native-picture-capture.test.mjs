@@ -19,10 +19,12 @@ const state = vi.hoisted(() => ({
   nextFrame: 0,
 }));
 vi.mock('react-native', () => ({
-  View: ({ children, style, onLayout }) => {
+  findNodeHandle: (target) => target,
+  View: forwardRef(({ children, style, onLayout }, ref) => {
+    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     if (onLayout) state.layouts.push(onLayout);
     return createElement('div', { style }, children);
-  },
+  }),
   StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
   PanResponder: {
     create: (responder) => {
@@ -203,10 +205,11 @@ async function surface(drawing) {
       createElement(DrawingSurface, {
         ref,
         drawing,
+        currentDrawing: () => drawing,
         color: 'Blue',
         brush: 'marker',
         disabled: false,
-        onStroke: vi.fn(),
+        onCohort: vi.fn(),
         onDrawingChange: vi.fn(),
         onPreparingChange: busy,
         onError: error,
@@ -308,10 +311,27 @@ describe('mounted canonical output identity', () => {
       state.layouts.at(-1)({ nativeEvent: { layout: { width: 1024, height: 768 } } })
     );
     const responder = state.responders[0];
-    const touch = { identifier: 'finger', locationX: 20, locationY: 30 };
-    await act(async () =>
-      responder.onPanResponderGrant({ nativeEvent: { touches: [touch], changedTouches: [touch] } })
-    );
+    const touch = {
+      identifier: 'finger',
+      locationX: 20,
+      locationY: 30,
+      pageX: 20,
+      pageY: 30,
+      target: 101,
+      timestamp: 100,
+    };
+    const start = {
+      currentTarget: 101,
+      nativeEvent: { touches: [touch], changedTouches: [touch], target: 101 },
+      touchHistory: {
+        touchBank: { finger: { touchActive: true, startTimeStamp: 100 } },
+        mostRecentTimeStamp: 100,
+      },
+    };
+    await act(async () => {
+      responder.onPanResponderGrant(start);
+      responder.onPanResponderStart(start);
+    });
     expect(() => ref.current.lockInput()).toThrow('Finish drawing');
     await expect(ref.current.captureInk(drawing)).rejects.toThrow('Lift your finger');
   });

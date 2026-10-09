@@ -3,7 +3,7 @@ import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
-  addStroke,
+  addStrokes,
   commitDrawing,
   createHistory,
   clearDrawing,
@@ -53,9 +53,13 @@ export function useDrawingScreen() {
     );
   }
 
-  function finishStroke(stroke: Stroke) {
+  function currentDrawing() {
+    return historyRef.current.drawing;
+  }
+
+  function finishCohort(strokes: readonly Stroke[]) {
     try {
-      const next = addStroke(historyRef.current, stroke);
+      const next = addStrokes(historyRef.current, strokes);
       setHistory(next);
       setNotice('');
     } catch (error) {
@@ -120,7 +124,7 @@ export function useDrawingScreen() {
     blocked: drawing || busy || pagePickerOpen || pictures !== null,
     setPreparing,
     setDrawing,
-    finishStroke,
+    finishCohort,
     report,
     setNotice,
   });
@@ -147,7 +151,8 @@ export function useDrawingScreen() {
     choosePage,
     disabled,
     report,
-    finishStroke,
+    currentDrawing,
+    finishCohort,
     save,
     exportPicture,
     showPictures,

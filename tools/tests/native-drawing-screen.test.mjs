@@ -75,10 +75,11 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onStroke }, ref) => {
+  DrawingSurface: forwardRef(({ drawing, onCohort }, ref) => {
     useImperativeHandle(
       ref,
       () => ({
+        refreshGeometry: vi.fn(),
         lockInput: files.lock,
         capturePng: files.capture,
         captureInk: files.ink,
@@ -90,7 +91,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
       {
         'data-testid': 'paper',
         'data-drawing': JSON.stringify(drawing),
-        onClick: () => onStroke(STROKE),
+        onClick: () => onCohort([STROKE]),
       },
       'Draw fixture stroke'
     );

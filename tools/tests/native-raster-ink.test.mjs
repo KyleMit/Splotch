@@ -76,7 +76,7 @@ async function render(strokes, prepareEraser = false, draft = null) {
       createElement(RasterInk, {
         ref,
         strokes,
-        draft,
+        drafts: draft ? [draft] : [],
         prepareEraser,
         onError: error,
         onBusy: busy,

@@ -26,7 +26,8 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   exportPng: sdk.export,
 }));
 vi.mock('react-native', () => {
-  function View({ children, testID, onLayout, responderIndex }) {
+  const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
+    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
     }, []);
@@ -35,8 +36,9 @@ vi.mock('react-native', () => {
       { 'data-testid': testID, 'data-responder': responderIndex },
       children
     );
-  }
+  });
   return {
+    findNodeHandle: (target) => target,
     View,
     SafeAreaView: View,
     ScrollView: View,
@@ -177,12 +179,37 @@ describe('visible terminal renderer recovery', () => {
     expect(host.textContent).toContain('Garden flower');
     const paper = host.querySelector('[data-testid="drawing-paper"]');
     const input = sdk.responders[Number(paper.getAttribute('data-responder'))];
-    const touch = { identifier: 'new-contact', locationX: 200, locationY: 200 };
-    const event = { nativeEvent: { changedTouches: [touch], touches: [touch] } };
+    const touch = {
+      identifier: 'new-contact',
+      locationX: 200,
+      locationY: 200,
+      pageX: 200,
+      pageY: 200,
+      target: 101,
+      timestamp: 100,
+    };
+    const event = {
+      currentTarget: 101,
+      nativeEvent: { changedTouches: [touch], touches: [touch], target: 101 },
+      touchHistory: {
+        touchBank: { 'new-contact': { touchActive: true, startTimeStamp: 100 } },
+        mostRecentTimeStamp: 100,
+      },
+    };
+    const end = {
+      currentTarget: 101,
+      nativeEvent: { changedTouches: [{ ...touch, timestamp: 200 }], touches: [], target: 101 },
+      touchHistory: {
+        touchBank: { 'new-contact': { touchActive: false, startTimeStamp: 100 } },
+        mostRecentTimeStamp: 200,
+      },
+    };
     expect(input.onStartShouldSetPanResponder()).toBe(true);
     await act(async () => {
       input.onPanResponderGrant(event);
-      input.onPanResponderRelease(event);
+      input.onPanResponderStart(event);
+      input.onPanResponderEnd(end);
+      input.onPanResponderRelease(end);
     });
     await click('Save picture');
     expect(sdk.save.mock.calls.at(-1)[0].strokes).toHaveLength(3);
@@ -257,7 +284,7 @@ describe('generation and real input/command admission', () => {
       surface: { current: { lockInput } },
       setPreparing: vi.fn(),
       setDrawing: vi.fn(),
-      finishStroke: vi.fn(),
+      finishCohort: vi.fn(),
       report: vi.fn(),
       setNotice: vi.fn(),
     };
@@ -291,13 +318,13 @@ describe('generation and real input/command admission', () => {
       old.callbacks.onPreparingChange(false);
       old.callbacks.onRendererFault(new Error('late'));
       old.callbacks.onDrawingChange(true);
-      old.callbacks.onStroke(fixture.strokes[0]);
+      old.callbacks.onCohort([fixture.strokes[0]]);
       old.callbacks.onError(new Error('late ordinary'));
     });
     expect(h.options.setPreparing).toHaveBeenCalledTimes(counts[0]);
     expect(h.options.report).toHaveBeenCalledTimes(counts[1]);
     expect(h.options.setDrawing).not.toHaveBeenCalled();
-    expect(h.options.finishStroke).not.toHaveBeenCalled();
+    expect(h.options.finishCohort).not.toHaveBeenCalled();
     act(() => h.get().callbacks.onPreparingChange(false));
     expect(h.options.setPreparing).toHaveBeenLastCalledWith(false);
   });

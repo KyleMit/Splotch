@@ -1,3 +1,4 @@
+import { useRef, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -11,12 +12,15 @@ import {
 import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { COLORING_PAGES } from './drawing/pages';
-import { DrawingSurface } from './drawing/DrawingSurface';
+import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
 import type { History } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+
+const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
 const COLORS: readonly PaletteLabel[] = [
   'Purple',
@@ -57,9 +61,36 @@ function Action({
   );
 }
 
+function DrawingScroll({
+  children,
+  drawing,
+  surface,
+}: {
+  children: ReactNode;
+  drawing: boolean;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+}) {
+  const scrollGeometry = useRef(
+    createPaperScroll(() => surface.current?.refreshGeometry())
+  ).current;
+  return (
+    <ScrollView
+      contentContainerStyle={styles.content}
+      scrollEnabled={!drawing}
+      onLayout={() => surface.current?.refreshGeometry()}
+      onScroll={({ nativeEvent }) => scrollGeometry(nativeEvent.contentOffset)}
+      onContentSizeChange={() => surface.current?.refreshGeometry()}
+      scrollEventThrottle={SCROLL_GEOMETRY_THROTTLE_MS}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
 export function DrawingScreen() {
   const {
     history,
+    currentDrawing,
     clear,
     undo,
     recovery,
@@ -83,8 +114,8 @@ export function DrawingScreen() {
     openPicture,
   } = useDrawingScreen();
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!drawing}>
+    <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
+      <DrawingScroll drawing={drawing} surface={surface}>
         <View style={styles.heading}>
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
@@ -124,6 +155,7 @@ export function DrawingScreen() {
           key={recovery.generation}
           ref={surface}
           drawing={history.drawing}
+          currentDrawing={currentDrawing}
           color={color}
           brush={brush}
           disabled={busy || pictures !== null || pagePickerOpen}
@@ -160,7 +192,7 @@ export function DrawingScreen() {
             {notice}
           </Text>
         </View>
-      </ScrollView>
+      </DrawingScroll>
       {pagePickerOpen ? (
         <ColoringPagePicker
           selected={history.drawing.pageId}

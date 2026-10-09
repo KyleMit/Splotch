@@ -9,7 +9,7 @@ type RecoveryOptions = {
   blocked: boolean;
   setPreparing: (busy: boolean) => void;
   setDrawing: (drawing: boolean) => void;
-  finishStroke: (stroke: Stroke) => void;
+  finishCohort: (strokes: readonly Stroke[]) => void;
   report: (error: unknown) => void;
   setNotice: (notice: string) => void;
 };
@@ -68,8 +68,8 @@ export function useRendererRecovery(options: RecoveryOptions) {
     retry,
     retryDisabled: options.blocked,
     callbacks: {
-      onStroke(stroke: Stroke) {
-        if (valid()) current.current.finishStroke(stroke);
+      onCohort(strokes: readonly Stroke[]) {
+        if (valid()) current.current.finishCohort(strokes);
       },
       onDrawingChange(drawing: boolean) {
         if (valid()) current.current.setDrawing(drawing);

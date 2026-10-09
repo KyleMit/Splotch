@@ -54,8 +54,8 @@ independent. The controller exposes a visible Retry drawing action for a termina
 fault. It acquires the real surface input lease, remounts only the keyed renderer generation and
 retains exact History, Undo, page and rainbow. Old-generation callbacks are refused; commands remain
 blocked until the new image is ready. Ordinary export/alpha failures do not offer this renderer
-action. This source and its real-button mounted regressions are unrun; app recovery remains
-unqualified.
+action. SDK-boundary mounted regressions exercise the real Retry button and controller; actual
+native and browser app recovery remains unqualified.
 
 Remaining gates include: PNG->Image pixel/color/alpha roundtrip, Crayon actual chronological
 backdrop and native live/export agreement, replacement image race/failure controls, and real 1000-op
@@ -115,3 +115,25 @@ bound native capture/compression/base64 allocation. Atomic preflight, actual bot
 producer formats, mounted Clear/Retry/history, native throughput, original raw-RGBA/RSS gates and
 legal1000-depth qualification remain held. This source candidate changes neither ADR-0085's shipping
 performance history nor framework selection.
+
+## Current joint drawing capabilities
+
+The current contact composition carries the measured-paper and contact-lifetime owners from
+cd3cc23750476c26abd907bc7b68a3cabd1dbdbc into this v3 drawing model. Accepted simultaneous contacts
+remain separate ordered strokes and commit as one reversible cohort. Pencil, marker, Crayon, Magic
+and eraser retain their variant metadata; pending Crayon contacts reserve successive seeds through
+the shared style owner. Canonical stroke/point and Undo bounds remain unchanged.
+
+The production surface measures its actual page frame, translates page coordinates and refreshes
+that frame on layout, content-size and changed scroll offsets. Geometry invalidation settles an
+accepted cohort once and refuses stale measurements. Captures require an idle cohort, the current
+ready ink plan and the existing command/input lease. Renderer recovery rejects old-generation cohort
+and geometry callbacks. The v3 saved readers, page/rainbow rules, chronological eraser checkpoints
+and foreground coloring outlines remain in place.
+
+Pure and SDK-boundary mounted tests exercise the actual cohort, controller, history, surface,
+renderer and recovery owners. They establish source/lifecycle behavior, not trusted native touch
+delivery, raster fidelity or resource acceptance. Current Brush Defs/Use and Android export repairs
+and the Audio graph/reset changes require their owners' qualified source before composition. The
+native producer allocation/format, browser raw-RGBA/RSS/observer, legal-depth and live save/reopen
+gates remain open in this same unit.

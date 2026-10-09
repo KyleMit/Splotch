@@ -34,7 +34,8 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   exportPng: sdk.export,
 }));
 vi.mock('react-native', () => {
-  function View({ children, testID, onLayout, responderIndex }) {
+  const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
+    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
     useEffect(() => {
       onLayout?.({ nativeEvent: { layout: { width: 1024, height: 768 } } });
     }, []);
@@ -43,8 +44,9 @@ vi.mock('react-native', () => {
       { 'data-testid': testID, 'data-responder': responderIndex },
       children
     );
-  }
+  });
   return {
+    findNodeHandle: (target) => target,
     Dimensions: {
       get: () => sdk.metrics,
       addEventListener: (_, listener) => {
@@ -381,10 +383,11 @@ describe('mounted actual native Clear and decoder ownership', () => {
     const ref = { current: null },
       props = {
         drawing: fixture,
+        currentDrawing: () => fixture,
         color: 'Purple',
         brush: 'marker',
         disabled: false,
-        onStroke: vi.fn(),
+        onCohort: vi.fn(),
         onDrawingChange: vi.fn(),
         onPreparingChange: vi.fn(),
         onError: vi.fn(),

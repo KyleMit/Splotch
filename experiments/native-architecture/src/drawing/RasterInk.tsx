@@ -21,7 +21,7 @@ export type RasterInkHandle = {
 };
 type Props = {
   strokes: readonly Stroke[];
-  draft?: Stroke | null;
+  drafts?: readonly Stroke[];
   prepareEraser: boolean;
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
@@ -29,8 +29,8 @@ type Props = {
 
 export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(props, ref) {
   const strokes = useMemo(
-    () => (props.draft ? [...props.strokes, props.draft] : props.strokes),
-    [props.strokes, props.draft]
+    () => (props.drafts?.length ? [...props.strokes, ...props.drafts] : props.strokes),
+    [props.strokes, props.drafts]
   );
   const currentStrokes = useRef(strokes);
   currentStrokes.current = strokes;
@@ -72,7 +72,7 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
       if (
         !ready ||
         working.current ||
-        propsRef.current.draft ||
+        propsRef.current.drafts?.length ||
         requested.length !== strokes.length ||
         requested.some((stroke, index) => stroke !== strokes[index])
       )
