@@ -13,16 +13,18 @@ import {
   type Stroke,
 } from './model';
 import { DRAWING_THEME } from './theme';
-import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
+import { createContactCohort } from './contactCohort';
+import { createPngCapture, type PngCaptureRequest } from './interactions';
 
 const EXPORT_TIMEOUT_MS = 10_000;
 export type DrawingSurfaceHandle = { capturePng: (snapshot: Drawing) => Promise<string> };
 type Props = {
   drawing: Drawing;
+  currentDrawing: () => Drawing;
   color: PaletteLabel;
   brush: Brush;
   disabled: boolean;
-  onStroke: (stroke: Stroke) => void;
+  onCohort: (strokes: readonly Stroke[]) => void;
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
 };
@@ -48,11 +50,11 @@ function Ink({ stroke }: { stroke: Stroke }) {
 
 function Artwork({
   drawing,
-  draft,
+  drafts = [],
   svgRef,
 }: {
   drawing: Drawing;
-  draft?: Stroke | null;
+  drafts?: readonly Stroke[];
   svgRef?: Ref<Svg>;
 }) {
   return (
@@ -67,7 +69,9 @@ function Artwork({
       {drawing.strokes.map((stroke, index) => (
         <Ink key={index} stroke={stroke} />
       ))}
-      {draft ? <Ink stroke={draft} /> : null}
+      {drafts.map((stroke, index) => (
+        <Ink key={`draft-${index}`} stroke={stroke} />
+      ))}
     </Svg>
   );
 }
@@ -120,97 +124,128 @@ function usePngExport(ref: Ref<DrawingSurfaceHandle>) {
   return { exportRequest, exportSvg };
 }
 
-export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
-  function DrawingSurface(props, ref) {
-    const propsRef = useRef(props);
-    propsRef.current = props;
-    const size = useRef({ width: 0, height: 0 });
-    const input = useRef(createStrokeInput()).current;
-    const [draft, setDraft] = useState<Stroke | null>(null);
-    const { exportRequest, exportSvg } = usePngExport(ref);
+function useContactDrawing(props: Props) {
+  const propsRef = useRef(props);
+  propsRef.current = props;
+  const size = useRef({ width: 0, height: 0 });
+  const paperTarget = useRef<string | null>(null);
+  const input = useRef(createContactCohort()).current;
+  const [drafts, setDrafts] = useState<readonly Stroke[]>([]);
 
-    function point(event: GestureResponderEvent, identifier: string) {
-      const touch = [...event.nativeEvent.touches, ...event.nativeEvent.changedTouches].find(
-        (item) => item.identifier === identifier
-      );
-      return touch
-        ? paperPoint(touch.locationX, touch.locationY, size.current.width, size.current.height)
-        : undefined;
-    }
+  function publish(completed: readonly Stroke[] | null = null) {
+    if (completed) propsRef.current.onCohort(completed);
+    setDrafts(input.drafts());
+    propsRef.current.onDrawingChange(input.hasActive());
+  }
 
-    function sample(event: GestureResponderEvent) {
-      const identifier = input.identifier();
-      if (identifier === undefined) return;
-      const nextPoint = point(event, identifier);
-      if (!nextPoint) return;
+  function ready() {
+    return !propsRef.current.disabled && size.current.width > 0 && size.current.height > 0;
+  }
+
+  function begin(event: GestureResponderEvent) {
+    if (!ready()) return;
+    const current = propsRef.current;
+    for (const touch of event.nativeEvent.touches) {
+      if (touch.target !== paperTarget.current) continue;
       try {
-        setDraft(input.sample(identifier, nextPoint));
+        const point = paperPoint(
+          touch.locationX,
+          touch.locationY,
+          size.current.width,
+          size.current.height
+        );
+        input.start(
+          touch.identifier,
+          current.color,
+          current.brush,
+          point,
+          current.currentDrawing()
+        );
+      } catch (error) {
+        current.onError(error);
+      }
+    }
+    publish();
+  }
+
+  function sample(event: GestureResponderEvent, ending = false) {
+    const touches = ending ? event.nativeEvent.changedTouches : event.nativeEvent.touches;
+    for (const touch of touches) {
+      try {
+        const point = paperPoint(
+          touch.locationX,
+          touch.locationY,
+          size.current.width,
+          size.current.height
+        );
+        input.sample(touch.identifier, point, ending);
       } catch (error) {
         propsRef.current.onError(error);
       }
+      if (ending) publish(input.finish(touch.identifier));
     }
+    if (!ending) publish();
+  }
 
-    function finish(event?: GestureResponderEvent) {
-      const identifier = input.identifier();
-      if (identifier === undefined) return;
-      const stroke = input.finish(identifier, event ? point(event, identifier) : undefined);
-      setDraft(null);
+  function interrupt() {
+    publish(input.interrupt());
+  }
+
+  useEffect(
+    () => () => {
+      const completed = input.interrupt();
+      if (completed) propsRef.current.onCohort(completed);
       propsRef.current.onDrawingChange(false);
-      if (stroke) propsRef.current.onStroke(stroke);
-    }
+    },
+    [input]
+  );
 
-    function ready() {
-      return !propsRef.current.disabled && size.current.width > 0 && size.current.height > 0;
-    }
+  const responder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: ready,
+      onMoveShouldSetPanResponder: ready,
+      onPanResponderGrant: (event) => {
+        paperTarget.current = event.nativeEvent.target;
+        begin(event);
+      },
+      onPanResponderStart: begin,
+      onPanResponderMove: (event) => sample(event),
+      onPanResponderEnd: (event) => sample(event, true),
+      onPanResponderRelease: (event) => {
+        sample(event, true);
+        interrupt();
+        paperTarget.current = null;
+      },
+      onPanResponderTerminate: () => {
+        interrupt();
+        paperTarget.current = null;
+      },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+    })
+  ).current;
 
-    const responder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: ready,
-        onMoveShouldSetPanResponder: ready,
-        onPanResponderGrant: (event) => {
-          const current = propsRef.current;
-          const touch = event.nativeEvent.changedTouches[0];
-          if (!touch) return;
-          const first = paperPoint(
-            touch.locationX,
-            touch.locationY,
-            size.current.width,
-            size.current.height
-          );
-          setDraft(input.start(touch.identifier, current.color, current.brush, first));
-          current.onDrawingChange(true);
-        },
-        onPanResponderStart: (event) => {
-          if (event.nativeEvent.touches.length > 1) finish();
-        },
-        onPanResponderMove: sample,
-        onPanResponderEnd: (event) => {
-          if (
-            event.nativeEvent.changedTouches.some(
-              (touch) => touch.identifier === input.identifier()
-            )
-          )
-            finish(event);
-        },
-        onPanResponderRelease: (event) => finish(event),
-        onPanResponderTerminate: () => finish(),
-        onPanResponderTerminationRequest: () => false,
-        onShouldBlockNativeResponder: () => true,
-      })
-    ).current;
+  return { drafts, size, responder };
+}
+
+export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
+  function DrawingSurface(props, ref) {
+    const { drafts, size, responder } = useContactDrawing(props);
+    const { exportRequest, exportSvg } = usePngExport(ref);
 
     return (
       <View style={styles.container}>
         <View
           accessibilityLabel="Drawing paper"
           testID="drawing-paper"
+          pointerEvents="box-only"
           style={styles.paper}
           onLayout={({ nativeEvent }) => {
             size.current = nativeEvent.layout;
           }}
           {...responder.panHandlers}
         >
-          <Artwork drawing={props.drawing} draft={draft} />
+          <Artwork drawing={props.drawing} drafts={drafts} />
         </View>
         {exportRequest ? (
           <View pointerEvents="none" style={styles.export}>

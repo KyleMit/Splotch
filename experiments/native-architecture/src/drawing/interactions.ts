@@ -1,42 +1,4 @@
-import type { PaletteLabel } from './palette';
-import {
-  appendPoint,
-  MAX_POINTS,
-  type Brush,
-  type Drawing,
-  type Point,
-  type Stroke,
-} from './model';
-
-export function createStrokeInput() {
-  let current: { identifier: string; stroke: Stroke } | null = null;
-  return {
-    start(identifier: string, color: PaletteLabel, brush: Brush, point: Point): Stroke {
-      const stroke = { color, brush, points: [point] };
-      current = { identifier, stroke };
-      return stroke;
-    },
-    sample(identifier: string, point: Point, endpoint = false): Stroke | null {
-      if (!current || current.identifier !== identifier) return null;
-      current = {
-        ...current,
-        stroke: { ...current.stroke, points: appendPoint(current.stroke.points, point, endpoint) },
-      };
-      return current.stroke;
-    },
-    finish(identifier?: string, point?: Point): Stroke | null {
-      if (!current || (identifier !== undefined && identifier !== current.identifier)) return null;
-      const stroke = current.stroke;
-      current = null;
-      return point && stroke.points.length < MAX_POINTS
-        ? { ...stroke, points: appendPoint(stroke.points, point, true) }
-        : stroke;
-    },
-    identifier(): string | undefined {
-      return current?.identifier;
-    },
-  };
-}
+import type { Drawing } from './model';
 
 export type PngCaptureRequest = {
   drawing: Drawing;

@@ -71,7 +71,8 @@ export function DrawingScreen() {
     surface,
     disabled,
     report,
-    finishStroke,
+    currentDrawing,
+    finishCohort,
     save,
     exportPicture,
     showPictures,
@@ -131,10 +132,11 @@ export function DrawingScreen() {
         <DrawingSurface
           ref={surface}
           drawing={history.drawing}
+          currentDrawing={currentDrawing}
           color={color}
           brush={brush}
           disabled={busy || pictures !== null}
-          onStroke={finishStroke}
+          onCohort={finishCohort}
           onDrawingChange={setDrawing}
           onError={report}
         />

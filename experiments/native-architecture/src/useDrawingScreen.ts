@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import { addStroke, commitDrawing, createHistory, type Brush, type Stroke } from './drawing/model';
+import { addStrokes, commitDrawing, createHistory, type Brush, type Stroke } from './drawing/model';
 import {
   exportPng,
   listPictures,
@@ -28,9 +28,13 @@ export function useDrawingScreen() {
     );
   }
 
-  function finishStroke(stroke: Stroke) {
+  function currentDrawing() {
+    return historyRef.current.drawing;
+  }
+
+  function finishCohort(strokes: readonly Stroke[]) {
     try {
-      const next = addStroke(historyRef.current, stroke);
+      const next = addStrokes(historyRef.current, strokes);
       historyRef.current = next;
       setHistory(next);
       setNotice('');
@@ -107,7 +111,8 @@ export function useDrawingScreen() {
     surface,
     disabled,
     report,
-    finishStroke,
+    currentDrawing,
+    finishCohort,
     save,
     exportPicture,
     showPictures,

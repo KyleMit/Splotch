@@ -3,6 +3,7 @@ import { PALETTE_COLORS, type PaletteLabel } from './palette';
 export const PAPER_WIDTH = 1024;
 export const PAPER_HEIGHT = 768;
 const MAX_STROKES = 1000;
+export const DRAWING_FULL_MESSAGE = 'This picture is full. Save it, then start a new picture.';
 export const MAX_POINTS = 100_000;
 const MIN_SAMPLE_DISTANCE = 1;
 export const BRUSHES = {
@@ -42,15 +43,25 @@ export function commitDrawing(history: History, drawing: Drawing): History {
   return { drawing, undo };
 }
 
-export function addStroke(history: History, stroke: Stroke): History {
-  if (stroke.points.length === 0) return history;
-  if (
-    history.drawing.strokes.length >= MAX_STROKES ||
-    pointCount(history.drawing) + stroke.points.length > MAX_POINTS
-  ) {
-    throw new Error('This picture is full. Save it, then start a new picture.');
+export function drawingCapacity(drawing: Drawing): { strokes: number; points: number } {
+  return {
+    strokes: MAX_STROKES - drawing.strokes.length,
+    points: MAX_POINTS - pointCount(drawing),
+  };
+}
+
+export function addStrokes(history: History, strokes: readonly Stroke[]): History {
+  const additions = strokes.filter((stroke) => stroke.points.length > 0);
+  if (additions.length === 0) return history;
+  const capacity = drawingCapacity(history.drawing);
+  const points = additions.reduce((sum, stroke) => sum + stroke.points.length, 0);
+  if (additions.length > capacity.strokes || points > capacity.points) {
+    throw new Error(DRAWING_FULL_MESSAGE);
   }
-  return commitDrawing(history, { version: 1, strokes: [...history.drawing.strokes, stroke] });
+  return commitDrawing(history, {
+    version: 1,
+    strokes: [...history.drawing.strokes, ...additions],
+  });
 }
 
 export function undoDrawing(history: History): History {

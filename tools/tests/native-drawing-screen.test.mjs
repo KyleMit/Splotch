@@ -57,15 +57,31 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onStroke }, _ref) =>
+  DrawingSurface: forwardRef(({ drawing, onCohort, onDrawingChange }, _ref) =>
     createElement(
-      'button',
-      {
-        'data-testid': 'paper',
-        'data-drawing': JSON.stringify(drawing),
-        onClick: () => onStroke(STROKE),
-      },
-      'Draw fixture stroke'
+      'div',
+      null,
+      createElement(
+        'button',
+        {
+          'data-testid': 'paper',
+          'data-drawing': JSON.stringify(drawing),
+          onClick: () => onCohort([STROKE, { ...STROKE, color: 'Blue', brush: 'pencil' }]),
+        },
+        'Draw fixture stroke'
+      ),
+      createElement('button', { onClick: () => onDrawingChange(true) }, 'Begin cohort'),
+      createElement('button', { onClick: () => onDrawingChange(true) }, 'Lift one contact'),
+      createElement(
+        'button',
+        {
+          onClick: () => {
+            onCohort([STROKE, { ...STROKE, color: 'Blue', brush: 'pencil' }]);
+            onDrawingChange(false);
+          },
+        },
+        'Finish cohort'
+      )
     )
   ),
 }));
@@ -188,5 +204,36 @@ describe('saved-picture failure feedback', () => {
     expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
     await act(async () => finish(emptyDrawing()));
     expect(screen.dialog()).toBeNull();
+  });
+});
+
+describe('contact cohort history through the drawing screen', () => {
+  it('keeps commands disabled until every contact has ended', async () => {
+    await screen.click('Draw fixture stroke');
+    await screen.click('Begin cohort');
+    await screen.click('Lift one contact');
+    const commands = ['Undo', 'Clear', 'Save picture', 'Pictures', 'Export PNG'];
+    expect(
+      commands.map((label) => screen.container.querySelector(`[aria-label="${label}"]`).disabled)
+    ).toEqual(commands.map(() => true));
+    await screen.click('Finish cohort');
+    expect(
+      commands.map((label) => screen.container.querySelector(`[aria-label="${label}"]`).disabled)
+    ).toEqual(commands.map(() => false));
+    expect(JSON.parse(screen.paper()).strokes).toHaveLength(4);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
+  });
+
+  it('removes both cohort strokes with one Undo and keeps Clear independently reversible', async () => {
+    await screen.click('Draw fixture stroke');
+    const first = screen.paper();
+    expect(JSON.parse(first).strokes).toHaveLength(2);
+    await screen.click('Clear');
+    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(first);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
   });
 });

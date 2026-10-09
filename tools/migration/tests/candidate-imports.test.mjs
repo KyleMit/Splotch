@@ -19,6 +19,7 @@ describe('candidate source import ownership', () => {
       'src/DrawingScreen.tsx',
       'src/ProbeApp.tsx',
       'src/drawing/DrawingSurface.tsx',
+      'src/drawing/contactCohort.ts',
       'src/drawing/interactions.ts',
       'src/drawing/model.ts',
       'src/drawing/palette.ts',
