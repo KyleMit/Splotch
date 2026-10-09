@@ -202,7 +202,11 @@ function SavedPictures({
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>Your pictures</Text>
           {notice ? (
-            <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.notice}>
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={[styles.notice, styles.modalNotice]}
+            >
               {notice}
             </Text>
           ) : null}
@@ -304,7 +308,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalTitle: { fontSize: 24, fontWeight: '700', color: DRAWING_THEME.textStrong },
-  pictureList: { flexGrow: 0 },
+  modalNotice: { flexShrink: 0, alignSelf: 'stretch' },
+  pictureList: { flexGrow: 0, flexShrink: 1 },
   savedPicture: {
     paddingVertical: 16,
     borderBottomWidth: 1,

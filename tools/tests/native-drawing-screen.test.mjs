@@ -10,7 +10,7 @@ import {
 
 const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn() }));
 
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles', () => ({
+vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
   savePicture: vi.fn(),
@@ -33,10 +33,14 @@ vi.mock('react-native', () => {
     SafeAreaView: container,
     ScrollView: container,
     View: container,
-    Text: ({ children, accessibilityRole, accessibilityLiveRegion }) =>
+    Text: ({ children, accessibilityRole, accessibilityLiveRegion, style }) =>
       createElement(
         'span',
-        { role: accessibilityRole, 'aria-live': accessibilityLiveRegion },
+        {
+          role: accessibilityRole,
+          'aria-live': accessibilityLiveRegion,
+          style: Object.assign({}, ...[style].flat().filter(Boolean)),
+        },
         children
       ),
     StyleSheet: { create: (styles) => styles },
@@ -52,7 +56,7 @@ const STROKE = {
   ],
 };
 
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface', () => ({
+vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: forwardRef(({ drawing, onStroke }, _ref) =>
     createElement(
       'button',
@@ -148,6 +152,25 @@ describe('saved-picture failure feedback', () => {
       expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
     }
   );
+
+  it('retains the complete long refusal in a nonshrinking modal notice', async () => {
+    const message = 'This saved picture is not a supported drawing. '.repeat(4).trim();
+    files.open.mockRejectedValueOnce(new Error(message));
+    await screen.click('Pictures');
+    await screen.click('Open picture from Broken picture');
+    const alert = screen.dialog().querySelector('[role="alert"]');
+    expect(alert.textContent).toBe(message);
+    expect(alert.style.flexShrink).toBe('0');
+    expect(alert.style.alignSelf).toBe('stretch');
+    const status = [...screen.container.querySelectorAll('[aria-live="polite"]')].find(
+      (element) => !screen.dialog().contains(element)
+    );
+    expect(status.style.flexShrink).toBe('1');
+    expect(alert.style.maxHeight).toBe('');
+    expect(alert.style.overflow).toBe('');
+    await screen.click('Close');
+    expect(screen.dialog()).toBeNull();
+  });
 
   it('clears the previous refusal immediately when retrying an asynchronous open', async () => {
     files.open.mockRejectedValueOnce(new Error('This saved picture cannot be opened.'));
