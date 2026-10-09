@@ -44,11 +44,26 @@ The own frozen installation ran from 2026-10-09 04:15:03 through 04:15:12 UTC wi
 `pnpm install --frozen-lockfile --ignore-scripts`: exit 0, unchanged lock, 1,441 packages cloned
 into this worktree's own `node_modules`. No mutable link to another checkout was used.
 
-Focused candidate type checking and ESLint passed. The focused test set passed 35 tests, including
-real `Ink` renderer raster output: paper tooth, same-color buildup, within-gesture backtracking,
-subtractive blue/yellow crossing, paper-fixed Magic colors across a stroke and tap, exact
-save/reopen/undo pixels, invalid brush/rainbow rejection, and preserved first-slice saves. Mutation
-controls, full applicable checks and native output are pending.
+Source implementation commit: a77d6e055f054a718b58b1a3d576f68da3fa7ee8.
+
+`npm run check`, `npm run lint`, candidate TypeScript, and `npm run format:check` passed. Lint
+reported one inherited unused-variable warning in `candidate-configs.test.mjs`; no brush warning or
+error was reported. The focused test set passed 35 tests, including real `Ink` renderer raster
+output: paper tooth, same-color buildup, within-gesture backtracking, subtractive blue/yellow
+crossing, paper-fixed Magic colors across a stroke and tap, exact save/reopen/undo pixels, invalid
+brush/rainbow rejection, and preserved first-slice saves. Full applicable checks and native output
+remain pending.
+
+Rejecting controls temporarily changed committed source, ran the actual artwork output suite, and
+restored only that source file before the next control. Each failed at a substantive pixel
+assertion, and the restored full focused set passed 35 tests. Actual logs live in `controls/`:
+
+| Mutation                                             | Rejection                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Flat solid Crayon in place of the texture renderer   | Coverage became 1; tooth, subtractive crossing and backtracking assertions failed. |
+| Every deposition uses the same phase                 | Repeated and backtracking passes could not increase coverage.                      |
+| Remove pigment mixing                                | Crossing produced zero green-leading pixels, below the required 30.                |
+| Magic gradient anchored to each shape's bounding box | Spatial rainbow and same-position stroke/tap assertions failed.                    |
 
 An exploratory browser window ran from 2026-10-09 04:22:41 through 04:24:08 UTC on the uncommitted
 implementation. Expo/Metro used two workers on the selected unused port 5301. An earlier owned

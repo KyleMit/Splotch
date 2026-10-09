@@ -1,0 +1,60 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+ ❯ tests/native-brush-output.test.mjs (6 tests | 2 failed) 282ms
+   ❯ native brush artwork output (6)
+     × renders a spatial rainbow and preserves later solid ink in the same composition 10ms
+     × reveals the same Magic color at a paper position across separate strokes and taps 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > renders a spatial rainbow and preserves later solid ink in the same composition
+AssertionError: expected [ 255, 255, 255, 255 ] to not deeply equal [ 255, 255, 255, 255 ]
+
+Compared values have no visual difference.
+
+ ❯ tests/native-brush-output.test.mjs:81:30
+     79|       ...output.data.subarray((y * output.info.width + x) * 4, (y * ou…
+     80|     ];
+     81|     expect(at(150, 200)).not.toEqual(at(850, 200));
+       |                              ^
+     82|     expect(at(500, 200).slice(0, 3)).toEqual([10, 11, 16]);
+     83|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > reveals the same Magic color at a paper position across separate strokes and taps
+AssertionError: expected Buffer[ 84, 239, 134, 255 ] to deeply equal Buffer[ 255, 255, 255, 255 ]
+
+- Expected
++ Received
+
+  {
+    "data": [
+-     255,
+-     255,
+-     255,
++     84,
++     239,
++     134,
+      255,
+    ],
+    "type": "Buffer",
+  }
+
+ ❯ tests/native-brush-output.test.mjs:153:54
+    151|     ]);
+    152|     const offset = (200 * first.info.width + 400) * 4;
+    153|     expect(second.data.subarray(offset, offset + 4)).toEqual(
+       |                                                      ^
+    154|       first.data.subarray(offset, offset + 4)
+    155|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+   Start at  00:32:59
+   Duration  534ms (tests 58%, import 30%, transform 12%)
+

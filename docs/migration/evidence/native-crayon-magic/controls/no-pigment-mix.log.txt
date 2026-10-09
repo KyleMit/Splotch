@@ -1,0 +1,27 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+ ❯ tests/native-brush-output.test.mjs (6 tests | 1 failed) 277ms
+   ❯ native brush artwork output (6)
+     × mixes blue and yellow crossings subtractively in the artwork itself 38ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > mixes blue and yellow crossings subtractively in the artwork itself
+AssertionError: expected 0 to be greater than 30
+ ❯ tests/native-brush-output.test.mjs:120:52
+    118|       ]),
+    119|     ]);
+    120|     expect(region(output, 492, 192, 16, 16).green).toBeGreaterThan(30);
+       |                                                    ^
+    121|   });
+    122|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  00:32:52
+   Duration  560ms (tests 55%, import 29%, transform 15%)
+
