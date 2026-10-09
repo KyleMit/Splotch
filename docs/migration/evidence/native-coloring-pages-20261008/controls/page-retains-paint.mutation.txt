@@ -1,0 +1,3 @@
+: commitDrawing(history, { ...emptyDrawing(), pageId });
+=>
+: commitDrawing(history, { ...history.drawing, pageId });

@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "pageId": "flower",
+  "strokeCount": 1,
+  "inkPixels": 4861,
+  "outlinePixels": 15713,
+  "png": {
+    "width": 1024,
+    "height": 768
+  },
+  "pageErrors": [],
+  "checks": [
+    "visible named picker and all choices",
+    "selected page under real green marker stroke",
+    "page change plus undo restores page and paint",
+    "clear preserves selected page and undo restores paint",
+    "blank selection clears page and paint atomically and undo restores both",
+    "save, reload, reopen exact page and stroke SVG",
+    "PNG contains selected outline and expected green paint pixels",
+    "corrupt saved page refusal preserves live picture",
+    "denied save preserves live picture",
+    "phone picker fits and all page targets exceed 52px",
+    "modal backdrop uses the actual design-token color"
+  ],
+  "screenshots": [
+    "picker.png",
+    "flower-painted.png",
+    "turtle.png",
+    "blank.png",
+    "sunshine.png",
+    "picker-phone.png"
+  ]
+}

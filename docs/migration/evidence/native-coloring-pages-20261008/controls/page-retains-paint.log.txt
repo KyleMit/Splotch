@@ -1,0 +1,53 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-coloring-pages.test.mjs --maxWorkers=1 -t changes the page and paint together
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-coloring-pages/Splotch/tools
+
+ ❯ tests/native-coloring-pages.test.mjs (18 tests | 1 failed | 17 skipped) 4ms
+   ❯ native coloring-page composition (18)
+     × changes the page and paint together as one reversible picture operation 3ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 skipped (18)
+   Start at  23:55:54
+   Duration  71ms (transform 62%, import 19%, tests 14%, worker 4%)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > changes the page and paint together as one reversible picture operation
+AssertionError: expected { version: 2, pageId: 'turtle', …(1) } to deeply equal { version: 2, pageId: 'turtle', …(1) }
+
+- Expected
++ Received
+
+  {
+    "pageId": "turtle",
+-   "strokes": [],
++   "strokes": [
++     {
++       "brush": "marker",
++       "color": "Green",
++       "points": [
++         {
++           "x": 512,
++           "y": 384,
++         },
++       ],
++     },
++   ],
+    "version": 2,
+  }
+
+ ❯ tests/native-coloring-pages.test.mjs:34:26
+     32|     const original = picture();
+     33|     const next = changePage(original, 'turtle');
+     34|     expect(next.drawing).toEqual({ version: 2, pageId: 'turtle', strok…
+       |                          ^
+     35|     expect(next.undo.at(-1)).toBe(original.drawing);
+     36|     expect(undoDrawing(next).drawing).toBe(original.drawing);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

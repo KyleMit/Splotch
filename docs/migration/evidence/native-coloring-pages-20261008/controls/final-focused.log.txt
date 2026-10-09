@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-coloring-pages.test.mjs tools/tests/native-drawing-model.test.mjs tools/tests/native-drawing-interactions.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-coloring-pages/Splotch/tools
+
+
+ Test Files  3 passed (3)
+      Tests  32 passed (32)
+   Start at  23:57:17
+   Duration  199ms (transform 40%, tests 31%, import 22%, worker 6%)
+
