@@ -31,9 +31,10 @@ history; this candidate cache does not inherit its acceptance.
 
 The joint v3 parser retains explicit v1, page-v2 and brush-v2 readers and refuses ambiguous or mixed
 metadata. Page changes retain the held rainbow. Successful Clear advances it once; observed blank
-Clear adds no history state. Native nonempty Clear intentionally fails with retained drawing until
-actual native alpha observation is implemented and qualified in this same unit. It never guesses
-emptiness from an operation log or geometry. Browser observation reads the actual transparent PNG.
+Clear adds no history state. Native Clear has a bounded TypeScript alpha source candidate;
+unsupported, malformed, stale or cancelled observation retains the drawing. Actual native format
+coverage, producer preflight and qualification remain pending in this same unit. Emptiness is never
+guessed from an operation log or geometry. Browser observation reads the actual transparent PNG.
 
 The first production mechanism uses chronological prefix PNG checkpoints and at most one eraser mask
 per scene. Runtime checkpoint state is separate from the canonical 1000-operation saved/history log.
@@ -49,8 +50,12 @@ replay. The whole output deadline remains ten seconds. The controller rechecks i
 history ref before writing an exported PNG, and Clear retains its full-History identity check.
 Superseded preparation jobs cancel by request identity and restart only the current plan; genuine
 capture/load failures remain terminal. A per-request mount identity keeps consecutive outputs
-independent. Main-owner fault recovery still requires a real user-facing repair in this same unit:
-manual mounted-test remounts do not provide that app recovery flow.
+independent. The controller exposes a visible Retry drawing action for a terminal main-renderer
+fault. It acquires the real surface input lease, remounts only the keyed renderer generation and
+retains exact History, Undo, page and rainbow. Old-generation callbacks are refused; commands remain
+blocked until the new image is ready. Ordinary export/alpha failures do not offer this renderer
+action. This source and its real-button mounted regressions are unrun; app recovery remains
+unqualified.
 
 Remaining gates include: PNG->Image pixel/color/alpha roundtrip, Crayon actual chronological
 backdrop and native live/export agreement, replacement image race/failure controls, and real 1000-op
@@ -70,3 +75,43 @@ binds each callback to its canonical prefix/checkpoint hashes. Its source was ad
 ready-plan output and first-erase boundary; no model or saved-reader change accompanied that
 adaptation. Its failed diagnostic runs do not qualify the repaired source or clear the remaining
 gates.
+
+The global SVG observer classifies actual ActivityIndicator/progressbar SVGs outside paper as
+noncapture. Named paper outlines and picker previews still require an actual SVG method. Unknown
+owners and missing required methods remain errors with node provenance. Every mandatory exported
+observation is preserved before its diagnostic-error guard. Existing capture, retention, pixel and
+resource caps remain unchanged. Native module integration is held: the unchanged Expo search owner
+requires every result inside the reviewed lock closure and installed-package root. A local module
+cannot gain that admission from a separate positive source inventory. No native owner or dependency
+was added. Native alpha and its producer preflight remain required within this same unit.
+
+## Native alpha source candidate
+
+The native `inkCoverage` caller uses a hook-owned observation request prepared before ink capture.
+It snapshots the documented cached RN screen metrics, expected raster dimensions, current history,
+command lease and mounted surface identity. Dimension changes, cancelled requests and old owners
+refuse completion. The mounted imperative surface handle is stable; its capture methods read the
+existing current refs rather than a drawing prop snapshot.
+
+`pngAlpha`, `pngBytes`, `pngInflate` and `pngWork` implement a candidate-owned streaming RGBA8 PNG
+alpha observation without a dependency or native-module addition. The initial supported subset is
+noninterlaced RGBA8 with PNG compression/filter method0 and only optional pre-IDAT PLTE, sRGB, gAMA
+and pHYs metadata with the supported field checks. Other metadata, color types, depths or interlace
+forms refuse observation. Source support is not evidence that both actual transparent native
+producers fit this subset.
+
+The decoder validates every supported chunk CRC, the complete zlib/DEFLATE stream and Adler32, exact
+filtered-row length, terminal IEND and input end before returning either empty or nonempty. Alpha
+below4 is empty under the shared existing threshold. It retains two dimension-derived scanlines,
+one32KiB history window and bounded tables, without a full decoded image buffer. Cooperative work
+slices, a finite synchronous-slice refusal, a total work limit and the existing10-second deadline
+bound decoder work. Cancellation does not release its active decoder ownership until the underlying
+async function's actual finally. The web alpha algorithm is preserved, with only the consumed
+request wrapper and shared unchanged constants.
+
+Cached RN scale is observational. It does not atomically authenticate UIKit's default renderer
+format at queued execution or prove a before-allocation native budget. Decoder buffer bounds do not
+bound native capture/compression/base64 allocation. Atomic preflight, actual both-OS transparent
+producer formats, mounted Clear/Retry/history, native throughput, original raw-RGBA/RSS gates and
+legal1000-depth qualification remain held. This source candidate changes neither ADR-0085's shipping
+performance history nor framework selection.

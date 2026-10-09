@@ -29,6 +29,11 @@ vi.mock('react-native', () => {
     return createElement('div', null, children);
   }
   return {
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+      addEventListener: () => ({ remove: vi.fn() }),
+    },
+    Platform: { OS: 'android' },
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
     Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
@@ -71,11 +76,15 @@ const STROKE = {
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: forwardRef(({ drawing, onStroke }, ref) => {
-    useImperativeHandle(ref, () => ({
-      lockInput: files.lock,
-      capturePng: files.capture,
-      captureInk: files.ink,
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        lockInput: files.lock,
+        capturePng: files.capture,
+        captureInk: files.ink,
+      }),
+      []
+    );
     return createElement(
       'button',
       {
@@ -255,7 +264,9 @@ describe('Clear observation refusal', () => {
     await screen.click('Clear');
     expect(files.ink).toHaveBeenCalledOnce();
     expect(screen.paper()).toBe(original);
-    expect(screen.container.textContent).toContain('This picture could not be checked.');
+    expect(screen.container.textContent).toContain(
+      'Picture capture returned an invalid or unsupported PNG.'
+    );
     await screen.click('Undo');
     expect(JSON.parse(screen.paper()).strokes).toEqual([]);
     expect(JSON.parse(screen.paper()).rainbow).toBe(0);

@@ -5,7 +5,11 @@ import {
   finishBrowserAccounting,
   recordResourcePhase,
 } from './checkpoint-resources.mjs';
-import { installObservation, retained } from './checkpoint-observation.mjs';
+import {
+  assertObservationComplete,
+  installObservation,
+  retained,
+} from './checkpoint-observation.mjs';
 import {
   PROTECTED,
   sha,
@@ -170,6 +174,7 @@ async function main() {
       resource(name + ':export-complete');
       const observation = await retained(page);
       report.observations.push(await preserveObservation(output, name, observation));
+      assertObservationComplete(observation);
       return observation;
     }
     if (phase === 'causal') {

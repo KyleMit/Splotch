@@ -1,8 +1,7 @@
 import { PNG_TIMEOUT_MS } from './svgCapture';
+import { createInkObservationController } from './inkObservation';
+import { EMPTY_ALPHA_THRESHOLD, MAX_PNG_BASE64_CHARACTERS, MAX_PNG_PIXELS } from './pngLimits';
 
-const EMPTY_ALPHA_THRESHOLD = 4;
-const MAX_PNG_BASE64_CHARACTERS = 64 * 1024 * 1024;
-const MAX_PNG_PIXELS = 16 * 1024 * 1024;
 const PNG_HEADER_BASE64_CHARACTERS = 44;
 const PNG_WIDTH_OFFSET = 16;
 const PNG_HEIGHT_OFFSET = 20;
@@ -75,4 +74,11 @@ export function inkPngIsEmpty(base64: string): Promise<boolean> {
     };
     image.src = `data:image/png;base64,${base64}`;
   });
+}
+
+export function createInkObservation() {
+  return createInkObservationController(
+    () => ({ grid: null, current: () => true, dispose() {} }),
+    (base64) => inkPngIsEmpty(base64)
+  );
 }

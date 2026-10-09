@@ -39,6 +39,7 @@ type Props = {
   onDrawingChange: (drawing: boolean) => void;
   onPreparingChange: (busy: boolean) => void;
   onError: (error: unknown) => void;
+  onRendererFault: (error: unknown) => void;
 };
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
@@ -153,7 +154,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             draft={draft}
             prepareEraser={props.brush === 'eraser'}
             onBusy={props.onPreparingChange}
-            onError={props.onError}
+            onError={props.onRendererFault}
           />
           <Svg
             width="100%"
@@ -230,19 +231,23 @@ function useSurfaceCapture(
       request.cancel('The picture changed before capture finished.');
   }, [drawing]);
 
-  useImperativeHandle(ref, () => ({
-    capturePng: (snapshot) => capture(snapshot, 'picture'),
-    captureInk: (snapshot) => capture(snapshot, 'ink'),
-    lockInput() {
-      if (input.identifier() !== undefined || commandLock.current)
-        throw new Error('Finish drawing before using this control.');
-      const lease = {};
-      commandLock.current = lease;
-      return () => {
-        if (commandLock.current === lease) commandLock.current = null;
-      };
-    },
-  }));
+  useImperativeHandle(
+    ref,
+    () => ({
+      capturePng: (snapshot) => capture(snapshot, 'picture'),
+      captureInk: (snapshot) => capture(snapshot, 'ink'),
+      lockInput() {
+        if (input.identifier() !== undefined || commandLock.current)
+          throw new Error('Finish drawing before using this control.');
+        const lease = {};
+        commandLock.current = lease;
+        return () => {
+          if (commandLock.current === lease) commandLock.current = null;
+        };
+      },
+    }),
+    []
+  );
 
   useEffect(
     () => () => {

@@ -1,3 +1,14 @@
+export { retained } from './checkpoint-retention.mjs';
+import {
+  assertObservationComplete,
+  classifyDiagnosticSvg,
+  diagnosticAncestors,
+  diagnosticInstance,
+  diagnosticOwner,
+  diagnosticPageOutline,
+} from './checkpoint-svg-owners.mjs';
+export { assertObservationComplete, classifyDiagnosticSvg };
+
 function observationBase(protectedRegion) {
   const state = {
     mode: 'normal',
@@ -133,6 +144,7 @@ function diagnosticHash(state, record, key, value) {
       })
       .catch((error) => {
         record[key + 'Failure'] = String(error);
+        state.diagnosticErrors.push(String(error));
       })
   );
 }
@@ -209,38 +221,6 @@ function diagnosticScene(state, record, children) {
   record.sceneUnavailable = 'No named InkScene element found in actual Svg instance children';
 }
 
-function diagnosticAncestors(node) {
-  const key = Object.getOwnPropertyNames(node).find((name) => name.startsWith('__reactFiber$'));
-  let fiber = key ? node[key] : null;
-  const ancestors = [];
-  for (let index = 0; fiber && index < 64; index++, fiber = fiber.return) {
-    const name = fiber.type?.render?.name ?? fiber.type?.name ?? fiber.type;
-    if (typeof name === 'string') ancestors.push({ name, key: fiber.key });
-  }
-  return ancestors;
-}
-
-function diagnosticOwner(node) {
-  const ancestors = diagnosticAncestors(node),
-    has = (name) => ancestors.some((item) => item.name === name);
-  let kind = 'unknown';
-  if (has('FixedInkCapture')) kind = has('PictureCapture') ? 'picture-ink' : 'checkpoint';
-  else if (has('RasterFrames'))
-    kind = node.firstElementChild?.getAttribute('opacity') === '0' ? 'incoming-ink' : 'live-ink';
-  else if (has('PictureCapture')) kind = 'picture-output';
-  return { kind, ancestors };
-}
-
-function diagnosticInstance(node) {
-  const key = Object.getOwnPropertyNames(node).find((name) => name.startsWith('__reactFiber$'));
-  let fiber = key ? node[key] : null,
-    instance;
-  for (let index = 0; fiber && index < 64; index++, fiber = fiber.return) {
-    if (fiber.stateNode?.elementRef?.current === node) instance = fiber.stateNode;
-  }
-  return instance;
-}
-
 function diagnosticDocument(state) {
   const started = performance.now(),
     nodes = [...document.querySelectorAll('svg')];
@@ -288,6 +268,12 @@ export function patchSnapshotMethod(state, instance, decorate) {
 }
 
 function diagnosticPatchSvg(state, node) {
+  if (state.classified.has(node)) return;
+  const owner = diagnosticOwner(node);
+  const classification = classifyDiagnosticSvg(node, owner);
+  state.classifications.set(node, classification);
+  state.classified.add(node);
+  if (classification.kind === 'noncapture-activity-indicator') return;
   const instance = diagnosticInstance(node);
   patchSnapshotMethod(
     state,
@@ -380,7 +366,12 @@ function diagnosticStart(state) {
     imageCaptureIds: new WeakMap(),
     canvasCaptureIds: new WeakMap(),
     patched: new WeakSet(),
+    classified: new WeakSet(),
+    classifications: new WeakMap(),
+    svgErrors: [],
+    failedNodes: new WeakSet(),
     heap: diagnosticHeap,
+    geometry: diagnosticGeometry,
   });
   const originalSerializer = XMLSerializer.prototype.serializeToString;
   XMLSerializer.prototype.serializeToString = function (node) {
@@ -434,8 +425,25 @@ function diagnosticStart(state) {
   };
   window.Image.prototype = NativeImage.prototype;
   new MutationObserver(() => {
-    for (const node of document.querySelectorAll('svg'))
-      diagnosticAttempt(state, () => diagnosticPatchSvg(state, node));
+    for (const node of document.querySelectorAll('svg')) {
+      if (state.failedNodes.has(node)) continue;
+      try {
+        diagnosticPatchSvg(state, node);
+      } catch (error) {
+        state.failedNodes.add(node);
+        state.diagnosticErrors.push(String(error));
+        diagnosticAttempt(state, () => {
+          const provenance = {
+            error: String(error),
+            owner: diagnosticOwner(node),
+            geometry: diagnosticGeometry(node),
+          };
+          if (state.svgErrors.length >= state.diagnosticLimits.svgs)
+            throw new Error('SVG error provenance limit');
+          state.svgErrors.push(provenance);
+        });
+      }
+    }
   }).observe(document, { childList: true, subtree: true });
 }
 
@@ -447,7 +455,9 @@ export async function installObservation(page, protectedRegion) {
     diagnosticRetain,
     diagnosticAncestors,
     diagnosticOwner,
+    diagnosticPageOutline,
     diagnosticInstance,
+    classifyDiagnosticSvg,
     diagnosticCaptureLive,
     diagnosticAttributes,
     diagnosticDocument,
@@ -465,45 +475,6 @@ export async function installObservation(page, protectedRegion) {
       JSON.stringify(protectedRegion) +
       ');})()'
   );
-}
-
-export async function retained(page) {
-  return page.evaluate(async () => {
-    const state = globalThis.__eraserCheckpointProbe;
-    const started = performance.now();
-    await Promise.all(state.jobs);
-    const metadataJsonCharacters = JSON.stringify(state.details).length;
-    if (state.causal && metadataJsonCharacters > 1024 * 1024)
-      state.diagnosticErrors.push('Metadata retention byte limit');
-    const retention = {
-      serializedCharacters: state.serialized.reduce((sum, item) => sum + item.text.length, 0),
-      base64Characters: state.retained.reduce((sum, item) => sum + item.length, 0),
-      metadataJsonCharacters,
-      hashCost: state.hashCost,
-      hashSettlementMs: performance.now() - started,
-      retainedSvgCount: state.serialized.length,
-      retainedPngCount: state.retained.length,
-      callbackBase64Characters: state.callbackPngs.reduce(
-        (sum, item) => sum + item.base64.length,
-        0
-      ),
-      diagnosticLimits: state.diagnosticLimits,
-      hashJobs: state.jobs.length,
-      heap: state.heap(),
-    };
-    return {
-      captures: state.captures,
-      retained: state.retained,
-      callbackPngs: state.callbackPngs,
-      events: state.events,
-      maxMaskDepth: state.maxMaskDepth,
-      maxImages: state.maxImages,
-      details: state.details,
-      diagnosticErrors: state.diagnosticErrors,
-      serialized: state.serialized,
-      retention,
-    };
-  });
 }
 
 export async function captureLive(page) {

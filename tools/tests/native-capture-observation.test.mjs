@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
-import { patchSnapshotMethod } from '../migration/probes/native-eraser/checkpoint-observation.mjs';
+import {
+  assertObservationComplete,
+  classifyDiagnosticSvg,
+  patchSnapshotMethod,
+} from '../migration/probes/native-eraser/checkpoint-observation.mjs';
+import { diagnosticOwner } from '../migration/probes/native-eraser/checkpoint-svg-owners.mjs';
 import {
   MAX_BROWSER_PROCESSES,
   MAX_RESOURCE_PHASES,
@@ -332,5 +337,79 @@ describe('consumed late browser accounting', () => {
     expect(closing.indexOf('await finishBrowserAccounting')).toBeLessThan(
       closing.indexOf("await writeFile(join(output, 'result.json')")
     );
+  });
+});
+
+describe('strict global SVG owner admission', () => {
+  const spinner = { kind: 'unknown', ancestors: [{ name: 'ActivityIndicator', key: null }] };
+  function node({ progressbar = true, paper = false } = {}) {
+    return {
+      closest: (selector) =>
+        selector === '[role="progressbar"]' ? (progressbar ? {} : null) : paper ? {} : null,
+    };
+  }
+  it('classifies only an actual ActivityIndicator ancestor inside its progressbar outside paper', () => {
+    expect(classifyDiagnosticSvg(node(), spinner).kind).toBe('noncapture-activity-indicator');
+    expect(() => classifyDiagnosticSvg(node({ progressbar: false }), spinner)).toThrow(
+      'Unclassified'
+    );
+    expect(() => classifyDiagnosticSvg(node({ paper: true }), spinner)).toThrow('Unclassified');
+    expect(() => classifyDiagnosticSvg(node(), { kind: 'unknown', ancestors: [] })).toThrow(
+      'Unclassified'
+    );
+    expect(() => classifyDiagnosticSvg(node(), { kind: 'invented-owner', ancestors: [] })).toThrow(
+      'Unclassified'
+    );
+  });
+  it('requires the real method on a capture owner even under ActivityIndicator ancestry', () => {
+    const owner = { ...spinner, kind: 'checkpoint' };
+    expect(classifyDiagnosticSvg(node(), owner).kind).toBe('required-capture');
+    expect(() => patchSnapshotMethod({ patched: new WeakSet() }, {}, decorate([]))).toThrow(
+      'Missing actual'
+    );
+  });
+  it('refuses missing or failed mandatory metadata independently of pixel/resource success', () => {
+    expect(() => assertObservationComplete({ diagnosticErrors: [] })).not.toThrow();
+    expect(() => assertObservationComplete({})).toThrow('Mandatory SVG');
+    expect(() =>
+      assertObservationComplete({ diagnosticErrors: ['Missing actual SVG capture method'] })
+    ).toThrow('Mandatory SVG');
+    const driver = readFileSync(
+      new URL('../migration/probes/native-eraser/checkpoint-browser.mjs', import.meta.url),
+      'utf8'
+    );
+    expect(driver).toMatch(
+      /preserveObservation\(output, name, observation\)\);\s*assertObservationComplete\(observation\);/
+    );
+  });
+});
+
+describe('actual named production outline ownership', () => {
+  function tree(ancestor, pageOutline) {
+    const node = {};
+    const instance = {
+      elementRef: { current: node },
+      props: {
+        children: pageOutline
+          ? { type: function PageOutline() {} }
+          : { type: function Unrelated() {} },
+      },
+    };
+    node.__reactFiber$fixture = {
+      type: 'svg',
+      stateNode: node,
+      return: {
+        type: function Svg() {},
+        stateNode: instance,
+        return: { type: { name: ancestor }, key: null },
+      },
+    };
+    return node;
+  }
+  it('requires both the actual Svg instance children and the owning production ancestor', () => {
+    expect(diagnosticOwner(tree('DrawingSurface', true)).kind).toBe('paper-outline');
+    expect(diagnosticOwner(tree('ColoringPagePicker', true)).kind).toBe('page-preview');
+    expect(diagnosticOwner(tree('DrawingSurface', false)).kind).toBe('unknown');
+    expect(diagnosticOwner(tree('Unrelated', true)).kind).toBe('unknown');
   });
 });

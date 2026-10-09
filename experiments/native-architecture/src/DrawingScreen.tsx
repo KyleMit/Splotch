@@ -62,13 +62,12 @@ export function DrawingScreen() {
     history,
     clear,
     undo,
-    setPreparing,
+    recovery,
     color,
     setColor,
     brush,
     setBrush,
     drawing,
-    setDrawing,
     busy,
     notice,
     pictures,
@@ -78,8 +77,6 @@ export function DrawingScreen() {
     setPagePickerOpen,
     choosePage,
     disabled,
-    report,
-    finishStroke,
     save,
     exportPicture,
     showPictures,
@@ -124,15 +121,13 @@ export function DrawingScreen() {
         />
         <Text style={styles.subtitle}>{COLORING_PAGES[history.drawing.pageId].label}</Text>
         <DrawingSurface
+          key={recovery.generation}
           ref={surface}
           drawing={history.drawing}
           color={color}
           brush={brush}
           disabled={busy || pictures !== null || pagePickerOpen}
-          onStroke={finishStroke}
-          onDrawingChange={setDrawing}
-          onPreparingChange={setPreparing}
-          onError={report}
+          {...recovery.callbacks}
         />
         <View style={styles.toolbar}>
           <Action
@@ -152,8 +147,15 @@ export function DrawingScreen() {
             }}
           />
         </View>
+        {recovery.failed ? (
+          <Action
+            label="Retry drawing"
+            disabled={recovery.retryDisabled}
+            onPress={recovery.retry}
+          />
+        ) : null}
         <View style={styles.status}>
-          {busy ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
+          {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
           <Text accessibilityLiveRegion="polite" style={styles.notice}>
             {notice}
           </Text>
