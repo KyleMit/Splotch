@@ -70,6 +70,7 @@ export function useDrawingScreen() {
   function showPictures() {
     try {
       setPictures(listPictures());
+      setNotice('');
     } catch (error) {
       report(error);
     }
@@ -77,6 +78,7 @@ export function useDrawingScreen() {
 
   async function openPicture(picture: SavedPicture) {
     setBusy(true);
+    setNotice('');
     try {
       const saved = await reopenPicture(picture.id);
       setHistory((current) => commitDrawing(current, saved));

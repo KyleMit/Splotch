@@ -1,6 +1,6 @@
 import type { Point } from '../drawing/model';
 
-export type DrawingLoop = {
+type DrawingLoop = {
   start: () => void;
   setVolume: (volume: number) => void;
   stop: () => void;

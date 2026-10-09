@@ -1,5 +1,7 @@
 import {
+  linkSync,
   mkdtempSync,
+  mkdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -10,12 +12,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
-import { NATIVE_GEMFILE_OWNER, readCandidateGemfile } from '../lib/native-gemfile.mjs';
+import {
+  NATIVE_GEMFILE_OWNER,
+  NATIVE_GEMFILE_LOCK_OWNER,
+  readCandidateGemfile,
+} from '../lib/native-gemfile.mjs';
 import { readTemplateManifest } from '../lib/native-template.mjs';
 
 const root = join(import.meta.dirname, '../../..');
 const candidate = join(root, CANDIDATE_DIRECTORY);
 const source = readFileSync(join(candidate, NATIVE_GEMFILE_OWNER.path), 'utf8');
+const lockSource = readFileSync(join(candidate, NATIVE_GEMFILE_LOCK_OWNER.path));
 const fixtures = [];
 
 afterEach(() => fixtures.splice(0).forEach((path) => rmSync(path, { recursive: true })));
@@ -23,6 +30,7 @@ afterEach(() => fixtures.splice(0).forEach((path) => rmSync(path, { recursive: t
 function fixture() {
   const directory = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-native-gemfile-control-')));
   fixtures.push(directory);
+  writeFileSync(join(directory, NATIVE_GEMFILE_LOCK_OWNER.path), lockSource);
   return directory;
 }
 
@@ -30,6 +38,7 @@ describe('manual native Gemfile source owner', () => {
   it('binds exact proposal pins without claiming template generation or gem resolution', () => {
     expect(readCandidateGemfile(candidate)).toMatchObject({
       ...NATIVE_GEMFILE_OWNER,
+      lockfile: NATIVE_GEMFILE_LOCK_OWNER,
       resolvedGemGraphQualified: false,
     });
     for (const [name, version] of [
@@ -41,6 +50,17 @@ describe('manual native Gemfile source owner', () => {
     expect(readTemplateManifest(root).members.map((row) => row.path)).not.toContain(
       'package/Gemfile'
     );
+  });
+
+  it('keeps development selections and documented lock ownership bound to their source owners', () => {
+    const development = readFileSync(join(candidate, 'DEVELOPMENT.md'), 'utf8');
+    const ownership = readFileSync(join(candidate, 'NATIVE-SOURCES.md'), 'utf8');
+    expect(development).toContain('process.stdout.write(NATIVE_CONTRACT.nodeVersion)');
+    expect(development).toContain('export GEMRC=/dev/null');
+    expect(development).toContain('export BUNDLE_IGNORE_CONFIG=true');
+    expect(development).toContain('export BUNDLE_FROZEN=true');
+    expect(ownership).toContain('NATIVE_GEMFILE_LOCK_OWNER');
+    expect(ownership).not.toContain(NATIVE_GEMFILE_LOCK_OWNER.sourceSha256);
   });
 
   it('retains released compatibility constraints and explicit Ruby 3.4 library consumers', () => {
@@ -80,6 +100,57 @@ describe('manual native Gemfile source owner', () => {
     symlinkSync(target, path);
     expect(() => readCandidateGemfile(directory)).toThrow(
       'Manual native Gemfile is not an owned regular source'
+    );
+  });
+
+  it('rejects a missing lock and accepts exact source restoration', () => {
+    const directory = fixture();
+    writeFileSync(join(directory, NATIVE_GEMFILE_OWNER.path), source);
+    const path = join(directory, NATIVE_GEMFILE_LOCK_OWNER.path);
+    rmSync(path);
+    expect(() => readCandidateGemfile(directory)).toThrow();
+    writeFileSync(path, lockSource);
+    expect(readCandidateGemfile(directory).lockfile).toEqual(NATIVE_GEMFILE_LOCK_OWNER);
+  });
+
+  it('rejects changed resolved lock bytes without claiming graph qualification', () => {
+    const directory = fixture();
+    writeFileSync(join(directory, NATIVE_GEMFILE_OWNER.path), source);
+    const path = join(directory, NATIVE_GEMFILE_LOCK_OWNER.path);
+    writeFileSync(path, Buffer.concat([lockSource, Buffer.from('\nchanged resolution\n')]));
+    expect(() => readCandidateGemfile(directory)).toThrow('Native Gemfile.lock source changed');
+    writeFileSync(path, lockSource);
+    expect(readCandidateGemfile(directory)).toMatchObject({
+      lockfile: NATIVE_GEMFILE_LOCK_OWNER,
+      resolvedGemGraphQualified: false,
+    });
+  });
+
+  it.each(['symlink', 'hardlink'])('rejects a %s lock alias and accepts restoration', (kind) => {
+    const directory = fixture();
+    writeFileSync(join(directory, NATIVE_GEMFILE_OWNER.path), source);
+    const path = join(directory, NATIVE_GEMFILE_LOCK_OWNER.path);
+    const target = join(directory, 'aliased-lock');
+    writeFileSync(target, lockSource);
+    rmSync(path);
+    const link = kind === 'symlink' ? symlinkSync : linkSync;
+    link(target, path);
+    expect(() => readCandidateGemfile(directory)).toThrow(
+      'Native Gemfile.lock is not an owned regular source'
+    );
+    rmSync(path);
+    writeFileSync(path, lockSource);
+    expect(readCandidateGemfile(directory).lockfile).toEqual(NATIVE_GEMFILE_LOCK_OWNER);
+  });
+
+  it('rejects a directory substituted for the lock', () => {
+    const directory = fixture();
+    writeFileSync(join(directory, NATIVE_GEMFILE_OWNER.path), source);
+    const path = join(directory, NATIVE_GEMFILE_LOCK_OWNER.path);
+    rmSync(path);
+    mkdirSync(path);
+    expect(() => readCandidateGemfile(directory)).toThrow(
+      'Native Gemfile.lock is not an owned regular source'
     );
   });
 });

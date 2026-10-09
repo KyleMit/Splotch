@@ -118,7 +118,7 @@ async function materializerFixture() {
     `${CANDIDATE_DIRECTORY}/alignment.json`,
     JSON.stringify(alignment)
   );
-  for (const path of ['package.json', NATIVE_CONTRACT.entry, 'Gemfile'])
+  for (const path of ['package.json', NATIVE_CONTRACT.entry, 'Gemfile', 'Gemfile.lock'])
     writeMaterializerFixture(
       fixtureRoot,
       `${CANDIDATE_DIRECTORY}/${path}`,
@@ -174,6 +174,10 @@ describe('native maintained source contract', () => {
     expect(runNativeCandidateCheck([])).toMatchObject({
       sourceContract: true,
       template: { version: '57.0.28' },
+      gemfile: {
+        lockfile: { path: 'Gemfile.lock', ownership: 'maintained-lock-source' },
+        resolvedGemGraphQualified: false,
+      },
     });
     expect(NATIVE_CONTRACT.identity).toBe('art.splotch.migration.probe');
   });

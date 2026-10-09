@@ -175,6 +175,7 @@ export function DrawingScreen() {
       <SavedPictures
         pictures={pictures}
         busy={busy}
+        notice={notice}
         onOpen={openPicture}
         onClose={() => setPictures(null)}
       />
@@ -217,11 +218,13 @@ function PaintColors({
 function SavedPictures({
   pictures,
   busy,
+  notice,
   onOpen,
   onClose,
 }: {
   pictures: SavedPicture[] | null;
   busy: boolean;
+  notice: string;
   onOpen: (picture: SavedPicture) => Promise<void>;
   onClose: () => void;
 }) {
@@ -238,6 +241,15 @@ function SavedPictures({
       <View style={styles.modalBackdrop}>
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>Your pictures</Text>
+          {notice ? (
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={[styles.notice, styles.modalNotice]}
+            >
+              {notice}
+            </Text>
+          ) : null}
           <ScrollView style={styles.pictureList}>
             {pictures?.length ? (
               pictures.map((picture) => (
@@ -336,7 +348,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   modalTitle: { fontSize: 24, fontWeight: '700', color: DRAWING_THEME.textStrong },
-  pictureList: { flexGrow: 0 },
+  modalNotice: { flexShrink: 0, alignSelf: 'stretch' },
+  pictureList: { flexGrow: 0, flexShrink: 1 },
   savedPicture: {
     paddingVertical: 16,
     borderBottomWidth: 1,
