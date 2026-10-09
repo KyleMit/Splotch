@@ -58,84 +58,67 @@ export function inkCaptures(observation, strokes) {
     });
 }
 
-export async function causalCases({
-  openFixture,
-  exportFixture,
-  page,
-  rich,
-  drawing,
-  cornerErase,
-}) {
+export async function causalCases({ openFixture, exportFixture, page, fixtures }) {
   const cases = [],
     comparisons = [],
     geometryObservations = [];
-  for (const [group, prefix] of [
-    ['magic', [rich[4]]],
-    ['crayon-magic', rich.slice(2)],
-  ]) {
-    for (const masked of [false, true]) {
-      const name = `${group}-${masked ? 'disjoint-mask' : 'bare'}`;
-      const strokes = masked ? [...prefix, cornerErase()] : prefix;
-      await openFixture(name, drawing(strokes));
-      await captureLive(page);
-      const observation = await exportFixture(name);
-      assert.deepEqual(observation.diagnosticErrors, []);
-      const actual = inkCaptures(observation, strokes);
-      const final = actual.filter((item) => item.record.owner.kind === 'picture-ink');
-      assert.equal(final.length, 1, 'Missing unique ready-plan fixed output');
-      const { record: fixed, data } = final[0];
-      assert.equal(fixed.scene.prefixLength + fixed.scene.remainingLength, strokes.length);
-      const live = observation.details.find((item) => item.owner.kind === 'live-ink');
-      assert.ok(live, 'Missing actual visible ink capture');
-      assert.equal(
-        live.scene.drawnOperationPrefixJsonSha256,
-        fixed.scene.drawnOperationPrefixJsonSha256
-      );
-      const source = masked
-        ? actual.find(
-            (item) =>
-              item.record.owner.kind === 'checkpoint' &&
-              item.record.scene.drawnOperationPrefixJsonSha256 === sha(JSON.stringify(prefix))
-          )?.record
-        : fixed;
-      assert.ok(source, 'Missing pre-first-erase source prefix');
-      assert.equal(source.magicSemantics.length, 1);
-      assert.equal(source.magicSemantics[0].paths.length, 1);
-      if (masked)
-        assert.equal(fixed.scene.checkpointBase64TextSha256, source.callbackBase64TextSha256);
-      const serialized = observation.serialized.find((item) => item.captureId === fixed.id).text;
-      assert.equal((serialized.match(/<mask\b/g) ?? []).length, masked ? 1 : 0);
-      assert.deepEqual([live.geometry.rect.width, live.geometry.rect.height], [1022, 766]);
-      assert.deepEqual([fixed.geometry.rect.width, fixed.geometry.rect.height], [1024, 768]);
-      assert.deepEqual(fixed.serializedOuterAttributes, {
-        viewBox: '0 0 1024 768',
-        width: '1024',
-        height: '768',
-      });
-      assert.equal(
-        observation.serialized.length,
-        observation.details.length,
-        'Capture SVG missing'
-      );
-      assert.equal(
-        observation.callbackPngs.length,
-        observation.details.length,
-        'Capture PNG missing'
-      );
-      for (const item of observation.details)
-        assert.ok(item.documentSvgs?.svgs.length, 'Missing concurrent SVG ID inventory');
-      const livePng = observation.callbackPngs.find((item) => item.captureId === live.id);
-      const fixedBytes = await protectedPixels(data);
-      geometryObservations.push({
-        name: name + ':geometry-only',
-        strictRgbaEqual: fixedBytes.equals(
-          await protectedPixels('data:image/png;base64,' + livePng.base64)
-        ),
-        liveCaptureId: live.id,
-        fixedCaptureId: fixed.id,
-      });
-      cases.push({ name, fixedBytes, id: fixed.id, semantics: source.magicSemantics });
-    }
+  for (const { name, prefix, masked, drawing } of fixtures) {
+    const { strokes } = drawing;
+    await openFixture(name, drawing);
+    await captureLive(page);
+    const observation = await exportFixture(name);
+    assert.deepEqual(observation.diagnosticErrors, []);
+    const actual = inkCaptures(observation, strokes);
+    const final = actual.filter((item) => item.record.owner.kind === 'picture-ink');
+    assert.equal(final.length, 1, 'Missing unique ready-plan fixed output');
+    const { record: fixed, data } = final[0];
+    assert.equal(fixed.scene.prefixLength + fixed.scene.remainingLength, strokes.length);
+    const live = observation.details.find((item) => item.owner.kind === 'live-ink');
+    assert.ok(live, 'Missing actual visible ink capture');
+    assert.equal(
+      live.scene.drawnOperationPrefixJsonSha256,
+      fixed.scene.drawnOperationPrefixJsonSha256
+    );
+    const source = masked
+      ? actual.find(
+          (item) =>
+            item.record.owner.kind === 'checkpoint' &&
+            item.record.scene.drawnOperationPrefixJsonSha256 === sha(JSON.stringify(prefix))
+        )?.record
+      : fixed;
+    assert.ok(source, 'Missing pre-first-erase source prefix');
+    assert.equal(source.magicSemantics.length, 1);
+    assert.equal(source.magicSemantics[0].paths.length, 1);
+    if (masked)
+      assert.equal(fixed.scene.checkpointBase64TextSha256, source.callbackBase64TextSha256);
+    const serialized = observation.serialized.find((item) => item.captureId === fixed.id).text;
+    assert.equal((serialized.match(/<mask\b/g) ?? []).length, masked ? 1 : 0);
+    assert.deepEqual([live.geometry.rect.width, live.geometry.rect.height], [1022, 766]);
+    assert.deepEqual([fixed.geometry.rect.width, fixed.geometry.rect.height], [1024, 768]);
+    assert.deepEqual(fixed.serializedOuterAttributes, {
+      viewBox: '0 0 1024 768',
+      width: '1024',
+      height: '768',
+    });
+    assert.equal(observation.serialized.length, observation.details.length, 'Capture SVG missing');
+    assert.equal(
+      observation.callbackPngs.length,
+      observation.details.length,
+      'Capture PNG missing'
+    );
+    for (const item of observation.details)
+      assert.ok(item.documentSvgs?.svgs.length, 'Missing concurrent SVG ID inventory');
+    const livePng = observation.callbackPngs.find((item) => item.captureId === live.id);
+    const fixedBytes = await protectedPixels(data);
+    geometryObservations.push({
+      name: name + ':geometry-only',
+      strictRgbaEqual: fixedBytes.equals(
+        await protectedPixels('data:image/png;base64,' + livePng.base64)
+      ),
+      liveCaptureId: live.id,
+      fixedCaptureId: fixed.id,
+    });
+    cases.push({ name, fixedBytes, id: fixed.id, semantics: source.magicSemantics });
   }
   for (let index = 0; index < cases.length; index += 2) {
     const pair = cases.slice(index, index + 2);

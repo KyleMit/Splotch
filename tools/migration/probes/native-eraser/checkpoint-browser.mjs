@@ -1,3 +1,4 @@
+import { checkpointFixtures } from './checkpoint-fixtures.mjs';
 import { installObservation, retained } from './checkpoint-observation.mjs';
 import {
   PROTECTED,
@@ -60,31 +61,6 @@ function processTreeRss(pid) {
   return rows.filter(([child]) => owned.has(child)).reduce((sum, [, , rss]) => sum + rss, 0) * 1024;
 }
 
-const line = (brush, color, y) => ({
-  brush,
-  color,
-  points: [120, 680].map((x) => ({ x, y })),
-});
-const cornerErase = () => ({ brush: 'eraser', points: [{ x: 960, y: 740 }] });
-const cornerPaint = () => ({ brush: 'marker', color: 'Green', points: [{ x: 960, y: 690 }] });
-const rich = [
-  line('pencil', 'Purple', 140),
-  line('marker', 'Red', 200),
-  { ...line('crayon', 'Blue', 300), seed: 4294967295 },
-  {
-    brush: 'crayon',
-    color: 'Yellow',
-    seed: 17,
-    points: [240, 360].map((y) => ({ x: 400, y })),
-  },
-  {
-    brush: 'magic',
-    rainbow: 3,
-    points: [120, 680].map((x) => ({ x, y: 450 })),
-  },
-];
-const drawing = (strokes) => ({ version: 3, pageId: 'blank', rainbow: 3, strokes });
-
 async function main() {
   const url = new URL(argument('url'));
   assert.equal(url.protocol, 'http:');
@@ -116,6 +92,7 @@ async function main() {
   let server, browser, sampler, page;
   let baselineRss;
   const replayStarted = performance.now();
+  const fixtures = checkpointFixtures();
   report.pageErrors = [];
   report.observations = [];
   report.resourcePhases = [];
@@ -203,41 +180,34 @@ async function main() {
         openFixture,
         exportFixture,
         page,
-        rich,
-        drawing,
-        cornerErase,
+        fixtures: fixtures.causal,
       });
       assert.ok(
         report.checks.causal.comparisons.every((item) => item.strictRgbaEqual),
         'Causal protected raw RGBA comparison failed; diagnostic only'
       );
     } else {
-      await openFixture('reference', drawing(rich), true, true);
+      await openFixture('reference', fixtures.reference, true, true);
       const reference = await exportFixture('reference');
-      const referenceInk = inkCaptures(reference, rich).find(
+      const referenceInk = inkCaptures(reference, fixtures.reference.strokes).find(
         (item) => item.record.owner.kind === 'picture-ink'
       )?.data;
       assert.ok(referenceInk, 'No transparent production ink capture was observed');
       assert.ok(hasInk(await decoded(referenceInk)));
       const expectedProtected = await protectedPixels(referenceInk);
       if (phase === 'small') {
-        await openFixture(
-          'roundtrip',
-          drawing([...rich, cornerErase(), cornerPaint(), cornerErase()])
-        );
+        await openFixture('roundtrip', fixtures.roundtrip);
         const roundtrip = await exportFixture('roundtrip');
-        const roundtripInk = inkCaptures(roundtrip, [
-          ...rich,
-          cornerErase(),
-          cornerPaint(),
-          cornerErase(),
-        ]);
+        const roundtripInk = inkCaptures(roundtrip, fixtures.roundtrip.strokes);
         assert.ok(
           roundtripInk.length >= 2,
           'Checkpoint and final production PNG were not both observed'
         );
         for (const { record, data } of roundtripInk) {
-          assert.ok(record.scene.prefixLength + record.scene.remainingLength >= rich.length);
+          assert.ok(
+            record.scene.prefixLength + record.scene.remainingLength >=
+              fixtures.reference.strokes.length
+          );
           assert.ok(
             expectedProtected.equals(await protectedPixels(data)),
             'Matching-prefix PNG->Image checkpoint changed protected RGBA pixels'
@@ -252,36 +222,23 @@ async function main() {
         assert.ok(roundtrip.maxMaskDepth <= 1);
         report.checks.roundtrip = true;
 
-        const red = line('marker', 'Red', 200);
-        await openFixture('redreference', drawing([red]));
-        const redReference = inkCaptures(await exportFixture('red-reference'), [red]).find(
-          (item) => item.record.owner.kind === 'picture-ink'
-        )?.data;
-        await openFixture(
-          'futureink',
-          drawing([
-            line('marker', 'Blue', 200),
-            { brush: 'eraser', points: red.points },
-            red,
-            cornerErase(),
-          ])
-        );
-        const futureStrokes = [
-          line('marker', 'Blue', 200),
-          { brush: 'eraser', points: red.points },
-          red,
-          cornerErase(),
-        ];
-        const futureInk = inkCaptures(await exportFixture('future-ink'), futureStrokes).find(
-          (item) => item.record.owner.kind === 'picture-ink'
-        )?.data;
+        await openFixture('redreference', fixtures.redreference);
+        const redReference = inkCaptures(
+          await exportFixture('red-reference'),
+          fixtures.redreference.strokes
+        ).find((item) => item.record.owner.kind === 'picture-ink')?.data;
+        await openFixture('futureink', fixtures.futureink);
+        const futureInk = inkCaptures(
+          await exportFixture('future-ink'),
+          fixtures.futureink.strokes
+        ).find((item) => item.record.owner.kind === 'picture-ink')?.data;
         assert.ok(
           (await protectedPixels(redReference)).equals(await protectedPixels(futureInk)),
           'Later paint was erased or earlier covered ink returned'
         );
         report.checks.futureInk = true;
 
-        await openFixture('failure', drawing([red]));
+        await openFixture('failure', fixtures.failure);
         const beforeFailure = await page.getByTestId('drawing-paper').screenshot();
         await page.evaluate(() => {
           globalThis.__eraserCheckpointProbe.mode = 'drop-next-svg-load';
@@ -316,7 +273,7 @@ async function main() {
         );
         assert.deepEqual(
           saved,
-          drawing([red]),
+          fixtures.failure,
           'Failed observation changed the saved drawing/rainbow'
         );
         report.checks.timeoutRetentionAndLateCallback = true;
@@ -332,13 +289,10 @@ async function main() {
         );
       }
       if (phase === 'depth') {
-        const deep = [
-          ...rich,
-          ...Array.from({ length: 995 }, (_, index) => (index % 2 ? cornerPaint() : cornerErase())),
-        ];
+        const deep = fixtures.depth.strokes;
         assert.equal(deep.length, 1000);
         const replayStart = performance.now();
-        await openFixture('depth', drawing(deep), false);
+        await openFixture('depth', fixtures.depth, false);
         const reopenedMs = performance.now() - replayStart;
         const depth = await exportFixture('depth');
         const totalReplayExportMs = performance.now() - replayStart;
