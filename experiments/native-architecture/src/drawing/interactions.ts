@@ -1,4 +1,4 @@
-import type { PaletteLabel } from '../../../../web/src/lib/palette';
+import type { PaletteLabel } from './palette';
 import {
   appendPoint,
   MAX_POINTS,

@@ -37,6 +37,8 @@ const candidate = join(root, CANDIDATE_DIRECTORY);
 const delegateMember = 'package/ios/HelloWorld/AppDelegate.swift';
 const plistMember = 'package/ios/HelloWorld/Info.plist';
 const fixtureDirectories = [];
+const PHASE_CONTROLS_TIMEOUT_MS = 15000;
+const PHASE_CHILD_TIMEOUT_MS = 5000;
 const scenePaths = [
   'ios/AppDelegates/ExpoAppSceneDelegate.swift',
   'ios/AppDelegates/ExpoReactNativeFactoryProvider.swift',
@@ -299,112 +301,124 @@ describe('native Expo scene source boundary', () => {
       ).toThrow(`Reviewed Expo scene source changed: ${path}`);
     }
   );
-  it('executes actual Apple phase guards with a stubbed native bundle boundary', () => {
-    const owned = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-apple-phase-control-')));
-    fixtureDirectories.push(owned);
-    const project = readFileSync(
-      join(candidate, 'ios/HelloWorld.xcodeproj/project.pbxproj'),
-      'utf8'
-    );
-    const script = [...project.matchAll(/shellScript = ("(?:[^"\\]|\\.)*");/g)]
-      .map((match) => JSON.parse(match[1]))
-      .find((source) => source.includes('Candidate bundle phase requires Release'));
-    expect(script).toContain('Candidate Hermes compiler override is forbidden');
-    ownedWrite(owned, 'phase.sh', script);
-    ownedWrite(owned, 'package.json', JSON.stringify({ type: 'module' }));
-    ownedWrite(owned, 'ios/Pods/control.txt', 'owned pod path');
-    ownedWrite(owned, 'src/index.ts', readFileSync(join(candidate, 'src/index.ts')));
-    for (const [name, version] of [
-      ['react-native', '0.86.3'],
-      ['expo', '57.0.26'],
-      ['hermes-compiler', HERMES_COMPILER_VERSION],
-    ]) {
-      ownedWrite(owned, `node_modules/${name}/package.json`, JSON.stringify({ name, version }));
-    }
-    ownedWrite(
-      owned,
-      'node_modules/expo/scripts/resolveAppEntry.js',
-      "console.log(require('path').join(process.argv[1], 'src/index.ts'));\n"
-    );
-    ownedWrite(
-      owned,
-      'node_modules/@expo/cli/package.json',
-      JSON.stringify({ name: '@expo/cli', main: 'index.js' })
-    );
-    ownedWrite(owned, 'node_modules/@expo/cli/index.js', '');
-    const compiler = join(owned, 'node_modules/hermes-compiler/hermesc/osx-bin/hermesc');
-    ownedWrite(
-      owned,
-      'node_modules/hermes-compiler/hermesc/osx-bin/hermesc',
-      '#!/bin/sh\nexit 99\n',
-      0o755
-    );
-    ownedWrite(owned, 'wrong-hermesc', '#!/bin/sh\nexit 99\n', 0o755);
-    // The version fixture isolates the selector; exact Node bytes belong to the Release caller.
-    const nodeForwarder = `#!/bin/sh
+  it(
+    'executes actual Apple phase guards with a stubbed native bundle boundary',
+    () => {
+      const owned = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-apple-phase-control-')));
+      fixtureDirectories.push(owned);
+      const project = readFileSync(
+        join(candidate, 'ios/HelloWorld.xcodeproj/project.pbxproj'),
+        'utf8'
+      );
+      const script = [...project.matchAll(/shellScript = ("(?:[^"\\]|\\.)*");/g)]
+        .map((match) => JSON.parse(match[1]))
+        .find((source) => source.includes('Candidate bundle phase requires Debug or Release'));
+      expect(script).toContain('Candidate Hermes compiler override is forbidden');
+      ownedWrite(owned, 'phase.sh', script);
+      ownedWrite(owned, 'package.json', JSON.stringify({ type: 'module' }));
+      ownedWrite(owned, 'ios/Pods/control.txt', 'owned pod path');
+      ownedWrite(owned, 'src/index.ts', readFileSync(join(candidate, 'src/index.ts')));
+      for (const [name, version] of [
+        ['react-native', '0.86.3'],
+        ['expo', '57.0.26'],
+        ['hermes-compiler', HERMES_COMPILER_VERSION],
+      ]) {
+        ownedWrite(owned, `node_modules/${name}/package.json`, JSON.stringify({ name, version }));
+      }
+      ownedWrite(
+        owned,
+        'node_modules/expo/scripts/resolveAppEntry.js',
+        "console.log(require('path').join(process.argv[1], 'src/index.ts'));\n"
+      );
+      ownedWrite(
+        owned,
+        'node_modules/@expo/cli/package.json',
+        JSON.stringify({ name: '@expo/cli', main: 'index.js' })
+      );
+      ownedWrite(owned, 'node_modules/@expo/cli/index.js', '');
+      const compiler = join(owned, 'node_modules/hermes-compiler/hermesc/osx-bin/hermesc');
+      ownedWrite(
+        owned,
+        'node_modules/hermes-compiler/hermesc/osx-bin/hermesc',
+        '#!/bin/sh\nexit 99\n',
+        0o755
+      );
+      ownedWrite(owned, 'wrong-hermesc', '#!/bin/sh\nexit 99\n', 0o755);
+      // The version fixture isolates the selector; exact Node bytes belong to the Release caller.
+      const nodeForwarder = `#!/bin/sh
 if [ "$1" = --version ]; then
   printf '%s\\n' '${NATIVE_CONTRACT.nodeVersion}'
 else
   exec '${process.execPath.replaceAll("'", "'\\''")}' "$@"
 fi
 `;
-    ownedWrite(owned, 'reviewed-version-node', nodeForwarder, 0o755);
-    ownedWrite(owned, 'different-node', '#!/bin/sh\nprintf "v22.1.0\\n"\n', 0o755);
-    ownedWrite(
-      owned,
-      'node_modules/react-native/scripts/react-native-xcode.sh',
-      'printf "%s\\n" "$BUNDLE_COMMAND|$ENTRY_FILE|$USE_HERMES|$HERMES_CLI_PATH"\n'
-    );
-    const environment = {
-      ...process.env,
-      CONFIGURATION: 'Release',
-      PROJECT_DIR: join(owned, 'ios'),
-      NODE_BINARY: join(owned, 'reviewed-version-node'),
-    };
-    for (const name of [...APPLE_BUNDLE_OVERRIDES, 'USE_HERMES', 'HERMES_CLI_PATH'])
-      delete environment[name];
-    const run = (overrides = {}) =>
-      spawnSync('/bin/sh', [join(owned, 'phase.sh')], {
-        cwd: owned,
-        env: { ...environment, ...overrides },
-        encoding: 'utf8',
-      });
-    const expected = `export:embed|${owned}/src/index.ts|true|${compiler}\n`;
-    for (const overrides of [
-      {},
-      { USE_HERMES: 'true' },
-      {
-        HERMES_CLI_PATH: join(
-          owned,
-          'ios/Pods/../../node_modules/hermes-compiler/hermesc/osx-bin/hermesc'
-        ),
-      },
-      { EXTRA_COMPILER_ARGS: 'ineffective ambient override' },
-    ]) {
-      const result = run(overrides);
-      expect(result.status, result.stderr).toBe(0);
-      expect(result.stdout).toBe(expected);
-    }
-    for (const name of APPLE_BUNDLE_OVERRIDES) {
-      const result = run({ [name]: 'rejecting control' });
-      expect(result.status, name).toBe(1);
-      expect(result.stderr).toContain('Candidate bundling overrides are forbidden');
-      expect(result.stdout).toBe('');
+      ownedWrite(owned, 'reviewed-version-node', nodeForwarder, 0o755);
+      ownedWrite(owned, 'different-node', '#!/bin/sh\nprintf "v22.1.0\\n"\n', 0o755);
+      ownedWrite(
+        owned,
+        'node_modules/react-native/scripts/react-native-xcode.sh',
+        'printf "%s\\n" "$BUNDLE_COMMAND|$ENTRY_FILE|$USE_HERMES|$HERMES_CLI_PATH"\n'
+      );
+      const environment = {
+        ...process.env,
+        CONFIGURATION: 'Release',
+        PROJECT_DIR: join(owned, 'ios'),
+        NODE_BINARY: join(owned, 'reviewed-version-node'),
+      };
+      for (const name of [...APPLE_BUNDLE_OVERRIDES, 'USE_HERMES', 'HERMES_CLI_PATH'])
+        delete environment[name];
+      const run = (overrides = {}) =>
+        spawnSync('/bin/sh', [join(owned, 'phase.sh')], {
+          cwd: owned,
+          env: { ...environment, ...overrides },
+          encoding: 'utf8',
+          timeout: PHASE_CHILD_TIMEOUT_MS,
+        });
+      const expected = `export:embed|${owned}/src/index.ts|true|${compiler}\n`;
+      for (const overrides of [
+        {},
+        { USE_HERMES: 'true' },
+        {
+          HERMES_CLI_PATH: join(
+            owned,
+            'ios/Pods/../../node_modules/hermes-compiler/hermesc/osx-bin/hermesc'
+          ),
+        },
+        { EXTRA_COMPILER_ARGS: 'ineffective ambient override' },
+      ]) {
+        const result = run(overrides);
+        expect(result.status, result.stderr).toBe(0);
+        expect(result.stdout).toBe(expected);
+      }
+      for (const name of APPLE_BUNDLE_OVERRIDES) {
+        const result = run({ [name]: 'rejecting control' });
+        expect(result.status, name).toBe(1);
+        expect(result.stderr).toContain('Candidate bundling overrides are forbidden');
+        expect(result.stdout).toBe('');
+        expect(run().stdout).toBe(expected);
+      }
+      const debug = run({ CONFIGURATION: 'Debug', SKIP_BUNDLING: '1' });
+      expect(debug.status, debug.stderr).toBe(0);
+      expect(debug.stdout).toBe(expected);
+      const unsupported = run({ CONFIGURATION: 'Profile' });
+      expect(unsupported.status).toBe(1);
+      expect(unsupported.stderr).toContain('Candidate bundle phase requires Debug or Release');
+      expect(unsupported.stdout).toBe('');
+      const jsc = run({ USE_HERMES: 'false' });
+      expect(jsc.status).toBe(1);
+      expect(jsc.stderr).toContain('Candidate requires Hermes');
+      const differentNode = run({ NODE_BINARY: join(owned, 'different-node') });
+      expect(differentNode.status).toBe(1);
+      expect(differentNode.stderr).toContain(
+        'Candidate NODE_BINARY must be the reviewed Node version'
+      );
+      expect(differentNode.stdout).toBe('');
       expect(run().stdout).toBe(expected);
-    }
-    const jsc = run({ USE_HERMES: 'false' });
-    expect(jsc.status).toBe(1);
-    expect(jsc.stderr).toContain('Candidate requires Hermes');
-    const differentNode = run({ NODE_BINARY: join(owned, 'different-node') });
-    expect(differentNode.status).toBe(1);
-    expect(differentNode.stderr).toContain(
-      'Candidate NODE_BINARY must be the reviewed Node version'
-    );
-    expect(differentNode.stdout).toBe('');
-    expect(run().stdout).toBe(expected);
-    const substituted = run({ HERMES_CLI_PATH: join(owned, 'wrong-hermesc') });
-    expect(substituted.status).toBe(1);
-    expect(substituted.stderr).toContain('Candidate Hermes compiler override is forbidden');
-    expect(run().stdout).toBe(expected);
-  });
+      const substituted = run({ HERMES_CLI_PATH: join(owned, 'wrong-hermesc') });
+      expect(substituted.status).toBe(1);
+      expect(substituted.stderr).toContain('Candidate Hermes compiler override is forbidden');
+      expect(run().stdout).toBe(expected);
+    },
+    PHASE_CONTROLS_TIMEOUT_MS
+  );
 });

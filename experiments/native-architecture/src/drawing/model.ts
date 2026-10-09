@@ -1,4 +1,4 @@
-import { PALETTE_COLORS, type PaletteLabel } from '../../../../web/src/lib/palette';
+import { PALETTE_COLORS, type PaletteLabel } from './palette';
 
 export const PAPER_WIDTH = 1024;
 export const PAPER_HEIGHT = 768;

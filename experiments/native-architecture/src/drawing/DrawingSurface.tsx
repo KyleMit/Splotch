@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { paletteHex, type PaletteLabel } from '../../../../web/src/lib/palette';
+import { paletteHex, type PaletteLabel } from './palette';
 import {
   BRUSHES,
   PAPER_HEIGHT,

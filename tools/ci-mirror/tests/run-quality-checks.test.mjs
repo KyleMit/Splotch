@@ -253,12 +253,37 @@ function hasDirectForgeMitigationCall(ast) {
           call.arguments.length === 3 &&
           call.arguments.every(
             (argument, position) =>
-              ts.isIdentifier(argument) && argument.text === ['root', 'lock', 'workspace'][position]
+              argument.getText(ast) === ['root', 'drawingForge.lock', 'workspace'][position]
           )
         );
       })
   );
-  return index >= 0 && !hasPrecedingTermination(statements.slice(0, index));
+  const projection = statements.findIndex(
+    (node) =>
+      node.getText(ast).replace(/\s+/g, '') ===
+      'constdrawingForge=projectDrawingForgeLock(lock,manifest,readDrawingForgeInputs(root));'
+  );
+  const adjunctImport = ast.statements.some(
+    (node) =>
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === './lib/native-drawing-forge-paths.mjs' &&
+      node.importClause?.namedBindings &&
+      ts.isNamedImports(node.importClause.namedBindings) &&
+      ['projectDrawingForgeLock', 'readDrawingForgeInputs'].every((name) =>
+        node.importClause.namedBindings.elements.some(
+          (binding) =>
+            binding.name.text === name &&
+            (!binding.propertyName || binding.propertyName.text === name)
+        )
+      )
+  );
+  return (
+    adjunctImport &&
+    projection >= 0 &&
+    projection < index &&
+    !hasPrecedingTermination(statements.slice(0, index))
+  );
 }
 
 function forgeMitigationWiringViolations(workspaceYaml, checker, commands) {
@@ -337,7 +362,8 @@ describe('the guard-qualified Forge advisory exception', () => {
   });
 
   it('rejects commented imports/calls, dead or conditional calls and preceding returns', () => {
-    const call = 'const forgeMitigation = await verifyForgeMitigation(root, lock, workspace);';
+    const call =
+      'const forgeMitigation = await verifyForgeMitigation(root, drawingForge.lock, workspace);';
     const mitigationSpecifier = './lib/forge-mitigation.mjs';
     const importDeclaration = `import { verifyForgeMitigation } from '${mitigationSpecifier}';`;
     expect(
@@ -351,7 +377,7 @@ describe('the guard-qualified Forge advisory exception', () => {
       `// ${call}`,
       `if (false) { ${call} }`,
       `if (root) { ${call} }`,
-      'const forgeMitigation = root ? await verifyForgeMitigation(root, lock, workspace) : null;',
+      'const forgeMitigation = root ? await verifyForgeMitigation(root, drawingForge.lock, workspace) : null;',
       `return {}; ${call}`,
       `if (root) return {}; ${call}`,
       `process.exit(0); ${call}`,
@@ -364,6 +390,21 @@ describe('the guard-qualified Forge advisory exception', () => {
           QUALITY_COMMANDS
         )
       ).toContain('mandatory installed mitigation call absent');
+  });
+
+  it('requires the unconditional qualified N1 projection before the installed guard', () => {
+    const projection =
+      'const drawingForge = projectDrawingForgeLock(lock, manifest, readDrawingForgeInputs(root));';
+    for (const changed of [
+      checker.replace(projection, 'const drawingForge = { lock };'),
+      checker.replace(projection, `if (root) { ${projection} }`),
+      checker.replace('readDrawingForgeInputs(root)', '{}'),
+      checker.replace('./lib/native-drawing-forge-paths.mjs', './lib/unreviewed-projection.mjs'),
+      checker.replace('root, drawingForge.lock, workspace', 'root, lock, workspace'),
+    ])
+      expect(forgeMitigationWiringViolations(pnpmWorkspace, changed, QUALITY_COMMANDS)).toContain(
+        'mandatory installed mitigation call absent'
+      );
   });
 
   it('rejects no-op npm scripts, dead main callbacks and preceding process exits', () => {
