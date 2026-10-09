@@ -188,8 +188,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.1))
       web-features:
-        specifier: 3.40.0
-        version: 3.40.0
+        specifier: 3.40.1
+        version: 3.40.1
 
 packages:
 
@@ -5489,8 +5489,8 @@ packages:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
     engines: {node: 20 || >=22}
 
-  web-features@3.40.0:
-    resolution: {integrity: sha512-3AzfKxVv7hWTRZSubYBVu1LHk62mdGg+vIpVAf6+nNC3pC7g455nKSry5OlwsaSYMzuzL2DxSTwlyb5z0+XZdQ==}
+  web-features@3.40.1:
+    resolution: {integrity: sha512-HRdUYqZRNawtIEI39iKjk6E6g1yO/bct/8bFcD/O+bNGYsbG475PV80+HTrpkYOiZnoEaVSMu5Q/LTVwnBH5ag==}
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -9717,7 +9717,7 @@ snapshots:
       speedline-core: 1.4.3
       third-party-web: 0.30.0
       tldts-icann: 7.4.15
-      web-features: 3.40.0
+      web-features: 3.40.1
       ws: 7.5.13
       yargs: 17.7.2
       yargs-parser: 21.1.1
@@ -11210,7 +11210,7 @@ snapshots:
 
   walk-up-path@4.0.0: {}
 
-  web-features@3.40.0: {}
+  web-features@3.40.1: {}
 
   web-streams-polyfill@3.3.3: {}
 
