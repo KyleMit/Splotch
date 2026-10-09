@@ -5,12 +5,16 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PALETTE_COLORS as shippingPalette } from '../../web/src/lib/palette.ts';
-import { themes } from '../../web/src/lib/design/tokens.ts';
+import { scale, themes } from '../../web/src/lib/design/tokens.ts';
 import {
   PALETTE_COLORS,
   paletteHex,
 } from '../../experiments/native-architecture/src/drawing/palette.ts';
-import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import {
+  DRAWING_SCALE,
+  DRAWING_SCRIM,
+  DRAWING_THEME,
+} from '../../experiments/native-architecture/src/drawing/theme.ts';
 
 const sourceDirectory = join(
   import.meta.dirname,
@@ -42,6 +46,23 @@ function assertThemeProjection(theme) {
   );
 }
 
+function assertScaleProjection(nativeScale) {
+  assert.deepEqual(
+    nativeScale,
+    Object.fromEntries(
+      Object.keys(DRAWING_SCALE).map((key) => [
+        key,
+        key.startsWith('fontWeight') ? scale[key] : Number.parseFloat(scale[key]),
+      ])
+    )
+  );
+}
+
+function assertScrimProjection(scrim) {
+  const [, red, green, blue, alpha] = /^rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)$/.exec(scale.scrimPill);
+  assert.equal(scrim, `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`);
+}
+
 afterEach(() => fixtures.splice(0).forEach((path) => rmSync(path, { recursive: true })));
 
 describe('native drawing token projection', () => {
@@ -53,6 +74,20 @@ describe('native drawing token projection', () => {
 
   it('pins exactly the light-theme values consumed by drawing controls', () => {
     expect(() => assertThemeProjection(DRAWING_THEME)).not.toThrow();
+  });
+
+  it('pins the picker scale and compatible scrim to the design token owner', () => {
+    expect(() => assertScaleProjection(DRAWING_SCALE)).not.toThrow();
+    expect(() => assertScrimProjection(DRAWING_SCRIM)).not.toThrow();
+  });
+
+  it('refuses changed picker scale and scrim after consuming owned source fixtures', async () => {
+    const scaleModule = await fixtureModule('theme.ts', "space1: '4px'", "space1: '9px'");
+    expect(scaleModule.DRAWING_SCALE.space1).toBe(9);
+    expect(() => assertScaleProjection(scaleModule.DRAWING_SCALE)).toThrow();
+    const scrimModule = await fixtureModule('theme.ts', '23 23 29 / 72%', '23 23 29 / 50%');
+    expect(scrimModule.DRAWING_SCRIM).toBe('rgba(23, 23, 29, 0.5)');
+    expect(() => assertScrimProjection(scrimModule.DRAWING_SCRIM)).toThrow();
   });
 
   it('refuses a changed palette source after consuming the actual owned fixture', async () => {

@@ -47,6 +47,12 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('react-native-svg', () => ({
+  default: ({ children }) => createElement('svg', null, children),
+  Rect: (props) => createElement('rect', props),
+  Path: (props) => createElement('path', props),
+}));
+
 const STROKE = {
   color: 'Purple',
   brush: 'marker',

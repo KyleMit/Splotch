@@ -1,0 +1,50 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-coloring-pages.test.mjs --maxWorkers=1 -t refuses an invalid page identity
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-coloring-pages/Splotch/tools
+
+ ❯ tests/native-coloring-pages.test.mjs (18 tests | 7 failed | 11 skipped) 5ms
+   ❯ native coloring-page composition (18)
+     × refuses an invalid page identity from storage 0 3ms
+     × refuses an invalid page identity from storage 1 0ms
+     × refuses an invalid page identity from storage 2 0ms
+     × refuses an invalid page identity from storage 3 0ms
+     × refuses an invalid page identity from storage 4 0ms
+     × refuses an invalid page identity from storage 5 0ms
+     × refuses an invalid page identity from storage 6 0ms
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 11 skipped (18)
+   Start at  23:55:54
+   Duration  91ms (transform 60%, import 20%, tests 16%, worker 4%)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 0
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 1
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 2
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 3
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 4
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 5
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > refuses an invalid page identity from storage 6
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ tests/native-coloring-pages.test.mjs:73:71
+     71|     'refuses an invalid page identity from storage %#',
+     72|     (pageId) => {
+     73|       expect(() => parseDrawing({ version: 2, pageId, strokes: [] })).…
+       |                                                                       ^
+     74|         'not a supported drawing'
+     75|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+

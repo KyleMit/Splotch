@@ -1,3 +1,4 @@
+import { isPageId, type PageId } from './pages';
 import { PALETTE_COLORS, type PaletteLabel } from './palette';
 
 export const PAPER_WIDTH = 1024;
@@ -13,14 +14,14 @@ export const BRUSHES = {
 export type Brush = keyof typeof BRUSHES;
 export type Point = Readonly<{ x: number; y: number }>;
 export type Stroke = Readonly<{ color: PaletteLabel; brush: Brush; points: readonly Point[] }>;
-export type Drawing = Readonly<{ version: 1; strokes: readonly Stroke[] }>;
+export type Drawing = Readonly<{ version: 2; pageId: PageId; strokes: readonly Stroke[] }>;
 export type History = Readonly<{ drawing: Drawing; undo: readonly Drawing[] }>;
 
 const HISTORY_LIMIT = 50;
 const HISTORY_POINT_BUDGET = 200_000;
 
 export function emptyDrawing(): Drawing {
-  return { version: 1, strokes: [] };
+  return { version: 2, pageId: 'blank', strokes: [] };
 }
 
 export function createHistory(drawing: Drawing = emptyDrawing()): History {
@@ -50,7 +51,10 @@ export function addStroke(history: History, stroke: Stroke): History {
   ) {
     throw new Error('This picture is full. Save it, then start a new picture.');
   }
-  return commitDrawing(history, { version: 1, strokes: [...history.drawing.strokes, stroke] });
+  return commitDrawing(history, {
+    ...history.drawing,
+    strokes: [...history.drawing.strokes, stroke],
+  });
 }
 
 export function undoDrawing(history: History): History {
@@ -59,7 +63,15 @@ export function undoDrawing(history: History): History {
 }
 
 export function clearDrawing(history: History): History {
-  return history.drawing.strokes.length ? commitDrawing(history, emptyDrawing()) : history;
+  return history.drawing.strokes.length
+    ? commitDrawing(history, { ...history.drawing, strokes: [] })
+    : history;
+}
+
+export function changePage(history: History, pageId: PageId): History {
+  return pageId === history.drawing.pageId
+    ? history
+    : commitDrawing(history, { ...emptyDrawing(), pageId });
 }
 
 export function paperPoint(x: number, y: number, width: number, height: number): Point {
@@ -101,7 +113,8 @@ function record(value: unknown): value is Record<string, unknown> {
 export function parseDrawing(value: unknown): Drawing {
   if (
     !record(value) ||
-    value.version !== 1 ||
+    (value.version !== 1 && value.version !== 2) ||
+    (value.version === 2 && !isPageId(value.pageId)) ||
     !Array.isArray(value.strokes) ||
     value.strokes.length > MAX_STROKES
   ) {
@@ -139,5 +152,9 @@ export function parseDrawing(value: unknown): Drawing {
     });
     return { color: item.color as PaletteLabel, brush: item.brush, points };
   });
-  return { version: 1, strokes };
+  return {
+    version: 2,
+    pageId: value.version === 2 && isPageId(value.pageId) ? value.pageId : 'blank',
+    strokes,
+  };
 }

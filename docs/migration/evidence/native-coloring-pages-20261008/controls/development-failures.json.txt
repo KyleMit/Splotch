@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "observed development failure",
+    "stage": "uncommitted initial picker",
+    "assertion": "Blank paper aria-selected === true",
+    "actual": null,
+    "outcome": "failed",
+    "repair": "Explicit radio role, native checked state, and aria-checked on each page choice."
+  },
+  {
+    "kind": "browser fixture authoring error",
+    "stage": "initial browser smoke script",
+    "assertion": "Turtle has nine outline paths",
+    "actual": 8,
+    "outcome": "failed",
+    "repair": "Corrected the original eight-path fixture expectation; no product code change."
+  },
+  {
+    "kind": "observed development failure",
+    "stage": "238306bf509f47b7c818162a0010e7af102a0559",
+    "assertion": "Rendered modal backdrop uses the imported percentage-alpha token",
+    "actual": "rgba(0, 0, 0, 0)",
+    "outcome": "failed",
+    "repair": "Convert the owner token to the comma-separated fractional-alpha syntax accepted by the released RN/RNW parsers."
+  },
+  {
+    "kind": "observed development failure",
+    "stage": "uncommitted fractional-alpha-only adapter",
+    "assertion": "Rendered modal backdrop is rgba(23, 23, 29, 0.72)",
+    "actual": "rgba(0, 0, 0, 0)",
+    "outcome": "failed",
+    "repair": "RNW has a nested older normalize-colors package that also requires comma-separated syntax; final adapter handles both requirements."
+  }
+]
