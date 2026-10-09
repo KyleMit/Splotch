@@ -547,7 +547,7 @@
     "@vitest/coverage-v8": "^5.0.2",
     "@vitest/eslint-plugin": "^1.6.27",
     "browserslist": "4.29.2",
-    "dprint": "^0.57.4",
+    "dprint": "^0.60.1",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-playwright": "^2.12.0",
