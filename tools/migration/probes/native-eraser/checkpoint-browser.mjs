@@ -1,4 +1,10 @@
 import { checkpointFixtures } from './checkpoint-fixtures.mjs';
+import {
+  assertMemoryBudget,
+  createBrowserMemory,
+  finishBrowserAccounting,
+  recordResourcePhase,
+} from './checkpoint-resources.mjs';
 import { installObservation, retained } from './checkpoint-observation.mjs';
 import {
   PROTECTED,
@@ -47,20 +53,6 @@ async function assertSource(receipt) {
   }
 }
 
-function processTreeRss(pid) {
-  const rows = execFileSync('ps', ['-axo', 'pid=,ppid=,rss='], { encoding: 'utf8' })
-    .trim()
-    .split('\n')
-    .map((line) => line.trim().split(/\s+/).map(Number));
-  const owned = new Set([pid]);
-  for (;;) {
-    const prior = owned.size;
-    for (const [child, parent] of rows) if (owned.has(parent)) owned.add(child);
-    if (owned.size === prior) break;
-  }
-  return rows.filter(([child]) => owned.has(child)).reduce((sum, [, , rss]) => sum + rss, 0) * 1024;
-}
-
 async function main() {
   const url = new URL(argument('url'));
   assert.equal(url.protocol, 'http:');
@@ -89,7 +81,7 @@ async function main() {
     replayBudgetMs,
     rssGrowthBudgetBytes,
   };
-  let server, browser, sampler, page;
+  let server, browser, sampler, page, memoryOwner;
   let baselineRss;
   const replayStarted = performance.now();
   const fixtures = checkpointFixtures();
@@ -97,12 +89,15 @@ async function main() {
   report.observations = [];
   report.resourcePhases = [];
   report.fixtures = [];
-  const resource = (phase) =>
-    report.resourcePhases.push({
+  const resource = (phase) => {
+    peakRss = recordResourcePhase(
+      report.resourcePhases,
       phase,
-      elapsedMs: performance.now() - replayStarted,
-      rssBytes: processTreeRss(report.ownedBrowserPid),
-    });
+      performance.now() - replayStarted,
+      memoryOwner.sample(),
+      peakRss
+    );
+  };
   let memoryFailure;
   let peakRss = 0;
   try {
@@ -111,11 +106,13 @@ async function main() {
     browser = await chromium.connect(server.wsEndpoint());
     const context = await browser.newContext({ viewport: VIEWPORT, acceptDownloads: true });
     page = await context.newPage();
-    baselineRss = processTreeRss(report.ownedBrowserPid);
+    memoryOwner = createBrowserMemory(report.ownedBrowserPid);
+    report.baselineMemory = memoryOwner.sample();
+    baselineRss = report.baselineMemory.rssBytes;
     peakRss = baselineRss;
     sampler = setInterval(() => {
       try {
-        peakRss = Math.max(peakRss, processTreeRss(report.ownedBrowserPid));
+        peakRss = Math.max(peakRss, memoryOwner.sample().rssBytes);
       } catch (error) {
         memoryFailure ??= String(error);
       }
@@ -349,11 +346,7 @@ async function main() {
         };
       }
     }
-    assert.equal(memoryFailure, undefined);
-    assert.ok(
-      peakRss - baselineRss <= rssGrowthBudgetBytes,
-      'Owned browser RSS growth exceeded the supplied budget'
-    );
+    assertMemoryBudget(baselineRss, peakRss, rssGrowthBudgetBytes, memoryFailure);
     assert.deepEqual(errors, []);
     await assertSource(source);
     report.status = 'passed-browser-only';
@@ -375,41 +368,54 @@ async function main() {
         .catch((error) => ({ observationFailure: String(error) }));
     process.exitCode = 1;
   } finally {
-    if (sampler) clearInterval(sampler);
-    if (report.ownedBrowserPid) {
-      try {
-        peakRss = Math.max(peakRss, processTreeRss(report.ownedBrowserPid));
-      } catch (error) {
-        memoryFailure ??= String(error);
-      }
-    }
-    report.memory = {
-      baselineRss,
-      peakRss,
-      growthBytes: baselineRss === undefined ? undefined : peakRss - baselineRss,
-      samplingFailure: memoryFailure ?? null,
-      baselinePhase: 'Owned Chromium after context/page creation, before first app navigation',
-    };
-    report.totalElapsedMs = performance.now() - replayStarted;
-    if (page && !page.isClosed()) {
-      try {
-        const observation = await retained(page);
-        report.terminalObservation = await preserveObservation(output, 'terminal', observation);
-      } catch (error) {
-        report.terminalObservationFailure = String(error);
-      }
-    }
-    report.sourceAfter = await assertSource(source).then(
-      () => 'exact',
-      (error) => {
-        process.exitCode = 1;
-        return String(error);
-      }
-    );
-    await browser?.close();
-    await server?.close();
-    report.closedAt = new Date().toISOString();
-    report.liveOwnedHandles = [];
+    await finishBrowserAccounting(report, {
+      observe: async () => {
+        if (!page || page.isClosed()) return { status: 'not-collected-page-closed' };
+        return preserveObservation(output, 'terminal', await retained(page));
+      },
+      verifySource: async () => {
+        await assertSource(source);
+        return 'exact';
+      },
+      beginClosing: () => memoryOwner?.beginClosing(),
+      closeBrowser: async () => {
+        if (!browser) return 'not-created';
+        await browser.close();
+        return true;
+      },
+      closeServer: async () => {
+        if (!server) return 'not-created';
+        await server.close();
+        return true;
+      },
+      sample: () => {
+        try {
+          const sample = memoryOwner?.sample();
+          if (sample) peakRss = Math.max(peakRss, sample.rssBytes);
+          return sample;
+        } catch (error) {
+          memoryFailure ??= String(error);
+          throw error;
+        }
+      },
+      stopSampling: () => {
+        if (sampler) clearInterval(sampler);
+      },
+      enforceBudget: () =>
+        assertMemoryBudget(baselineRss, peakRss, rssGrowthBudgetBytes, memoryFailure),
+      memory: () => ({
+        baselineRss,
+        peakRss,
+        growthBytes: baselineRss === undefined ? undefined : peakRss - baselineRss,
+        samplingFailure: memoryFailure ?? null,
+        baselinePhase: 'Owned Chromium after context/page creation, before first app navigation',
+        endPhase:
+          'After awaited supplemental diagnostic, source verification and owned browser shutdown',
+        samplingIntervalMs: MEMORY_SAMPLE_MS,
+      }),
+      elapsed: () => performance.now() - replayStarted,
+    });
+    if (report.status === 'failed') process.exitCode = 1;
     await writeFile(join(output, 'result.json'), JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify({ status: report.status, output }));
   }

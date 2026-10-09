@@ -272,3 +272,98 @@ describe('SVG job cancellation identity', () => {
     capture.dispose();
   });
 });
+
+describe('consumed SVG raster disposal', () => {
+  it.each(['success', 'empty', 'cancel', 'timeout', 'dispose'])(
+    'disposes the actual request once on %s and refuses duplicate settlement',
+    async (outcome) => {
+      const callbacks = [],
+        released = vi.fn(),
+        capture = createSvgCapture();
+      const job = capture.capture({
+        toDataURL(callback) {
+          callbacks.push(callback);
+          return released;
+        },
+      });
+      const result = job.promise.then(
+        (value) => ({ value }),
+        (failure) => ({ failure })
+      );
+      await frames();
+      if (outcome === 'success') callbacks[0]('current');
+      else if (outcome === 'empty') callbacks[0]('');
+      else if (outcome === 'cancel') job.cancel();
+      else if (outcome === 'dispose') capture.dispose();
+      else await act(async () => vi.advanceTimersByTimeAsync(PNG_TIMEOUT_MS));
+      const terminal = await result;
+      expect(outcome === 'success' ? terminal.value : terminal.failure).toBeTruthy();
+      expect(released).toHaveBeenCalledOnce();
+      callbacks[0]('late');
+      job.cancel();
+      capture.dispose();
+      expect(released).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('registers synchronous cleanup before resolving and preserves the first callback', async () => {
+    const released = vi.fn(),
+      capture = createSvgCapture();
+    const job = capture.capture({
+      toDataURL(callback) {
+        callback('first');
+        callback('duplicate');
+        return released;
+      },
+    });
+    await frames();
+    await expect(job.promise).resolves.toBe('first');
+    expect(released).toHaveBeenCalledOnce();
+  });
+
+  it('disposes a cleanup returned after its request was cancelled during native dispatch', async () => {
+    const released = vi.fn(),
+      capture = createSvgCapture();
+    const job = capture.capture({
+      toDataURL(callback) {
+        capture.dispose();
+        callback('late-sync');
+        return released;
+      },
+    });
+    const refused = job.promise.catch((failure) => failure.message);
+    await frames();
+    await expect(refused).resolves.toContain('cancelled');
+    expect(released).toHaveBeenCalledOnce();
+  });
+
+  it('retains terminal cleanup failure without resolving a PNG or accepting another job', async () => {
+    const capture = createSvgCapture();
+    const job = capture.capture({
+      toDataURL(callback) {
+        callback('pixels');
+        return () => {
+          throw new Error('Resource disposal failed');
+        };
+      },
+    });
+    const refused = job.promise.catch((failure) => failure.message);
+    await frames();
+    await expect(refused).resolves.toContain('cleanup failed');
+    await expect(capture.capture({ toDataURL() {} }).promise).rejects.toThrow('unavailable');
+  });
+
+  it('accepts the unchanged native void-return contract without claiming native resource cancellation', async () => {
+    const callbacks = [],
+      capture = createSvgCapture();
+    const job = capture.capture({
+      toDataURL(callback) {
+        callbacks.push(callback);
+      },
+    });
+    await frames();
+    callbacks[0]('native-result');
+    await expect(job.promise).resolves.toBe('native-result');
+    capture.dispose();
+  });
+});

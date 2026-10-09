@@ -19,6 +19,8 @@ describe('candidate source import ownership', () => {
       'src/ColoringPagePicker.tsx',
       'src/DrawingScreen.tsx',
       'src/ProbeApp.tsx',
+      'src/drawing/CaptureSvg.tsx',
+      'src/drawing/CaptureSvg.web.tsx',
       'src/drawing/CrayonGlaze.tsx',
       'src/drawing/CrayonGlaze.web.tsx',
       'src/drawing/DrawingSurface.tsx',

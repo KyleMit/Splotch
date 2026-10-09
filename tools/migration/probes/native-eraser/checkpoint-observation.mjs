@@ -274,69 +274,82 @@ function diagnosticDocument(state) {
   return { svgs, inventoryMs: performance.now() - started };
 }
 
+export function patchSnapshotMethod(state, instance, decorate) {
+  if (!instance || typeof instance.toDataURL !== 'function')
+    throw new Error('Missing actual SVG capture method');
+  const target = Object.prototype.hasOwnProperty.call(instance, 'toDataURL')
+    ? instance
+    : Object.getPrototypeOf(instance);
+  if (state.patched.has(target)) return;
+  const original = target.toDataURL;
+  if (typeof original !== 'function') throw new Error('Missing actual SVG method owner');
+  target.toDataURL = decorate(original);
+  state.patched.add(target);
+}
+
 function diagnosticPatchSvg(state, node) {
   const instance = diagnosticInstance(node);
-  if (!instance || typeof instance.toDataURL !== 'function') return;
-  const prototype = Object.getPrototypeOf(instance);
-  if (state.patched.has(prototype)) return;
-  state.patched.add(prototype);
-  const original = prototype.toDataURL;
-  prototype.toDataURL = function (callback, options) {
-    const target = this.elementRef.current,
-      id = ++state.nextCaptureId;
-    const record = { id, at: performance.now(), options };
-    diagnosticAttempt(state, () => {
-      Object.assign(record, {
-        callStack: new Error().stack,
-        livePaper: !!target?.closest('[data-testid="drawing-paper"]'),
-        owner: diagnosticOwner(target),
-        geometry: diagnosticGeometry(target),
-        heap: diagnosticHeap(),
-        ancestors: diagnosticAncestors(target),
-        purpose: state.activePurpose ?? 'production',
-        documentSvgs: state.causal ? diagnosticDocument(state) : null,
-        magicSemantics: state.causal
-          ? [...target.querySelectorAll('linearGradient')].map((gradient) => ({
-              attributes: diagnosticAttributes(gradient, ['id']),
-              stops: [...gradient.children].map((item) => diagnosticAttributes(item)),
-              paths: [...target.querySelectorAll('path')]
-                .filter((item) => item.getAttribute('stroke') === `url(#${gradient.id})`)
-                .map((item) => diagnosticAttributes(item, ['stroke'])),
-            }))
-          : null,
-      });
-      record.images = [...target.querySelectorAll('image')].map((image) => {
-        const item = { geometry: diagnosticGeometry(image) };
-        diagnosticHash(state, item, 'hrefTextSha256', image.href.baseVal);
-        return item;
-      });
-      diagnosticScene(state, record, this.props.children);
-    });
-    state.details.push(record);
-    const previous = state.activeId;
-    state.activeId = id;
-    try {
-      return original.call(
-        this,
-        (base64) => {
-          record.callbackAt = performance.now();
-          record.callbackCount = (record.callbackCount ?? 0) + 1;
-          record.callbackBase64Characters = base64.length;
-          if (state.causal)
-            diagnosticAttempt(state, () =>
-              diagnosticRetain(state, state.callbackPngs, { captureId: id, base64 }, 'base64')
-            );
-          diagnosticAttempt(state, () =>
-            diagnosticHash(state, record, 'callbackBase64TextSha256', base64)
+  patchSnapshotMethod(
+    state,
+    instance,
+    (original) =>
+      function (callback, options) {
+        const target = this.elementRef.current,
+          id = ++state.nextCaptureId;
+        const record = { id, at: performance.now(), options };
+        diagnosticAttempt(state, () => {
+          Object.assign(record, {
+            callStack: new Error().stack,
+            livePaper: !!target?.closest('[data-testid="drawing-paper"]'),
+            owner: diagnosticOwner(target),
+            geometry: diagnosticGeometry(target),
+            heap: diagnosticHeap(),
+            ancestors: diagnosticAncestors(target),
+            purpose: state.activePurpose ?? 'production',
+            documentSvgs: state.causal ? diagnosticDocument(state) : null,
+            magicSemantics: state.causal
+              ? [...target.querySelectorAll('linearGradient')].map((gradient) => ({
+                  attributes: diagnosticAttributes(gradient, ['id']),
+                  stops: [...gradient.children].map((item) => diagnosticAttributes(item)),
+                  paths: [...target.querySelectorAll('path')]
+                    .filter((item) => item.getAttribute('stroke') === `url(#${gradient.id})`)
+                    .map((item) => diagnosticAttributes(item, ['stroke'])),
+                }))
+              : null,
+          });
+          record.images = [...target.querySelectorAll('image')].map((image) => {
+            const item = { geometry: diagnosticGeometry(image) };
+            diagnosticHash(state, item, 'hrefTextSha256', image.href.baseVal);
+            return item;
+          });
+          diagnosticScene(state, record, this.props.children);
+        });
+        state.details.push(record);
+        const previous = state.activeId;
+        state.activeId = id;
+        try {
+          return original.call(
+            this,
+            (base64) => {
+              record.callbackAt = performance.now();
+              record.callbackCount = (record.callbackCount ?? 0) + 1;
+              record.callbackBase64Characters = base64.length;
+              if (state.causal)
+                diagnosticAttempt(state, () =>
+                  diagnosticRetain(state, state.callbackPngs, { captureId: id, base64 }, 'base64')
+                );
+              diagnosticAttempt(state, () =>
+                diagnosticHash(state, record, 'callbackBase64TextSha256', base64)
+              );
+              callback(base64);
+            },
+            options
           );
-          callback(base64);
-        },
-        options
-      );
-    } finally {
-      state.activeId = previous;
-    }
-  };
+        } finally {
+          state.activeId = previous;
+        }
+      }
+  );
 }
 
 function diagnosticCaptureLive() {
@@ -440,6 +453,7 @@ export async function installObservation(page, protectedRegion) {
     diagnosticDocument,
     diagnosticGeometry,
     diagnosticScene,
+    patchSnapshotMethod,
     diagnosticPatchSvg,
     diagnosticStart,
     observationBase,

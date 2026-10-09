@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg from 'react-native-svg';
+import type Svg from 'react-native-svg';
+import { CaptureSvg } from './CaptureSvg';
 import type { InkPlan, InkCheckpoint } from './checkpoints';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 import { InkScene } from './InkScene';
@@ -35,7 +36,7 @@ export function FixedInkCapture({
   }, [plan, loaded]);
   return (
     <View style={styles.capture} pointerEvents="none">
-      <Svg
+      <CaptureSvg
         ref={svgRef}
         width={PAPER_WIDTH}
         height={PAPER_HEIGHT}
@@ -48,7 +49,7 @@ export function FixedInkCapture({
             if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
           }}
         />
-      </Svg>
+      </CaptureSvg>
     </View>
   );
 }

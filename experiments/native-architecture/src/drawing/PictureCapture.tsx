@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Image, Rect } from 'react-native-svg';
+import { Image, Rect, type Svg } from 'react-native-svg';
+import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
 import type { InkPlan } from './checkpoints';
 import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
@@ -84,7 +85,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
           onError={fail}
         />
       ) : (
-        <Svg
+        <CaptureSvg
           ref={output}
           width={PAPER_WIDTH}
           height={PAPER_HEIGHT}
@@ -103,7 +104,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
             }}
           />
           <PageOutline pageId={request.drawing.pageId} />
-        </Svg>
+        </CaptureSvg>
       )}
     </View>
   );
