@@ -15,6 +15,7 @@ const brushModules = [
   'src/drawing/brushes.ts',
   'src/drawing/crayon.ts',
 ];
+const shippingPaletteSpecifier = '../../../../web/src/lib/palette.ts';
 
 describe('new native brush source ownership', () => {
   it('keeps every production brush module in the accepted candidate scanner', () => {
@@ -30,7 +31,7 @@ describe('new native brush source ownership', () => {
       expectRejectedMutationAndRestore(
         target,
         module,
-        `${original}\nimport '../../../../web/src/lib/palette';\n`,
+        `${original}\nimport '${shippingPaletteSpecifier}';\n`,
         'escapes candidate ownership'
       );
     }

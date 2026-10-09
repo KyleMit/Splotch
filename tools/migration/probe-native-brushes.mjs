@@ -12,6 +12,7 @@ const MIN_BUILDUP_FRACTION = 0.05;
 const MIN_GREEN_PIXELS = 30;
 const MIN_GRAIN_FRACTION = 0.1;
 const MAX_GRAIN_FRACTION = 0.7;
+const SETTLE_MS = 1000;
 
 function argument(name) {
   const value = process.argv.find((item) => item.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -122,7 +123,25 @@ async function main() {
       .raw()
       .toBuffer({ resolveWithObject: true });
     assert.ok(countRegion(exportPixels, 389, 189, 22, 22).green > MIN_GREEN_PIXELS);
-    report.checks.export = { width: metadata.width, height: metadata.height, mixed: true };
+    const exportGrain = countRegion(exportPixels, 450, 193, 100, 14);
+    assert.ok(
+      exportGrain.paperFraction > MIN_GRAIN_FRACTION &&
+        exportGrain.paperFraction < MAX_GRAIN_FRACTION
+    );
+    const exportAt = (x, y) => [
+      ...exportPixels.data.subarray(
+        (y * exportPixels.info.width + x) * 4,
+        (y * exportPixels.info.width + x) * 4 + 3
+      ),
+    ];
+    assert.notDeepEqual(exportAt(150, 400), exportAt(850, 400));
+    report.checks.export = {
+      width: metadata.width,
+      height: metadata.height,
+      mixing: countRegion(exportPixels, 389, 189, 22, 22),
+      grain: exportGrain,
+      magic: { left: exportAt(150, 400), right: exportAt(850, 400) },
+    };
     const saved = await page.evaluate(() => {
       const key = Object.keys(localStorage).find((item) => item.startsWith('splotch-picture:'));
       return { key, value: localStorage.getItem(key) };
@@ -139,6 +158,7 @@ async function main() {
     assert.ok(snapshot.equals(await paper.screenshot()));
     report.checks.corruptSeedRetainsPicture = true;
     await page.evaluate(({ key, value }) => localStorage.setItem(key, value), saved);
+    await page.waitForTimeout(SETTLE_MS);
     assert.deepEqual(errors, []);
     report.checks.pageErrors = errors;
   } catch (error) {

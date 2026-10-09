@@ -13,7 +13,7 @@ import {
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', () => import('react-native-svg/lib/module/elements.web.js'));
 vi.mock(
-  '../../experiments/native-architecture/src/drawing/CrayonGlaze',
+  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
   () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
 );
 
