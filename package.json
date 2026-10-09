@@ -561,7 +561,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-svelte": "^4.1.1",
     "scripts-info": "^1.0.5",
-    "stylelint": "^17.15.0",
+    "stylelint": "^17.16.0",
     "svelte-check": "^4.7.6",
     "svgo": "^4.1.0",
     "typescript": "^6.0.3",
