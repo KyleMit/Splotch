@@ -1,0 +1,380 @@
+{
+  "observedAtNs": 1791587139445750000,
+  "head": "4f077fa4bd609255c43c4244aa27748902127e44",
+  "tree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "testsRun": 37999476080,
+  "retainedJob": 114053770190,
+  "headChecks": {
+    "total": 21,
+    "counts": {
+      "skipped": 5,
+      "success": 16
+    },
+    "complete": true
+  },
+  "testsJobs": {
+    "total": 19,
+    "counts": {
+      "success": 15,
+      "skipped": 4
+    },
+    "complete": true
+  },
+  "retainedSteps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 1
+    },
+    {
+      "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 2
+    },
+    {
+      "name": "Run ./.github/actions/setup-pnpm",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 3
+    },
+    {
+      "name": "Run ./.github/actions/setup-playwright",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 4
+    },
+    {
+      "name": "Build and check retained release and mechanism",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 5
+    },
+    {
+      "name": "Upload retained release evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 6
+    },
+    {
+      "name": "Upload retained mechanism evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 7
+    },
+    {
+      "name": "Post Run ./.github/actions/setup-playwright",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 12
+    },
+    {
+      "name": "Post Run ./.github/actions/setup-pnpm",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 13
+    },
+    {
+      "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 14
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 15
+    }
+  ],
+  "testedMerge": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+  "testedFullTree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "sourceFullTree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "fullTreeEquality": true,
+  "signedTestedMergeVerified": true,
+  "gitObjectIdentityRecomputed": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+  "actualCheckoutBoundByTerminalFullLog": true,
+  "sourceBinding": {
+    "path": "/private/tmp/native-brush-4f-ci-artifacts-2302/CURRENT-SOURCE-BINDING.json",
+    "bytes": 10384,
+    "sha256": "cc40c1d752db9d1612824fd87771e77294f4cc4f06b52f3e68a8149021a5a5bb"
+  },
+  "nativeArtifactTransports": "Both native GitHub file references HTTP200/curl0, official bytes/digests matched; no gh fallback.",
+  "artifacts": [
+    {
+      "role": "release",
+      "artifactId": 11649926426,
+      "zipBytes": 15838947,
+      "zipSHA256": "e2de967c78d8431bc67ca60d0c915776c50e66e082d62a992aa357ba02fe3023",
+      "members": 20,
+      "fullMemberCensus": {
+        "path": "/private/tmp/native-brush-4f-ci-artifacts-2302/release-zip-full-member-readback.json",
+        "bytes": 5631,
+        "sha256": "5d0e66c1ca3684beccea2f30ef66bd5c602ae504f203cf41c88c776b2b73b1b4"
+      },
+      "regularMembers": 20,
+      "resultMember": "splotch-web-host-1dAZtH/result.json",
+      "resultBytes": 2207553,
+      "resultSHA256": "cb7f0086cdd1a7a55cdeb3e5329dd7b74cc81ede41ae6cdbf27ecbf4a64b6779",
+      "inputsMember": "splotch-web-host-1dAZtH/inputs.json",
+      "inputsSHA256": "154ac8c9a96942248a818a878d29fac25d72a43c80bec214c0f4ed8ac6311bee",
+      "status": "structural-build-only",
+      "reviewEvidenceEligible": true,
+      "all48ChangedSourceRowsBound": true,
+      "snapshotEntries": 8135,
+      "sourceSha": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+      "topologySha": "1b057679d5837b3c6e298fd8131203e51048d4f1",
+      "lockSHA256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+      "children": [
+        {
+          "label": "reference-prebuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "reference-build",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "reference-postbuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-prebuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-build",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-postbuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-types",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        }
+      ],
+      "browsers": [
+        {
+          "member": "splotch-web-host-1dAZtH/controls/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c.json",
+          "bytes": 2054,
+          "sha256": "48f747bf2b509c502a3a86c4678a93b80136eb9877e4cb996abcdb0415878bd3",
+          "code": 0,
+          "started": "2026-10-09T22:38:01.620Z",
+          "finished": "2026-10-09T22:39:34.770Z",
+          "lastRunMember": "splotch-web-host-1dAZtH/browser-results/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c/.last-run.json",
+          "lastRunSHA256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          }
+        }
+      ],
+      "measurements": {
+        "startupBytes": 459470,
+        "startupFileCount": 38,
+        "modulepreloadCount": 38,
+        "inlineStyleBytes": 84638,
+        "largestLazyChunk": {
+          "path": "_app/immutable/chunks/CDIcR4xU.js",
+          "bytes": 60772
+        }
+      },
+      "structuralComparison": "complete output bytes with explicit copy-path normalization; output paths, startup/lazy measurements, version and host sources match",
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": [
+          "explicit owned-copy absolute path prefix"
+        ],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      },
+      "passes": [
+        {
+          "ssr": true,
+          "chunks": 181
+        },
+        {
+          "ssr": false,
+          "chunks": 113
+        }
+      ],
+      "remainingScopeFromActualResult": [
+        "browser release ink and mechanism early acceptance/adoption",
+        "deployed CSP/PWA",
+        "physical floors and performance",
+        "full candidate startup accounting and React mechanics"
+      ]
+    },
+    {
+      "role": "mechanism",
+      "artifactId": 11649786667,
+      "zipBytes": 16240303,
+      "zipSHA256": "67a8fc8825c022fd6c35a6a2209ccc52ce7e86ccde1eb9f68a75b5fd8b707215",
+      "members": 26,
+      "fullMemberCensus": {
+        "path": "/private/tmp/native-brush-4f-ci-artifacts-2302/mechanism-zip-full-member-readback.json",
+        "bytes": 7597,
+        "sha256": "f3c08b8e2d19d07c69046cea3612cede57aa990abff0b8bdbdf91d1f0a4ed907"
+      },
+      "regularMembers": 26,
+      "resultMember": "splotch-web-host-apkhPv/result.json",
+      "resultBytes": 2207627,
+      "resultSHA256": "447c1750460e6183687a99a4eb41cdc114353f32fe189d982a931c1459457f8c",
+      "inputsMember": "splotch-web-host-apkhPv/inputs.json",
+      "inputsSHA256": "249f400f53a42e55c179c6a57ad79e3335ffcce7ad2838490c98811c5605b43b",
+      "status": "structural-build-only",
+      "reviewEvidenceEligible": true,
+      "all48ChangedSourceRowsBound": true,
+      "snapshotEntries": 8135,
+      "sourceSha": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+      "topologySha": "1b057679d5837b3c6e298fd8131203e51048d4f1",
+      "lockSHA256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+      "children": [
+        {
+          "label": "reference-prebuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "reference-build",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "reference-postbuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-prebuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-build",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-postbuild",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        },
+        {
+          "label": "control-types",
+          "code": 0,
+          "timedOut": false,
+          "interrupted": false
+        }
+      ],
+      "browsers": [
+        {
+          "member": "splotch-web-host-apkhPv/controls/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba.json",
+          "bytes": 2070,
+          "sha256": "3fcef23f1afd9c1b6a9bdc42b5360c7185cb1745f327110429ddafda76e0acf2",
+          "code": 0,
+          "started": "2026-10-09T22:47:12.855Z",
+          "finished": "2026-10-09T22:48:46.491Z",
+          "lastRunMember": "splotch-web-host-apkhPv/browser-results/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba/.last-run.json",
+          "lastRunSHA256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          }
+        },
+        {
+          "member": "splotch-web-host-apkhPv/controls/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8.json",
+          "bytes": 2070,
+          "sha256": "7ea34308ce19c88b31913995a57ae106e5bede7f0310e4ea0aa9c9a05d1f83c1",
+          "code": 0,
+          "started": "2026-10-09T22:49:46.506Z",
+          "finished": "2026-10-09T22:51:20.148Z",
+          "lastRunMember": "splotch-web-host-apkhPv/browser-results/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8/.last-run.json",
+          "lastRunSHA256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          }
+        }
+      ],
+      "measurements": {
+        "startupBytes": 464127,
+        "startupFileCount": 38,
+        "modulepreloadCount": 38,
+        "inlineStyleBytes": 84638,
+        "largestLazyChunk": {
+          "path": "_app/immutable/chunks/C2fToSGv.js",
+          "bytes": 60772
+        }
+      },
+      "structuralComparison": "complete output bytes with explicit copy-path normalization; output paths, startup/lazy measurements, version and host sources match",
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": [
+          "explicit owned-copy absolute path prefix"
+        ],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      },
+      "passes": [
+        {
+          "ssr": true,
+          "chunks": 181
+        },
+        {
+          "ssr": false,
+          "chunks": 113
+        }
+      ],
+      "remainingScopeFromActualResult": [
+        "browser release ink and mechanism early acceptance/adoption",
+        "deployed CSP/PWA",
+        "physical floors and performance",
+        "full candidate startup accounting and React mechanics"
+      ]
+    }
+  ],
+  "all48ChangedSourceRowsBoundBothArtifacts": true,
+  "all14BuildChildren3BrowserControlsExit0": true,
+  "actualCIFailure": null,
+  "dataReaderFailuresPreserved": [
+    "first-semantic-helper-failure.json",
+    "second-semantic-helper-failure.json"
+  ],
+  "scope": "Current4f retained web structural CI only; no RNW, native brush output, RSS, fidelity, performance or release acceptance inferred.",
+  "heldLimitations": [
+    "35064 first strict Undo245pixel mismatch/timingUNPROVED",
+    "SMALL RSS298.875MiB and mandatory observer failures",
+    "Android BackgroundImage export-prefix hypothesis pending actual output"
+  ],
+  "originalBrushReviewBudget": {
+    "used": 0,
+    "remaining": 3,
+    "opened": false
+  },
+  "reviewLaunched": false
+}

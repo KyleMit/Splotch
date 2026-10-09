@@ -1,0 +1,157 @@
+{
+  "artifactId": 11649926426,
+  "zipBytes": 15838947,
+  "zipSHA256": "e2de967c78d8431bc67ca60d0c915776c50e66e082d62a992aa357ba02fe3023",
+  "officialDigestMatched": true,
+  "allMemberCRCsPassed": true,
+  "totalMembers": 20,
+  "regularMembers": [
+    {
+      "member": "browser-1.log.txt",
+      "bytes": 408,
+      "sha256": "38958fc52520413a34f36c2f7ba4093ddd6d9f333095b20ba88d3518d6dfcd23",
+      "crc32": "974088fc",
+      "regular": true
+    },
+    {
+      "member": "build.log.txt",
+      "bytes": 99,
+      "sha256": "a12fd8549c99141830167455dbd0508a6e50358292c9b0e61d85890fd4da3575",
+      "crc32": "68f286dc",
+      "regular": true
+    },
+    {
+      "member": "check.log.txt",
+      "bytes": 396,
+      "sha256": "052d9cef7e36c821e77b47e84b03fb69a72bb2f5a06ebb3333486df0f3cce01f",
+      "crc32": "56840d24",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/.splotch-web-host.json",
+      "bytes": 131,
+      "sha256": "de36d0def10ffa2ab2a98421f292ef997f81029590fa6596be5cd53c8b200404",
+      "crc32": "da839e05",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/browser-report/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c/index.html",
+      "bytes": 521043,
+      "sha256": "1a43103ad3a5b62d4fe88bec53919160adbfc6761997fe3d6581473055e0bf24",
+      "crc32": "f389c31b",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/browser-results/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "crc32": "e1bbbed0",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/browser-results/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c/control-retained-release-paper-accepts-visible-ink-retained-chromium/retained-release-ink.png",
+      "bytes": 213609,
+      "sha256": "3df5f58bcd3983f8d1284fea6eab0692c9517ab20aeb14a6326f3f29e9a33b35",
+      "crc32": "d7cc0b32",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/control-passes.json",
+      "bytes": 211197,
+      "sha256": "68b9fdbdc418caa0e9fd298cf8d42bbf3ffc528c7ebb027ddbce07e2b4846932",
+      "crc32": "48014ae4",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c.json",
+      "bytes": 2054,
+      "sha256": "48f747bf2b509c502a3a86c4678a93b80136eb9877e4cb996abcdb0415878bd3",
+      "crc32": "57840c2c",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c.log.txt",
+      "bytes": 2861,
+      "sha256": "16079b73631ceab8a2f3b538d790396a5a6fa367e720967ea45b8b7c2c752360",
+      "crc32": "2c689b57",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/control-build.log.txt",
+      "bytes": 59497,
+      "sha256": "838585061983c8da2d410e83947f936295a3a559d48db054ef01e6b7c1490bc7",
+      "crc32": "ac7b9fd5",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/control-postbuild.log.txt",
+      "bytes": 1262,
+      "sha256": "7d668696855fcf491a7c7331c82f4927e98c732f7db59dffef8928d46b759ca7",
+      "crc32": "b9285231",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/control-types.log.txt",
+      "bytes": 138,
+      "sha256": "3baa5a1f88ecc57b85e76e6f8d75f2a011883394f4a801c7f18bc7acc666c90f",
+      "crc32": "7a342612",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/control-prebuild.log.txt",
+      "bytes": 2825,
+      "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04",
+      "crc32": "6055a21e",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/recheck-types-1791585388355.log.txt",
+      "bytes": 138,
+      "sha256": "3baa5a1f88ecc57b85e76e6f8d75f2a011883394f4a801c7f18bc7acc666c90f",
+      "crc32": "7a342612",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/reference-build.log.txt",
+      "bytes": 58671,
+      "sha256": "3ae6372419c3fc6fe7d55d117ec2fe1ca7597ea9940d1d6287f01afaa2295f1f",
+      "crc32": "819c4666",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/reference-postbuild.log.txt",
+      "bytes": 1262,
+      "sha256": "7d668696855fcf491a7c7331c82f4927e98c732f7db59dffef8928d46b759ca7",
+      "crc32": "b9285231",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/controls/reference-prebuild.log.txt",
+      "bytes": 3033,
+      "sha256": "a3ce9d9534dce55ed814e34ae4cd12430affabf57e56c834ecdd5d189320f3c4",
+      "crc32": "44a71a1a",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/inputs.json",
+      "bytes": 100761454,
+      "sha256": "154ac8c9a96942248a818a878d29fac25d72a43c80bec214c0f4ed8ac6311bee",
+      "crc32": "56bce7a3",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-1dAZtH/result.json",
+      "bytes": 2207553,
+      "sha256": "cb7f0086cdd1a7a55cdeb3e5329dd7b74cc81ede41ae6cdbf27ecbf4a64b6779",
+      "crc32": "3f6d85d1",
+      "regular": true
+    }
+  ],
+  "selectedDataMembersCopied": [
+    "splotch-web-host-1dAZtH/browser-results/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c/.last-run.json",
+    "splotch-web-host-1dAZtH/control-passes.json",
+    "splotch-web-host-1dAZtH/controls/browser-control-eb3efd68-db41-4b6b-8694-9a4e588d3a3c.json",
+    "splotch-web-host-1dAZtH/inputs.json",
+    "splotch-web-host-1dAZtH/result.json"
+  ]
+}

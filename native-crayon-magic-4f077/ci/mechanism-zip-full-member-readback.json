@@ -1,0 +1,201 @@
+{
+  "artifactId": 11649786667,
+  "zipBytes": 16240303,
+  "zipSHA256": "67a8fc8825c022fd6c35a6a2209ccc52ce7e86ccde1eb9f68a75b5fd8b707215",
+  "officialDigestMatched": true,
+  "allMemberCRCsPassed": true,
+  "totalMembers": 26,
+  "regularMembers": [
+    {
+      "member": "browser-1.log.txt",
+      "bytes": 412,
+      "sha256": "8a5697af8b80d39930c6a85cbeca088dc2507753d668ec6d762acf5d89ce236a",
+      "crc32": "ed1c9d30",
+      "regular": true
+    },
+    {
+      "member": "browser-2.log.txt",
+      "bytes": 412,
+      "sha256": "8a5697af8b80d39930c6a85cbeca088dc2507753d668ec6d762acf5d89ce236a",
+      "crc32": "ed1c9d30",
+      "regular": true
+    },
+    {
+      "member": "build.log.txt",
+      "bytes": 101,
+      "sha256": "8ac31a499aedf2f1cc3ee702c79ea0fccba70ff71c4497fc8d1ea6d52204af6c",
+      "crc32": "2854a5c5",
+      "regular": true
+    },
+    {
+      "member": "check.log.txt",
+      "bytes": 400,
+      "sha256": "961d654c02e55a27c07e6a21a3ad5f4c967614be53e35d0079bd24f45f2c7826",
+      "crc32": "2567dbff",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/.splotch-web-host.json",
+      "bytes": 133,
+      "sha256": "34b09308fc2ada6de7b6ecee933181df26c362703e440381fac7ed8a17331741",
+      "crc32": "83b17b6a",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-report/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba/index.html",
+      "bytes": 521507,
+      "sha256": "47d97aba4b6787ea5003ed6b0e7a17a16c17aad1dfe838fe420024bac48833a3",
+      "crc32": "0eed6a52",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-report/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8/index.html",
+      "bytes": 521519,
+      "sha256": "36af05585c32e0edbd57ca950d25c3a3b78194e0f6956a9f86d02c681af0afb5",
+      "crc32": "820eabed",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-results/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "crc32": "e1bbbed0",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-results/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png",
+      "bytes": 213251,
+      "sha256": "12a98e1e85642e583e5cdc6dc0f56af32c00edc3c7ab19c58e9aced58d151551",
+      "crc32": "96777956",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-results/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png",
+      "bytes": 213251,
+      "sha256": "12a98e1e85642e583e5cdc6dc0f56af32c00edc3c7ab19c58e9aced58d151551",
+      "crc32": "96777956",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/browser-results/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "crc32": "e1bbbed0",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/control-passes.json",
+      "bytes": 211209,
+      "sha256": "e5ed3a978fee59329a9dfa1211f0c37dd425d5b6726e7c10bb29686b849be09e",
+      "crc32": "0f14df64",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba.json",
+      "bytes": 2070,
+      "sha256": "3fcef23f1afd9c1b6a9bdc42b5360c7185cb1745f327110429ddafda76e0acf2",
+      "crc32": "78cb600d",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba.log.txt",
+      "bytes": 2863,
+      "sha256": "1a57349da1ce20b6782cae7a51c7b7869cc42f552547d6f65ab491acfc7fc5b6",
+      "crc32": "3be5c17d",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8.json",
+      "bytes": 2070,
+      "sha256": "7ea34308ce19c88b31913995a57ae106e5bede7f0310e4ea0aa9c9a05d1f83c1",
+      "crc32": "3778872f",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8.log.txt",
+      "bytes": 2862,
+      "sha256": "d296d3db4d5f311c83fa6109e781816f01e52e7e7d9d529165db12b3d0b413fd",
+      "crc32": "ab8b816d",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/control-build.log.txt",
+      "bytes": 59501,
+      "sha256": "98d4300f6bced55234f410af3de4c1e0365ed9dab7c85b6ebe1097756663d8f4",
+      "crc32": "f9297bac",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/control-postbuild.log.txt",
+      "bytes": 1361,
+      "sha256": "186ec30a669f4c767bcb490866541cd1c550907c47482e75a17e5f0945be9aad",
+      "crc32": "9ba3ccfe",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/control-prebuild.log.txt",
+      "bytes": 2825,
+      "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04",
+      "crc32": "6055a21e",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/control-types.log.txt",
+      "bytes": 140,
+      "sha256": "edb1cd1227c28c026b715760531747c1b78eec8d318a15701b98c56dd6e4872d",
+      "crc32": "f7da834e",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/recheck-types-1791585938562.log.txt",
+      "bytes": 140,
+      "sha256": "edb1cd1227c28c026b715760531747c1b78eec8d318a15701b98c56dd6e4872d",
+      "crc32": "f7da834e",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/reference-build.log.txt",
+      "bytes": 58671,
+      "sha256": "514e58e4eb9ce17e0d23d054b04bf293ee322737e99c7c8c1dbabb7b8fd8fe63",
+      "crc32": "7f3cee5b",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/reference-postbuild.log.txt",
+      "bytes": 1361,
+      "sha256": "186ec30a669f4c767bcb490866541cd1c550907c47482e75a17e5f0945be9aad",
+      "crc32": "9ba3ccfe",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/controls/reference-prebuild.log.txt",
+      "bytes": 3033,
+      "sha256": "7b2bb10caae6e0143866841051426017d989d0853df9443c9da1f278cfc51208",
+      "crc32": "7ab91838",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/inputs.json",
+      "bytes": 100761464,
+      "sha256": "249f400f53a42e55c179c6a57ad79e3335ffcce7ad2838490c98811c5605b43b",
+      "crc32": "28060682",
+      "regular": true
+    },
+    {
+      "member": "splotch-web-host-apkhPv/result.json",
+      "bytes": 2207627,
+      "sha256": "447c1750460e6183687a99a4eb41cdc114353f32fe189d982a931c1459457f8c",
+      "crc32": "d1460723",
+      "regular": true
+    }
+  ],
+  "selectedDataMembersCopied": [
+    "splotch-web-host-apkhPv/browser-results/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba/.last-run.json",
+    "splotch-web-host-apkhPv/browser-results/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8/.last-run.json",
+    "splotch-web-host-apkhPv/control-passes.json",
+    "splotch-web-host-apkhPv/controls/browser-control-9fd7ff10-d5e5-4bbc-8e12-7640c38ac3ba.json",
+    "splotch-web-host-apkhPv/controls/browser-control-fed4b530-692d-4dae-bda2-46662e7f44c8.json",
+    "splotch-web-host-apkhPv/inputs.json",
+    "splotch-web-host-apkhPv/result.json"
+  ]
+}

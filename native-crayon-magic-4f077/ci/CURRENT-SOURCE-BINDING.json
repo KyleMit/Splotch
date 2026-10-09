@@ -1,0 +1,257 @@
+{
+  "head": "4f077fa4bd609255c43c4244aa27748902127e44",
+  "tree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "clean": true,
+  "lockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "testedMerge": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+  "testedMergeTree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "fullTreeEquality": true,
+  "signedMergeVerifiedByNativeAPI": true,
+  "gitObjectIdentityRecomputed": "eac4d383c44449c42792b8c8629fc586a8e7fc9b",
+  "maintainedInventoryPath": "/private/tmp/native-brush-4f077-rnw-admission-2232/CURRENT-MAINTAINED-SOURCE.json",
+  "maintainedInventorySha256": "697f5d78ff53591a3e981e11c6bbd35c86d8102404eb2fd8671a0252a8232bae",
+  "changedFiles": [
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/README.md",
+      "bytes": 14583,
+      "sha256": "143a829a868c92a47d6fa5aeec08ae001f30ce6d209096363316d79bea1d764d"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/controls/fixed-phase.log.txt",
+      "bytes": 1972,
+      "sha256": "107ba94788edae36c895afc72e6da5d2c4febcc8624591eb8b78dfa2ea725cf1"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/controls/flat-crayon.log.txt",
+      "bytes": 2498,
+      "sha256": "a7bdec88c99e66d9220327b217eacae0092469f7430024e315258dfb4f2fcdf6"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/controls/no-pigment-mix.log.txt",
+      "bytes": 998,
+      "sha256": "2fc16d24b01a57eee319f1e2d81e0d8737eec65d60d5a5e6ba493a18c1f7f60b"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/controls/restored-focused.log.txt",
+      "bytes": 228,
+      "sha256": "727418d501977ea0706c4e37b89f2a40758cc8f467c08c5e70a4df86275609a2"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/controls/stroke-relative-magic.log.txt",
+      "bytes": 2106,
+      "sha256": "1f0386c4394c2bc0575825121ae0c49900394c157727529f1056a8ee38ec2bbb"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-browser/composition.png",
+      "bytes": 54638,
+      "sha256": "4c12234c2d40f5aea2539874105c93114ce7fb7ec85fdd75c1f24a1cbd07a4e9"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-browser/crayon-buildup.png",
+      "bytes": 29609,
+      "sha256": "ffb48f104e8e9716db853ce194442a65982a6b901649d58bd01fc8e8f64348a7"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-browser/crayon-first.png",
+      "bytes": 28573,
+      "sha256": "14447693f638dc589a1644edd4325b43d80efb3cca50b7d8bb395daf86841f03"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-browser/export.png",
+      "bytes": 69176,
+      "sha256": "06e338e48843dcf6c81d9026ea738f6e918a22390cdd90dfbd883ae4f1086968"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-browser/report.json",
+      "bytes": 1055,
+      "sha256": "a975d08bf6a0fa901a659242e50e79cf405f9f630471947583d3ab0c9aabd4a8"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/browser.log.txt",
+      "bytes": 1199,
+      "sha256": "8dab66512278b1a050f4c18a2e0efb85e6d2d178b606174affbfe5317df0d666"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/check-repair.log.txt",
+      "bytes": 2356,
+      "sha256": "3d4027ffc56e2bda84b8b041015d9a28a1d1c5a38ef69b68b316a1bf0bb38efe"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/check.log.txt",
+      "bytes": 2356,
+      "sha256": "a1b48e7a7403ae081af6f2493d49950080a1a3c27f0541afe2a24590175b029b"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/focused-repair.log.txt",
+      "bytes": 462,
+      "sha256": "7a63c707775a0b2f60546414f1f0998a9ad7721f4dcc5e551087349c8b47ad2f"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/format-repair.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/format.log.txt",
+      "bytes": 3584,
+      "sha256": "5fa90b00026d2f7beab6d3e30c6257993d44328d44edfae1d5e9433e57bf4e86"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/full-tools-repair.log.txt",
+      "bytes": 5644,
+      "sha256": "d8c0bb34e4122b3d0b2fef02e18e37402407bed742382450e3052bc1d082e2ae"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/full-tools.log.txt",
+      "bytes": 7433,
+      "sha256": "876d5559bde154f7ded1a2b05bc6f5dcc1a29527d582a377388f16039b5c1aff"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/install.log.txt",
+      "bytes": 393,
+      "sha256": "8ca707a85f36077be81a90731bb6a06bb470793a0c7fae0bb1d9e4df27011e03"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/lint-repair.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/lint.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/native-source.log.txt",
+      "bytes": 1236,
+      "sha256": "ef2f326c8df9ab72c968b27ddf2ba550cf6dff8d37351513dc7a4d10ca117374"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/native-ts.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/current-window/terminal.json",
+      "bytes": 1417,
+      "sha256": "f8fa50068496c8898e696d3a73f2630f8106eeb7fc8f800f0da0615baa4c133d"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/exploratory-browser/composition.png",
+      "bytes": 53865,
+      "sha256": "5cf54b9345e9315901363da89ce450e447cfd27ef2559ae910e06dd6fc11362b"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/exploratory-browser/controls.png",
+      "bytes": 39114,
+      "sha256": "209acecb1e307ff2367d3458bda0f637a9f649bc5ec73e4068c00cf10e90cff4"
+    },
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/exploratory-browser/export.png",
+      "bytes": 59097,
+      "sha256": "a793e5c6b7979a5797f06b1c5a21aa1d7ad0f34397cb3225dd2fc5d18d3632e4"
+    },
+    {
+      "path": "experiments/native-architecture/src/DrawingScreen.tsx",
+      "bytes": 9185,
+      "sha256": "70ff9e00341911a1395ac15b99a63b15a5ec2ee048b85cb9d19c16cbb59e3af6"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/CrayonGlaze.tsx",
+      "bytes": 831,
+      "sha256": "575e65de04141e8894f42f5a8ceaa3e5ad687de0b3893482ab02eab52bb98d14"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx",
+      "bytes": 340,
+      "sha256": "ccbf37fb22d5a59bf212f7e39cdb75b91be5b2406dc36af381e8d1ac6a148f1c"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/DrawingSurface.tsx",
+      "bytes": 6913,
+      "sha256": "de289e358c55d8b97cdd8b9f702d66be9120daf144018d5110d57b63cbe759ab"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/Ink.tsx",
+      "bytes": 4195,
+      "sha256": "754cd9fb967a4005d1368af230084238be06e88afdacdc10f8934549791416e5"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/brushes.ts",
+      "bytes": 1663,
+      "sha256": "b84471ce69c037848cdc1af91d083acd4d6bbfcff9b6e0809184bcfae0ca07fa"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/crayon.ts",
+      "bytes": 6327,
+      "sha256": "1e7ea2ed1fdd4f950ab1fac899127a29b995ed9d8a5347cbdc5d19b5af367d66"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/interactions.ts",
+      "bytes": 2329,
+      "sha256": "cf69c1e899cdd70014b4eb15644284039f9a35b98b60b70dcf84f59933612034"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/model.ts",
+      "bytes": 6612,
+      "sha256": "042acb31f468e9b184acfe34053bdacc2f50b94b19fa56c7f7ccd95982d1316a"
+    },
+    {
+      "path": "experiments/native-architecture/src/useDrawingScreen.ts",
+      "bytes": 3014,
+      "sha256": "17d353f90f11db16e551f2486a60ed8c75a86cc0a7871cd4817834c1160a291b"
+    },
+    {
+      "path": "tools/migration/probe-native-brushes.mjs",
+      "bytes": 11469,
+      "sha256": "668adb783975c395511c481dd9cf503e00d3d2d49cdf309a8073353a51ac40f4"
+    },
+    {
+      "path": "tools/migration/probes/native-brush-pixels.mjs",
+      "bytes": 2069,
+      "sha256": "8b973b62fb22176de1ad2787a830d5a4d0a76587d1454fe23b2dcfa062c61f9f"
+    },
+    {
+      "path": "tools/migration/tests/candidate-imports.test.mjs",
+      "bytes": 15766,
+      "sha256": "4220b0fce721132224400f7838fe44fec85973d97c0a9e01e69020e904859bc6"
+    },
+    {
+      "path": "tools/tests/native-brush-boundary.test.mjs",
+      "bytes": 1408,
+      "sha256": "981b62839b655495d0f9799fbb6ad5fdc9c262e7edee3e5f4816d535bdd3fe3f"
+    },
+    {
+      "path": "tools/tests/native-brush-output.test.mjs",
+      "bytes": 6041,
+      "sha256": "a7cc47fddba265a610cc348c8e093801c47d856e5286186ee0ff89bfbdbcca79"
+    },
+    {
+      "path": "tools/tests/native-brush-pixels.test.mjs",
+      "bytes": 4285,
+      "sha256": "da9af0b35193b50a4a6dc4b98f8b78318d435cbbae09dbbde6f4c99e9e0cd6e0"
+    },
+    {
+      "path": "tools/tests/native-brushes.test.mjs",
+      "bytes": 6667,
+      "sha256": "be10c2c3f9238f52651c2eca24b16bcfc266c4377a145e1178e2cd6ed5211587"
+    },
+    {
+      "path": "tools/tests/native-crayon-phase.test.mjs",
+      "bytes": 5233,
+      "sha256": "fb7d797d36b4c58600211f4dda15b1c363c6d356d79e6b15a53df4bd6d5677ec"
+    },
+    {
+      "path": "tools/tests/native-crayon-references.test.mjs",
+      "bytes": 9253,
+      "sha256": "9e0a726fd96dd1f719aa53131619028c03019ed2ff0fa852d323ed232e11a0ab"
+    },
+    {
+      "path": "tools/tests/native-drawing-interactions.test.mjs",
+      "bytes": 3454,
+      "sha256": "380b88f7ea9f9b3d4390a0f5bb7dcfd595ad588b4c3f14226201a0ec0784e2b8"
+    }
+  ],
+  "nativeAPIAndActualCheckoutLogBound": true
+}

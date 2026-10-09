@@ -1,0 +1,35 @@
+{
+  "returnedAt": "2026-10-09T23:09:39.340187+00:00",
+  "knownPIDs": {
+    "91018": null,
+    "91167": "Fri Oct 9 19:07:53 2026",
+    "91171": "Fri Oct 9 19:07:57 2026",
+    "91176": "Fri Oct 9 19:07:58 2026",
+    "91549": "Fri Oct 9 19:08:24 2026",
+    "91592": "Fri Oct 9 19:08:24 2026",
+    "91593": "Fri Oct 9 19:08:24 2026"
+  },
+  "knownGroups": [
+    91018,
+    91167,
+    91171,
+    91176,
+    91549,
+    91593
+  ],
+  "freshKnownPIDGroupRows": [],
+  "allKnownPIDsGroupsAbsent": true,
+  "port": 62536,
+  "allFamiliesListenerAbsent": true,
+  "lsofExit": 1,
+  "lsofStdout": "",
+  "lsofStderr": "",
+  "supervisorToolSession": 31452,
+  "supervisorTerminalExit": 0,
+  "sourceIndexGraphProof": {
+    "path": "SOURCE-INDEX-GRAPH-AFTER.json",
+    "bytes": 1169,
+    "sha256": "9cb6d8b98769b82f347ffebaf68a46fb32d00a2b37c981d4f8e4682c114db87f"
+  },
+  "noSignalsOutsideLauncherOwnedGroups": true
+}

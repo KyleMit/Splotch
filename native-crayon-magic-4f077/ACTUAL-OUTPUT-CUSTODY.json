@@ -1,0 +1,368 @@
+{
+  "at": "2026-10-09T23:09:39.275444+00:00",
+  "source": "4f077fa4bd609255c43c4244aa27748902127e44",
+  "tree": "e7120297004896a80535612cf6c96a5af2bb0502",
+  "oneDriver": true,
+  "retries": 0,
+  "checks": {
+    "crayon": {
+      "before": {
+        "paperFraction": 0.1961904761904762,
+        "green": 0
+      },
+      "after": {
+        "paperFraction": 0.07,
+        "green": 0
+      }
+    },
+    "mixing": {
+      "paperFraction": 0.08884297520661157,
+      "green": 93
+    },
+    "magic": {
+      "left": [
+        238,
+        201,
+        67
+      ],
+      "right": [
+        142,
+        68,
+        238
+      ]
+    },
+    "laterInk": {
+      "pencil": [
+        10,
+        11,
+        16
+      ],
+      "markerCore": [
+        [
+          249,
+          210,
+          79
+        ],
+        [
+          249,
+          210,
+          79
+        ],
+        [
+          249,
+          210,
+          79
+        ]
+      ],
+      "markerOutside": [
+        252,
+        251,
+        248
+      ]
+    },
+    "undoClear": true,
+    "undoExport": {
+      "equal": true,
+      "pixels": 786432
+    },
+    "reopen": true,
+    "reopenExport": {
+      "equal": true,
+      "pixels": 786432
+    },
+    "export": {
+      "width": 1024,
+      "height": 768,
+      "mixing": {
+        "paperFraction": 0.2830578512396694,
+        "green": 92
+      },
+      "grain": {
+        "paperFraction": 0.37,
+        "green": 0
+      },
+      "magic": {
+        "left": [
+          238,
+          201,
+          67
+        ],
+        "right": [
+          142,
+          68,
+          238
+        ]
+      },
+      "laterInk": {
+        "pencil": [
+          10,
+          11,
+          16
+        ],
+        "markerCore": [
+          [
+            249,
+            210,
+            79
+          ],
+          [
+            249,
+            210,
+            79
+          ],
+          [
+            249,
+            210,
+            79
+          ]
+        ],
+        "markerOutside": [
+          252,
+          251,
+          248
+        ]
+      }
+    },
+    "corruptSeedRetainsPicture": true,
+    "pageErrors": []
+  },
+  "paperBounds": {
+    "x": 88,
+    "y": 228,
+    "width": 1024,
+    "height": 768
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 1100
+  },
+  "pngs": [
+    {
+      "path": "actual-output/cleared.png",
+      "bytes": 4800,
+      "sha256": "e1d1a10aad06c0b454cb3f7152efe022d4a19f75cc1f324c71b1b7efdcb7350c",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/composition-magic.png",
+      "bytes": 54641,
+      "sha256": "3e93032ca97002419ce8b8059628460879fa4b7ec4bbe4d5e9fd5374c433ccb2",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/composition.png",
+      "bytes": 55666,
+      "sha256": "608e711fb790914ed923e83d0d79bbef289615f0f6c9197b4f5ae85a0c5e23c2",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/corrupt-seed-modal.png",
+      "bytes": 95911,
+      "sha256": "77541f9942b65e53e49f7d332476f5a6feb1eb7e671e5ea636a619f0481d68a1",
+      "ihdr": {
+        "width": 1200,
+        "height": 1100,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": false
+    },
+    {
+      "path": "actual-output/corrupt-seed-retained.png",
+      "bytes": 55666,
+      "sha256": "608e711fb790914ed923e83d0d79bbef289615f0f6c9197b4f5ae85a0c5e23c2",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/crayon-buildup.png",
+      "bytes": 29608,
+      "sha256": "8e72880b85aaf7720b50603c7067b7d6fdaf60ef1cf2efc21d59ae07078bb253",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/crayon-crossing.png",
+      "bytes": 42354,
+      "sha256": "ac198e1cf06a852d89f087465f2081ddc2a6195fdf878182c7626fef8b208afe",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/crayon-first.png",
+      "bytes": 28586,
+      "sha256": "fa12c40561308355004f669ac17dd115f3cd1d6a1a11194e4441e303a2170460",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/export-after-undo.png",
+      "bytes": 69843,
+      "sha256": "bd6c981bfe9fcff0a8728baa2f49018bfba33b457ea25358996745489cbf52c7",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 6,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/export-before-clear.png",
+      "bytes": 69843,
+      "sha256": "bd6c981bfe9fcff0a8728baa2f49018bfba33b457ea25358996745489cbf52c7",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 6,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/export.png",
+      "bytes": 69843,
+      "sha256": "bd6c981bfe9fcff0a8728baa2f49018bfba33b457ea25358996745489cbf52c7",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 6,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/reopened.png",
+      "bytes": 55666,
+      "sha256": "608e711fb790914ed923e83d0d79bbef289615f0f6c9197b4f5ae85a0c5e23c2",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    },
+    {
+      "path": "actual-output/undo-clear.png",
+      "bytes": 55666,
+      "sha256": "608e711fb790914ed923e83d0d79bbef289615f0f6c9197b4f5ae85a0c5e23c2",
+      "ihdr": {
+        "width": 1024,
+        "height": 768,
+        "bitDepth": 8,
+        "colorType": 2,
+        "compression": 0,
+        "filter": 0,
+        "interlace": 0
+      },
+      "assertedByPublishedDriver": true
+    }
+  ],
+  "threeOriginalProductionExportBytesIdentical": true,
+  "fullRGBA8PixelsPerExport": 786432,
+  "immediateWholePaperEncodedScreenshotExact": {
+    "undo": true,
+    "reopen": true
+  },
+  "savedRawJSON": {
+    "path": "actual-output/saved-original.json",
+    "bytes": 3037,
+    "sha256": "d5558f99eb5b209f0bd9fbdfffb9a48ce27780c1a3b1de0ccbb09a274f0d2258",
+    "version": 2,
+    "brushes": [
+      "crayon",
+      "crayon",
+      "crayon",
+      "magic",
+      "pencil",
+      "marker"
+    ]
+  },
+  "savedValueRestored": true,
+  "browserClosed": true,
+  "cleanupErrors": [],
+  "held": [
+    "35064 first native245pixel Undo mismatch/timingUNPROVED",
+    "SMALL RSS298.875MiB and mandatory observer failures",
+    "Android export-prefix hypothesis",
+    "currentbothOS richbrush output pending"
+  ],
+  "memoryMeasured": false,
+  "nativeOutputExecuted": false,
+  "originalReviewUsed": 0
+}
