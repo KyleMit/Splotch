@@ -403,8 +403,8 @@
       "source": "package/android/app/src/main/AndroidManifest.xml",
       "sourceSha256": "2bb28f4f3e9f37feeaff9e4d3fb63d1cbff962924a91c712b55c6c5fdd114c7c",
       "target": "android/app/src/main/AndroidManifest.xml",
-      "change": "reviewed-network-permission",
-      "targetSha256": "e5a586e66c602c706ac0e166b3abe8baad0b72794399428441d47c2dac28ad88",
+      "change": "reviewed-network-and-private-storage-policy",
+      "targetSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90",
       "mode": "0o644"
     },
     {

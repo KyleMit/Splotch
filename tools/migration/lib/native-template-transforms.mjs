@@ -1,4 +1,5 @@
 import {
+  ANDROID_STORAGE_PERMISSION_REMOVALS,
   APPLE_BUNDLE_OVERRIDES,
   HERMES_COMPILER_VERSION,
   NATIVE_CONTRACT,
@@ -26,7 +27,10 @@ const TRANSFORMATION_NAMES = new Map([
     'package/android/app/src/main/java/com/helloworld/MainApplication.kt',
     'candidate-kotlin-identity',
   ],
-  ['package/android/app/src/main/AndroidManifest.xml', 'reviewed-network-permission'],
+  [
+    'package/android/app/src/main/AndroidManifest.xml',
+    'reviewed-network-and-private-storage-policy',
+  ],
   ['package/android/app/proguard-rules.pro', 'candidate-turbomodule-rules'],
   ['package/ios/Podfile', 'explicit-pod-contract'],
   ['package/ios/Podfile.properties.json', 'explicit-apple-contract'],
@@ -229,11 +233,18 @@ function appleProject(source) {
 function androidManifest(source) {
   let result = source.replace(/\n\s*<!--.*?-->/gs, '');
   result = result.replace(
-    /\n\s*<uses-permission\s+android:name="android\.permission\.(?:SYSTEM_ALERT_WINDOW|VIBRATE|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)"[^>]*\/>/g,
+    /\n\s*<uses-permission\s+android:name="android\.permission\.(?:SYSTEM_ALERT_WINDOW|VIBRATE)"[^>]*\/>/g,
     ''
   );
-  result = result.replace(/\n\s*<queries>.*?<\/queries>/s, '');
-  return result.replace('\n  xmlns:tools="http://schemas.android.com/tools"', '');
+  for (const permission of ANDROID_STORAGE_PERMISSION_REMOVALS) {
+    result = replaceExactly(
+      result,
+      `<uses-permission android:name="${permission}" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion"/>`,
+      `<uses-permission android:name="${permission}" tools:node="remove"/>`,
+      `Android storage permission removal: ${permission}`
+    );
+  }
+  return result.replace(/\n\s*<queries>.*?<\/queries>/s, '');
 }
 
 function applePodfile(source) {
