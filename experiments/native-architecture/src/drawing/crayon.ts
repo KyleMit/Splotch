@@ -72,7 +72,7 @@ function wrap(value: number): number {
   return ((Math.floor(value) % CRAYON_TILE_PX) + CRAYON_TILE_PX) % CRAYON_TILE_PX;
 }
 
-export function waxAt(x: number, y: number, seed: number, coverage: number): boolean {
+function waxAt(x: number, y: number, seed: number, coverage: number): boolean {
   const phase = crayonPhase(seed);
   const tx = wrap(x - phase.x);
   const ty = wrap(y - phase.y);
