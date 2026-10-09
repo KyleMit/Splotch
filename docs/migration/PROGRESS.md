@@ -13,9 +13,10 @@ order: useful drawing, controls, undo, clear, PNG export and local save/reopen f
 development feedback. The phone development checkpoint is 2026-10-11 03:00 UTC, or a concrete
 device/signing blocker with a runnable emulator/simulator build and demonstration. Actual iOS Debug
 and browser drawing, saving/reopening, PNG and restart feedback is recorded in the current campaign
-register; maintained-source qualification and original N1 review remain pending. The campaign
-remains active and incomplete. Follow it with full fidelity/services, fair architecture evidence,
-integrated tuning and final readiness.
+register. N1 maintained source is published after source qualification; final-head CI,
+executed-source equivalence, optimized both-OS structural builds and the original reserved N1 review
+remain pending, and N1 is unaccepted. The campaign remains active and incomplete. Follow it with
+full fidelity/services, fair architecture evidence, integrated tuning and final readiness.
 
 F1's single additional original round was consumed and its exact composition accepted and merged;
 the current public register owns the source and review bindings. N1 retains 2 used / 1 reserved; its

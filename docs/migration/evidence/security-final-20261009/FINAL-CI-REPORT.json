@@ -87,7 +87,7 @@
   ],
   "verifiedContents": "RETAINED-PROOF-CONTENT-SUMMARY.json",
   "memberIdentities": "export-member-manifest.json",
-  "fullRetainedLog": "retained-job-full.log.txt",
+  "fullRetainedLog": "host-local (not committed; see durableSameMacCopies)",
   "fullInputsLocation": "Complete96,243,530B release and96,243,540B mechanism inputs remain in verified ZIPs; their SHA256 values match result.inputsSha256. All46 regular ZIP members read and CRC/SHA checked. Other exported records/browser evidence retained under export/.",
   "history": {
     "failedFirstCI": "/private/tmp/splotch-handlebars-retained-ci-diagnosis-01a11a00/DIAGNOSIS.json",
