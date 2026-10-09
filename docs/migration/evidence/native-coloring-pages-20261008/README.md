@@ -60,9 +60,11 @@ The [window receipt](controls/full-tools-window.json) and
 [partial output](controls/full-tools.log.txt) are preserved. Read-only
 [diagnosis](controls/inherited-failure-diagnosis.json) identifies inherited N1 candidate-import and
 Forge-path policy failures, with no sandbox/file-path refusal. No inherited guard or N1 source was
-changed under this page unit. Publication and the final applicable tier remain pending exact N1
-source composition and a coordinated native-build window. Review and campaign registration are owned
-by the root session; this document does not consume or reset N1/F1 reviewer identities or budgets.
+changed under this page unit. This attempt predates the published N1 repairs. The later
+[source-composition record](composition-20261009/README.md) pins the exact maintained dependency and
+lightweight results; publication and the final applicable tier await a coordinated window. Review
+and campaign registration are owned by the root session; this document does not consume or reset
+N1/F1 reviewer identities or budgets.
 
 ## Running captures
 

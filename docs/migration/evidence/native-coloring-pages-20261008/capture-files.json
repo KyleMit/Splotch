@@ -1,8 +1,8 @@
 [
   {
     "path": "README.md",
-    "sha256": "1da24b84198cfacd3310b71985b9f6d8a0c31745e6169cf1ed9c463fb3f26a9e",
-    "bytes": 7874
+    "sha256": "5e5fc023ebb4691a652fa01881b7a559326c50f6dbea7d92d66834e5b56e52ba",
+    "bytes": 8000
   },
   {
     "path": "before-source.json.txt",
@@ -13,6 +13,21 @@
     "path": "composed-picture.png",
     "sha256": "1da4f6cdb9ff315b51e9e82ba23a3bf39dcedb8a96eeed5bee610b40e24baeb0",
     "bytes": 56173
+  },
+  {
+    "path": "composition-20261009/README.md",
+    "sha256": "87cad795846f6376901c8669def5e426ce052d103dee6c2e2a541d16b62f5c6d",
+    "bytes": 5276
+  },
+  {
+    "path": "composition-20261009/browser-smoke.mjs.txt",
+    "sha256": "5366a8cad4a1fb11a388ae89cef7ec4c5602bb79bf615485ba48ca0a49518cf4",
+    "bytes": 9854
+  },
+  {
+    "path": "composition-20261009/light-checks.json",
+    "sha256": "502aec7e6bea33a2ebe5d3d597c8df18ca0f6727e4ee54dae1198f8334875178",
+    "bytes": 2706
   },
   {
     "path": "controls/accepts-foreign-page.log.txt",
