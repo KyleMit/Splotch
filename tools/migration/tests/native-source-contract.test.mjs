@@ -16,12 +16,13 @@ import { createRequire } from 'node:module';
 import { c } from 'tar';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
-import { assertNativeSourceContract, NATIVE_CONTRACT } from '../lib/native-source-contract.mjs';
-import { readCandidateEntry, readMaintainedNativeFiles } from '../lib/native-source-files.mjs';
+import { NATIVE_CONTRACT } from '../lib/native-source-contract.mjs';
 import { readTemplateManifest, sha256 } from '../lib/native-template.mjs';
 import { candidateTemplateTarget } from '../lib/native-template-transforms.mjs';
 import { runNativeCandidateCheck } from '../check-native-candidate.mjs';
 import { runNativeCandidateMaterialization } from '../materialize-native-candidate.mjs';
+
+import { assertFixture, fixture, replace } from './native-source-fixtures.mjs';
 
 const root = join(import.meta.dirname, '../../..');
 const candidate = join(root, CANDIDATE_DIRECTORY);
@@ -165,23 +166,6 @@ function maintainedModeSnapshot(value) {
         expectedSha256: record.targetSha256,
       };
     });
-}
-
-function fixture() {
-  return {
-    files: readMaintainedNativeFiles(candidate, readTemplateManifest(root)),
-    ...readCandidateEntry(candidate),
-  };
-}
-
-function assertFixture(value) {
-  assertNativeSourceContract(value.files, value.packageManifest, value.indexSource);
-}
-
-function replace(value, path, from, to) {
-  const source = value.files.get(path).toString('utf8');
-  expect(source).toContain(from);
-  value.files.set(path, Buffer.from(source.replace(from, to)));
 }
 
 describe('native maintained source contract', () => {

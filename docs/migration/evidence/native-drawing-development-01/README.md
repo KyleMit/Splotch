@@ -120,6 +120,14 @@ latter controls passed alone and the final full tier passed without concurrent s
 
 ## Remaining acceptance
 
+The later native save repair waits for Expo File System's asynchronous move before reporting
+success. Write, readback and move failures clean only that save's original pending URI; a cleanup
+failure preserves the original error, and a moved JSON file is never deleted through the mutable
+File URI. Production-module tests cover delayed commit, rejection and cleanup, with source mutation
+controls for the missing await and unsafe mutable-URI cleanup. The preserved Android and iOS Release
+receipts remain evidence for their exact prior sources. Corrected-source native results and CI are
+required before the original N1 review resumes.
+
 This checkpoint has ordinary simulator/browser behavior, not final structural acceptance. A physical
 phone was offline. Both platforms have standalone Release behavior; the iOS run predates the
 interface-only export repair. Supported-floor runtime checks, lifecycle/multitouch coverage, and

@@ -28,7 +28,10 @@ import {
   readTemplateArchive,
   sha256,
 } from '../lib/native-template.mjs';
-import { candidateTemplateTarget } from '../lib/native-template-transforms.mjs';
+import {
+  candidateTemplateTarget,
+  transformTemplateMember,
+} from '../lib/native-template-transforms.mjs';
 
 const root = join(import.meta.dirname, '../../..');
 const manifest = JSON.parse(
@@ -207,6 +210,69 @@ describe('reviewed native template boundary', () => {
       'Native provenance replay mismatch'
     );
   });
+
+  it('derives exactly the private-storage removal policy from the authenticated template text', () => {
+    const path = 'package/android/app/src/main/AndroidManifest.xml';
+    const member = manifest.members.find((row) => row.path === path);
+    const transformed = transformTemplateMember(path, Buffer.from(member.originalText));
+    const source = transformed.bytes.toString('utf8');
+    expect(transformed.change).toBe('reviewed-network-and-private-storage-policy');
+    expect(source).toContain('xmlns:tools="http://schemas.android.com/tools"');
+    expect(source.match(/<uses-permission\b[^>]*\/>/g)).toEqual([
+      '<uses-permission android:name="android.permission.INTERNET"/>',
+      '<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>',
+      '<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>',
+    ]);
+    expect(transformed.bytes).toEqual(
+      readFileSync(join(root, CANDIDATE_DIRECTORY, 'android/app/src/main/AndroidManifest.xml'))
+    );
+  });
+
+  it.each(['READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'])(
+    'refuses missing original %s input instead of inventing a template declaration',
+    (permission) => {
+      const path = 'package/android/app/src/main/AndroidManifest.xml';
+      const member = manifest.members.find((row) => row.path === path);
+      const declaration = `<uses-permission android:name="android.permission.${permission}" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion"/>`;
+      const changed = member.originalText.replace(declaration, '');
+      expect(changed).not.toBe(member.originalText);
+      expect(() => transformTemplateMember(path, Buffer.from(changed))).toThrow(
+        'Android storage permission removal'
+      );
+    }
+  );
+
+  it.each(['READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'])(
+    'rejects joint maintained %s removal and provenance edits',
+    (permission) => {
+      const candidate = directory();
+      const actual = join(root, CANDIDATE_DIRECTORY);
+      const receipt = JSON.parse(
+        readFileSync(join(actual, 'native-template-provenance.json'), 'utf8')
+      );
+      for (const record of receipt.records.filter((row) => row.target)) {
+        write(
+          candidate,
+          record.target,
+          readFileSync(join(actual, record.target)),
+          Number(record.mode)
+        );
+      }
+      write(candidate, 'native-template-provenance.json', JSON.stringify(receipt));
+      expect(() => readMaintainedNativeFiles(candidate, manifest)).not.toThrow();
+      const path = 'android/app/src/main/AndroidManifest.xml';
+      const marker = `<uses-permission android:name="android.permission.${permission}" tools:node="remove"/>`;
+      const original = readFileSync(join(candidate, path), 'utf8');
+      expect(original).toContain(marker);
+      const changed = Buffer.from(original.replace(marker, ''));
+      write(candidate, path, changed);
+      receipt.records.find((row) => row.target === path).targetSha256 = sha256(changed);
+      write(candidate, 'native-template-provenance.json', JSON.stringify(receipt));
+      expect(() => readMaintainedNativeFiles(candidate, manifest)).toThrow(
+        'Native provenance replay mismatch'
+      );
+    }
+  );
 
   it('rejects joint unchanged source and receipt hash edits through the maintained-file reader', () => {
     const candidate = directory();

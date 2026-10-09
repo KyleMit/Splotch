@@ -47,6 +47,12 @@ export const APPLE_BUNDLE_OVERRIDES = Object.freeze([
 
 export const HERMES_COMPILER_VERSION = '250829098.0.17';
 
+const ANDROID_MANIFEST_TOOLS_NAMESPACE = 'http://schemas.android.com/tools';
+export const ANDROID_STORAGE_PERMISSION_REMOVALS = Object.freeze([
+  'android.permission.READ_EXTERNAL_STORAGE',
+  'android.permission.WRITE_EXTERNAL_STORAGE',
+]);
+
 const SHIPPING_IDENTITY = 'art.splotch.app';
 const KOTLIN_DIRECTORY = `android/app/src/main/java/${NATIVE_CONTRACT.identity.replaceAll('.', '/')}`;
 
@@ -180,12 +186,30 @@ function assertAndroidManifest(files) {
   const manifest = text(files, 'android/app/src/main/AndroidManifest.xml');
   requireCount(
     manifest,
+    new RegExp(`xmlns:tools="${ANDROID_MANIFEST_TOOLS_NAMESPACE.replaceAll('.', '\\.')}"`, 'g'),
+    1,
+    'Android manifest tools namespace'
+  );
+  requireCount(
+    manifest,
     /<uses-permission\s+android:name="android.permission.INTERNET"\s*\/>/g,
     1,
     'network permission'
   );
+  for (const permission of ANDROID_STORAGE_PERMISSION_REMOVALS) {
+    requireCount(
+      manifest,
+      new RegExp(
+        `<uses-permission\\s+android:name="${permission.replaceAll('.', '\\.')}"\\s+tools:node="remove"\\s*\\/>`,
+        'g'
+      ),
+      1,
+      `storage permission removal: ${permission}`
+    );
+  }
   if (
-    (manifest.match(/<uses-permission\b/g) ?? []).length !== 1 ||
+    (manifest.match(/<uses-permission\b/g) ?? []).length !==
+      1 + ANDROID_STORAGE_PERMISSION_REMOVALS.length ||
     /<queries\b|usesCleartextTraffic="true"/.test(manifest)
   ) {
     throw new Error('Unreviewed Android permission, query or cleartext policy');

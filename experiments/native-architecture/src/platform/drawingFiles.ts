@@ -38,12 +38,23 @@ export async function savePicture(drawing: Drawing): Promise<SavedPicture> {
   const modifiedAt = Date.now();
   const id = `picture-${modifiedAt}-${Math.random().toString(36).slice(2, 10)}`;
   const file = new File(directory(), `${id}.pending`);
+  const pendingUri = file.uri;
   file.create();
-  file.write(snapshot);
-  const readback = await file.text();
-  if (readback !== snapshot)
-    throw new Error('The picture could not be saved completely. Please try again.');
-  file.move(pictureFile(id));
+  try {
+    file.write(snapshot);
+    const readback = await file.text();
+    if (readback !== snapshot)
+      throw new Error('The picture could not be saved completely. Please try again.');
+    await file.move(pictureFile(id));
+  } catch (error) {
+    try {
+      const pending = new File(pendingUri);
+      if (pending.exists) pending.delete();
+    } catch {
+      // Cleanup must preserve the save error; move can change the original File's URI.
+    }
+    throw error;
+  }
   return { id, name: new Date(modifiedAt).toLocaleString(), modifiedAt };
 }
 
