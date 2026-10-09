@@ -65,11 +65,11 @@ function Artwork({
       pointerEvents="none"
     >
       <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-      <PageOutline pageId={drawing.pageId} />
       {drawing.strokes.map((stroke, index) => (
         <Ink key={index} stroke={stroke} />
       ))}
       {draft ? <Ink stroke={draft} /> : null}
+      <PageOutline pageId={drawing.pageId} />
     </Svg>
   );
 }
