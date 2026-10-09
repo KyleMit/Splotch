@@ -1,0 +1,119 @@
+{
+  "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "fullRepoTree": "bc597d5b869d70c9700d79e00fca5b3301a23072",
+  "candidateSubtree": "dafc74f3e004441ac834feb690ff331ff06e42a8",
+  "candidateSubtreeDefinition": "HEAD:experiments/native-architecture",
+  "nativeSourceTree": "71a888c20182bb7821a98b396e9051aac1eccb8c",
+  "lockSHA256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "productionBundle": {
+    "bytes": 463118,
+    "sha256": "f8e0733b7e16c2cfba2a6c04cbe765ef4e92e7beb16c7543704259a8288e5ad2",
+    "dev": false,
+    "minify": true
+  },
+  "browser": {
+    "exitCode": 0,
+    "attempts": 1,
+    "checks": [
+      "visible named picker and all choices",
+      "selected page outline above real green marker stroke",
+      "page change plus undo restores page and paint",
+      "clear preserves selected page and undo restores paint",
+      "blank selection clears page and paint atomically and undo restores both",
+      "save, reload, reopen exact page and stroke SVG",
+      "PNG retains solid outline pixels at both Green paint crossings and expected paint elsewhere",
+      "corrupt saved page has an in-dialog alert and preserves live picture plus undo history",
+      "denied save preserves live picture plus undo history",
+      "genuine v1 new-app save reopens exact Pencil path on selected blank paper",
+      "phone picker fits and all page targets exceed 52px",
+      "modal backdrop uses the actual design-token color"
+    ],
+    "pageErrors": []
+  },
+  "wrapper": {
+    "exitCode": 1,
+    "failure": "Case-alias filename collision after the successful browser primary and owned cleanup: the wrapper tried to exclusively create RESULT.json while the probe had already created result.json.",
+    "disposition": "Original probe result and wrapper trace preserved; append-only distinct WRAPPER-RESULT.json and closure supplement qualified. No retry or overwrite.",
+    "sourceIndexBeforeAfterExact": true,
+    "ownedProcessesClosed": true
+  },
+  "png": {
+    "file": "flower-painted.png.export.png",
+    "width": 1024,
+    "height": 768,
+    "greenRGB": [
+      140,
+      200,
+      100
+    ],
+    "greenPixelsWithinExistingPerChannelTolerance3": 4500,
+    "outlineRGB": [
+      51,
+      51,
+      51
+    ],
+    "outlinePixelsWithinExistingPerChannelTolerance3": 15995,
+    "solidOutlineCrossings": [
+      {
+        "x": 426,
+        "y": 384,
+        "rgb": [
+          51,
+          51,
+          51
+        ]
+      },
+      {
+        "x": 598,
+        "y": 384,
+        "rgb": [
+          51,
+          51,
+          51
+        ]
+      }
+    ],
+    "headersAndAllChunkCRCsVerified": true
+  },
+  "sourceQualification": {
+    "focusedTests": 28,
+    "candidateTypeScriptExit": 0,
+    "repositoryCheckExit": 0,
+    "lintExit": 0,
+    "formatExit": 0,
+    "fullToolsFiles": 351,
+    "fullToolsTests": 8166,
+    "fullToolsExit": 0,
+    "originalProductionOrderRejectedArtworkCases": 3,
+    "correctedSourceRestoredExactly": true
+  },
+  "ci": {
+    "runId": 38001126680,
+    "status": "completed",
+    "conclusion": "success",
+    "verifiedVia": "native GitHub fetch_commit_workflow_runs"
+  },
+  "native": {
+    "currentHeadAndroid": "UNRUN",
+    "currentHeadiOS": "UNRUN",
+    "historical02697Android": "Partial; exact saved-picture reopen unaccepted; later attempts stopped before input on changed actual timezone witness. No current native claim."
+  },
+  "review": {
+    "originalRoundUsed": 2,
+    "remaining": 1,
+    "latestOriginalReview": "https://github.com/KyleMit/Splotch/pull/2741#pullrequestreview-5476204292",
+    "latestReviewHead": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+    "sourceApprovedWithZeroActionableFindings": true,
+    "originalR1ThreadResolvedByRoot": true
+  },
+  "fullHbcReleaseGate": "HELD",
+  "featureAccepted": false,
+  "frameworkSelected": false,
+  "hardwareSigningPerformanceReleaseAndFullProductAcceptance": "HELD",
+  "reviewAtBrowserCapture": {
+    "originalRoundUsed": 1,
+    "remaining": 2,
+    "followUpLaunched": false
+  }
+}

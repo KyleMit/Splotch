@@ -1,0 +1,105 @@
+{
+  "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+  "base": "9f64c4cb5604361f223690f1143296e8cd747c7d",
+  "fullRepoTree": "bc597d5b869d70c9700d79e00fca5b3301a23072",
+  "candidateSubtree": "dafc74f3e004441ac834feb690ff331ff06e42a8",
+  "nativeSourceTree": "71a888c20182bb7821a98b396e9051aac1eccb8c",
+  "immutableFolder": "native-coloring-pages-874380f",
+  "assets": [
+    {
+      "name": "blank.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 29896,
+      "sha256": "680a86a09972c990529bfc9604357700e584a1a62527d09c562c1bfcef05c9d9",
+      "gitBlob": "2fa2be4a0566f79990bf88fd8f92460c35f140ab",
+      "mode": "100644"
+    },
+    {
+      "name": "browser-validation.json",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 4069,
+      "sha256": "7c9ba29ab3ed4896915a36c008eceb58076ca12d4f6b9e6d71fa1d8821f7ae73",
+      "gitBlob": "c5a8e6c08b323f7429d2e169b29a967ed3f3e8ff",
+      "mode": "100644"
+    },
+    {
+      "name": "flower-painted.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 55721,
+      "sha256": "8084982ce0400a16a7a622ba67783e762ed52e1ab955e2af8f18ff7690b28011",
+      "gitBlob": "9d00bdb03fa9a5f0c6ebaf9d62952f6bce90691c",
+      "mode": "100644"
+    },
+    {
+      "name": "flower-painted.png.export.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 56686,
+      "sha256": "9d2957771378bc335a10d50865af251b2d712b0b16817233a2f1670737f63ff2",
+      "gitBlob": "294cd35da0e8c11e31d37cf6264baf22b0327ac6",
+      "mode": "100644"
+    },
+    {
+      "name": "picker-phone.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 49619,
+      "sha256": "e3811f8f6aafa86bed2397d9fe83387a3bac12ca356cee81f4e553309b7ca790",
+      "gitBlob": "e47f3aa12278a6422b497b373de9fd740eb82915",
+      "mode": "100644"
+    },
+    {
+      "name": "picker.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 38911,
+      "sha256": "9781a3cfb9295cb2be519ebcb09a862057466f8081f868965ed2f28b1759febd",
+      "gitBlob": "555f09341f849b0c22c98932fe8bb1078f7c5c7e",
+      "mode": "100644"
+    },
+    {
+      "name": "saved-picture.json",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 358,
+      "sha256": "fc70fb48213193435e12470a4b7553817025a4ba51cd01e7d28516d664f5f148",
+      "gitBlob": "05b55dbf26618a317a286b03f0b2756acc2adc92",
+      "mode": "100644"
+    },
+    {
+      "name": "sunshine.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 46127,
+      "sha256": "d3ba76d82b33a7f621ac3ad6e04a625eaf2c1c39ad2caab50d55e9363ca1b575",
+      "gitBlob": "aaab288c4a4baa8f61da32c8d3721dbfd197c96c",
+      "mode": "100644"
+    },
+    {
+      "name": "turtle.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 61062,
+      "sha256": "8b0e26fbc3cbb584b09a838812399d6102a7f78a79d83a8da05e7eb8adf6fc5a",
+      "gitBlob": "c359842c85f409c625fff702c19ea9643a3455a1",
+      "mode": "100644"
+    },
+    {
+      "name": "v1-blank-reopened.png",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 30654,
+      "sha256": "5660b90836090ee08495e0d05d51cb1e21949313cbeb196645f5d5b9ea172350",
+      "gitBlob": "0fc1a5fe1d4b39d71673a232d19f2282dffb99fa",
+      "mode": "100644"
+    },
+    {
+      "name": "v1-resaved-picture.json",
+      "source": "874380f5023c55a0dbf9634ec63230b3116f3d16",
+      "bytes": 263,
+      "sha256": "cc3d01e8dcdf593d23b47484c2e95f1ac0f9ebb2850a8776b7ab171089173ad4",
+      "gitBlob": "7d2bc4f67c74f76044b686abd97b8d51dc991916",
+      "mode": "100644"
+    }
+  ],
+  "historicalBeforeReference": {
+    "source": "02697ce323285c8e32fa08b94fbd4ad5d191ddaf",
+    "assetCommit": "dfed858d277b8fa6d86292f8b2661dd3836cc65c",
+    "folder": "native-coloring-pages-02697ce",
+    "untouched": true
+  },
+  "currentScreenshots": "Actual current874 minified production browser captures; export PNG is a genuine browser download."
+}
