@@ -57,6 +57,28 @@ earlier Debug cache file was fresh. Generated CocoaPods output is preserved sepa
 maintained sources. The following CI repair removes two unused exports while retaining their
 internal constants and values; this Release run predates that interface-only change.
 
+Android Release from 95d1a47dd953b4d12fe48dd31da13ee8eed9a73b built successfully in two minutes 30
+seconds, including all four declared native ABIs, the embedded Hermes bundle, minification and
+resource shrinking. The first build refused missing library Build Tools 35.0.0. A fresh development
+SDK copy added the host's already installed Build Tools 35 and platform-tools; the historical SDK
+and first failure remain preserved, and maintained source, floors and guards did not change.
+
+The signed APK is 64,297,279 bytes, SHA256
+394b4a49ec17364be8e3f853264a9612ac7dc68fe6353692a99879722dcc5240. Signature verification passed with
+one disposable v2 signer. Its manifest reports minimum API 24 and target API 36. Installation and
+standalone launch succeeded on an existing API 28 emulator without Metro. Native flows passed both
+styles, Clear/Undo, save, visible list/reopen, the system PNG share sheet, and reopen after
+restarting the app. The owned emulator and test driver were closed after capture.
+
+The production-created Android PNG is 18,485 bytes, SHA256
+e33d9b5b943fd0e5ec4291c06bb0da4fa2a29027484a621fcd3fafc8c764508b. It decodes to 1024×768 with 13,930
+exact Purple pixels and 3,782 exact Blue pixels. The 2,927-byte saved JSON, SHA256
+a16982b8f6436bd7c488ffcb0bbbd9846a4aa61712b64b8316925fcb285aa09f, parses through the production
+consumer as Purple/Marker and Blue/Pencil strokes with 59 points each. Source path/inode/mode/owner,
+modification times, before/after metadata, guest hashes and exclusive copies bind the fresh files.
+The first read-only remote stat command quoting error is preserved; its correction preceded file
+capture. Generated Android Gradle/CMake output is preserved separately from maintained source.
+
 ## New dependency inputs
 
 The exact direct development package declaration and manual alignment owner include the drawing,
@@ -99,7 +121,8 @@ latter controls passed alone and the final full tier passed without concurrent s
 ## Remaining acceptance
 
 This checkpoint has ordinary simulator/browser behavior, not final structural acceptance. A physical
-phone was offline. Android development and its standalone optimized artifact, supported-floor
-checks, lifecycle/multitouch coverage, and matched performance evidence remain pending. The original
-failed qualification attempts remain failed. Crayon/Magic and coloring-page work are separate
-feature units with an unaccepted N1 dependency.
+phone was offline. Both platforms have standalone Release behavior; the iOS run predates the
+interface-only export repair. Supported-floor runtime checks, lifecycle/multitouch coverage, and
+matched performance evidence remain pending. The original failed qualification attempts remain
+failed. Crayon/Magic and coloring-page work are separate feature units with an unaccepted N1
+dependency.
