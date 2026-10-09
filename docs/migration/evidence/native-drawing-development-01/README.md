@@ -38,8 +38,24 @@ The compiled app and first native flows used e836b73ac2731fd7e22853a5b334f7403ea
 captured Debug recipe. The executed-source snapshot binds the dirty recipe and JS bytes. The
 generated bundle phase equals the independently derived maintained recipe. CocoaPods' generated
 workspace is preserved privately, and maintained source files were restored before source checks.
-This does not claim a fresh native rebuild from the final canonical checkout. Reproduction commands
+This does not claim a fresh Debug rebuild from the final canonical checkout. Reproduction commands
 are in [DEVELOPMENT.md](../../../../experiments/native-architecture/DEVELOPMENT.md).
+
+A fresh simulator Release build from 20b51012a9bb3daa1314cab1d8c276cc9eb8a977 succeeded with zero
+errors and one warning. Expo's desktop activation wrapper failed after installation; direct
+`simctl launch` ran the embedded Hermes bundle with Metro stopped. Native interactions confirmed
+both brush styles, Clear and Undo, save, a visible saved entry, reopen, PNG sharing with Copy, and
+reopen after terminating and relaunching the standalone app. The first flow's final assertion used
+stale success copy and failed after Copy; the separate confirmation used the actual rendered copy
+and passed. The original failure remains preserved.
+
+The Release-created cache PNG and saved JSON have the same deterministic bytes and hashes listed
+above. Separate custody records bind their actual new production paths, creation and modification
+times, before/after file identities, and exclusive copies. Decoded raster pixels and the production
+JSON parser confirm both strokes. This evidence belongs to the Release run, rather than assuming an
+earlier Debug cache file was fresh. Generated CocoaPods output is preserved separately from
+maintained sources. The following CI repair removes two unused exports while retaining their
+internal constants and values; this Release run predates that interface-only change.
 
 ## New dependency inputs
 
@@ -74,7 +90,7 @@ composition. Neither the accepted mitigation source nor its mitigation input cha
 ## Source validation
 
 The merged development source passes type checking, lint, formatting, and the complete tools tier:
-346 files and 8,094 tests. The real topology command reports eight actual Forge routes, four
+346 files and 8,101 tests. The real topology command reports eight actual Forge routes, four
 baseline comparison routes, 23 additional archive rows and 21 newly required candidate rows. Its
 installed Forge certificate/signature/CSR/tamper consumers remain required. The sandbox server
 failures, full-tier Apple fixture timeout and signal-control timing failure remain preserved; the
@@ -83,7 +99,7 @@ latter controls passed alone and the final full tier passed without concurrent s
 ## Remaining acceptance
 
 This checkpoint has ordinary simulator/browser behavior, not final structural acceptance. A physical
-phone was offline. Android Debug development, standalone optimized artifacts on both platforms,
-supported-floor checks, lifecycle/multitouch coverage, and matched performance evidence remain
-pending. The original failed qualification attempts remain failed. Crayon/Magic and coloring-page
-work are separate feature units with an unaccepted N1 dependency.
+phone was offline. Android development and its standalone optimized artifact, supported-floor
+checks, lifecycle/multitouch coverage, and matched performance evidence remain pending. The original
+failed qualification attempts remain failed. Crayon/Magic and coloring-page work are separate
+feature units with an unaccepted N1 dependency.

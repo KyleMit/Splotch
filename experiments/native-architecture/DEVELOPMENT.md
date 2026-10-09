@@ -40,8 +40,20 @@ xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" art.splotch.migr
 ```
 
 `RCT_jsLocation` is the installed React Native bundle provider's supported user-default key. Match
-its value to the chosen Metro port. The Debug app needs Metro; a standalone Release bundle is a
-later gate.
+its value to the chosen Metro port. The Debug app needs Metro. Build a standalone Release app with
+the same package and Ruby environment:
+
+```sh
+NODE_BINARY="$(command -v node)" node ../../node_modules/expo/bin/cli run:ios \
+  --device "$SIMULATOR_ID" --configuration Release --no-bundler
+```
+
+Do not combine `--port` with `--no-bundler`; Expo refuses that combination. Launch the installed
+Release app without `RCT_jsLocation` or Metro:
+
+```sh
+xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" art.splotch.migration.probe
+```
 
 CocoaPods writes the project, workspace, lock, privacy manifest and generated dependency tree.
 Preserve those development outputs separately from maintained template sources. The maintained
