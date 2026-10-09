@@ -173,3 +173,33 @@ evidence are unchanged. The lock remains the exact SHA256 named above. This comp
 formatter, installation, tests, browser, native build, performance or review operation. Current
 execution checks and the forthcoming published permissions change remain pending. N1 remains
 unaccepted, and this unit retains its original unopened review and three-round budget.
+
+## Local geometry reference candidate: qualification pending
+
+A source-only change after 35064e11ca3cecc1012d0a304e3bd4c6bfbfe9d9 defines each Crayon band/shade
+Path once per stroke, with its own explicit wax color and React-generated identifier. Patterns keep
+the same four wrapped translations and refer to those Paths through the installed SVG `Use`.
+Template Defs sit outside Patterns because native Pattern reference parsing registers a painter
+without traversing child templates. The tile grid, content units, seeds, pass splitting, band
+widths, paints and both glaze operations are unchanged. No renderer or dependency is selected by
+this probe.
+
+The retained eraser SMALL measurement exceeded its unchanged 256 MiB growth ceiling: 298.875 MiB.
+Its required observer errors remain rejecting. Duplicated serialized texture geometry is observed;
+its contribution to allocations is unproved. Native Use can create transformed path copies, and
+filter surfaces and repeated drawing remain. Smaller SVG strings would not establish an RSS cure.
+
+The added `tools/tests/native-crayon-references.test.mjs` consumes production Ink. It checks local
+explicit colors, distinct IDs across strokes and SVG roots, exact seeded wrapping, resolved
+references and one stored texture definition per shade. It compares original-grid RGBA with inline
+expansion of the same geometry and includes broken-reference and removed-quadrant controls. This
+inline comparison is a representation check, not an independent prior-output oracle. The existing
+native-equivalent phase tests retain seed 20 at y=550/650, multiple seeds, buildup and reentry.
+
+All new tests, type checks, lint, full tools, browser, native and memory measurements are UNRUN in
+the source-only window. Later qualification must execute the actual source-removal mutation, restore
+it, compare unchanged retained raw-pixel oracles at their original dimensions, and run current
+browser and both native outputs. Any later SMALL capture keeps the same fixture, 60-second/256 MiB
+criteria and all mandatory observers. The first native 245-pixel Pencil-tip mismatch remains held;
+the later settled export/Undo/reopen equality does not prove its timing hypothesis. Existing outputs
+remain bound to their executed source and do not qualify this uncommitted representation.

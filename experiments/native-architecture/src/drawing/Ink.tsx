@@ -1,5 +1,5 @@
 import { useId, useMemo } from 'react';
-import { Circle, Defs, G, LinearGradient, Path, Pattern, Stop } from 'react-native-svg';
+import { Circle, Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
 import { paletteHex } from './palette';
 import { BRUSHES, rainbow, rainbowLine } from './brushes';
 import {
@@ -49,6 +49,18 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
   const color = paletteHex(stroke.color);
   return (
     <G>
+      <Defs>
+        {CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
+          paths.map((path, shade) => (
+            <Path
+              key={`${bandIndex}-${shade}`}
+              id={`${id}-wax-${bandIndex}-${shade}`}
+              d={path}
+              fill={waxColor(color, shade)}
+            />
+          ))
+        )}
+      </Defs>
       {passes.map((pass, index) => {
         const phase = crayonPhase(pass.seed);
         return (
@@ -66,8 +78,8 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                   {CRAYON_TILE_OFFSETS.flatMap((x) =>
                     CRAYON_TILE_OFFSETS.map((y) => (
                       <G key={`${x},${y}`} transform={`translate(${phase.x + x} ${phase.y + y})`}>
-                        {CRAYON_TEXTURES[bandIndex].map((path, shade) => (
-                          <Path key={shade} d={path} fill={waxColor(color, shade)} />
+                        {CRAYON_TEXTURES[bandIndex].map((_, shade) => (
+                          <Use key={shade} href={`#${id}-wax-${bandIndex}-${shade}`} />
                         ))}
                       </G>
                     ))
