@@ -12,6 +12,7 @@ import {
   type Drawing,
   type Stroke,
 } from './model';
+import { PageOutline } from './PageOutline';
 import { DRAWING_THEME } from './theme';
 import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
 
@@ -64,6 +65,7 @@ function Artwork({
       pointerEvents="none"
     >
       <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
+      <PageOutline pageId={drawing.pageId} />
       {drawing.strokes.map((stroke, index) => (
         <Ink key={index} stroke={stroke} />
       ))}
