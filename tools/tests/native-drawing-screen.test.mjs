@@ -8,13 +8,20 @@ import {
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn(), lock: vi.fn() }));
+const files = vi.hoisted(() => ({
+  list: vi.fn(),
+  open: vi.fn(),
+  lock: vi.fn(),
+  capture: vi.fn(),
+  ink: vi.fn(),
+  export: vi.fn(),
+}));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
   savePicture: vi.fn(),
-  exportPng: vi.fn(),
+  exportPng: files.export,
 }));
 
 vi.mock('react-native', () => {
@@ -66,8 +73,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
   DrawingSurface: forwardRef(({ drawing, onStroke }, ref) => {
     useImperativeHandle(ref, () => ({
       lockInput: files.lock,
-      capturePng: vi.fn(),
-      captureInk: vi.fn(),
+      capturePng: files.capture,
+      captureInk: files.ink,
     }));
     return createElement(
       'button',
@@ -115,6 +122,9 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.list.mockReturnValue(pictures);
   files.open.mockReset();
+  files.capture.mockReset();
+  files.ink.mockReset();
+  files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
   screen = createScreen();
   screen.mount();
@@ -215,5 +225,39 @@ describe('saved-picture failure feedback', () => {
     expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
     await act(async () => finish(emptyDrawing()));
     expect(screen.dialog()).toBeNull();
+  });
+});
+
+describe('controller output snapshot ownership', () => {
+  it('refuses a captured PNG if the canonical history ref changed before output', async () => {
+    await screen.click('Draw fixture stroke');
+    let finish;
+    files.capture.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    await screen.click('Export PNG');
+    await screen.click('Draw fixture stroke');
+    await act(async () => finish('old-picture-png'));
+    expect(files.export).not.toHaveBeenCalled();
+    expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
+    expect(screen.container.textContent).toContain('The picture changed before export finished.');
+  });
+});
+
+describe('Clear observation refusal', () => {
+  it('retains canonical history and rainbow when the real native alpha owner refuses observation', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    files.ink.mockResolvedValueOnce('ink-observation-input');
+    await screen.click('Clear');
+    expect(files.ink).toHaveBeenCalledOnce();
+    expect(screen.paper()).toBe(original);
+    expect(screen.container.textContent).toContain('This picture could not be checked.');
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+    expect(JSON.parse(screen.paper()).rainbow).toBe(0);
   });
 });

@@ -1,27 +1,26 @@
+import { installObservation, retained } from './checkpoint-observation.mjs';
 import {
-  installObservation,
-  retained,
+  PROTECTED,
+  sha,
+  decoded,
+  hasInk,
+  transparentPngs,
+  protectedPixels,
+  inkCaptures,
+  causalCases,
   preserveObservation,
-  captureLive,
-} from './checkpoint-observation.mjs';
+} from './checkpoint-evidence.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { chromium, expect } from '@playwright/test';
-import sharp from 'sharp';
 
 const VIEWPORT = { width: 1200, height: 1100 };
-const PAPER_WIDTH = 1024;
-const PAPER_HEIGHT = 768;
 const PAGE_TIMEOUT_MS = 30_000;
 const FAILURE_TIMEOUT_MS = 15_000;
 const MEMORY_SAMPLE_MS = 200;
-const PROTECTED = { left: 80, top: 80, width: 680, height: 480 };
-const ALPHA_THRESHOLD = 4;
 const SETUP_EVIDENCE_LIMITS = { textChars: 8192, domChars: 32768, storageKeys: 100 };
-const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 function argument(name) {
   const value = process.argv.find((item) => item.startsWith(`--${name}=`))?.slice(name.length + 3);
@@ -86,34 +85,6 @@ const rich = [
 ];
 const drawing = (strokes) => ({ version: 3, pageId: 'blank', rainbow: 3, strokes });
 
-async function decoded(data) {
-  const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data.split(',')[1], 'base64');
-  return sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-}
-
-function hasInk(image) {
-  return image.data.some((value, index) => index % 4 === 3 && value >= ALPHA_THRESHOLD);
-}
-
-async function transparentPngs(observation) {
-  const result = [];
-  for (const data of observation.retained) {
-    const image = await decoded(data);
-    assert.equal(image.info.width, PAPER_WIDTH);
-    assert.equal(image.info.height, PAPER_HEIGHT);
-    if (image.data.some((value, index) => index % 4 === 3 && value < 255)) result.push(data);
-  }
-  return result;
-}
-
-async function protectedPixels(data) {
-  return sharp(Buffer.from(data.split(',')[1], 'base64'))
-    .ensureAlpha()
-    .extract(PROTECTED)
-    .raw()
-    .toBuffer();
-}
-
 async function main() {
   const url = new URL(argument('url'));
   assert.equal(url.protocol, 'http:');
@@ -126,10 +97,8 @@ async function main() {
   await assertSource(source);
   const phase = argument('phase');
   assert.ok(['small', 'depth', 'causal'].includes(phase));
-  if (phase === 'causal') {
-    assert.equal(positive('replay-budget-ms'), 60000);
-    assert.equal(positive('rss-growth-budget-mib'), 256);
-  }
+  assert.equal(positive('replay-budget-ms'), 60000);
+  assert.equal(positive('rss-growth-budget-mib'), 256);
   const replayBudgetMs = positive('replay-budget-ms');
   const rssGrowthBudgetBytes = positive('rss-growth-budget-mib') * 1024 * 1024;
   const report = {
@@ -177,9 +146,14 @@ async function main() {
     page.setDefaultTimeout(PAGE_TIMEOUT_MS);
     const errors = report.pageErrors;
     page.on('pageerror', (error) => errors.push(error.message));
-    await installObservation(page);
+    await installObservation(page, PROTECTED);
     const pick = (name) => page.getByRole('button', { name, exact: true }).click();
-    async function openFixture(name, fixture, retainAll = true) {
+    async function openFixture(
+      name,
+      fixture,
+      retainAll = true,
+      fullDiagnostics = phase !== 'depth'
+    ) {
       const record = {
         name,
         drawing: fixture,
@@ -199,7 +173,7 @@ async function main() {
           globalThis.__eraserCheckpointProbe.causal = causal;
           return key;
         },
-        { suffix: String(report.fixtures.length), fixture, retainAll, causal: phase === 'causal' }
+        { suffix: String(report.fixtures.length), fixture, retainAll, causal: fullDiagnostics }
       );
       await pick('Pictures');
       const open = page.getByRole('button', { name: /Open picture from/ });
@@ -225,15 +199,24 @@ async function main() {
       return observation;
     }
     if (phase === 'causal') {
-      report.checks.causal = await causalCases(openFixture, exportFixture, page);
+      report.checks.causal = await causalCases({
+        openFixture,
+        exportFixture,
+        page,
+        rich,
+        drawing,
+        cornerErase,
+      });
       assert.ok(
         report.checks.causal.comparisons.every((item) => item.strictRgbaEqual),
         'Causal protected raw RGBA comparison failed; diagnostic only'
       );
     } else {
-      await openFixture('reference', drawing(rich));
+      await openFixture('reference', drawing(rich), true, true);
       const reference = await exportFixture('reference');
-      const referenceInk = (await transparentPngs(reference)).at(-1);
+      const referenceInk = inkCaptures(reference, rich).find(
+        (item) => item.record.owner.kind === 'picture-ink'
+      )?.data;
       assert.ok(referenceInk, 'No transparent production ink capture was observed');
       assert.ok(hasInk(await decoded(referenceInk)));
       const expectedProtected = await protectedPixels(referenceInk);
@@ -243,16 +226,23 @@ async function main() {
           drawing([...rich, cornerErase(), cornerPaint(), cornerErase()])
         );
         const roundtrip = await exportFixture('roundtrip');
-        const roundtripInk = await transparentPngs(roundtrip);
+        const roundtripInk = inkCaptures(roundtrip, [
+          ...rich,
+          cornerErase(),
+          cornerPaint(),
+          cornerErase(),
+        ]);
         assert.ok(
           roundtripInk.length >= 2,
           'Checkpoint and final production PNG were not both observed'
         );
-        for (const png of roundtripInk)
+        for (const { record, data } of roundtripInk) {
+          assert.ok(record.scene.prefixLength + record.scene.remainingLength >= rich.length);
           assert.ok(
-            expectedProtected.equals(await protectedPixels(png)),
-            'PNG->Image checkpoint changed protected RGBA pixels'
+            expectedProtected.equals(await protectedPixels(data)),
+            'Matching-prefix PNG->Image checkpoint changed protected RGBA pixels'
           );
+        }
         const loaded = roundtrip.events.find((event) => event.type === 'checkpoint-image-load');
         assert.ok(loaded, 'No actual SVG checkpoint image load observed');
         assert.ok(
@@ -264,7 +254,9 @@ async function main() {
 
         const red = line('marker', 'Red', 200);
         await openFixture('redreference', drawing([red]));
-        const redReference = (await transparentPngs(await exportFixture('red-reference'))).at(-1);
+        const redReference = inkCaptures(await exportFixture('red-reference'), [red]).find(
+          (item) => item.record.owner.kind === 'picture-ink'
+        )?.data;
         await openFixture(
           'futureink',
           drawing([
@@ -274,7 +266,15 @@ async function main() {
             cornerErase(),
           ])
         );
-        const futureInk = (await transparentPngs(await exportFixture('future-ink'))).at(-1);
+        const futureStrokes = [
+          line('marker', 'Blue', 200),
+          { brush: 'eraser', points: red.points },
+          red,
+          cornerErase(),
+        ];
+        const futureInk = inkCaptures(await exportFixture('future-ink'), futureStrokes).find(
+          (item) => item.record.owner.kind === 'picture-ink'
+        )?.data;
         assert.ok(
           (await protectedPixels(redReference)).equals(await protectedPixels(futureInk)),
           'Later paint was erased or earlier covered ink returned'
@@ -352,6 +352,26 @@ async function main() {
           assert.ok(
             expectedProtected.equals(await protectedPixels(png)),
             'Repeated checkpoints changed protected pixels'
+          );
+        assert.deepEqual(depth.diagnosticErrors, []);
+        const checkpoints = depth.details.filter((item) => item.owner.kind === 'checkpoint');
+        assert.equal(
+          checkpoints.length,
+          498,
+          'Rich-prefix depth did not replay every erase boundary'
+        );
+        for (const item of depth.details.filter((item) => item.scene)) {
+          const length = item.scene.prefixLength + item.scene.remainingLength;
+          assert.equal(
+            item.scene.drawnOperationPrefixJsonSha256,
+            sha(JSON.stringify(deep.slice(0, length)))
+          );
+        }
+        for (const item of depth.captures.filter((item) => item.cornerAlpha === 0))
+          assert.equal(
+            item.protectedRgbaSha256,
+            sha(expectedProtected),
+            'A serial stage changed protected raw RGBA'
           );
         assert.ok(
           depth.captures.length >= 499,
@@ -442,72 +462,3 @@ async function main() {
 }
 
 await main();
-
-async function causalCases(openFixture, exportFixture, page) {
-  const cases = [],
-    comparisons = [];
-  for (const [group, prefix] of [
-    ['magic', [rich[4]]],
-    ['crayon-magic', rich.slice(2)],
-  ]) {
-    for (const masked of [false, true]) {
-      const name = `${group}-${masked ? 'disjoint-mask' : 'bare'}`;
-      const strokes = masked ? [...prefix, cornerErase()] : prefix;
-      await openFixture(name, drawing(strokes));
-      await captureLive(page);
-      const observation = await exportFixture(name);
-      assert.deepEqual(observation.diagnosticErrors, []);
-      const ink = observation.details.filter((item) => item.scene && !item.scene.checkpointId);
-      const live = ink.find((item) => item.livePaper),
-        fixed = ink.find((item) => !item.livePaper);
-      assert.ok(live && fixed, 'Missing matching production live/hidden ink captures');
-      assert.equal(
-        live.scene.drawnOperationPrefixJsonSha256,
-        fixed.scene.drawnOperationPrefixJsonSha256
-      );
-      assert.deepEqual(live.magicSemantics, fixed.magicSemantics);
-      assert.equal(fixed.magicSemantics.length, 1);
-      assert.equal(fixed.magicSemantics[0].paths.length, 1);
-      const serialized = observation.serialized.find((item) => item.captureId === fixed.id).text;
-      assert.equal((serialized.match(/<mask\b/g) ?? []).length, masked ? 1 : 0);
-      assert.deepEqual([live.geometry.rect.width, live.geometry.rect.height], [1022, 766]);
-      assert.deepEqual([fixed.geometry.rect.width, fixed.geometry.rect.height], [1024, 768]);
-      assert.deepEqual(fixed.serializedOuterAttributes, {
-        viewBox: '0 0 1024 768',
-        width: '1024',
-        height: '768',
-      });
-      const count = observation.details.length;
-      assert.equal(observation.serialized.length, count, 'Capture SVG missing');
-      assert.equal(observation.callbackPngs.length, count, 'Capture PNG missing');
-      for (const item of observation.details)
-        assert.ok(item.documentSvgs?.svgs.length, 'Missing concurrent document SVG ID inventory');
-      const get = (item) =>
-        'data:image/png;base64,' +
-        observation.callbackPngs.find((png) => png.captureId === item.id).base64;
-      const liveBytes = await protectedPixels(get(live)),
-        fixedBytes = await protectedPixels(get(fixed));
-      comparisons.push({
-        name: name + ':geometry-only',
-        strictRgbaEqual: liveBytes.equals(fixedBytes),
-        liveCaptureId: live.id,
-        fixedCaptureId: fixed.id,
-      });
-      cases.push({ name, fixedBytes, id: fixed.id, semantics: fixed.magicSemantics });
-    }
-  }
-  for (let index = 0; index < cases.length; index += 2) {
-    const pair = cases.slice(index, index + 2);
-    assert.deepEqual(pair[0].semantics, pair[1].semantics);
-    comparisons.push({
-      name: `fixed1024-${pair[0].name}-versus-disjoint-mask`,
-      strictRgbaEqual: pair[0].fixedBytes.equals(pair[1].fixedBytes),
-      captureIds: pair.map((item) => item.id),
-    });
-  }
-  return {
-    diagnosticOnly: true,
-    comparisons,
-    independentControl: 'Same Magic semantics; disjoint mask; same-prefix geometry.',
-  };
-}

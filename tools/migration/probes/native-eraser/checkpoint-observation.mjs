@@ -1,8 +1,4 @@
-import { createHash } from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-function observationBase() {
+function observationBase(protectedRegion) {
   const state = {
     mode: 'normal',
     retainAll: true,
@@ -31,6 +27,17 @@ function observationBase() {
       characters: data.length,
       cornerAlpha,
     };
+    if (cornerAlpha === 0 && record.captureId)
+      diagnosticAttempt(state, () => {
+        const pixels = this.getContext('2d').getImageData(
+          protectedRegion.left,
+          protectedRegion.top,
+          protectedRegion.width,
+          protectedRegion.height
+        );
+        record.protectedRegion = protectedRegion;
+        diagnosticHash(state, record, 'protectedRgbaSha256', pixels.data);
+      });
     state.captures.push(record);
     if (cornerAlpha === 0) {
       if (state.retainAll) {
@@ -111,9 +118,9 @@ function diagnosticRetain(state, list, item, key) {
   list.push(item);
 }
 
-function diagnosticHash(state, record, key, text) {
+function diagnosticHash(state, record, key, value) {
   const started = performance.now(),
-    encoded = new TextEncoder().encode(text);
+    encoded = typeof value === 'string' ? new TextEncoder().encode(value) : value;
   state.hashCost.bytes += encoded.length;
   state.jobs.push(
     crypto.subtle
@@ -213,6 +220,17 @@ function diagnosticAncestors(node) {
   return ancestors;
 }
 
+function diagnosticOwner(node) {
+  const ancestors = diagnosticAncestors(node),
+    has = (name) => ancestors.some((item) => item.name === name);
+  let kind = 'unknown';
+  if (has('FixedInkCapture')) kind = has('PictureCapture') ? 'picture-ink' : 'checkpoint';
+  else if (has('RasterFrames'))
+    kind = node.firstElementChild?.getAttribute('opacity') === '0' ? 'incoming-ink' : 'live-ink';
+  else if (has('PictureCapture')) kind = 'picture-output';
+  return { kind, ancestors };
+}
+
 function diagnosticInstance(node) {
   const key = Object.getOwnPropertyNames(node).find((name) => name.startsWith('__reactFiber$'));
   let fiber = key ? node[key] : null,
@@ -271,6 +289,7 @@ function diagnosticPatchSvg(state, node) {
       Object.assign(record, {
         callStack: new Error().stack,
         livePaper: !!target?.closest('[data-testid="drawing-paper"]'),
+        owner: diagnosticOwner(target),
         geometry: diagnosticGeometry(target),
         heap: diagnosticHeap(),
         ancestors: diagnosticAncestors(target),
@@ -322,11 +341,11 @@ function diagnosticPatchSvg(state, node) {
 
 function diagnosticCaptureLive() {
   const state = globalThis.__eraserCheckpointProbe;
-  const node = [...document.querySelectorAll('[data-testid="drawing-paper"] svg')].find((item) =>
-    item.querySelector('linearGradient')
+  const nodes = [...document.querySelectorAll('[data-testid="drawing-paper"] svg')].filter(
+    (item) => diagnosticOwner(item).kind === 'live-ink'
   );
-  const instance = node ? diagnosticInstance(node) : null;
-  if (!instance) throw new Error('No production live Magic Svg instance');
+  const instance = nodes.length === 1 ? diagnosticInstance(nodes[0]) : null;
+  if (!instance) throw new Error('Missing unique production visible RasterFrames Svg instance');
   state.activePurpose = 'harness-direct-live-Svg.toDataURL';
   try {
     return new Promise((resolve) => instance.toDataURL(resolve, { width: 1024, height: 768 }));
@@ -407,13 +426,14 @@ function diagnosticStart(state) {
   }).observe(document, { childList: true, subtree: true });
 }
 
-export async function installObservation(page) {
+export async function installObservation(page, protectedRegion) {
   const functions = [
     diagnosticHeap,
     diagnosticAttempt,
     diagnosticHash,
     diagnosticRetain,
     diagnosticAncestors,
+    diagnosticOwner,
     diagnosticInstance,
     diagnosticCaptureLive,
     diagnosticAttributes,
@@ -425,7 +445,11 @@ export async function installObservation(page) {
     observationBase,
   ];
   await page.addInitScript(
-    '(()=>{' + functions.map((fn) => fn.toString()).join('\n') + ';observationBase();})()'
+    '(()=>{' +
+      functions.map((fn) => fn.toString()).join('\n') +
+      ';observationBase(' +
+      JSON.stringify(protectedRegion) +
+      ');})()'
   );
 }
 
@@ -466,51 +490,6 @@ export async function retained(page) {
       retention,
     };
   });
-}
-
-export async function preserveObservation(output, name, observation) {
-  const started = performance.now();
-  const files = [];
-  for (const [label, png] of [
-    ['first', observation.retained[0]],
-    ['last', observation.retained.at(-1)],
-  ]) {
-    if (!png) continue;
-    const file = `${name}-${label}-transparent.png`;
-    await writeFile(join(output, file), Buffer.from(png.split(',')[1], 'base64'));
-    files.push(file);
-  }
-  for (const item of observation.callbackPngs) {
-    const file = `${name}-callback-capture-${item.captureId}.png`;
-    await writeFile(join(output, file), Buffer.from(item.base64, 'base64'));
-    files.push({ file, captureId: item.captureId });
-  }
-  for (const [index, item] of observation.serialized.entries()) {
-    const file = `${name}-serialized-${index}-capture-${item.captureId}.svg.txt`;
-    await writeFile(join(output, file), item.text);
-    files.push({
-      file,
-      sha256: createHash('sha256').update(item.text).digest('hex'),
-      captureId: item.captureId,
-    });
-  }
-  const retention = {
-    ...observation.retention,
-    serializedUtf8Bytes: observation.serialized.reduce(
-      (sum, item) => sum + Buffer.byteLength(item.text),
-      0
-    ),
-    base64Utf8Bytes: observation.retained.reduce((sum, item) => sum + Buffer.byteLength(item), 0),
-    metadataJsonUtf8Bytes: Buffer.byteLength(JSON.stringify(observation.details)),
-    preservationMs: performance.now() - started,
-    callbackBase64Utf8Bytes: observation.callbackPngs.reduce(
-      (sum, item) => sum + Buffer.byteLength(item.base64),
-      0
-    ),
-  };
-  const summary = { ...observation, retention, files };
-  for (const key of ['retained', 'callbackPngs', 'serialized']) delete summary[key];
-  return summary;
 }
 
 export async function captureLive(page) {

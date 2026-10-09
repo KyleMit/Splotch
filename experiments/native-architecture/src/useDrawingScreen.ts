@@ -90,6 +90,8 @@ export function useDrawingScreen() {
       const snapshot = historyRef.current.drawing;
       const base64 = await surface.current?.capturePng(snapshot);
       if (!base64) throw new Error('The drawing paper is not ready to export.');
+      if (historyRef.current.drawing !== snapshot)
+        throw new Error('The picture changed before export finished. Please try again.');
       await exportPng(base64);
       setNotice('PNG ready. Your picture is still here.');
     });

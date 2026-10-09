@@ -13,10 +13,10 @@ import { checkpointMatches, planInk, type InkCheckpoint, type InkPlan } from './
 import { InkScene } from './InkScene';
 import { FixedInkCapture } from './FixedInkCapture';
 import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
-import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
+import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCapture';
 
 export type RasterInkHandle = {
-  capturePng: () => Promise<string>;
+  readyPlan: (strokes: readonly Stroke[]) => InkPlan;
   isReady: () => boolean;
 };
 type Props = {
@@ -35,94 +35,76 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
   const currentStrokes = useRef(strokes);
   currentStrokes.current = strokes;
   const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
-  const [incoming, setIncoming] = useState<InkCheckpoint | null>(null);
-  const [settled, setSettled] = useState(0);
-  const mounted = useRef(true);
+  const [pending, setIncoming] = useState<InkCheckpoint | null>(null);
+  const incoming = pending && checkpointMatches(strokes, pending) ? pending : null;
+  const incomingRef = useRef(incoming);
+  incomingRef.current = incoming;
   const [fault, setFault] = useState<unknown>(null);
   const loadedId = useRef<number | null>(null);
   const nextId = useRef(1);
-  const epoch = useRef(0);
-  const working = useRef(false);
-  const svg = useRef<Svg>(null);
-  const captures = useRef(createSvgCapture()).current;
   const plan = useMemo(
     () => planInk(strokes, checkpoint, props.prepareEraser),
     [strokes, checkpoint, props.prepareEraser]
   );
   const fixedSvg = useRef<Svg>(null);
-  const [fixedReady, setFixedReady] = useState<typeof plan | null>(null);
+  const [fixedReady, setFixedReady] = useState<InkPlan | null>(null);
   const imageReady = !plan.checkpoint || loadedId.current === plan.checkpoint.id;
   const ready = !fault && !incoming && !plan.needsCheckpoint && imageReady;
   const propsRef = useRef(props);
   propsRef.current = props;
+  const working = useCheckpointJob({
+    plan,
+    ready: !fault && !incoming && imageReady && plan.needsCheckpoint && fixedReady === plan,
+    svg: fixedSvg,
+    onCheckpoint(base64, capturedPlan) {
+      const next = { id: nextId.current++, strokes: capturedPlan.prefix, base64 };
+      if (checkpointMatches(currentStrokes.current, next)) setIncoming(next);
+    },
+    onError(error) {
+      setFault(error);
+      propsRef.current.onError(error);
+    },
+  });
 
   useImperativeHandle(ref, () => ({
-    isReady: () => ready,
-    capturePng: () =>
-      ready
-        ? captures.capture(svg.current)
-        : Promise.reject(new Error('This picture is still being prepared.')),
+    isReady: () => ready && !working.current,
+    readyPlan(requested) {
+      if (
+        !ready ||
+        working.current ||
+        propsRef.current.draft ||
+        requested.length !== strokes.length ||
+        requested.some((stroke, index) => stroke !== strokes[index])
+      )
+        throw new Error('This picture is still being prepared.');
+      return plan;
+    },
   }));
+  useEffect(() => propsRef.current.onBusy(!ready), [ready]);
 
   useEffect(() => {
-    propsRef.current.onBusy(!ready);
-  }, [ready]);
-
-  useEffect(() => {
-    const revision = ++epoch.current;
-    if (
-      fault ||
-      incoming ||
-      working.current ||
-      !imageReady ||
-      !plan.needsCheckpoint ||
-      fixedReady !== plan
-    )
-      return;
-    working.current = true;
-    void captures
-      .capture(fixedSvg.current)
-      .then((base64) => {
-        if (epoch.current !== revision) return;
-        const next = { id: nextId.current++, strokes: plan.prefix, base64 };
-        if (checkpointMatches(currentStrokes.current, next)) setIncoming(next);
-      })
-      .catch((error: unknown) => {
-        if (epoch.current !== revision) return;
-        setFault(error);
-        propsRef.current.onError(error);
-      })
-      .finally(() => {
-        working.current = false;
-        if (mounted.current) setSettled((value) => value + 1);
-      });
-  }, [plan, incoming, fault, imageReady, captures, settled, fixedReady]);
+    if (pending && !incoming) setIncoming(null);
+  }, [pending, incoming]);
 
   useEffect(() => {
     if (!incoming) return;
     const timeout = setTimeout(() => {
+      if (incomingRef.current !== incoming) return;
       const error = new Error(
         'The prepared picture did not load. Your saved drawing is unchanged.'
       );
       setFault(error);
+      incomingRef.current = null;
       setIncoming(null);
       propsRef.current.onError(error);
     }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [incoming]);
 
-  useEffect(
-    () => () => {
-      epoch.current += 1;
-      mounted.current = false;
-      captures.dispose();
-    },
-    [captures]
-  );
-
   function imageLoaded(frame: InkCheckpoint) {
-    if (incoming !== frame || !checkpointMatches(currentStrokes.current, frame)) return;
+    if (incomingRef.current !== frame || !checkpointMatches(currentStrokes.current, frame)) return;
     loadedId.current = frame.id;
+    incomingRef.current = null;
     setCheckpoint(frame);
     setIncoming(null);
   }
@@ -146,18 +128,65 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
           }}
         />
       ) : null}
-      <RasterFrames frames={frames} svg={svg} onImageLoad={imageLoaded} />
+      <RasterFrames frames={frames} onImageLoad={imageLoaded} />
     </View>
   );
 });
 
+function useCheckpointJob(options: {
+  plan: InkPlan;
+  ready: boolean;
+  svg: RefObject<Svg | null>;
+  onCheckpoint: (base64: string, plan: InkPlan) => void;
+  onError: (error: unknown) => void;
+}) {
+  const current = useRef(options);
+  current.current = options;
+  const active = useRef<SvgCaptureJob | null>(null);
+  const epoch = useRef(0);
+  const captures = useRef(createSvgCapture()).current;
+  const { plan, ready, svg } = options;
+  useEffect(() => {
+    const revision = ++epoch.current;
+    if (!ready) return;
+    const job = captures.capture(svg.current);
+    active.current = job;
+    const valid = () =>
+      epoch.current === revision &&
+      active.current === job &&
+      current.current.plan === plan &&
+      current.current.ready;
+    void job.promise
+      .then((base64) => {
+        if (valid()) current.current.onCheckpoint(base64, plan);
+      })
+      .catch((error: unknown) => {
+        if (valid()) current.current.onError(error);
+      })
+      .finally(() => {
+        if (active.current === job) active.current = null;
+      });
+    return () => {
+      epoch.current += 1;
+      if (active.current === job) active.current = null;
+      job.cancel();
+    };
+  }, [plan, ready, svg, captures]);
+  useEffect(
+    () => () => {
+      epoch.current += 1;
+      captures.dispose();
+    },
+    [captures]
+  );
+  return active;
+}
+
 function RasterFrames({
   frames,
-  svg,
   onImageLoad,
 }: {
   frames: readonly { id: number; plan: InkPlan; hidden: boolean }[];
-  svg: RefObject<Svg | null>;
   onImageLoad: (frame: InkCheckpoint) => void;
 }) {
   return (
@@ -165,7 +194,6 @@ function RasterFrames({
       {frames.map((frame) => (
         <Svg
           key={frame.id}
-          ref={frame.hidden ? undefined : svg}
           width="100%"
           height="100%"
           viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}

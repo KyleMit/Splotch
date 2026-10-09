@@ -42,6 +42,16 @@ composites the captured ink raster with paper/outline. Application capture reque
 bounded deadlines, late-result rejection and a failed-channel stop rather than automatic retry
 loops. Controller input leases protect asynchronous commands before React disables controls.
 
+Ready output pins the visible owner's exact immutable InkPlan and Drawing/stroke identity under that
+input lease. A separate fixed-grid InkScene captures transparent ink once; picture output then adds
+white paper and the selected page outline. Export and Clear do not start another full-history
+replay. The whole output deadline remains ten seconds. The controller rechecks its synchronous
+history ref before writing an exported PNG, and Clear retains its full-History identity check.
+Superseded preparation jobs cancel by request identity and restart only the current plan; genuine
+capture/load failures remain terminal. A per-request mount identity keeps consecutive outputs
+independent. Main-owner fault recovery still requires a real user-facing repair in this same unit:
+manual mounted-test remounts do not provide that app recovery flow.
+
 Remaining gates include: PNG->Image pixel/color/alpha roundtrip, Crayon actual chronological
 backdrop and native live/export agreement, replacement image race/failure controls, and real 1000-op
 replay/Undo/reopen memory and latency. Native SVG export BackgroundImage ownership is a specific
@@ -55,6 +65,8 @@ The tools/migration/probes/native-eraser/checkpoint-browser.mjs is additional er
 source. It consumes the actual saved reader, scene and PNG pipeline through the visible app, binds
 exact current source bytes, and separates small pixel/load/failure controls from the legal
 1000-operation replay/resource phase. Its README records observed scope and remaining native,
-decoder, Undo and image-load race controls. No production renderer/model change accompanied that
-probe preparation. Its failed diagnostic runs do not qualify the repaired source or clear the
-remaining gates.
+decoder, Undo and image-load race controls. The probe identifies actual mounted capture owners and
+binds each callback to its canonical prefix/checkpoint hashes. Its source was adapted for the
+ready-plan output and first-erase boundary; no model or saved-reader change accompanied that
+adaptation. Its failed diagnostic runs do not qualify the repaired source or clear the remaining
+gates.

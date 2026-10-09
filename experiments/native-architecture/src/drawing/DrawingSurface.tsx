@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ForwardedRef,
+  type RefObject,
 } from 'react';
 import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import Svg from 'react-native-svg';
@@ -49,21 +50,18 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     const [draft, setDraft] = useState<Stroke | null>(null);
     const raster = useRef<RasterInkHandle>(null);
     const [packet, setPacket] = useState<PictureRequest | null>(null);
-    const { captureLock, commandLock } = useSurfaceCapture(input, ref, setPacket);
-
-    function point(event: GestureResponderEvent, identifier: string) {
-      const touch = [...event.nativeEvent.touches, ...event.nativeEvent.changedTouches].find(
-        (item) => item.identifier === identifier
-      );
-      return touch
-        ? paperPoint(touch.locationX, touch.locationY, size.current.width, size.current.height)
-        : undefined;
-    }
+    const { captureLock, commandLock } = useSurfaceCapture(
+      input,
+      ref,
+      setPacket,
+      raster,
+      props.drawing
+    );
 
     function sample(event: GestureResponderEvent) {
       const identifier = input.identifier();
       if (identifier === undefined) return;
-      const nextPoint = point(event, identifier);
+      const nextPoint = touchPoint(event, identifier, size.current);
       if (!nextPoint) return;
       try {
         setDraft(input.sample(identifier, nextPoint));
@@ -75,7 +73,10 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     function finish(event?: GestureResponderEvent) {
       const identifier = input.identifier();
       if (identifier === undefined) return;
-      const stroke = input.finish(identifier, event ? point(event, identifier) : undefined);
+      const stroke = input.finish(
+        identifier,
+        event ? touchPoint(event, identifier, size.current) : undefined
+      );
       setDraft(null);
       propsRef.current.onDrawingChange(false);
       if (stroke) propsRef.current.onStroke(stroke);
@@ -164,33 +165,70 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             <PageOutline pageId={props.drawing.pageId} />
           </Svg>
         </View>
-        {packet ? (
-          <PictureCapture key={packet.kind} packet={packet} onSettled={() => setPacket(null)} />
-        ) : null}
+        {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
       </View>
     );
   }
 );
 
+function touchPoint(
+  event: GestureResponderEvent,
+  identifier: string,
+  size: { width: number; height: number }
+) {
+  const touch = [...event.nativeEvent.touches, ...event.nativeEvent.changedTouches].find(
+    (item) => item.identifier === identifier
+  );
+  return touch ? paperPoint(touch.locationX, touch.locationY, size.width, size.height) : undefined;
+}
+
 function useSurfaceCapture(
   input: ReturnType<typeof createStrokeInput>,
   ref: ForwardedRef<DrawingSurfaceHandle>,
-  setPacket: (packet: PictureRequest | null) => void
+  setPacket: (packet: PictureRequest | null) => void,
+  raster: RefObject<RasterInkHandle | null>,
+  drawing: Drawing
 ) {
   const captures = useRef(createPngCapture()).current;
   const captureLock = useRef<PngCaptureRequest | null>(null);
   const commandLock = useRef<object | null>(null);
 
-  function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
+  const currentDrawing = useRef(drawing);
+  currentDrawing.current = drawing;
+  const mounted = useRef(true);
+  const nextId = useRef(1);
+
+  async function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
     if (input.identifier() !== undefined)
-      return Promise.reject(new Error('Lift your finger before capturing the picture.'));
+      throw new Error('Lift your finger before capturing the picture.');
+    const lease = commandLock.current;
+    if (!lease || currentDrawing.current !== snapshot || !raster.current)
+      throw new Error('The current drawing paper is not ready to capture.');
+    const plan = raster.current.readyPlan(snapshot.strokes);
     const request = captures.begin(snapshot);
     captureLock.current = request;
-    setPacket({ request, kind });
+    setPacket({
+      id: nextId.current++,
+      request,
+      kind,
+      plan,
+      isCurrent: () =>
+        captureLock.current === request &&
+        commandLock.current === lease &&
+        currentDrawing.current === snapshot,
+    });
     return request.promise.finally(() => {
-      if (captureLock.current === request) captureLock.current = null;
+      if (captureLock.current !== request) return;
+      captureLock.current = null;
+      if (mounted.current) setPacket(null);
     });
   }
+
+  useEffect(() => {
+    const request = captureLock.current;
+    if (request && request.drawing !== drawing)
+      request.cancel('The picture changed before capture finished.');
+  }, [drawing]);
 
   useImperativeHandle(ref, () => ({
     capturePng: (snapshot) => capture(snapshot, 'picture'),
@@ -208,6 +246,7 @@ function useSurfaceCapture(
 
   useEffect(
     () => () => {
+      mounted.current = false;
       input.finish();
       captureLock.current?.cancel('Picture capture was cancelled.');
     },

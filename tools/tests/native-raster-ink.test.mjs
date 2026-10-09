@@ -3,7 +3,10 @@ import { act, createElement, createRef, forwardRef, useImperativeHandle } from '
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
-import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import {
+  createSvgCapture,
+  PNG_TIMEOUT_MS,
+} from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({ captures: [], imageLoads: [], frames: new Map(), nextFrame: 0 }));
 vi.mock('react-native', () => ({
@@ -67,12 +70,13 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
-async function render(strokes, prepareEraser = false) {
+async function render(strokes, prepareEraser = false, draft = null) {
   await act(async () =>
     root.render(
       createElement(RasterInk, {
         ref,
         strokes,
+        draft,
         prepareEraser,
         onError: error,
         onBusy: busy,
@@ -93,7 +97,7 @@ async function png(index, value = 'transparent-png') {
   await act(async () => state.captures[index].callback(value));
 }
 async function load(width = '100%') {
-  const image = host.querySelector(`[data-svg-width="${width}"] button`);
+  const image = [...host.querySelectorAll(`[data-svg-width="${width}"] button`)].at(-1);
   expect(image).not.toBeNull();
   await act(async () => image.click());
 }
@@ -103,7 +107,7 @@ describe('chronological raster checkpoint lifecycle', () => {
     const prefix = [crayon, magic];
     await render(prefix, true);
     expect(ref.current.isReady()).toBe(false);
-    await expect(ref.current.capturePng()).rejects.toThrow('still being prepared');
+    expect(() => ref.current.readyPlan(prefix)).toThrow('still being prepared');
     await frames();
     expect(state.captures).toHaveLength(1);
     expect(state.captures[0]).toMatchObject({
@@ -150,9 +154,9 @@ describe('chronological raster checkpoint lifecycle', () => {
     await render([crayon, magic], true);
     await frames();
     await render([marker, magic], true);
+    await frames();
     await png(0, 'stale-prefix');
     expect(host.querySelector('button')).toBeNull();
-    await frames();
     expect(state.captures).toHaveLength(2);
     expect(state.captures[1].children.props.strokes[0]).toBe(marker);
     await png(1, 'current-prefix');
@@ -171,6 +175,33 @@ describe('chronological raster checkpoint lifecycle', () => {
     expect(ref.current.isReady()).toBe(false);
     expect(host.querySelector('[data-checkpoint="1"]')).toBeNull();
     expect(state.captures).toHaveLength(1);
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    await png(1, 'replacement-image');
+    await load();
+    await act(async () => oldLoad());
+    expect(ref.current.isReady()).toBe(true);
+    expect(ref.current.readyPlan([marker, magic]).checkpoint.base64).toBe('replacement-image');
+    await act(async () => vi.advanceTimersByTimeAsync(PNG_TIMEOUT_MS));
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('restarts only the latest of several canonical replacements while older callbacks are held', async () => {
+    await render([crayon], true);
+    await frames();
+    await render([magic], true);
+    await frames();
+    await render([marker], true);
+    await frames();
+    expect(state.captures).toHaveLength(3);
+    await png(1, 'middle');
+    await png(0, 'oldest');
+    expect(host.querySelector('button')).toBeNull();
+    await png(2, 'latest');
+    await load();
+    await png(0, 'duplicate-oldest');
+    expect(ref.current.readyPlan([marker]).checkpoint.base64).toBe('latest');
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('bounds fixed-grid checkpoint image readiness and refuses late load', async () => {
@@ -218,5 +249,26 @@ describe('chronological raster checkpoint lifecycle', () => {
     await act(async () => incoming.click());
     expect(ref.current.isReady()).toBe(false);
     expect(host.querySelector('button')).toBeNull();
+  });
+});
+
+describe('SVG job cancellation identity', () => {
+  it('cancels only the superseded job and refuses its old and duplicate callbacks', async () => {
+    const callbacks = [];
+    const capture = createSvgCapture();
+    const svg = { toDataURL: (callback) => callbacks.push(callback) };
+    const first = capture.capture(svg);
+    const refused = first.promise.catch((failure) => failure.message);
+    await frames();
+    first.cancel();
+    await expect(refused).resolves.toContain('superseded');
+    const second = capture.capture(svg);
+    await frames();
+    first.cancel();
+    callbacks[0]('old');
+    callbacks[1]('new');
+    callbacks[1]('duplicate');
+    await expect(second.promise).resolves.toBe('new');
+    capture.dispose();
   });
 });

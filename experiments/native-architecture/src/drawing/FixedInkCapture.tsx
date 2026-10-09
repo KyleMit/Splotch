@@ -25,13 +25,12 @@ export function FixedInkCapture({
       current.current.onReady();
       return;
     }
-    const timeout = setTimeout(
-      () =>
-        current.current.onError(
-          new Error('The checkpoint did not load for capture. Your saved drawing is unchanged.')
-        ),
-      PNG_TIMEOUT_MS
-    );
+    const timeout = setTimeout(() => {
+      if (current.current.plan !== plan) return;
+      current.current.onError(
+        new Error('The checkpoint did not load for capture. Your saved drawing is unchanged.')
+      );
+    }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [plan, loaded]);
   return (
