@@ -169,6 +169,79 @@ correction, recorded in the
 actual resource ownership as above. These standing authority, recording and lease rules remain
 current under this section.
 
+## Historical accepted frontier and N1 observations, 2026-10-08
+
+Observed through the native GitHub API at 2026-10-08 14:42:27 UTC: shipping main remains
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 and accepted integration is
+d11f99c8b2470a1f9af397180728014890a25a5b. The earlier public-status table below remains a dated
+observation. The campaign is active; no framework or migrated drawing product is accepted.
+
+* **F1:** [PR 2703](https://github.com/KyleMit/Splotch/pull/2703) accepted source
+  d8bbd45d102d0576a3e0e55013bee5fa1315a7b9 and merged 205e402c1fde674d971dc9cda72685686ff58444. The
+  [authorized original round four](https://github.com/KyleMit/Splotch/pull/2703#pullrequestreview-5452521688)
+  found no source defects. Its exact-head CI condition was subsequently discharged by
+  [Tests run 37737561740](https://github.com/KyleMit/Splotch/actions/runs/37737561740): fifteen
+  applicable jobs succeeded, four conditional WebKit jobs skipped, and ADR Integrity passed. The
+  original reviewer has four rounds used and zero remaining; its three prior rounds and the separate
+  additional-round authorization are preserved. PR 2697 stays closed.
+* **Reviewer boundary:** [PR 2712](https://github.com/KyleMit/Splotch/pull/2712) accepted source
+  9bcd430053f428b2bfd017836a809b3c813b5fa8 and merged c2ef44c35e2909bfc017368f1c422e6de42882a7 after
+  its
+  [original final review](https://github.com/KyleMit/Splotch/pull/2712#pullrequestreview-5452197011)
+  and applicable CI. The original reviewer has three rounds used and zero remaining. The canonical
+  checkout carries the reviewed installation only; it is not a product integration base.
+* **Hand-back and fresh-start scope:** [PR 2713](https://github.com/KyleMit/Splotch/pull/2713)
+  merged b65cf8f6790fc702060f0f1bc948db0bf5ecd79d after original round two and exact-composition CI;
+  the original reviewer has two rounds used and one remaining.
+  [PR 2714](https://github.com/KyleMit/Splotch/pull/2714), reviewed source
+  fada055a62470d9da9ca8ff36d4eb53a9e6cbb5f, merged 93940e7e333c513c9d356114fcd0ade6251e0140 after
+  its
+  [original final review](https://github.com/KyleMit/Splotch/pull/2714#pullrequestreview-5452416157)
+  and exact owner-union CI. The original reviewer has three rounds used and zero remaining. The
+  authoritative fresh-start contract retires legacy-only beta transfer and exact old-UI parity,
+  preserving substantive new-product and final release requirements.
+* **Security failure contract:** [PR 2716](https://github.com/KyleMit/Splotch/pull/2716) accepted
+  source 9df4f1faff73ec13f1eee856a05cca4a823490a7 and merged
+  d11f99c8b2470a1f9af397180728014890a25a5b after its
+  [original final review](https://github.com/KyleMit/Splotch/pull/2716#pullrequestreview-5455679802),
+  current local full tier/runtime checks and
+  [Tests run 37767245996](https://github.com/KyleMit/Splotch/actions/runs/37767245996). All
+  twenty-one registered checks are terminal: sixteen succeeded and five conditional checks skipped.
+  The original reviewer has three rounds used and zero remaining. This accepts the narrow
+  web/security contract, not physical native secure-storage behavior or full-product readiness.
+
+[N1 draft PR 2715](https://github.com/KyleMit/Splotch/pull/2715) remains independently unaccepted.
+At that observation its public head was 834fc9f8e4d7ebc73a95710ca953757170eb087e; later local source
+composition and validation have not been promoted to that head's CI. The current accepted-owner
+composition and manual Gemfile repair preserve the native template. Isolated Node resolution, Hermes
+compiler version, disposable nonproduction signing and an owned Gradle/JVM version consumer ran
+successfully. These observations prove no optimized application bundle, native configuration,
+compiled RN candidate, mount or drawing.
+
+Two subsequent local current-source Browserless attempts remain separate failures: the first stopped
+before any tier because npm refused one empty file used as both user and global config; the
+corrected controller ran all five commands, with four passing and two archive-fixture mode tests
+failing in the tools command. A restrictive umask exposed fixture creation modes; the production
+importer's exact-mode check remains intact. Detailed source, raw channels, controller revisions,
+grants, graph snapshots and cleanup receipts remain host-local. Those failures confer no after-graph
+or whole-tier acceptance.
+
+Subsequent bounded source qualification passed all seventeen template tests under the restrictive
+umask, formatting, type checks and lint. Complete before/after source and dependency checks passed,
+with static package inputs kept strict and finite generated-cache outputs accounted for separately.
+The fixture repair preserves the production importer's exact-mode check. These local essentials do
+not accept the current full Browserless tier, hosted CI, optimized native compilation or drawing.
+Current-source publication, applicable CI and the reserved original review remain pending.
+
+The original N1 reviewer still has two rounds used and one remaining. Exact conversation identities
+and their provenance remain in the handler's private receipts. No ledger reset, reviewer
+substitution or renamed repair occurred. Legacy-only L0 work remains held. The neutral host's
+observed cost failure and fair retained/hybrid/native alternatives remain open; reference Svelte
+drawing/export observations are not migration acceptance. Missing matched hardware blocks dependent
+physical gates, while structural builds and applicable product work continue. Full drawing fidelity,
+services, web/API/admin ownership, calibrated comparisons, integrated tuning, signing/channel
+updates and final independent review remain outstanding.
+
 ## Historical public status, 2026-10-08
 
 Public source and CI observation: 2026-10-08T06:13:12.044Z; scope round two completed at

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { assertDeclaredCandidateImports, dependencySpecifiers } from '../lib/native-identity.mjs';
 import { candidateImport, createCandidateFixtures } from './candidate-fixtures.mjs';
 
-const { candidate, manifest, fixture, write, expectRejectedMutationAndRestore, cleanup } =
+const { manifest, fixture, write, expectRejectedMutationAndRestore, cleanup } =
   createCandidateFixtures();
 afterEach(cleanup);
 

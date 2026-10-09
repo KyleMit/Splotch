@@ -2,6 +2,6 @@
   "expo": {
     "name": "Splotch Native Architecture",
     "slug": "splotch-native-architecture",
-    "platforms": ["android", "ios"]
+    "platforms": ["android", "ios", "web"]
   }
 }

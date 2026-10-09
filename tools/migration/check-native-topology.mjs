@@ -1,4 +1,9 @@
 import { verifyForgeMitigation } from './lib/forge-mitigation.mjs';
+import {
+  projectDrawingForgeLock,
+  readDrawingForgeInputs,
+} from './lib/native-drawing-forge-paths.mjs';
+import { readDrawingArchiveInventory } from './lib/native-drawing-inventory.mjs';
 import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -46,12 +51,19 @@ export async function checkNativeTopology(argv) {
   );
   assertAlignmentUpdateOwner(readPolicyYaml(join(root, '.github/dependabot.yml')), alignment);
   const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
-  const forgeMitigation = await verifyForgeMitigation(root, lock, workspace);
+  const drawingForge = projectDrawingForgeLock(lock, manifest, readDrawingForgeInputs(root));
+  const forgeMitigation = await verifyForgeMitigation(root, drawingForge.lock, workspace);
   const lockSha256 = createHash('sha256')
     .update(readFileSync(join(root, 'pnpm-lock.yaml')))
     .digest('hex');
+  const drawingArchives = readDrawingArchiveInventory(
+    root,
+    lock,
+    lockSha256,
+    readJson(join(evidence, 'script-inventory.json'))
+  );
   const inventory = assertCandidateArchiveInventory(
-    readJson(join(evidence, 'script-inventory.json')),
+    drawingArchives.inventory,
     lock,
     readJson(join(evidence, 'baseline-artifact-resolutions.json'))
   );
@@ -80,8 +92,12 @@ export async function checkNativeTopology(argv) {
     scope: 'Candidate topology only; no native compile, mount, performance or upgrade result',
     lockSha256,
     candidateImports,
-    forgeMitigation,
-    inventory,
+    forgeMitigation: {
+      ...forgeMitigation,
+      lockedPaths: drawingForge.provenance.actualLockedPaths,
+      n1DrawingInputs: drawingForge.provenance,
+    },
+    inventory: { ...inventory, drawingInputs: drawingArchives.qualification },
     production,
     shippingImports,
     identities,

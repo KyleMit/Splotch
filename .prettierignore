@@ -1,3 +1,9 @@
+android/
+ios/
+!experiments/native-architecture/android/
+!experiments/native-architecture/android/**
+!experiments/native-architecture/ios/
+!experiments/native-architecture/ios/**
 **/.svelte-kit/
 **/build/
 **/.netlify/
@@ -19,8 +25,6 @@ scrapbook/
 docs/scratchpad/perf/
 docs/scratchpad/triage/
 docs/scratchpad/icon-toolbar-alignment/
-android/
-ios/
 pnpm-lock.yaml
 web/src/lib/components/icon-names.d.ts
 web/src/lib/components/page/ReleaseHistory.svelte

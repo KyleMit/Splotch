@@ -16,8 +16,17 @@ describe('candidate source import ownership', () => {
       'babel.config.cjs',
       'metro.config.cjs',
       'scripts/check-transform.cjs',
+      'src/DrawingScreen.tsx',
       'src/ProbeApp.tsx',
+      'src/drawing/DrawingSurface.tsx',
+      'src/drawing/interactions.ts',
+      'src/drawing/model.ts',
+      'src/drawing/palette.ts',
+      'src/drawing/theme.ts',
       'src/index.ts',
+      'src/platform/drawingFiles.ts',
+      'src/platform/drawingFiles.web.ts',
+      'src/useDrawingScreen.ts',
       'tsconfig.json',
     ]);
     expect(result.generatedSubpathExclusions).toContain('android/app/build');

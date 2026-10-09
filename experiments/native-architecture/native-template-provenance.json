@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "template": {
+    "name": "expo-template-bare-minimum",
+    "version": "57.0.28",
+    "integrity": "sha512-8rr+H+WPM1OnnH+IzAtW4jOglhhN+KAdPKI+l3jfuIZXt0PQt+wSAoPb/v+4unM5hHjmQu65ES0jfqSZPGcGEw=="
+  },
+  "archive": {
+    "url": "https://registry.npmjs.org/expo-template-bare-minimum/-/expo-template-bare-minimum-57.0.28.tgz",
+    "bytes": 297906,
+    "sha256": "f4457960d6ea35dce4270d8881e42a82e71134964822a15b47549fb8ac44bc96"
+  },
+  "records": [
+    {
+      "source": "package/.gitattributes",
+      "sourceSha256": "b254862d7d7bfed251f34dbdcff52346a424408537a8fc18e883335725ecf2f2",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/gitignore",
+      "sourceSha256": "ed2e83b6a71e3b048dc2681be0bdf534a5ec81d4eded17012e78a6b252422465",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/gitignore",
+      "sourceSha256": "3c59f13d0c888dd24d4beb97abc9eb6938f7f6e40959ea782b054eef7b739abb",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/ios/gitignore",
+      "sourceSha256": "f8042134be9ad24176d8d630255be93f8a0223925ae88c34b603c8989baa8345",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/gradlew",
+      "sourceSha256": "fb68debc1b1acf8ec55dc0d5e5495e1dedd0bd6b61f304bee61613eeb2bd9b92",
+      "target": "android/gradlew",
+      "change": "unchanged",
+      "targetSha256": "fb68debc1b1acf8ec55dc0d5e5495e1dedd0bd6b61f304bee61613eeb2bd9b92",
+      "mode": "0o755"
+    },
+    {
+      "source": "package/ios/Podfile",
+      "sourceSha256": "e221d5ce3bfd95766efaf431cd33b4e45fc06a92ee22c757084df94a26e989c9",
+      "target": "ios/Podfile",
+      "change": "explicit-pod-contract",
+      "targetSha256": "b66d1a4c0ef1f06ef3f400d5f47dff79c1dcc363b57e8f885cf716fba403cc12",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/gradlew.bat",
+      "sourceSha256": "982f1b2979dd2d13505c11e92192ab43eef338242ca61587f86f8d7fbc86f67b",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/ios/.xcode.env",
+      "sourceSha256": "3c02dca07775b31ce4e77dfb3bb660d7c6e577474d65a6216f1ea9bef54e1ca6",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/app/build.gradle",
+      "sourceSha256": "c5056fedcc8225aae86d3432ca48aa1711130987bac10427e68f4e0d6938bd40",
+      "target": "android/app/build.gradle",
+      "change": "candidate-release-contract",
+      "targetSha256": "8bc3c8c9b4cabb25985a3dd30478647bc257789255b06735254afa814447304e",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/build.gradle",
+      "sourceSha256": "bdb916d3fe7085c9e9f3bb45bd5eacb97f5d2c5a2b2af965642f7d904739ca68",
+      "target": "android/build.gradle",
+      "change": "unchanged",
+      "targetSha256": "bdb916d3fe7085c9e9f3bb45bd5eacb97f5d2c5a2b2af965642f7d904739ca68",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/settings.gradle",
+      "sourceSha256": "89cc82f22e665fb69aa88b10a0086f41a929919aff24d59736dcd9f5945e33d1",
+      "target": "android/settings.gradle",
+      "change": "unchanged",
+      "targetSha256": "89cc82f22e665fb69aa88b10a0086f41a929919aff24d59736dcd9f5945e33d1",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/HelloWorld-Bridging-Header.h",
+      "sourceSha256": "4a625b53abd4333ca454a4161ba62ab1b0cb44e8a4581326c0bcfe03dc26dd5c",
+      "target": "ios/HelloWorld/HelloWorld-Bridging-Header.h",
+      "change": "unchanged",
+      "targetSha256": "4a625b53abd4333ca454a4161ba62ab1b0cb44e8a4581326c0bcfe03dc26dd5c",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/gradle/wrapper/gradle-wrapper.jar",
+      "sourceSha256": "b3a875ddc1f044746e1b1a55f645584505f4a10438c1afea9f15e92a7c42ec13",
+      "target": "android/gradle/wrapper/gradle-wrapper.jar",
+      "change": "unchanged",
+      "targetSha256": "b3a875ddc1f044746e1b1a55f645584505f4a10438c1afea9f15e92a7c42ec13",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/App.js",
+      "sourceSha256": "8f5c4da6157b8f8f741f6e3fba1d072358a518a44fa5838aa8f72fedb5fe507b",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/index.js",
+      "sourceSha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/metro.config.js",
+      "sourceSha256": "961d504f4ce5312bb9d744dbcfa298bc3290af0c1483f791a27edfaf28974934",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/app.json",
+      "sourceSha256": "94f0550dd29c65a4cb272d7d04a808361e83f947297912ab02b613f13801514b",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json",
+      "sourceSha256": "c7a8725d9ec5b4fd5dc49e733805c4d2cbbb15c63622181cdcbd38a7c5f3c8e8",
+      "target": "ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json",
+      "change": "formatted-template-resource",
+      "targetSha256": "2f1b8a0c5efd596703501e97c9c5ca878463dca6e43ad08c5a9c108cb2ae3711",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/Images.xcassets/Contents.json",
+      "sourceSha256": "632a1481b9e3b957f3b34267728744d61272e3db32751432551b9eb7c58ad7a2",
+      "target": "ios/HelloWorld/Images.xcassets/Contents.json",
+      "change": "formatted-template-resource",
+      "targetSha256": "940968520a462215ccf98317a12e4c3b90875bf9c51a5f473a8ffb97e8cd1464",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/package.json",
+      "sourceSha256": "65c332e0463a3bb555120031e4af7180a0ced590b67f855976295dfe5ce162ae",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/ios/Podfile.properties.json",
+      "sourceSha256": "4222d802ab80961762b71603a713160c16c0fa3ce5d6c74a111c67785872331a",
+      "target": "ios/Podfile.properties.json",
+      "change": "explicit-apple-contract",
+      "targetSha256": "d0eb719a09eb05712b856e96013fa04330896ef487434f3616be3aa9febb9863",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/debug.keystore",
+      "sourceSha256": "221e0a3106aa4c3ccc154e0a418b55020b3f9ea6e84f92e8749cd9e2f39f5e58",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/app/src/main/java/com/helloworld/MainActivity.kt",
+      "sourceSha256": "493e0fa887aa86433b21676330b939914a915023c569b779369bb686a76a81f5",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/MainActivity.kt",
+      "change": "candidate-kotlin-identity",
+      "targetSha256": "b07495740e573e3372bea282e2ad6e9077fc234ea64737a9b25b4ee364227bb0",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/java/com/helloworld/MainApplication.kt",
+      "sourceSha256": "48d80b82ca5ff0072a94178634ebf7f8fe6ef7d5991d480fbe0f4140ff1df707",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt",
+      "change": "candidate-kotlin-identity",
+      "targetSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld.xcodeproj/project.pbxproj",
+      "sourceSha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
+      "target": "ios/HelloWorld.xcodeproj/project.pbxproj",
+      "change": "candidate-apple-identity-and-bundling",
+      "targetSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/Supporting/Expo.plist",
+      "sourceSha256": "d9b06c202956033b01e62b21c727eea89b6a4fd456ef71d420c39f460426b9f3",
+      "target": "ios/HelloWorld/Supporting/Expo.plist",
+      "change": "unchanged",
+      "targetSha256": "d9b06c202956033b01e62b21c727eea89b6a4fd456ef71d420c39f460426b9f3",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "sourceSha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542",
+      "target": "ios/HelloWorld.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "change": "unchanged",
+      "targetSha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/Info.plist",
+      "sourceSha256": "7ab1a1bf1eeb2b06d16cd6ec854e2351a8e3604b76225c2fe2c81abbf2d53ee6",
+      "target": "ios/HelloWorld/Info.plist",
+      "change": "reviewed-apple-network-and-scene-policy",
+      "targetSha256": "4e50cf2bc7f220209ef261d4765a0972f7e334ee3943aaf05e0baacc695ad925",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable-hdpi/splashscreen_logo.png",
+      "sourceSha256": "721c895579cb08ec4c9a0fe7dadafe9a97c33ef758d3578ad5e8b540de59f974",
+      "target": "android/app/src/main/res/drawable-hdpi/splashscreen_logo.png",
+      "change": "unchanged",
+      "targetSha256": "721c895579cb08ec4c9a0fe7dadafe9a97c33ef758d3578ad5e8b540de59f974",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable-mdpi/splashscreen_logo.png",
+      "sourceSha256": "f84b9b17a4a1c7d7dd840cd272c07a6c3fd66d5a9826b64bb53facb6f176bc24",
+      "target": "android/app/src/main/res/drawable-mdpi/splashscreen_logo.png",
+      "change": "unchanged",
+      "targetSha256": "f84b9b17a4a1c7d7dd840cd272c07a6c3fd66d5a9826b64bb53facb6f176bc24",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png",
+      "sourceSha256": "e1c5250e339add5ed7849cb0859d052edb9781abb91db049e68ae3a4059247d7",
+      "target": "android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png",
+      "change": "unchanged",
+      "targetSha256": "e1c5250e339add5ed7849cb0859d052edb9781abb91db049e68ae3a4059247d7",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png",
+      "sourceSha256": "23d97ccb41a821ee345b2c5bb0c9bdab730a751a9227925acbf0af021dc38a9b",
+      "target": "android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png",
+      "change": "unchanged",
+      "targetSha256": "23d97ccb41a821ee345b2c5bb0c9bdab730a751a9227925acbf0af021dc38a9b",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png",
+      "sourceSha256": "be9fac5c4cda48c41dce592288c486524bba3e4ca7fa00c0a04a46928154b5bf",
+      "target": "android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png",
+      "change": "unchanged",
+      "targetSha256": "be9fac5c4cda48c41dce592288c486524bba3e4ca7fa00c0a04a46928154b5bf",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/proguard-rules.pro",
+      "sourceSha256": "8bd4d7b69a1d78e8322b459b5e8d48234adce7481df04da34c0140d52ffb367a",
+      "target": "android/app/proguard-rules.pro",
+      "change": "candidate-turbomodule-rules",
+      "targetSha256": "8aeca16a794df43f924f9fb096ac9aaa66270971d6eebd0c92d1e411d320a38a",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/gradle/wrapper/gradle-wrapper.properties",
+      "sourceSha256": "a180163249c7252412ddaee1c7adcf59f6494b1183136f690fbd9a3b8aaed00e",
+      "target": "android/gradle/wrapper/gradle-wrapper.properties",
+      "change": "pinned-wrapper-distribution",
+      "targetSha256": "40c4ac801fa3d3029cc46957c91216f9fcff52a05a011a0579357bae3dc4c441",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/gradle.properties",
+      "sourceSha256": "3fcf70e0b331ebaa9751630e7ba8db8f2971d74f6ae8005396b97f4314a1c63a",
+      "target": "android/gradle.properties",
+      "change": "explicit-android-contract",
+      "targetSha256": "60c8e3e155680995c9e7c5be1913c7c78a3bcd227929280c36d001fe20b444a5",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/SplashScreen.storyboard",
+      "sourceSha256": "0763588212466aaec0b9121db1e318eba07aff23b29940f7df97728c6f69f2d1",
+      "target": "ios/HelloWorld/SplashScreen.storyboard",
+      "change": "unchanged",
+      "targetSha256": "0763588212466aaec0b9121db1e318eba07aff23b29940f7df97728c6f69f2d1",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld/AppDelegate.swift",
+      "sourceSha256": "510895dbd9aec82fe5c8143baf7cc4740449433f4a59a7299dd3dc1c6a408aeb",
+      "target": "ios/HelloWorld/AppDelegate.swift",
+      "change": "reviewed-expo-scene-support",
+      "targetSha256": "248a72ab880e205edd772bc984cccbc59e9b18a1523002e63dd8332de4a096e6",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp",
+      "sourceSha256": "21304a0c9b00da6a72cfa31c7229c9528fc17b6e5eb4e68a969bce08c01a2fee",
+      "target": "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp",
+      "change": "unchanged",
+      "targetSha256": "21304a0c9b00da6a72cfa31c7229c9528fc17b6e5eb4e68a969bce08c01a2fee",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "sourceSha256": "520d05f978a15ba0ccf23006a1a5691a054a02478c70cafc5ebafae76e600f0d",
+      "target": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "change": "unchanged",
+      "targetSha256": "520d05f978a15ba0ccf23006a1a5691a054a02478c70cafc5ebafae76e600f0d",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp",
+      "sourceSha256": "2846e1a703e519791fe22f41bcb243b82f908d12e5ebcb43f020ddf9982780b0",
+      "target": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp",
+      "change": "unchanged",
+      "targetSha256": "2846e1a703e519791fe22f41bcb243b82f908d12e5ebcb43f020ddf9982780b0",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp",
+      "sourceSha256": "363a569beb72e8b007bf046454612148d4c9f782b9391352059fe83179f18e30",
+      "target": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp",
+      "change": "unchanged",
+      "targetSha256": "363a569beb72e8b007bf046454612148d4c9f782b9391352059fe83179f18e30",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
+      "sourceSha256": "5bacd97a1b41e4413c6092cdbd83f65112a9124e823cfaa3a219c65e2761647b",
+      "target": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
+      "change": "unchanged",
+      "targetSha256": "5bacd97a1b41e4413c6092cdbd83f65112a9124e823cfaa3a219c65e2761647b",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "sourceSha256": "ded7aabf6a56b694e486e096efd89e2f0c9067d292b634663898e352c9491f10",
+      "target": "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "change": "unchanged",
+      "targetSha256": "ded7aabf6a56b694e486e096efd89e2f0c9067d292b634663898e352c9491f10",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "sourceSha256": "eef20f25fb1477d8c9df15757e764811cc503fb0777f18d0f7fb2d19178b5bf6",
+      "target": "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "change": "unchanged",
+      "targetSha256": "eef20f25fb1477d8c9df15757e764811cc503fb0777f18d0f7fb2d19178b5bf6",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+      "sourceSha256": "e77c5045bfdb6f4bbe955b3a793bfed3baa369ce4811ae2a9103d5480637cfff",
+      "target": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+      "change": "unchanged",
+      "targetSha256": "e77c5045bfdb6f4bbe955b3a793bfed3baa369ce4811ae2a9103d5480637cfff",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp",
+      "sourceSha256": "eb3a34b13632e0cb3b1c0f4273035866cbe81b1b17b7178ce29d19c78d394a5e",
+      "target": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp",
+      "change": "unchanged",
+      "targetSha256": "eb3a34b13632e0cb3b1c0f4273035866cbe81b1b17b7178ce29d19c78d394a5e",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp",
+      "sourceSha256": "9ff27328b6916b7f75b99ef36153f154bb4724946e5654635cba2e257352c69f",
+      "target": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp",
+      "change": "unchanged",
+      "targetSha256": "9ff27328b6916b7f75b99ef36153f154bb4724946e5654635cba2e257352c69f",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld.xcodeproj/xcshareddata/xcschemes/HelloWorld.xcscheme",
+      "sourceSha256": "c6d0856ab8a818761e17f4c640092fcd19cbdb85acfa175b100292542ed970c6",
+      "target": "ios/HelloWorld.xcodeproj/xcshareddata/xcschemes/HelloWorld.xcscheme",
+      "change": "unchanged",
+      "targetSha256": "c6d0856ab8a818761e17f4c640092fcd19cbdb85acfa175b100292542ed970c6",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/ios/HelloWorld.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "sourceSha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f",
+      "target": "ios/HelloWorld.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "change": "unchanged",
+      "targetSha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/debug/AndroidManifest.xml",
+      "sourceSha256": "fb1795032c764d975376e1612ab7022058eca2268a45efbe731a47a5d3ac0f60",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/app/src/debugOptimized/AndroidManifest.xml",
+      "sourceSha256": "fb1795032c764d975376e1612ab7022058eca2268a45efbe731a47a5d3ac0f60",
+      "target": null,
+      "change": "omitted"
+    },
+    {
+      "source": "package/android/app/src/main/AndroidManifest.xml",
+      "sourceSha256": "2bb28f4f3e9f37feeaff9e4d3fb63d1cbff962924a91c712b55c6c5fdd114c7c",
+      "target": "android/app/src/main/AndroidManifest.xml",
+      "change": "reviewed-network-and-private-storage-policy",
+      "targetSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/values/colors.xml",
+      "sourceSha256": "b71bfe77b51d8984d196c20f04394bfd15fd1420f579a6f96b900889592c4493",
+      "target": "android/app/src/main/res/values/colors.xml",
+      "change": "unchanged",
+      "targetSha256": "b71bfe77b51d8984d196c20f04394bfd15fd1420f579a6f96b900889592c4493",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "sourceSha256": "51fca95679d075ddbe2b9fe7ad2efb5ef545c5770a9ad6cafe8bf610c18c67be",
+      "target": "android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "change": "unchanged",
+      "targetSha256": "51fca95679d075ddbe2b9fe7ad2efb5ef545c5770a9ad6cafe8bf610c18c67be",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/drawable/rn_edit_text_material.xml",
+      "sourceSha256": "738e3aaad53180caba1419a6d5db8465a0742662fe59a4bbaf05f1061cbc3390",
+      "target": "android/app/src/main/res/drawable/rn_edit_text_material.xml",
+      "change": "unchanged",
+      "targetSha256": "738e3aaad53180caba1419a6d5db8465a0742662fe59a4bbaf05f1061cbc3390",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/values/strings.xml",
+      "sourceSha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713",
+      "target": "android/app/src/main/res/values/strings.xml",
+      "change": "unchanged",
+      "targetSha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/android/app/src/main/res/values/styles.xml",
+      "sourceSha256": "c24f72ee2e907c5ccafb4758e8f981654cb64c811bd5a1bab36bfa946153c059",
+      "target": "android/app/src/main/res/values/styles.xml",
+      "change": "unchanged",
+      "targetSha256": "c24f72ee2e907c5ccafb4758e8f981654cb64c811bd5a1bab36bfa946153c059",
+      "mode": "0o644"
+    },
+    {
+      "source": "package/LICENSE",
+      "sourceSha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "target": "TEMPLATE-LICENSE",
+      "change": "unchanged",
+      "targetSha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "mode": "0o644"
+    }
+  ]
+}

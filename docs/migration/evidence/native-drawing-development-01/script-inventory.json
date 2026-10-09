@@ -1,0 +1,506 @@
+{
+  "schemaVersion": 1,
+  "scope": "all added/changed lock package artifacts, all platforms",
+  "baselineLockSha256": "705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92",
+  "candidateLockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "selectedArtifacts": [
+    {
+      "key": "@react-native/normalize-colors@0.74.89",
+      "integrity": "sha512-qoMMXddVKVhZ8PA1AbUCk83trpd6N+1nF2A6k1i6LsQObyS92fELuk8kU/lQs6M7BsMHwqyLCpQJ1uFgNvIQXg=="
+    },
+    {
+      "key": "cross-fetch@3.2.0",
+      "integrity": "sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q=="
+    },
+    {
+      "key": "css-in-js-utils@3.1.0",
+      "integrity": "sha512-fJAcud6B3rRu+KHYk+Bwf+WFL2MDCJJ1XG9x137tJQ0xYxor7XziQtuGFbWNdqrvF4Tk26O3H73nfVqXt/fW1A=="
+    },
+    {
+      "key": "css-select@5.2.2",
+      "integrity": "sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw=="
+    },
+    {
+      "key": "css-tree@1.1.3",
+      "integrity": "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q=="
+    },
+    {
+      "key": "expo-sharing@57.0.22",
+      "integrity": "sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg=="
+    },
+    {
+      "key": "fbjs-css-vars@1.0.2",
+      "integrity": "sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ=="
+    },
+    {
+      "key": "fbjs@3.0.5",
+      "integrity": "sha512-ztsSx77JBtkuMrEypfhgc3cI0+0h+svqeie7xHbh1k/IKdcydnvadp/mUaGgjAOXQmQSxsqgaRhS3q9fy+1kxg=="
+    },
+    {
+      "key": "handlebars@4.7.10",
+      "integrity": "sha512-P5VJMVM7qgBn6vjXMw8WG9uVI+ncf2pi72j4de4yz5ZULLj2RGqLYaKOYGsgyrViQ0tePOVlN1tDCCXXtFqXKg=="
+    },
+    {
+      "key": "hyphenate-style-name@1.1.0",
+      "integrity": "sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw=="
+    },
+    {
+      "key": "inline-style-prefixer@7.0.1",
+      "integrity": "sha512-lhYo5qNTQp3EvSSp3sRvXMbVQTLrvGV6DycRMJ5dm2BLMiJ30wpXKdDdgX+GmJZ5uQMucwRKHamXSst3Sj/Giw=="
+    },
+    {
+      "key": "legacy-javascript@0.0.3",
+      "integrity": "sha512-1r6MT4dVaJyXt4G07Cm2cQ0AUaLJdefiEp4SmIAylA++gnEQ82YvmzE58RkM5EP0fk5hROLCslUPGnwIYdZQVA=="
+    },
+    {
+      "key": "mdn-data@2.0.14",
+      "integrity": "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="
+    },
+    {
+      "key": "memoize-one@6.0.0",
+      "integrity": "sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw=="
+    },
+    {
+      "key": "object-assign@4.1.1",
+      "integrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg=="
+    },
+    {
+      "key": "promise@7.3.1",
+      "integrity": "sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg=="
+    },
+    {
+      "key": "react-dom@19.2.3",
+      "integrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg=="
+    },
+    {
+      "key": "react-native-svg@15.15.4",
+      "integrity": "sha512-boT/vIRgj6zZKBpfTPJJiYWMbZE9duBMOwPK6kCSTgxsS947IFMOq9OgIFkpWZTB7t229H24pDRkh3W9ZK/J1A=="
+    },
+    {
+      "key": "react-native-web@0.21.0",
+      "integrity": "sha512-S0mtV7wMPeet1kCRnrEmo1bTUJeFsKebleCbRwbBRBUg/BWS64bfsnnm+ArC+QtjlbZFSZmtvv8imzOIuOOa3Q=="
+    },
+    {
+      "key": "setimmediate@1.0.5",
+      "integrity": "sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA=="
+    },
+    {
+      "key": "styleq@0.1.3",
+      "integrity": "sha512-3ZUifmCDCQanjeej1f6kyl/BeP/Vae5EYkQ9iJfUm/QwZvlgnZzyflqAsAWYURdtea8Vkvswu2GrC57h3qffcA=="
+    },
+    {
+      "key": "ua-parser-js@1.0.41",
+      "integrity": "sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug=="
+    },
+    {
+      "key": "warn-once@0.1.1",
+      "integrity": "sha512-VkQZJbO8zVImzYFteBXvBOZEl1qL175WH8VmZcxF2fZAoudNhNDvHi+doCaAEdU2l2vtcIwa2zn0QK5+I1HQ3Q=="
+    }
+  ],
+  "inspectedArtifacts": 23,
+  "inspectionWorkers": 4,
+  "complete": true,
+  "rows": [
+    {
+      "key": "@react-native/normalize-colors@0.74.89",
+      "name": "@react-native/normalize-colors",
+      "version": "0.74.89",
+      "integrity": "sha512-qoMMXddVKVhZ8PA1AbUCk83trpd6N+1nF2A6k1i6LsQObyS92fELuk8kU/lQs6M7BsMHwqyLCpQJ1uFgNvIQXg==",
+      "tarball": "https://registry.npmjs.org/@react-native/normalize-colors/-/normalize-colors-0.74.89.tgz",
+      "registryIntegrity": "sha512-qoMMXddVKVhZ8PA1AbUCk83trpd6N+1nF2A6k1i6LsQObyS92fELuk8kU/lQs6M7BsMHwqyLCpQJ1uFgNvIQXg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "cross-fetch@3.2.0",
+      "name": "cross-fetch",
+      "version": "3.2.0",
+      "integrity": "sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==",
+      "tarball": "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.2.0.tgz",
+      "registryIntegrity": "sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {
+        "prepare": "husky install"
+      },
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "registry-publication-only-no-execution-needed",
+      "rootReviewed": true
+    },
+    {
+      "key": "css-in-js-utils@3.1.0",
+      "name": "css-in-js-utils",
+      "version": "3.1.0",
+      "integrity": "sha512-fJAcud6B3rRu+KHYk+Bwf+WFL2MDCJJ1XG9x137tJQ0xYxor7XziQtuGFbWNdqrvF4Tk26O3H73nfVqXt/fW1A==",
+      "tarball": "https://registry.npmjs.org/css-in-js-utils/-/css-in-js-utils-3.1.0.tgz",
+      "registryIntegrity": "sha512-fJAcud6B3rRu+KHYk+Bwf+WFL2MDCJJ1XG9x137tJQ0xYxor7XziQtuGFbWNdqrvF4Tk26O3H73nfVqXt/fW1A==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "css-select@5.2.2",
+      "name": "css-select",
+      "version": "5.2.2",
+      "integrity": "sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==",
+      "tarball": "https://registry.npmjs.org/css-select/-/css-select-5.2.2.tgz",
+      "registryIntegrity": "sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {
+        "prepare": "npm run build"
+      },
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "registry-publication-only-no-execution-needed",
+      "rootReviewed": true
+    },
+    {
+      "key": "css-tree@1.1.3",
+      "name": "css-tree",
+      "version": "1.1.3",
+      "integrity": "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q==",
+      "tarball": "https://registry.npmjs.org/css-tree/-/css-tree-1.1.3.tgz",
+      "registryIntegrity": "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q==",
+      "hasInstallScript": null,
+      "engines": {
+        "node": ">=8.0.0"
+      },
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "expo-sharing@57.0.22",
+      "name": "expo-sharing",
+      "version": "57.0.22",
+      "integrity": "sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==",
+      "tarball": "https://registry.npmjs.org/expo-sharing/-/expo-sharing-57.0.22.tgz",
+      "registryIntegrity": "sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "fbjs-css-vars@1.0.2",
+      "name": "fbjs-css-vars",
+      "version": "1.0.2",
+      "integrity": "sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ==",
+      "tarball": "https://registry.npmjs.org/fbjs-css-vars/-/fbjs-css-vars-1.0.2.tgz",
+      "registryIntegrity": "sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "fbjs@3.0.5",
+      "name": "fbjs",
+      "version": "3.0.5",
+      "integrity": "sha512-ztsSx77JBtkuMrEypfhgc3cI0+0h+svqeie7xHbh1k/IKdcydnvadp/mUaGgjAOXQmQSxsqgaRhS3q9fy+1kxg==",
+      "tarball": "https://registry.npmjs.org/fbjs/-/fbjs-3.0.5.tgz",
+      "registryIntegrity": "sha512-ztsSx77JBtkuMrEypfhgc3cI0+0h+svqeie7xHbh1k/IKdcydnvadp/mUaGgjAOXQmQSxsqgaRhS3q9fy+1kxg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {
+        "prepare": "yarn run build"
+      },
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "registry-publication-only-no-execution-needed",
+      "rootReviewed": true
+    },
+    {
+      "key": "handlebars@4.7.10",
+      "name": "handlebars",
+      "version": "4.7.10",
+      "integrity": "sha512-P5VJMVM7qgBn6vjXMw8WG9uVI+ncf2pi72j4de4yz5ZULLj2RGqLYaKOYGsgyrViQ0tePOVlN1tDCCXXtFqXKg==",
+      "tarball": "https://registry.npmjs.org/handlebars/-/handlebars-4.7.10.tgz",
+      "registryIntegrity": "sha512-P5VJMVM7qgBn6vjXMw8WG9uVI+ncf2pi72j4de4yz5ZULLj2RGqLYaKOYGsgyrViQ0tePOVlN1tDCCXXtFqXKg==",
+      "hasInstallScript": null,
+      "engines": {
+        "node": ">=0.4.7"
+      },
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "hyphenate-style-name@1.1.0",
+      "name": "hyphenate-style-name",
+      "version": "1.1.0",
+      "integrity": "sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==",
+      "tarball": "https://registry.npmjs.org/hyphenate-style-name/-/hyphenate-style-name-1.1.0.tgz",
+      "registryIntegrity": "sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "inline-style-prefixer@7.0.1",
+      "name": "inline-style-prefixer",
+      "version": "7.0.1",
+      "integrity": "sha512-lhYo5qNTQp3EvSSp3sRvXMbVQTLrvGV6DycRMJ5dm2BLMiJ30wpXKdDdgX+GmJZ5uQMucwRKHamXSst3Sj/Giw==",
+      "tarball": "https://registry.npmjs.org/inline-style-prefixer/-/inline-style-prefixer-7.0.1.tgz",
+      "registryIntegrity": "sha512-lhYo5qNTQp3EvSSp3sRvXMbVQTLrvGV6DycRMJ5dm2BLMiJ30wpXKdDdgX+GmJZ5uQMucwRKHamXSst3Sj/Giw==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "legacy-javascript@0.0.3",
+      "name": "legacy-javascript",
+      "version": "0.0.3",
+      "integrity": "sha512-1r6MT4dVaJyXt4G07Cm2cQ0AUaLJdefiEp4SmIAylA++gnEQ82YvmzE58RkM5EP0fk5hROLCslUPGnwIYdZQVA==",
+      "tarball": "https://registry.npmjs.org/legacy-javascript/-/legacy-javascript-0.0.3.tgz",
+      "registryIntegrity": "sha512-1r6MT4dVaJyXt4G07Cm2cQ0AUaLJdefiEp4SmIAylA++gnEQ82YvmzE58RkM5EP0fk5hROLCslUPGnwIYdZQVA==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "mdn-data@2.0.14",
+      "name": "mdn-data",
+      "version": "2.0.14",
+      "integrity": "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow==",
+      "tarball": "https://registry.npmjs.org/mdn-data/-/mdn-data-2.0.14.tgz",
+      "registryIntegrity": "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "memoize-one@6.0.0",
+      "name": "memoize-one",
+      "version": "6.0.0",
+      "integrity": "sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==",
+      "tarball": "https://registry.npmjs.org/memoize-one/-/memoize-one-6.0.0.tgz",
+      "registryIntegrity": "sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "object-assign@4.1.1",
+      "name": "object-assign",
+      "version": "4.1.1",
+      "integrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==",
+      "tarball": "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz",
+      "registryIntegrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==",
+      "hasInstallScript": null,
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "promise@7.3.1",
+      "name": "promise",
+      "version": "7.3.1",
+      "integrity": "sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg==",
+      "tarball": "https://registry.npmjs.org/promise/-/promise-7.3.1.tgz",
+      "registryIntegrity": "sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "react-dom@19.2.3",
+      "name": "react-dom",
+      "version": "19.2.3",
+      "integrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==",
+      "tarball": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.3.tgz",
+      "registryIntegrity": "sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "react-native-svg@15.15.4",
+      "name": "react-native-svg",
+      "version": "15.15.4",
+      "integrity": "sha512-boT/vIRgj6zZKBpfTPJJiYWMbZE9duBMOwPK6kCSTgxsS947IFMOq9OgIFkpWZTB7t229H24pDRkh3W9ZK/J1A==",
+      "tarball": "https://registry.npmjs.org/react-native-svg/-/react-native-svg-15.15.4.tgz",
+      "registryIntegrity": "sha512-boT/vIRgj6zZKBpfTPJJiYWMbZE9duBMOwPK6kCSTgxsS947IFMOq9OgIFkpWZTB7t229H24pDRkh3W9ZK/J1A==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {
+        "prepare": "npm run bob && husky install"
+      },
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "registry-publication-only-no-execution-needed",
+      "rootReviewed": true
+    },
+    {
+      "key": "react-native-web@0.21.0",
+      "name": "react-native-web",
+      "version": "0.21.0",
+      "integrity": "sha512-S0mtV7wMPeet1kCRnrEmo1bTUJeFsKebleCbRwbBRBUg/BWS64bfsnnm+ArC+QtjlbZFSZmtvv8imzOIuOOa3Q==",
+      "tarball": "https://registry.npmjs.org/react-native-web/-/react-native-web-0.21.0.tgz",
+      "registryIntegrity": "sha512-S0mtV7wMPeet1kCRnrEmo1bTUJeFsKebleCbRwbBRBUg/BWS64bfsnnm+ArC+QtjlbZFSZmtvv8imzOIuOOa3Q==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "setimmediate@1.0.5",
+      "name": "setimmediate",
+      "version": "1.0.5",
+      "integrity": "sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==",
+      "tarball": "https://registry.npmjs.org/setimmediate/-/setimmediate-1.0.5.tgz",
+      "registryIntegrity": "sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "styleq@0.1.3",
+      "name": "styleq",
+      "version": "0.1.3",
+      "integrity": "sha512-3ZUifmCDCQanjeej1f6kyl/BeP/Vae5EYkQ9iJfUm/QwZvlgnZzyflqAsAWYURdtea8Vkvswu2GrC57h3qffcA==",
+      "tarball": "https://registry.npmjs.org/styleq/-/styleq-0.1.3.tgz",
+      "registryIntegrity": "sha512-3ZUifmCDCQanjeej1f6kyl/BeP/Vae5EYkQ9iJfUm/QwZvlgnZzyflqAsAWYURdtea8Vkvswu2GrC57h3qffcA==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {
+        "prepare": "npm run test && npm run build"
+      },
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "registry-publication-only-no-execution-needed",
+      "rootReviewed": true
+    },
+    {
+      "key": "ua-parser-js@1.0.41",
+      "name": "ua-parser-js",
+      "version": "1.0.41",
+      "integrity": "sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug==",
+      "tarball": "https://registry.npmjs.org/ua-parser-js/-/ua-parser-js-1.0.41.tgz",
+      "registryIntegrity": "sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug==",
+      "hasInstallScript": null,
+      "engines": {
+        "node": "*"
+      },
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "warn-once@0.1.1",
+      "name": "warn-once",
+      "version": "0.1.1",
+      "integrity": "sha512-VkQZJbO8zVImzYFteBXvBOZEl1qL175WH8VmZcxF2fZAoudNhNDvHi+doCaAEdU2l2vtcIwa2zn0QK5+I1HQ3Q==",
+      "tarball": "https://registry.npmjs.org/warn-once/-/warn-once-0.1.1.tgz",
+      "registryIntegrity": "sha512-VkQZJbO8zVImzYFteBXvBOZEl1qL175WH8VmZcxF2fZAoudNhNDvHi+doCaAEdU2l2vtcIwa2zn0QK5+I1HQ3Q==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    }
+  ],
+  "prepareDisposition": {
+    "receipt": "ROOT-N1-DRAWING-PREPARE-DISPOSITION.json.txt",
+    "sha256": "3bc68b368bf9b8808218dbe2b9c73bbb7a9c3606a495cbf19e2cfde25e00833d",
+    "scope": "Five exact registry-publication prepare hooks; no execution permitted or needed"
+  },
+  "securityComposition": {
+    "acceptedIntegration": "f61f0c842abd2c4d4ab0eb1f3058786d245c444a",
+    "newlyInspectedArtifact": "handlebars@4.7.10",
+    "priorDrawingRowsPreserved": true
+  }
+}

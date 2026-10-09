@@ -18,7 +18,9 @@ const root = join(import.meta.dirname, '../../..');
 const mitigation = JSON.parse(
   readFileSync(join(root, 'tools/migration/inputs/forge-mitigation.json'), 'utf8')
 );
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
+const baselinePath = join(import.meta.dirname, 'fixtures/forge-baseline-195.yaml.txt');
+const baselineBytes = readFileSync(baselinePath);
+const lock = readLockFile(baselinePath);
 const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
 const fixtures = [];
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -57,6 +59,15 @@ afterEach(() => {
 });
 
 describe('the exact Forge mitigation policy', () => {
+  it('pins the pre-drawing four-path importer fixture independently of new N1 roots', () => {
+    expect(digest(baselineBytes)).toBe(
+      '705b57623e37d509826f4b6aa42b00d4957d7dd295165d462523b075e42a9f92'
+    );
+    expect(lock.importers[CANDIDATE_DIRECTORY].devDependencies).not.toHaveProperty(
+      'expo-file-system'
+    );
+    expect(lock.importers[CANDIDATE_DIRECTORY].devDependencies).not.toHaveProperty('expo-sharing');
+  });
   it('accepts only the reviewed patch hash and complete candidate-owned paths', () => {
     expect(assertForgeMitigationPolicy(policyFixture(), lock, workspace, mitigation)).toHaveLength(
       4

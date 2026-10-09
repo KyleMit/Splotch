@@ -9,6 +9,7 @@ export const QUALITY_COMMANDS = [
   'npm run check',
   'npm run lint',
   'npm run check:migration:native-topology',
+  'npm run check:migration:native-candidate',
   'npm run lint:css',
   'npm run check:svg-assets',
   'npm run ruler:check',

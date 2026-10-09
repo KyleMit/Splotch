@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 1,
+  "template": {
+    "name": "expo-template-bare-minimum",
+    "version": "57.0.28",
+    "integrity": "sha512-8rr+H+WPM1OnnH+IzAtW4jOglhhN+KAdPKI+l3jfuIZXt0PQt+wSAoPb/v+4unM5hHjmQu65ES0jfqSZPGcGEw=="
+  },
+  "registryMetadata": {
+    "url": "https://registry.npmjs.org/expo-template-bare-minimum/57.0.28",
+    "sha256": "faee783906ddffa9423b0983ff00e210d6206f851109c44a0e0fa930dc4e9dde"
+  },
+  "archive": {
+    "url": "https://registry.npmjs.org/expo-template-bare-minimum/-/expo-template-bare-minimum-57.0.28.tgz",
+    "bytes": 297906,
+    "sha256": "f4457960d6ea35dce4270d8881e42a82e71134964822a15b47549fb8ac44bc96"
+  },
+  "members": [
+    {
+      "path": "package/.gitattributes",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 16,
+      "sha256": "b254862d7d7bfed251f34dbdcff52346a424408537a8fc18e883335725ecf2f2"
+    },
+    {
+      "path": "package/android/gitignore",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 183,
+      "sha256": "ed2e83b6a71e3b048dc2681be0bdf534a5ec81d4eded17012e78a6b252422465"
+    },
+    {
+      "path": "package/gitignore",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 389,
+      "sha256": "3c59f13d0c888dd24d4beb97abc9eb6938f7f6e40959ea782b054eef7b739abb"
+    },
+    {
+      "path": "package/ios/gitignore",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 321,
+      "sha256": "f8042134be9ad24176d8d630255be93f8a0223925ae88c34b603c8989baa8345"
+    },
+    {
+      "path": "package/android/gradlew",
+      "type": "file",
+      "mode": "0o755",
+      "bytes": 8618,
+      "sha256": "fb68debc1b1acf8ec55dc0d5e5495e1dedd0bd6b61f304bee61613eeb2bd9b92"
+    },
+    {
+      "path": "package/ios/Podfile",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2783,
+      "sha256": "e221d5ce3bfd95766efaf431cd33b4e45fc06a92ee22c757084df94a26e989c9",
+      "originalText": "require File.join(File.dirname(`node --print \"require.resolve('expo/package.json')\"`), \"scripts/autolinking\")\nrequire File.join(File.dirname(`node --print \"require.resolve('react-native/package.json')\"`), \"scripts/react_native_pods\")\n\nrequire 'json'\npodfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}\n\ndef ccache_enabled?(podfile_properties)\n  # Environment variable takes precedence\n  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']\n\n  # Fall back to Podfile properties\n  podfile_properties['apple.ccacheEnabled'] == 'true'\nend\n\nENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']\nENV['RCT_USE_RN_DEP'] ||= podfile_properties['ios.buildReactNativeFromSource'] == 'true' ? '0' : '1'\nENV['RCT_USE_PREBUILT_RNCORE'] ||= podfile_properties['ios.buildReactNativeFromSource'] == 'true' ? '0' : '1'\nENV['RCT_HERMES_V1_ENABLED'] ||= '0' if podfile_properties['expo.useHermesV1'] == 'false'\n# An explicit `ios.usePrecompiledModules: false` must win even when the env var is already set\n# (e.g. EXPO_USE_PRECOMPILED_MODULES exported by EAS Build), so force-disable here before the default.\nENV['EXPO_USE_PRECOMPILED_MODULES'] = '0' if podfile_properties['EXPO_USE_PRECOMPILED_MODULES'] == 'false'\nENV['EXPO_USE_PRECOMPILED_MODULES'] ||= '1'\nplatform :ios, podfile_properties['ios.deploymentTarget'] || '16.4'\n\nprepare_react_native_project!\n\ntarget 'HelloWorld' do\n  use_expo_modules!\n\n  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'\n    config_command = ['node', '-e', \"process.argv=['', '', 'config'];require('@react-native-community/cli').run()\"];\n  else\n    config_command = [\n      'node',\n      '--no-warnings',\n      '--eval',\n      'require(\\'expo/bin/autolinking\\')',\n      'expo-modules-autolinking',\n      'react-native-config',\n      '--json',\n      '--platform',\n      'ios'\n    ]\n  end\n\n  config = use_native_modules!(config_command)\n\n  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']\n  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']\n\n  use_react_native!(\n    :path => config[:reactNativePath],\n    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',\n    # An absolute path to your application root.\n    :app_path => \"#{Pod::Config.instance.installation_root}/..\",\n    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',\n  )\n\n  post_install do |installer|\n    react_native_post_install(\n      installer,\n      config[:reactNativePath],\n      :mac_catalyst_enabled => false,\n      :ccache_enabled => ccache_enabled?(podfile_properties),\n    )\n  end\nend\n"
+    },
+    {
+      "path": "package/android/gradlew.bat",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 3093,
+      "sha256": "982f1b2979dd2d13505c11e92192ab43eef338242ca61587f86f8d7fbc86f67b"
+    },
+    {
+      "path": "package/ios/.xcode.env",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 482,
+      "sha256": "3c02dca07775b31ce4e77dfb3bb660d7c6e577474d65a6216f1ea9bef54e1ca6"
+    },
+    {
+      "path": "package/android/app/build.gradle",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 8188,
+      "sha256": "c5056fedcc8225aae86d3432ca48aa1711130987bac10427e68f4e0d6938bd40",
+      "originalText": "apply plugin: \"com.android.application\"\napply plugin: \"org.jetbrains.kotlin.android\"\napply plugin: \"com.facebook.react\"\n\ndef projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()\n\n/**\n * This is the configuration block to customize your React Native Android app.\n * By default you don't need to apply any configuration, just uncomment the lines you need.\n */\nreact {\n    entryFile = file([\"node\", \"-e\", \"require('expo/scripts/resolveAppEntry')\", projectRoot, \"android\", \"absolute\"].execute(null, rootDir).text.trim())\n    reactNativeDir = new File([\"node\", \"--print\", \"require.resolve('react-native/package.json')\"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()\n    hermesCommand = new File([\"node\", \"--print\", \"require.resolve('hermes-compiler/package.json', { paths: [require.resolve('react-native/package.json')] })\"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + \"/hermesc/%OS-BIN%/hermesc\"\n    codegenDir = new File([\"node\", \"--print\", \"require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })\"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()\n\n    enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()\n    // Use Expo CLI to bundle the app, this ensures the Metro config\n    // works correctly with Expo projects.\n    cliFile = new File([\"node\", \"--print\", \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\"].execute(null, rootDir).text.trim())\n    bundleCommand = \"export:embed\"\n\n    /* Folders */\n     //   The root of your project, i.e. where \"package.json\" lives. Default is '../..'\n    // root = file(\"../../\")\n    //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native\n    // reactNativeDir = file(\"../../node_modules/react-native\")\n    //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen\n    // codegenDir = file(\"../../node_modules/@react-native/codegen\")\n\n    /* Variants */\n    //   The list of variants to that are debuggable. For those we're going to\n    //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.\n    //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.\n    // debuggableVariants = [\"liteDebug\", \"prodDebug\"]\n\n    /* Bundling */\n    //   A list containing the node command and its flags. Default is just 'node'.\n    // nodeExecutableAndArgs = [\"node\"]\n\n    //\n    //   The path to the CLI configuration file. Default is empty.\n    // bundleConfig = file(../rn-cli.config.js)\n    //\n    //   The name of the generated asset file containing your JS bundle\n    // bundleAssetName = \"MyApplication.android.bundle\"\n    //\n    //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'\n    // entryFile = file(\"../js/MyApplication.android.js\")\n    //\n    //   A list of extra flags to pass to the 'bundle' commands.\n    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle\n    // extraPackagerArgs = []\n\n    /* Hermes Commands */\n    //   The hermes compiler command to run. By default it is 'hermesc'\n    // hermesCommand = \"$rootDir/my-custom-hermesc/bin/hermesc\"\n    //\n    //   The list of flags to pass to the Hermes compiler. By default is \"-O\", \"-output-source-map\"\n    // hermesFlags = [\"-O\", \"-output-source-map\"]\n\n    /* Autolinking */\n    autolinkLibrariesWithApp()\n}\n\n/**\n * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).\n */\ndef enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()\n\n/**\n * The preferred build flavor of JavaScriptCore (JSC)\n *\n * For example, to use the international variant, you can use:\n * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`\n *\n * The international variant includes ICU i18n library and necessary data\n * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that\n * give correct results when using with locales other than en-US. Note that\n * this variant is about 6MiB larger per architecture than default.\n */\ndef jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'\n\nandroid {\n    ndkVersion rootProject.ext.ndkVersion\n\n    buildToolsVersion rootProject.ext.buildToolsVersion\n    compileSdk rootProject.ext.compileSdkVersion\n\n    namespace \"com.helloworld\"\n    defaultConfig {\n        applicationId \"com.helloworld\"\n        minSdkVersion rootProject.ext.minSdkVersion\n        targetSdkVersion rootProject.ext.targetSdkVersion\n        versionCode 1\n        versionName \"1.0\"\n\n        buildConfigField \"String\", \"REACT_NATIVE_RELEASE_LEVEL\", \"\\\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\\\"\"\n    }\n    signingConfigs {\n        debug {\n            storeFile file('debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }\n    buildTypes {\n        debug {\n            signingConfig signingConfigs.debug\n        }\n        release {\n            // Caution! In production, you need to generate your own keystore file.\n            // see https://reactnative.dev/docs/signed-apk-android.\n            signingConfig signingConfigs.debug\n            def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'\n            shrinkResources enableShrinkResources.toBoolean()\n            minifyEnabled enableMinifyInReleaseBuilds\n            proguardFiles getDefaultProguardFile(\"proguard-android.txt\"), \"proguard-rules.pro\"\n            def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'\n            crunchPngs enablePngCrunchInRelease.toBoolean()\n        }\n    }\n    packagingOptions {\n        jniLibs {\n            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'\n            useLegacyPackaging enableLegacyPackaging.toBoolean()\n        }\n    }\n    androidResources {\n        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'\n    }\n}\n\n// Apply static values from `gradle.properties` to the `android.packagingOptions`\n// Accepts values in comma delimited lists, example:\n// android.packagingOptions.pickFirsts=/LICENSE,**/picasa.ini\n[\"pickFirsts\", \"excludes\", \"merges\", \"doNotStrip\"].each { prop ->\n    // Split option: 'foo,bar' -> ['foo', 'bar']\n    def options = (findProperty(\"android.packagingOptions.$prop\") ?: \"\").split(\",\");\n    // Trim all elements in place.\n    for (i in 0..<options.size()) options[i] = options[i].trim();\n    // `[] - \"\"` is essentially `[\"\"].filter(Boolean)` removing all empty strings.\n    options -= \"\"\n\n    if (options.length > 0) {\n        println \"android.packagingOptions.$prop += $options ($options.length)\"\n        // Ex: android.packagingOptions.pickFirsts += '**/SCCS/**'\n        options.each {\n            android.packagingOptions[prop] += it\n        }\n    }\n}\n\ndependencies {\n    // The version of react-native is set by the React Native Gradle Plugin\n    implementation(\"com.facebook.react:react-android\")\n\n    def isGifEnabled = (findProperty('expo.gif.enabled') ?: \"\") == \"true\";\n    def isWebpEnabled = (findProperty('expo.webp.enabled') ?: \"\") == \"true\";\n    def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: \"\") == \"true\";\n\n    if (isGifEnabled) {\n        // For animated gif support\n        implementation(\"com.facebook.fresco:animated-gif:${expoLibs.versions.fresco.get()}\")\n    }\n\n    if (isWebpEnabled) {\n        // For webp support\n        implementation(\"com.facebook.fresco:webpsupport:${expoLibs.versions.fresco.get()}\")\n        if (isWebpAnimatedEnabled) {\n            // Animated webp support\n            implementation(\"com.facebook.fresco:animated-webp:${expoLibs.versions.fresco.get()}\")\n        }\n    }\n\n    if (hermesEnabled.toBoolean()) {\n        implementation(\"com.facebook.react:hermes-android\")\n    } else {\n        implementation jscFlavor\n    }\n}\n"
+    },
+    {
+      "path": "package/android/build.gradle",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 556,
+      "sha256": "bdb916d3fe7085c9e9f3bb45bd5eacb97f5d2c5a2b2af965642f7d904739ca68"
+    },
+    {
+      "path": "package/android/settings.gradle",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1263,
+      "sha256": "89cc82f22e665fb69aa88b10a0086f41a929919aff24d59736dcd9f5945e33d1"
+    },
+    {
+      "path": "package/ios/HelloWorld/HelloWorld-Bridging-Header.h",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 102,
+      "sha256": "4a625b53abd4333ca454a4161ba62ab1b0cb44e8a4581326c0bcfe03dc26dd5c"
+    },
+    {
+      "path": "package/android/gradle/wrapper/gradle-wrapper.jar",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 46175,
+      "sha256": "b3a875ddc1f044746e1b1a55f645584505f4a10438c1afea9f15e92a7c42ec13"
+    },
+    {
+      "path": "package/App.js",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 454,
+      "sha256": "8f5c4da6157b8f8f741f6e3fba1d072358a518a44fa5838aa8f72fedb5fe507b"
+    },
+    {
+      "path": "package/index.js",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 307,
+      "sha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42"
+    },
+    {
+      "path": "package/metro.config.js",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 245,
+      "sha256": "961d504f4ce5312bb9d744dbcfa298bc3290af0c1483f791a27edfaf28974934"
+    },
+    {
+      "path": "package/app.json",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 103,
+      "sha256": "94f0550dd29c65a4cb272d7d04a808361e83f947297912ab02b613f13801514b"
+    },
+    {
+      "path": "package/ios/HelloWorld/Images.xcassets/AppIcon.appiconset/Contents.json",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 175,
+      "sha256": "c7a8725d9ec5b4fd5dc49e733805c4d2cbbb15c63622181cdcbd38a7c5f3c8e8",
+      "originalText": "{\n  \"images\" : [\n    {\n      \"idiom\" : \"universal\",\n      \"platform\" : \"ios\",\n      \"size\" : \"1024x1024\"\n    }\n  ],\n  \"info\" : {\n    \"version\" : 1,\n    \"author\" : \"expo\"\n  }\n}"
+    },
+    {
+      "path": "package/ios/HelloWorld/Images.xcassets/Contents.json",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 62,
+      "sha256": "632a1481b9e3b957f3b34267728744d61272e3db32751432551b9eb7c58ad7a2",
+      "originalText": "{\n  \"info\" : {\n    \"version\" : 1,\n    \"author\" : \"expo\"\n  }\n}\n"
+    },
+    {
+      "path": "package/package.json",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 591,
+      "sha256": "65c332e0463a3bb555120031e4af7180a0ced590b67f855976295dfe5ce162ae"
+    },
+    {
+      "path": "package/ios/Podfile.properties.json",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 77,
+      "sha256": "4222d802ab80961762b71603a713160c16c0fa3ce5d6c74a111c67785872331a",
+      "originalText": "{\n  \"expo.jsEngine\": \"hermes\",\n  \"EX_DEV_CLIENT_NETWORK_INSPECTOR\": \"true\"\n}\n"
+    },
+    {
+      "path": "package/android/app/debug.keystore",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2257,
+      "sha256": "221e0a3106aa4c3ccc154e0a418b55020b3f9ea6e84f92e8749cd9e2f39f5e58"
+    },
+    {
+      "path": "package/android/app/src/main/java/com/helloworld/MainActivity.kt",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2184,
+      "sha256": "493e0fa887aa86433b21676330b939914a915023c569b779369bb686a76a81f5",
+      "originalText": "package com.helloworld\n\nimport android.os.Build\nimport android.os.Bundle\n\nimport com.facebook.react.ReactActivity\nimport com.facebook.react.ReactActivityDelegate\nimport com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled\nimport com.facebook.react.defaults.DefaultReactActivityDelegate\n\nimport expo.modules.ReactActivityDelegateWrapper\n\nclass MainActivity : ReactActivity() {\n  override fun onCreate(savedInstanceState: Bundle?) {\n    // Set the theme to AppTheme BEFORE onCreate to support\n    // coloring the background, status bar, and navigation bar.\n    // This is required for expo-splash-screen.\n    setTheme(R.style.AppTheme);\n    super.onCreate(null)\n  }\n\n  /**\n   * Returns the name of the main component registered from JavaScript. This is used to schedule\n   * rendering of the component.\n   */\n  override fun getMainComponentName(): String = \"main\"\n\n  /**\n   * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]\n   * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]\n   */\n  override fun createReactActivityDelegate(): ReactActivityDelegate {\n    return ReactActivityDelegateWrapper(\n          this,\n          BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,\n          object : DefaultReactActivityDelegate(\n              this,\n              mainComponentName,\n              fabricEnabled\n          ){})\n  }\n\n  /**\n    * Align the back button behavior with Android S\n    * where moving root activities to background instead of finishing activities.\n    * @see <a href=\"https://developer.android.com/reference/android/app/Activity#onBackPressed()\">onBackPressed</a>\n    */\n  override fun invokeDefaultOnBackPressed() {\n      if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {\n          if (!moveTaskToBack(false)) {\n              // For non-root activities, use the default implementation to finish them.\n              super.invokeDefaultOnBackPressed()\n          }\n          return\n      }\n\n      // Use the default back button implementation on Android S\n      // because it's doing more than [Activity.moveTaskToBack] in fact.\n      super.invokeDefaultOnBackPressed()\n  }\n}\n"
+    },
+    {
+      "path": "package/android/app/src/main/java/com/helloworld/MainApplication.kt",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1486,
+      "sha256": "48d80b82ca5ff0072a94178634ebf7f8fe6ef7d5991d480fbe0f4140ff1df707",
+      "originalText": "package com.helloworld\n\nimport android.app.Application\nimport android.content.res.Configuration\n\nimport com.facebook.react.PackageList\nimport com.facebook.react.ReactApplication\nimport com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative\nimport com.facebook.react.ReactPackage\nimport com.facebook.react.ReactHost\nimport com.facebook.react.common.ReleaseLevel\nimport com.facebook.react.defaults.DefaultNewArchitectureEntryPoint\n\nimport expo.modules.ApplicationLifecycleDispatcher\nimport expo.modules.ExpoReactHostFactory\n\nclass MainApplication : Application(), ReactApplication {\n\n  override val reactHost: ReactHost by lazy {\n    ExpoReactHostFactory.getDefaultReactHost(\n      context = applicationContext,\n      packageList =\n        PackageList(this).packages.apply {\n          // Packages that cannot be autolinked yet can be added manually here, for example:\n          // add(MyReactNativePackage())\n        }\n    )\n  }\n\n  override fun onCreate() {\n    super.onCreate()\n    DefaultNewArchitectureEntryPoint.releaseLevel = try {\n      ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())\n    } catch (e: IllegalArgumentException) {\n      ReleaseLevel.STABLE\n    }\n    loadReactNative(this)\n    ApplicationLifecycleDispatcher.onApplicationCreate(this)\n  }\n\n  override fun onConfigurationChanged(newConfig: Configuration) {\n    super.onConfigurationChanged(newConfig)\n    ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig)\n  }\n}\n"
+    },
+    {
+      "path": "package/ios/HelloWorld.xcodeproj/project.pbxproj",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 17341,
+      "sha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
+      "originalText": "// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 54;\n\tobjects = {\n\n/* Begin PBXBuildFile section */\n\t\t13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };\n\t\t3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };\n\t\tBB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };\n\t\tF11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };\n/* End PBXBuildFile section */\n\n/* Begin PBXFileReference section */\n\t\t13B07F961A680F5B00A75B9A /* HelloWorld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloWorld.app; sourceTree = BUILT_PRODUCTS_DIR; };\n\t\t13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = HelloWorld/Images.xcassets; sourceTree = \"<group>\"; };\n\t\t13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HelloWorld/Info.plist; sourceTree = \"<group>\"; };\n\t\tAA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = HelloWorld/SplashScreen.storyboard; sourceTree = \"<group>\"; };\n\t\tBB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = \"<group>\"; };\n\t\tED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };\n\t\tF11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HelloWorld/AppDelegate.swift; sourceTree = \"<group>\"; };\n\t\tF11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = \"HelloWorld-Bridging-Header.h\"; path = \"HelloWorld/HelloWorld-Bridging-Header.h\"; sourceTree = \"<group>\"; };\n/* End PBXFileReference section */\n\n/* Begin PBXFrameworksBuildPhase section */\n\t\t13B07F8C1A680F5B00A75B9A /* Frameworks */ = {\n\t\t\tisa = PBXFrameworksBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t};\n/* End PBXFrameworksBuildPhase section */\n\n/* Begin PBXGroup section */\n\t\t13B07FAE1A68108700A75B9A /* HelloWorld */ = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t\tF11748412D0307B40044C1D9 /* AppDelegate.swift */,\n\t\t\t\tF11748442D0722820044C1D9 /* HelloWorld-Bridging-Header.h */,\n\t\t\t\tBB2F792B24A3F905000567C9 /* Supporting */,\n\t\t\t\t13B07FB51A68108700A75B9A /* Images.xcassets */,\n\t\t\t\t13B07FB61A68108700A75B9A /* Info.plist */,\n\t\t\t\tAA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,\n\t\t\t);\n\t\t\tname = HelloWorld;\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n\t\t2D16E6871FA4F8E400B85C8A /* Frameworks */ = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t\tED297162215061F000B7C4FE /* JavaScriptCore.framework */,\n\t\t\t);\n\t\t\tname = Frameworks;\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n\t\t832341AE1AAA6A7D00B99B32 /* Libraries */ = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t);\n\t\t\tname = Libraries;\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n\t\t83CBB9F61A601CBA00E9B192 = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t\t13B07FAE1A68108700A75B9A /* HelloWorld */,\n\t\t\t\t832341AE1AAA6A7D00B99B32 /* Libraries */,\n\t\t\t\t83CBBA001A601CBA00E9B192 /* Products */,\n\t\t\t\t2D16E6871FA4F8E400B85C8A /* Frameworks */,\n\t\t\t);\n\t\t\tindentWidth = 2;\n\t\t\tsourceTree = \"<group>\";\n\t\t\ttabWidth = 2;\n\t\t\tusesTabs = 0;\n\t\t};\n\t\t83CBBA001A601CBA00E9B192 /* Products */ = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t\t13B07F961A680F5B00A75B9A /* HelloWorld.app */,\n\t\t\t);\n\t\t\tname = Products;\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n\t\tBB2F792B24A3F905000567C9 /* Supporting */ = {\n\t\t\tisa = PBXGroup;\n\t\t\tchildren = (\n\t\t\t\tBB2F792C24A3F905000567C9 /* Expo.plist */,\n\t\t\t);\n\t\t\tname = Supporting;\n\t\t\tpath = HelloWorld/Supporting;\n\t\t\tsourceTree = \"<group>\";\n\t\t};\n/* End PBXGroup section */\n\n/* Begin PBXNativeTarget section */\n\t\t13B07F861A680F5B00A75B9A /* HelloWorld */ = {\n\t\t\tisa = PBXNativeTarget;\n\t\t\tbuildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget \"HelloWorld\" */;\n\t\t\tbuildPhases = (\n\t\t\t\t08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,\n\t\t\t\t13B07F871A680F5B00A75B9A /* Sources */,\n\t\t\t\t13B07F8C1A680F5B00A75B9A /* Frameworks */,\n\t\t\t\t13B07F8E1A680F5B00A75B9A /* Resources */,\n\t\t\t\t00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,\n\t\t\t\t800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,\n\t\t\t);\n\t\t\tbuildRules = (\n\t\t\t);\n\t\t\tdependencies = (\n\t\t\t);\n\t\t\tname = HelloWorld;\n\t\t\tproductName = HelloWorld;\n\t\t\tproductReference = 13B07F961A680F5B00A75B9A /* HelloWorld.app */;\n\t\t\tproductType = \"com.apple.product-type.application\";\n\t\t};\n/* End PBXNativeTarget section */\n\n/* Begin PBXProject section */\n\t\t83CBB9F71A601CBA00E9B192 /* Project object */ = {\n\t\t\tisa = PBXProject;\n\t\t\tattributes = {\n\t\t\t\tLastUpgradeCheck = 1130;\n\t\t\t\tTargetAttributes = {\n\t\t\t\t\t13B07F861A680F5B00A75B9A = {\n\t\t\t\t\t\tLastSwiftMigration = 1250;\n\t\t\t\t\t};\n\t\t\t\t};\n\t\t\t};\n\t\t\tbuildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject \"HelloWorld\" */;\n\t\t\tcompatibilityVersion = \"Xcode 3.2\";\n\t\t\tdevelopmentRegion = en;\n\t\t\thasScannedForEncodings = 0;\n\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t);\n\t\t\tmainGroup = 83CBB9F61A601CBA00E9B192;\n\t\t\tproductRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;\n\t\t\tprojectDirPath = \"\";\n\t\t\tprojectRoot = \"\";\n\t\t\ttargets = (\n\t\t\t\t13B07F861A680F5B00A75B9A /* HelloWorld */,\n\t\t\t);\n\t\t};\n/* End PBXProject section */\n\n/* Begin PBXResourcesBuildPhase section */\n\t\t13B07F8E1A680F5B00A75B9A /* Resources */ = {\n\t\t\tisa = PBXResourcesBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t\tBB2F792D24A3F905000567C9 /* Expo.plist in Resources */,\n\t\t\t\t13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,\n\t\t\t\t3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t};\n/* End PBXResourcesBuildPhase section */\n\n/* Begin PBXShellScriptBuildPhase section */\n\t\t00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {\n\t\t\tisa = PBXShellScriptBuildPhase;\n\t\t\talwaysOutOfDate = 1;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t);\n\t\t\tinputPaths = (\n\t\t\t\t\"$(SRCROOT)/.xcode.env\",\n\t\t\t\t\"$(SRCROOT)/.xcode.env.local\",\n\t\t\t);\n\t\t\tname = \"Bundle React Native code and images\";\n\t\t\toutputPaths = (\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t\tshellPath = /bin/sh;\n\t\t\tshellScript = \"if [[ -f \\\"$PODS_ROOT/../.xcode.env\\\" ]]; then\\n  source \\\"$PODS_ROOT/../.xcode.env\\\"\\nfi\\nif [[ -f \\\"$PODS_ROOT/../.xcode.env.local\\\" ]]; then\\n  source \\\"$PODS_ROOT/../.xcode.env.local\\\"\\nfi\\n\\n# The project root by default is one level up from the ios directory\\nexport PROJECT_ROOT=\\\"$PROJECT_DIR\\\"/..\\n\\nif [[ \\\"$CONFIGURATION\\\" = *Debug* ]]; then\\n  export SKIP_BUNDLING=1\\nfi\\nif [[ -z \\\"$ENTRY_FILE\\\" ]]; then\\n  # Set the entry JS file using the bundler's entry resolution.\\n  export ENTRY_FILE=\\\"$(\\\"$NODE_BINARY\\\" -e \\\"require('expo/scripts/resolveAppEntry')\\\" \\\"$PROJECT_ROOT\\\" ios absolute | tail -n 1)\\\"\\nfi\\n\\nif [[ -z \\\"$CLI_PATH\\\" ]]; then\\n  # Use Expo CLI\\n  export CLI_PATH=\\\"$(\\\"$NODE_BINARY\\\" --print \\\"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\\\")\\\"\\nfi\\nif [[ -z \\\"$BUNDLE_COMMAND\\\" ]]; then\\n  # Default Expo CLI command for bundling\\n  export BUNDLE_COMMAND=\\\"export:embed\\\"\\nfi\\n\\n# Source .xcode.env.updates if it exists to allow\\n# SKIP_BUNDLING to be unset if needed\\nif [[ -f \\\"$PODS_ROOT/../.xcode.env.updates\\\" ]]; then\\n  source \\\"$PODS_ROOT/../.xcode.env.updates\\\"\\nfi\\n# Source local changes to allow overrides\\n# if needed\\nif [[ -f \\\"$PODS_ROOT/../.xcode.env.local\\\" ]]; then\\n  source \\\"$PODS_ROOT/../.xcode.env.local\\\"\\nfi\\n\\n`\\\"$NODE_BINARY\\\" --print \\\"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\\\"`\\n\\n\";\n\t\t};\n\t\t08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */ = {\n\t\t\tisa = PBXShellScriptBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t);\n\t\t\tinputFileListPaths = (\n\t\t\t);\n\t\t\tinputPaths = (\n\t\t\t\t\"${PODS_PODFILE_DIR_PATH}/Podfile.lock\",\n\t\t\t\t\"${PODS_ROOT}/Manifest.lock\",\n\t\t\t);\n\t\t\tname = \"[CP] Check Pods Manifest.lock\";\n\t\t\toutputFileListPaths = (\n\t\t\t);\n\t\t\toutputPaths = (\n\t\t\t\t\"$(DERIVED_FILE_DIR)/Pods-HelloWorld-checkManifestLockResult.txt\",\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t\tshellPath = /bin/sh;\n\t\t\tshellScript = \"diff \\\"${PODS_PODFILE_DIR_PATH}/Podfile.lock\\\" \\\"${PODS_ROOT}/Manifest.lock\\\" > /dev/null\\nif [ $? != 0 ] ; then\\n    # print error to STDERR\\n    echo \\\"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\\\" >&2\\n    exit 1\\nfi\\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\\necho \\\"SUCCESS\\\" > \\\"${SCRIPT_OUTPUT_FILE_0}\\\"\\n\";\n\t\t\tshowEnvVarsInLog = 0;\n\t\t};\n\t\t800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {\n\t\t\tisa = PBXShellScriptBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t);\n\t\t\tinputPaths = (\n\t\t\t\t\"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-resources.sh\",\n\t\t\t\t\"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle\",\n\t\t\t\t\"${PODS_CONFIGURATION_BUILD_DIR}/EXUpdates/EXUpdates.bundle\",\n\t\t\t\t\"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/RCTI18nStrings.bundle\",\n\t\t\t);\n\t\t\tname = \"[CP] Copy Pods Resources\";\n\t\t\toutputPaths = (\n\t\t\t\t\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle\",\n\t\t\t\t\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXUpdates.bundle\",\n\t\t\t\t\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RCTI18nStrings.bundle\",\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t\tshellPath = /bin/sh;\n\t\t\tshellScript = \"\\\"${PODS_ROOT}/Target Support Files/Pods-HelloWorld/Pods-HelloWorld-resources.sh\\\"\\n\";\n\t\t\tshowEnvVarsInLog = 0;\n\t\t};\n/* End PBXShellScriptBuildPhase section */\n\n/* Begin PBXSourcesBuildPhase section */\n\t\t13B07F871A680F5B00A75B9A /* Sources */ = {\n\t\t\tisa = PBXSourcesBuildPhase;\n\t\t\tbuildActionMask = 2147483647;\n\t\t\tfiles = (\n\t\t\t\tF11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,\n\t\t\t);\n\t\t\trunOnlyForDeploymentPostprocessing = 0;\n\t\t};\n/* End PBXSourcesBuildPhase section */\n\n/* Begin XCBuildConfiguration section */\n\t\t13B07F941A680F5B00A75B9A /* Debug */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t\tASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;\n\t\t\t\tCLANG_ENABLE_MODULES = YES;\n\t\t\t\tCURRENT_PROJECT_VERSION = 1;\n\t\t\t\tENABLE_BITCODE = NO;\n\t\t\t\tGCC_PREPROCESSOR_DEFINITIONS = (\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"FB_SONARKIT_ENABLED=1\",\n\t\t\t\t);\n\t\t\t\tINFOPLIST_FILE = HelloWorld/Info.plist;\n\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 16.4;\n\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"@executable_path/Frameworks\",\n\t\t\t\t);\n\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 13.4;\n\t\t\t\tMARKETING_VERSION = 1.0;\n\t\t\t\tOTHER_LDFLAGS = (\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"-ObjC\",\n\t\t\t\t\t\"-lc++\",\n\t\t\t\t);\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = org.name.HelloWorld;\n\t\t\t\tPRODUCT_NAME = HelloWorld;\n\t\t\t\tSWIFT_OBJC_BRIDGING_HEADER = \"HelloWorld/HelloWorld-Bridging-Header.h\";\n\t\t\t\tSWIFT_OPTIMIZATION_LEVEL = \"-Onone\";\n\t\t\t\tSWIFT_VERSION = 5.0;\n\t\t\t\tVERSIONING_SYSTEM = \"apple-generic\";\n\t\t\t};\n\t\t\tname = Debug;\n\t\t};\n\t\t13B07F951A680F5B00A75B9A /* Release */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t\tASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;\n\t\t\t\tCLANG_ENABLE_MODULES = YES;\n\t\t\t\tCURRENT_PROJECT_VERSION = 1;\n\t\t\t\tINFOPLIST_FILE = HelloWorld/Info.plist;\n\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 16.4;\n\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"@executable_path/Frameworks\",\n\t\t\t\t);\n\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 13.4;\n\t\t\t\tMARKETING_VERSION = 1.0;\n\t\t\t\tOTHER_LDFLAGS = (\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"-ObjC\",\n\t\t\t\t\t\"-lc++\",\n\t\t\t\t);\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = org.name.HelloWorld;\n\t\t\t\tPRODUCT_NAME = HelloWorld;\n\t\t\t\tSWIFT_OBJC_BRIDGING_HEADER = \"HelloWorld/HelloWorld-Bridging-Header.h\";\n\t\t\t\tSWIFT_VERSION = 5.0;\n\t\t\t\tVERSIONING_SYSTEM = \"apple-generic\";\n\t\t\t};\n\t\t\tname = Release;\n\t\t};\n\t\t83CBBA201A601CBA00E9B192 /* Debug */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t\tALWAYS_SEARCH_USER_PATHS = NO;\n\t\t\t\tCLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;\n\t\t\t\tCLANG_CXX_LANGUAGE_STANDARD = \"c++20\";\n\t\t\t\tCLANG_CXX_LIBRARY = \"libc++\";\n\t\t\t\tCLANG_ENABLE_MODULES = YES;\n\t\t\t\tCLANG_ENABLE_OBJC_ARC = YES;\n\t\t\t\tCLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;\n\t\t\t\tCLANG_WARN_BOOL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_COMMA = YES;\n\t\t\t\tCLANG_WARN_CONSTANT_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;\n\t\t\t\tCLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;\n\t\t\t\tCLANG_WARN_EMPTY_BODY = YES;\n\t\t\t\tCLANG_WARN_ENUM_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_INFINITE_RECURSION = YES;\n\t\t\t\tCLANG_WARN_INT_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;\n\t\t\t\tCLANG_WARN_OBJC_LITERAL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;\n\t\t\t\tCLANG_WARN_RANGE_LOOP_ANALYSIS = YES;\n\t\t\t\tCLANG_WARN_STRICT_PROTOTYPES = YES;\n\t\t\t\tCLANG_WARN_SUSPICIOUS_MOVE = YES;\n\t\t\t\tCLANG_WARN_UNREACHABLE_CODE = YES;\n\t\t\t\tCLANG_WARN__DUPLICATE_METHOD_MATCH = YES;\n\t\t\t\t\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\" = \"iPhone Developer\";\n\t\t\t\tCOPY_PHASE_STRIP = NO;\n\t\t\t\tENABLE_STRICT_OBJC_MSGSEND = YES;\n\t\t\t\tENABLE_TESTABILITY = YES;\n\t\t\t\tGCC_C_LANGUAGE_STANDARD = gnu99;\n\t\t\t\tGCC_DYNAMIC_NO_PIC = NO;\n\t\t\t\tGCC_NO_COMMON_BLOCKS = YES;\n\t\t\t\tGCC_OPTIMIZATION_LEVEL = 0;\n\t\t\t\tGCC_PREPROCESSOR_DEFINITIONS = (\n\t\t\t\t\t\"DEBUG=1\",\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t);\n\t\t\t\tGCC_SYMBOLS_PRIVATE_EXTERN = NO;\n\t\t\t\tGCC_WARN_64_TO_32_BIT_CONVERSION = YES;\n\t\t\t\tGCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;\n\t\t\t\tGCC_WARN_UNDECLARED_SELECTOR = YES;\n\t\t\t\tGCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;\n\t\t\t\tGCC_WARN_UNUSED_FUNCTION = YES;\n\t\t\t\tGCC_WARN_UNUSED_VARIABLE = YES;\n\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 16.4;\n\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n\t\t\t\t\t/usr/lib/swift,\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t);\n\t\t\t\tLIBRARY_SEARCH_PATHS = \"\\\"$(inherited)\\\"\";\n\t\t\t\tMTL_ENABLE_DEBUG_INFO = YES;\n\t\t\t\tONLY_ACTIVE_ARCH = YES;\n\t\t\t\tSDKROOT = iphoneos;\n\t\t\t};\n\t\t\tname = Debug;\n\t\t};\n\t\t83CBBA211A601CBA00E9B192 /* Release */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t\tALWAYS_SEARCH_USER_PATHS = NO;\n\t\t\t\tCLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;\n\t\t\t\tCLANG_CXX_LANGUAGE_STANDARD = \"c++20\";\n\t\t\t\tCLANG_CXX_LIBRARY = \"libc++\";\n\t\t\t\tCLANG_ENABLE_MODULES = YES;\n\t\t\t\tCLANG_ENABLE_OBJC_ARC = YES;\n\t\t\t\tCLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;\n\t\t\t\tCLANG_WARN_BOOL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_COMMA = YES;\n\t\t\t\tCLANG_WARN_CONSTANT_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;\n\t\t\t\tCLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;\n\t\t\t\tCLANG_WARN_EMPTY_BODY = YES;\n\t\t\t\tCLANG_WARN_ENUM_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_INFINITE_RECURSION = YES;\n\t\t\t\tCLANG_WARN_INT_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;\n\t\t\t\tCLANG_WARN_OBJC_LITERAL_CONVERSION = YES;\n\t\t\t\tCLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;\n\t\t\t\tCLANG_WARN_RANGE_LOOP_ANALYSIS = YES;\n\t\t\t\tCLANG_WARN_STRICT_PROTOTYPES = YES;\n\t\t\t\tCLANG_WARN_SUSPICIOUS_MOVE = YES;\n\t\t\t\tCLANG_WARN_UNREACHABLE_CODE = YES;\n\t\t\t\tCLANG_WARN__DUPLICATE_METHOD_MATCH = YES;\n\t\t\t\t\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\" = \"iPhone Developer\";\n\t\t\t\tCOPY_PHASE_STRIP = YES;\n\t\t\t\tENABLE_NS_ASSERTIONS = NO;\n\t\t\t\tENABLE_STRICT_OBJC_MSGSEND = YES;\n\t\t\t\tGCC_C_LANGUAGE_STANDARD = gnu99;\n\t\t\t\tGCC_NO_COMMON_BLOCKS = YES;\n\t\t\t\tGCC_WARN_64_TO_32_BIT_CONVERSION = YES;\n\t\t\t\tGCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;\n\t\t\t\tGCC_WARN_UNDECLARED_SELECTOR = YES;\n\t\t\t\tGCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;\n\t\t\t\tGCC_WARN_UNUSED_FUNCTION = YES;\n\t\t\t\tGCC_WARN_UNUSED_VARIABLE = YES;\n\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 16.4;\n\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (\n\t\t\t\t\t/usr/lib/swift,\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t);\n\t\t\t\tLIBRARY_SEARCH_PATHS = \"\\\"$(inherited)\\\"\";\n\t\t\t\tMTL_ENABLE_DEBUG_INFO = NO;\n\t\t\t\tSDKROOT = iphoneos;\n\t\t\t\tVALIDATE_PRODUCT = YES;\n\t\t\t};\n\t\t\tname = Release;\n\t\t};\n/* End XCBuildConfiguration section */\n\n/* Begin XCConfigurationList section */\n\t\t13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget \"HelloWorld\" */ = {\n\t\t\tisa = XCConfigurationList;\n\t\t\tbuildConfigurations = (\n\t\t\t\t13B07F941A680F5B00A75B9A /* Debug */,\n\t\t\t\t13B07F951A680F5B00A75B9A /* Release */,\n\t\t\t);\n\t\t\tdefaultConfigurationIsVisible = 0;\n\t\t\tdefaultConfigurationName = Release;\n\t\t};\n\t\t83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject \"HelloWorld\" */ = {\n\t\t\tisa = XCConfigurationList;\n\t\t\tbuildConfigurations = (\n\t\t\t\t83CBBA201A601CBA00E9B192 /* Debug */,\n\t\t\t\t83CBBA211A601CBA00E9B192 /* Release */,\n\t\t\t);\n\t\t\tdefaultConfigurationIsVisible = 0;\n\t\t\tdefaultConfigurationName = Release;\n\t\t};\n/* End XCConfigurationList section */\n\t};\n\trootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;\n}\n"
+    },
+    {
+      "path": "package/ios/HelloWorld/Supporting/Expo.plist",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 188,
+      "sha256": "d9b06c202956033b01e62b21c727eea89b6a4fd456ef71d420c39f460426b9f3"
+    },
+    {
+      "path": "package/ios/HelloWorld.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 238,
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "package/ios/HelloWorld/Info.plist",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1592,
+      "sha256": "7ab1a1bf1eeb2b06d16cd6ec854e2351a8e3604b76225c2fe2c81abbf2d53ee6",
+      "originalText": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>CADisableMinimumFrameDurationOnPhone</key>\n\t<true/>\n\t<key>CFBundleDevelopmentRegion</key>\n\t<string>$(DEVELOPMENT_LANGUAGE)</string>\n\t<key>CFBundleExecutable</key>\n\t<string>$(EXECUTABLE_NAME)</string>\n\t<key>CFBundleIdentifier</key>\n\t<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>\n\t<key>CFBundleInfoDictionaryVersion</key>\n\t<string>6.0</string>\n\t<key>CFBundleName</key>\n\t<string>$(PRODUCT_NAME)</string>\n\t<key>CFBundlePackageType</key>\n\t<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>\n\t<key>CFBundleShortVersionString</key>\n\t<string>1.0</string>\n\t<key>CFBundleSignature</key>\n\t<string>????</string>\n\t<key>CFBundleVersion</key>\n\t<string>1</string>\n\t<key>LSRequiresIPhoneOS</key>\n\t<true/>\n\t<key>LSMinimumSystemVersion</key>\n\t<string>12.0</string>\n\t<key>NSAppTransportSecurity</key>\n\t<dict>\n\t\t<key>NSAllowsArbitraryLoads</key>\n\t\t<false/>\n\t\t<key>NSAllowsLocalNetworking</key>\n\t\t<true/>\n\t</dict>\n\t<key>UILaunchStoryboardName</key>\n\t<string>SplashScreen</string>\n\t<key>UIRequiredDeviceCapabilities</key>\n\t<array>\n\t\t<string>arm64</string>\n\t</array>\n\t<key>UIStatusBarStyle</key>\n\t<string>UIStatusBarStyleDefault</string>\n\t<key>UISupportedInterfaceOrientations</key>\n\t<array>\n\t\t<string>UIInterfaceOrientationPortrait</string>\n\t\t<string>UIInterfaceOrientationLandscapeLeft</string>\n\t\t<string>UIInterfaceOrientationLandscapeRight</string>\n\t</array>\n\t<key>UIViewControllerBasedStatusBarAppearance</key>\n\t<false/>\n</dict>\n</plist>\n"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable-hdpi/splashscreen_logo.png",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 20754,
+      "sha256": "721c895579cb08ec4c9a0fe7dadafe9a97c33ef758d3578ad5e8b540de59f974"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable-mdpi/splashscreen_logo.png",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 12863,
+      "sha256": "f84b9b17a4a1c7d7dd840cd272c07a6c3fd66d5a9826b64bb53facb6f176bc24"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 29081,
+      "sha256": "e1c5250e339add5ed7849cb0859d052edb9781abb91db049e68ae3a4059247d7"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 47123,
+      "sha256": "23d97ccb41a821ee345b2c5bb0c9bdab730a751a9227925acbf0af021dc38a9b"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 66529,
+      "sha256": "be9fac5c4cda48c41dce592288c486524bba3e4ca7fa00c0a04a46928154b5bf"
+    },
+    {
+      "path": "package/android/app/proguard-rules.pro",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 562,
+      "sha256": "8bd4d7b69a1d78e8322b459b5e8d48234adce7481df04da34c0140d52ffb367a",
+      "originalText": "# Add project specific ProGuard rules here.\n# By default, the flags in this file are appended to flags specified\n# in /usr/local/Cellar/android-sdk/24.3.3/tools/proguard/proguard-android.txt\n# You can edit the include path and order by changing the proguardFiles\n# directive in build.gradle.\n#\n# For more details, see\n#   http://developer.android.com/guide/developing/tools/proguard.html\n\n# react-native-reanimated\n-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n\n# Add any project specific keep options here:\n"
+    },
+    {
+      "path": "package/android/gradle/wrapper/gradle-wrapper.properties",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 252,
+      "sha256": "a180163249c7252412ddaee1c7adcf59f6494b1183136f690fbd9a3b8aaed00e",
+      "originalText": "distributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\ndistributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-bin.zip\nnetworkTimeout=10000\nvalidateDistributionUrl=true\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\n"
+    },
+    {
+      "path": "package/android/gradle.properties",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2526,
+      "sha256": "3fcf70e0b331ebaa9751630e7ba8db8f2971d74f6ae8005396b97f4314a1c63a",
+      "originalText": "# Project-wide Gradle settings.\n\n# IDE (e.g. Android Studio) users:\n# Gradle settings configured through the IDE *will override*\n# any settings specified in this file.\n\n# For more details on how to configure your build environment visit\n# http://www.gradle.org/docs/current/userguide/build_environment.html\n\n# Specifies the JVM arguments used for the daemon process.\n# The setting is particularly useful for tweaking memory settings.\n# Default value: -Xmx512m -XX:MaxMetaspaceSize=256m\norg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m\n\n# When configured, Gradle will run in incubating parallel mode.\n# This option should only be used with decoupled projects. More details, visit\n# http://www.gradle.org/docs/current/userguide/multi_project_builds.html#sec:decoupled_projects\norg.gradle.parallel=true\n\n# AndroidX package structure to make it clearer which packages are bundled with the\n# Android operating system, and which are packaged with your app's APK\n# https://developer.android.com/topic/libraries/support-library/androidx-rn\nandroid.useAndroidX=true\n\n# Enable AAPT2 PNG crunching\nandroid.enablePngCrunchInReleaseBuilds=true\n\n# Use this property to specify which architecture you want to build.\n# You can also override it from the CLI using\n# ./gradlew <task> -PreactNativeArchitectures=x86_64\nreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64\n\n# Use this property to enable support to the new architecture.\n# This will allow you to use TurboModules and the Fabric render in\n# your application. You should enable this flag either if you want\n# to write custom TurboModules/Fabric components OR use libraries that\n# are providing them.\nnewArchEnabled=true\n\n# Use this property to enable or disable the Hermes JS engine.\n# If set to false, you will be using JSC instead.\nhermesEnabled=true\n\n# Use this property to enable edge-to-edge display support.\n# This allows your app to draw behind system bars for an immersive UI.\n# Note: Only works with ReactActivity and should not be used with custom Activity.\nedgeToEdgeEnabled=true\n\n# Enable GIF support in React Native images (~200 B increase)\nexpo.gif.enabled=true\n# Enable webp support in React Native images (~85 KB increase)\nexpo.webp.enabled=true\n# Enable animated webp support (~3.4 MB increase)\n# Disabled by default because iOS doesn't support animated webp\nexpo.webp.animated=false\n\n# Enable network inspector\nEX_DEV_CLIENT_NETWORK_INSPECTOR=true\n\n# Use legacy packaging to compress native libraries in the resulting APK.\nexpo.useLegacyPackaging=false\n"
+    },
+    {
+      "path": "package/ios/HelloWorld/SplashScreen.storyboard",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 3516,
+      "sha256": "0763588212466aaec0b9121db1e318eba07aff23b29940f7df97728c6f69f2d1"
+    },
+    {
+      "path": "package/ios/HelloWorld/AppDelegate.swift",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2228,
+      "sha256": "510895dbd9aec82fe5c8143baf7cc4740449433f4a59a7299dd3dc1c6a408aeb",
+      "originalText": "internal import Expo\nimport React\nimport ReactAppDependencyProvider\n\n@main\nclass AppDelegate: ExpoAppDelegate {\n  var window: UIWindow?\n\n  var reactNativeDelegate: ExpoReactNativeFactoryDelegate?\n  var reactNativeFactory: RCTReactNativeFactory?\n\n  public override func application(\n    _ application: UIApplication,\n    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil\n  ) -> Bool {\n    let delegate = ReactNativeDelegate()\n    let factory = ExpoReactNativeFactory(delegate: delegate)\n    delegate.dependencyProvider = RCTAppDependencyProvider()\n\n    reactNativeDelegate = delegate\n    reactNativeFactory = factory\n\n#if os(iOS) || os(tvOS)\n    window = UIWindow(frame: UIScreen.main.bounds)\n    factory.startReactNative(\n      withModuleName: \"main\",\n      in: window,\n      launchOptions: launchOptions)\n#endif\n\n    return super.application(application, didFinishLaunchingWithOptions: launchOptions)\n  }\n\n  // Linking API\n  public override func application(\n    _ app: UIApplication,\n    open url: URL,\n    options: [UIApplication.OpenURLOptionsKey: Any] = [:]\n  ) -> Bool {\n    return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)\n  }\n\n  // Universal Links\n  public override func application(\n    _ application: UIApplication,\n    continue userActivity: NSUserActivity,\n    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void\n  ) -> Bool {\n    let result = RCTLinkingManager.application(application, continue: userActivity, restorationHandler: restorationHandler)\n    return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result\n  }\n}\n\nclass ReactNativeDelegate: ExpoReactNativeFactoryDelegate {\n  // Extension point for config-plugins\n\n  override func sourceURL(for bridge: RCTBridge) -> URL? {\n    // needed to return the correct URL for expo-dev-client.\n    bridge.bundleURL ?? bundleURL()\n  }\n\n  override func bundleURL() -> URL? {\n#if DEBUG\n    return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: \".expo/.virtual-metro-entry\")\n#else\n    return Bundle.main.url(forResource: \"main\", withExtension: \"jsbundle\")\n#endif\n  }\n}\n"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 5024,
+      "sha256": "21304a0c9b00da6a72cfa31c7229c9528fc17b6e5eb4e68a969bce08c01a2fee"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2858,
+      "sha256": "520d05f978a15ba0ccf23006a1a5691a054a02478c70cafc5ebafae76e600f0d"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 7098,
+      "sha256": "2846e1a703e519791fe22f41bcb243b82f908d12e5ebcb43f020ddf9982780b0"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 10676,
+      "sha256": "363a569beb72e8b007bf046454612148d4c9f782b9391352059fe83179f18e30"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 15523,
+      "sha256": "5bacd97a1b41e4413c6092cdbd83f65112a9124e823cfaa3a219c65e2761647b"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 3056,
+      "sha256": "ded7aabf6a56b694e486e096efd89e2f0c9067d292b634663898e352c9491f10"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-mdpi/ic_launcher.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 2096,
+      "sha256": "eef20f25fb1477d8c9df15757e764811cc503fb0777f18d0f7fb2d19178b5bf6"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 4569,
+      "sha256": "e77c5045bfdb6f4bbe955b3a793bfed3baa369ce4811ae2a9103d5480637cfff"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 6464,
+      "sha256": "eb3a34b13632e0cb3b1c0f4273035866cbe81b1b17b7178ce29d19c78d394a5e"
+    },
+    {
+      "path": "package/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 9250,
+      "sha256": "9ff27328b6916b7f75b99ef36153f154bb4724946e5654635cba2e257352c69f"
+    },
+    {
+      "path": "package/ios/HelloWorld.xcodeproj/xcshareddata/xcschemes/HelloWorld.xcscheme",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 3306,
+      "sha256": "c6d0856ab8a818761e17f4c640092fcd19cbdb85acfa175b100292542ed970c6"
+    },
+    {
+      "path": "package/ios/HelloWorld.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 135,
+      "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f"
+    },
+    {
+      "path": "package/android/app/src/debug/AndroidManifest.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 374,
+      "sha256": "fb1795032c764d975376e1612ab7022058eca2268a45efbe731a47a5d3ac0f60"
+    },
+    {
+      "path": "package/android/app/src/debugOptimized/AndroidManifest.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 374,
+      "sha256": "fb1795032c764d975376e1612ab7022058eca2268a45efbe731a47a5d3ac0f60"
+    },
+    {
+      "path": "package/android/app/src/main/AndroidManifest.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1823,
+      "sha256": "2bb28f4f3e9f37feeaff9e4d3fb63d1cbff962924a91c712b55c6c5fdd114c7c",
+      "originalText": "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n  xmlns:tools=\"http://schemas.android.com/tools\">\n\n  <uses-permission android:name=\"android.permission.INTERNET\"/>\n  <!-- OPTIONAL PERMISSIONS, REMOVE WHATEVER YOU DO NOT NEED -->\n  <uses-permission android:name=\"android.permission.SYSTEM_ALERT_WINDOW\"/>\n  <uses-permission android:name=\"android.permission.VIBRATE\"/>\n  <!-- These require runtime permissions on M -->\n  <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\" tools:replace=\"android:maxSdkVersion\"/>\n  <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\" tools:replace=\"android:maxSdkVersion\"/>\n  <!-- END OPTIONAL PERMISSIONS -->\n\n  <queries>\n    <!-- Support checking for http(s) links via the Linking API -->\n    <intent>\n      <action android:name=\"android.intent.action.VIEW\" />\n      <category android:name=\"android.intent.category.BROWSABLE\" />\n      <data android:scheme=\"https\" />\n    </intent>\n  </queries>\n\n  <application android:name=\".MainApplication\" android:label=\"@string/app_name\" android:icon=\"@mipmap/ic_launcher\" android:roundIcon=\"@mipmap/ic_launcher_round\" android:allowBackup=\"false\" android:theme=\"@style/AppTheme\" android:supportsRtl=\"true\">\n    <activity android:name=\".MainActivity\" android:configChanges=\"keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode|smallestScreenSize|assetsPaths\" android:launchMode=\"singleTask\" android:windowSoftInputMode=\"adjustResize\" android:theme=\"@style/Theme.App.SplashScreen\" android:exported=\"true\">\n      <intent-filter>\n        <action android:name=\"android.intent.action.MAIN\"/>\n        <category android:name=\"android.intent.category.LAUNCHER\"/>\n      </intent-filter>\n    </activity>\n  </application>\n</manifest>\n"
+    },
+    {
+      "path": "package/android/app/src/main/res/values/colors.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 136,
+      "sha256": "b71bfe77b51d8984d196c20f04394bfd15fd1420f579a6f96b900889592c4493"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 245,
+      "sha256": "51fca95679d075ddbe2b9fe7ad2efb5ef545c5770a9ad6cafe8bf610c18c67be"
+    },
+    {
+      "path": "package/android/app/src/main/res/drawable/rn_edit_text_material.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1917,
+      "sha256": "738e3aaad53180caba1419a6d5db8465a0742662fe59a4bbaf05f1061cbc3390"
+    },
+    {
+      "path": "package/android/app/src/main/res/values/strings.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 85,
+      "sha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713"
+    },
+    {
+      "path": "package/android/app/src/main/res/values/styles.xml",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 337,
+      "sha256": "c24f72ee2e907c5ccafb4758e8f981654cb64c811bd5a1bab36bfa946153c059"
+    },
+    {
+      "path": "package/LICENSE",
+      "type": "file",
+      "mode": "0o644",
+      "bytes": 1106,
+      "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+    }
+  ]
+}
