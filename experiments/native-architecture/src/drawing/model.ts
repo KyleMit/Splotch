@@ -3,9 +3,9 @@ import { INITIAL_RAINBOW, MAGIC_RAINBOW_COUNT, MAX_CRAYON_SEED, type Brush } fro
 
 export const PAPER_WIDTH = 1024;
 export const PAPER_HEIGHT = 768;
-export const MAX_STROKES = 1000;
+const MAX_STROKES = 1000;
 export const MAX_POINTS = 100_000;
-export const MIN_SAMPLE_DISTANCE = 1;
+const MIN_SAMPLE_DISTANCE = 1;
 export type Point = Readonly<{ x: number; y: number }>;
 export type StrokeStyle =
   | Readonly<{ color: PaletteLabel; brush: 'pencil' | 'marker' }>

@@ -3,11 +3,17 @@
 This is a new, pending product unit on the provisional native drawing candidate. Its starting source
 is e836b73ac2731fd7e22853a5b334f7403ea4cfea. The original N1 source/evidence, source-boundary
 repairs, review and acceptance remain owned by N1; this unit neither accepts nor repairs that
-dependency. The feature composes the exact published N1 dependency
-20b51012a9bb3daa1314cab1d8c276cc9eb8a977; N1 remains unaccepted. Three import-only merge conflicts
+dependency. The initial feature composition used the published N1 dependency
+20b51012a9bb3daa1314cab1d8c276cc9eb8a977. Three import-only merge conflicts
 retain the new brush implementation and use N1's candidate-local palette. The new `Ink` renderer
 uses that same palette owner. The N1 projection, native recipes, package declarations and security
 repairs are unchanged by the feature composition.
+
+The final dependency composition uses the exact published N1 source
+64af9ba7c32b785dcef71ce7d9e3549f392cf5e5 and checkpoint
+ff248625efa72215354b83c44f892ae9e5ecdfba. Its single source conflict retains N1's private tuning
+constants and this unit's four-brush owner and version 2 save model. N1 remains unaccepted. The
+original feature commits, browser artifacts and rejecting controls remain preserved.
 
 The existing positive scanned-source expectation adds only the five actual production brush modules.
 The accepted F1 scanner/refusal logic and input boundaries are unchanged. New feature tests make
@@ -64,15 +70,18 @@ crossing, paper-fixed Magic colors across a stroke and tap, exact save/reopen/un
 brush/rainbow rejection, and preserved first-slice saves. Full applicable checks and native output
 remain pending.
 
-After composing the published N1 source, candidate TypeScript, `npm run check`, and `npm run lint`
+After the initial N1 composition, candidate TypeScript, `npm run check`, and `npm run lint`
 passed with no ESLint warning. The permitted focused composition set passed 109 tests across brush
 behavior/output/history, token projections, the real candidate import inventory, and all five new
 module escape-and-restore controls. The composed lock SHA256 is
 9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57. The security commit
 f61f0c842abd2c4d4ab0eb1f3058786d245c444a is an ancestor of the composed N1 dependency.
 
+The final N1 composition was source-only: merge inspection and `git diff --check` passed, and the
+lock SHA256 remains unchanged. No installation or execution check ran on that final composition.
+
 The own installed dependency tree predates that security lock update. No installation ran during the
-source-composition window; a new frozen installation, exact-source browser/native output, and the
+source-composition windows; a new frozen installation, exact-source browser/native output, and the
 applicable full tier remain pending a coordinated resource window. These source checks do not
 certify that installed graph or accept N1.
 
