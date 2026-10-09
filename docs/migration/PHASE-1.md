@@ -111,6 +111,13 @@ scope. The earlier development checkpoint does not require or consume that final
 remaining findings, failed attempts and unresolved obligations stay attached to N1; exhaustion
 requires a legitimate human budget disposition before another substantive N1 round.
 
+The optimized-build requirement gates N1's claimed structural acceptance and dependent integration
+merges. Later feature source may be developed, exercised and reviewed against an exact published but
+unaccepted N1 head, with that dependency explicitly pending; such a composed draft stays off
+integration until the required N1 acceptance. Optimized qualification can progress after the first
+working drawing checkpoint alongside later feature construction. It does not block ordinary
+development or require full-product completion before the N1 review.
+
 Later crayon/Magic, coloring, history/page, audio and service features are subsequent units with
 their own bounded changed behavior, source range, dependency on accepted N1 source and original
 Claude review identity. Register each unit's scope and budget before its first review. A new unit
@@ -181,17 +188,20 @@ comparison results; update those records only through reviewed evidence.
    backend. Audit actual permissions, binaries, install scripts and CocoaPods sources. Verify Hermes
    configuration, fixed-fixture portable compute and raster/JSI costs separately; no whole-device
    verdict. Prove native contact ownership, default/unbuffered sample handling and no redundant MOVE
-   stream. Keep collector changes, audio smoke and graphics consumers in separate reviewable units.
-   At the earliest real collector/placement slice, prove one export cut and one page-plus-undo
-   transaction with delayed work and a known fixture before full crayon/Magic investment. Start with
-   an attached receiver; a pre-React host is a conditional first-ink remedy.
-6. **Early new-app storage and service feasibility.** Exercise real save/export consumers,
-   permission denial, secure credential read/write failures, exact unsaved-picture retention/retry
-   and background/rotation teardown on disposable installations. Use data created by the candidate;
-   no old WebView/settings/secret/picture import fixture is required. Prove safe fresh
-   initialization under the existing app ID/local signing scope and safe cancellation or
-   reconciliation of surviving prior work. Installation allowance identity remains
-   server-authoritative. Prove the bounded
+   stream. N1's registered first drawing slice combines the bounded collector, graphics/export and
+   basic local save/reopen consumers in its original review scope. Beyond that explicit first slice,
+   keep collector changes, audio smoke and graphics consumers in separate reviewable units. At the
+   earliest real collector/placement slice, prove one export cut and one page-plus-undo transaction
+   with delayed work and a known fixture before full crayon/Magic investment. Start with an attached
+   receiver; a pre-React host is a conditional first-ink remedy.
+6. **Early new-app storage and service feasibility.** N1's basic local save/reopen results may
+   satisfy only the exact observed storage predicates from its registered first slice; they do not
+   complete this broader unit. Exercise real save/export consumers, permission denial, secure
+   credential read/write failures, exact unsaved-picture retention/retry and background/rotation
+   teardown on disposable installations. Use data created by the candidate; no old
+   WebView/settings/secret/picture import fixture is required. Prove safe fresh initialization under
+   the existing app ID/local signing scope and safe cancellation or reconciliation of surviving
+   prior work. Installation allowance identity remains server-authoritative. Prove the bounded
    [abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security) without
    restoring old transfer/readers or deleting unrelated inert data. These checks do not establish
    Play/TestFlight signing/channel installability, physical floor behavior or full-product release
