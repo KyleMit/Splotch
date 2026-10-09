@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "scope": "all added/changed lock package artifacts, all platforms",
+  "baselineLockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "candidateLockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "selectedArtifacts": [
+    {
+      "key": "expo-audio@57.0.5",
+      "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ=="
+    }
+  ],
+  "inspectedArtifacts": 1,
+  "inspectionWorkers": 4,
+  "complete": true,
+  "rows": [
+    {
+      "key": "expo-audio@57.0.5",
+      "name": "expo-audio",
+      "version": "57.0.5",
+      "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+      "tarball": "https://registry.npmjs.org/expo-audio/-/expo-audio-57.0.5.tgz",
+      "registryIntegrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    }
+  ]
+}

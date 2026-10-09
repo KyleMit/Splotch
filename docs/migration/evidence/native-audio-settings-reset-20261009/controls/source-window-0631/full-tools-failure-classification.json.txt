@@ -1,0 +1,33 @@
+{
+  "timeUTC": "2026-10-09T06:37:00.314231+00:00",
+  "exitCode": 1,
+  "testFiles": {
+    "failed": 3,
+    "passed": 349
+  },
+  "tests": {
+    "failed": 5,
+    "passed": 8164
+  },
+  "durationSeconds": 46.3,
+  "failures": [
+    {
+      "file": "tools/ci-mirror/tests/run-quality-checks.test.mjs",
+      "count": 1,
+      "cause": "Audio composition changed the mandatory literal N1 projection call; existing fence correctly rejected it."
+    },
+    {
+      "file": "tools/migration/tests/native-drawing-forge-paths.test.mjs",
+      "count": 2,
+      "cause": "N1 test fixtures read the added Audio root graph, bypassing the new-unit-qualified inherited N1 lock projection."
+    },
+    {
+      "file": "tools/migration/tests/native-drawing-inventory.test.mjs",
+      "count": 2,
+      "cause": "N1 test fixtures read the added Audio artifact and lock hash instead of their exact inherited lock comparison boundary."
+    }
+  ],
+  "resetFailures": 0,
+  "classificationBeforeRepair": true,
+  "plannedRepair": "Only new-unit composition glue and N1 test input fixture boundaries; retain all existing eight-path/23-artifact/refusal assertions and policies."
+}

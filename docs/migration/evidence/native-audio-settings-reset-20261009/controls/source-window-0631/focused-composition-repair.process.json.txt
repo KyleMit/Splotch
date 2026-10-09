@@ -1,0 +1,26 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "ci-mirror/tests/run-quality-checks.test.mjs",
+    "migration/tests/native-drawing-forge-paths.test.mjs",
+    "migration/tests/native-drawing-inventory.test.mjs",
+    "migration/tests/native-audio-qualification.test.mjs",
+    "--maxWorkers=1"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T06:37:33.254978+00:00",
+  "hardEndUTC": "2026-10-09T06:41:50+00:00",
+  "capSeconds": 120,
+  "ownerPID": 55623,
+  "ownerStart": "Fri Oct  9 02:37:33 2026",
+  "childPID": 55630,
+  "childProcessGroup": 55630,
+  "childStart": "Fri Oct  9 02:37:33 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T06:37:36.230126+00:00",
+  "ownedChildClosed": true,
+  "ownedProcessGroupClosed": true
+}

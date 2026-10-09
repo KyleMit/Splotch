@@ -1,0 +1,24 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "tests/native-audio-adapter.test.mjs",
+    "tests/native-audio-projection.test.mjs",
+    "tests/native-drawing-audio.test.mjs",
+    "tests/native-sound-settings.test.mjs",
+    "tests/native-sound-settings-files.test.mjs",
+    "migration/tests/candidate-imports.test.mjs",
+    "--maxWorkers=1"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:43:58.200223+00:00",
+  "ownerPID": 60920,
+  "ownerStart": "Fri Oct  9 01:43:58 2026",
+  "childPID": 60939,
+  "childStart": "Fri Oct  9 01:43:58 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:44:04.456958+00:00",
+  "ownedChildClosed": true
+}

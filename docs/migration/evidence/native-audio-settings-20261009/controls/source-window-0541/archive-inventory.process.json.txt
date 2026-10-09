@@ -1,0 +1,19 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "gen:migration:script-inventory",
+    "--",
+    "--baseline=docs/migration/evidence/native-audio-settings-20261009/controls/source-window-0541/before-pnpm-lock.yaml.txt",
+    "--output=docs/migration/evidence/native-audio-settings-20261009/script-inventory.json"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:43:33.926454+00:00",
+  "ownerPID": 60580,
+  "ownerStart": "Fri Oct  9 01:43:33 2026",
+  "childPID": 60587,
+  "childStart": "Fri Oct  9 01:43:33 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:43:34.549230+00:00",
+  "ownedChildClosed": true
+}

@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { assertForgeMitigationPolicy } from '../lib/forge-mitigation.mjs';
-import { getImporterDependencyPaths, readLockFile } from '../lib/lock-artifacts.mjs';
+import { getImporterDependencyPaths } from '../lib/lock-artifacts.mjs';
+import { qualifyAudioInputs } from '../lib/native-audio-qualification.mjs';
 import {
   projectDrawingForgeLock,
   readDrawingForgeInputs,
@@ -12,8 +13,9 @@ import {
 import { readPolicyYaml } from '../lib/topology-policy.mjs';
 
 const root = join(import.meta.dirname, '../../..');
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
-const manifest = JSON.parse(readFileSync(join(root, CANDIDATE_DIRECTORY, 'package.json')));
+const audio = qualifyAudioInputs(root);
+const lock = audio.lock;
+const manifest = audio.inheritedManifest;
 const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
 const mitigation = JSON.parse(
   readFileSync(join(root, 'tools/migration/inputs/forge-mitigation.json'))

@@ -14,6 +14,9 @@ import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, clearDrawing, undoDrawing, type Brush } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+import { useState } from 'react';
+import { useDrawingSound } from './useDrawingSound';
+import { SoundSettings } from './settings/SoundSettingsSheet';
 
 const COLORS: readonly PaletteLabel[] = [
   'Purple',
@@ -77,6 +80,8 @@ export function DrawingScreen() {
     showPictures,
     openPicture,
   } = useDrawingScreen();
+  const sound = useDrawingSound();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} scrollEnabled={!drawing}>
@@ -84,25 +89,7 @@ export function DrawingScreen() {
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
         </View>
-        <View style={styles.palette}>
-          {COLORS.map((label) => (
-            <Pressable
-              key={label}
-              accessibilityRole="button"
-              accessibilityLabel={`${label} paint`}
-              accessibilityState={{ selected: label === color, disabled }}
-              disabled={disabled}
-              onPress={() => setColor(label)}
-              style={[
-                styles.swatch,
-                { backgroundColor: paletteHex(label) },
-                label === color && styles.selectedSwatch,
-              ]}
-            >
-              {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
-            </Pressable>
-          ))}
-        </View>
+        <PaintColors color={color} disabled={disabled} onChange={setColor} />
         <View style={styles.toolbar}>
           {(Object.keys(BRUSHES) as Brush[]).map((key) => (
             <Pressable
@@ -133,10 +120,13 @@ export function DrawingScreen() {
           drawing={history.drawing}
           color={color}
           brush={brush}
-          disabled={busy || pictures !== null}
+          disabled={busy || pictures !== null || settingsOpen}
           onStroke={finishStroke}
           onDrawingChange={setDrawing}
           onError={report}
+          onSoundStart={(point, timestamp) => sound.owner?.audio.begin(point, timestamp)}
+          onSoundSample={(point, timestamp) => sound.owner?.audio.sample(point, timestamp)}
+          onSoundEnd={() => sound.owner?.audio.end()}
         />
         <View style={styles.toolbar}>
           <Action
@@ -147,6 +137,7 @@ export function DrawingScreen() {
               void save();
             }}
           />
+          <Action label="Settings" disabled={disabled} onPress={() => setSettingsOpen(true)} />
           <Action label="Pictures" disabled={disabled} onPress={showPictures} />
           <Action
             label="Export PNG"
@@ -162,7 +153,25 @@ export function DrawingScreen() {
             {notice}
           </Text>
         </View>
+        {sound.settings.message || sound.audioMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.notice}>
+            {sound.settings.message || sound.audioMessage}
+          </Text>
+        ) : null}
       </ScrollView>
+      {settingsOpen ? (
+        <SoundSettings
+          state={sound.settings}
+          audioMessage={sound.audioMessage}
+          onChange={(enabled) => {
+            void sound.owner?.settings.setEnabled(enabled);
+          }}
+          onRetrySave={() => {
+            void sound.owner?.settings.retrySave();
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      ) : null}
       <SavedPictures
         pictures={pictures}
         busy={busy}
@@ -170,6 +179,38 @@ export function DrawingScreen() {
         onClose={() => setPictures(null)}
       />
     </SafeAreaView>
+  );
+}
+
+function PaintColors({
+  color,
+  disabled,
+  onChange,
+}: {
+  color: PaletteLabel;
+  disabled: boolean;
+  onChange: (color: PaletteLabel) => void;
+}) {
+  return (
+    <View style={styles.palette}>
+      {COLORS.map((label) => (
+        <Pressable
+          key={label}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} paint`}
+          accessibilityState={{ selected: label === color, disabled }}
+          disabled={disabled}
+          onPress={() => onChange(label)}
+          style={[
+            styles.swatch,
+            { backgroundColor: paletteHex(label) },
+            label === color && styles.selectedSwatch,
+          ]}
+        >
+          {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
+        </Pressable>
+      ))}
+    </View>
   );
 }
 

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "timeUTC": "2026-10-09T05:51:12.839483+00:00",
+  "branch": "codex/native-audio-settings",
+  "source": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "lockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "dirtyFiles": [
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 506,
+      "sha256": "9309cd353cb1a1844ac1f729c3efb6c6078573ee5020d06a3f839b0934be5659"
+    },
+    {
+      "path": "experiments/native-architecture/src/DrawingScreen.tsx",
+      "bytes": 10180,
+      "sha256": "605683f924d35e130682d2af2795ff359d9bfd3622bebeb15df8c40ed93c0c64"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/DrawingSurface.tsx",
+      "bytes": 7722,
+      "sha256": "661eaeb5ec3846e53591c0d783efab28eca99ad7dddb15e9b2a26b54a13c64c7"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/theme.ts",
+      "bytes": 662,
+      "sha256": "ac1f20832c4b450df0ef103bc0067b963d1c1f917f1341bb415f84f0324f8235"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 529474,
+      "sha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15"
+    },
+    {
+      "path": "tools/migration/check-native-topology.mjs",
+      "bytes": 4723,
+      "sha256": "6cb02acb4f9ced8c91490e8063567a54bf9b9c93c3fbc279610de7d1cbd92ccc"
+    },
+    {
+      "path": "tools/migration/tests/candidate-imports.test.mjs",
+      "bytes": 16458,
+      "sha256": "34fe8ed0b946f418cb98bcd982448d8e7d2c7ec0f5c50687a1d2caffd242d4f2"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/assets.d.ts",
+      "bytes": 243,
+      "sha256": "2c66f807ae0c4216b11736d7c7ab331eb0cfb1758a3a8a339118e2b061691440"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/drawingAudio.ts",
+      "bytes": 5248,
+      "sha256": "0e77ede9a083a6f31fb5e114bb310e13cb819ecaf9838797ec6a94a09ef3428d"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/pencil-1.mp3",
+      "bytes": 82992,
+      "sha256": "234cb63eb7c3692cb2d4296298fc169ed48ad0f419f21b340a9a71ed21382cbe"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/drawingAudio.ts",
+      "bytes": 4258,
+      "sha256": "6793da1b9348b41504058806e27b62aeba1c6899a1086c0bdd69fac2032b8364"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/drawingAudio.web.ts",
+      "bytes": 3550,
+      "sha256": "2d6dc99bba1f76fe264828f469d36c41a0e09c865f381c8a79e330c746d6ac68"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/soundSettings.ts",
+      "bytes": 2301,
+      "sha256": "beaad0267799da83e671ca92ce93a74247edad09c02e55b86897ba0092177804"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/soundSettings.web.ts",
+      "bytes": 481,
+      "sha256": "377b74d090192211a8c72ac1f2e79e7f8296373d25cc7393f6ac44d9a944a7c1"
+    },
+    {
+      "path": "experiments/native-architecture/src/settings/SoundSettingsSheet.tsx",
+      "bytes": 3723,
+      "sha256": "023392ff4cf273d1823545f535522c40c45612e4a1157e60f159d6895de891e0"
+    },
+    {
+      "path": "experiments/native-architecture/src/settings/soundSettings.ts",
+      "bytes": 3083,
+      "sha256": "83a0c21e1bc2c41d97a04f9aadff8050b7032b185d4fbfe153e77f1a083a1283"
+    },
+    {
+      "path": "experiments/native-architecture/src/useDrawingSound.ts",
+      "bytes": 1596,
+      "sha256": "0bf62a1a607c27e8a494d55298d2ba560d157c2bf3dfc3bed8d456353c671a93"
+    },
+    {
+      "path": "tools/migration/check-native-audio-inputs.mjs",
+      "bytes": 306,
+      "sha256": "a06d2f9c18fc93bea2c784ef7c2e20153196433fcbc510c85c21a713d8f4ae32"
+    },
+    {
+      "path": "tools/migration/lib/native-audio-qualification.mjs",
+      "bytes": 5390,
+      "sha256": "da4d82e8c30549441c4b528f520b98fc8620f95732b205b94e41bec6489ab816"
+    },
+    {
+      "path": "tools/migration/tests/native-audio-qualification.test.mjs",
+      "bytes": 2525,
+      "sha256": "c58708867767d095e794809cc21a542894f9bde473c660d9b7f8c04b9443bea2"
+    },
+    {
+      "path": "tools/tests/native-audio-adapter.test.mjs",
+      "bytes": 5591,
+      "sha256": "7ab15b26a3d7ae62d755bf39c16994a7a81f9084c8da8c90357addaca548e472"
+    },
+    {
+      "path": "tools/tests/native-audio-projection.test.mjs",
+      "bytes": 2620,
+      "sha256": "8a84a26e6e6595ca99c93fe51a0462d073bfb97bc07d6c45b2df2121ab0f0d41"
+    },
+    {
+      "path": "tools/tests/native-drawing-audio.test.mjs",
+      "bytes": 4994,
+      "sha256": "7d8a47c21f620b812c946e8dcd3ed80375718f522ac43100679beff2c123b2a2"
+    },
+    {
+      "path": "tools/tests/native-sound-settings-files.test.mjs",
+      "bytes": 5421,
+      "sha256": "ce73dbc937f1182dd58712b403b82317e79b91a8cd3beb5095b0bc22589c3ea3"
+    },
+    {
+      "path": "tools/tests/native-sound-settings.test.mjs",
+      "bytes": 4598,
+      "sha256": "f437933d8aeeb9027d214b893766f4f127f64f90a9f5a91cd697328f166f3083"
+    }
+  ],
+  "noCommit": true,
+  "noFullToolsBrowserNativeHooks": true
+}

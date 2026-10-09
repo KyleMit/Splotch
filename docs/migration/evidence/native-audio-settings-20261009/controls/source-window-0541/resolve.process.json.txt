@@ -1,0 +1,18 @@
+{
+  "command": [
+    "pnpm",
+    "install",
+    "--lockfile-only",
+    "--ignore-scripts",
+    "--ignore-pnpmfile"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:42:17.411617+00:00",
+  "ownerPID": 59727,
+  "ownerStart": "Fri Oct  9 01:42:17 2026",
+  "childPID": 59734,
+  "childStart": "Fri Oct  9 01:42:17 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:42:22.785850+00:00",
+  "ownedChildClosed": true
+}

@@ -1,0 +1,24 @@
+{
+  "command": [
+    "node",
+    "node_modules/prettier/bin/prettier.cjs",
+    "--write",
+    "tools/migration/check-native-topology.mjs",
+    "tools/migration/tests/native-drawing-forge-paths.test.mjs",
+    "tools/migration/tests/native-drawing-inventory.test.mjs",
+    "tools/migration/tests/native-audio-qualification.test.mjs"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T06:37:00.345748+00:00",
+  "hardEndUTC": "2026-10-09T06:41:50+00:00",
+  "capSeconds": 30,
+  "ownerPID": 55202,
+  "ownerStart": "Fri Oct  9 02:37:00 2026",
+  "childPID": 55210,
+  "childProcessGroup": 55210,
+  "childStart": "Fri Oct  9 02:37:00 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T06:37:00.520415+00:00",
+  "ownedChildClosed": true,
+  "ownedProcessGroupClosed": true
+}

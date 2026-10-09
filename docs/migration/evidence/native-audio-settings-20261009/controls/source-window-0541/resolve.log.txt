@@ -1,0 +1,19 @@
+Scope: all 2 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1h ago)
+Progress: resolved 1, reused 0, downloaded 0, added 0
+
+   ╭───────────────────────────────────────────────╮
+   │                                               │
+   │     Update available! 11.22.0 → 12.10.1.      │
+   │     Changelog: https://pnpm.io/v/12.10.1      │
+   │   To update, run: corepack use pnpm@12.10.1   │
+   │                                               │
+   ╰───────────────────────────────────────────────╯
+
+Progress: resolved 71, reused 0, downloaded 0, added 0
+Progress: resolved 275, reused 0, downloaded 0, added 0
+Progress: resolved 1153, reused 0, downloaded 0, added 0
+[WARN] 16 deprecated subdependencies found: conventional-changelog-atom@2.0.8, conventional-changelog-codemirror@2.0.8, conventional-changelog-core@4.2.4, conventional-changelog-ember@2.0.9, conventional-changelog-eslint@3.0.9, conventional-changelog-express@2.0.6, conventional-changelog-jquery@3.0.11, conventional-changelog-jshint@2.0.9, git-raw-commits@2.0.11, git-semver-tags@4.1.1, glob@11.1.0, glob@9.3.5, node-domexception@1.0.0, q@1.5.1, source-map@0.8.0-beta.0, uuid@7.0.3
+
+Done in 3.9s using pnpm v11.22.0
+Progress: resolved 1519, reused 0, downloaded 0, added 0
