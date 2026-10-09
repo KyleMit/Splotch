@@ -50,13 +50,16 @@ autolinking evidence.
 and substitutes exactly Ruby3.4.11, CocoaPods1.16.2 and xcodeproj1.27.0. The released xcodeproj cap
 below1.26 conflicts with
 [CocoaPods1.16.2's minimum1.27](https://raw.githubusercontent.com/CocoaPods/CocoaPods/1.16.2/cocoapods.gemspec).
-The other ActiveSupport/concurrent-ruby constraints and four explicit Ruby3.4 library consumers
-remain. The source checker authenticates the complete manual bytes and refuses a missing, changed or
-aliased file. Its rejecting and restored controls do not resolve or execute gems. Actual
-Ruby/OpenSSL/Psych/native gem compatibility, locked graph authentication, project parsing and
-generation remain separate execution gates; xcodeproj1.27.0's constants do not prove Xcode27
-compatibility. A future gem caller must disable actual HOME gem and Bundler configuration loading
-through released supported options before resolving its reviewed graph.
+The other ActiveSupport/concurrent-ruby constraints and explicit Ruby3.4 library consumers remain.
+The manual Gemfile includes `nkf` because Expo autolinking loads CFPropertyList's `kconv`
+dependency; Ruby3.4 provides that library through the bundled gem. JSON remains below major3 because
+ActiveSupport7.0's encoder supplies the removed `quirks_mode` option. The source checker
+authenticates the complete manual bytes and refuses a missing, changed or aliased file. Its
+rejecting and restored controls do not resolve or execute gems. Actual Ruby/OpenSSL/Psych/native gem
+compatibility, locked graph authentication, project parsing and generation remain separate execution
+gates; xcodeproj1.27.0's constants do not prove Xcode27 compatibility. A future gem caller must
+disable actual HOME gem and Bundler configuration loading through released supported options before
+resolving its reviewed graph.
 
 Android Release requires four candidate signing properties declared by `RELEASE_SIGNING_PROPERTIES`
 and the external filename `RELEASE_KEYSTORE_NAME`. It uses R8, resource shrinking and optimize
