@@ -94,21 +94,25 @@ browser config invokes `serve-web-host.mjs`; that private entry serves only an e
 source-bound owned artifact and refuses a missing explicit port.
 
 ```sh
-npm run migration:web-host:build -- --topology-sha=<actual-reviewed05-commit> --topology-lock-sha256=<actual-reviewed05-lock-digest> --artifact=release
+npm run migration:web-host:build -- --topology-sha=<workflow-checkpoint-commit> --topology-lock-sha256=<workflow-checkpoint-lock-digest> --artifact=release
 npm run migration:web-host:check -- --artifact-root=<reported-owned-root>
 npm run migration:web-host:test -- --artifact-root=<reported-owned-root> --port=<unused-port> --browser-registry=<existing-absolute-registry>
 ```
 
-The topology commit and lock digest are required execution inputs. Use the accepted identities in
-[the retained-control acceptance record](../../docs/migration/evidence/retained-control/README.md);
-they cannot be guessed from a predecessor. The active source must contain that commit and retain its
-exact lock. A frozen full dependency install must already exist and have the same installed lock;
-this runner never installs. Final evidence exports a clean committed source slice, records its real
-commit and source hashes, and derives version metadata through `web/buildVersion.ts`.
-`--provisional` permits local iteration with HEAD, binary patch and actual file hashes; it cannot
-supply final review evidence. `--artifact=mechanism` enables only the existing private harness, with
-performance marks disabled. It is distinct from the release artifact and cannot score release
-startup costs.
+The topology commit and lock digest are required execution inputs. Take `--topology-sha` from
+`jobs.retained-web-host-control.env.TOPOLOGY_SHA` and `--topology-lock-sha256` from
+`jobs.retained-web-host-control.env.TOPOLOGY_LOCK_SHA256` in
+[the CI workflow](../../.github/workflows/test.yml). The
+[retained-control acceptance record](../../docs/migration/evidence/retained-control/README.md)
+preserves historical execution inputs and results. The active source must contain the workflow's
+checkpoint commit and retain its exact lock. A normal merge commit must preserve that checkpoint's
+ancestry; squash or rebase merging this security-lock update would remove the required ancestor. A
+frozen full dependency install must already exist and have the same installed lock; this runner
+never installs. Final evidence exports a clean committed source slice, records its real commit and
+source hashes, and derives version metadata through `web/buildVersion.ts`. `--provisional` permits
+local iteration with HEAD, binary patch and actual file hashes; it cannot supply final review
+evidence. `--artifact=mechanism` enables only the existing private harness, with performance marks
+disabled. It is distinct from the release artifact and cannot score release startup costs.
 
 Outputs are a new `splotch-web-host-*` temporary root (or under the explicitly separate existing
 `--output-parent`), a fresh ownership marker, frozen inputs, reference/control copies, both wrapper
@@ -162,7 +166,10 @@ routes, metadata, generators and shipping postbuild owners. Tool-helper guards l
 capability's tests; wrapper/browser sources live under `migration/probes/web-host`. Root discovery
 and the retained-control CI job register these callers over the accepted topology checkpoint. CI
 runs release build/check/browser, then mechanism build/check/browser twice, serially on one runner.
-The acceptance record owns the measured harness-cost derivation for its numeric job deadline.
+The acceptance record owns the measured harness-cost derivation for its numeric job deadline. The
+lock-only Handlebars security update changes dormant tooling without changing build/browser owners
+or workloads, so the existing timing allowance remains. Fresh source-bound release/mechanism CI must
+still pass; historical results do not qualify the changed lock.
 
 `gen:migration:hosted-topology` runs after all ordinary web postbuild guards. Only the exact
 nonproduction proof ref writes `web/build/migration-install-topology.json`; other builds return
