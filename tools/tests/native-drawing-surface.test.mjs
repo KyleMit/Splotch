@@ -11,6 +11,7 @@ import {
 const native = vi.hoisted(() => ({ handlers: null, layout: null }));
 
 vi.mock('react-native', () => ({
+  findNodeHandle: (target) => target,
   PanResponder: {
     create(handlers) {
       native.handlers ??= handlers;
@@ -45,12 +46,27 @@ vi.mock('react-native-svg', () => ({
     }),
 }));
 
+const PAPER_TARGET = {};
+
 function touch(identifier, x, y) {
-  return { identifier, locationX: x, locationY: y, target: 'paper' };
+  return { identifier, locationX: x, locationY: y, target: PAPER_TARGET, timestamp: 100 };
 }
 
 function event(touches, changedTouches = touches) {
-  return { nativeEvent: { touches, changedTouches, target: 'paper' } };
+  const touchBank = Object.fromEntries(
+    [...touches, ...changedTouches].map(({ identifier }) => [
+      identifier,
+      {
+        startTimeStamp: 100,
+        touchActive: touches.some((touch) => touch.identifier === identifier),
+      },
+    ])
+  );
+  return {
+    currentTarget: PAPER_TARGET,
+    nativeEvent: { touches, changedTouches, target: PAPER_TARGET },
+    touchHistory: { touchBank, mostRecentTimeStamp: 100 },
+  };
 }
 
 let root;
@@ -62,7 +78,17 @@ function render() {
 }
 
 function send(callback, input) {
-  act(() => native.handlers[callback](input));
+  act(() => {
+    native.handlers[callback](input);
+    if (
+      callback === 'onPanResponderGrant' &&
+      input.nativeEvent.changedTouches.some(
+        (touch) =>
+          input.touchHistory?.touchBank?.[touch.identifier]?.startTimeStamp === touch.timestamp
+      )
+    )
+      native.handlers.onPanResponderStart(input);
+  });
 }
 
 beforeEach(() => {
@@ -140,13 +166,14 @@ describe('independent native contact responder wiring', () => {
     expect(container.querySelector('[data-viewbox]').dataset.viewbox).toBe('0 0 1024 768');
   });
 
-  it('accepts every paper contact present at grant even when only one is in changedTouches', () => {
+  it('admits only the changed START contact while an older unknown contact is present at grant', () => {
     const a = touch('A', 10, 20);
     const b = touch('B', 30, 40);
     send('onPanResponderGrant', event([a, b], [a]));
     send('onPanResponderRelease', event([], [a, b]));
     expect(props.onCohort).toHaveBeenCalledTimes(1);
-    expect(props.onCohort.mock.calls[0][0]).toHaveLength(2);
+    expect(props.onCohort.mock.calls[0][0]).toHaveLength(1);
+    expect(props.onCohort.mock.calls[0][0][0].points).toEqual([{ x: 10, y: 20 }]);
   });
 
   it('reads admission capacity from current history instead of a stale rendered drawing', () => {
@@ -243,7 +270,7 @@ describe('independent native contact responder wiring', () => {
       'onPanResponderMove',
       event([touch('A', 50, 60), { ...control, locationX: 100, locationY: 200 }])
     );
-    send('onPanResponderEnd', event([a], [control]));
+    send('onPanResponderEnd', event([touch('A', 50, 60)], [control]));
     expect(props.onCohort).not.toHaveBeenCalled();
     expect(props.onDrawingChange).toHaveBeenLastCalledWith(true);
     send('onPanResponderRelease', event([], [touch('A', 70, 80)]));

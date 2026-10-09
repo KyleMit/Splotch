@@ -1,32 +1,16 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { PanResponder, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { paletteHex, type PaletteLabel } from './palette';
-import {
-  BRUSHES,
-  PAPER_HEIGHT,
-  PAPER_WIDTH,
-  paperPoint,
-  strokePath,
-  type Brush,
-  type Drawing,
-  type Stroke,
-} from './model';
+import { paletteHex } from './palette';
+import { BRUSHES, PAPER_HEIGHT, PAPER_WIDTH, strokePath, type Drawing, type Stroke } from './model';
 import { DRAWING_THEME } from './theme';
-import { createContactCohort } from './contactCohort';
+import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 
 const EXPORT_TIMEOUT_MS = 10_000;
 export type DrawingSurfaceHandle = { capturePng: (snapshot: Drawing) => Promise<string> };
-type Props = {
+type Props = ContactDrawingProps & {
   drawing: Drawing;
-  currentDrawing: () => Drawing;
-  color: PaletteLabel;
-  brush: Brush;
-  disabled: boolean;
-  onCohort: (strokes: readonly Stroke[]) => void;
-  onDrawingChange: (drawing: boolean) => void;
-  onError: (error: unknown) => void;
 };
 
 function Ink({ stroke }: { stroke: Stroke }) {
@@ -128,109 +112,48 @@ function useContactDrawing(props: Props) {
   const propsRef = useRef(props);
   propsRef.current = props;
   const size = useRef({ width: 0, height: 0 });
-  const paperTarget = useRef<string | null>(null);
-  const input = useRef(createContactCohort()).current;
   const [drafts, setDrafts] = useState<readonly Stroke[]>([]);
-
-  function publish(completed: readonly Stroke[] | null = null) {
-    if (completed) propsRef.current.onCohort(completed);
-    setDrafts(input.drafts());
-    propsRef.current.onDrawingChange(input.hasActive());
-  }
-
-  function ready() {
-    return !propsRef.current.disabled && size.current.width > 0 && size.current.height > 0;
-  }
-
-  function begin(event: GestureResponderEvent) {
-    if (!ready()) return;
-    const current = propsRef.current;
-    for (const touch of event.nativeEvent.touches) {
-      if (touch.target !== paperTarget.current) continue;
-      try {
-        const point = paperPoint(
-          touch.locationX,
-          touch.locationY,
-          size.current.width,
-          size.current.height
-        );
-        input.start(
-          touch.identifier,
-          current.color,
-          current.brush,
-          point,
-          current.currentDrawing()
-        );
-      } catch (error) {
-        current.onError(error);
-      }
-    }
-    publish();
-  }
-
-  function sample(event: GestureResponderEvent, ending = false) {
-    const touches = ending ? event.nativeEvent.changedTouches : event.nativeEvent.touches;
-    for (const touch of touches) {
-      try {
-        const point = paperPoint(
-          touch.locationX,
-          touch.locationY,
-          size.current.width,
-          size.current.height
-        );
-        input.sample(touch.identifier, point, ending);
-      } catch (error) {
-        propsRef.current.onError(error);
-      }
-      if (ending) publish(input.finish(touch.identifier));
-    }
-    if (!ending) publish();
-  }
-
-  function interrupt() {
-    publish(input.interrupt());
-  }
+  const input = useRef(
+    createContactResponder(
+      () => propsRef.current,
+      () => size.current,
+      setDrafts
+    )
+  ).current;
 
   useEffect(
     () => () => {
-      const completed = input.interrupt();
-      if (completed) propsRef.current.onCohort(completed);
-      propsRef.current.onDrawingChange(false);
+      input.detach();
     },
     [input]
   );
 
   const responder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: ready,
-      onMoveShouldSetPanResponder: ready,
-      onPanResponderGrant: (event) => {
-        paperTarget.current = event.nativeEvent.target;
-        begin(event);
-      },
-      onPanResponderStart: begin,
-      onPanResponderMove: (event) => sample(event),
-      onPanResponderEnd: (event) => sample(event, true),
-      onPanResponderRelease: (event) => {
-        sample(event, true);
-        interrupt();
-        paperTarget.current = null;
-      },
-      onPanResponderTerminate: () => {
-        interrupt();
-        paperTarget.current = null;
-      },
+      onStartShouldSetPanResponder: () => input.ready(),
+      onMoveShouldSetPanResponder: () => input.ready(),
+      onPanResponderGrant: (event) => input.grant(event),
+      onPanResponderStart: (event) => input.start(event),
+      onPanResponderMove: (event) => input.move(event),
+      onPanResponderEnd: (event) => input.end(event),
+      onPanResponderRelease: (event) => input.end(event),
+      onPanResponderTerminate: () => input.interrupt(),
       onPanResponderTerminationRequest: () => false,
       onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
-  return { drafts, size, responder };
+  function layout(next: { width: number; height: number }) {
+    if (next.width !== size.current.width || next.height !== size.current.height) input.resize();
+    size.current = next;
+  }
+
+  return { drafts, layout, responder };
 }
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
-    const { drafts, size, responder } = useContactDrawing(props);
+    const { drafts, layout, responder } = useContactDrawing(props);
     const { exportRequest, exportSvg } = usePngExport(ref);
 
     return (
@@ -241,7 +164,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
           pointerEvents="box-only"
           style={styles.paper}
           onLayout={({ nativeEvent }) => {
-            size.current = nativeEvent.layout;
+            layout(nativeEvent.layout);
           }}
           {...responder.panHandlers}
         >
