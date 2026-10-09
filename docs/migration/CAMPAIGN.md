@@ -7,7 +7,43 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current public status, 2026-10-08
+## Current public status, 2026-10-09
+
+Public branch observation: 2026-10-09 03:05 UTC. The native GitHub connector returned integration
+d11f99c8b2470a1f9af397180728014890a25a5b and shipping main ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4.
+The isolated sequencing checkout starts from that exact integration Git object. The canonical
+reviewer-installation checkout is not the product base.
+
+The maintainer's course correction prioritizes useful native construction and running feedback.
+Follow the [functional development sequence](PHASE-1.md#functional-development-sequence). The
+development checkpoint is an installable phone build by 2026-10-11 03:00 UTC; a concrete
+device/signing blocker requires a runnable emulator/simulator build, demonstration and substantial
+source. The full goal remains active. No framework or migrated drawing candidate is accepted.
+
+| Unit                                   | Current source and disposition                                                                                                                                                                                                                                                                                                                                  | Original review capacity                                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| F1 import ownership                    | [PR 2703](https://github.com/KyleMit/Splotch/pull/2703), accepted d8bbd45d102d0576a3e0e55013bee5fa1315a7b9, merged 205e402c1fde674d971dc9cda72685686ff58444 after [original round four](https://github.com/KyleMit/Splotch/pull/2703#pullrequestreview-5452521688). Its accepted composition releases the dependent source gate.                                | 4 used / 0 remaining; the single additional authorized round was consumed, with the three prior rounds preserved. |
+| Reviewer boundary                      | [PR 2712](https://github.com/KyleMit/Splotch/pull/2712), accepted 9bcd430053f428b2bfd017836a809b3c813b5fa8, merged c2ef44c35e2909bfc017368f1c422e6de42882a7 after its [original final review](https://github.com/KyleMit/Splotch/pull/2712#pullrequestreview-5452197011).                                                                                       | 3 used / 0 remaining.                                                                                             |
+| Fresh-start scope                      | [PR 2714](https://github.com/KyleMit/Splotch/pull/2714), accepted fada055a62470d9da9ca8ff36d4eb53a9e6cbb5f, merged 93940e7e333c513c9d356114fcd0ade6251e0140.                                                                                                                                                                                                    | 3 used / 0 remaining.                                                                                             |
+| Hand-back signal                       | [PR 2713](https://github.com/KyleMit/Splotch/pull/2713), accepted 17286cd7f4fb2d997440fe3faab72098a874f7ac, merged b65cf8f6790fc702060f0f1bc948db0bf5ecd79d.                                                                                                                                                                                                    | 2 used / 1 remaining.                                                                                             |
+| Secure storage failures                | [PR 2716](https://github.com/KyleMit/Splotch/pull/2716), accepted 9df4f1faff73ec13f1eee856a05cca4a823490a7, merged d11f99c8b2470a1f9af397180728014890a25a5b after its [original final review](https://github.com/KyleMit/Splotch/pull/2716#pullrequestreview-5455679802). Narrow shipping security acceptance does not accept candidate-native storage.         | 3 used / 0 remaining.                                                                                             |
+| N1 native product                      | Draft [PR 2715](https://github.com/KyleMit/Splotch/pull/2715), published source 19558428a5caa16ed11ab5a18459050dfd7d5d6a. Source checks do not prove RN compile/mount/drawing. The same implementation owner now constructs drawing, controls, undo, clear, PNG export and local save/reopen in an isolated checkout; running feature evidence remains pending. | Original 7c940639-09e2-4236-961f-1122171cb5d8: 2 used / 1 reserved.                                               |
+| Neutral host and retained alternatives | [PR 2711](https://github.com/KyleMit/Splotch/pull/2711) remains unaccepted. The observed raw React DOM module exceeds its declared budget; that is scoped evidence, not a rejection of every shared vocabulary. Keep Svelte/Capacitor and native paper within it fair alternatives.                                                                             | Original neutral conversation: 2 used / 1 reserved.                                                               |
+| L0 and final gates                     | Legacy-only L0 import/iOS-reader work remains held. New-app reliability, full fidelity, web/API/admin, fair comparisons, physical performance, signing/channel and final independent Codex/Claude inventory review remain open.                                                                                                                                 | L0: 2 used / 1 remaining; all other original ledgers retain their dispositions.                                   |
+
+The first feature inventory is pending: drawing, color/brush, undo, clear, PNG export and local
+save/reopen. Publish exact source and actual running results as these land; do not report source,
+controls, a build or a thin drawing demonstration as full completion. Development validation
+resolves concrete next-feature blockers. Exhaustive compiler/materializer qualification and matched
+physical performance do not block ordinary development. Preserve existing failed attempts and
+private receipts, including their host-local availability limits.
+
+Accepted narrow units above retain their exact original review and CI scopes. This sequencing change
+does not reset a ledger, substitute a reviewer, rename an exhausted repair or reopen PR 2697. Its
+own consequential source and review transition must be recorded before integration. The full
+[completion contract](CONTRACT.md#migration-completion) remains unmet.
+
+## Historical public status, 2026-10-08
 
 Public source and CI observation: 2026-10-08T06:13:12.044Z; scope round two completed at
 2026-10-08T06:10:56.031Z. Later transitions require a new recorded observation before acceptance.

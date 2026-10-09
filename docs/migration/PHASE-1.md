@@ -3,8 +3,8 @@
 Status: execution requirements refined by two complete next-phase Claude reviews; candidate
 validation is pending. No candidate, new physical control, native instrument, or architecture
 verdict is certified by this plan. The migration contract remains authoritative. Native-only
-topology and minimal templates can proceed while physical devices are unavailable; comparison timing
-cannot.
+topology, product features and development builds can proceed while physical devices are
+unavailable; comparative timing cannot.
 
 ## Fresh-start execution scope
 
@@ -18,8 +18,40 @@ or accepted by the scope change.
 Unit 6 below owns new-app storage/service feasibility instead of historical import feasibility.
 References to continuity in the comparison rules mean applicable new-app lifecycle/data reliability
 and same-identity update installability. The retired old-origin, secure-entry, held-picture and
-pack-job transfer matrix is not a prerequisite. Other ordering, observer, structural, security,
-burden, review and final release gates keep their existing meaning and limits.
+pack-job transfer matrix is not a prerequisite. The functional development priority below supersedes
+earlier implementation ordering; observer, structural, security, burden, review and final release
+acceptance retain their requirements and claim limits.
+
+## Functional development sequence
+
+The [functional development priority](CONTRACT.md#functional-development-priority) is the current
+execution order. The native implementation owner constructs and repairs useful features in an
+isolated campaign checkout, with frequent running feedback. The first phone development checkpoint
+is due by 2026-10-11 03:00 UTC; unavailable phone/signing has a concrete blocker and an
+emulator/simulator build, local demonstration and implemented source as the fallback.
+
+| Slice                       | Implementation and running evidence still required                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Drawing and recovery        | Real strokes, color/brush controls, undo, clear, genuine PNG export and basic local save/reopen.                                            |
+| Drawing fidelity and pages  | Crayon/Magic, coloring, history/page operations, ordering and representative output.                                                        |
+| Product services            | Settings/audio, permissions, offline/lifecycle behavior, failed-save recovery and secure services.                                          |
+| Qualification and selection | Optimized target builds, fair structural/mechanism comparisons, calibrated physical evidence and recurring burden decision.                 |
+| Final target readiness      | Integrated tuning, complete applicable product/web/API/admin acceptance, signing/channel updates and final independent Codex/Claude review. |
+
+Record exact feature source and observed behavior in the campaign register. An earlier slice can
+have unresolved work while another independent feature progresses. Supported debug and Expo
+development workflows may provide feedback before optimized release builds. A concrete next-feature
+build, correctness or security blocker receives the shortest bounded resolution; expanded
+materializer/toolchain controls and performance qualification wait when they do not unblock it.
+Prior failed qualification attempts remain failed evidence, and existing original reviewer budgets
+remain attached to their units.
+
+The numbered units below describe architecture and acceptance obligations. They are not a strict
+chronological barrier to functional development. Full Skia qualification or an optimized build on
+both OSes is not a prerequisite to a provisional supported drawing implementation. Any provisional
+backend needs actual output evidence and remains subject to later fidelity, lifecycle, performance
+and alternative checks. A development build or thin drawing slice does not establish foundation
+selection, production cutover or campaign completion.
 
 ## Historical review dispositions
 
@@ -64,9 +96,12 @@ The second review preserved those dispositions and refined eight remaining point
 
 ## Bounded units and dependencies
 
-Each unit receives an implementation plan and Claude review, then an exact-head diff/evidence review
-and applicable CI before joining the integration branch. Units may investigate independently; they
-do not confer another unit's evidence.
+Each consequential unit receives scoped independent review, an exact-head diff/evidence review and
+applicable CI before joining the integration branch. The handler can implement and exercise routine
+feature increments before that review; consolidate concrete source and results for the original
+reviewer within the unit's remaining capacity. Units may progress independently; they do not confer
+another unit's evidence. No budget reset, replacement reviewer or renamed exhausted repair follows
+from this ordering change.
 
 Register the contract's causal limits, observer fallback and burden ranges before remedies or
 comparison results; update those records only through reviewed evidence.
@@ -121,18 +156,19 @@ comparison results; update those records only through reviewed evidence.
    rule; absent calibration, record retention/comparison unproved without a Phase 1 exit or final
    gate waiver. Delay paper, decoded output and chrome separately; inject incoherent epochs and
    missing clock/token evidence so the validator rejects them. Simulator/emulator proves mechanics
-   only. Extend to static Skia before full native-paper investment; thresholds require fresh
-   physical controls.
+   only. Extend to the actual candidate backend before comparative claims; functional drawing work
+   may proceed independently. Thresholds require fresh physical controls.
 5. **Released template and static native graphics.** Commit the isolated minimum native template and
-   exact toolchain/locks, preserving API24/iOS16.4. Compile optimized builds for both OSes and
-   exercise static Skia geometry and output. Audit actual permissions, binaries, install scripts and
-   CocoaPods sources. Verify Hermes configuration, fixed-fixture portable compute and raster/JSI
-   costs separately; no whole-device verdict. Prove native contact ownership, default/unbuffered
-   sample handling and no redundant MOVE stream. Keep collector changes, audio smoke and graphics
-   consumers in separate reviewable units. At the earliest real collector/placement slice, prove one
-   export cut and one page-plus-undo transaction with delayed work and a known fixture before full
-   crayon/Magic investment. Start with an attached receiver; a pre-React host is a conditional
-   first-ink remedy.
+   exact toolchain/locks, preserving API24/iOS16.4. Build and exercise a useful development drawing
+   screen first. Compile optimized builds for both OSes and exercise the candidate graphics geometry
+   and output before structural acceptance; Skia is a hypothesis, not a mandatory development
+   backend. Audit actual permissions, binaries, install scripts and CocoaPods sources. Verify Hermes
+   configuration, fixed-fixture portable compute and raster/JSI costs separately; no whole-device
+   verdict. Prove native contact ownership, default/unbuffered sample handling and no redundant MOVE
+   stream. Keep collector changes, audio smoke and graphics consumers in separate reviewable units.
+   At the earliest real collector/placement slice, prove one export cut and one page-plus-undo
+   transaction with delayed work and a known fixture before full crayon/Magic investment. Start with
+   an attached receiver; a pre-React host is a conditional first-ink remedy.
 6. **Early new-app storage and service feasibility.** Exercise real save/export consumers,
    permission denial, secure credential read/write failures, exact unsaved-picture retention/retry
    and background/rotation teardown on disposable installations. Use data created by the candidate;
