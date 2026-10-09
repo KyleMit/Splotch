@@ -62,10 +62,14 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
     retiring.clear();
     void context.close().catch(onFailure);
   }
+  function resume() {
+    // Suspended WebKit contexts can reject resume while waiting for a later real activation.
+    if (context.state === 'suspended') void context.resume().catch(() => {});
+  }
   signal.addEventListener('abort', dispose, { once: true });
   try {
     signal.throwIfAborted();
-    if (context.state === 'suspended') void context.resume().catch(onFailure);
+    resume();
     const asset = Asset.fromModule(pencilSound);
     const buffer = await Promise.race([
       (async () => {
@@ -82,7 +86,7 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
       start() {
         stop();
         if (disposed) return;
-        if (context.state === 'suspended') void context.resume().catch(onFailure);
+        resume();
         const gain = context.createGain();
         gain.gain.value = 0;
         gain.connect(context.destination);

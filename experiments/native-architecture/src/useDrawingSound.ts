@@ -17,11 +17,13 @@ export function useDrawingSound() {
     settings: ReturnType<typeof createSoundSettings>;
   } | null>(null);
   useEffect(() => {
-    const audio = createDrawingAudio(loadDrawingLoop, () => {
-      setAudioMessage(
-        'Drawing sound is unavailable. You can keep drawing. Turn sound off and on to retry.'
-      );
-    });
+    const audio = createDrawingAudio(
+      loadDrawingLoop,
+      () => {
+        setAudioMessage('Drawing sound is unavailable. You can keep drawing. Try another stroke.');
+      },
+      () => setAudioMessage('')
+    );
     const preferences = createSoundSettings(soundSettingsStorage, (next) => {
       setSettings(next);
       audio.setEnabled(next.soundEnabled);

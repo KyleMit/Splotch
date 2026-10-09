@@ -42,7 +42,7 @@ export async function checkNativeTopology(argv) {
   const alignment = readJson(join(candidate, 'alignment.json'));
   const manifest = readJson(join(candidate, 'package.json'));
   const audio = qualifyAudioInputs(root);
-  assertCandidateManifest(audio.inheritedManifest, alignment);
+  assertCandidateManifest(manifest, alignment);
   const candidateImports = assertDeclaredCandidateImports(candidate, manifest);
   const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
   assertWorkspacePolicy(workspace);

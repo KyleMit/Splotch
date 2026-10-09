@@ -10,9 +10,10 @@ export type DrawingLoopLoader = (
   signal: AbortSignal,
   onFailure: () => void
 ) => Promise<DrawingLoop>;
-// native-audio-projection.test.mjs pins the scratch mapping to its shipping owner without a startup import.
+// native-audio-projection.test.mjs pins the portable gain/timing literals without a startup import.
+// Speed is per-event normalized paper units/ms, distinct from shipping backing-store/windowed speed.
 export const BASE_SCRATCH_GAIN = 0.2;
-export const FULL_VOLUME_SPEED = 0.45;
+export const FULL_VOLUME_PAPER_UNITS_PER_MS = 0.45;
 export const GAIN_RAMP_S = 0.06;
 export const STOP_DECLICK_S = 0.005;
 export const TEARDOWN_SLACK_MS = 20;
@@ -35,6 +36,7 @@ type AudioState = {
   volume: number;
   failureReported: boolean;
   onFailure: () => void;
+  onReady: () => void;
 };
 function reportFailure(state: AudioState) {
   if (state.disposed || state.failureReported) return;
@@ -115,13 +117,18 @@ function prepare(state: AudioState, load: DrawingLoopLoader) {
           fail(state);
         }
       }
+      if (!expired() && state.resource.status === 'ready') state.onReady();
     })
     .catch(() => {
       clearTimeout(deadline);
       if (!expired()) fail(state);
     });
 }
-export function createDrawingAudio(load: DrawingLoopLoader, onFailure: () => void) {
+export function createDrawingAudio(
+  load: DrawingLoopLoader,
+  onFailure: () => void,
+  onReady: () => void
+) {
   const state: AudioState = {
     enabled: false,
     foreground: true,
@@ -133,6 +140,7 @@ export function createDrawingAudio(load: DrawingLoopLoader, onFailure: () => voi
     volume: 0,
     failureReported: false,
     onFailure,
+    onReady,
   };
   return {
     begin(point: Point, timestamp: number) {
@@ -155,7 +163,7 @@ export function createDrawingAudio(load: DrawingLoopLoader, onFailure: () => voi
       const speed =
         Math.hypot(point.x - state.active.point.x, point.y - state.active.point.y) / elapsed;
       state.active = { point, timestamp };
-      state.volume = BASE_SCRATCH_GAIN * Math.min(speed / FULL_VOLUME_SPEED, 1);
+      state.volume = BASE_SCRATCH_GAIN * Math.min(speed / FULL_VOLUME_PAPER_UNITS_PER_MS, 1);
       applyVolume(state);
       clearStillness(state);
       state.stillness = setTimeout(() => {

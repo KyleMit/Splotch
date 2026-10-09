@@ -3,7 +3,7 @@ import {
   AUDIO_LOAD_TIMEOUT_MS,
   BASE_SCRATCH_GAIN,
   createDrawingAudio,
-  FULL_VOLUME_SPEED,
+  FULL_VOLUME_PAPER_UNITS_PER_MS,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
 
 function pending() {
@@ -20,8 +20,9 @@ function fixture() {
   const loop = { start: vi.fn(), setVolume: vi.fn(), stop: vi.fn(), dispose: vi.fn() };
   const load = vi.fn(() => ready.promise);
   const failure = vi.fn();
-  const audio = createDrawingAudio(load, failure);
-  return { ready, loop, load, failure, audio };
+  const recovered = vi.fn();
+  const audio = createDrawingAudio(load, failure, recovered);
+  return { ready, loop, load, failure, recovered, audio };
 }
 const first = { x: 10, y: 20 };
 async function ready(f) {
@@ -38,18 +39,39 @@ describe('drawing audio gesture and resource ownership', () => {
     f.audio.begin(first, 200);
     expect(f.load).not.toHaveBeenCalled();
   });
-  it('maps real paper movement to the shipping scratch gain and stops on lift', async () => {
+  it('maps normalized paper movement to its bounded scratch gain and stops on lift', async () => {
     const f = fixture();
     f.audio.setEnabled(true);
     f.audio.begin(first, 100);
     await ready(f);
-    f.audio.sample({ x: 10 + FULL_VOLUME_SPEED * 100, y: 20 }, 200);
+    f.audio.sample({ x: 10 + FULL_VOLUME_PAPER_UNITS_PER_MS * 100, y: 20 }, 200);
     expect(f.loop.start).toHaveBeenCalledOnce();
     expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
     f.audio.end();
     expect(f.loop.stop).toHaveBeenCalledOnce();
     f.audio.dispose();
   });
+  it.each([0, 0.01])(
+    'bounds equal or near-equal timestamp gain with a 1 ms floor (%s)',
+    async (delta) => {
+      const f = fixture();
+      f.audio.setEnabled(true);
+      f.audio.begin(first, 100);
+      await ready(f);
+      f.audio.sample({ x: first.x + FULL_VOLUME_PAPER_UNITS_PER_MS / 2, y: first.y }, 100 + delta);
+      expect(f.loop.setVolume.mock.calls.at(-1)[0]).toBeCloseTo(BASE_SCRATCH_GAIN / 2);
+      f.audio.sample({ x: first.x + 100, y: first.y }, 100 + delta);
+      expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
+      f.audio.sample(first, 99);
+      expect(f.loop.setVolume).toHaveBeenLastCalledWith(BASE_SCRATCH_GAIN);
+      expect(
+        f.loop.setVolume.mock.calls.every(
+          ([gain]) => Number.isFinite(gain) && gain >= 0 && gain <= BASE_SCRATCH_GAIN
+        )
+      ).toBe(true);
+      f.audio.dispose();
+    }
+  );
   it('does not start playback when a decode completes after lift', async () => {
     const f = fixture();
     f.audio.setEnabled(true);
@@ -116,6 +138,7 @@ describe('drawing audio gesture and resource ownership', () => {
     await Promise.resolve();
     expect(f.loop.start).toHaveBeenCalledOnce();
     expect(f.load).toHaveBeenCalledTimes(2);
+    expect(f.recovered).toHaveBeenCalledOnce();
     f.audio.dispose();
   });
   it('bounds an unresolved native initialization and ignores its expired result', async () => {
@@ -129,6 +152,7 @@ describe('drawing audio gesture and resource ownership', () => {
     await ready(f);
     expect(f.loop.start).not.toHaveBeenCalled();
     expect(f.loop.dispose).toHaveBeenCalledOnce();
+    expect(f.recovered).not.toHaveBeenCalled();
   });
   it('releases a failed player even if stop itself throws', async () => {
     const f = fixture();
