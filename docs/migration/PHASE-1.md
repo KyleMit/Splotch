@@ -3,8 +3,8 @@
 Status: execution requirements refined by two complete next-phase Claude reviews; candidate
 validation is pending. No candidate, new physical control, native instrument, or architecture
 verdict is certified by this plan. The migration contract remains authoritative. Native-only
-topology and minimal templates can proceed while physical devices are unavailable; comparison timing
-cannot.
+topology, product features and development builds can proceed while physical devices are
+unavailable; comparative timing cannot.
 
 ## Fresh-start execution scope
 
@@ -18,8 +18,40 @@ or accepted by the scope change.
 Unit 6 below owns new-app storage/service feasibility instead of historical import feasibility.
 References to continuity in the comparison rules mean applicable new-app lifecycle/data reliability
 and same-identity update installability. The retired old-origin, secure-entry, held-picture and
-pack-job transfer matrix is not a prerequisite. Other ordering, observer, structural, security,
-burden, review and final release gates keep their existing meaning and limits.
+pack-job transfer matrix is not a prerequisite. The functional development priority below supersedes
+earlier implementation ordering; observer, structural, security, burden, review and final release
+acceptance retain their requirements and claim limits.
+
+## Functional development sequence
+
+The [functional development priority](CONTRACT.md#functional-development-priority) is the current
+execution order. The native implementation owner constructs and repairs useful features in an
+isolated campaign checkout, with frequent running feedback. The first phone development checkpoint
+is due by 2026-10-11 03:00 UTC; unavailable phone/signing has a concrete blocker and an
+emulator/simulator build, local demonstration and implemented source as the fallback.
+
+| Slice                       | Implementation and running evidence still required                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Drawing and recovery        | Real strokes, color/brush controls, undo, clear, genuine PNG export and basic local save/reopen.                                            |
+| Drawing fidelity and pages  | Crayon/Magic, coloring, history/page operations, ordering and representative output.                                                        |
+| Product services            | Settings/audio, permissions, offline/lifecycle behavior, failed-save recovery and secure services.                                          |
+| Qualification and selection | Optimized target builds, fair structural/mechanism comparisons, calibrated physical evidence and recurring burden decision.                 |
+| Final target readiness      | Integrated tuning, complete applicable product/web/API/admin acceptance, signing/channel updates and final independent Codex/Claude review. |
+
+Record exact feature source and observed behavior in the campaign register. An earlier slice can
+have unresolved work while another independent feature progresses. Supported debug and Expo
+development workflows may provide feedback before optimized release builds. A concrete next-feature
+build, correctness or security blocker receives the shortest bounded resolution; expanded
+materializer/toolchain controls and performance qualification wait when they do not unblock it.
+Prior failed qualification attempts remain failed evidence, and existing original reviewer budgets
+remain attached to their units.
+
+The numbered units below describe architecture and acceptance obligations. They are not a strict
+chronological barrier to functional development. Full Skia qualification or an optimized build on
+both OSes is not a prerequisite to a provisional supported drawing implementation. Any provisional
+backend needs actual output evidence and remains subject to later fidelity, lifecycle, performance
+and alternative checks. A development build or thin drawing slice does not establish foundation
+selection, production cutover or campaign completion.
 
 ## Historical review dispositions
 
@@ -64,9 +96,35 @@ The second review preserved those dispositions and refined eight remaining point
 
 ## Bounded units and dependencies
 
-Each unit receives an implementation plan and Claude review, then an exact-head diff/evidence review
-and applicable CI before joining the integration branch. Units may investigate independently; they
-do not confer another unit's evidence.
+Each unit receives scoped Claude review, an exact-head diff/evidence review and applicable CI before
+joining the integration branch. Within a unit, the handler can implement and exercise routine
+feature increments before that review; consolidate concrete source and results for the original
+reviewer within the unit's remaining capacity. Codex subagents do not replace Claude review. Units
+may progress independently; they do not confer another unit's evidence. No budget reset, replacement
+reviewer or renamed exhausted repair follows from this ordering change.
+
+N1's reserved original round covers its recovered template/package/platform source and the first
+drawing slice: strokes, color/brush, undo, clear, PNG export and local save/reopen. Develop and try
+that slice first. Hold the reserved round until the exact resulting source and results for the
+claimed N1 structural scope are ready, including the optimized both-OS builds required for that
+scope. The earlier development checkpoint does not require or consume that final round. N1's
+remaining findings, failed attempts and unresolved obligations stay attached to N1; exhaustion
+requires a legitimate human budget disposition before another substantive N1 round.
+
+The optimized-build requirement gates N1's claimed structural acceptance and dependent integration
+merges. Later feature source may be developed, exercised and reviewed against an exact published but
+unaccepted N1 head, with that dependency explicitly pending; such a composed draft stays off
+integration until the required N1 acceptance. Optimized qualification can progress after the first
+working drawing checkpoint alongside later feature construction. It does not block ordinary
+development or require full-product completion before the N1 review.
+
+Later crayon/Magic, coloring, history/page, audio and service features are subsequent units with
+their own bounded changed behavior, source range, dependency on accepted N1 source and original
+Claude review identity. Register each unit's scope and budget before its first review. A new unit
+cannot relabel N1 findings, repair an exhausted N1 defect under a fresh reviewer, or count
+incomplete N1 evidence as accepted. Review and applicable CI precede each integration merge; later
+feature units do not move N1's unused or consumed capacity. This separates real new product work
+from a renamed repair without forcing the full product into one review.
 
 Register the contract's causal limits, observer fallback and burden ranges before remedies or
 comparison results; update those records only through reviewed evidence.
@@ -121,25 +179,29 @@ comparison results; update those records only through reviewed evidence.
    rule; absent calibration, record retention/comparison unproved without a Phase 1 exit or final
    gate waiver. Delay paper, decoded output and chrome separately; inject incoherent epochs and
    missing clock/token evidence so the validator rejects them. Simulator/emulator proves mechanics
-   only. Extend to static Skia before full native-paper investment; thresholds require fresh
-   physical controls.
+   only. Extend to the actual candidate backend before comparative claims; functional drawing work
+   may proceed independently. Thresholds require fresh physical controls.
 5. **Released template and static native graphics.** Commit the isolated minimum native template and
-   exact toolchain/locks, preserving API24/iOS16.4. Compile optimized builds for both OSes and
-   exercise static Skia geometry and output. Audit actual permissions, binaries, install scripts and
-   CocoaPods sources. Verify Hermes configuration, fixed-fixture portable compute and raster/JSI
-   costs separately; no whole-device verdict. Prove native contact ownership, default/unbuffered
-   sample handling and no redundant MOVE stream. Keep collector changes, audio smoke and graphics
-   consumers in separate reviewable units. At the earliest real collector/placement slice, prove one
-   export cut and one page-plus-undo transaction with delayed work and a known fixture before full
-   crayon/Magic investment. Start with an attached receiver; a pre-React host is a conditional
-   first-ink remedy.
-6. **Early new-app storage and service feasibility.** Exercise real save/export consumers,
-   permission denial, secure credential read/write failures, exact unsaved-picture retention/retry
-   and background/rotation teardown on disposable installations. Use data created by the candidate;
-   no old WebView/settings/secret/picture import fixture is required. Prove safe fresh
-   initialization under the existing app ID/local signing scope and safe cancellation or
-   reconciliation of surviving prior work. Installation allowance identity remains
-   server-authoritative. Prove the bounded
+   exact toolchain/locks, preserving API24/iOS16.4. Build and exercise a useful development drawing
+   screen first. Compile optimized builds for both OSes and exercise the candidate graphics geometry
+   and output before structural acceptance; Skia is a hypothesis, not a mandatory development
+   backend. Audit actual permissions, binaries, install scripts and CocoaPods sources. Verify Hermes
+   configuration, fixed-fixture portable compute and raster/JSI costs separately; no whole-device
+   verdict. Prove native contact ownership, default/unbuffered sample handling and no redundant MOVE
+   stream. N1's registered first drawing slice combines the bounded collector, graphics/export and
+   basic local save/reopen consumers in its original review scope. Beyond that explicit first slice,
+   keep collector changes, audio smoke and graphics consumers in separate reviewable units. At the
+   earliest real collector/placement slice, prove one export cut and one page-plus-undo transaction
+   with delayed work and a known fixture before full crayon/Magic investment. Start with an attached
+   receiver; a pre-React host is a conditional first-ink remedy.
+6. **Early new-app storage and service feasibility.** N1's basic local save/reopen results may
+   satisfy only the exact observed storage predicates from its registered first slice; they do not
+   complete this broader unit. Exercise real save/export consumers, permission denial, secure
+   credential read/write failures, exact unsaved-picture retention/retry and background/rotation
+   teardown on disposable installations. Use data created by the candidate; no old
+   WebView/settings/secret/picture import fixture is required. Prove safe fresh initialization under
+   the existing app ID/local signing scope and safe cancellation or reconciliation of surviving
+   prior work. Installation allowance identity remains server-authoritative. Prove the bounded
    [abandoned-credential security disposition](CONTRACT.md#abandoned-credential-security) without
    restoring old transfer/readers or deleting unrelated inert data. These checks do not establish
    Play/TestFlight signing/channel installability, physical floor behavior or full-product release

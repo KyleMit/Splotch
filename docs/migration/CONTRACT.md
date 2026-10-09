@@ -48,8 +48,37 @@ The next product milestone is an observable drawing candidate: runnable paper, r
 undo and exported output, with exact source and claim limits. Follow it with full fidelity and
 service slices, matched foundation evidence, integrated tuning and target release gates. Legacy-only
 transfer work is not a prerequisite. Existing source-acceptance dependencies still apply to the
-units that consume them; scope reconciliation does not accept F1 or another pending unit. Physical
-hardware gates comparison and release, rather than independent structural builds.
+units that consume them; scope reconciliation does not accept a pending unit. Physical hardware
+gates comparison and release, rather than ordinary feature construction and development builds.
+
+### Functional development priority
+
+The maintainer's course correction effective 2026-10-09 03:00 UTC prioritizes useful native product
+construction with running feedback. The development checkpoint is an installable phone build within
+48 hours, by 2026-10-11 03:00 UTC. If a phone or signing requirement prevents installation, record
+the concrete blocker and provide a runnable emulator/simulator build, local demonstration and
+substantial implemented source. A time target does not establish delivery or acceptance.
+
+Build the next working feature before expanding qualification. Start with drawing, color and brush
+controls, undo, clear, PNG export and basic local save/reopen. Continue through substantive
+crayon/Magic, coloring, history/page operations, settings/audio and reliable services. Keep drawing,
+history, UI, storage and platform responsibilities clear; resolve real needs without speculative
+abstraction. Maintain a short feature inventory with exact source and observed running behavior.
+
+Upfront validation addresses concrete build, correctness or security requirements needed for the
+next feature. Use supported development workflows and already trusted inputs where practical. Name
+any remaining blocker, its specific risk and shortest bounded resolution. Exhaustive source
+materialization qualification, optimized builds on both OSes, complete performance instrumentation
+and matched physical comparisons are not prerequisites to ordinary development. Preserve prior
+attempts and their limitations; defer work that does not unblock the next running feature.
+
+Keep the shipping app runnable and experiments isolated. Development observations do not select a
+framework, pass Phase 1, authorize production ownership changes or complete the campaign. Full
+fidelity, fair alternatives, applicable web/API/admin contracts, source/dependency security,
+integrated tuning, physical performance gates, signing/channel updates and final independent
+Codex/Claude review remain required for reviewed cutover or valid retention. Original reviewer
+identities, consumed rounds and remaining budgets persist; changing the sequence grants no new
+review capacity and does not reopen an exhausted unit.
 
 ### Abandoned credential security
 
@@ -104,7 +133,9 @@ Before choosing the implementation foundation, record:
 4. A native measurement mapping and validation plan, including what cannot be compared directly.
    Calibrate new observables and input transports before using them for comparative conclusions.
 5. Phase 1 implementation plans for the smallest checks that settle structural risk. Claude reviews
-   the contract and plans, including alternative costs and pivot conditions, before code begins.
+   the contract and consequential foundation plans, including alternative costs and pivot
+   conditions, before foundation selection. Incremental isolated feature construction follows the
+   functional development priority; routine edits do not require a separate planning review.
 
 The [baseline inventory](BASELINE.md) records banked source/build provenance, input regimes,
 dispositions, missing witnesses and section-specific age limits. Current physical controls remain
@@ -123,16 +154,17 @@ as proof that a target has no valid baseline.
 
 ## Phase 1 exit: selected architecture with its expensive assumptions tested
 
-Review and run the checks below in independently reviewed units. Begin bounded shipping-app
-attribution and behavior-preserving remedies before investing in complete native paper. Diagnostic
-suppressions may deliberately omit output or readiness and cannot qualify as product candidates.
-Costs removed in place remain regression workloads but no longer count as architectural failure
-elimination. Keep this work bounded rather than reopening an indefinite web-tuning campaign.
+Review and run the checks below in independently reviewed units. Complete bounded shipping-app
+attribution and behavior-preserving remedies before interpreting native comparisons. Functional
+native construction can proceed while that evidence is pending. Diagnostic suppressions may
+deliberately omit output or readiness and cannot qualify as product candidates. Costs removed in
+place remain regression workloads but no longer count as architectural failure elimination. Keep
+this work bounded rather than reopening an indefinite web-tuning campaign.
 
-Candidate package topology, minimum native templates and static graphics can proceed while physical
-controls are unavailable. Simulator/emulator checks establish mechanics and structural feasibility.
-Validated observers, fresh physical controls and registered thresholds are prerequisites for
-comparative timing, not for independent compilation.
+Candidate package topology, native drawing features and development builds can proceed while
+physical controls are unavailable. Simulator/emulator checks establish mechanics and structural
+feasibility. Validated observers, fresh physical controls and registered thresholds are
+prerequisites for comparative timing, not for independent compilation.
 
 Review and run bounded checks for:
 
@@ -339,11 +371,13 @@ and tokens where selected; keep render surfaces, native services, and web semant
 adapters. A setting or DOM subtree has one active owner. Do not make the current Svelte facade a
 native dependency: it imports SvelteKit/rune state and owns browser canvas objects.
 
-For each bounded increment, the lead writes an implementation plan with alternatives and done-when
-evidence; Claude reviews it. Implement, run appropriate checks and real-app validation, then open
-the unit PR promptly and obtain Claude's diff/evidence review. Resolve material findings, verify the
-exact head's applicable CI, and merge into the integration branch. Review the phase outcome before
-adding the next foundation. Preserve a durable work ledger and all rejected assumptions.
+After foundation selection, for each bounded ownership increment, the lead writes an implementation
+plan with alternatives and done-when evidence; Claude reviews it. Isolated pre-selection routine
+feature construction follows the functional development priority and each unit's integration review
+gate. Implement, run appropriate checks and real-app validation, then open the unit PR promptly and
+obtain Claude's diff/evidence review. Resolve material findings, verify the exact head's applicable
+CI, and merge into the integration branch. Review the phase outcome before adding the next
+foundation. Preserve a durable work ledger and all rejected assumptions.
 
 Web, Android, and iOS have independent readiness gates. Keep a shipping reference and staged
 candidate until that target earns applicable product acceptance and measured readiness. Validate

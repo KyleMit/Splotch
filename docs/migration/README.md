@@ -1,7 +1,7 @@
 # Product UI migration
 
 Live execution resumed on 2026-10-06. The
-[public campaign register](CAMPAIGN.md#current-public-status-2026-10-08) owns current status,
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-09) owns current status,
 source/review dependencies and acceptance. Host-local CURRENT mirrors pending draft execution and
 lease receipts; accepted evidence stays committed or publicly linked. The pause checkpoint below
 remains historical.
@@ -13,6 +13,13 @@ goal is a complete, integrated, tuned new drawing product across web, Android, a
 [authoritative fresh-start scope](CONTRACT.md#authoritative-fresh-start-scope) retires legacy beta
 data transfer and exact old-UI parity across web/PWA, Android and iOS while retaining substantive
 product, narrow credential security and release obligations.
+
+The [functional development priority](CONTRACT.md#functional-development-priority) puts useful
+native features and running feedback first. The next checkpoint is a phone development build by
+2026-10-11 03:00 UTC, or a concrete device/signing blocker with a runnable emulator/simulator build
+and local demonstration. Qualification and integrated tuning follow functional construction unless a
+specific build, correctness or security requirement blocks the next feature. This sequencing change
+preserves original review capacity and every applicable final cutover or retention gate.
 
 React Native mobile with a shared web-capable product UI remains an architecture hypothesis. No
 framework is selected; the [contract](CONTRACT.md)'s structural and evidence checks govern the
