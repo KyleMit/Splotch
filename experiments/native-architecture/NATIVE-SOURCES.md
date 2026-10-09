@@ -92,10 +92,14 @@ The final Release caller must bind the actual compiler/runtime versions and payl
 Hermes bytecode validation, optimization invocation and native bundle consumption. A bytecode magic
 header alone rejects plain JavaScript but cannot establish complete validity or optimization.
 
-The maintained Android manifest declares INTERNET only; local ATS exceptions and development
-inspectors are disabled. Native dependency installation must inspect actual merged permissions and
-privacy inputs before treating these source declarations as effective policy. No children's-store
-compliance claim follows.
+The maintained Android manifest requests INTERNET and explicitly removes the two legacy external
+storage permissions contributed by Expo FileSystem. The template transform retains the tools
+namespace and derives these exact removal markers; the source contract rejects missing, altered or
+additional declarations. Saving uses app-private Documents and exporting shares a cache PNG through
+SharingFileProvider. Local ATS exceptions and development inspectors are disabled. A merged APK
+permission readback remains required before treating the source markers as effective policy. The
+previous d82 APK contained both storage permissions with maxSdkVersion 32; its successful drawing
+flows and sealed audit remain prior-source evidence. No children's-store compliance claim follows.
 
 Native tools run only in an independent owned disposable copy of the accepted candidate source. The
 maintained reader rejects every additional native path and names the path; it does not infer

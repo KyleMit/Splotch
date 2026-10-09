@@ -8,6 +8,11 @@ and reopening pictures in app-private storage. Saved pictures survive an app res
 renderer is `react-native-svg`; PNG export uses its raster `toDataURL` callback and Expo file and
 sharing APIs.
 
+The maintained Android manifest removes Expo FileSystem's legacy READ_EXTERNAL_STORAGE and
+WRITE_EXTERNAL_STORAGE declarations. These private save/cache paths and PNG sharing do not request
+external storage grants. Validate the actual built APK's merged permissions when checking a new
+native build; source markers alone do not establish its permission set.
+
 ## Local iOS development
 
 Use Node 24 and the Ruby version in `Gemfile`. Install JavaScript packages at the repository root
