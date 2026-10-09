@@ -1,0 +1,456 @@
+{
+  "artifacts": [
+    {
+      "kind": "release",
+      "CI_ownedRoot": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D",
+      "status": "structural-build-only",
+      "reviewEvidenceEligible": true,
+      "sourceSha": "944788da322876bfa2577cf4b0e87f662187c2f2",
+      "topologySha": "c0ca2f6dc7d7d385ecb2307c7fda91605dab240d",
+      "inputsSha256": "f9bf3eddaa6471ed19318e30609696b32c9728c2a1492ce881b7df641eb64eee",
+      "sourceInputMetadata": {
+        "node": "v22.23.3",
+        "sha": "944788da322876bfa2577cf4b0e87f662187c2f2",
+        "topologySha": "c0ca2f6dc7d7d385ecb2307c7fda91605dab240d",
+        "topologyLockSha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+        "lockSha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+        "provisional": false,
+        "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "patchSha256": null
+      },
+      "installedLockRowsCount": 4,
+      "installedLockRows": [
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n          \"link\": null\n        },\n        {\n          \"path\": \".pnpm/lock.yaml\",\n          \"bytes\": 518386,\n          \"kind\": \"file\",\n          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n          \"link\": null\n        },\n        {\n          \"path\": \".pnpm/lock.yaml\",\n          \"bytes\": 518386,\n          \"kind\": \"file\",\n          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n            \"link\": null\n          },\n          {\n            \"path\": \"node_modules/.pnpm/lock.yaml\",\n            \"bytes\": 518386,\n            \"kind\": \"file\",\n            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n            \"link\": null\n          },\n          {\n            \"path\": \"node_modules/.pnpm/lock.yaml\",\n            \"bytes\": 518386,\n            \"kind\": \"file\",\n            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        }
+      ],
+      "buildChildren": [
+        {
+          "label": "reference-prebuild",
+          "started": "2026-10-09T04:02:50.221Z",
+          "finished": "2026-10-09T04:02:51.721Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2506,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/reference-prebuild.log.txt"
+        },
+        {
+          "label": "reference-build",
+          "started": "2026-10-09T04:03:03.002Z",
+          "finished": "2026-10-09T04:03:12.683Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2599,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/reference-build.log.txt"
+        },
+        {
+          "label": "reference-postbuild",
+          "started": "2026-10-09T04:03:24.445Z",
+          "finished": "2026-10-09T04:03:25.377Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2647,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/reference-postbuild.log.txt"
+        },
+        {
+          "label": "control-prebuild",
+          "started": "2026-10-09T04:03:48.501Z",
+          "finished": "2026-10-09T04:03:49.865Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2712,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/control-prebuild.log.txt"
+        },
+        {
+          "label": "control-build",
+          "started": "2026-10-09T04:04:01.150Z",
+          "finished": "2026-10-09T04:04:10.645Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2799,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/control-build.log.txt"
+        },
+        {
+          "label": "control-postbuild",
+          "started": "2026-10-09T04:04:22.506Z",
+          "finished": "2026-10-09T04:04:23.435Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2851,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/control-postbuild.log.txt"
+        },
+        {
+          "label": "control-types",
+          "started": "2026-10-09T04:04:47.031Z",
+          "finished": "2026-10-09T04:04:50.157Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 2918,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/controls/control-types.log.txt"
+        }
+      ],
+      "browserInvocations": [
+        {
+          "record": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6.json",
+          "label": "browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6",
+          "started": "2026-10-09T04:07:47.446Z",
+          "finished": "2026-10-09T04:09:05.266Z",
+          "code": 0,
+          "termination": {
+            "groupPid": 3078,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "outputDir": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/browser-results/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6",
+          "reportDir": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/browser-report/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          },
+          "borrowedBrowserRegistry": {
+            "path": "/home/runner/.cache/ms-playwright",
+            "dev": 66305,
+            "ino": 9513521,
+            "mode": 493,
+            "standardHostValidationMayWrite": "DEPENDENCIES_VALIDATED"
+          },
+          "transformCache": "/home/runner/work/_temp/retained-web-host/release/splotch-web-host-LFKo3D/runtime/cache/playwright-transform-g3LCgv"
+        }
+      ],
+      "outputInventoryCounts": {
+        "web/.svelte-kit/output": 1546,
+        "web/build": 1227,
+        "web/.netlify": 322
+      },
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": ["explicit owned-copy absolute path prefix"],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      },
+      "structuralComparison": "complete output bytes with explicit copy-path normalization; output paths, startup/lazy measurements, version and host sources match",
+      "measurement": {
+        "startupBytes": 459474,
+        "startupFileCount": 38,
+        "modulepreloadCount": 38,
+        "inlineStyleBytes": 84638,
+        "largestLazyChunk": {
+          "path": "_app/immutable/chunks/DVeYvXfu.js",
+          "bytes": 60772
+        }
+      },
+      "version": {
+        "version": "1.6.2817"
+      },
+      "appShellUrl": "/?app-shell-build=f17662f0-3d44-4d51-b2db-53b36e093ab9",
+      "producerPending": [
+        "browser release ink and mechanism early acceptance/adoption",
+        "deployed CSP/PWA",
+        "physical floors and performance",
+        "full candidate startup accounting and React mechanics"
+      ],
+      "borrowedAfter": {
+        "web/.svelte-kit": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "web/.netlify": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        ".netlify": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "web/build": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "node_modules": "d52c2db80da0022ad4c205a55e648fd92a0f82b355f462f26a5d30c20b484961"
+      }
+    },
+    {
+      "kind": "mechanism",
+      "CI_ownedRoot": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h",
+      "status": "structural-build-only",
+      "reviewEvidenceEligible": true,
+      "sourceSha": "944788da322876bfa2577cf4b0e87f662187c2f2",
+      "topologySha": "c0ca2f6dc7d7d385ecb2307c7fda91605dab240d",
+      "inputsSha256": "a7fa4b0e59c280a791a22e91bf4199f53f3f74558617c0f06588320fa04f31ed",
+      "sourceInputMetadata": {
+        "node": "v22.23.3",
+        "sha": "944788da322876bfa2577cf4b0e87f662187c2f2",
+        "topologySha": "c0ca2f6dc7d7d385ecb2307c7fda91605dab240d",
+        "topologyLockSha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+        "lockSha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+        "provisional": false,
+        "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "patchSha256": null
+      },
+      "installedLockRowsCount": 4,
+      "installedLockRows": [
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n          \"link\": null\n        },\n        {\n          \"path\": \".pnpm/lock.yaml\",\n          \"bytes\": 518386,\n          \"kind\": \"file\",\n          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n          \"link\": null\n        },\n        {\n          \"path\": \".pnpm/lock.yaml\",\n          \"bytes\": 518386,\n          \"kind\": \"file\",\n          \"mode\": 420,\n          \"target\": null,\n          \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n            \"link\": null\n          },\n          {\n            \"path\": \"node_modules/.pnpm/lock.yaml\",\n            \"bytes\": 518386,\n            \"kind\": \"file\",\n            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        },
+        {
+          "sha256": "3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee",
+          "context": "            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"5c5baf1008a331cc5784873ff5529b11b38bc6ce01066d6bd9ba849df30ea4d7\",\n            \"link\": null\n          },\n          {\n            \"path\": \"node_modules/.pnpm/lock.yaml\",\n            \"bytes\": 518386,\n            \"kind\": \"file\",\n            \"mode\": 420,\n            \"target\": null,\n            \"sha256\": \"3704d14e3bc2a8d3070317b4de25ad2b322ffce08b36cc52bdf87c43edbbdcee\",\n"
+        }
+      ],
+      "buildChildren": [
+        {
+          "label": "reference-prebuild",
+          "started": "2026-10-09T04:10:43.663Z",
+          "finished": "2026-10-09T04:10:45.206Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3372,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/reference-prebuild.log.txt"
+        },
+        {
+          "label": "reference-build",
+          "started": "2026-10-09T04:10:56.604Z",
+          "finished": "2026-10-09T04:11:05.943Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3464,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/reference-build.log.txt"
+        },
+        {
+          "label": "reference-postbuild",
+          "started": "2026-10-09T04:11:17.911Z",
+          "finished": "2026-10-09T04:11:18.790Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3512,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/reference-postbuild.log.txt"
+        },
+        {
+          "label": "control-prebuild",
+          "started": "2026-10-09T04:11:42.086Z",
+          "finished": "2026-10-09T04:11:43.484Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3574,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/control-prebuild.log.txt"
+        },
+        {
+          "label": "control-build",
+          "started": "2026-10-09T04:11:54.887Z",
+          "finished": "2026-10-09T04:12:04.528Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3661,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/control-build.log.txt"
+        },
+        {
+          "label": "control-postbuild",
+          "started": "2026-10-09T04:12:16.401Z",
+          "finished": "2026-10-09T04:12:17.277Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3709,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/control-postbuild.log.txt"
+        },
+        {
+          "label": "control-types",
+          "started": "2026-10-09T04:12:41.097Z",
+          "finished": "2026-10-09T04:12:44.200Z",
+          "code": 0,
+          "signal": null,
+          "timedOut": false,
+          "interrupted": false,
+          "termination": {
+            "groupPid": 3772,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "logPath": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/controls/control-types.log.txt"
+        }
+      ],
+      "browserInvocations": [
+        {
+          "record": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2.json",
+          "label": "browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2",
+          "started": "2026-10-09T04:17:48.748Z",
+          "finished": "2026-10-09T04:19:05.897Z",
+          "code": 0,
+          "termination": {
+            "groupPid": 4124,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "outputDir": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2",
+          "reportDir": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/browser-report/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          },
+          "borrowedBrowserRegistry": {
+            "path": "/home/runner/.cache/ms-playwright",
+            "dev": 66305,
+            "ino": 9513521,
+            "mode": 493,
+            "standardHostValidationMayWrite": "DEPENDENCIES_VALIDATED"
+          },
+          "transformCache": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/runtime/cache/playwright-transform-a6WLQU"
+        },
+        {
+          "record": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-ffc92769-61df-491d-8a6f-232934b4b198.json",
+          "label": "browser-control-ffc92769-61df-491d-8a6f-232934b4b198",
+          "started": "2026-10-09T04:15:42.067Z",
+          "finished": "2026-10-09T04:16:59.370Z",
+          "code": 0,
+          "termination": {
+            "groupPid": 3911,
+            "gracefulSignal": "SIGTERM",
+            "escalated": false
+          },
+          "outputDir": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-ffc92769-61df-491d-8a6f-232934b4b198",
+          "reportDir": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/browser-report/browser-control-ffc92769-61df-491d-8a6f-232934b4b198",
+          "lastRun": {
+            "status": "passed",
+            "failedTests": []
+          },
+          "borrowedBrowserRegistry": {
+            "path": "/home/runner/.cache/ms-playwright",
+            "dev": 66305,
+            "ino": 9513521,
+            "mode": 493,
+            "standardHostValidationMayWrite": "DEPENDENCIES_VALIDATED"
+          },
+          "transformCache": "/home/runner/work/_temp/retained-web-host/mechanism/splotch-web-host-nw6n1h/runtime/cache/playwright-transform-UgWY5g"
+        }
+      ],
+      "outputInventoryCounts": {
+        "web/.svelte-kit/output": 1546,
+        "web/build": 1227,
+        "web/.netlify": 322
+      },
+      "byteComparison": {
+        "compared": "complete emitted bytes",
+        "normalized": [],
+        "allowances": ["explicit owned-copy absolute path prefix"],
+        "buildTime": "identical pinned owner metadata; no time normalization"
+      },
+      "structuralComparison": "complete output bytes with explicit copy-path normalization; output paths, startup/lazy measurements, version and host sources match",
+      "measurement": {
+        "startupBytes": 464131,
+        "startupFileCount": 38,
+        "modulepreloadCount": 38,
+        "inlineStyleBytes": 84638,
+        "largestLazyChunk": {
+          "path": "_app/immutable/chunks/DKFeDJQ0.js",
+          "bytes": 60772
+        }
+      },
+      "version": {
+        "version": "1.6.2817"
+      },
+      "appShellUrl": "/?app-shell-build=82a059c6-50bf-41a3-8c95-695f8acba740",
+      "producerPending": [
+        "browser release ink and mechanism early acceptance/adoption",
+        "deployed CSP/PWA",
+        "physical floors and performance",
+        "full candidate startup accounting and React mechanics"
+      ],
+      "borrowedAfter": {
+        "web/.svelte-kit": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "web/.netlify": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        ".netlify": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "web/build": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "node_modules": "d52c2db80da0022ad4c205a55e648fd92a0f82b355f462f26a5d30c20b484961"
+      }
+    }
+  ],
+  "contentVerification": "Both full archives read and all regular member SHA256/CRC recorded; source metadata, inputs hash, installed-lock rows, equality of complete exported reference/control evidence,14 buildchildren and3 browser records checked as DATA",
+  "processClosureScope": "Recorded groups ended with termination.escalated=false; the unchanged owner determines this by ownedGroupExists=false. No independent remote PS census or unobserved process graph claim."
+}

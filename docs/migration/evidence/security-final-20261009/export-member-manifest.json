@@ -1,0 +1,340 @@
+[
+  {
+    "artifact": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/retained-web-host-release-1.zip",
+    "kind": "release",
+    "members": [
+      {
+        "member": "browser-1.log.txt",
+        "bytes": 408,
+        "sha256": "118b2b2abc3c4b1c61c0accc2e0b8606684b8afbbf9b495d1127c331f7ca8635",
+        "CRC": "f8f933c3",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/browser-1.log.txt"
+      },
+      {
+        "member": "build.log.txt",
+        "bytes": 99,
+        "sha256": "d0e28ede21b353940a6a584c44d1dbf17c94d92b7d8d5023b129767a60d94748",
+        "CRC": "fb0c5771",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/build.log.txt"
+      },
+      {
+        "member": "check.log.txt",
+        "bytes": 396,
+        "sha256": "7f780bb8e21f65b6254166ab35b428d032b714ecfc4f177275caeb9e079eb544",
+        "CRC": "80b7653e",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/check.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/.splotch-web-host.json",
+        "bytes": 131,
+        "sha256": "992d599a86292a7037fad8b724356cddfd5e6012506de23629796150b535b29e",
+        "CRC": "5d095255",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/.splotch-web-host.json"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/browser-report/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/index.html",
+        "bytes": 521039,
+        "sha256": "ba9e1bacd243686204d3ac4fc55e7fc239c8d019ee8c499de2c450ea91237afa",
+        "CRC": "51be5ecd",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/browser-report/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/index.html"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/browser-results/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/.last-run.json",
+        "bytes": 45,
+        "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+        "CRC": "e1bbbed0",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/browser-results/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/.last-run.json"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/browser-results/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/control-retained-release-paper-accepts-visible-ink-retained-chromium/retained-release-ink.png",
+        "bytes": 213609,
+        "sha256": "3df5f58bcd3983f8d1284fea6eab0692c9517ab20aeb14a6326f3f29e9a33b35",
+        "CRC": "d7cc0b32",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/browser-results/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6/control-retained-release-paper-accepts-visible-ink-retained-chromium/retained-release-ink.png"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/control-passes.json",
+        "bytes": 211197,
+        "sha256": "2271bf7741ac5c44128d66b2f065ec16f0e98c7e6626288c5a6d83491a9ba151",
+        "CRC": "fde05fcc",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/control-passes.json"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6.json",
+        "bytes": 2055,
+        "sha256": "11a02ab83965b4f853f2393fb74ca47bb685ea269f0673bee06da187dad6294b",
+        "CRC": "9c10d4c7",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6.json"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6.log.txt",
+        "bytes": 2862,
+        "sha256": "a692460703c1072947183182d6e5717a05fc0d9d8fb00e52ca34b26717e1ee2f",
+        "CRC": "1bac2cd0",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/browser-control-fe24c1f9-b502-4b56-95a0-0395bf74e2f6.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/control-build.log.txt",
+        "bytes": 59426,
+        "sha256": "5f599aeadd3bf11b99d6eb6a281d81cc02390a74fed502a9e97b1ba3f90c44b5",
+        "CRC": "57de2e47",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/control-build.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/control-postbuild.log.txt",
+        "bytes": 1262,
+        "sha256": "8c54a0a00c010394e0f6dca74b40ea7d21f95df58870a59bf196be45d7cbdb53",
+        "CRC": "23cfedb7",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/control-postbuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/control-prebuild.log.txt",
+        "bytes": 2825,
+        "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04",
+        "CRC": "6055a21e",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/control-prebuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/control-types.log.txt",
+        "bytes": 138,
+        "sha256": "f2cf62faa354c705ccf035d4bc24d087d4db950e49e92c85b5cf7b136ca9ce48",
+        "CRC": "0a17e337",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/control-types.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/recheck-types-1791518789888.log.txt",
+        "bytes": 138,
+        "sha256": "f2cf62faa354c705ccf035d4bc24d087d4db950e49e92c85b5cf7b136ca9ce48",
+        "CRC": "0a17e337",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/recheck-types-1791518789888.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/reference-build.log.txt",
+        "bytes": 58600,
+        "sha256": "32beeb124cbed20451161fb0edfbb0adffc5850341f0203a81260ed1b8ebefb2",
+        "CRC": "0420cf3b",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/reference-build.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/reference-postbuild.log.txt",
+        "bytes": 1262,
+        "sha256": "8c54a0a00c010394e0f6dca74b40ea7d21f95df58870a59bf196be45d7cbdb53",
+        "CRC": "23cfedb7",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/reference-postbuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/controls/reference-prebuild.log.txt",
+        "bytes": 3033,
+        "sha256": "a3ce9d9534dce55ed814e34ae4cd12430affabf57e56c834ecdd5d189320f3c4",
+        "CRC": "44a71a1a",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/controls/reference-prebuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/inputs.json",
+        "bytes": 96243530,
+        "sha256": "f9bf3eddaa6471ed19318e30609696b32c9728c2a1492ce881b7df641eb64eee",
+        "CRC": "96ee3c96",
+        "savedPath": null
+      },
+      {
+        "member": "splotch-web-host-LFKo3D/result.json",
+        "bytes": 2207553,
+        "sha256": "d5000cf3286968ed4d3769f94bc46b5a29daa77a7b6e96cfbfb0ca028196dfea",
+        "CRC": "90d22346",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/release/splotch-web-host-LFKo3D/result.json"
+      }
+    ],
+    "allMembersReadToDeclaredEOFAndCRCCheckedByZipfile": true,
+    "largeInputsRetainedWithinZIP": "splotch-web-host-LFKo3D/inputs.json"
+  },
+  {
+    "artifact": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/retained-web-host-mechanism-1.zip",
+    "kind": "mechanism",
+    "members": [
+      {
+        "member": "browser-1.log.txt",
+        "bytes": 412,
+        "sha256": "4df04c7471d94e7f246cd7c0187805e4151d7dbeaea3913823967852d5d5b462",
+        "CRC": "4448177a",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/browser-1.log.txt"
+      },
+      {
+        "member": "browser-2.log.txt",
+        "bytes": 412,
+        "sha256": "4df04c7471d94e7f246cd7c0187805e4151d7dbeaea3913823967852d5d5b462",
+        "CRC": "4448177a",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/browser-2.log.txt"
+      },
+      {
+        "member": "build.log.txt",
+        "bytes": 101,
+        "sha256": "c4d3d1ed88791bf71c4f9a5eacc4ccfa6b50afe96b06112f60710c1e108cd496",
+        "CRC": "bba52ffa",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/build.log.txt"
+      },
+      {
+        "member": "check.log.txt",
+        "bytes": 400,
+        "sha256": "2702f0afbd99eb4ad1cf5cdb6f2eac47e8e4d4bf595173ccff3262c8fc4affa8",
+        "CRC": "5437d880",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/check.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/.splotch-web-host.json",
+        "bytes": 133,
+        "sha256": "e0ab047a93602d6c374e7ef58a7245b3adffb210025ef1c922fb444f2f12b5ee",
+        "CRC": "cdac62b3",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/.splotch-web-host.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-report/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/index.html",
+        "bytes": 521471,
+        "sha256": "b3fd6ec95d72f5825e2298c0f83138429d2dac3cd098bb98756135ce06530480",
+        "CRC": "f30a9a0d",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-report/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/index.html"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-report/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/index.html",
+        "bytes": 521307,
+        "sha256": "6b406d6001514aad9a1cdadc84e41c19294ca5b23dbd5aec8303cefe2c93f965",
+        "CRC": "925f5dba",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-report/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/index.html"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-results/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/.last-run.json",
+        "bytes": 45,
+        "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+        "CRC": "e1bbbed0",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/.last-run.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-results/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png",
+        "bytes": 213251,
+        "sha256": "12a98e1e85642e583e5cdc6dc0f56af32c00edc3c7ab19c58e9aced58d151551",
+        "CRC": "96777956",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-results/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/.last-run.json",
+        "bytes": 45,
+        "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+        "CRC": "e1bbbed0",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/.last-run.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/browser-results/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png",
+        "bytes": 213251,
+        "sha256": "12a98e1e85642e583e5cdc6dc0f56af32c00edc3c7ab19c58e9aced58d151551",
+        "CRC": "96777956",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/browser-results/browser-control-ffc92769-61df-491d-8a6f-232934b4b198/control-retained-mechanism-2245d-ation-paper-and-visible-ink-retained-chromium/retained-mechanism-adoption.png"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/control-passes.json",
+        "bytes": 211209,
+        "sha256": "9f86636867fa07a318987da3d8f7770fafc2410774b20dc4e043ea2df71d3bdb",
+        "CRC": "76d439b9",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/control-passes.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2.json",
+        "bytes": 2071,
+        "sha256": "d1f00fbea2316f6de5d9114cb8b2b40644402b6c9a45d051fc82a26af997b482",
+        "CRC": "3de037fd",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2.log.txt",
+        "bytes": 2864,
+        "sha256": "76648fba8266e9d11216b3205e8bce61aea9d487a730fb3d1cf884767b3c8bd4",
+        "CRC": "b02ecf73",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-61a4ed22-e843-4b91-b72f-c662584f5af2.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/browser-control-ffc92769-61df-491d-8a6f-232934b4b198.json",
+        "bytes": 2071,
+        "sha256": "af8233dcc77f9bf4fe1cab8a7ba342badeeaf95f9be4b2b5f053bcbd603ca394",
+        "CRC": "ff797ceb",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-ffc92769-61df-491d-8a6f-232934b4b198.json"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/browser-control-ffc92769-61df-491d-8a6f-232934b4b198.log.txt",
+        "bytes": 2864,
+        "sha256": "c6491447f61ddd60d8734c3dd3a5d365f37011ef6365fa2227df7f48857eb7a1",
+        "CRC": "af6358e7",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/browser-control-ffc92769-61df-491d-8a6f-232934b4b198.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/control-build.log.txt",
+        "bytes": 59430,
+        "sha256": "0590acc40c49afb13602d9d28094ec02c5cecfb0ddf1d5b08373f8d6421fd174",
+        "CRC": "cbf43ad7",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/control-build.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/control-postbuild.log.txt",
+        "bytes": 1361,
+        "sha256": "38394f5991a151fad55614a05eefc51191b8e10076825695558db90111be5137",
+        "CRC": "5641c0e2",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/control-postbuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/control-prebuild.log.txt",
+        "bytes": 2825,
+        "sha256": "aeb38b75192498d4ad0d0dc0db1ae607a061cf8bd7075d54aa08b2eaca4a7a04",
+        "CRC": "6055a21e",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/control-prebuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/control-types.log.txt",
+        "bytes": 140,
+        "sha256": "af2f0668a6bb08e77d2c8c6c8ebb959a42c8268eb0cf9efb840cf94dfbf872dd",
+        "CRC": "47d30be5",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/control-types.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/recheck-types-1791519264682.log.txt",
+        "bytes": 140,
+        "sha256": "af2f0668a6bb08e77d2c8c6c8ebb959a42c8268eb0cf9efb840cf94dfbf872dd",
+        "CRC": "47d30be5",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/recheck-types-1791519264682.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/reference-build.log.txt",
+        "bytes": 58600,
+        "sha256": "ba0eaca2c59743ed203e489e90e8c31af411201f908f283b9777c20234968d90",
+        "CRC": "16a4916f",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/reference-build.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/reference-postbuild.log.txt",
+        "bytes": 1361,
+        "sha256": "38394f5991a151fad55614a05eefc51191b8e10076825695558db90111be5137",
+        "CRC": "5641c0e2",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/reference-postbuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/controls/reference-prebuild.log.txt",
+        "bytes": 3033,
+        "sha256": "7b2bb10caae6e0143866841051426017d989d0853df9443c9da1f278cfc51208",
+        "CRC": "7ab91838",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/controls/reference-prebuild.log.txt"
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/inputs.json",
+        "bytes": 96243540,
+        "sha256": "a7fa4b0e59c280a791a22e91bf4199f53f3f74558617c0f06588320fa04f31ed",
+        "CRC": "eab63e17",
+        "savedPath": null
+      },
+      {
+        "member": "splotch-web-host-nw6n1h/result.json",
+        "bytes": 2207627,
+        "sha256": "37a634b0128620434db8e71091521450cbbd00102a11fc588d10767c0ea9ced8",
+        "CRC": "65901da5",
+        "savedPath": "/private/tmp/splotch-handlebars-final-ci-evidence-01a11a00/export/mechanism/splotch-web-host-nw6n1h/result.json"
+      }
+    ],
+    "allMembersReadToDeclaredEOFAndCRCCheckedByZipfile": true,
+    "largeInputsRetainedWithinZIP": "splotch-web-host-nw6n1h/inputs.json"
+  }
+]
