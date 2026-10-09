@@ -1,7 +1,12 @@
 import { scale, themes } from '../../../../web/src/lib/design/tokens';
 
 export const DRAWING_THEME = themes.light;
-export const DRAWING_SCRIM = scale.scrimPill;
+// The released React Native Web color parser requires comma-separated rgba syntax.
+export const DRAWING_SCRIM = scale.scrimPill.replace(
+  /^rgb\((\d+) (\d+) (\d+) \/ (\d+)%\)$/,
+  (_, red: string, green: string, blue: string, alpha: string) =>
+    `rgba(${red}, ${green}, ${blue}, ${Number(alpha) / 100})`
+);
 export const TOUCH_TARGET = 52;
 export const CONTROL_RADIUS = 14;
 export const CONTROL_GAP = 8;
