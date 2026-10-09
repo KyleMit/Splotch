@@ -7,7 +7,169 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current accepted frontier, 2026-10-08
+## Current public status, 2026-10-09
+
+Public branch observation: 2026-10-09 04:36 UTC. Native GitHub readback and fetched Git objects
+verify integration f61f0c842abd2c4d4ab0eb1f3058786d245c444a and shipping main
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The isolated sequencing checkout began at the accepted
+d11f99c8b2470a1f9af397180728014890a25a5b predecessor. The canonical reviewer-installation checkout
+is not the product base.
+
+The maintainer's course correction prioritizes useful native construction and running feedback.
+Follow the [functional development sequence](PHASE-1.md#functional-development-sequence). The
+development checkpoint is an installable phone build by 2026-10-11 03:00 UTC; a concrete
+device/signing blocker requires a runnable emulator/simulator build, demonstration and substantial
+source. The full goal remains active. No framework or migrated drawing candidate is accepted.
+
+| Unit                                   | Current source and disposition                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Original review capacity                                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| F1 import ownership                    | [PR 2703](https://github.com/KyleMit/Splotch/pull/2703), accepted d8bbd45d102d0576a3e0e55013bee5fa1315a7b9, merged 205e402c1fde674d971dc9cda72685686ff58444 after [original round four](https://github.com/KyleMit/Splotch/pull/2703#pullrequestreview-5452521688). Its accepted composition releases the dependent source gate.                                                                                                                                                   | 4 used / 0 remaining; the single additional authorized round was consumed, with the three prior rounds preserved. |
+| Reviewer boundary                      | [PR 2712](https://github.com/KyleMit/Splotch/pull/2712), accepted 9bcd430053f428b2bfd017836a809b3c813b5fa8, merged c2ef44c35e2909bfc017368f1c422e6de42882a7 after its [original final review](https://github.com/KyleMit/Splotch/pull/2712#pullrequestreview-5452197011).                                                                                                                                                                                                          | 3 used / 0 remaining.                                                                                             |
+| Fresh-start scope                      | [PR 2714](https://github.com/KyleMit/Splotch/pull/2714), accepted fada055a62470d9da9ca8ff36d4eb53a9e6cbb5f, merged 93940e7e333c513c9d356114fcd0ade6251e0140.                                                                                                                                                                                                                                                                                                                       | 3 used / 0 remaining.                                                                                             |
+| Hand-back signal                       | [PR 2713](https://github.com/KyleMit/Splotch/pull/2713), accepted 17286cd7f4fb2d997440fe3faab72098a874f7ac, merged b65cf8f6790fc702060f0f1bc948db0bf5ecd79d.                                                                                                                                                                                                                                                                                                                       | 2 used / 1 remaining.                                                                                             |
+| Secure storage failures                | [PR 2716](https://github.com/KyleMit/Splotch/pull/2716), accepted 9df4f1faff73ec13f1eee856a05cca4a823490a7, merged d11f99c8b2470a1f9af397180728014890a25a5b after its [original final review](https://github.com/KyleMit/Splotch/pull/2716#pullrequestreview-5455679802). Narrow shipping security acceptance does not accept candidate-native storage.                                                                                                                            | 3 used / 0 remaining.                                                                                             |
+| Security resolution                    | [PR 2718](https://github.com/KyleMit/Splotch/pull/2718), accepted d1225d202e5bb7b2e925870fce5964d798b47ed7, normal-merged f61f0c842abd2c4d4ab0eb1f3058786d245c444a after [final original review](https://github.com/KyleMit/Splotch/pull/2718#pullrequestreview-5465740182) and [exact-source CI](https://github.com/KyleMit/Splotch/actions/runs/37881689559). The security checkpoint ancestor is preserved; source-specific evidence is bound below.                            | Original c462732d-12c3-4b4c-9bf8-906e9c56db21: 3 used / 0 remaining.                                              |
+| N1 native product                      | Draft [PR 2715](https://github.com/KyleMit/Splotch/pull/2715), published source 20b51012a9bb3daa1314cab1d8c276cc9eb8a977, including the maintained first slice and exact checkpoint. The same owner has exercised the first drawing slice in an iOS Debug simulator and browser, including save/reopen, PNG and restart. Maintained source is published; optimized both-OS structural builds and original reserved review remain pending. Development evidence does not accept N1. | Original 7c940639-09e2-4236-961f-1122171cb5d8: 2 used / 1 reserved.                                               |
+| Neutral host and retained alternatives | [PR 2711](https://github.com/KyleMit/Splotch/pull/2711) remains unaccepted. The observed raw React DOM module exceeds its declared budget; that is scoped evidence, not a rejection of every shared vocabulary. Keep Svelte/Capacitor and native paper within it fair alternatives.                                                                                                                                                                                                | Original neutral conversation: 2 used / 1 reserved.                                                               |
+| L0 and final gates                     | Legacy-only L0 import/iOS-reader work remains held. New-app reliability, full fidelity, web/API/admin, fair comparisons, physical performance, signing/channel and final independent Codex/Claude inventory review remain open.                                                                                                                                                                                                                                                    | L0: 2 used / 1 remaining; all other original ledgers retain their dispositions.                                   |
+
+Formal first-slice acceptance remains pending: drawing, color/brush, undo, clear, PNG export and
+local save/reopen. The development observations below record actual running feedback. Publish exact
+source and results as these land; do not report source, controls, a build or a thin drawing
+demonstration as full completion. Development validation resolves concrete next-feature blockers.
+Exhaustive compiler/materializer qualification and matched physical performance do not block
+ordinary development. Preserve existing failed attempts and private receipts, including their
+host-local availability limits.
+
+### Local development transition, 2026-10-09 03:44 UTC
+
+The original N1 owner committed the first drawing source locally at
+ae4038f200f47d3b8f7f508c49c51a86197c8066. Its bounded browser run exercised drawing, color/brush
+controls, undo, clear/undo, save, a visible saved-picture list, reload/reopen and a decoded
+1024-by-768 PNG. These are local development observations; the published PR 2715 frontier above
+remains unchanged and no native compile/mount/draw is accepted. A source countercheck found
+stroke-cap recovery still required, and the same N1 owner is repairing it and strengthening rendered
+style assertions while pursuing the supported iOS Debug simulator build. Earlier failed attempts and
+the original reserved review stay attached to N1.
+
+The new coloring-page unit is registered with a fresh implementation owner in an isolated checkout
+from that exact, unaccepted N1 commit. Its scope is an original bounded page catalog and blank,
+accessible selection, outlines under strokes, undoable page changes, and composed save/reopen/PNG.
+Its original Claude conversation is unopened, with the default three-round budget; record the
+identity before its first substantive review. It cannot repair or accept N1's pending obligations,
+and its integration merge requires the N1 acceptance described in
+[the development and acceptance boundary](PHASE-1.md#functional-development-sequence).
+
+The distinct [Handlebars security unit, PR 2718](https://github.com/KyleMit/Splotch/pull/2718),
+published c0ca2f6dc7d7d385ecb2307c7fda91605dab240d, has its own original Claude conversation
+c462732d-12c3-4b4c-9bf8-906e9c56db21: one used, two remaining. Its
+[first review](https://github.com/KyleMit/Splotch/pull/2718#pullrequestreview-5465452463) found no
+defects in the lock-only security change and Quality passed. The retained-host job rejected the
+changed lock at its existing source guard before building. A new security-scoped checkpoint and
+fresh retained execution through the unchanged accepted owner are pending. Historical topology and
+F1's four-used, zero-remaining ledger remain intact; this is not accepted retained proof or another
+F1 round.
+
+### Native development feedback, 2026-10-09 04:16 UTC
+
+The same N1 owner repaired capped-stroke recovery at local e836b73ac2731fd7e22853a5b334f7403ea4cfea.
+Xcode compiled, linked, signed and installed the iOS Debug candidate; the Expo wrapper then failed
+its macOS window-activation step. That wrapper failure remains recorded. A supported Metro
+connection and direct simulator launch mounted the actual app. Native flows exercised Purple/Marker
+and Blue/Pencil strokes, undo, clear/undo, save, visible Pictures, reopen, the system PNG share
+sheet, and restart/reopen. The initial saved-row selector failure remains preserved; the corrected
+test uses the row's explicit accessibility label.
+
+The native PNG was decoded independently by Codex: 187,143 bytes, SHA256
+a6bbf9ef5d2c6ce2b54d11abe610b786fd7aa34c649e4f6e8b4a8b0b4cb550fe, 3072-by-2304 pixels at the
+simulator's scale three over logical 1024-by-768 paper, with both real strokes. The browser's
+smaller raster dimensions were not imposed on that native observation. These are development
+mechanics; the maintained Debug recipe and executed-source equivalence, exact published first-slice
+source, optimized both-OS structural results, original reserved review and N1 acceptance remain
+pending.
+
+The new coloring-page owner's code is local fed2bab73711c865ff5dfa1139902cb4c4f0097c, with evidence
+and preserved failures at 81fe3610ff896df849ae19645585e7ffdbf5571d. Its browser exercises actual
+selection, outline/paint composition, undoable page change, Clear/Undo, save/reload/reopen, PNG and
+corrupt/denied-save refusals. Its bounded full-tools run timed out with inherited N1 source-boundary
+and new save/share dependency-path failures. The N1 owner retains those repairs; the page unit does
+not acquire them or the N1 budget. Exact composition, applicable final validation, publication and
+its own original Claude review remain pending.
+
+The genuinely new Crayon/Magic unit is registered with a fresh implementation owner in an isolated
+checkout from the unaccepted e836 N1 source. It owns only new brush behavior and corresponding real
+rendered/exported composition, history and save/reopen evidence. Its original Claude conversation is
+unopened, with the default three-round budget; record that identity before its first substantive
+review. It cannot repair or accept an inherited N1/F1 defect or transfer any original capacity.
+Later exact-source composition and its integration merge retain the N1 acceptance dependency.
+
+Security PR 2718 is published at d1225d202e5bb7b2e925870fce5964d798b47ed7. Its same original
+c462732d-12c3-4b4c-9bf8-906e9c56db21 conversation has two used, one remaining. The
+[second review](https://github.com/KyleMit/Splotch/pull/2718#pullrequestreview-5465538589) found no
+blockers and required fresh retained execution and a normal merge preserving the reviewed c0 lock
+checkpoint's ancestry. Its local-instruction suggestion is repaired. Final-source CI had 17
+successful checks, five conditional skips and the retained-host control still running at the last
+readback. Final original review and merge remain pending; this supplies no additional F1 round.
+
+### Security acceptance and brush development, 2026-10-09 04:38 UTC
+
+The final original security round accepted d1225d202e5bb7b2e925870fce5964d798b47ed7 with zero
+findings or unverified claims. All three review submissions and the original conversation are
+preserved. The normal merge f61f0c842abd2c4d4ab0eb1f3058786d245c444a has parents d11f99c8 and
+d1225d20; its tree matches the tested GitHub merge ref 944788da322876bfa2577cf4b0e87f662187c2f2. The
+c0ca2f6dc7d7d385ecb2307c7fda91605dab240d checkpoint remains an ancestor.
+[The evidence receipt](evidence/security-final-20261009/README.md) records the exact source, lock,
+checks, exported content and artifact digests. The seven serial retained calls finished in 1082
+seconds; the release browser passed once and the mechanism browser passed twice with distinct
+preserved records. Both digest-verified ZIPs and original private review receipts are retained on
+this Mac before the CI uploads expire. This accepts the narrow security and retained-host checkpoint
+unit; N1's changed dependency lock requires its own source-specific qualification.
+
+The Crayon/Magic owner committed new brush code at a77d6e055f054a718b58b1a3d576f68da3fa7ee8 and
+evidence through eb2f0f2ab277da28d4a21553cef2a6a4fc7b7dbf. The first actual browser probe observed
+grainy Crayon deposition, crossing-color mixing, paper-coordinate Magic colors, pixel-identical
+undo/reopen and a real PNG. Four source mutations failed meaningful renderer assertions; restored
+focused checks passed. Exact N1 composition, the repeatable corrupt-save/export probe, applicable
+full-tier checks, native output and this new unit's own original Claude review remain pending. This
+supplies no native fidelity, performance or framework acceptance.
+
+### Maintained native source publication, 2026-10-09 04:46 UTC
+
+The original N1 owner published 20b51012a9bb3daa1314cab1d8c276cc9eb8a977 after source qualification
+and a passing full tool tier: 346 files, 8094 tests. Check, lint, formatting and the native
+candidate topology pass. Earlier sandbox interruption and two timing failures remain recorded with
+the isolated checks and final full-tier result; no retry erases them. The maintained Debug recipe,
+candidate-owned palette/theme projections and their source drift guards, exact new
+dependency/archive delta, strict eight-path Forge adjunct and actual DrawingScreen transform are
+included. A narrow read-only Codex source countercheck found no actionable issue; it is not the
+original reserved Claude review.
+
+The source checkpoint is 8e7257dd680cc6e180d2b33bbacf0097faabaf9b, with actual lock SHA256
+9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57. The follow-up CI pin names that
+source and lock, rather than reusing the earlier security checkpoint for changed dependencies.
+[The published development evidence](https://github.com/KyleMit/Splotch/tree/20b51012a9bb3daa1314cab1d8c276cc9eb8a977/docs/migration/evidence/native-drawing-development-01)
+records the actual simulator observations and their limitations. The same owner proceeds directly to
+supported optimized iOS and Android builds. Final-head CI, executed-source equivalence, optimized
+both-OS results and the original reserved review remain pending; N1 is unaccepted. Coloring and
+Crayon/Magic owners compose this exact published dependency in their isolated units.
+
+Accepted narrow units above retain their exact original review and CI scopes. This sequencing change
+does not reset a ledger, substitute a reviewer, rename an exhausted repair or reopen PR 2697. Its
+own consequential source and review transition must be recorded before integration. The full
+[completion contract](CONTRACT.md#migration-completion) remains unmet.
+
+This committed register owns public campaign status and acceptance. Record consequential source,
+review, dependency and acceptance transitions with exact evidence before relying on them. Host-local
+CURRENT mirrors pending execution and leases; it does not override the public register or establish
+accepted evidence. Reconcile actual resource ownership at execution time and record owned handles;
+historical lease rows grant no current ownership. The documentation change itself grants no runtime,
+device or signing lease. Supported local development follows the maintainer's 2026-10-09 course
+correction, recorded in the
+[functional development priority](CONTRACT.md#functional-development-priority), and still reconciles
+actual resource ownership as above. These standing authority, recording and lease rules remain
+current under this section.
+
+## Historical accepted frontier and N1 observations, 2026-10-08
 
 Observed through the native GitHub API at 2026-10-08 14:42:27 UTC: shipping main remains
 ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4 and accepted integration is
@@ -80,7 +242,7 @@ physical gates, while structural builds and applicable product work continue. Fu
 services, web/API/admin ownership, calibrated comparisons, integrated tuning, signing/channel
 updates and final independent review remain outstanding.
 
-## Current public status, 2026-10-08
+## Historical public status, 2026-10-08
 
 Public source and CI observation: 2026-10-08T06:13:12.044Z; scope round two completed at
 2026-10-08T06:10:56.031Z. Later transitions require a new recorded observation before acceptance.
