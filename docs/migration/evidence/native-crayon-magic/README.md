@@ -163,3 +163,13 @@ generated native project, Pods/cache and outputs, without mutating N1's retained
 standalone brush drawing, save/reopen, PNG/share and restart output on both native platforms remain
 required before publication or the original new-unit review. No native compile, performance run,
 reviewer operation or acceptance merge ran in this window.
+
+## Subsequent source-only composition
+
+The exact published N1 source d82a3b0329558272fa2d3b267d4f9491fcafdda5 composes without source
+conflicts. It includes the accepted documentation base and N1's awaited native save commit with
+cleanup of that save's original pending URI. The four-brush model, renderer and all prior brush
+evidence are unchanged. The lock remains the exact SHA256 named above. This composition ran no
+formatter, installation, tests, browser, native build, performance or review operation. Current
+execution checks and the forthcoming published permissions change remain pending. N1 remains
+unaccepted, and this unit retains its original unopened review and three-round budget.
