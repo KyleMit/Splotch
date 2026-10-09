@@ -77,9 +77,10 @@ owned process handles were stopped when the window ended. The probe observed:
 * A real PNG downloaded, containing the Crayon and Magic composition.
 
 These observations are exploratory browser evidence, not exact-head qualification or native
-evidence. The repeatable caller is `tools/migration/probe-native-brushes.mjs`; it adds actual
-corrupted-save rejection and records source/status, images, PNG and a report. Run it only in a
-coordinated window against the source-qualified candidate:
+evidence. Actual control/composition screenshots and the downloaded PNG are retained in
+`exploratory-browser/`. The repeatable caller is `tools/migration/probe-native-brushes.mjs`; it adds
+actual corrupted-save rejection and records source/status, images, PNG and a report. Run it only in
+a coordinated window against the source-qualified candidate:
 
 ```sh
 node tools/migration/probe-native-brushes.mjs \
