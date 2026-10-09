@@ -723,7 +723,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      TOPOLOGY_SHA: a9f271498fa056344ac3b7f72cf9100c2395c7de
+      TOPOLOGY_SHA: ff248625efa72215354b83c44f892ae9e5ecdfba
       TOPOLOGY_LOCK_SHA256: 9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
