@@ -1,0 +1,95 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+ ❯ tests/native-stroke-widths.test.mjs (35 tests | 2 failed) 9ms
+   ❯ one persisted candidate settings owner (12)
+     × keeps width taps session-only after a transient read failure until explicit retry 3ms
+     × keeps width taps session-only after a transient read failure until explicit sound choice 1ms
+ ❯ tests/native-custom-colors.test.mjs (24 tests | 2 failed) 7ms
+   ❯ custom palettes in the one serialized settings owner (6)
+     × preserves unread stored preferences and the warning through session paint changes until explicit retry 2ms
+     × preserves unread stored preferences and the warning through session paint changes until explicit sound choice 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-custom-colors.test.mjs > custom palettes in the one serialized settings owner > preserves unread stored preferences and the warning through session paint changes until explicit retry
+ FAIL  tests/native-custom-colors.test.mjs > custom palettes in the one serialized settings owner > preserves unread stored preferences and the warning through session paint changes until explicit sound choice
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 5 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      "{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"#123ABC","customColors":["#123ABC"]}",
+    ]
+
+  2nd vi.fn() call:
+
+    Array [
+      "{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Blue","customColors":["#123ABC"]}",
+    ]
+
+  3rd vi.fn() call:
+
+    Array [
+      "{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"medium","selectedColor":"Blue","customColors":["#123ABC"]}",
+    ]
+
+  4th vi.fn() call:
+
+    Array [
+      "{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"medium","selectedColor":"#000077","customColors":["#000077","#123ABC"]}",
+    ]
+
+  5th vi.fn() call:
+
+    Array [
+      "{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"medium","selectedColor":"#123ABC","customColors":["#123ABC","#000077"]}",
+    ]
+
+
+Number of calls: 5
+
+ ❯ tests/native-custom-colors.test.mjs:170:33
+    168|       await owner.setColor('#000077');
+    169|       await owner.setColor('#123ABC');
+    170|       expect(storage.write).not.toHaveBeenCalled();
+       |                                 ^
+    171|       expect(stored).toBe(original);
+    172|       expect(states.at(-1)).toMatchObject({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/native-stroke-widths.test.mjs > one persisted candidate settings owner > keeps width taps session-only after a transient read failure until explicit retry
+ FAIL  tests/native-stroke-widths.test.mjs > one persisted candidate settings owner > keeps width taps session-only after a transient read failure until explicit sound choice
+AssertionError: expected { status: 'ready', …(8) } to deeply equal { status: 'ready', …(7) }
+
+- Expected
++ Received
+
+@@ -5,6 +5,7 @@
+    "saved": false,
+    "selectedColor": "Purple",
+    "soundEnabled": false,
+    "status": "ready",
+    "strokeWidth": "thin",
++   "version": 3,
+  }
+
+ ❯ tests/native-stroke-widths.test.mjs:248:29
+    246|       expect(storage.write).not.toHaveBeenCalled();
+    247|       expect(saved).toBe(original);
+    248|       expect(states.at(-1)).toEqual({
+       |                             ^
+    249|         status: 'ready',
+    250|         soundEnabled: false,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+
+ Test Files  2 failed | 1 passed (3)
+      Tests  4 failed | 67 passed (71)
+   Start at  23:21:19
+   Duration  625ms (tests 36%, environment 33%, transform 21%, import 9%, worker 1%)
+

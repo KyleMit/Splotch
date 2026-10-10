@@ -113,12 +113,14 @@ export function createSoundSettings(
     message: '',
   };
   let disposed = false;
+  let readFailed = false;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
     onChange(state);
   }
   async function persist(settings: SoundSettings) {
+    readFailed = false;
     const { version: _version, ...choices } = settings;
     publish({ status: 'saving', ...choices, message: '' });
     try {
@@ -150,6 +152,7 @@ export function createSoundSettings(
         const { version: _version, ...choices } = settings;
         publish({ status: 'ready', ...choices, saved: true, message: '' });
       } catch {
+        readFailed = true;
         publish({
           status: 'ready',
           soundEnabled: false,
@@ -157,7 +160,7 @@ export function createSoundSettings(
           ...DEFAULT_COLOR_SETTINGS,
           saved: false,
           message:
-            'Drawing settings could not be read. Sound is off, widths use Medium, and paint uses Purple. Choose your settings and retry saving.',
+            'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.',
         });
       }
     },
@@ -170,22 +173,30 @@ export function createSoundSettings(
       if (disposed || state.status !== 'ready') return;
       if ((tool !== 'drawing' && tool !== 'eraser') || !isStrokeWidth(width))
         throw new Error('Drawing width choice is invalid.');
-      await persist({
-        ...snapshot(state),
+      const choices = {
         strokeWidth: tool === 'drawing' ? width : state.strokeWidth,
         eraserWidth: tool === 'eraser' ? width : state.eraserWidth,
-      });
+      };
+      if (readFailed) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
     },
     async setColor(selectedColor: PaintColor) {
       if (disposed || state.status !== 'ready') return;
       if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
-      await persist({
-        ...snapshot(state),
+      const choices = {
         selectedColor,
         customColors: isCustomColor(selectedColor)
           ? rememberColor(state.customColors, selectedColor)
           : state.customColors,
-      });
+      };
+      if (readFailed) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
     },
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;

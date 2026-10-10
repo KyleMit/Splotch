@@ -205,6 +205,57 @@ afterEach(() => {
 });
 
 describe('custom paints wired to the drawing screen', () => {
+  it.each(['Retry saving', 'Drawing sound'])(
+    'uses a session custom paint without replacing unread preferences until explicit %s',
+    async (recovery) => {
+      await act(async () => screen.close());
+      const original = JSON.stringify({
+        version: 3,
+        soundEnabled: true,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+        selectedColor: '#FEDCBA',
+        customColors: ['#FEDCBA'],
+      });
+      let stored = original;
+      files.settingsRead.mockImplementation(async () => stored);
+      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
+      files.settingsWrite.mockImplementation(async (snapshot) => {
+        stored = snapshot;
+      });
+      screen = createScreen();
+      await act(async () => screen.mount());
+      const warning =
+        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('More colors');
+      await screen.click('Use color');
+      await screen.click('Marker');
+      await screen.click('Draw fixture stroke');
+      expect(JSON.parse(screen.paper()).strokes[0].color).toBe('#AB71E1');
+      expect(
+        screen.container
+          .querySelector('[aria-label="Custom paint #AB71E1"]')
+          .getAttribute('aria-pressed')
+      ).toBe('true');
+      expect(files.settingsWrite).not.toHaveBeenCalled();
+      expect(stored).toBe(original);
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Settings');
+      expect(screen.dialog().textContent).toContain(warning);
+      await screen.click(recovery);
+      expect(files.settingsWrite).toHaveBeenCalledOnce();
+      expect(JSON.parse(stored)).toEqual({
+        version: 3,
+        soundEnabled: recovery === 'Drawing sound',
+        strokeWidth: 'medium',
+        eraserWidth: 'medium',
+        selectedColor: '#AB71E1',
+        customColors: ['#AB71E1'],
+      });
+      expect(screen.dialog().textContent).not.toContain(warning);
+    }
+  );
   it('locks input for exploration, persists only the chosen color and carries it through drawing and remount', async () => {
     await act(async () => {});
     await screen.click('More colors');
@@ -283,6 +334,49 @@ describe('drawing width controls', () => {
     expect(files.settingsWrite.mock.calls.at(-1)).toEqual(files.settingsWrite.mock.calls.at(-2));
     expect(screen.dialog().textContent).not.toContain('could not be saved');
   });
+
+  it.each(['Retry saving', 'Drawing sound'])(
+    'retains the read warning and stored preferences through width taps until explicit %s',
+    async (recovery) => {
+      await act(async () => screen.close());
+      const original =
+        '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
+      let saved = original;
+      files.settingsRead.mockImplementation(async () => saved);
+      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
+      files.settingsWrite.mockImplementation(async (snapshot) => {
+        saved = snapshot;
+      });
+      screen = createScreen();
+      await act(async () => screen.mount());
+      const warning =
+        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Marker');
+      await screen.click('Drawing width: Thin');
+      await screen.click('Draw fixture stroke');
+      await screen.click('Eraser');
+      await screen.click('Eraser width: Thick');
+      await screen.click('Draw fixture stroke');
+      expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([11, 88]);
+      expect(files.settingsWrite).not.toHaveBeenCalled();
+      expect(saved).toBe(original);
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Settings');
+      expect(screen.dialog().textContent).toContain(warning);
+      await screen.click(recovery);
+      expect(files.settingsWrite).toHaveBeenCalledOnce();
+      expect(JSON.parse(saved)).toEqual({
+        version: 3,
+        soundEnabled: recovery === 'Drawing sound',
+        strokeWidth: 'thin',
+        eraserWidth: 'thick',
+        selectedColor: 'Purple',
+        customColors: [],
+      });
+      expect(screen.dialog().textContent).not.toContain(warning);
+    }
+  );
 });
 
 describe('saved-picture failure feedback', () => {

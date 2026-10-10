@@ -139,6 +139,101 @@ describe('new candidate custom paints', () => {
 });
 
 describe('custom palettes in the one serialized settings owner', () => {
+  it.each(['retry', 'sound choice'])(
+    'preserves unread stored preferences and the warning through session paint changes until explicit %s',
+    async (recovery) => {
+      const original = JSON.stringify({
+        version: 3,
+        soundEnabled: true,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+        selectedColor: '#FEDCBA',
+        customColors: ['#FEDCBA', '#000000'],
+      });
+      let stored = original;
+      const states = [];
+      const storage = {
+        read: vi.fn(async () => stored).mockRejectedValueOnce(new Error('temporarily unreadable')),
+        write: vi.fn(async (snapshot) => {
+          stored = snapshot;
+        }),
+      };
+      const owner = createSoundSettings(storage, (state) => states.push(state));
+      await owner.load();
+      const warning = states.at(-1).message;
+      expect(warning).toContain('could not be read');
+      await owner.setColor('#123ABC');
+      await owner.setColor('Blue');
+      await owner.setWidth('drawing', 'thin');
+      await owner.setColor('#000077');
+      await owner.setColor('#123ABC');
+      expect(storage.write).not.toHaveBeenCalled();
+      expect(stored).toBe(original);
+      expect(states.at(-1)).toMatchObject({
+        saved: false,
+        message: warning,
+        soundEnabled: false,
+        strokeWidth: 'thin',
+        eraserWidth: 'medium',
+        selectedColor: '#123ABC',
+        customColors: ['#123ABC', '#000077'],
+      });
+      const untouched = [];
+      await createSoundSettings(storage, (state) => untouched.push(state)).load();
+      expect(untouched.at(-1)).toMatchObject({
+        saved: true,
+        soundEnabled: true,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+        selectedColor: '#FEDCBA',
+        customColors: ['#FEDCBA', '#000000'],
+      });
+      if (recovery === 'retry') await owner.retrySave();
+      else await owner.setEnabled(true);
+      expect(storage.write).toHaveBeenCalledOnce();
+      expect(parseSoundSettings(stored)).toEqual({
+        version: 3,
+        soundEnabled: recovery === 'sound choice',
+        strokeWidth: 'thin',
+        eraserWidth: 'medium',
+        selectedColor: '#123ABC',
+        customColors: ['#123ABC', '#000077'],
+      });
+      expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
+      await owner.setColor('#ABCDEF');
+      expect(storage.write).toHaveBeenCalledTimes(2);
+      const reopened = [];
+      await createSoundSettings(storage, (state) => reopened.push(state)).load();
+      expect(reopened.at(-1)).toMatchObject({
+        saved: true,
+        selectedColor: '#ABCDEF',
+        customColors: ['#ABCDEF', '#123ABC', '#000077'],
+        soundEnabled: recovery === 'sound choice',
+        strokeWidth: 'thin',
+        eraserWidth: 'medium',
+      });
+    }
+  );
+  it('persists a later paint choice after a failed write following a known successful read', async () => {
+    const f = settingsFixture();
+    await f.owner.load();
+    await f.owner.setWidth('eraser', 'thick');
+    f.storage.write.mockRejectedValueOnce(new Error('disk full'));
+    await f.owner.setColor('#123ABC');
+    expect(f.states.at(-1)).toMatchObject({ saved: false, soundEnabled: true });
+    expect(f.states.at(-1).message).toContain('could not be saved');
+    await f.owner.setColor('#ABCDEF');
+    expect(f.storage.write).toHaveBeenCalledTimes(3);
+    expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
+      version: 3,
+      soundEnabled: true,
+      strokeWidth: 'medium',
+      eraserWidth: 'thick',
+      selectedColor: '#ABCDEF',
+      customColors: ['#ABCDEF', '#123ABC'],
+    });
+    expect(f.states.at(-1)).toMatchObject({ saved: true, message: '' });
+  });
   it('retains the exact failed palette snapshot through width/sound changes and retry, then reopens it', async () => {
     const f = settingsFixture();
     await f.owner.load();
@@ -193,18 +288,14 @@ describe('custom palettes in the one serialized settings owner', () => {
     ).toThrow();
     expect(() => parseSoundSettings(JSON.stringify({ ...valid, extra: true }))).toThrow();
   });
-  it('serializes palette writes with pending settings and makes unreadable defaults explicit', async () => {
+  it('serializes pending palette writes and rejects unsafe live colors', async () => {
     const f = settingsFixture();
-    f.storage.read = async () => {
-      throw new Error('denied');
-    };
     await f.owner.load();
     expect(f.states.at(-1)).toMatchObject({
-      saved: false,
+      saved: true,
       selectedColor: 'Purple',
       customColors: [],
     });
-    expect(f.states.at(-1).message).toContain('could not be read');
     let finish;
     f.storage.write.mockImplementationOnce(
       () =>

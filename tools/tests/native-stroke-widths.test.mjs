@@ -224,11 +224,95 @@ describe('one persisted candidate settings owner', () => {
     });
   });
 
-  it('fails safely on unreadable widths, rejects invalid live inputs, and admits no concurrent writer', async () => {
+  it.each(['retry', 'sound choice'])(
+    'keeps width taps session-only after a transient read failure until explicit %s',
+    async (recovery) => {
+      const original =
+        '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
+      let saved = original;
+      const states = [];
+      const storage = {
+        read: vi.fn(async () => saved).mockRejectedValueOnce(new Error('temporarily unreadable')),
+        write: vi.fn(async (snapshot) => {
+          saved = snapshot;
+        }),
+      };
+      const owner = createSoundSettings(storage, (state) => states.push(state));
+      await owner.load();
+      const warning = states.at(-1).message;
+      expect(warning).toContain('could not be read');
+      await owner.setWidth('drawing', 'thin');
+      await owner.setWidth('eraser', 'thick');
+      expect(storage.write).not.toHaveBeenCalled();
+      expect(saved).toBe(original);
+      expect(states.at(-1)).toEqual({
+        status: 'ready',
+        soundEnabled: false,
+        strokeWidth: 'thin',
+        eraserWidth: 'thick',
+        selectedColor: 'Purple',
+        customColors: [],
+        saved: false,
+        message: warning,
+      });
+      if (recovery === 'retry') await owner.retrySave();
+      else await owner.setEnabled(true);
+      expect(storage.write).toHaveBeenCalledOnce();
+      expect(JSON.parse(saved)).toEqual({
+        version: 3,
+        soundEnabled: recovery === 'sound choice',
+        strokeWidth: 'thin',
+        eraserWidth: 'thick',
+        selectedColor: 'Purple',
+        customColors: [],
+      });
+      expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
+      await owner.setWidth('drawing', 'medium');
+      expect(storage.write).toHaveBeenCalledTimes(2);
+      const reopened = createSoundSettings(storage, (state) => states.push(state));
+      await reopened.load();
+      expect(states.at(-1)).toMatchObject({
+        soundEnabled: recovery === 'sound choice',
+        strokeWidth: 'medium',
+        eraserWidth: 'thick',
+        saved: true,
+      });
+    }
+  );
+
+  it('persists a later width choice after a write failure following a successful read', async () => {
+    let saved = '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
+    const states = [];
+    const storage = {
+      read: async () => saved,
+      write: vi
+        .fn(async (snapshot) => {
+          saved = snapshot;
+        })
+        .mockRejectedValueOnce(new Error('disk full')),
+    };
+    const owner = createSoundSettings(storage, (state) => states.push(state));
+    await owner.load();
+    await owner.setWidth('drawing', 'thin');
+    expect(states.at(-1)).toMatchObject({ saved: false, soundEnabled: true });
+    await owner.setWidth('eraser', 'thick');
+    expect(storage.write).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(saved)).toEqual({
+      version: 3,
+      soundEnabled: true,
+      strokeWidth: 'thin',
+      eraserWidth: 'thick',
+      selectedColor: 'Purple',
+      customColors: [],
+    });
+    expect(states.at(-1)).toMatchObject({ saved: true, message: '' });
+  });
+
+  it('rejects invalid live widths and admits no concurrent writer after a successful read', async () => {
     const states = [];
     let finish;
     const storage = {
-      read: vi.fn().mockRejectedValue(new Error('denied')),
+      read: vi.fn().mockResolvedValue(null),
       write: vi.fn(
         () =>
           new Promise((resolve) => {
@@ -239,10 +323,10 @@ describe('one persisted candidate settings owner', () => {
     const owner = createSoundSettings(storage, (state) => states.push(state));
     await owner.load();
     expect(states.at(-1)).toMatchObject({
-      soundEnabled: false,
+      soundEnabled: true,
       strokeWidth: 'medium',
       eraserWidth: 'medium',
-      saved: false,
+      saved: true,
     });
     await expect(owner.setWidth('other', 'thin')).rejects.toThrow('invalid');
     await expect(owner.setWidth('drawing', 'huge')).rejects.toThrow('invalid');
@@ -262,7 +346,7 @@ describe('one persisted candidate settings owner', () => {
       saved: true,
       strokeWidth: 'thin',
       eraserWidth: 'medium',
-      soundEnabled: false,
+      soundEnabled: true,
     });
   });
 });

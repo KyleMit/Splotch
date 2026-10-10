@@ -12,6 +12,14 @@ The feature includes a normal merge of Width's documentation-only update
 dependent draft targets `codex/native-stroke-widths`; publication waits for the applicable full test
 tier.
 
+The same Width owner's read-failure repair 8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9 is composed by
+normal merge. Color and width taps after a failed settings read change only session choices and
+retain the warning and unread storage. An explicit sound choice or Retry saving in Settings
+authorizes the full retained snapshot. A failed write following a known read remains distinct and
+allows later palette saves. The new color caller uses this same policy; the strict v3 parser and
+single writer are unchanged. Color-specific reproduction and recovery controls are retained in the
+[repair receipt](../../docs/migration/evidence/custom-colors-construction/READ-FAILURE-REPAIR.md).
+
 “More colors” opens a continuous hue/tone field with a visible color preview. Dragging explores;
 lifting keeps a tentative color in the picker. “Use color” selects it for drawing and remembers it
 with six distinct recent custom paints. Reusing a custom paint moves it to the front. Named paints
@@ -63,8 +71,8 @@ unchanged. A mounted test consumer was repaired to read the same settings-owned 
 the Crayon oracle follows the safe pigment identifier. Root source inspection caught and removed a
 stray fragment space that native View cannot render outside Text. The click-control test's omitted
 helper import was caught by scoped tests and lint, then repaired. Initial dprint cache access failed
-under the sandbox; verification uses an owned temporary cache. The final scoped run passed 18 files
-/ 270 tests; candidate TypeScript, root check, lint and formatting passed.
+under the sandbox; verification uses an owned temporary cache. The initial scoped run passed 18
+files / 270 tests; candidate TypeScript, root check, lint and formatting passed.
 
 Scoped model/storage, mounted flow, installed-renderer and PNG checks do not establish browser touch
 layout, physical native rendering, performance, signing, release or independent acceptance. Full

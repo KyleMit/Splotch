@@ -13,12 +13,12 @@ ID oracle and a sandbox dprint cache failure. A later click-control test omitted
 import; its 269-pass/one-fail result and lint failure are retained. Repairs preserve strict
 input/source inventories and existing v4 fixture bodies.
 
-The final scoped tier passed 18 files / 270 tests with one worker in 18.09 seconds. Its meaningful
-negative controls reject malformed/custom-in-v4 drawings, malformed palette snapshots, stale
-geometry, failed settings writes and physical trailing clicks; positive controls exercise exact
-v4-to-v5 stroke normalization, full-snapshot retry, simultaneous-contact color/width ownership,
-installed-renderer selection/focus, mixed pigment definitions and decoded PNG colors. The strict
-candidate source inventory includes all three consumed new modules.
+The initial feature's scoped tier passed 18 files / 270 tests with one worker in 18.09 seconds. Its
+meaningful negative controls reject malformed/custom-in-v4 drawings, malformed palette snapshots,
+stale geometry, failed settings writes and physical trailing clicks; positive controls exercise
+exact v4-to-v5 stroke normalization, full-snapshot retry, simultaneous-contact color/width
+ownership, installed-renderer selection/focus, mixed pigment definitions and decoded PNG colors. The
+strict candidate source inventory includes all three consumed new modules.
 
 Candidate TypeScript (`tsc --project experiments/native-architecture/tsconfig.json --noEmit`),
 `npm run check`, `npm run lint` and `npm run format:check` exited zero. The empty TypeScript log
@@ -29,3 +29,7 @@ settings, eraser/composition/contact, joint-sound and Crayon/width-output suites
 the full tools tier. Logs describe only their named checks. Full tools, compact browser and native
 feedback remain separate pending work. The backdrop resize hook was added after source inspection;
 the planned running resize case must establish fresh coordinates and exploration cancellation.
+
+The subsequent [read-failure repair](READ-FAILURE-REPAIR.md) composes the Width owner's explicit
+recovery policy and applies it to custom paints. Its separately retained checks cover that source;
+the initial logs above remain unchanged.

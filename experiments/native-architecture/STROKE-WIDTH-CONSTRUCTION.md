@@ -30,7 +30,9 @@ canonical snapshot. It reads the previous candidate sound-only version with Medi
 native revision files and the web key retain their identity. There is one writer; a failed write
 keeps all choices usable for the session and offers Retry saving in Settings. Retry writes the exact
 retained snapshot. A malformed/unreadable snapshot mutes sound, uses Medium widths and reports
-failure; it cannot silently claim persistence. Disposal suppresses late publication.
+failure. Width choices after a read failure remain session-only and retain the warning until an
+explicit sound choice or Retry saving in Settings permits persistence. A write failure after a
+successful read does not impose this read-failure barrier. Disposal suppresses late publication.
 
 Focused controls exercise old/current model formats, malformed widths, actual responder admission,
 shared Undo, clear/save/reopen, serialized settings writes, exact failure retry, visible selection,
@@ -47,5 +49,7 @@ omitted the two new consumed width modules; the repair adds only those paths. Th
 is preserved, and the guard's negative controls remain intact. The parent CI-only history repair is
 included through a normal merge without replacing the width feature commit.
 
-Runtime screenshots on a compact phone viewport, actual native width drawing/save/reopen/export,
-independent review and a passing repaired full tier remain pending until separately recorded.
+The subsequent repaired full-tier pass and compact browser outcomes are recorded in the
+[dated campaign inventory](../../docs/migration/CAMPAIGN.md#drawing-feature-inventory-2026-10-10-utc).
+The final browser command exited 1 at its saved-snapshot picker; reopen and restored choices were
+not reached. Actual native width drawing/save/reopen/export remains unverified.
