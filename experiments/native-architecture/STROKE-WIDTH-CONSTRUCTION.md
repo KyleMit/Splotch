@@ -11,7 +11,11 @@ eraser tool; the two choices persist independently. Medium preserves the candida
 Marker, Crayon, Magic and Eraser defaults (7, 22, 34, 30 and 44 paper pixels). Thin halves that
 brush's default and Thick doubles it. Relative levels preserve each brush's existing character
 without adding a separate settings owner or six permanent controls. Each target is at least 52
-pixels in both dimensions, with a checkmark, border and accessible selected/disabled state.
+pixels in both dimensions, with a checkmark, border and accessible selected/disabled state. Native
+selection uses the selected accessibility state; the web toggle buttons also receive explicit
+`aria-pressed`, which the installed React Native Web renderer forwards. Its native-state object
+alone does not reach web DOM attributes. An actual installed-renderer test checks every choice and
+disabled state; the screen SDK mock no longer invents this translation.
 
 Every admitted contact captures its actual paper-pixel width. Sampling, another contact, a tool
 change or later settings hydration cannot replace that width. Drawing version 4 requires a valid
@@ -37,5 +41,11 @@ acceptance. The checkpoint probe's current-model fixtures gain explicit default 
 without changing their points, colors, operation counts, masks or budgets. Historical parser
 fixtures remain widthless; no broad guard inventory or threshold is relaxed.
 
+The first full tools tier at merged source f7300e81f6cc803904668c33289b14c7b74f82be completed in
+155.91 seconds: 384 files, 8647 passing tests and one failure. The strict positive source inventory
+omitted the two new consumed width modules; the repair adds only those paths. The original failure
+is preserved, and the guard's negative controls remain intact. The parent CI-only history repair is
+included through a normal merge without replacing the width feature commit.
+
 Runtime screenshots on a compact phone viewport, actual native width drawing/save/reopen/export,
-independent review and applicable full-tier checks remain pending until separately recorded.
+independent review and a passing repaired full tier remain pending until separately recorded.

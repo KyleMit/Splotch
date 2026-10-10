@@ -24,6 +24,7 @@ export function StrokeWidthSelector({
             accessibilityRole="button"
             accessibilityLabel={`${label}: ${STROKE_WIDTH_LABELS[width]}`}
             accessibilityState={{ selected: selected === width, disabled }}
+            aria-pressed={selected === width}
             disabled={disabled}
             onPress={() => onChange(width)}
             style={[

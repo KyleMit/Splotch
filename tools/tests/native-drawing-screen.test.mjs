@@ -58,14 +58,23 @@ vi.mock('react-native', () => {
         onClick: () => onValueChange(!value),
       }),
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({ children, onPress, disabled, accessibilityLabel, accessibilityState, style }) =>
+    Pressable: ({
+      children,
+      onPress,
+      disabled,
+      accessibilityLabel,
+      accessibilityState,
+      'aria-pressed': pressed,
+      style,
+    }) =>
       createElement(
         'button',
         {
           onClick: onPress,
           disabled,
           'aria-label': accessibilityLabel,
-          'aria-pressed': accessibilityState?.selected,
+          'aria-pressed': pressed,
+          'data-native-selected': accessibilityState?.selected,
           style:
             typeof style === 'function'
               ? undefined
@@ -197,6 +206,7 @@ describe('drawing width controls', () => {
     await screen.click('Marker');
     const control = (label) => screen.container.querySelector(`[aria-label="${label}"]`);
     expect(control('Drawing width: Medium').getAttribute('aria-pressed')).toBe('true');
+    expect(control('Drawing width: Medium').getAttribute('data-native-selected')).toBe('true');
     expect(parseFloat(control('Drawing width: Thin').style.minHeight)).toBeGreaterThanOrEqual(48);
     expect(parseFloat(control('Drawing width: Thin').style.minWidth)).toBeGreaterThanOrEqual(48);
     await screen.click('Drawing width: Thin');
