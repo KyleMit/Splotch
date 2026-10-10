@@ -11,6 +11,8 @@ const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
 });
 const MAX_CHUNK_BYTES = 0x7fffffff;
 const IHDR_BYTES = 13;
+const EXIF_SIGNATURE_BYTES = 4;
+const APPLE_IDOT_BYTES = 28;
 
 function invalid(): never {
   throw new Error('Picture capture returned an invalid or unsupported PNG.');
@@ -68,6 +70,18 @@ function base64Bytes(input: string, work: PngWork) {
 }
 
 type Chunk = { type: string; remaining: number; crc: number; length: number };
+
+function assertIgnoredCaptureMetadata(current: Chunk, read: (chunk: Chunk) => number) {
+  if (current.type === 'iDOT') {
+    // Apple parallel-decoding offsets are unused by the sequential IDAT decoder.
+    if (current.length !== APPLE_IDOT_BYTES) invalid();
+    return;
+  }
+  if (current.length < EXIF_SIGNATURE_BYTES) invalid();
+  const signature =
+    read(current) * 0x1000000 + (read(current) << 16) + (read(current) << 8) + read(current);
+  if (signature !== 0x49492a00 && signature !== 0x4d4d002a) invalid();
+}
 
 export async function openPng(input: string, expected: PngGrid, work: PngWork) {
   assertPngGrid(expected);
@@ -162,6 +176,8 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
       if (c.length !== 9) invalid();
       for (let index = 0; index < 8; index++) data(c);
       if (data(c) > 1) invalid();
+    } else if (c.type === 'eXIf' || c.type === 'iDOT') {
+      assertIgnoredCaptureMetadata(c, data);
     } else invalid();
   }
   while (current.type !== 'IDAT') {
