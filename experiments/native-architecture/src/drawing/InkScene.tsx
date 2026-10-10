@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Defs, G, Image, Mask, Rect } from 'react-native-svg';
 import { BRUSHES } from './brushes';
 import type { InkCheckpoint } from './checkpoints';
-import { Ink } from './Ink';
+import { Ink, InkArtwork } from './Ink';
 import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
 import { StrokeShape } from './StrokeShape';
 
@@ -44,7 +44,7 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
     </>
   );
   return (
-    <>
+    <InkArtwork strokes={strokes}>
       {erasers.length ? (
         <>
           <Defs>
@@ -76,6 +76,6 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
       {after.map((stroke, index) =>
         stroke.brush === 'eraser' ? null : <Ink key={index} stroke={stroke} />
       )}
-    </>
+    </InkArtwork>
   );
 }

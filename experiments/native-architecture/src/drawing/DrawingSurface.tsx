@@ -57,6 +57,9 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
       )
     ).current;
     inputRef.current = input;
+    useLayoutEffect(() => {
+      if (props.disabled) input.silence();
+    }, [input, props.disabled]);
     const refreshGeometry = useCallback(() => {
       geometry.refresh((complete) => measurePaper(paper.current, complete));
     }, [geometry]);
@@ -84,7 +87,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
         onPanResponderStart: (event) => input.start(event),
         onPanResponderMove: (event) => input.move(event),
         onPanResponderEnd: (event) => input.end(event),
-        onPanResponderRelease: (event) => input.end(event),
+        onPanResponderRelease: (event) => input.release(event),
         onPanResponderTerminate: () => input.interrupt(),
         onPanResponderTerminationRequest: () => false,
         onShouldBlockNativeResponder: () => true,
@@ -101,6 +104,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
           pointerEvents="box-only"
           onLayout={refreshGeometry}
           {...responder.panHandlers}
+          onTouchEnd={(event) => input.endRaw(event)}
+          onTouchCancel={() => input.interrupt()}
         >
           <RasterInk
             ref={raster}
@@ -108,7 +113,10 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             drafts={drafts}
             prepareEraser={props.brush === 'eraser'}
             onBusy={props.onPreparingChange}
-            onError={props.onRendererFault}
+            onError={(error) => {
+              input.silence();
+              props.onRendererFault(error);
+            }}
           />
           <Svg
             width="100%"

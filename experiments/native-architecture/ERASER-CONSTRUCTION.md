@@ -137,3 +137,38 @@ delivery, raster fidelity or resource acceptance. Current Brush Defs/Use and And
 and the Audio graph/reset changes require their owners' qualified source before composition. The
 native producer allocation/format, browser raw-RGBA/RSS/observer, legal-depth and live save/reopen
 gates remain open in this same unit.
+
+## Joint source composition under construction
+
+Published d8fb32f15e9af0f4657452f62cd09a968080addf supplies measured multi-contact cohorts, strict
+v3 history/readers, chronological eraser checkpoints, visible renderer Retry, and the coloring
+outline above live and exported ink. Color 874380f5023c55a0dbf9634ec63230b3116f3d16's outline order
+and saved-picture feedback requirements were already present in that source.
+
+The current source carries Audio 73179b36eee307d6836382b135164139a3d1a3c4's settings, loaders, asset
+and controller. A joint contact sound adapter issues an opaque lease only after contact admission,
+supplies that contact's own prior paper sample, and holds one loop from first to last accepted
+contact. Stationary samples use the existing stillness timer, so they cannot mute another moving
+contact. Geometry invalidation, renderer fault, background, mute and teardown retire their owned
+leases. Settings holds the actual input lease until close; drawing commands and renderer Retry
+remain blocked while it is open. No sound operation writes drawing history.
+
+The same Brush owner's sealed shared-definitions repair supplies one InkArtwork scope per SVG scene.
+It defines explicit-color texture paths once and retains the original shade indexes after empty
+paths are removed. InkScene keeps its existing checkpoint image, one chronological erase mask and
+later paint inside that scope; StrokeShape and strict PaintStroke ownership stay with this
+composition. The four wrapped phase copies and glaze paints retain their owning code.
+
+These joint source changes and their new mounted/contact controls are unqualified. The two
+feature-owned dependency patches require a supported pnpm-generated joint graph and exact SVG to
+Audio projections before source or native qualification. Standalone feature locks are evidence, not
+substitutes for the actual joint lock. Each sibling keeps its original reviews and holds. All prior
+pixel, mandatory-observer, RSS, native alpha-format and atomic preallocation failures or gaps remain
+open; this source composition confers no runtime, native or framework acceptance.
+
+The joint root lock was emitted by supported pinned pnpm and reverses only the SVG patch delta to
+the exact Audio72/1b source inputs. The real topology caller authenticates the whole joint graph,
+both patch bytes and candidate inputs, performs the SVG projection and actual installed-source
+checks, then consumes the Audio owner’s explicit view. Standalone feature tests keep their original
+exact lock inputs. The installed graph still requires a separate frozen provision and qualification;
+current source tests are unrun.

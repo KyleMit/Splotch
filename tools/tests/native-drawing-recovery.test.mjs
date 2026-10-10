@@ -25,6 +25,16 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   savePicture: sdk.save,
   exportPng: sdk.export,
 }));
+vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+  loadDrawingLoop: vi.fn(),
+}));
+vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+  soundSettingsStorage: {
+    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
+    write: vi.fn(),
+  },
+}));
+
 vi.mock('react-native', () => {
   const View = forwardRef(function View({ children, testID, onLayout, responderIndex }, ref) {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
@@ -38,6 +48,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     findNodeHandle: (target) => target,
     View,
     SafeAreaView: View,
@@ -82,6 +93,7 @@ vi.mock('react-native-svg', () => {
     LinearGradient: group,
     Rect: () => null,
     Path: () => null,
+    Use: () => null,
     Circle: () => null,
     Stop: () => null,
     FeBlend: () => null,

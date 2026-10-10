@@ -1,4 +1,5 @@
 import type { GestureResponderEvent, NativeTouchEvent } from 'react-native';
+import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
 import { paperPoint, type Drawing, type Stroke } from './model';
 import type { Brush } from './brushes';
@@ -14,10 +15,15 @@ export type ContactDrawingProps = {
   onCohort: (strokes: readonly Stroke[]) => void;
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
+  sound?: ContactSound | null;
 };
 
-type Contact = { startedAt: number | null; state: 'accepted' | 'awaiting-start' | 'ignored' };
-type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY'>;
+type Contact = {
+  startedAt: number | null;
+  state: 'accepted' | 'awaiting-start' | 'ignored';
+  sound: SoundContact | null;
+};
+type ContactSample = Pick<NativeTouchEvent, 'identifier' | 'pageX' | 'pageY' | 'timestamp'>;
 const INTERRUPTED_TOUCH_MESSAGE = 'That touch was interrupted. Lift and try again.';
 
 function insidePaper(touch: NativeTouchEvent, frame: PaperFrame | null): boolean {
@@ -36,6 +42,7 @@ class ContactResponder {
   private readonly input = createContactCohort();
   private readonly contacts = new Map<string, Contact>();
   private paperTarget: unknown = null;
+  private responderHeld = false;
   private lastStartEvent: GestureResponderEvent['nativeEvent'] | null = null;
   private startBatch: {
     fingerprint: string;
@@ -60,6 +67,18 @@ class ContactResponder {
     this.current().onDrawingChange(this.input.hasActive());
   }
 
+  private finish(identifier: string) {
+    this.contacts.get(identifier)?.sound?.end();
+    this.publish(this.input.finish(identifier));
+  }
+
+  silence() {
+    for (const contact of this.contacts.values()) {
+      contact.sound?.end();
+      contact.sound = null;
+    }
+  }
+
   hasActive() {
     return this.input.hasActive();
   }
@@ -74,10 +93,10 @@ class ContactResponder {
       const touch = present.get(identifier);
       const startedAt = touch ? (contactLifetime(event, touch, 'active')?.startedAt ?? null) : null;
       if (!touch || (contact.startedAt !== null && startedAt !== contact.startedAt)) {
+        this.finish(identifier);
         this.contacts.delete(identifier);
-        this.publish(this.input.finish(identifier));
         if (touch && startedAt === null) {
-          this.contacts.set(identifier, { startedAt: null, state: 'ignored' });
+          this.contacts.set(identifier, { startedAt: null, state: 'ignored', sound: null });
           this.current().onError(new Error(INTERRUPTED_TOUCH_MESSAGE));
         }
       }
@@ -91,17 +110,16 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
-      this.input.sample(
-        touch.identifier,
-        paperPoint(point.x, point.y, frame.width, frame.height),
-        endpoint
-      );
+      const sample = paperPoint(point.x, point.y, frame.width, frame.height);
+      this.input.sample(touch.identifier, sample, endpoint);
+      this.contacts.get(touch.identifier)?.sound?.sample(sample, touch.timestamp);
     } catch (error) {
       this.current().onError(error);
     }
   }
 
   grant(event: GestureResponderEvent) {
+    this.responderHeld = true;
     this.flushGrant(new Set(), true);
     this.reconcile(event);
     this.paperTarget ??= responderTarget(event);
@@ -116,6 +134,7 @@ class ContactResponder {
                 identifier: touch.identifier,
                 pageX: touch.pageX,
                 pageY: touch.pageY,
+                timestamp: touch.timestamp,
               },
             },
           ]
@@ -143,7 +162,11 @@ class ContactResponder {
     for (const touch of event.nativeEvent.touches) {
       if (this.contacts.has(touch.identifier)) continue;
       const lifetime = contactLifetime(event, touch, 'active');
-      const contact: Contact = { startedAt: lifetime?.startedAt ?? null, state: 'ignored' };
+      const contact: Contact = {
+        startedAt: lifetime?.startedAt ?? null,
+        state: 'ignored',
+        sound: null,
+      };
       this.contacts.set(touch.identifier, contact);
       observed.add(contact);
       if (!lifetime) {
@@ -173,14 +196,16 @@ class ContactResponder {
       const frame = this.frame();
       const point = paperLocation(touch, frame);
       if (!frame || !point) throw new Error(INTERRUPTED_TOUCH_MESSAGE);
+      const sample = paperPoint(point.x, point.y, frame.width, frame.height);
       this.input.start(
         touch.identifier,
         current.color,
         current.brush,
-        paperPoint(point.x, point.y, frame.width, frame.height),
+        sample,
         current.currentDrawing()
       );
       contact.state = 'accepted';
+      contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;
     } catch (error) {
       this.current().onError(error);
     }
@@ -228,8 +253,8 @@ class ContactResponder {
     this.flushGrant(changed);
     if (repeat === null) {
       for (const identifier of changed) {
-        this.publish(this.input.finish(identifier));
-        this.contacts.set(identifier, { startedAt: null, state: 'ignored' });
+        this.finish(identifier);
+        this.contacts.set(identifier, { startedAt: null, state: 'ignored', sound: null });
       }
       this.current().onError(new Error(INTERRUPTED_TOUCH_MESSAGE));
       this.update(event);
@@ -244,8 +269,8 @@ class ContactResponder {
           pending.contacts.has(contact);
         if (contact?.startedAt === null && readStartBatch(event) !== 'absent') continue;
         if (contact && !granted) {
+          this.finish(touch.identifier);
           this.contacts.delete(touch.identifier);
-          this.publish(this.input.finish(touch.identifier));
         }
         if (granted && contact.state === 'awaiting-start') this.accept(touch, contact);
       }
@@ -298,25 +323,53 @@ class ContactResponder {
       const lifetime = contactLifetime(event, touch, 'ended');
       if (lifetime?.startedAt === this.contacts.get(touch.identifier)?.startedAt)
         this.sample(touch, true);
+      this.finish(touch.identifier);
       this.contacts.delete(touch.identifier);
-      this.publish(this.input.finish(touch.identifier));
     }
     this.move(event);
   }
 
-  interrupt() {
+  release(event: GestureResponderEvent) {
+    this.end(event);
+    this.responderHeld = false;
+  }
+
+  endRaw(event: GestureResponderEvent) {
+    if (this.responderHeld) return;
+    if (event.nativeEvent.touches.length === 0) {
+      this.interrupt();
+      return;
+    }
+    // Generic touch events lack responder touchHistory; close known contacts without adopting samples.
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;
+    const present = new Set(event.nativeEvent.touches.map(({ identifier }) => identifier));
+    for (const { identifier } of event.nativeEvent.changedTouches) {
+      if (present.has(identifier) || !this.contacts.has(identifier)) continue;
+      this.finish(identifier);
+      this.contacts.delete(identifier);
+    }
+    if (this.contacts.size === 0) this.paperTarget = null;
+  }
+
+  interrupt() {
+    this.responderHeld = false;
+    this.flushGrant(new Set(), true);
+    this.startBatch = null;
+    this.lastStartEvent = null;
+    this.silence();
     this.contacts.clear();
     this.paperTarget = null;
     this.publish(this.input.interrupt());
   }
 
   detach() {
+    this.responderHeld = false;
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;
+    this.silence();
     this.contacts.clear();
     this.paperTarget = null;
     const completed = this.input.interrupt();
@@ -328,6 +381,7 @@ class ContactResponder {
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;
+    this.silence();
     for (const contact of this.contacts.values()) contact.state = 'ignored';
     this.publish(this.input.interrupt());
   }

@@ -24,11 +24,22 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   exportPng: files.export,
 }));
 
+vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+  loadDrawingLoop: vi.fn(),
+}));
+vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+  soundSettingsStorage: {
+    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
+    write: vi.fn(),
+  },
+}));
+
 vi.mock('react-native', () => {
   function container({ children }) {
     return createElement('div', null, children);
   }
   return {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     Dimensions: {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
       addEventListener: () => ({ remove: vi.fn() }),

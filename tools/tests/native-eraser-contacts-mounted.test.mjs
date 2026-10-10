@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
+import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
 import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
@@ -21,8 +22,27 @@ const sdk = vi.hoisted(() => ({
   opened: null,
   save: vi.fn(),
   export: vi.fn(),
+  soundStart: vi.fn(),
+  soundStop: vi.fn(),
+  soundVolume: vi.fn(),
+  soundDispose: vi.fn(),
+}));
+vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+  loadDrawingLoop: vi.fn(async () => ({
+    start: sdk.soundStart,
+    stop: sdk.soundStop,
+    setVolume: sdk.soundVolume,
+    dispose: sdk.soundDispose,
+  })),
+}));
+vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+  soundSettingsStorage: {
+    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":true}'),
+    write: vi.fn(),
+  },
 }));
 vi.mock('react-native', () => ({
+  AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   findNodeHandle: (owner) => owner,
   View: forwardRef(({ children, style }, ref) => {
     useImperativeHandle(ref, () => ({
@@ -66,6 +86,7 @@ vi.mock('react-native-svg', () => {
     LinearGradient: group,
     Filter: group,
     Path: () => null,
+    Use: () => null,
     Circle: () => null,
     Rect: () => null,
     Stop: () => null,
@@ -89,14 +110,16 @@ const marker = { brush: 'marker', color: 'Blue', points: [{ x: 40, y: 60 }] };
 let owner, root, host;
 function Consumer() {
   owner = useDrawingScreen();
+  const sound = useDrawingSound();
   return createElement(DrawingSurface, {
+    sound: sound.owner?.contacts ?? null,
     key: owner.recovery.generation,
     ref: owner.surface,
     drawing: owner.history.drawing,
     currentDrawing: owner.currentDrawing,
     color: owner.color,
     brush: owner.brush,
-    disabled: owner.busy,
+    disabled: owner.busy || owner.settingsOpen,
     ...owner.recovery.callbacks,
   });
 }
@@ -174,6 +197,10 @@ beforeEach(async () => {
   sdk.frame = [0, 0, 1024, 768, 40, 800];
   sdk.save.mockClear();
   sdk.export.mockClear();
+  sdk.soundStart.mockClear();
+  sdk.soundStop.mockClear();
+  sdk.soundVolume.mockClear();
+  sdk.soundDispose.mockClear();
   vi.stubGlobal('requestAnimationFrame', (callback) => {
     const id = ++sdk.nextFrame;
     sdk.frames.set(id, callback);
@@ -336,6 +363,53 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
     await send('onPanResponderGrant', event([touch(0, 10, 20)]));
     await send('onPanResponderEnd', event([], [touch(0, 30, 40, 200)], { 0: 100 }), false);
     expect(owner.history.drawing.strokes).toHaveLength(1);
+  });
+
+  it('retains one sound loop through a partial lift and ends it with the actual last contact', async () => {
+    await twoContacts();
+    expect(sdk.soundStart).toHaveBeenCalledOnce();
+    expect(sdk.soundStop).not.toHaveBeenCalled();
+    await send('onPanResponderEnd', event([], [touch(0, 90, 100, 500)], { 0: 100 }), false);
+    expect(sdk.soundStop).toHaveBeenCalledOnce();
+    expect(owner.history.drawing.strokes).toHaveLength(2);
+    await settle();
+    await act(async () => owner.undo());
+    expect(owner.history.drawing.strokes).toEqual([]);
+  });
+
+  it('holds the real input lease throughout Settings and rejects commands until close', async () => {
+    const before = owner.history;
+    const staleChoosePage = owner.choosePage;
+    await act(async () => owner.openSettings());
+    expect(owner.settingsOpen).toBe(true);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(false);
+    await act(async () => {
+      await owner.save();
+      await owner.exportPicture();
+      await owner.clear();
+      owner.choosePage('flower');
+      staleChoosePage('turtle');
+    });
+    expect(sdk.save).not.toHaveBeenCalled();
+    expect(sdk.export).not.toHaveBeenCalled();
+    expect(sdk.captures).toEqual([]);
+    expect(owner.history).toBe(before);
+    await act(async () => owner.closeSettings());
+    expect(owner.settingsOpen).toBe(false);
+    expect(sdk.handlers.onStartShouldSetPanResponder()).toBe(true);
+  });
+
+  it('refuses Settings during an admitted cohort and silences on measured geometry invalidation', async () => {
+    await twoContacts();
+    await act(async () => owner.openSettings());
+    expect(owner.settingsOpen).toBe(false);
+    await act(async () => owner.surface.current.refreshGeometry());
+    expect(sdk.soundStop).toHaveBeenCalledOnce();
+    const completed = owner.history;
+    const samples = sdk.soundVolume.mock.calls.length;
+    await send('onPanResponderMove', event([touch(0, 90, 100, 400)], undefined, { 0: 100 }), false);
+    expect(sdk.soundVolume).toHaveBeenCalledTimes(samples);
+    expect(owner.history).toBe(completed);
   });
 
   it('refreshes only on changed scroll offsets and translates web document coordinates', () => {

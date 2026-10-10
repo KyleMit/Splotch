@@ -19,6 +19,8 @@ import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
 import type { History } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+import { useDrawingSound } from './useDrawingSound';
+import { SoundSettings } from './settings/SoundSettingsSheet';
 
 const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
@@ -106,6 +108,9 @@ export function DrawingScreen() {
     surface,
     pagePickerOpen,
     setPagePickerOpen,
+    settingsOpen,
+    openSettings,
+    closeSettings,
     choosePage,
     disabled,
     save,
@@ -113,6 +118,7 @@ export function DrawingScreen() {
     showPictures,
     openPicture,
   } = useDrawingScreen();
+  const sound = useDrawingSound();
   return (
     <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
       <DrawingScroll drawing={drawing} surface={surface}>
@@ -120,25 +126,7 @@ export function DrawingScreen() {
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
         </View>
-        <View style={styles.palette}>
-          {COLORS.map((label) => (
-            <Pressable
-              key={label}
-              accessibilityRole="button"
-              accessibilityLabel={`${label} paint`}
-              accessibilityState={{ selected: label === color, disabled }}
-              disabled={disabled}
-              onPress={() => setColor(label)}
-              style={[
-                styles.swatch,
-                { backgroundColor: paletteHex(label) },
-                label === color && styles.selectedSwatch,
-              ]}
-            >
-              {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
-            </Pressable>
-          ))}
-        </View>
+        <PaintColors color={color} disabled={disabled} onChange={setColor} />
         <DrawingTools
           history={history}
           brush={brush}
@@ -158,27 +146,17 @@ export function DrawingScreen() {
           currentDrawing={currentDrawing}
           color={color}
           brush={brush}
-          disabled={busy || pictures !== null || pagePickerOpen}
+          disabled={busy || pictures !== null || pagePickerOpen || settingsOpen}
+          sound={sound.owner?.contacts ?? null}
           {...recovery.callbacks}
         />
-        <View style={styles.toolbar}>
-          <Action
-            label="Save picture"
-            primary
-            disabled={disabled}
-            onPress={() => {
-              void save();
-            }}
-          />
-          <Action label="Pictures" disabled={disabled} onPress={showPictures} />
-          <Action
-            label="Export PNG"
-            disabled={disabled}
-            onPress={() => {
-              void exportPicture();
-            }}
-          />
-        </View>
+        <DrawingActions
+          disabled={disabled}
+          save={save}
+          showPictures={showPictures}
+          exportPicture={exportPicture}
+          openSettings={openSettings}
+        />
         {recovery.failed ? (
           <Action
             label="Retry drawing"
@@ -192,12 +170,30 @@ export function DrawingScreen() {
             {notice}
           </Text>
         </View>
+        {sound.settings.message || sound.audioMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.notice}>
+            {sound.settings.message || sound.audioMessage}
+          </Text>
+        ) : null}
       </DrawingScroll>
       {pagePickerOpen ? (
         <ColoringPagePicker
           selected={history.drawing.pageId}
           onChoose={choosePage}
           onClose={() => setPagePickerOpen(false)}
+        />
+      ) : null}
+      {settingsOpen ? (
+        <SoundSettings
+          state={sound.settings}
+          audioMessage={sound.audioMessage}
+          onChange={(enabled) => {
+            void sound.owner?.settings.setEnabled(enabled);
+          }}
+          onRetrySave={() => {
+            void sound.owner?.settings.retrySave();
+          }}
+          onClose={closeSettings}
         />
       ) : null}
       <SavedPictures
@@ -208,6 +204,71 @@ export function DrawingScreen() {
         onClose={() => setPictures(null)}
       />
     </SafeAreaView>
+  );
+}
+
+function PaintColors({
+  color,
+  disabled,
+  onChange,
+}: {
+  color: PaletteLabel;
+  disabled: boolean;
+  onChange: (color: PaletteLabel) => void;
+}) {
+  return (
+    <View style={styles.palette}>
+      {COLORS.map((label) => (
+        <Pressable
+          key={label}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} paint`}
+          accessibilityState={{ selected: label === color, disabled }}
+          disabled={disabled}
+          onPress={() => onChange(label)}
+          style={[
+            styles.swatch,
+            { backgroundColor: paletteHex(label) },
+            label === color && styles.selectedSwatch,
+          ]}
+        >
+          {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function DrawingActions({
+  disabled,
+  save,
+  showPictures,
+  exportPicture,
+  openSettings,
+}: Pick<
+  ReturnType<typeof useDrawingScreen>,
+  'disabled' | 'save' | 'showPictures' | 'exportPicture' | 'openSettings'
+>) {
+  return (
+    <View style={styles.toolbar}>
+      <Action
+        label="Save picture"
+        primary
+        disabled={disabled}
+        onPress={() => {
+          void save();
+        }}
+      />
+      <Action label="Settings" disabled={disabled} onPress={openSettings} />
+      <Action label="Pictures" disabled={disabled} onPress={showPictures} />
+      <Action
+        label="Export PNG"
+        disabled={disabled}
+        onPress={() => {
+          void exportPicture();
+        }}
+      />
+    </View>
   );
 }
 

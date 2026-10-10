@@ -24,7 +24,7 @@ import { COLORING_PAGES, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 
 export function useDrawingScreen() {
-  const { history, historyRef, setHistory } = useDrawingHistory();
+  const { history, historyRef, setHistory, currentDrawing } = useDrawingHistory();
   const [color, setColor] = useState<PaletteLabel>('Purple');
   const [brush, setBrush] = useState<Brush>('marker');
   const [preparing, setPreparing] = useState(false);
@@ -33,9 +33,9 @@ export function useDrawingScreen() {
   const [notice, setNotice] = useState('Pick a color and draw.');
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
+  const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
-  const disabled = drawing || busy || preparing || pagePickerOpen;
 
   const { command, runCommand, undo, clear } = useSurfaceCommands({
     historyRef,
@@ -44,17 +44,11 @@ export function useDrawingScreen() {
     setBusy,
     setNotice,
     report,
-    blocked: () => rendererFault.current || preparing || drawing,
+    blocked: () => rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
 
   function report(error: unknown) {
-    setNotice(
-      error instanceof Error ? error.message : 'That did not finish. Your picture is still here.'
-    );
-  }
-
-  function currentDrawing() {
-    return historyRef.current.drawing;
+    setNotice(drawingErrorMessage(error));
   }
 
   function finishCohort(strokes: readonly Stroke[]) {
@@ -67,8 +61,34 @@ export function useDrawingScreen() {
     }
   }
 
+  const settings = useDrawingSettings({
+    surface,
+    settingsLease,
+    blocked: () =>
+      drawing ||
+      busy ||
+      preparing ||
+      pagePickerOpen ||
+      pictures !== null ||
+      command.current ||
+      rendererFault.current,
+    report,
+  });
+  const disabled = drawing || busy || preparing || pagePickerOpen || settings.settingsOpen;
+
+  function commandsBlocked() {
+    return (
+      command.current ||
+      rendererFault.current ||
+      preparing ||
+      drawing ||
+      busy ||
+      settingsLease.current !== null
+    );
+  }
+
   function choosePage(pageId: PageId) {
-    if (command.current || rendererFault.current || preparing || drawing || busy) return;
+    if (commandsBlocked()) return;
     const next = changePage(historyRef.current, pageId);
     if (next !== historyRef.current) {
       setHistory(next);
@@ -77,28 +97,17 @@ export function useDrawingScreen() {
     setPagePickerOpen(false);
   }
 
-  async function save() {
-    await runCommand(async () => {
-      const snapshot = historyRef.current.drawing;
-      await savePicture(snapshot);
-      setNotice('Picture saved on this device.');
-    });
-  }
-
-  async function exportPicture() {
-    await runCommand(async () => {
-      const snapshot = historyRef.current.drawing;
-      const base64 = await surface.current?.capturePng(snapshot);
-      if (!base64) throw new Error('The drawing paper is not ready to export.');
-      if (historyRef.current.drawing !== snapshot)
-        throw new Error('The picture changed before export finished. Please try again.');
-      await exportPng(base64);
-      setNotice('PNG ready. Your picture is still here.');
-    });
-  }
+  const pictureActions = usePictureActions({
+    historyRef,
+    setHistory,
+    surface,
+    runCommand,
+    setNotice,
+    setPictures,
+  });
 
   function showPictures() {
-    if (command.current || rendererFault.current || preparing || drawing || busy) return;
+    if (commandsBlocked()) return;
     try {
       setPictures(listPictures());
       setNotice('');
@@ -107,21 +116,11 @@ export function useDrawingScreen() {
     }
   }
 
-  async function openPicture(picture: SavedPicture) {
-    await runCommand(async () => {
-      setNotice('');
-      const saved = await reopenPicture(picture.id);
-      setHistory((current) => commitDrawing(current, saved));
-      setPictures(null);
-      setNotice('Picture opened. Undo returns to your previous picture.');
-    });
-  }
-
   const recovery = useRendererRecovery({
     surface,
     rendererFault,
     command,
-    blocked: drawing || busy || pagePickerOpen || pictures !== null,
+    blocked: drawing || busy || pagePickerOpen || settings.settingsOpen || pictures !== null,
     setPreparing,
     setDrawing,
     finishCohort,
@@ -148,16 +147,21 @@ export function useDrawingScreen() {
     surface,
     pagePickerOpen,
     setPagePickerOpen,
+    ...settings,
     choosePage,
     disabled,
     report,
     currentDrawing,
     finishCohort,
-    save,
-    exportPicture,
+    ...pictureActions,
     showPictures,
-    openPicture,
   };
+}
+
+function drawingErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : 'That did not finish. Your picture is still here.';
 }
 
 function useDrawingHistory() {
@@ -168,7 +172,89 @@ function useDrawingHistory() {
     historyRef.current = value;
     renderHistory(value);
   }
-  return { history, historyRef, setHistory };
+  function currentDrawing() {
+    return historyRef.current.drawing;
+  }
+  return { history, historyRef, setHistory, currentDrawing };
+}
+
+function useDrawingSettings({
+  surface,
+  settingsLease,
+  blocked,
+  report,
+}: {
+  surface: RefObject<DrawingSurfaceHandle | null>;
+  settingsLease: RefObject<(() => void) | null>;
+  blocked: () => boolean;
+  report: (error: unknown) => void;
+}) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => () => settingsLease.current?.(), [settingsLease]);
+  function openSettings() {
+    if (blocked() || settingsLease.current) return;
+    try {
+      if (!surface.current) throw new Error('The drawing paper is not ready.');
+      settingsLease.current = surface.current.lockInput();
+      setSettingsOpen(true);
+    } catch (error) {
+      report(error);
+    }
+  }
+  function closeSettings() {
+    settingsLease.current?.();
+    settingsLease.current = null;
+    setSettingsOpen(false);
+  }
+  return { settingsOpen, openSettings, closeSettings };
+}
+
+function usePictureActions({
+  historyRef,
+  setHistory,
+  surface,
+  runCommand,
+  setNotice,
+  setPictures,
+}: {
+  historyRef: RefObject<History>;
+  setHistory: (next: History | ((current: History) => History)) => void;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+  runCommand: (action: () => Promise<void>) => Promise<void>;
+  setNotice: (notice: string) => void;
+  setPictures: (pictures: SavedPicture[] | null) => void;
+}) {
+  async function save() {
+    await runCommand(async () => {
+      const snapshot = historyRef.current.drawing;
+      await savePicture(snapshot);
+      setNotice('Picture saved on this device.');
+    });
+  }
+
+  async function exportPicture() {
+    await runCommand(async () => {
+      const snapshot = historyRef.current.drawing;
+      const base64 = await surface.current?.capturePng(snapshot);
+      if (!base64) throw new Error('The drawing paper is not ready to export.');
+      if (historyRef.current.drawing !== snapshot)
+        throw new Error('The picture changed before export finished. Please try again.');
+      await exportPng(base64);
+      setNotice('PNG ready. Your picture is still here.');
+    });
+  }
+
+  async function openPicture(picture: SavedPicture) {
+    await runCommand(async () => {
+      setNotice('');
+      const saved = await reopenPicture(picture.id);
+      setHistory((current) => commitDrawing(current, saved));
+      setPictures(null);
+      setNotice('Picture opened. Undo returns to your previous picture.');
+    });
+  }
+
+  return { save, exportPicture, openPicture };
 }
 
 function useSurfaceCommands({
