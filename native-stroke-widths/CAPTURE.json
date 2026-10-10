@@ -1,0 +1,468 @@
+{
+  "startedAt": "2026-10-10T02:58:08.738Z",
+  "scope": "browser development only",
+  "viewport": {
+    "width": 360,
+    "height": 640
+  },
+  "expectedHead": "4b1882fb7dd41cf7b4387bdc323c6698f798d6e9",
+  "phases": [
+    {
+      "name": "source-copy-start",
+      "at": "2026-10-10T02:58:08.790Z"
+    },
+    {
+      "name": "metro-started",
+      "at": "2026-10-10T02:58:27.205Z",
+      "port": 50688,
+      "pid": 48335
+    },
+    {
+      "name": "marker-thin-admission-geometry",
+      "at": "2026-10-10T02:58:29.732Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.1,
+        0.14
+      ],
+      "inputTo": [
+        0.9,
+        0.14
+      ],
+      "absoluteFrom": {
+        "x": 48.800000000000004,
+        "y": 236.44
+      },
+      "absoluteTo": {
+        "x": 311.2,
+        "y": 236.44
+      }
+    },
+    {
+      "name": "marker-thin-drawn",
+      "at": "2026-10-10T02:58:29.960Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thin"
+    },
+    {
+      "name": "marker-thick-admission-geometry",
+      "at": "2026-10-10T02:58:30.315Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.1,
+        0.31
+      ],
+      "inputTo": [
+        0.9,
+        0.31
+      ],
+      "absoluteFrom": {
+        "x": 48.800000000000004,
+        "y": 278.26
+      },
+      "absoluteTo": {
+        "x": 311.2,
+        "y": 278.26
+      }
+    },
+    {
+      "name": "marker-thick-drawn",
+      "at": "2026-10-10T02:58:30.528Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thick"
+    },
+    {
+      "name": "crayon-thin-admission-geometry",
+      "at": "2026-10-10T02:58:30.863Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.1,
+        0.49
+      ],
+      "inputTo": [
+        0.9,
+        0.49
+      ],
+      "absoluteFrom": {
+        "x": 48.800000000000004,
+        "y": 322.53999999999996
+      },
+      "absoluteTo": {
+        "x": 311.2,
+        "y": 322.53999999999996
+      }
+    },
+    {
+      "name": "crayon-thin-drawn",
+      "at": "2026-10-10T02:58:31.091Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thin"
+    },
+    {
+      "name": "crayon-thick-admission-geometry",
+      "at": "2026-10-10T02:58:31.413Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.1,
+        0.69
+      ],
+      "inputTo": [
+        0.9,
+        0.69
+      ],
+      "absoluteFrom": {
+        "x": 48.800000000000004,
+        "y": 371.74
+      },
+      "absoluteTo": {
+        "x": 311.2,
+        "y": 371.74
+      }
+    },
+    {
+      "name": "crayon-thick-drawn",
+      "at": "2026-10-10T02:58:31.625Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thick"
+    },
+    {
+      "name": "eraser-thin-admission-geometry",
+      "at": "2026-10-10T02:58:32.029Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.36,
+        0.04
+      ],
+      "inputTo": [
+        0.36,
+        0.86
+      ],
+      "absoluteFrom": {
+        "x": 134.07999999999998,
+        "y": 211.84
+      },
+      "absoluteTo": {
+        "x": 134.07999999999998,
+        "y": 413.56
+      }
+    },
+    {
+      "name": "eraser-thin-drawn",
+      "at": "2026-10-10T02:58:32.241Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thin"
+    },
+    {
+      "name": "eraser-thick-admission-geometry",
+      "at": "2026-10-10T02:58:32.565Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "inputFrom": [
+        0.65,
+        0.04
+      ],
+      "inputTo": [
+        0.65,
+        0.86
+      ],
+      "absoluteFrom": {
+        "x": 229.20000000000002,
+        "y": 211.84
+      },
+      "absoluteTo": {
+        "x": 229.20000000000002,
+        "y": 413.56
+      }
+    },
+    {
+      "name": "eraser-thick-drawn",
+      "at": "2026-10-10T02:58:32.774Z",
+      "paperFrame": {
+        "x": 16,
+        "y": 202,
+        "width": 328,
+        "height": 246
+      },
+      "width": "Thick"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    "React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element. maskType masktype"
+  ],
+  "checks": {
+    "targets": [
+      {
+        "name": "Thin",
+        "box": {
+          "x": 50.078125,
+          "y": 494,
+          "width": 69.25,
+          "height": 52
+        }
+      },
+      {
+        "name": "Medium",
+        "box": {
+          "x": 127.328125,
+          "y": 494,
+          "width": 96.90625,
+          "height": 52
+        }
+      },
+      {
+        "name": "Thick",
+        "box": {
+          "x": 232.234375,
+          "y": 494,
+          "width": 77.6875,
+          "height": 52
+        }
+      }
+    ],
+    "export-two-erasers": {
+      "path": "/private/tmp/native-stroke-widths/compact-browser-centered/export-two-erasers.png",
+      "bytes": 56665,
+      "sha256": "0c50bab343a5a520e0407c18d1a34eb1acd578d17216bcaba71e0bee4e601052",
+      "rgbaSha256": "1a1814ac55dbfca8fea284e778edb705919e12692f64ccf83286d365138ace29",
+      "format": "raw",
+      "width": 1024,
+      "height": 768,
+      "channels": 4,
+      "depth": "uchar",
+      "premultiplied": false,
+      "hasAlpha": true,
+      "size": 3145728
+    },
+    "eraserPixels": {
+      "thinGap": 21,
+      "thickGap": 87
+    }
+  },
+  "dependencies": [
+    {
+      "path": "package.json",
+      "sha256": "2f34502e3f9f63adcec04e04cb94387f1a282f6e4d797861351ba17b3db831fc"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "45d731eb5385e67970e2ec59941de4a668aeb78a67eb68eda023dc6d652a16a2"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "7d4490e0657569fc25752b4780d94e4b9b2ba51d47d89f2df4350ab2aee02734"
+    }
+  ],
+  "dependencyLinkCount": 119,
+  "tool": {
+    "node": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+    "nodeSha256": "1ee75375e33b94fc34b3b19aede049e11dae90efb63b374dc96d6bdace70c4b8",
+    "browser": "/Users/kylemit/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "browserSha256": "8319963f6625accf51c0dd4f55091ceaf9f09ed39e7a52fed4fae12b2a6b668a"
+  },
+  "status": "failed",
+  "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    pageId: 'blank',\n    rainbow: 0,\n    strokes: [\n      {\n...\n      },\n+     {\n+       brush: 'eraser',\n+       points: [\n+         {\n+           x: 664.98,\n+           y: 28.1\n+         },\n+         {\n+           x: 664.98,\n+           y: 81.17\n+         },\n+         {\n+           x: 664.98,\n+           y: 134.24\n+         },\n+         {\n+           x: 664.98,\n+           y: 187.32\n+         },\n+         {\n+           x: 664.98,\n+           y: 240.39\n+         },\n+         {\n+           x: 664.98,\n+           y: 290.34\n+         },\n+         {\n+           x: 664.98,\n+           y: 343.41\n+         },\n+         {\n+           x: 664.98,\n+           y: 396.49\n+         },\n+         {\n+           x: 664.98,\n+           y: 449.56\n+         },\n+         {\n+           x: 664.98,\n+           y: 502.63\n+         },\n+         {\n+           x: 664.98,\n+           y: 552.59\n+         },\n+         {\n+           x: 664.98,\n+           y: 605.66\n+         },\n+         {\n+           x: 664.98,\n+           y: 658.73\n+         }\n+       ],\n+       width: 88\n+     }\n    ],\n    version: 4\n  }\n\n    at file:///private/tmp/native-stroke-widths/compact-browser-centered.mjs:172:10",
+  "terminalAt": "2026-10-10T02:58:33.173Z",
+  "elapsedMs": 24435,
+  "sourceTree": "2805de485bc7d394a08e0e87a1cfb87cc1860151",
+  "closure": {
+    "at": "2026-10-10T02:59:16.228060+00:00",
+    "knownBirthCount": 13,
+    "knownGroupCount": 3,
+    "remainingBirths": [],
+    "remainingGroupMembers": [],
+    "ports": [
+      {
+        "host": "127.0.0.1",
+        "port": 50688,
+        "connectExit": 61
+      },
+      {
+        "host": "::1",
+        "port": 50688,
+        "connectExit": 61
+      }
+    ],
+    "trackedSourceFileCount": 8983,
+    "changedSourceFiles": [],
+    "sourceStatuses": {
+      "/private/tmp/native-stroke-widths/repository": "",
+      "/private/tmp/native-stroke-widths/compact-runtime-centered": ""
+    }
+  },
+  "undoDiagnosis": {
+    "at": "2026-10-10T02:59:16.231071+00:00",
+    "scope": "read-only diagnosis of captured actual browser storage, no rerun",
+    "oldKey": "splotch-picture:picture-1791601112867-osbdznz3",
+    "newKey": "splotch-picture:picture-1791601113084-mqi9zt6l",
+    "oldWidths": [
+      11,
+      44,
+      17,
+      68,
+      22,
+      88
+    ],
+    "newWidths": [
+      11,
+      44,
+      17,
+      68,
+      22
+    ],
+    "exactUndoSavedDrawingEqualsSixMinusLast": true,
+    "driverSortSegment": [
+      "picture:picture",
+      "picture:picture"
+    ],
+    "reopenReached": false,
+    "consoleWarning": [
+      "React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element. maskType masktype"
+    ]
+  },
+  "custodyFiles": [
+    {
+      "path": "compact-browser-localhost/failure.png",
+      "bytes": 24375,
+      "sha256": "1255f36e560457af2fec41c5f9d182fdd41d20c7cfd96c9bf195eced2c335cd6"
+    },
+    {
+      "path": "compact-browser-localhost/phone-default-medium.png",
+      "bytes": 36309,
+      "sha256": "188cc4c2c8d652bfe252ca1b7bfa39f322c238203e9ae976108c2238ec486862"
+    },
+    {
+      "path": "compact-browser-localhost/phone-marker-thin-selection.png",
+      "bytes": 36452,
+      "sha256": "603feeb4dae97639f50d8552b3453519abc1d687a71eac87d0cdd6110edd3fc6"
+    },
+    {
+      "path": "compact-browser-centered/export-two-erasers.png",
+      "bytes": 56665,
+      "sha256": "0c50bab343a5a520e0407c18d1a34eb1acd578d17216bcaba71e0bee4e601052"
+    },
+    {
+      "path": "compact-browser-centered/failure.png",
+      "bytes": 41943,
+      "sha256": "fbbc70fc5f8594bc305537ee38cd8c2b048a5298045459d9d149aee426346def"
+    },
+    {
+      "path": "compact-browser-centered/paper-two-eraser-widths.png",
+      "bytes": 18367,
+      "sha256": "48dcc53ab46a75c6dbb47453cb63f5ad12a7865a956b8c62d0f785c33b0ce945"
+    },
+    {
+      "path": "compact-browser-centered/phone-crayon-thick-selection.png",
+      "bytes": 36171,
+      "sha256": "9fff2c3970e201d3df20e80ffa322c0f2f7564b17e45219fdbacc8be91a024e7"
+    },
+    {
+      "path": "compact-browser-centered/phone-crayon-thin-selection.png",
+      "bytes": 36369,
+      "sha256": "d6644432f0614dacd641202d86abe8eca96e72435f1a16aefde61146d59b9835"
+    },
+    {
+      "path": "compact-browser-centered/phone-default-medium.png",
+      "bytes": 36309,
+      "sha256": "188cc4c2c8d652bfe252ca1b7bfa39f322c238203e9ae976108c2238ec486862"
+    },
+    {
+      "path": "compact-browser-centered/phone-eraser-thick-selection.png",
+      "bytes": 34676,
+      "sha256": "2684c212530db95da6d96b733e330608b47263e2020e99bb64288e32594ef245"
+    },
+    {
+      "path": "compact-browser-centered/phone-eraser-thin-selection.png",
+      "bytes": 42825,
+      "sha256": "a8553b613b5073239d10975edc41e77891fc0a4df3497d5f844cc3837d63bed1"
+    },
+    {
+      "path": "compact-browser-centered/phone-marker-thick-selection.png",
+      "bytes": 36142,
+      "sha256": "569c8856c5c1dd835d4780f67aa990e5813fa4406b2051ad868206eaed441bd0"
+    },
+    {
+      "path": "compact-browser-centered/phone-marker-thin-selection.png",
+      "bytes": 36452,
+      "sha256": "603feeb4dae97639f50d8552b3453519abc1d687a71eac87d0cdd6110edd3fc6"
+    }
+  ]
+}
