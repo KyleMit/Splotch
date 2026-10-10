@@ -1,0 +1,3 @@
+return PAGE_IDS.some((id) => id === value);
+=>
+return true;

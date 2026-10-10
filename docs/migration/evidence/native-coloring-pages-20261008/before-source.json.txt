@@ -1,0 +1,9 @@
+{
+  "source": "ae4038f200f47d3b8f7f508c49c51a86197c8066",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "paperPathCount": 1,
+  "coloringPageButtonCount": 0
+}

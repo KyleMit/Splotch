@@ -2,6 +2,8 @@
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { rgbaPng } from './native-png-fixtures.mjs';
+import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import {
   emptyDrawing,
@@ -15,6 +17,7 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  cohort: null,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
@@ -47,10 +50,23 @@ vi.mock('react-native', () => {
     Platform: { OS: 'android' },
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
+    Pressable: ({
+      children,
+      onPress,
+      disabled,
+      accessibilityLabel,
+      accessibilityRole,
+      accessibilityState,
+    }) =>
       createElement(
         'button',
-        { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
+        {
+          onClick: onPress,
+          disabled,
+          'aria-label': accessibilityLabel,
+          role: accessibilityRole,
+          'aria-checked': accessibilityState?.checked,
+        },
         children
       ),
     SafeAreaView: container,
@@ -72,8 +88,8 @@ vi.mock('react-native', () => {
 
 vi.mock('react-native-svg', () => ({
   default: ({ children }) => createElement('svg', null, children),
-  Rect: () => null,
-  Path: () => null,
+  Rect: (props) => createElement('rect', props),
+  Path: (props) => createElement('path', props),
 }));
 
 const STROKE = {
@@ -86,7 +102,8 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onCohort }, ref) => {
+  DrawingSurface: forwardRef(({ drawing, onCohort, disabled }, ref) => {
+    files.cohort = onCohort;
     useImperativeHandle(
       ref,
       () => ({
@@ -101,6 +118,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
       'button',
       {
         'data-testid': 'paper',
+        disabled,
         'data-drawing': JSON.stringify(drawing),
         onClick: () => onCohort([STROKE]),
       },
@@ -113,7 +131,13 @@ function createScreen() {
   const container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
   const root = createRoot(container);
+  function button(label) {
+    return [...container.querySelectorAll('button')].find(
+      (element) => element.getAttribute('aria-label') === label || element.textContent === label
+    );
+  }
   return {
+    button,
     container,
     mount: () => act(() => root.render(createElement(DrawingScreen))),
     close: () => {
@@ -137,9 +161,10 @@ const pictures = [
   { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
   { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
 ];
+const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
 
-beforeEach(() => {
+beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.list.mockReturnValue(pictures);
   files.open.mockReset();
@@ -148,7 +173,7 @@ beforeEach(() => {
   files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
   screen = createScreen();
-  screen.mount();
+  await screen.mount();
 });
 
 afterEach(() => {
@@ -260,7 +285,8 @@ describe('controller output snapshot ownership', () => {
         })
     );
     await screen.click('Export PNG');
-    await screen.click('Draw fixture stroke');
+    expect(screen.button('Draw fixture stroke').disabled).toBe(true);
+    act(() => files.cohort([STROKE]));
     await act(async () => finish('old-picture-png'));
     expect(files.export).not.toHaveBeenCalled();
     expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
@@ -283,4 +309,98 @@ describe('Clear observation refusal', () => {
     expect(JSON.parse(screen.paper()).strokes).toEqual([]);
     expect(JSON.parse(screen.paper()).rainbow).toBe(0);
   });
+});
+
+describe('coloring-page controls through the real drawing screen', () => {
+  it('disables the underlying toolbar and paper while the real picker is open', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Coloring pages');
+    const choices = [...screen.dialog().querySelectorAll('[role="radio"]')];
+    expect(choices.map((choice) => choice.getAttribute('aria-label'))).toEqual([
+      'Blank paper',
+      'Sunshine',
+      'Garden flower',
+      'Little turtle',
+    ]);
+    expect(choices.map((choice) => choice.getAttribute('aria-checked'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+    ]);
+    const underlying = [...screen.container.querySelectorAll('button')].filter(
+      (button) => !screen.dialog().contains(button)
+    );
+    expect(underlying.length).toBeGreaterThan(10);
+    expect(underlying.every((button) => button.disabled)).toBe(true);
+    await act(async () => screen.button('Clear').click());
+    expect(screen.paper()).toBe(original);
+    await screen.click('Keep drawing');
+    expect(screen.dialog()).toBeNull();
+    expect(screen.paper()).toBe(original);
+    expect(screen.button('Save picture').disabled).toBe(false);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+    expect(screen.button('Undo').disabled).toBe(true);
+  });
+
+  it('changes page and paint in one history entry and keeps same-page paint intact', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Coloring pages');
+    await screen.click('Garden flower');
+    expect(screen.dialog()).toBeNull();
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
+    expect(screen.container.textContent).toContain(
+      'Garden flower ready. Undo brings your picture back.'
+    );
+    await screen.click('Draw fixture stroke');
+    const painted = screen.paper();
+    await screen.click('Coloring pages');
+    expect(screen.button('Garden flower').getAttribute('aria-checked')).toBe('true');
+    await screen.click('Garden flower');
+    expect(screen.dialog()).toBeNull();
+    expect(screen.paper()).toBe(painted);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(original);
+  });
+
+  it(
+    'preserves the selected page through Clear and restores blank selection atomically with Undo',
+    async () => {
+      await screen.click('Coloring pages');
+      await screen.click('Little turtle');
+      await screen.click('Draw fixture stroke');
+      const painted = screen.paper();
+      let finishInk;
+      files.ink.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishInk = resolve;
+          })
+      );
+      await screen.click('Clear');
+      expect(screen.button('Clear').disabled).toBe(true);
+      await act(async () => finishInk(rgbaPng(1024, 768, 255).toString('base64')));
+      await vi.waitFor(
+        async () => {
+          await act(async () => {});
+          expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1, 'turtle'));
+        },
+        { timeout: PNG_TIMEOUT_MS }
+      );
+      expect(screen.button('Clear').disabled).toBe(false);
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+      await screen.click('Coloring pages');
+      await screen.click('Blank paper');
+      expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+    },
+    PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS
+  );
 });

@@ -1,0 +1,23 @@
+[
+  {
+    "name": "clear-loses-page",
+    "exitCode": 1,
+    "mutatedPath": "experiments/native-architecture/src/drawing/model.ts",
+    "mutationSha256": "753b83fa15c08ffe6362eaae7e7a4cd5659e27fdb6c3aaed82d6ca82bbb02687",
+    "testPattern": "keeps the page through new ink and undoable clear"
+  },
+  {
+    "name": "page-retains-paint",
+    "exitCode": 1,
+    "mutatedPath": "experiments/native-architecture/src/drawing/model.ts",
+    "mutationSha256": "ef544734986c3867ea614f72d04225f03592936fdd224228a07bff41c08a5924",
+    "testPattern": "changes the page and paint together"
+  },
+  {
+    "name": "accepts-foreign-page",
+    "exitCode": 1,
+    "mutatedPath": "experiments/native-architecture/src/drawing/pages.ts",
+    "mutationSha256": "4a0298080525531fbc1fe5d3081026af36af5ecd1fb18c5a472565754658ff31",
+    "testPattern": "refuses an invalid page identity"
+  }
+]

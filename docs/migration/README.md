@@ -1,7 +1,7 @@
 # Product UI migration
 
 Live execution resumed on 2026-10-06. The
-[public campaign register](CAMPAIGN.md#current-public-status-2026-10-09) owns current status,
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-10) owns current status,
 source/review dependencies and acceptance. Host-local CURRENT mirrors pending draft execution and
 lease receipts; accepted evidence stays committed or publicly linked. The pause checkpoint below
 remains historical.
