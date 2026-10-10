@@ -19,6 +19,15 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
   loadDrawingLoop: sound.load,
 }));
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: async () => null, write: async () => {} },
+    deliver: async () => {
+      return 'sharing-closed';
+    },
+  },
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: () => [],
   reopenPicture: vi.fn(),

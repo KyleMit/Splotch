@@ -1,20 +1,12 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useRef, type ReactNode, type RefObject } from 'react';
+import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
+import { DrawingStatus } from './DrawingStatus';
 import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
 import type { History } from './drawing/model';
@@ -89,14 +81,8 @@ function DrawingScroll({
   );
 }
 
-function useIdleMessage(message: string, drawing: boolean) {
-  const [settled, setSettled] = useState(message);
-  // Changing status layout invalidates the paper frame owned by the active contacts.
-  if (!drawing && settled !== message) setSettled(message);
-  return drawing ? settled : message;
-}
-
 export function DrawingScreen() {
+  const screen = useDrawingScreen();
   const {
     history,
     currentDrawing,
@@ -124,10 +110,8 @@ export function DrawingScreen() {
     exportPicture,
     showPictures,
     openPicture,
-  } = useDrawingScreen();
+  } = screen;
   const sound = useDrawingSound();
-  const visibleNotice = useIdleMessage(notice, drawing);
-  const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
   return (
     <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
       <DrawingScroll drawing={drawing} surface={surface}>
@@ -173,17 +157,10 @@ export function DrawingScreen() {
             onPress={recovery.retry}
           />
         ) : null}
-        <View style={styles.status}>
-          {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleNotice}
-          </Text>
-        </View>
-        {visibleSoundMessage ? (
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleSoundMessage}
-          </Text>
-        ) : null}
+        <DrawingStatus
+          screen={screen}
+          soundMessage={sound.settings.message || sound.audioMessage}
+        />
       </DrawingScroll>
       {pagePickerOpen ? (
         <ColoringPagePicker
@@ -428,13 +405,6 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.75 },
-  status: {
-    minHeight: 32,
-    flexDirection: 'row',
-    gap: CONTROL_GAP,
-    alignItems: 'center',
-    maxWidth: 1024,
-  },
   notice: { fontSize: 15, color: DRAWING_THEME.text, flexShrink: 1 },
   modalBackdrop: {
     flex: 1,
