@@ -7,7 +7,62 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current public status, 2026-10-09
+## Current public status, 2026-10-10
+
+Native GitHub branch and Git-object readback at 2026-10-10 04:12 UTC verifies integration
+c315db4771b99f4957cc283b6760a6f5f14d3f77, tree bc597d5b869d70c9700d79e00fca5b3301a23072, and
+unchanged shipping main ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign remains active and
+incomplete. No framework, full product, target cutover or release is accepted. The canonical
+reviewer-installation checkout remains installation-only.
+
+The standing authority, recording and lease rules at the end of the
+[2026-10-09 section](#historical-public-status-2026-10-09) remain current; this documentation change
+grants no runtime, device or signing lease.
+
+| Unit                                | Exact public source / full tree                                                     | Source disposition and original review capacity                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| N1 drawing development              | 6411ac5b08429608462cbbc573643b0568a3eddf / 16863cfa3ed4fa34ce2ee6366475bad4dc1496a1 | [PR 2715](https://github.com/KyleMit/Splotch/pull/2715) normal-merged at 9f64c4cb5604361f223690f1143296e8cd747c7d; narrow development-source disposition only. [Original round 3](https://github.com/KyleMit/Splotch/pull/2715#pullrequestreview-5468234550) reviewed dab1227abbf428d25c8e692ea61709dde9b5398c; its two final suggestions were repaired before the final source. 3 used / 0 remaining. |
+| Coloring pages                      | 874380f5023c55a0dbf9634ec63230b3116f3d16 / bc597d5b869d70c9700d79e00fca5b3301a23072 | [PR 2741](https://github.com/KyleMit/Splotch/pull/2741) normal-merged at c315db4771b99f4957cc283b6760a6f5f14d3f77 for the isolated source unit. [Original round 2](https://github.com/KyleMit/Splotch/pull/2741#pullrequestreview-5476204292) found no remaining source defect at this head. 2 used / 1 remaining.                                                                                     |
+| Simultaneous contacts / shared Undo | 328dafd110efda65201698c81d0037afcd2475bd / 3a125d07a5d00c78e911beb0be67b6e83f64eecc | Dependent draft [PR 2739](https://github.com/KyleMit/Splotch/pull/2739). [Original round 3](https://github.com/KyleMit/Splotch/pull/2739#pullrequestreview-5477435900) approved within the exact unit's source scope, with no new defects. 3 used / 0 remaining.                                                                                                                                       |
+| Crayon / Magic brushes              | f8539fc673a1bcce27f58d99bf6db6c2c98500b6 / 0a97a4a571002b8349d080c85c694984f23c3f90 | Dependent draft [PR 2740](https://github.com/KyleMit/Splotch/pull/2740). [Original round 3](https://github.com/KyleMit/Splotch/pull/2740#pullrequestreview-5477503601) found no new source defects and kept all three earlier findings addressed. The unchanged process suites remain unverified after four sandbox `ps` assertion failures; no passing rerun is claimed. 3 used / 0 remaining.        |
+| Drawing / eraser widths             | c8b2a9aac4e9702e61ea0f8bb95951eeb71bb2c2 / 3e2c02a3b07078d130d4a59827c78a4b7597339f | Dependent draft [PR 2744](https://github.com/KyleMit/Splotch/pull/2744). [Original round 2](https://github.com/KyleMit/Splotch/pull/2744#pullrequestreview-5477396120) confirmed both original findings repaired, with no new concrete defects. 2 used / 1 remaining.                                                                                                                                  |
+| Custom colors / saved palette       | a63d0b6d9f343aa8cba38422ce7c5bdc44e1350d / 70cdc499a657a6f4000c2d632b33671b4a5dd353 | Dependent draft [PR 2745](https://github.com/KyleMit/Splotch/pull/2745), based on the widths source above. Original independent review is unopened: 0 used / 3 remaining. No native acceptance.                                                                                                                                                                                                        |
+
+The N1 merge tree equals its final source tree; the Coloring merge tree likewise equals its isolated
+source tree. These identities preserve source history, not structural or runtime acceptance. N1's
+[published disposition](https://github.com/KyleMit/Splotch/pull/2715) attributes optimized modal
+execution to dab1227abbf428d25c8e692ea61709dde9b5398c and earlier complete
+drawing/save/export/restart observations to a17b0f838a85cee7a44a1ebf2965283495e243fd; neither is an
+exact-current both-OS acceptance result. Its original final review explicitly did not verify private
+native execution. Retained web artifacts establish their structural build scope only.
+
+Coloring was integrated before N1's required optimized both-OS compile/mount/draw acceptance. This
+records the premature dependent source merge; it neither waives the
+[N1 structural gate](PHASE-1.md#bounded-units-and-dependencies) nor retrospectively accepts N1.
+Preserve both merges and hold further dependent integration until the required exact N1 structural
+acceptance and applicable composition gates are satisfied. Independent feature construction and
+review may continue under the existing development sequence. The exhausted N1 review budget remains
+attached to N1; this register correction grants no additional round or replacement reviewer.
+
+The separately observed Android workflow belongs to joined source
+c81312b3acc49f77890741d7042970dfa4b3f527. The public
+[Coloring disposition](https://github.com/KyleMit/Splotch/pull/2741) records its
+page/outline/color/Undo/save/reopen/PNG flow; the
+[Contacts disposition](https://github.com/KyleMit/Splotch/pull/2739) records its stationary-survivor
+case. Neither result is execution of the isolated feature heads in the table or the current
+integration tree. Widths, custom colors and brushes retain their own observed-source limits and
+unresolved native obligations.
+
+Both-OS product and lifecycle behavior, complete drawing fidelity, services, web/API/admin/security,
+fair alternatives, physical floors and performance, signing/channel/release and final independent
+Codex/Claude review remain open under the unchanged
+[completion contract](CONTRACT.md#migration-completion). Unavailable physical hardware blocks only
+the dependent physical gates. All original reviewer identities and consumed capacity persist; PR
+2697, F1, N1 and Records are not reopened. The dated records below preserve earlier observations and
+failures. Host-local CURRENT records pending work and leases; it does not establish public
+acceptance.
+
+## Historical public status, 2026-10-09
 
 Public branch observation: 2026-10-09 04:36 UTC. Native GitHub readback and fetched Git objects
 verify integration f61f0c842abd2c4d4ab0eb1f3058786d245c444a and shipping main
