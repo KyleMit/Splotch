@@ -152,6 +152,12 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
       if (palette || c.length !== 4) invalid();
       gamma = data(c) * 0x1000000 + (data(c) << 16) + (data(c) << 8) + data(c);
       if (!gamma || (metadata.has('sRGB') && gamma !== 45455)) invalid();
+    } else if (c.type === 'sBIT') {
+      if (palette || c.length !== 4) invalid();
+      for (let channel = 0; channel < c.length; channel++) {
+        const depth = data(c);
+        if (!depth || depth > h[8]) invalid();
+      }
     } else if (c.type === 'pHYs') {
       if (c.length !== 9) invalid();
       for (let index = 0; index < 8; index++) data(c);

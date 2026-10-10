@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
 import { act } from 'react';
+import { rgbaPng } from './native-png-fixtures.mjs';
+import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   emptyDrawing,
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
+const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
 
 beforeEach(async () => {
@@ -307,6 +310,7 @@ describe('controller output snapshot ownership', () => {
         })
     );
     await screen.click('Export PNG');
+    expect(screen.button('Draw fixture stroke').disabled).toBe(true);
     await act(async () => files.cohort([STROKE]));
     await act(async () => finish('old-picture-png'));
     expect(files.export).not.toHaveBeenCalled();
@@ -330,4 +334,42 @@ describe('Clear observation refusal', () => {
     expect(JSON.parse(screen.paper()).strokes).toEqual([]);
     expect(JSON.parse(screen.paper()).rainbow).toBe(0);
   });
+});
+
+describe('deferred coloring-page Clear through the real drawing screen', () => {
+  it(
+    'preserves the selected page through Clear and restores blank selection atomically with Undo',
+    async () => {
+      await screen.click('Coloring pages');
+      await screen.click('Little turtle');
+      await screen.click('Draw fixture stroke');
+      const painted = screen.paper();
+      let finishInk;
+      files.ink.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishInk = resolve;
+          })
+      );
+      await screen.click('Clear');
+      expect(screen.button('Clear').disabled).toBe(true);
+      await act(async () => finishInk(rgbaPng(1024, 768, 255).toString('base64')));
+      await vi.waitFor(
+        async () => {
+          await act(async () => {});
+          expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1, 'turtle'));
+        },
+        { timeout: PNG_TIMEOUT_MS }
+      );
+      expect(screen.button('Clear').disabled).toBe(false);
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+      await screen.click('Coloring pages');
+      await screen.click('Blank paper');
+      expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+    },
+    PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS
+  );
 });

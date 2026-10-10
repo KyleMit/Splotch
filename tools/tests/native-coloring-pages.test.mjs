@@ -50,7 +50,9 @@ describe('native coloring-page composition', () => {
     expect(original.drawing.pageId).toBe('flower');
     expect(cleared.drawing).toEqual(emptyDrawing(original.drawing.rainbow + 1, 'flower'));
     expect(undoDrawing(cleared).drawing).toBe(original.drawing);
-    expect(clearDrawing(cleared, true).undo).toBe(cleared.undo);
+    const visuallyEmpty = clearDrawing(cleared, true);
+    expect(visuallyEmpty.drawing).toEqual(emptyDrawing(original.drawing.rainbow + 2, 'flower'));
+    expect(visuallyEmpty.undo).toBe(cleared.undo);
   });
 
   it('leaves the painted picture and history intact when its page is selected again', () => {
@@ -80,6 +82,20 @@ describe('native coloring-page composition', () => {
       expect(() => parseDrawing({ version: 2, pageId, strokes: [] })).toThrow(
         'This saved picture contains an invalid coloring page.'
       );
+    }
+  );
+
+  it.each([undefined, null, '', 'foreign', 'toString', {}, 1])(
+    'refuses invalid current-format page identity %#',
+    (pageId) => {
+      for (const drawing of [
+        { version: 3, rainbow: 0, pageId, strokes: [] },
+        { ...emptyDrawing(), pageId },
+      ]) {
+        expect(() => parseDrawing(drawing)).toThrow(
+          'This saved picture contains an invalid coloring page.'
+        );
+      }
     }
   );
 

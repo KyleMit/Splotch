@@ -46,6 +46,7 @@ vi.mock('react-native-svg', () => ({
     const svg = useRef(null);
     useImperativeHandle(ref, () => ({
       toDataURL(callback) {
+        if (svg.current.querySelector('image')) capturedOutputs.push(svg.current.cloneNode(true));
         void sharp(Buffer.from(svg.current.outerHTML))
           .png()
           .toBuffer()
@@ -91,6 +92,7 @@ const CROSSINGS = [
 ];
 let container;
 let root;
+let capturedOutputs;
 
 function colorChannels(color) {
   const expanded =
@@ -184,6 +186,7 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
+  capturedOutputs = [];
 });
 
 afterEach(() => {
@@ -253,6 +256,9 @@ describe('coloring outlines over live and exported paint', () => {
         expect(base64).toBeDefined();
       });
       unlock();
+      const exportSvg = capturedOutputs.at(-1);
+      expectOutlineLast(exportSvg, 0, pageId);
+      expect(exportSvg.querySelector('image')).not.toBeNull();
       const image = await sharp(Buffer.from(base64, 'base64'))
         .raw()
         .toBuffer({ resolveWithObject: true });
