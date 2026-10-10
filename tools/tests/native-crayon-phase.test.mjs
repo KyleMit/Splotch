@@ -24,7 +24,8 @@ vi.mock(
 );
 
 const { Svg, Rect, Defs, Path, Pattern } = await import('react-native-svg');
-const { Ink } = await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } =
+  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 const PAPER_WIDTH = 1024;
 const PAPER_HEIGHT = 768;
 const CORE_HALF_HEIGHT = 7;
@@ -69,7 +70,13 @@ function line(seed, y) {
 }
 
 function artwork(strokes) {
-  return raster(strokes.map((stroke, index) => createElement(Ink, { key: index, stroke })));
+  return raster([
+    createElement(
+      InkArtwork,
+      { strokes },
+      ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+    ),
+  ]);
 }
 
 describe('crayon phase under native pattern clipping', () => {

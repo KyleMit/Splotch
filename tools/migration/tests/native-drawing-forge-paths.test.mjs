@@ -4,17 +4,16 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { assertForgeMitigationPolicy } from '../lib/forge-mitigation.mjs';
-import { getImporterDependencyPaths, readLockFile } from '../lib/lock-artifacts.mjs';
+import { getImporterDependencyPaths } from '../lib/lock-artifacts.mjs';
 import {
   projectDrawingForgeLock,
   readDrawingForgeInputs,
 } from '../lib/native-drawing-forge-paths.mjs';
-import { readPolicyYaml } from '../lib/topology-policy.mjs';
+import { qualifySvgBackdropPatch } from '../lib/native-svg-backdrop-patch.mjs';
 
 const root = join(import.meta.dirname, '../../..');
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
+const { lock, workspace } = qualifySvgBackdropPatch(root);
 const manifest = JSON.parse(readFileSync(join(root, CANDIDATE_DIRECTORY, 'package.json')));
-const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
 const mitigation = JSON.parse(
   readFileSync(join(root, 'tools/migration/inputs/forge-mitigation.json'))
 );

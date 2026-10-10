@@ -11,7 +11,7 @@ import {
   type Stroke,
 } from './model';
 import type { Brush } from './brushes';
-import { Ink } from './Ink';
+import { Ink, InkArtwork } from './Ink';
 import { DRAWING_THEME } from './theme';
 import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
 
@@ -45,10 +45,12 @@ function Artwork({
       pointerEvents="none"
     >
       <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-      {drawing.strokes.map((stroke, index) => (
-        <Ink key={index} stroke={stroke} />
-      ))}
-      {draft ? <Ink stroke={draft} /> : null}
+      <InkArtwork strokes={draft ? [...drawing.strokes, draft] : drawing.strokes}>
+        {drawing.strokes.map((stroke, index) => (
+          <Ink key={index} stroke={stroke} />
+        ))}
+        {draft ? <Ink stroke={draft} /> : null}
+      </InkArtwork>
     </Svg>
   );
 }

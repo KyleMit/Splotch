@@ -18,7 +18,8 @@ vi.mock(
 );
 
 const { Svg, Rect } = await import('react-native-svg');
-const { Ink } = await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } =
+  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 
 async function pixels(strokes) {
   const svg = renderToStaticMarkup(
@@ -26,7 +27,11 @@ async function pixels(strokes) {
       Svg,
       { width: 1024, height: 768, viewBox: '0 0 1024 768' },
       createElement(Rect, { width: 1024, height: 768, fill: '#ffffff' }),
-      ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      createElement(
+        InkArtwork,
+        { strokes },
+        ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      )
     )
   );
   return sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

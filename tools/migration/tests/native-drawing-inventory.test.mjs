@@ -1,9 +1,8 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { readLockFile } from '../lib/lock-artifacts.mjs';
+import { qualifySvgBackdropPatch } from '../lib/native-svg-backdrop-patch.mjs';
 import { readDrawingArchiveInventory } from '../lib/native-drawing-inventory.mjs';
 import { assertCandidateArchiveInventory } from '../lib/topology-policy.mjs';
 
@@ -14,10 +13,7 @@ const original = JSON.parse(readFileSync(join(originalEvidence, 'script-inventor
 const baseline = JSON.parse(
   readFileSync(join(originalEvidence, 'baseline-artifact-resolutions.json'))
 );
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
-const lockSha256 = createHash('sha256')
-  .update(readFileSync(join(root, 'pnpm-lock.yaml')))
-  .digest('hex');
+const { lock, baselineLockSha256: lockSha256 } = qualifySvgBackdropPatch(root);
 const fixtures = [];
 
 function fixture(mutate) {

@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -29,14 +33,19 @@ vi.mock(
 );
 
 const { Svg, Rect } = await import('react-native-svg');
-const { Ink } = await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
+const { Ink, InkArtwork } =
+  await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 const PAPER_WIDTH = 1024;
 const PAPER_HEIGHT = 768;
 const CORE_HALF_HEIGHT = 7;
 const SAMPLE_WIDTH = 96;
 const MIN_COVERAGE = 0.3;
 const WRAPPED_COPIES = 4;
-const TEXTURES = CRAYON_BANDS.map((band) => crayonTexture(band.coverage));
+const TEXTURES = CRAYON_BANDS.map((band) =>
+  crayonTexture(band.coverage)
+    .map((d, shade) => ({ d, shade }))
+    .filter(({ d }) => d.length > 0)
+);
 
 function line(color = 'Red', seed = 20, y = 550) {
   return {
@@ -55,7 +64,11 @@ function scene(strokes) {
     Svg,
     { width: PAPER_WIDTH, height: PAPER_HEIGHT, viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}` },
     createElement(Rect, { width: PAPER_WIDTH, height: PAPER_HEIGHT, fill: '#ffffff' }),
-    ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+    createElement(
+      InkArtwork,
+      { strokes },
+      ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+    )
   );
 }
 
@@ -116,7 +129,7 @@ describe('production Crayon texture references', () => {
     const svg = renderToStaticMarkup(scene([line('Blue')]));
     expect(definitions(svg).map(({ d, fill }) => ({ d, fill }))).toEqual(
       TEXTURES.flatMap((paths) =>
-        paths.map((d, shade) => ({ d, fill: waxColor(paletteHex('Blue'), shade) }))
+        paths.map(({ d, shade }) => ({ d, fill: waxColor(paletteHex('Blue'), shade) }))
       )
     );
     expect(patterns(svg).flatMap(({ content }) => tags(content, 'path'))).toEqual([]);
@@ -150,7 +163,7 @@ describe('production Crayon texture references', () => {
         })
       ).toEqual(
         Array.from({ length: WRAPPED_COPIES }, () =>
-          TEXTURES[bandIndex].map((d, shade) => ({
+          TEXTURES[bandIndex].map(({ d, shade }) => ({
             d,
             fill: waxColor(paletteHex(stroke.color), shade),
           }))
@@ -175,7 +188,7 @@ describe('production Crayon texture references', () => {
         .flat()
         .flatMap((stroke) =>
           TEXTURES.flatMap((band) =>
-            band.map((_, shade) => waxColor(paletteHex(stroke.color), shade))
+            band.map(({ shade }) => waxColor(paletteHex(stroke.color), shade))
           )
         )
     );
@@ -235,5 +248,153 @@ describe('production Crayon texture references', () => {
     expect(removed).not.toBe(svg);
     expect(coverage(await raster(svg), 330, 550)).toBeGreaterThan(MIN_COVERAGE);
     expect(coverage(await raster(removed), 330, 550)).toBe(0);
+  });
+});
+
+const legacySource = readFileSync(
+  new URL(
+    '../../docs/migration/evidence/native-svg-backdrop-20261009/Ink.before.tsx.txt',
+    import.meta.url
+  ),
+  'utf8'
+);
+const legacyModules = {
+  react: await import('react'),
+  'react/jsx-runtime': await import('react/jsx-runtime'),
+  'react-native-svg': await import('react-native-svg'),
+  './palette': await import('../../experiments/native-architecture/src/drawing/palette.ts'),
+  './brushes': await import('../../experiments/native-architecture/src/drawing/brushes.ts'),
+  './crayon': await import('../../experiments/native-architecture/src/drawing/crayon.ts'),
+  './CrayonGlaze':
+    await import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx'),
+  './model': await import('../../experiments/native-architecture/src/drawing/model.ts'),
+};
+const legacyExports = {};
+runInNewContext(
+  ts.transpileModule(legacySource, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+      jsx: ts.JsxEmit.ReactJSX,
+    },
+  }).outputText,
+  {
+    exports: legacyExports,
+    require(name) {
+      if (!Object.hasOwn(legacyModules, name))
+        throw new Error(`Unreviewed legacy fixture import: ${name}`);
+      return legacyModules[name];
+    },
+  }
+);
+
+function legacyScene(strokes) {
+  return createElement(
+    Svg,
+    { width: PAPER_WIDTH, height: PAPER_HEIGHT, viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}` },
+    createElement(Rect, { width: PAPER_WIDTH, height: PAPER_HEIGHT, fill: '#ffffff' }),
+    ...strokes.map((stroke, index) => createElement(legacyExports.Ink, { key: index, stroke }))
+  );
+}
+
+describe('per-Artwork explicit pigment definitions', () => {
+  it('binds the original production source oracle to exact reviewed bytes', () => {
+    expect(createHash('sha256').update(legacySource).digest('hex')).toBe(
+      '754cd9fb967a4005d1368af230084238be06e88afdacdc10f8934549791416e5'
+    );
+  });
+
+  it('stores geometry once per used color and omits only empty original-index shades', () => {
+    const strokes = [line('Red'), line('Red', 21, 650), line('Blue', 22, 550)];
+    const svg = renderToStaticMarkup(scene(strokes));
+    expect(definitions(svg)).toHaveLength(TEXTURES.flat().length * 2);
+    expect(definitions(svg).every((path) => path.d.length > 0)).toBe(true);
+    for (const color of ['Red', 'Blue']) {
+      expect(
+        definitions(svg)
+          .filter((path) => path.id.includes(`-wax-${color}-`))
+          .map(({ d, fill }) => ({ d, fill }))
+      ).toEqual(
+        TEXTURES.flatMap((band) =>
+          band.map(({ d, shade }) => ({ d, fill: waxColor(paletteHex(color), shade) }))
+        )
+      );
+    }
+    expect(patterns(svg)).toHaveLength(strokes.length * CRAYON_BANDS.length);
+    expect(svg.length).toBeLessThan(renderToStaticMarkup(legacyScene(strokes)).length);
+  });
+
+  it.each(['repeated colors and later solid ink', 'mixed backtracking and Magic'])(
+    'preserves every original RGBA byte for %s',
+    async (kind) => {
+      const red = line('Red');
+      const strokes =
+        kind === 'repeated colors and later solid ink'
+          ? [
+              red,
+              line('Red', 21, 650),
+              line('Red', 22, 550),
+              {
+                brush: 'pencil',
+                color: 'Black',
+                points: [
+                  { x: 300, y: 500 },
+                  { x: 300, y: 700 },
+                ],
+              },
+              {
+                brush: 'marker',
+                color: 'Mint',
+                points: [
+                  { x: 500, y: 500 },
+                  { x: 500, y: 700 },
+                ],
+              },
+            ]
+          : [
+              { ...red, points: [...red.points, { x: 100, y: 550 }] },
+              line('Blue', 21, 550),
+              {
+                brush: 'magic',
+                rainbow: 3,
+                points: [
+                  { x: 100, y: 350 },
+                  { x: 950, y: 350 },
+                ],
+              },
+            ];
+      const current = await raster(renderToStaticMarkup(scene(strokes)));
+      const before = await raster(renderToStaticMarkup(legacyScene(strokes)));
+      expect(current.info).toEqual(before.info);
+      expect(current.data.equals(before.data)).toBe(true);
+    }
+  );
+
+  it('includes live draft pigment while preserving the original committed/draft paint order', async () => {
+    const committed = line('Yellow');
+    const draft = line('Blue', 21, 550);
+    const svg = renderToStaticMarkup(
+      createElement(
+        Svg,
+        { width: PAPER_WIDTH, height: PAPER_HEIGHT, viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}` },
+        createElement(Rect, { width: PAPER_WIDTH, height: PAPER_HEIGHT, fill: '#ffffff' }),
+        createElement(
+          InkArtwork,
+          { strokes: [committed, draft] },
+          createElement(Ink, { stroke: committed }),
+          createElement(Ink, { stroke: draft })
+        )
+      )
+    );
+    const current = await raster(svg);
+    const before = await raster(renderToStaticMarkup(legacyScene([committed, draft])));
+    expect(current.info).toEqual(before.info);
+    expect(current.data.equals(before.data)).toBe(true);
+  });
+
+  it('refuses Crayon ink without its Artwork-owned definitions', () => {
+    expect(() => renderToStaticMarkup(createElement(Ink, { stroke: line() }))).toThrow(
+      'InkArtwork definition scope'
+    );
   });
 });
