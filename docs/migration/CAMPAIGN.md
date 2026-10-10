@@ -7,6 +7,44 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
+## Drawing feature inventory, 2026-10-10 UTC
+
+Accepted N1 remains integration 9f64c4cb5604361f223690f1143296e8cd747c7d. The following dependent
+construction sources and observations do not select a framework, accept another feature or waive
+native fidelity, allocation, RSS, performance, security or release gates.
+
+* **Widths:** draft [PR 2744](https://github.com/KyleMit/Splotch/pull/2744), product source
+  4b1882fb7dd41cf7b4387bdc323c6698f798d6e9, tree 2805de485bc7d394a08e0e87a1cfb87cc1860151.
+  Selectable drawing and independent eraser choices are captured per contact and retained in strict
+  v4 drawings and the existing settings owner's v2 snapshot. Check, lint, formatting and the
+  repaired full tools tier passed: 385 files / 8652 tests, two workers, 154.54 seconds. The final
+  360-by-640 browser attempt kept its 328-by-246 paper at one frame throughout six real contacts,
+  saved widths 11/44/17/68/22/88, and exported a decoded 1024-by-768 PNG with 21/87-pixel eraser
+  gaps. After Undo/save, its snapshot picker selected the older record and the command exited 1;
+  preserved newer storage equals the six-stroke drawing minus its last stroke. Reopen and restored
+  choices were not reached; a `maskType` DOM warning remains recorded. Earlier readiness and
+  positioning failures and all three fresh owned-process/port closures are preserved. The dependency
+  is PR 2742 at 76969fea63fe1f9ac84983a74d04f4d344b39bdd; its actual Android basic workflow remains
+  bound to c81312b3acc49f77890741d7042970dfa4b3f527, before this width feature. Widths' original
+  first review is pending.
+* **Audio:** [PR 2743](https://github.com/KyleMit/Splotch/pull/2743), source
+  9c3d1fc22dd17e5ff5aad79d5fc6277ee9b6ec97,
+  [original round 2](https://github.com/KyleMit/Splotch/pull/2743#pullrequestreview-5477165275): no
+  new source findings; two used / one remaining. Runtime and speaker/reset holds remain open.
+* **Eraser/composition:** [PR 2742](https://github.com/KyleMit/Splotch/pull/2742), source
+  76969fea63fe1f9ac84983a74d04f4d344b39bdd,
+  [original round 2](https://github.com/KyleMit/Splotch/pull/2742#pullrequestreview-5477200015): no
+  new concrete source finding; two used / one remaining. Its CI-only history repair does not advance
+  the c813 Android workflow evidence or clear broader rendering/resource holds.
+* **Crayon/Magic:** [PR 2740](https://github.com/KyleMit/Splotch/pull/2740), source
+  41aff66436d01d5fd7499f94db3e7a216a20b444,
+  [original round 2](https://github.com/KyleMit/Splotch/pull/2740#pullrequestreview-5477215329): no
+  new source findings; two used / one remaining. Hosted setup and retained failures remain under the
+  same Brush owner's repair; earlier native mismatch and RSS failures remain held.
+
+These are the same original review ledgers. Widths owns its new model/settings/control delta;
+neither this record nor its first review resets or reassigns another unit's exhausted capacity.
+
 ## Current public status, 2026-10-09
 
 Public branch observation: 2026-10-09 04:36 UTC. Native GitHub readback and fetched Git objects
