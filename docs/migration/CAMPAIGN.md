@@ -7,7 +7,43 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current development status, 2026-10-10 15:29 UTC
+## Current development status, 2026-10-10 16:34 UTC
+
+Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. This isolated development candidate normally merges Custom
+colors a4930d54b7d97c0dac53af09dbbf0a964c81d233 and Eraser mask repair
+b922bf14833d09d22a032ce65b6bb1dc12228562 into the local composition
+74599a45168e6d3383baf94452dd7c803ea48438. It preserves their owner histories; it does not accept a
+framework, whole product, native execution, cutover, or release, and it is not merged into verified
+integration. The installation checkout remains outside the product base.
+
+The prior composition's unchanged default tools run passed 402 files / 8908 tests after the two
+inherited current-width fixtures were repaired without changing their exact pixel, ordering, or
+history assertions. Its earlier thirteen failures remain preserved. Its first real composed browser
+journey stopped on React's unknown DOM `maskType` prop after a real Eraser stroke. Settings
+dismissal focus, custom-color persistence, Sunshine selection, five stroke actions, and the later
+Purple keyboard selection were reached. The final Marker stroke, save, Clear/ONE Undo, catalog
+reopen, PNG export, and landscape were unreached. The first-fault capsule is
+`/private/tmp/splotch-layout-composed-product-runtime-162142-sealed`; its initial cleanup faults and
+later strict two-stack closure remain separate facts. No aggregate product pass is claimed.
+
+The Custom successor names the Color explorer group while retaining all twenty-five paint buttons;
+its fifteen applicable hosted CI checks passed. Original conversation
+783f3bbb-0317-415e-9a98-1a1da43d39ce remains at one review used and two remaining. The Eraser owner
+repaired the mask through the installed SVG style contract and added real DOM-console and
+black/white/later-paint assertions. Those owner results do not qualify this composed successor's
+browser journey. Its applicable source checks and exact source are recorded separately; another
+browser launch requires its own finite grant. Existing ignored project `.expo` output is preserved
+and must be admitted explicitly by any later runtime protocol.
+
+All historical paragraphs and their source/review receipts below remain attached to their original
+endpoints. N1's exhausted review capacity and optimized both-OS compile/mount/draw requirement
+remain unchanged. Native asynchronous focus and modal ordering, real window blur, system insets,
+text scaling, lifecycle, permissions, fidelity, archive restart, whole-product services,
+web/API/admin/security, physical floors, signing and release remain open. The fresh-start completion
+contract remains authoritative; this development composition does not reset a unit or its budget.
+
+## Historical development status, 2026-10-10 15:29 UTC
 
 Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
 ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign is active and incomplete; no framework,
