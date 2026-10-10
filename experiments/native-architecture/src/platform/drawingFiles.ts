@@ -1,11 +1,8 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import * as LegacyFiles from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { parseDrawing, type Drawing } from '../drawing/model';
 
 const DRAWING_DIRECTORY = 'splotch-pictures';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
-const PNG_SIGNATURE_BASE64 = 'iVBORw0KGgo';
 
 export type SavedPicture = Readonly<{ id: string; name: string; modifiedAt: number }>;
 
@@ -63,19 +60,4 @@ export async function reopenPicture(id: string): Promise<Drawing> {
   if (!file.exists || file.size > MAX_SAVE_BYTES)
     throw new Error('This saved picture cannot be opened.');
   return parseDrawing(JSON.parse(await file.text()));
-}
-
-export async function exportPng(base64: string): Promise<string> {
-  if (!base64.startsWith(PNG_SIGNATURE_BASE64))
-    throw new Error('The drawing could not be exported as a PNG.');
-  const uri = new File(Paths.cache, `splotch-${Date.now()}.png`).uri;
-  await LegacyFiles.writeAsStringAsync(uri, base64, { encoding: LegacyFiles.EncodingType.Base64 });
-  if (!(await Sharing.isAvailableAsync()))
-    throw new Error('PNG saved locally, but sharing is unavailable on this device.');
-  await Sharing.shareAsync(uri, {
-    mimeType: 'image/png',
-    UTI: 'public.png',
-    dialogTitle: 'Save your picture',
-  });
-  return uri;
 }

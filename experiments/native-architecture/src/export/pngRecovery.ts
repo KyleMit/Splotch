@@ -10,7 +10,7 @@ import {
   type PngDeliveryResult,
 } from './heldPng';
 
-export type PngAttempt =
+type PngAttempt =
   | Readonly<{ status: 'held' | PngDeliveryResult }>
   | Readonly<{ status: 'failed'; message: string }>;
 type Entry = { picture: HeldPng; durable: boolean; attempt: PngAttempt };
