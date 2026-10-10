@@ -37,8 +37,8 @@ and `src/platform/drawingFiles.web.ts` remain byte-exact. No dependency, package
 hook, native project or renderer/collector change belongs here.
 
 Native delivery reserves a private attempt directory under a dedicated cache root, preserving the
-record's stable basename. URIs offered to system sharing remain eligible for 24 hours from
-allocation, including chooser cancellation, sharing rejection and process interruption. The delivery
+record's stable basename. URIs offered to system sharing remain eligible for 24 hours from the URI
+offer, including chooser cancellation, sharing rejection and process interruption. The delivery
 cache has its own 32-attempt limit and a 24 MiB total PNG-byte limit, independent of the
 three-held-record archive bound. New delivery is refused when eligible files fill either limit. Only
 expired inactive attempts can be pruned; active leases remain protected beyond their age. Pre-share
