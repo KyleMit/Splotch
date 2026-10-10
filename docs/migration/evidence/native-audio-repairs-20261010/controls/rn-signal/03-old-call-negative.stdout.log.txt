@@ -1,0 +1,33 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs native-audio-adapter.test.mjs --maxWorkers=2 --testNamePattern loads with the actual React Native signal without DOM throwIfAborted --reporter=default --reporter=json --outputFile /private/tmp/audio-rn-abort-checks-0146/negative-tests.json
+
+
+ RUN  v5.0.2 /private/tmp/audio-q5-native-development/repository/tools
+
+ ❯ tests/native-audio-adapter.test.mjs (17 tests | 1 failed | 16 skipped) 3ms
+   ❯ supported Expo native audio binding (17)
+     × loads with the actual React Native signal without DOM throwIfAborted 2ms
+     ↓ refuses an already-aborted React Native signal before creating a player
+     ↓ refuses React Native cancellation while the native audio mode is pending
+     ↓ subscribes before replacing the bundled asset and never enables recording or background playback
+     ↓ mutes, unsubscribes, removes registry membership and releases native resources exactly once
+     ↓ cancels a pending asset load and ignores its late native event
+     ↓ retains load errors from events and reports failures during playback
+     ↓ rejects a failed bundled asset without leaving a registered player
+     ↓ bounds missing native load events and frees the player
+     ↓ keeps a stopped stroke muted if the native backend attempts to resume it
+     ↓ stops its gain ramp immediately on lift
+     ↓ still releases native resources if registry removal throws
+     ↓ refuses a replacement player reset while an active stationary stroke is quiet
+     ↓ refuses reset while stopped before a later start can play at replacement gain
+     ↓ rejects reset during loading before a ready event can resolve the loop
+     ↓ cancels a reset gain ramp and ignores queued reset or loaded events after release
+     ↓ detects the active-still reset defect when the real source reset refusal is removed
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 skipped (17)
+   Start at  21:46:14
+   Duration  186ms (import 65%, transform 32%, tests 2%, worker 1%)
+
+JSON report written to /private/tmp/audio-rn-abort-checks-0146/negative-tests.json

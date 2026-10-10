@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "scope": "Fresh registry provenance and bounded own install/light checks; no runtime acceptance",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 5573,
+      "sha256": "52b979858c00148c3e8fb34b793f75c6555ea44957f8abc7dff6a93ef857e66e"
+    },
+    {
+      "path": "audio-lock-inputs.json",
+      "bytes": 6649,
+      "sha256": "f47a10918fafcfe5c0ebe471b96e291f1441c9b7dfc452ea7fadb9fff55cb980"
+    },
+    {
+      "path": "controls/source-window-0541/after.json.txt",
+      "bytes": 4993,
+      "sha256": "da07afb5607d016426aad8e92f007061ea0211240852372380c2070c1a528ec4"
+    },
+    {
+      "path": "controls/source-window-0541/archive-inventory.log.txt",
+      "bytes": 343,
+      "sha256": "46187d427d6cc44099a62d0c2b94de9b3c6dedeef18ae166362ad0580785ae88"
+    },
+    {
+      "path": "controls/source-window-0541/archive-inventory.process.json.txt",
+      "bytes": 659,
+      "sha256": "dcb89c0b0018d904e671a5465803be14f2733e9c35d27efe13e629453287f32a"
+    },
+    {
+      "path": "controls/source-window-0541/audio-input-final.log.txt",
+      "bytes": 3339,
+      "sha256": "bd43a0a8faf0f4824297f3e93017b48ddaefb3de2a1b585bdbdcb5cc2622d732"
+    },
+    {
+      "path": "controls/source-window-0541/audio-input-final.process.json.txt",
+      "bytes": 434,
+      "sha256": "a7b5591d4fce460f97be0238c129fbcff58bacbe74c2c9411cd49526051a5b62"
+    },
+    {
+      "path": "controls/source-window-0541/audio-input-qualification.log.txt",
+      "bytes": 2559,
+      "sha256": "dbfa5e4491dfb2519e55d79afd872f7f54d925abdbf575d18cd23b7eb042c5c5"
+    },
+    {
+      "path": "controls/source-window-0541/audio-input-qualification.process.json.txt",
+      "bytes": 434,
+      "sha256": "514b261ee374056267c3dcd5ea8b10de041afce9348331355de8305ae2b247a8"
+    },
+    {
+      "path": "controls/source-window-0541/before-dirty.tar.gz",
+      "bytes": 916029,
+      "sha256": "fa7d97b4f20059868901922a4bce678b0b3a40d04c465782a46f4852fbe1daa7"
+    },
+    {
+      "path": "controls/source-window-0541/before-pnpm-lock.yaml.txt",
+      "bytes": 527401,
+      "sha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57"
+    },
+    {
+      "path": "controls/source-window-0541/before.json",
+      "bytes": 7127,
+      "sha256": "1cc7edaea34ef197ae5886685ab6b481966bdd58d9c66dfb5ba48bd61ddf133a"
+    },
+    {
+      "path": "controls/source-window-0541/check-ignore.log.txt",
+      "bytes": 37,
+      "sha256": "a4b1777e3d23e04e890a957902d89828dd9066b0c11f6072369c9985e2528d03"
+    },
+    {
+      "path": "controls/source-window-0541/check-repair.log.txt",
+      "bytes": 2358,
+      "sha256": "1867078a13ecc54cfcced95cc59411a2a9818a6b6852ca3c1d3c25959cb2820f"
+    },
+    {
+      "path": "controls/source-window-0541/check-repair.process.json.txt",
+      "bytes": 404,
+      "sha256": "949b8df8fe89d331b13cf0c9ca51e522666f26495821d2492704abec3b06e916"
+    },
+    {
+      "path": "controls/source-window-0541/check.log.txt",
+      "bytes": 2358,
+      "sha256": "2faab1fd3ee9efcf587b9671f9f5d8764b4ee30e1eccf6c2e41c595f16a4eccc"
+    },
+    {
+      "path": "controls/source-window-0541/check.process.json.txt",
+      "bytes": 404,
+      "sha256": "967ae919b3425014f9e18de60db4b76eebcc8c46eb1455c93771b567699719ef"
+    },
+    {
+      "path": "controls/source-window-0541/closure.json.txt",
+      "bytes": 191,
+      "sha256": "13866b3abdd34c183ca3140fc6ae3ad317951a686bcdca524a169178f04966df"
+    },
+    {
+      "path": "controls/source-window-0541/compose.log.txt",
+      "bytes": 432,
+      "sha256": "eaecba1f731630db441ee51918e254d783473b14e4d759ab188a36ba5669aa68"
+    },
+    {
+      "path": "controls/source-window-0541/compose.process.json.txt",
+      "bytes": 458,
+      "sha256": "9bde04a0dfc5dbfccb713a1ec5dada2422078600edf657f85c7acdc53c9658af"
+    },
+    {
+      "path": "controls/source-window-0541/finite-controls-final.log.txt",
+      "bytes": 358,
+      "sha256": "638b5ba73b878ff7c9f89cc1d4ac638e5ec4b64c2a3a27cec7d3078b5d68f474"
+    },
+    {
+      "path": "controls/source-window-0541/finite-controls-final.process.json.txt",
+      "bytes": 500,
+      "sha256": "a5c16523712b5c2396251c02e7745f9e8616a17d9b18002883eaafe7465f8fdf"
+    },
+    {
+      "path": "controls/source-window-0541/focused-repair.log.txt",
+      "bytes": 595,
+      "sha256": "2f648c91a4256d232d5e66e238839f01ccd7f1357ee42c15a8c1808c15b55f1f"
+    },
+    {
+      "path": "controls/source-window-0541/focused-repair.process.json.txt",
+      "bytes": 776,
+      "sha256": "8248a74439042fa51e19ee946031168f7c5dffcccd43d3f7d013e1fea5c798ea"
+    },
+    {
+      "path": "controls/source-window-0541/focused.log.txt",
+      "bytes": 543,
+      "sha256": "e81a41a519b2172cb82cb4dcbc77cf3d08046c63bf2f261f10c58e1e4ed14350"
+    },
+    {
+      "path": "controls/source-window-0541/focused.process.json.txt",
+      "bytes": 717,
+      "sha256": "56045c00ccb845aecd2d0fd5683f771870cd1a07e8307c56d8566f930ad11d0c"
+    },
+    {
+      "path": "controls/source-window-0541/format-check-repair.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/source-window-0541/format-check-repair.process.json.txt",
+      "bytes": 411,
+      "sha256": "1d1b055023004d8210f6d74ccc7db62f3f126b3a5bc13328d677a2e9b7889341"
+    },
+    {
+      "path": "controls/source-window-0541/format-check.log.txt",
+      "bytes": 716,
+      "sha256": "a92f92e74bafe9c22b09917d55fbfdd973ad137b57eb833e6a34e30718e30c8b"
+    },
+    {
+      "path": "controls/source-window-0541/format-check.process.json.txt",
+      "bytes": 411,
+      "sha256": "a31a3b6f3231b3f93c5d68825eb6c586f007859d88a06ff4339e570f7e9722f2"
+    },
+    {
+      "path": "controls/source-window-0541/format-final.log.txt",
+      "bytes": 68,
+      "sha256": "a35e62153e858a6d2884147d38f620482d46c821b7574775f835c8c2f6440ebc"
+    },
+    {
+      "path": "controls/source-window-0541/format-final.process.json.txt",
+      "bytes": 500,
+      "sha256": "c25436a6f95fb4debf45a1320d84067f999ed9b1494be16ef2e26a5070a902e6"
+    },
+    {
+      "path": "controls/source-window-0541/format-input-repair.log.txt",
+      "bytes": 208,
+      "sha256": "22ac4ca4e0acdd3e342c570bf9340320af8f5540cd7f4f3c98c7ba706dab05a1"
+    },
+    {
+      "path": "controls/source-window-0541/format-input-repair.process.json.txt",
+      "bytes": 634,
+      "sha256": "a7c6a37300efb71c69e2c7fa2f12e1eec47c3acfb4a7563f05eef5807e4389cf"
+    },
+    {
+      "path": "controls/source-window-0541/format-repair.log.txt",
+      "bytes": 435,
+      "sha256": "6806f5e86c7aa57ed38d2c61d97b31c2aff1eeab2f8354446d1aa80d18b9ff8a"
+    },
+    {
+      "path": "controls/source-window-0541/format-repair.process.json.txt",
+      "bytes": 859,
+      "sha256": "7fac95098f23cccccab2031f5cd12d24541bd14044f1e6af7d226e86e766cf4a"
+    },
+    {
+      "path": "controls/source-window-0541/format.log.txt",
+      "bytes": 1707,
+      "sha256": "4d150dcb7d10710cf0d1c04a890d82563ecbcae35e943aac6ebf93f175ce3ff8"
+    },
+    {
+      "path": "controls/source-window-0541/format.process.json.txt",
+      "bytes": 871,
+      "sha256": "bb85f97b02cbd6ea93de6150309130c80536d645e4fe546b2c26b88d8c3ccede"
+    },
+    {
+      "path": "controls/source-window-0541/info-after-install.log.txt",
+      "bytes": 99927,
+      "sha256": "c80ad2b43ec576d3473354e79426a0811d112476c6caa6e10b36d2c6ebf38a27"
+    },
+    {
+      "path": "controls/source-window-0541/info-after-install.process.json.txt",
+      "bytes": 403,
+      "sha256": "fe44059266fac11e086772a48b7028618f7902aacc11402cfde00debec3f69e4"
+    },
+    {
+      "path": "controls/source-window-0541/info.log.txt",
+      "bytes": 74,
+      "sha256": "bf06ae8581469c95853a10373e432b2be11823c8fbe9403c923cfc8c4e3540d3"
+    },
+    {
+      "path": "controls/source-window-0541/info.process.json.txt",
+      "bytes": 405,
+      "sha256": "97fa8282b1baf496131f06b37441d8845738e9873e4d022310262bf8f9b60195"
+    },
+    {
+      "path": "controls/source-window-0541/install.log.txt",
+      "bytes": 777,
+      "sha256": "2a710bb87916a11703cc6be7c02bb0c8d25a71bfe4ae08f56f4a2790abba1be4"
+    },
+    {
+      "path": "controls/source-window-0541/install.process.json.txt",
+      "bytes": 470,
+      "sha256": "fb78db474f44d12394226e346b1b20e2bda9078a970ac5ad0e0a6ab807d51118"
+    },
+    {
+      "path": "controls/source-window-0541/lease.json.txt",
+      "bytes": 997,
+      "sha256": "be75ad175789fcd9e9bcba8b78791a6acf23326546c4c665c0f6a0b3e0f3a11f"
+    },
+    {
+      "path": "controls/source-window-0541/lint-final.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/source-window-0541/lint-final.process.json.txt",
+      "bytes": 403,
+      "sha256": "ef9a303b0d536c7d1c7f398dca07581053eca39571f135729bb70b1d47a81807"
+    },
+    {
+      "path": "controls/source-window-0541/lint-input-repair.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/source-window-0541/lint-input-repair.process.json.txt",
+      "bytes": 403,
+      "sha256": "267977fc5fec0addf9fadb1b67a1587d4e6e454d5ae22e52230d18d436b50643"
+    },
+    {
+      "path": "controls/source-window-0541/lint-repair.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/source-window-0541/lint-repair.process.json.txt",
+      "bytes": 403,
+      "sha256": "5666f6a016cc514c7833cc8716761583500b99c3a2277ed52b04c4b5d461fc63"
+    },
+    {
+      "path": "controls/source-window-0541/lint.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/source-window-0541/lint.process.json.txt",
+      "bytes": 403,
+      "sha256": "780c21e082f3acfd2e9e0065efd6f2a7b8e836ed82dd5b308a94be58927635d9"
+    },
+    {
+      "path": "controls/source-window-0541/markdown-final.log.txt",
+      "bytes": 533,
+      "sha256": "87b51e333e5afc67b026246515a55f9bd977cbafbc2ad029de697e4afd16f227"
+    },
+    {
+      "path": "controls/source-window-0541/markdown-final.process.json.txt",
+      "bytes": 490,
+      "sha256": "72ab7d5e953eda9cebfb524b710d78998a9556f79086584eecf7581239292329"
+    },
+    {
+      "path": "controls/source-window-0541/native-types-repair.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/source-window-0541/native-types-repair.process.json.txt",
+      "bytes": 506,
+      "sha256": "89e944a7e1d50e559d4c63d475bd60ffbd5f8ec952f0fe3ea2c3ae8da44100e9"
+    },
+    {
+      "path": "controls/source-window-0541/native-types.log.txt",
+      "bytes": 1517,
+      "sha256": "4ac5180729063718b42ddf339ed0c922e175a94647d9d5c2d708f46335bcc354"
+    },
+    {
+      "path": "controls/source-window-0541/native-types.process.json.txt",
+      "bytes": 506,
+      "sha256": "fa32ce4da45984d06fedfe98f63b8fa9824c979c0d899312cf55876efcce2133"
+    },
+    {
+      "path": "controls/source-window-0541/qualification-final.log.txt",
+      "bytes": 3846,
+      "sha256": "3110f78d3874cf7fbd5a490e0430fcab0d809368de0c91f5e01f54b41f1914a4"
+    },
+    {
+      "path": "controls/source-window-0541/qualification-final.process.json.txt",
+      "bytes": 434,
+      "sha256": "fd2b4720a897f643dcae39af0ba31d8e39628c5c2b8984a003423ffcf8abd637"
+    },
+    {
+      "path": "controls/source-window-0541/resolve.log.txt",
+      "bytes": 1479,
+      "sha256": "2de32b7e3da3391f3ce2aae8413fe8fb77eb34dbe7a0e4e24e9e3ac2bbe2e1d7"
+    },
+    {
+      "path": "controls/source-window-0541/resolve.process.json.txt",
+      "bytes": 468,
+      "sha256": "3ae43380d3f386d5ffd8140b45f7a883f6c7151630cb9b868f88dd1edc48458d"
+    },
+    {
+      "path": "controls/source-window-0541/topology-audio.log.txt",
+      "bytes": 1238,
+      "sha256": "c3ee744a58791ab402773b446d9806b82687f3a2a498ed2f3c8570f19bf79371"
+    },
+    {
+      "path": "controls/source-window-0541/topology-audio.process.json.txt",
+      "bytes": 431,
+      "sha256": "041701a500f6e35a46fa2acb7443fb168f6d32d5c8306a8628b42e88ed7225e1"
+    },
+    {
+      "path": "package-provenance/expo-57.0.26.installed-bundledNativeModules.json",
+      "bytes": 4268,
+      "sha256": "22e076735cacee96eea28d0bd793cf4cf998c69f354f66fde7e7648c72b54fa2"
+    },
+    {
+      "path": "package-provenance/expo-asset-57.0.18.archive-inventory.json",
+      "bytes": 26889,
+      "sha256": "2d05a81f40533d6342d8e58a0a299ba732e4bf5b5e7942cab3536db0a17cf181"
+    },
+    {
+      "path": "package-provenance/expo-asset-57.0.18.metadata.json.txt",
+      "bytes": 3288,
+      "sha256": "512cf3b81dbf75c6c9c7f676588e5af85df7f8b5ed3131daac0131c98d405b69"
+    },
+    {
+      "path": "package-provenance/expo-asset-57.0.18.package.json.txt",
+      "bytes": 1757,
+      "sha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa"
+    },
+    {
+      "path": "package-provenance/expo-asset-57.0.18.tar.gz",
+      "bytes": 92429,
+      "sha256": "b6533829c589a7acc746f4666dfd45188eaf2e5f717f8c8fbff2cf6c104bdda2"
+    },
+    {
+      "path": "package-provenance/expo-audio-57.0.5.archive-inventory.json",
+      "bytes": 32216,
+      "sha256": "02c4293155ab55932da26f2c6beacaf15d5a85225131dbe0428623ca2908fb5f"
+    },
+    {
+      "path": "package-provenance/expo-audio-57.0.5.metadata.json.txt",
+      "bytes": 2836,
+      "sha256": "5a196e1144ac1ff8e2d2f4eb8030f15dbd1959869e92c27943218aedf42e8946"
+    },
+    {
+      "path": "package-provenance/expo-audio-57.0.5.package.json.txt",
+      "bytes": 1152,
+      "sha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c"
+    },
+    {
+      "path": "package-provenance/expo-audio-57.0.5.tar.gz",
+      "bytes": 688132,
+      "sha256": "5b26f87d644dfe05c7259d66078de98de7c9658c1e8a2041d2fe1fd51cf2f9b8"
+    },
+    {
+      "path": "package-provenance.json",
+      "bytes": 3093,
+      "sha256": "2f0ec35f728d716289f5e3a462625089d1ed3e40694bdce328d6998567faa901"
+    },
+    {
+      "path": "script-inventory.json",
+      "bytes": 1227,
+      "sha256": "2ce4543a437f6633a94b586f2dc29982d15f1c251bab6665f2fe6b88772ab726"
+    }
+  ]
+}

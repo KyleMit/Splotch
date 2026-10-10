@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs migration/tests/native-audio-qualification.test.mjs --maxWorkers=1
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/tools
+
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  02:39:34
+   Duration  2.21s (tests 84%, import 13%, transform 2%)
+

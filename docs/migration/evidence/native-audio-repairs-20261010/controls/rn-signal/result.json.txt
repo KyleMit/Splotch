@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "failure": null,
+  "commands": 8,
+  "terminalCodes": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "timeoutCount": 0,
+  "elapsedSeconds": 30.450450292,
+  "source": {
+    "experiments/native-architecture/src/platform/drawingAudio.ts": "2a8f978dd9be392e1a7243546c5c35e84ab39285b7b664fe4406e86f9f9a347a",
+    "tools/tests/native-audio-adapter.test.mjs": "34ed22b40c74605725a2abad0cc44fce4b73a33fafb8da4089d4556afe5d12c8"
+  },
+  "ownerUnchanged": true,
+  "graphAndIndexUnchanged": true
+}

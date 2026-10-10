@@ -1,0 +1,172 @@
+{
+  "startUTC": "2026-10-09T05:42:01.757819+00:00",
+  "deadlineUTC": "2026-10-09T05:51:15Z",
+  "lease": "/Users/kylemit/Code/Splotch/logs/migration-resumption-01a11a00/native-releases-and-sequencing-r3-20261009-0539/AUDIO-SOURCE-WINDOW.json.txt",
+  "branch": "codex/native-audio-settings",
+  "head": "20b51012a9bb3daa1314cab1d8c276cc9eb8a977",
+  "lockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "dirty": [
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/README.md",
+      "bytes": 3958,
+      "sha256": "3717b25e3a804a4b4a2797b57aab7c77cc08bcf0a75649f85e76d144c134ccd8"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/manifest.json",
+      "bytes": 2133,
+      "sha256": "abf2a2f6c60164fdb015e6da821f31f44468244a7880cb2bf273208f9b51a057"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance.json",
+      "bytes": 2970,
+      "sha256": "4014b29a1199c5d4611e7cd31e367c378dc1c8830665f57728ddecfa09e69cc2"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-57.0.26.installed-bundledNativeModules.json",
+      "bytes": 4268,
+      "sha256": "22e076735cacee96eea28d0bd793cf4cf998c69f354f66fde7e7648c72b54fa2"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.archive-inventory.json",
+      "bytes": 26889,
+      "sha256": "2d05a81f40533d6342d8e58a0a299ba732e4bf5b5e7942cab3536db0a17cf181"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.metadata.json",
+      "bytes": 3288,
+      "sha256": "512cf3b81dbf75c6c9c7f676588e5af85df7f8b5ed3131daac0131c98d405b69"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.package.json",
+      "bytes": 1757,
+      "sha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.tar.gz",
+      "bytes": 92429,
+      "sha256": "b6533829c589a7acc746f4666dfd45188eaf2e5f717f8c8fbff2cf6c104bdda2"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.archive-inventory.json",
+      "bytes": 32216,
+      "sha256": "02c4293155ab55932da26f2c6beacaf15d5a85225131dbe0428623ca2908fb5f"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.metadata.json",
+      "bytes": 2836,
+      "sha256": "5a196e1144ac1ff8e2d2f4eb8030f15dbd1959869e92c27943218aedf42e8946"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.package.json",
+      "bytes": 1152,
+      "sha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c"
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.tar.gz",
+      "bytes": 688132,
+      "sha256": "5b26f87d644dfe05c7259d66078de98de7c9658c1e8a2041d2fe1fd51cf2f9b8"
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 506,
+      "sha256": "9309cd353cb1a1844ac1f729c3efb6c6078573ee5020d06a3f839b0934be5659"
+    },
+    {
+      "path": "experiments/native-architecture/src/DrawingScreen.tsx",
+      "bytes": 10170,
+      "sha256": "159bbca308703db3783fa1fee62992522f8e8fd3f7ed71741bb4730c6402787f"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/assets.d.ts",
+      "bytes": 243,
+      "sha256": "2c66f807ae0c4216b11736d7c7ab331eb0cfb1758a3a8a339118e2b061691440"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/drawingAudio.ts",
+      "bytes": 4920,
+      "sha256": "32aa925abaeabc735c3cab3fbaa847dfff3c12b6bc2f83b73f2f379f438c118b"
+    },
+    {
+      "path": "experiments/native-architecture/src/audio/pencil-1.mp3",
+      "bytes": 82992,
+      "sha256": "234cb63eb7c3692cb2d4296298fc169ed48ad0f419f21b340a9a71ed21382cbe"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/DrawingSurface.tsx",
+      "bytes": 7690,
+      "sha256": "7567c046fc4affb550b8c1b0fff9d5e53865e429c104cfe41fde65ad49a75828"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/theme.ts",
+      "bytes": 651,
+      "sha256": "ff38a6ae5a5156653d1125e60101e440e27a2bae7d3ac0ac4a0070bec636e302"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/drawingAudio.ts",
+      "bytes": 3717,
+      "sha256": "7d673ca8ecc139128fc205fa6ba04fc08e7e471b2d545063894aa31840f1101a"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/drawingAudio.web.ts",
+      "bytes": 3448,
+      "sha256": "635baecd37831170678824fa43d3f0aa34fab795a273078e89a6098459cf35cb"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/soundSettings.ts",
+      "bytes": 2214,
+      "sha256": "93d191fcf4a1cd38cb4c28fc38aabf0f1fd5657daafac80711a920bf79dba8bb"
+    },
+    {
+      "path": "experiments/native-architecture/src/platform/soundSettings.web.ts",
+      "bytes": 475,
+      "sha256": "7978fe382d5101e7e646131f5ecd472a123aef9ede1930c6631bf424ace11507"
+    },
+    {
+      "path": "experiments/native-architecture/src/settings/SoundSettings.tsx",
+      "bytes": 3324,
+      "sha256": "b6ef850be6abc88ae3741b8acd9a7131b4211f055e9fefef2dd6f34f77db2af2"
+    },
+    {
+      "path": "experiments/native-architecture/src/settings/soundSettings.ts",
+      "bytes": 2991,
+      "sha256": "d699376f31df11936b64d396138d99048631c88f9159144b97162e20ff477dc8"
+    },
+    {
+      "path": "experiments/native-architecture/src/useDrawingSound.ts",
+      "bytes": 1532,
+      "sha256": "c617ffddcee3a7b675a9b12be33f52f8fe01bbdb855de2142e99a89c816b045d"
+    },
+    {
+      "path": "tools/migration/tests/candidate-imports.test.mjs",
+      "bytes": 16423,
+      "sha256": "b9532808165a8e2432c8c27ecd961a998cc2116fc6746d0c739b858d21d22b71"
+    },
+    {
+      "path": "tools/tests/native-audio-adapter.test.mjs",
+      "bytes": 5274,
+      "sha256": "98459f1066a3ac6563640314756a5e1497a93b39fde4c2411e020a0a6ba7364b"
+    },
+    {
+      "path": "tools/tests/native-audio-projection.test.mjs",
+      "bytes": 2495,
+      "sha256": "306e2446596cadc7a632a3d5d4f496b8dc92d6b50e4a82d3ca4b5a609a90b34d"
+    },
+    {
+      "path": "tools/tests/native-drawing-audio.test.mjs",
+      "bytes": 4734,
+      "sha256": "edc4045bb75512a4f30bc53b68f8fc0089c96deee2f8d43dabd4902bbc811bf2"
+    },
+    {
+      "path": "tools/tests/native-sound-settings-files.test.mjs",
+      "bytes": 5098,
+      "sha256": "46a3c4d7e413727d18f0e1e47c60537fc6d7826246083356dcd30bae86f59697"
+    },
+    {
+      "path": "tools/tests/native-sound-settings.test.mjs",
+      "bytes": 4551,
+      "sha256": "94daaf8ff3cfeb32474ca568bc5a59e62d24c05d77720282b986e058d6006d14"
+    }
+  ],
+  "ownedHandles": [],
+  "scope": "Source/dependency/light only; no browser/native/full-tools/hooks/performance"
+}

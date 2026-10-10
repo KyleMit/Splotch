@@ -1,0 +1,9 @@
+{
+  "status": "FAILED_OR_INCOMPLETE",
+  "failure": "Traceback (most recent call last):\n  File \"/private/tmp/audio-q5-ios-stage2-source-0006/run-stage2.py\", line 224, in <module>\n    run('04-upstream-reset-negative', plan['negativeArgv'], CANDIDATE, 180, expected_failure=True)\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/audio-q5-ios-stage2-source-0006/run-stage2.py\", line 97, in run\n    assert (code != 0 if expected_failure else code == 0) and not timeout and not unexpected_network, f'First failure {label}: actual {code}, timeout={timeout}, unexpectedNetwork={unexpected_network}'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: First failure 04-upstream-reset-negative: actual 65, timeout=True, unexpectedNetwork=False\n",
+  "sourcePreservationExact": true,
+  "patchedRestorationExact": true,
+  "elapsedSeconds": 228.91683658305556,
+  "withinHardCap": true,
+  "Q5": "OPEN_NATIVE_CASES_DO_NOT_ESTABLISH_SPEAKER_BRIDGE_OR_FORCED_LATE_CALLBACK"
+}

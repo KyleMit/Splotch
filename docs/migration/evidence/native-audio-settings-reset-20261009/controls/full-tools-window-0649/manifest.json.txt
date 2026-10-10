@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "before.json.txt",
+      "bytes": 37166,
+      "sha256": "23a96b41c9728443aa9f075281d4d0fa2b20df608d0ba03cd76f2f51462af84e"
+    },
+    {
+      "path": "full-tools.log.txt",
+      "bytes": 5630,
+      "sha256": "e376089ced97f118f755bb396eb3c9830eb52081f0cb86c627cd4a7a19ca201a"
+    },
+    {
+      "path": "full-tools.process.json.txt",
+      "bytes": 552,
+      "sha256": "5d2137928793e3745d3bc2c3c2ab99654434bc40e329d9b7d0cdfbec82759825"
+    },
+    {
+      "path": "ignore-check.json.txt",
+      "bytes": 58,
+      "sha256": "dccbad1c56d5ebd735989a9b4cbdbeef9313cf1e319c88319d72bd1739aef551"
+    },
+    {
+      "path": "result.json.txt",
+      "bytes": 940,
+      "sha256": "b15f61b724d95afe7e3ae0ab728307c9e64bc1883edc706324a3d58a21d66f4f"
+    },
+    {
+      "path": "runner.py.txt",
+      "bytes": 2915,
+      "sha256": "a5f2c1011abee5c0573418e63e3d4eb784a1646fd048761e05bd9346b04bc25c"
+    }
+  ]
+}

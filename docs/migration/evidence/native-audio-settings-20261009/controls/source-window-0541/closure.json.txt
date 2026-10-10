@@ -1,0 +1,8 @@
+{
+  "endUTC": "2026-10-09T05:51:24.577445+00:00",
+  "allCommandsTerminal": true,
+  "commandCount": 28,
+  "allOwnedChildrenClosed": true,
+  "openHandles": [],
+  "sourceWindowReturned": true
+}

@@ -1,0 +1,19 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:tools",
+    "--",
+    "migration/tests/native-audio-qualification.test.mjs",
+    "--maxWorkers=1"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:50:48.920152+00:00",
+  "ownerPID": 65872,
+  "ownerStart": "Fri Oct  9 01:50:48 2026",
+  "childPID": 65879,
+  "childStart": "Fri Oct  9 01:50:48 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:50:49.891433+00:00",
+  "ownedChildClosed": true
+}

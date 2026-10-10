@@ -1,0 +1,5 @@
+{
+  "exitCode": 1,
+  "ignored": "",
+  "filesChecked": 5
+}

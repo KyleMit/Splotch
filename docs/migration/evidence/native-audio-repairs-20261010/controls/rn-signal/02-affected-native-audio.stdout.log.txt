@@ -1,0 +1,16 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs native-audio-adapter.test.mjs native-drawing-audio.test.mjs --maxWorkers=2 --reporter=default --reporter=json --outputFile /private/tmp/audio-rn-abort-checks-0146/affected-tests.json
+
+
+ RUN  v5.0.2 /private/tmp/audio-q5-native-development/repository/tools
+
+ ✓ tests/native-drawing-audio.test.mjs (13 tests) 5ms
+ ✓ tests/native-audio-adapter.test.mjs (17 tests) 49ms
+
+ Test Files  2 passed (2)
+      Tests  30 passed (30)
+   Start at  21:46:14
+   Duration  255ms (import 46%, transform 29%, tests 23%, worker 2%)
+
+JSON report written to /private/tmp/audio-rn-abort-checks-0146/affected-tests.json

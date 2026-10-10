@@ -39,6 +39,32 @@ function write(root, path, content) {
 afterEach(() => fixtures.splice(0).forEach((path) => rmSync(path, { recursive: true })));
 
 describe('candidate ownership and identity', () => {
+  it.each(['expo-asset', 'expo-audio'])(
+    'requires actual %s SDK alignment and a root-wide update owner',
+    (name) => {
+      expect(() => assertCandidateManifest(manifest, alignment)).not.toThrow();
+      const missingAlignment = structuredClone(alignment);
+      delete missingAlignment.directPackages[name];
+      expect(() => assertCandidateManifest(manifest, missingAlignment)).toThrow(
+        'SDK alignment changed'
+      );
+      const missingManifest = structuredClone(manifest);
+      delete missingManifest.devDependencies[name];
+      expect(() => assertCandidateManifest(missingManifest, alignment)).toThrow(
+        'SDK alignment changed'
+      );
+      for (const scoped of [false, true]) {
+        const updates = readPolicyYaml(join(repoRoot, '.github/dependabot.yml'));
+        const owner = updates.updates.find((update) => update['package-ecosystem'] === 'npm');
+        owner.ignore = owner.ignore.filter((rule) => rule['dependency-name'] !== name);
+        if (scoped) owner.ignore.push({ 'dependency-name': name, versions: ['57.x'] });
+        expect(() => assertAlignmentUpdateOwner(updates, alignment)).toThrow(
+          `manual SDK alignment policy: ${name}`
+        );
+      }
+    }
+  );
+
   it('rejects a removed owner even when hoisted package resolution still succeeds', () => {
     const missing = structuredClone(manifest);
     delete missing.devDependencies.expo;

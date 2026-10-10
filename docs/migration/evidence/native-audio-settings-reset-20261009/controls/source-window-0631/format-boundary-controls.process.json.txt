@@ -1,0 +1,22 @@
+{
+  "command": [
+    "node",
+    "node_modules/prettier/bin/prettier.cjs",
+    "--write",
+    "tools/migration/lib/native-audio-qualification.mjs",
+    "tools/migration/tests/native-audio-qualification.test.mjs"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T06:39:33.774783+00:00",
+  "hardEndUTC": "2026-10-09T06:41:50+00:00",
+  "capSeconds": 30,
+  "ownerPID": 56343,
+  "ownerStart": "Fri Oct  9 02:39:33 2026",
+  "childPID": 56345,
+  "childProcessGroup": 56345,
+  "childStart": "Fri Oct  9 02:39:33 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T06:39:33.953981+00:00",
+  "ownedChildClosed": true,
+  "ownedProcessGroupClosed": true
+}

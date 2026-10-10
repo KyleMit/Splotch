@@ -1,0 +1,25 @@
+{
+  "command": [
+    "node",
+    "node_modules/prettier/bin/prettier.cjs",
+    "--write",
+    "experiments/native-architecture/src",
+    "experiments/native-architecture/package.json",
+    "pnpm-lock.yaml",
+    "tools/tests/native-audio-adapter.test.mjs",
+    "tools/tests/native-audio-projection.test.mjs",
+    "tools/tests/native-drawing-audio.test.mjs",
+    "tools/tests/native-sound-settings.test.mjs",
+    "tools/tests/native-sound-settings-files.test.mjs",
+    "tools/migration/tests/candidate-imports.test.mjs"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:43:33.497452+00:00",
+  "ownerPID": 60541,
+  "ownerStart": "Fri Oct  9 01:43:33 2026",
+  "childPID": 60548,
+  "childStart": "Fri Oct  9 01:43:33 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:43:33.828761+00:00",
+  "ownedChildClosed": true
+}

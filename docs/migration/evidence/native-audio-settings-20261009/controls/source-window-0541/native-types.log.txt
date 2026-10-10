@@ -1,0 +1,9 @@
+experiments/native-architecture/src/DrawingScreen.tsx(19,31): error TS1149: File name '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/settings/SoundSettings.ts' differs from already included file name '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/settings/soundSettings.ts' only in casing.
+  The file is in the program because:
+    Imported via '../settings/soundSettings' from file '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/platform/soundSettings.ts'
+    Imported via './settings/soundSettings' from file '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/useDrawingSound.ts'
+    Imported via './settings/SoundSettings' from file '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/DrawingScreen.tsx'
+    Imported via '../settings/soundSettings' from file '/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/experiments/native-architecture/src/platform/soundSettings.web.ts'
+    Matched by include pattern 'src/**/*.ts' in 'experiments/native-architecture/tsconfig.json'
+experiments/native-architecture/src/DrawingScreen.tsx(163,10): error TS2693: 'SoundSettings' only refers to a type, but is being used as a value here.
+experiments/native-architecture/src/DrawingScreen.tsx(166,22): error TS7006: Parameter 'enabled' implicitly has an 'any' type.

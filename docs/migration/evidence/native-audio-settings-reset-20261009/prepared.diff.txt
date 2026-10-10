@@ -1,0 +1,165 @@
+--- before/experiments/native-architecture/src/platform/drawingAudio.ts
++++ prepared/experiments/native-architecture/src/platform/drawingAudio.ts
+@@ -107,6 +107,10 @@
+       subscription = player.addListener('playbackStatusUpdate', (status) => {
+         if (disposed) return;
+         try {
++          if (status.mediaServicesDidReset) {
++            failed();
++            return;
++          }
+           if (status.playing && !active) {
+             gain.mute();
+             player.pause();
+--- before/tools/tests/native-audio-adapter.test.mjs
++++ prepared/tools/tests/native-audio-adapter.test.mjs
+@@ -1,3 +1,6 @@
++import { readFileSync } from 'node:fs';
++import { join } from 'node:path';
++import ts from 'typescript';
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import {
+   AUDIO_LOAD_TIMEOUT_MS,
+@@ -7,7 +10,7 @@
+ vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
+ import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
+ 
+-function fixture() {
++function fixture(loader = loadDrawingLoop) {
+   const player = {
+     volume: 0,
+     loop: false,
+@@ -27,13 +30,47 @@
+   native.create.mockReturnValueOnce(player);
+   const controller = new AbortController();
+   const failure = vi.fn();
+-  const promise = loadDrawingLoop(controller.signal, failure);
++  const promise = loader(controller.signal, failure);
+   return { player, controller, failure, promise };
+ }
+ async function loaded(f) {
+   await Promise.resolve();
+   f.player.listener({ isLoaded: true, playing: false, error: null });
+   return f.promise;
++}
++function assertResetReleased(f) {
++  expect(f.player.volume).toBe(0);
++  expect(f.player.unsubscribe).toHaveBeenCalledOnce();
++  expect(f.player.remove).toHaveBeenCalledOnce();
++  expect(f.player.release).toHaveBeenCalledOnce();
++  expect(f.failure).toHaveBeenCalledOnce();
++  expect(vi.getTimerCount()).toBe(0);
++}
++async function resetRefusalMutation() {
++  const source = readFileSync(join(import.meta.dirname,
++    '../../experiments/native-architecture/src/platform/drawingAudio.ts'), 'utf8');
++  const guard = 'if (status.mediaServicesDidReset)';
++  expect(source).toContain(guard);
++  const { outputText } = ts.transpileModule(source.replace(guard, 'if (false)'), {
++    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
++  });
++  const body = outputText.replace(/^import .*;$/gm, '').replace(/^export /gm, '');
++  const fixtureSource = `export function createLoader({createAudioPlayer, setAudioModeAsync,
++    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, pencilSound}) { ${body}; return loadDrawingLoop; }`;
++  const module = await import(`data:text/javascript;base64,${Buffer.from(fixtureSource).toString('base64')}`);
++  return module.createLoader({ createAudioPlayer: native.create, setAudioModeAsync: native.mode,
++    AUDIO_LOAD_TIMEOUT_MS, GAIN_RAMP_S, pencilSound: 1 });
++}
++async function stationaryActive(f) {
++  const loop = await loaded(f);
++  loop.start();
++  loop.setVolume(0.2);
++  await vi.runAllTimersAsync();
++  loop.setVolume(0);
++  await vi.runAllTimersAsync();
++  expect(f.player.volume).toBe(0);
++  expect(vi.getTimerCount()).toBe(0);
++  return loop;
+ }
+ beforeEach(() => {
+   native.players.length = 0;
+@@ -145,4 +182,84 @@
+     expect(f.player.release).toHaveBeenCalledOnce();
+     expect(f.failure).toHaveBeenCalledOnce();
+   });
++
++  it('refuses a replacement player reset while an active stationary stroke is quiet', async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const loop = await stationaryActive(f);
++    f.player.volume = 1;
++    f.player.listener({ isLoaded: true, playing: true, error: null, mediaServicesDidReset: true });
++    assertResetReleased(f);
++    loop.start();
++    loop.setVolume(0.2);
++    await vi.runAllTimersAsync();
++    expect(f.player.play).toHaveBeenCalledOnce();
++    expect(f.player.volume).toBe(0);
++  });
++  it('refuses reset while stopped before a later start can play at replacement gain', async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const loop = await loaded(f);
++    loop.start();
++    loop.stop();
++    f.player.volume = 1;
++    f.player.listener({ isLoaded: true, playing: false, error: null, mediaServicesDidReset: true });
++    assertResetReleased(f);
++    loop.start();
++    loop.setVolume(0.2);
++    await vi.runAllTimersAsync();
++    expect(f.player.play).toHaveBeenCalledOnce();
++    expect(f.player.volume).toBe(0);
++  });
++  it('rejects reset during loading before a ready event can resolve the loop', async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const refused = f.promise.catch(error => error.message);
++    await Promise.resolve();
++    f.player.volume = 1;
++    f.player.listener({ isLoaded: true, playing: false, error: null, mediaServicesDidReset: true });
++    expect(await refused).toContain('unavailable');
++    f.player.listener({ isLoaded: true, playing: true, error: null });
++    expect(f.player.volume).toBe(0);
++    expect(f.player.play).not.toHaveBeenCalled();
++    expect(f.player.remove).toHaveBeenCalledOnce();
++    expect(f.player.release).toHaveBeenCalledOnce();
++    expect(f.failure).not.toHaveBeenCalled();
++    expect(vi.getTimerCount()).toBe(0);
++  });
++  it('cancels a reset gain ramp and ignores queued reset or loaded events after release', async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const loop = await loaded(f);
++    loop.start();
++    loop.setVolume(0.2);
++    await vi.advanceTimersByTimeAsync((GAIN_RAMP_S * 1000) / 2);
++    expect(f.player.volume).toBeGreaterThan(0);
++    f.player.volume = 1;
++    f.player.listener({ isLoaded: true, playing: true, error: null, mediaServicesDidReset: true });
++    assertResetReleased(f);
++    const pauses = f.player.pause.mock.calls.length;
++    for (const mediaServicesDidReset of [false, true])
++      f.player.listener({ isLoaded: true, playing: true, error: null, mediaServicesDidReset });
++    loop.start();
++    loop.setVolume(0.2);
++    loop.stop();
++    loop.dispose();
++    await vi.runAllTimersAsync();
++    assertResetReleased(f);
++    expect(f.player.pause).toHaveBeenCalledTimes(pauses);
++    expect(f.player.play).toHaveBeenCalledOnce();
++  });
++  it('detects the active-still reset defect when the real source reset refusal is removed', async () => {
++    vi.useFakeTimers();
++    const f = fixture(await resetRefusalMutation());
++    const loop = await stationaryActive(f);
++    f.player.volume = 1;
++    f.player.listener({ isLoaded: true, playing: true, error: null, mediaServicesDidReset: true });
++    expect(() => assertResetReleased(f)).toThrow();
++    expect(f.player.volume).toBe(1);
++    expect(f.player.release).not.toHaveBeenCalled();
++    expect(f.failure).not.toHaveBeenCalled();
++    loop.dispose();
++  });
+ });

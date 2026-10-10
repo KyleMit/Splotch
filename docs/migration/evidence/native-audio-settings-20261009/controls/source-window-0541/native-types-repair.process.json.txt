@@ -1,0 +1,18 @@
+{
+  "command": [
+    "node",
+    "node_modules/typescript/bin/tsc",
+    "--project",
+    "experiments/native-architecture/tsconfig.json",
+    "--noEmit"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:46:35.499332+00:00",
+  "ownerPID": 62212,
+  "ownerStart": "Fri Oct  9 01:46:35 2026",
+  "childPID": 62219,
+  "childStart": "Fri Oct  9 01:46:35 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:46:35.891567+00:00",
+  "ownedChildClosed": true
+}

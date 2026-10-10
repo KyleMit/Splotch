@@ -1,0 +1,27 @@
+[
+  {
+    "label": "01-current-fulltools",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "--maxWorkers=2"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T02:01:51.031391+00:00",
+    "pid": 36796,
+    "expectedPgid": 36796,
+    "capSeconds": 300,
+    "actualExit": 1,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T02:04:11.796454+00:00",
+    "observedDirectIdentity": {
+      "pid": 36796,
+      "ppid": 36782,
+      "pgid": 36796,
+      "start": "Fri Oct 9 22:01:51 2026",
+      "argv": "npm     "
+    }
+  }
+]

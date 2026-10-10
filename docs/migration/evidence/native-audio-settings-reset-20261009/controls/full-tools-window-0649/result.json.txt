@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "observedClosureUTC": "2026-10-09T06:52:18.019432+00:00",
+  "actualWindowStartUTC": "2026-10-09T06:49:17Z",
+  "hardEndUTC": "2026-10-09T06:53:17Z",
+  "commandCount": 1,
+  "command": [
+    "npm",
+    "run",
+    "test:tools"
+  ],
+  "childExitCode": 0,
+  "testFilesPassed": 352,
+  "testsPassed": 8173,
+  "durationSeconds": 46.12,
+  "ownedPID": 3515,
+  "ownedPGID": 3515,
+  "runnerPID": 3502,
+  "ownedPIDPGIDRunnerAbsent": true,
+  "terminalHandle": 15075,
+  "openHandles": [],
+  "source": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "lockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "preservedDirtyFileCount": 157,
+  "changedPriorSourceOrReceiptPaths": [],
+  "noSourceChangesInstallLightcheckReplayBrowserNativePlaybackReviewGitMutation": true,
+  "prior5FailuresAndShortWrapperFailureRetained": true,
+  "speakerTimingAndFullAudioAcceptance": false,
+  "sourceWindowReturned": true
+}

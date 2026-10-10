@@ -1,0 +1,9 @@
+{
+  "status": "THREE_NATIVE_CASES_UPSTREAM_NEGATIVE_RESTORED_PASS",
+  "failure": null,
+  "sourcePreservationExact": true,
+  "patchedRestorationExact": true,
+  "elapsedSeconds": 18.951298542087898,
+  "withinHardCap": true,
+  "Q5": "OPEN_NATIVE_CASES_DO_NOT_ESTABLISH_SPEAKER_BRIDGE_OR_FORCED_LATE_CALLBACK"
+}

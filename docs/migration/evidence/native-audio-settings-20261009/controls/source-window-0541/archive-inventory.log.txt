@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 gen:migration:script-inventory
+> node tools/migration/gen-script-inventory.mjs --baseline=docs/migration/evidence/native-audio-settings-20261009/controls/source-window-0541/before-pnpm-lock.yaml.txt --output=docs/migration/evidence/native-audio-settings-20261009/script-inventory.json
+
+1/1: expo-audio@57.0.5 no-install-hooks

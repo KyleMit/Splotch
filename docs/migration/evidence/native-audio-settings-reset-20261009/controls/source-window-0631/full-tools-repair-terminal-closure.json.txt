@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "actualClosureObservedUTC": "2026-10-09T06:42:49.664763+00:00",
+  "hardEndUTC": "2026-10-09T06:41:50Z",
+  "recordedCapSeconds": 33.144691,
+  "terminalToolHandle": 86804,
+  "toolExitCode": 1,
+  "schedulerFailure": "The remaining33.145s cap was shorter than prior46.3s runtime; the final runner encountered ProcessLookupError during owned-group reaping after its recorded bound. No restart or extension.",
+  "ownedPID": 57159,
+  "ownedProcessGroup": 57159,
+  "ownedPIDAndGroupAbsent": true,
+  "noOtherOpenHandles": true,
+  "fullTierPending": true,
+  "fullLogSha256": "987aa59bbf314b2de10fbdc7ef11ab50ed1de2caa89d4c45a5a2889c5be39b65"
+}

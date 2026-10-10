@@ -1,0 +1,5 @@
+
+> splotch@1.6.0 info
+> scripts-info
+
+sh: scripts-info: command not found

@@ -1,0 +1,268 @@
+{
+  "members": [
+    {
+      "path": "README.md",
+      "sha256": "e5af6efeaf0bb2f35c2761516569c6cf1737d8aee951278f2baec8294205a993",
+      "bytes": 4802,
+      "mode": "0o644"
+    },
+    {
+      "path": "SOURCE-RECEIPT.json",
+      "sha256": "fdc653e93f724c1e2610809aee3f322de1e2a372a41db42c3db9977a71948be2",
+      "bytes": 20237,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/first-generated-bin-refusal/commands.json.txt",
+      "sha256": "3267f5ecf42ec8268c512a505aa4a8cdbcb64a22630fc5ac44eda0ecb91373e9",
+      "bytes": 3565,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/first-generated-bin-refusal/result.json.txt",
+      "sha256": "e7dbd464715e69f2880780f0459a7bce588ac029dfb6a7d57d9cf06e3abad233",
+      "bytes": 4755,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/fulltools-first-refused/commands.json.txt",
+      "sha256": "bf028078c0dd3ec4ee83dc4bbc57c11b6d246a3daaad4ee35c38475eff225ecb",
+      "bytes": 602,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/fulltools-first-refused/fresh-closure.json.txt",
+      "sha256": "edf94d12911e31f61070cb87eb373997065f0c26a6ab945be036767360532887",
+      "bytes": 19732,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/fulltools-first-refused/result.json.txt",
+      "sha256": "3f32837163fe1838b755a92d06da2099a08874064b910842fe8dd16e7de36f0b",
+      "bytes": 870,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/fulltools-first-refused/stderr.log.txt",
+      "sha256": "287397599e14c78067da5c8b544652eb010c762b7a699f7abd46852c5a2c6e77",
+      "bytes": 10261,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/fulltools-first-refused/stdout.log.txt",
+      "sha256": "c6d2909f05483df1fd770923536918c8a4f252a25af708662beef3e3d0d85dd1",
+      "bytes": 3071,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/02-three-native-reset-cases.stdout.log.txt",
+      "sha256": "02e649ee44c2331f374f8cf2cc5df49b1efe7bd611d6e023a36e02afcbd34107",
+      "bytes": 457704,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/03-positive-summary.stdout.log.txt",
+      "sha256": "894e468d317bcb7ecc985ba9840c9f198022870744fdc408060c213128611dca",
+      "bytes": 1016,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/04-upstream-reset-negative.stdout.log.txt",
+      "sha256": "3352503225076b6c2cd6dd428be12e3dcbbad9aa929b1299233817b4b99dad1f",
+      "bytes": 440490,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/05-negative-summary.stdout.log.txt",
+      "sha256": "c3718f8f8457726a102ca9082a999f48e064c0d42ab7b94c66d2bd304c4e6d9b",
+      "bytes": 1515,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/06-restored-three-cases.stdout.log.txt",
+      "sha256": "c60ae1a5c99691dcb9662a323c6f90b6a330a4a7ee21a298f2135ec13d40f2a9",
+      "bytes": 440365,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/07-restored-summary.stdout.log.txt",
+      "sha256": "97776f6117bf611ce5a372e49ce55d2ada5d94c27bef9063a1efa227f5e3b3a7",
+      "bytes": 1016,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/FRESH-CLOSURE.json.txt",
+      "sha256": "2911c2f1f72779db76b86fa4a1621045da5f88adab9121c7240103d1d9928b63",
+      "bytes": 2065,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/commands.json.txt",
+      "sha256": "e4f6d38bd9699e448a2ef32b6ac576af96a33a0595981edeb5a06c016734e5dd",
+      "bytes": 10443,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/exact-source-restoration.json.txt",
+      "sha256": "9dff5dd0af455dc24d41c4b50a256b54d8f21d301732e93a6bce1e97530ae961",
+      "bytes": 111,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/negative-predicates.json.txt",
+      "sha256": "b82178636812fc494e8d512bfef07d09425e359d36b8cbd13dd93e216fe61dfe",
+      "bytes": 2504,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/positive-predicates.json.txt",
+      "sha256": "aab70192511ec23abeac926c3f8a30fecbdc68fcc3d34f466c5e274835b50e74",
+      "bytes": 2405,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/restored-predicates.json.txt",
+      "sha256": "031cc337c8114d4309949b2ad462da2f9d2105d3796a910c3d481912448a6be2",
+      "bytes": 2406,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/result-bundle-bindings.json.txt",
+      "sha256": "191dc1f4f4178ecb9d6261343a0212245385a230661f2f4a0eba19296ce630cb",
+      "bytes": 23490,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset/result.json.txt",
+      "sha256": "b28098c72eaee7fb2197d3ccb9f42f947d0625fc0b04bcf22f5bbb46ccfc7504",
+      "bytes": 308,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset-first-failed/commands.json.txt",
+      "sha256": "7c4a64c3c5f537241db633f797ea5f461dc2f017272b47be31cf4f38e28acdd4",
+      "bytes": 5593,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/native-reset-first-failed/result.json.txt",
+      "sha256": "6d6b179cb31b643b6965f7e7a736dda15992993f670d55498777197840058d5d",
+      "bytes": 1106,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/01-format-two-files.stdout.log.txt",
+      "sha256": "12aebb804740c846a74f0f6b92da0449f872d4771f8eaaee884572287af973db",
+      "bytes": 125,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/02-affected-native-audio.stdout.log.txt",
+      "sha256": "c2741dcaf37a598c756853cc127c42a1d503667c0f977ddd03322b9a05e4e639",
+      "bytes": 674,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/03-old-call-negative.stdout.log.txt",
+      "sha256": "a572bb49966760ee1b44d496b8add9e14ab59d863d1cd4eb811b19ee9f615d0c",
+      "bytes": 2135,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/04-restored-floor-case.stdout.log.txt",
+      "sha256": "c2b57c3580cb4b84b5484b4bc7e799123ed89192407cd7df6c073b95b154a825",
+      "bytes": 698,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/05-native-types.stdout.log.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/06-check.stdout.log.txt",
+      "sha256": "5240e8c7f9ed9de2d3626a33bf6515972f382bb6d0f00a48baba5fbe8d4e755e",
+      "bytes": 716,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/07-lint.stdout.log.txt",
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd",
+      "bytes": 34,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/08-format-check.stdout.log.txt",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+      "bytes": 66,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/affected-tests.json.txt",
+      "sha256": "108137f85a179b2e0c6bede6a315791988dfa306a51ae2dc64ec771ef5de3ffb",
+      "bytes": 11957,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/closure.json.txt",
+      "sha256": "8e66fb5f2c0b185b13915032709f8755054e9c69f6a3f589d268307faa25f665",
+      "bytes": 480,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/commands.json.txt",
+      "sha256": "fa69ea12e8654a2ac01b1bbe5aeb26a61b7f5706458667de64e2b6a5a6b77a84",
+      "bytes": 6456,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/mutation-binding.json.txt",
+      "sha256": "0cdd32b6aaf8cc7fd3aeb09d0deffbf47d45863e01f6906514df38a0b2f2d89a",
+      "bytes": 297,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/mutation-disposition.json.txt",
+      "sha256": "b257b7386df7af6924df78b20d292d6c0608bb68edc258a15f424d341057932d",
+      "bytes": 807,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/mutation-restoration.json.txt",
+      "sha256": "c422678313183406eb15dcf04da42e49611ff47994874afaf6522f7dc654901c",
+      "bytes": 104,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/negative-tests.json.txt",
+      "sha256": "913e68ae6a2ef735f2296a5663e42e72841e6c60275dc6e9eb48be5065f20474",
+      "bytes": 6722,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/restored-tests.json.txt",
+      "sha256": "84fb33ca97a7a1b83ec74c0db20da889673f3684832bde8e6ed9fc35f92fd137",
+      "bytes": 6464,
+      "mode": "0o644"
+    },
+    {
+      "path": "controls/rn-signal/result.json.txt",
+      "sha256": "310c0792cfdbe2f82815c1acfbff70ff3fe69174e4d7ca19b65e6c7a5a97c5a2",
+      "bytes": 526,
+      "mode": "0o644"
+    },
+    {
+      "path": "native-test-fixture/AudioPlayerResetTests.swift.txt",
+      "sha256": "45578783445e6d908e6d0e553f24cd5f1483ab18bc5e398a99473e5d76c27d41",
+      "bytes": 3230,
+      "mode": "0o644"
+    },
+    {
+      "path": "runtime-provider.json.txt",
+      "sha256": "5889f5238d856ba039149190a616c72141d49ddfc73df8350f6623673650283d",
+      "bytes": 1415,
+      "mode": "0o644"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "status": "READ_ONLY_SOURCE_BINDING_NO_NATIVE_EXECUTION",
+  "sourcePacket": "/private/tmp/audio-rn-abort-source-0144",
+  "sourceManifestSha256": "43190f594079cc656fd7eb4ffaf43c750475a994f710f52353b08c85712d5ee5",
+  "joinedSource": "be88bc20000ef89aa26e3f59eb713680d65fd5e5",
+  "retainedMap": "/private/tmp/native-eraser-joint-development/android-revised-build-artifact/artifact/index.android.bundle.packager.map",
+  "retainedMapSha256": "301f9b3a157045d6bf7f4f5081b30666df15bbe345f04b6358c22f5037b5a70a",
+  "metroProvider": {
+    "sourcePath": "node_modules/abort-controller/dist/abort-controller.mjs",
+    "sourceSha256": "4ba744fba41125a08484b2e628146a68dbb5c98aeefde1d1a98e64981058eb4a",
+    "bytes": 3311,
+    "packagerSourceExact": true
+  },
+  "nodeRegressionProvider": {
+    "path": "abort-controller/dist/abort-controller",
+    "resolvedRelativeTo": "react-native/package.json",
+    "variant": "CommonJS sibling of actual Metro MJS, same released abort-controller3.0.0 signal API"
+  },
+  "sourceObservation": "Both released variants define aborted getter/onabort/event-target prototype and lack throwIfAborted. Expo installAbortSignalPatch adds only static timeout/any. The native loader call is source-bound before player allocation in this retained APK.",
+  "limits": "Static provider/call binding plus actual RN-dependency regression; repaired native playback and physical sound remain unmeasured."
+}

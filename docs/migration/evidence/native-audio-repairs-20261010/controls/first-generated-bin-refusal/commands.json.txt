@@ -1,0 +1,104 @@
+[
+  {
+    "label": "01-normal-source-clone",
+    "argv": [
+      "/usr/bin/git",
+      "--no-optional-locks",
+      "clone",
+      "--local",
+      "--no-hardlinks",
+      "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+      "/private/tmp/audio-q5-native-development/repository"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development",
+    "startUtc": "2026-10-09T23:40:28.890359+00:00",
+    "pid": 27028,
+    "expectedPgid": 27028,
+    "capSeconds": 60,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-09T23:40:33.278411+00:00",
+    "observedDirectIdentity": {
+      "pid": 27028,
+      "ppid": 27016,
+      "pgid": 27028,
+      "start": "Fri Oct 9 19:40:28 2026",
+      "argv": "/Applications/Xcode.app/Contents/Developer/usr/bin/git --no-optional-locks clone --local --no-hardlinks /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch /private/tmp/audio-q5-native-development/repository"
+    }
+  },
+  {
+    "label": "02-owned-detached-checkout",
+    "argv": [
+      "/usr/bin/git",
+      "--no-optional-locks",
+      "checkout",
+      "--detach",
+      "73179b36eee307d6836382b135164139a3d1a3c4"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-09T23:40:33.279793+00:00",
+    "pid": 27127,
+    "expectedPgid": 27127,
+    "capSeconds": 10,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-09T23:40:33.452636+00:00",
+    "observedDirectIdentity": {
+      "pid": 27127,
+      "ppid": 27016,
+      "pgid": 27127,
+      "start": "Fri Oct 9 19:40:33 2026",
+      "argv": "/Applications/Xcode.app/Contents/Developer/usr/bin/git --no-optional-locks checkout --detach 73179b36eee307d6836382b135164139a3d1a3c4"
+    }
+  },
+  {
+    "label": "03-frozen-hookfree-install",
+    "argv": [
+      "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "/Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/bin/pnpm.cjs",
+      "install",
+      "--frozen-lockfile",
+      "--ignore-scripts",
+      "--ignore-pnpmfile",
+      "--store-dir",
+      "/private/tmp/audio-q5-native-development/cache/pnpm-store"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-09T23:40:33.477382+00:00",
+    "pid": 27132,
+    "expectedPgid": 27132,
+    "capSeconds": 180,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-09T23:40:41.823444+00:00",
+    "observedDirectIdentity": {
+      "pid": 27132,
+      "ppid": 27016,
+      "pgid": 27132,
+      "start": "Fri Oct 9 19:40:33 2026",
+      "argv": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node /Users/kylemit/.cache/node/corepack/v1/pnpm/11.22.0/bin/pnpm.cjs install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --store-dir /private/tmp/audio-q5-native-development/cache/pnpm-store"
+    }
+  },
+  {
+    "label": "04-actual-audio-installed-authentication",
+    "argv": [
+      "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "tools/migration/check-native-audio-inputs.mjs"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-09T23:40:41.825104+00:00",
+    "pid": 27422,
+    "expectedPgid": 27422,
+    "capSeconds": 30,
+    "actualExit": 1,
+    "timeout": false,
+    "terminalUtc": "2026-10-09T23:40:42.147263+00:00",
+    "observedDirectIdentity": {
+      "pid": 27422,
+      "ppid": 27016,
+      "pgid": 27422,
+      "start": "Fri Oct 9 19:40:41 2026",
+      "argv": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node tools/migration/check-native-audio-inputs.mjs"
+    }
+  }
+]

@@ -1,0 +1,85 @@
+import AVFoundation
+import XCTest
+@testable import ExpoAudio
+
+private struct ResetSnapshot {
+  let player: AVPlayer
+  let volume: Float
+  let rate: Float
+  let wasPlaying: Bool
+}
+
+private final class ResetObservingPlayer: AudioPlayer {
+  var resetSnapshots: [ResetSnapshot] = []
+
+  override func updateStatus(with dict: [String: Any]) {
+    if dict["mediaServicesDidReset"] as? Bool == true {
+      resetSnapshots.append(ResetSnapshot(
+        player: ref, volume: ref.volume, rate: ref.rate, wasPlaying: wasPlaying))
+    }
+  }
+}
+
+@MainActor
+final class AudioPlayerResetTests: XCTestCase {
+  private let readinessTimeoutSeconds = 10.0
+
+  private func assetURL() throws -> URL {
+    try XCTUnwrap(Bundle(for: AudioPlayerResetTests.self).url(
+      forResource: "pencil-1", withExtension: "mp3"))
+  }
+
+  private func checkReset(_ player: ResetObservingPlayer, original: AVPlayer) throws {
+    defer { player.sharedObjectWillRelease() }
+    original.volume = 0.2
+    player.wasPlaying = true
+    player.handleMediaServicesReset()
+    XCTAssertTrue(player.ref === original, "reset-does-not-create-default-volume-replacement")
+    XCTAssertEqual(original.volume, 0, "reset-mutes-existing-player")
+    XCTAssertEqual(original.rate, 0, "reset-pauses-existing-player")
+    XCTAssertFalse(player.wasPlaying, "reset-clears-upstream-resume-marker")
+    let snapshot = try XCTUnwrap(player.resetSnapshots.last)
+    XCTAssertEqual(player.resetSnapshots.count, 1)
+    XCTAssertTrue(snapshot.player === original, "reset-status-refers-to-original-player")
+    XCTAssertEqual(snapshot.volume, 0, "reset-gain-is-zero-before-event-method")
+    XCTAssertEqual(snapshot.rate, 0, "reset-is-paused-before-event-method")
+    XCTAssertFalse(snapshot.wasPlaying, "reset-resume-marker-cleared-before-event-method")
+  }
+
+  func testStoppedResetWithoutSource() throws {
+    let ref = AVQueuePlayer()
+    let player = ResetObservingPlayer(ref, interval: 100)
+    try checkReset(player, original: ref)
+  }
+
+  func testResetWithNonNilSourceAndPendingReadiness() throws {
+    var source = AudioSource()
+    source.uri = try assetURL()
+    let item = AVPlayerItem(url: try assetURL())
+    let ref = AVQueuePlayer(items: [item])
+    XCTAssertNotEqual(item.status, .readyToPlay, "actual-item-still-awaits-readiness")
+    let player = ResetObservingPlayer(ref, interval: 100, source: source)
+    try checkReset(player, original: ref)
+  }
+
+  func testLoadedResetKeepsOriginalMutedPlayer() async throws {
+    var source = AudioSource()
+    source.uri = try assetURL()
+    let item = AVPlayerItem(url: try assetURL())
+    let ready = expectation(description: "actual-local-AVPlayerItem-ready")
+    let observation = item.observe(\.status, options: [.initial, .new]) { item, _ in
+      if item.status == .readyToPlay || item.status == .failed {
+        ready.fulfill()
+      }
+    }
+    let ref = AVQueuePlayer(items: [item])
+    ref.volume = 0
+    ref.play()
+    await fulfillment(of: [ready], timeout: readinessTimeoutSeconds)
+    observation.invalidate()
+    ref.pause()
+    XCTAssertEqual(item.status, .readyToPlay, "actual-local-asset-loaded")
+    let player = ResetObservingPlayer(ref, interval: 100, source: source)
+    try checkReset(player, original: ref)
+  }
+}

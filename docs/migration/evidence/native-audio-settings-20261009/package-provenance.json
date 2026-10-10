@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "scope": "New Settings/audio feature only; no framework selection or execution acceptance",
+  "baseSource": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "ownerBranch": "codex/native-audio-settings",
+  "candidateDirectDevDelta": {
+    "expo-audio": "57.0.5",
+    "expo-asset": "57.0.18"
+  },
+  "packages": [
+    {
+      "name": "expo-audio",
+      "version": "57.0.5",
+      "newArtifact": true,
+      "registryMetadataUrl": "https://registry.npmjs.org/expo-audio/57.0.5",
+      "archiveUrl": "https://registry.npmjs.org/expo-audio/-/expo-audio-57.0.5.tgz",
+      "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+      "archiveSha256": "5b26f87d644dfe05c7259d66078de98de7c9658c1e8a2041d2fe1fd51cf2f9b8",
+      "manifestSha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c",
+      "dependencies": {},
+      "peers": {
+        "expo": "*",
+        "react": "*",
+        "react-native": "*",
+        "expo-asset": "*"
+      },
+      "lifecycleHooks": {},
+      "rootHookFiles": [],
+      "rootBindingGyp": false,
+      "memberCount": 190,
+      "scriptsExecuted": false,
+      "retainedArchive": "package-provenance/expo-audio-57.0.5.tar.gz",
+      "retainedMetadata": "package-provenance/expo-audio-57.0.5.metadata.json.txt"
+    },
+    {
+      "name": "expo-asset",
+      "version": "57.0.18",
+      "newArtifact": false,
+      "registryMetadataUrl": "https://registry.npmjs.org/expo-asset/57.0.18",
+      "archiveUrl": "https://registry.npmjs.org/expo-asset/-/expo-asset-57.0.18.tgz",
+      "integrity": "sha512-zDIQkUr0NM2S7YRj98Zohf/OBuM1q0o4ctxLz1C1oe4/33lHNLjp+2v3qUtBWVwn0zKka8UGADmS8M+83Wi6pw==",
+      "archiveSha256": "b6533829c589a7acc746f4666dfd45188eaf2e5f717f8c8fbff2cf6c104bdda2",
+      "manifestSha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa",
+      "dependencies": {
+        "@expo/image-utils": "^0.11.5",
+        "expo-constants": "~57.0.19"
+      },
+      "peers": {
+        "expo": "*",
+        "react": "*",
+        "react-native": "*"
+      },
+      "lifecycleHooks": {},
+      "rootHookFiles": [],
+      "rootBindingGyp": false,
+      "memberCount": 161,
+      "scriptsExecuted": false,
+      "retainedArchive": "package-provenance/expo-asset-57.0.18.tar.gz",
+      "retainedMetadata": "package-provenance/expo-asset-57.0.18.metadata.json.txt"
+    }
+  ],
+  "sourceReadiness": "Own frozen hook-free install and focused checks passed; actual browser/native playback and full applicable tier remain pending",
+  "claims": {
+    "installation": true,
+    "browserOutput": false,
+    "nativeOutput": false,
+    "supportedFloors": false,
+    "performance": false,
+    "productAcceptance": false
+  },
+  "originalQualificationInputsChanged": false,
+  "optionalAudioConfigPluginUsed": false,
+  "permissionScope": "Audio library declares Android MODIFY_AUDIO_SETTINGS only; microphone/recording/sampling/background APIs and config plugin excluded.",
+  "candidateLockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15"
+}

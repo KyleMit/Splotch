@@ -1,0 +1,58 @@
+{
+  "actualPaths": [
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-asset>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo>@expo/cli>node-forge"
+  ],
+  "baselineLockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "archiveRows": [
+    {
+      "key": "expo-audio@57.0.5",
+      "name": "expo-audio",
+      "version": "57.0.5",
+      "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+      "tarball": "https://registry.npmjs.org/expo-audio/-/expo-audio-57.0.5.tgz",
+      "registryIntegrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+      "hasInstallScript": null,
+      "engines": {},
+      "metadataHooks": {},
+      "hooks": {},
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIntegrityVerified": true,
+      "disposition": "no-install-hooks"
+    }
+  ],
+  "lockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "inputSha256": "36d482459010fbd27eccdd7a2bb61fc98443bd2a2ff9f1deac0f2cc61c72ff46",
+  "installed": [
+    {
+      "name": "expo-audio",
+      "version": "57.0.5",
+      "path": "node_modules/expo-audio/package.json",
+      "sha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c"
+    },
+    {
+      "name": "expo-asset",
+      "version": "57.0.18",
+      "path": "node_modules/expo-asset/package.json",
+      "sha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa"
+    }
+  ],
+  "scope": "Exact new two-dev-root/one-artifact delta and eighteen finite Forge paths; inherited N1 lock bytes preserved. No native output or product acceptance."
+}

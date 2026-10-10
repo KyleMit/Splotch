@@ -1,0 +1,11 @@
+{
+  "status": "FAILED",
+  "failure": "Traceback (most recent call last):\n  File \"/private/tmp/audio-pr2743-final-fulltools-0200.py\", line 130, in <module>\n    run('01-current-fulltools',['npm','run','test:tools','--','--maxWorkers=2'],TARGET,300)\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/audio-pr2743-final-fulltools-0200.py\", line 99, in run\n    assert code == expected_exit and not timeout, f'First failure {label}: actual {code}, expected {expected_exit}, timeout={timeout}'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: First failure 01-current-fulltools: actual 1, expected 0, timeout=False\n",
+  "terminalCodes": [
+    1
+  ],
+  "timeoutCount": 0,
+  "exactCandidateBeforeAfter": true,
+  "maintainedOwnerBeforeAfter": true,
+  "elapsedSeconds": 229.9345871671103
+}
