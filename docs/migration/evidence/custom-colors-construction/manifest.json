@@ -22,17 +22,12 @@
       "exitCode": 0
     }
   },
-  "pending": [
-    "full-tools-tier",
-    "compact-browser-and-resize",
-    "native-feedback",
-    "independent-review"
-  ],
+  "pending": ["compact-browser-and-resize", "native-feedback", "independent-review"],
   "files": [
     {
       "path": "READ-FAILURE-REPAIR.md",
-      "bytes": 2050,
-      "sha256": "98262d6a5c6888d2d957d3440c38b401964b114b589dcf41feaafb5f814f70c6"
+      "bytes": 2392,
+      "sha256": "75f7e764366e35d4e6cdcd94200d94833f8f47d3ae01ecb71db09e724d6fdf00"
     },
     {
       "path": "README.md",
@@ -180,5 +175,21 @@
         "exitCode": 0
       }
     }
+  },
+  "fullTools": {
+    "source": "eaec39978fe37660c4f8a4bd30c355b68ca1f36f",
+    "tree": "bb048745fb89a518ede43cdc36fa7498f305cf32",
+    "exitCode": 0,
+    "files": 388,
+    "tests": 8697,
+    "maxWorkers": 2,
+    "suiteSeconds": 157.78,
+    "supervisedSeconds": 160.165363,
+    "trackedFilesPreserved": 9015,
+    "rawAndSemanticIndicesPreserved": true,
+    "observedLifetimesClosed": 1646,
+    "ownedGroupsClosed": 40,
+    "supervisorGroupClosed": true,
+    "postToolClosureSha256": "32de33745e12fe54e696c63a6f6d3f14bd9fe10b9808a3f5d42d12757dea62c5"
   }
 }

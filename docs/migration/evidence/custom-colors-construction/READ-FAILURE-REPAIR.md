@@ -25,5 +25,9 @@ The expanded scoped tier passes 18 files / 280 tests with one worker in 14.98 se
 TypeScript, root check, lint and formatting exit zero. The `read-failure-*` controls retain the
 initial failure and each scoped/check receipt; they do not replace the initial feature's logs.
 
-Full tools, browser resize/layout/touch, native feedback and publication remain held for Root's host
-allocation. No independent review or campaign acceptance is claimed.
+After this scoped repair, the one allocated full tools tier passed on normally merged source
+eaec39978fe37660c4f8a4bd30c355b68ca1f36f: 388 files / 8697 tests, two workers, actual exit zero. The
+[construction note](../../../../experiments/native-architecture/CUSTOM-COLORS-CONSTRUCTION.md)
+records the exact tree, timings, complete source/index preservation and fresh process closure.
+Browser resize/layout/touch, native feedback and original independent review remain pending. No
+campaign acceptance is claimed.

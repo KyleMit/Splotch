@@ -74,10 +74,22 @@ helper import was caught by scoped tests and lint, then repaired. Initial dprint
 under the sandbox; verification uses an owned temporary cache. The initial scoped run passed 18
 files / 270 tests; candidate TypeScript, root check, lint and formatting passed.
 
-Scoped model/storage, mounted flow, installed-renderer and PNG checks do not establish browser touch
-layout, physical native rendering, performance, signing, release or independent acceptance. Full
-tools validation and a compact browser demonstration await the root coordinator's host allocation.
-The shortest running check is an owned development web bundle at 320-pixel portrait and compact
-landscape, plus a wide-window resize with the picker open and during exploration: touch
-exploration/lift, keyboard and focus, selected swatches, restart, mixed brushes, Clear/Undo,
-save/reopen and actual PNG export. Native feedback follows the campaign's shared build.
+The same owner normally merged published Width documentation
+c8b2a9aac4e9702e61ea0f8bb95951eeb71bb2c2 into source eaec39978fe37660c4f8a4bd30c355b68ca1f36f, tree
+bb048745fb89a518ede43cdc36fa7498f305cf32. The one Root-allocated full tools attempt passed 388 files
+/ 8697 tests with two workers, actual exit zero, 157.78 seconds suite time and 160.17 seconds
+including the qualified supervisor. Preparation bound all 9015 tracked files, their
+bytes/modes/kinds, both raw and semantic Git indices and the trusted Node graph. Prepared, before,
+after and fresh post-tool projections match exactly. The fresh post-tool inspection confirmed all
+1646 observed process lifetimes, their 40 owned groups and the supervisor's separate group absent.
+The sandbox refused the initial read-only process inspection; host inspection passed without
+repeating the test. Raw output, ancestry and complete projections remain in the owner's private
+evidence directory; the post-tool closure SHA-256 is
+`32de33745e12fe54e696c63a6f6d3f14bd9fe10b9808a3f5d42d12757dea62c5`.
+
+These checks do not establish browser touch layout, physical native rendering, performance, signing,
+release or independent acceptance. The next allocated check is an owned development web bundle at
+320-pixel portrait and compact landscape, plus a wide-window resize with the picker open and during
+exploration: touch exploration/lift, keyboard and focus, selected swatches, restart, mixed brushes,
+Clear/Undo, exact saved-record reopen and actual PNG export. Native feedback follows the campaign's
+shared build. Browser execution and original independent review remain pending.
