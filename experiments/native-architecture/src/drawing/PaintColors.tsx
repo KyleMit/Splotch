@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   paintHex,
@@ -21,12 +22,14 @@ export function PaintColors({
   color,
   customColors,
   disabled,
+  openerRef,
   onChange,
   onExplore,
 }: {
   color: PaintColor;
   customColors: readonly CustomColor[];
   disabled: boolean;
+  openerRef: RefObject<View | null>;
   onChange: (color: PaintColor) => void;
   onExplore: () => void;
 }) {
@@ -43,6 +46,7 @@ export function PaintColors({
           />
         ))}
         <Pressable
+          ref={openerRef}
           accessibilityRole="button"
           accessibilityLabel="More colors"
           disabled={disabled}
