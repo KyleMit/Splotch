@@ -247,6 +247,47 @@ describe('drawing width controls', () => {
     expect(files.settingsWrite.mock.calls.at(-1)).toEqual(files.settingsWrite.mock.calls.at(-2));
     expect(screen.dialog().textContent).not.toContain('could not be saved');
   });
+
+  it.each(['Retry saving', 'Drawing sound'])(
+    'retains the read warning and stored preferences through width taps until explicit %s',
+    async (recovery) => {
+      await act(async () => screen.close());
+      const original =
+        '{"version":2,"soundEnabled":true,"strokeWidth":"thick","eraserWidth":"thin"}';
+      let saved = original;
+      files.settingsRead.mockImplementation(async () => saved);
+      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
+      files.settingsWrite.mockImplementation(async (snapshot) => {
+        saved = snapshot;
+      });
+      screen = createScreen();
+      await act(async () => screen.mount());
+      const warning =
+        'Drawing settings could not be read. Sound is off. Width choices work for this session. Choose your settings and retry saving.';
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Marker');
+      await screen.click('Drawing width: Thin');
+      await screen.click('Draw fixture stroke');
+      await screen.click('Eraser');
+      await screen.click('Eraser width: Thick');
+      await screen.click('Draw fixture stroke');
+      expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([11, 88]);
+      expect(files.settingsWrite).not.toHaveBeenCalled();
+      expect(saved).toBe(original);
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Settings');
+      expect(screen.dialog().textContent).toContain(warning);
+      await screen.click(recovery);
+      expect(files.settingsWrite).toHaveBeenCalledOnce();
+      expect(JSON.parse(saved)).toEqual({
+        version: 2,
+        soundEnabled: recovery === 'Drawing sound',
+        strokeWidth: 'thin',
+        eraserWidth: 'thick',
+      });
+      expect(screen.dialog().textContent).not.toContain(warning);
+    }
+  );
 });
 
 describe('saved-picture failure feedback', () => {

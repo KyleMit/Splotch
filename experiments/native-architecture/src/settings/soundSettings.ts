@@ -65,12 +65,14 @@ export function createSoundSettings(
     message: '',
   };
   let disposed = false;
+  let readFailed = false;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
     onChange(state);
   }
   async function persist(settings: SoundSettings) {
+    readFailed = false;
     const { soundEnabled, strokeWidth, eraserWidth } = settings;
     const choices = { soundEnabled, strokeWidth, eraserWidth };
     publish({ status: 'saving', ...choices, message: '' });
@@ -105,13 +107,14 @@ export function createSoundSettings(
           message: '',
         });
       } catch {
+        readFailed = true;
         publish({
           status: 'ready',
           soundEnabled: false,
           ...DEFAULT_WIDTH_SETTINGS,
           saved: false,
           message:
-            'Drawing settings could not be read. Sound is off and widths use Medium. Choose your settings and retry saving.',
+            'Drawing settings could not be read. Sound is off. Width choices work for this session. Choose your settings and retry saving.',
         });
       }
     },
@@ -129,12 +132,16 @@ export function createSoundSettings(
       if (disposed || state.status !== 'ready') return;
       if ((tool !== 'drawing' && tool !== 'eraser') || !isStrokeWidth(width))
         throw new Error('Drawing width choice is invalid.');
-      await persist({
-        version: 2,
+      const choices = {
         soundEnabled: state.soundEnabled,
         strokeWidth: tool === 'drawing' ? width : state.strokeWidth,
         eraserWidth: tool === 'eraser' ? width : state.eraserWidth,
-      });
+      };
+      if (readFailed) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ version: 2, ...choices });
     },
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
