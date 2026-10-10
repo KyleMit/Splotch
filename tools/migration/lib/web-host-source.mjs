@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathInside } from './web-host-ownership.mjs';
+import { qualifySvgBackdropPatch } from './native-svg-backdrop-patch.mjs';
 
 const GIT_OUTPUT_MAX_BYTES = 32 * 1024 * 1024;
 const SHA_PATTERN = /^[a-f0-9]{40}$/;
@@ -90,6 +91,23 @@ function verifyGitBlob(root, entry) {
   }
 }
 
+function qualifySourceLock(root, lockSha256, topologyLockSha256) {
+  if (lockSha256 === topologyLockSha256) return null;
+  try {
+    const svg = qualifySvgBackdropPatch(root);
+    if (svg.baselineLockSha256 !== topologyLockSha256)
+      throw new Error('SVG baseline differs from the reviewed topology lock');
+    if (svg.qualification.actualLockSha256 !== lockSha256)
+      throw new Error('SVG qualification differs from the actual source lock');
+    return { ...svg.qualification, baselineLockSha256: svg.baselineLockSha256 };
+  } catch (cause) {
+    throw new Error(
+      'Current lock differs from the reviewed topology lock; SVG qualification failed',
+      { cause }
+    );
+  }
+}
+
 export function freezeSource({ root, topologySha, topologyLockSha256, provisional }) {
   if (!SHA_PATTERN.test(topologySha ?? ''))
     throw new Error('Actual reviewed topology SHA is required (40 lowercase hex characters)');
@@ -102,10 +120,7 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
   if (sha256(topologyLock) !== topologyLockSha256)
     throw new Error('Reviewed topology commit/lock digest mismatch');
   const lockSha256 = sha256(readFileSync(join(root, 'pnpm-lock.yaml')));
-  if (lockSha256 !== topologyLockSha256)
-    throw new Error(
-      'Current lock differs from the reviewed topology lock; revalidate before building'
-    );
+  const nativeQualification = qualifySourceLock(root, lockSha256, topologyLockSha256);
   const status = sourceGit(root, ['status', '--porcelain=v1', '-z']);
   if (status && !provisional)
     throw new Error(
@@ -137,6 +152,7 @@ export function freezeSource({ root, topologySha, topologyLockSha256, provisiona
     topologySha,
     topologyLockSha256,
     lockSha256,
+    nativeQualification,
     provisional,
     statusSha256: sha256(status),
     patchSha256: provisional

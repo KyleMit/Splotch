@@ -1,6 +1,7 @@
 import {
   chmodSync,
   copyFileSync,
+  linkSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -8,6 +9,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { runInNewContext } from 'node:vm';
@@ -15,6 +17,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { readLockFile } from '../lib/lock-artifacts.mjs';
 import { readPolicyYaml } from '../lib/topology-policy.mjs';
+import { freezeSource, sha256 } from '../lib/web-host-source.mjs';
 import {
   projectSvgBackdropPatch,
   qualifySvgBackdropPatch,
@@ -77,6 +80,48 @@ function packageFixture() {
   ])
     put(join(directory, path), readFileSync(join(root, path)));
   return { directory, packagePath };
+}
+
+function retainedSourceFixture(reviewedLock) {
+  const { directory, packagePath } = packageFixture();
+  put(join(directory, '.gitignore'), 'node_modules/\n');
+  put(join(directory, 'pnpm-lock.yaml'), reviewedLock);
+  function git(...args) {
+    return execFileSync(
+      'git',
+      [
+        '-c',
+        'core.hooksPath=/dev/null',
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.invalid',
+        '-c',
+        'commit.gpgsign=false',
+        '-C',
+        directory,
+        ...args,
+      ],
+      { encoding: 'utf8' }
+    ).trim();
+  }
+  git('init', '--quiet');
+  git('add', '.');
+  git('commit', '--quiet', '-m', 'Reviewed topology fixture');
+  const topologySha = git('rev-parse', 'HEAD');
+  copyFileSync(join(root, 'pnpm-lock.yaml'), join(directory, 'pnpm-lock.yaml'));
+  git('add', 'pnpm-lock.yaml');
+  git('commit', '--quiet', '-m', 'Supported SVG fixture');
+  return {
+    directory,
+    packagePath,
+    options: {
+      root: directory,
+      topologySha,
+      topologyLockSha256: sha256(reviewedLock),
+      provisional: false,
+    },
+  };
 }
 
 afterEach(() => {
@@ -189,41 +234,115 @@ describe('the complete effective SVG source fixture, without executing package c
     );
   });
 
-  it.each(['literal', 'foreign target', 'broken target', 'target bytes', 'target mode'])(
-    'rejects a generated peer bin with changed %s',
-    (change) => {
-      const { directory, packagePath } = packageFixture();
-      const record = input.generatedPeerBins[0];
-      const link = join(packagePath, record.path);
-      const target = join(directory, record.target.path);
-      if (change === 'literal') {
-        rmSync(link);
-        symlinkSync('/bin/sh', link);
-      } else if (change === 'foreign target') {
-        rmSync(target);
-        symlinkSync(join(root, record.target.path), target);
-      } else if (change === 'broken target') {
-        rmSync(target);
-      } else if (change === 'target bytes') {
-        writeFileSync(target, 'unreviewed target');
-      } else {
-        chmodSync(target, 0o644);
-      }
-      expect(() => verifySvgBackdropPackage(directory, packagePath, input)).toThrow();
+  it.each([
+    'literal',
+    'foreign target',
+    'broken target',
+    'target bytes',
+    'target mode',
+    'hardlinked target',
+  ])('rejects a generated peer bin with changed %s', (change) => {
+    const { directory, packagePath } = packageFixture();
+    const record = input.generatedPeerBins[0];
+    const link = join(packagePath, record.path);
+    const target = join(directory, record.target.path);
+    if (change === 'literal') {
       rmSync(link);
-      rmSync(target, { force: true });
-      put(target, readFileSync(join(root, record.target.path)));
-      chmodSync(target, record.target.mode);
-      symlinkSync(record.literal, link);
-      expect(verifySvgBackdropPackage(directory, packagePath, input).files).toBe(
-        input.installedFiles.length
-      );
+      symlinkSync('/bin/sh', link);
+    } else if (change === 'foreign target') {
+      rmSync(target);
+      symlinkSync(join(root, record.target.path), target);
+    } else if (change === 'broken target') {
+      rmSync(target);
+    } else if (change === 'target bytes') {
+      writeFileSync(target, 'unreviewed target');
+    } else if (change === 'hardlinked target') {
+      linkSync(target, join(directory, 'borrowed-cli.js'));
+    } else {
+      chmodSync(target, 0o644);
     }
-  );
+    expect(() => verifySvgBackdropPackage(directory, packagePath, input)).toThrow();
+    rmSync(link);
+    rmSync(target, { force: true });
+    put(target, readFileSync(join(root, record.target.path)));
+    chmodSync(target, record.target.mode);
+    symlinkSync(record.literal, link);
+    expect(verifySvgBackdropPackage(directory, packagePath, input).files).toBe(
+      input.installedFiles.length
+    );
+  });
 
   it('rejects a resolved package outside its owner', () => {
     const { packagePath } = packageFixture();
     expect(() => verifySvgBackdropPackage(fixture(), packagePath, input)).toThrow('escapes owner');
+  });
+});
+
+describe('retained source admission for the authenticated SVG lock delta', () => {
+  it('freezes committed patched source and records the exact reviewed baseline', () => {
+    const { options } = retainedSourceFixture(readFileSync(join(root, input.baselineLock.path)));
+    const snapshot = freezeSource(options);
+    expect(snapshot.lockSha256).toBe(input.lockSha256);
+    expect(snapshot.topologyLockSha256).toBe(input.originalLockSha256);
+    expect(snapshot.nativeQualification).toMatchObject({
+      inputSha256: qualifySvgBackdropPatch(options.root).qualification.inputSha256,
+      actualLockSha256: input.lockSha256,
+      baselineLockSha256: input.originalLockSha256,
+      installed: { files: input.installedFiles.length },
+    });
+  });
+
+  it('rejects a real reviewed ancestor with a different baseline lock', () => {
+    const { options } = retainedSourceFixture(Buffer.from('lockfileVersion: 9.0\n'));
+    expect(() => freezeSource(options)).toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({
+          message: 'SVG baseline differs from the reviewed topology lock',
+        }),
+      })
+    );
+  });
+
+  it.each([
+    ['pnpm-lock.yaml', 'Unqualified SVG lock'],
+    ['pnpm-workspace.yaml', 'Unqualified SVG workspace'],
+    [input.patch.path, 'SVG backdrop patch bytes changed'],
+    [`node_modules/react-native-svg/${java}`, 'Effective SVG package source changed'],
+  ])('rejects changed %s before admitting retained source', (path, message) => {
+    const { directory, options } = retainedSourceFixture(
+      readFileSync(join(root, input.baselineLock.path))
+    );
+    const target = join(directory, path);
+    const original = readFileSync(target);
+    writeFileSync(target, 'unreviewed input');
+    expect(() => freezeSource({ ...options, provisional: true })).toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({ message: expect.stringContaining(message) }),
+      })
+    );
+    writeFileSync(target, original);
+    expect(freezeSource(options).nativeQualification.actualLockSha256).toBe(input.lockSha256);
+  });
+
+  it('rejects a hardlinked generated target and accepts independent restoration', () => {
+    const { directory, options } = retainedSourceFixture(
+      readFileSync(join(root, input.baselineLock.path))
+    );
+    const alias = join(directory, 'borrowed-cli.js');
+    linkSync(join(directory, input.generatedPeerBins[0].target.path), alias);
+    expect(() => freezeSource(options)).toThrow(
+      expect.objectContaining({
+        cause: expect.objectContaining({
+          message: expect.stringContaining(
+            'SVG generated target is not independent: node_modules/.bin/react-native'
+          ),
+        }),
+      })
+    );
+    rmSync(alias);
+    expect(freezeSource(options).nativeQualification.installed.files).toBe(
+      input.installedFiles.length
+    );
   });
 });
 
