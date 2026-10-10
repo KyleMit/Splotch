@@ -15,6 +15,10 @@ unchanged shipping main ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign r
 incomplete. No framework, full product, target cutover or release is accepted. The canonical
 reviewer-installation checkout remains installation-only.
 
+The standing authority, recording and lease rules at the end of the
+[2026-10-09 section](#historical-public-status-2026-10-09) remain current; this documentation change
+grants no runtime, device or signing lease.
+
 | Unit                                | Exact public source / full tree                                                     | Source disposition and original review capacity                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | N1 drawing development              | 6411ac5b08429608462cbbc573643b0568a3eddf / 16863cfa3ed4fa34ce2ee6366475bad4dc1496a1 | [PR 2715](https://github.com/KyleMit/Splotch/pull/2715) normal-merged at 9f64c4cb5604361f223690f1143296e8cd747c7d; narrow development-source disposition only. [Original round 3](https://github.com/KyleMit/Splotch/pull/2715#pullrequestreview-5468234550) reviewed dab1227abbf428d25c8e692ea61709dde9b5398c; its two final suggestions were repaired before the final source. 3 used / 0 remaining. |
