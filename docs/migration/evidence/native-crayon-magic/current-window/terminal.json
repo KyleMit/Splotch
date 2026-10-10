@@ -1,0 +1,51 @@
+{
+  "windowStartedAt": "2026-10-09T05:52:15Z",
+  "handlesClosedAt": "2026-10-09T06:00:26Z",
+  "closureVerifiedAt": "2026-10-09T06:00:55Z",
+  "deadline": "2026-10-09T06:02:15Z",
+  "sourceBefore": "beb08769890cccb04d82fdcdd6c3cc431140aa09",
+  "executedSource": "eea3fd64898bc8bc08fc7f67fdfa7c031ca9597d",
+  "lockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "beforeDirty": false,
+  "executedDirty": false,
+  "ownedHandles": {
+    "check": 95304,
+    "lint": 2697,
+    "format": 45254,
+    "firstFullTools": 88697,
+    "repairCheck": 59145,
+    "repairLint": 37521,
+    "repairFormat": 73034,
+    "secondFullTools": 78825,
+    "expo": 67415,
+    "browserCaller": 40858
+  },
+  "exitCodes": {
+    "install": 0,
+    "check": 0,
+    "lint": 0,
+    "nativeTypeScript": 0,
+    "initialFormat": 20,
+    "firstFullTools": 1,
+    "focusedRepair": 0,
+    "repairCheck": 0,
+    "repairLint": 0,
+    "repairFormat": 0,
+    "maintainedNativeSource": 0,
+    "secondFullTools": 0,
+    "browserCaller": 0,
+    "expo": 0
+  },
+  "expoPid": 69561,
+  "expoProcessGroup": 69561,
+  "port": 5300,
+  "closure": {
+    "expoProcessAbsent": true,
+    "listenerAbsent": true,
+    "browserClosedByCallerFinally": true,
+    "allOwnedHandlesClosed": true
+  },
+  "nativeExecution": false,
+  "reviewerOperation": false,
+  "privateBeforeProcessInventory": "/private/tmp/native-brush-window-055215/before-processes.txt"
+}

@@ -1,0 +1,40 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+ ❯ tests/native-brush-output.test.mjs (6 tests | 2 failed) 289ms
+   ❯ native brush artwork output (6)
+     × renders tooth inside the crayon and gradual same-color buildup without changing the hue 62ms
+     × builds wax before the finger lifts when a gesture backtracks over itself 59ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > renders tooth inside the crayon and gradual same-color buildup without changing the hue
+AssertionError: expected 0.7028571428571428 to be greater than 0.8028571428571428
+ ❯ tests/native-brush-output.test.mjs:101:28
+     99|     expect(before.coverage).toBeGreaterThan(0.3);
+    100|     expect(before.coverage).toBeLessThan(0.85);
+    101|     expect(after.coverage).toBeGreaterThan(before.coverage + 0.1);
+       |                            ^
+    102|     expect(
+    103|       Math.max(...after.rgb.map((channel, index) => Math.abs(channel -…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > builds wax before the finger lifts when a gesture backtracks over itself
+AssertionError: expected 0.6071428571428571 to be greater than 0.7071428571428571
+ ❯ tests/native-brush-output.test.mjs:133:55
+    131|       crayon('Red', 1, [...forward, { x: 350, y: 400 }, { x: 100, y: 4…
+    132|     ]);
+    133|     expect(region(after, 150, 393, 200, 14).coverage).toBeGreaterThan(
+       |                                                       ^
+    134|       region(before, 150, 393, 200, 14).coverage + 0.1
+    135|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+   Start at  00:32:46
+   Duration  525ms (tests 61%, import 28%, transform 11%)
+

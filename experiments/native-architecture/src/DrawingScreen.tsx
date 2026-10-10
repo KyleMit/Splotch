@@ -12,7 +12,8 @@ import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { DrawingSurface } from './drawing/DrawingSurface';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
-import { BRUSHES, clearDrawing, undoDrawing, type Brush } from './drawing/model';
+import { clearDrawing, undoDrawing } from './drawing/model';
+import { BRUSHES, BRUSH_ORDER } from './drawing/brushes';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
 
 const COLORS: readonly PaletteLabel[] = [
@@ -104,7 +105,7 @@ export function DrawingScreen() {
           ))}
         </View>
         <View style={styles.toolbar}>
-          {(Object.keys(BRUSHES) as Brush[]).map((key) => (
+          {BRUSH_ORDER.map((key) => (
             <Pressable
               key={key}
               accessibilityRole="button"

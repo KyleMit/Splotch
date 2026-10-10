@@ -1,0 +1,121 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs --maxWorkers=2
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-EfFLSo/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-8jswqA/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-8jswqA/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+ ❯ tests/tool-specifier-resolution.test.mjs (873 tests | 2 failed) 76ms
+   ❯ relative specifiers under tools/ (766)
+     × tools/tests/native-brush-boundary.test.mjs resolves every relative specifier 3ms
+     × tools/tests/native-brush-output.test.mjs resolves every relative specifier 0ms
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/tool-specifier-resolution.test.mjs > relative specifiers under tools/ > tools/tests/native-brush-boundary.test.mjs resolves every relative specifier
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "../../../../web/src/lib/palette -> ../../web/src/lib/palette",
++ ]
+
+ ❯ tests/tool-specifier-resolution.test.mjs:98:70
+     96|     );
+     97|
+     98|     expect(broken.map(({ spec, target }) => `${spec} -> ${target}`)).t…
+       |                                                                      ^
+     99|   });
+    100| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/tool-specifier-resolution.test.mjs > relative specifiers under tools/ > tools/tests/native-brush-output.test.mjs resolves every relative specifier
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "../../experiments/native-architecture/src/drawing/CrayonGlaze -> experiments/native-architecture/src/drawing/CrayonGlaze",
++ ]
+
+ ❯ tests/tool-specifier-resolution.test.mjs:98:70
+     96|     );
+     97|
+     98|     expect(broken.map(({ spec, target }) => `${spec} -> ${target}`)).t…
+       |                                                                      ^
+     99|   });
+    100| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 348 passed (349)
+      Tests  2 failed | 8129 passed (8131)
+   Start at  01:53:10
+   Duration  133.88s (tests 93%, import 5%, transform 1%)
+
+    Isolate  349 workers spawned · ~42ms startup each (spawn + environment, per file)
+             at least ~7.37s faster with isolate: false — reuses workers across files instead of one per file
+

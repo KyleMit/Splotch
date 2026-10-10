@@ -1,0 +1,9 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+
+ Test Files  4 passed (4)
+      Tests  35 passed (35)
+   Start at  00:33:03
+   Duration  492ms (tests 60%, import 27%, transform 12%, worker 1%)
+

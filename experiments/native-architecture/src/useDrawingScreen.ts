@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import { addStroke, commitDrawing, createHistory, type Brush, type Stroke } from './drawing/model';
+import { addStroke, commitDrawing, createHistory, type Stroke } from './drawing/model';
+import type { Brush } from './drawing/brushes';
 import {
   exportPng,
   listPictures,

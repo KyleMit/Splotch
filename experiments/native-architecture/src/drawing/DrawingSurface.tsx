@@ -1,17 +1,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { paletteHex, type PaletteLabel } from './palette';
+import Svg, { Rect } from 'react-native-svg';
+import type { PaletteLabel } from './palette';
 import {
-  BRUSHES,
   PAPER_HEIGHT,
   PAPER_WIDTH,
   paperPoint,
-  strokePath,
-  type Brush,
+  strokeStyle,
   type Drawing,
   type Stroke,
 } from './model';
+import type { Brush } from './brushes';
+import { Ink, InkArtwork } from './Ink';
 import { DRAWING_THEME } from './theme';
 import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
 
@@ -26,25 +26,6 @@ type Props = {
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
 };
-
-function Ink({ stroke }: { stroke: Stroke }) {
-  const color = paletteHex(stroke.color);
-  const width = BRUSHES[stroke.brush].width;
-  const first = stroke.points[0];
-  if (!first) return null;
-  return stroke.points.length === 1 ? (
-    <Circle cx={first.x} cy={first.y} r={width / 2} fill={color} />
-  ) : (
-    <Path
-      d={strokePath(stroke.points)}
-      stroke={color}
-      strokeWidth={width}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
-  );
-}
 
 function Artwork({
   drawing,
@@ -64,10 +45,12 @@ function Artwork({
       pointerEvents="none"
     >
       <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-      {drawing.strokes.map((stroke, index) => (
-        <Ink key={index} stroke={stroke} />
-      ))}
-      {draft ? <Ink stroke={draft} /> : null}
+      <InkArtwork strokes={draft ? [...drawing.strokes, draft] : drawing.strokes}>
+        {drawing.strokes.map((stroke, index) => (
+          <Ink key={index} stroke={stroke} />
+        ))}
+        {draft ? <Ink stroke={draft} /> : null}
+      </InkArtwork>
     </Svg>
   );
 }
@@ -177,7 +160,13 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             size.current.width,
             size.current.height
           );
-          setDraft(input.start(touch.identifier, current.color, current.brush, first));
+          setDraft(
+            input.start(
+              touch.identifier,
+              strokeStyle(current.brush, current.color, current.drawing),
+              first
+            )
+          );
           current.onDrawingChange(true);
         },
         onPanResponderStart: (event) => {

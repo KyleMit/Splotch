@@ -1,0 +1,13 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tests/native-brushes.test.mjs tests/native-brush-output.test.mjs tests/native-brush-boundary.test.mjs tests/tool-specifier-resolution.test.mjs --maxWorkers=2
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+
+ Test Files  4 passed (4)
+      Tests  899 passed (899)
+   Start at  01:56:34
+   Duration  730ms (tests 60%, import 30%, transform 9%, worker 1%)
+

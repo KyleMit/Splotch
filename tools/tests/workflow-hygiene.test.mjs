@@ -291,6 +291,26 @@ describe('workflow hygiene', () => {
       expect(runtimeMajor).toBe(floorMajor);
     });
 
+    it('copies installed package files independently from the pnpm store', () => {
+      function assertCopyImports(lines) {
+        const index = lines.findIndex((line) => line.includes('- uses: pnpm/setup@'));
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(lines.slice(index + 1, index + 3)).toEqual([
+          '      env:',
+          '        PNPM_CONFIG_PACKAGE_IMPORT_METHOD: copy',
+        ]);
+      }
+      assertCopyImports(setupPnpmAction.lines);
+      expect(() =>
+        assertCopyImports(
+          setupPnpmAction.lines.filter((line) => !line.includes('PACKAGE_IMPORT_METHOD'))
+        )
+      ).toThrow();
+      expect(() =>
+        assertCopyImports(setupPnpmAction.lines.map((line) => line.replace(': copy', ': hardlink')))
+      ).toThrow();
+    });
+
     it('keeps Node setup active when the hosted deploy smoke skips dependencies', () => {
       expect(setupPnpmAction.lines.some((line) => /^\s+if:/.test(line))).toBe(false);
       expect(hostedSmoke.lines).toContain('      - uses: ./.github/actions/setup-pnpm');
