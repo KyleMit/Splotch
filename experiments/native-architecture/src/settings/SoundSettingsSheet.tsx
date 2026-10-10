@@ -1,4 +1,5 @@
-import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { DRAWING_THEME, SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
 
@@ -10,16 +11,29 @@ export function SoundSettings({
   onChange,
   onRetrySave,
   onClose,
+  visible,
+  onDismiss,
 }: {
   state: SoundSettingsState;
   audioMessage: string;
   onChange: (enabled: boolean) => void;
   onRetrySave: () => void;
   onClose: () => void;
+  visible: boolean;
+  onDismiss: () => void;
 }) {
-  const busy = state.status !== 'ready';
+  const busy = state.status !== 'ready' || !visible;
+  useEffect(() => {
+    if (!visible && Platform.OS === 'android') onDismiss();
+  }, [visible, onDismiss]);
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      onDismiss={onDismiss}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <View style={styles.backdrop}>
         <View accessibilityViewIsModal style={styles.card}>
           <Text accessibilityRole="header" style={styles.title}>
@@ -40,12 +54,8 @@ export function SoundSettings({
               trackColor={{ true: DRAWING_THEME.brandSolid, false: DRAWING_THEME.textSoft }}
             />
           </View>
-          {state.status === 'loading' ? (
-            <Text style={styles.help}>Loading sound settings…</Text>
-          ) : null}
-          {state.status === 'saving' ? (
-            <Text style={styles.help}>Saving sound setting…</Text>
-          ) : null}
+          {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
+          {state.status === 'saving' ? <Text style={styles.help}>Saving settings…</Text> : null}
           <Text accessibilityLiveRegion="polite" style={styles.help}>
             {state.message || audioMessage}
           </Text>
@@ -57,6 +67,7 @@ export function SoundSettings({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close Settings"
+            disabled={!visible}
             onPress={onClose}
             style={styles.button}
           >

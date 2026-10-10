@@ -1,0 +1,259 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+ ❯ tests/native-eraser-composition.test.mjs (26 tests | 10 failed) 582ms
+   ❯ actual browser checkpoint fixture hash contract (10)
+     × roundtrips consumed fixture reference through the production parser without JSON hash drift 4ms
+     × roundtrips consumed fixture roundtrip through the production parser without JSON hash drift 1ms
+     × roundtrips consumed fixture redreference through the production parser without JSON hash drift 0ms
+     × roundtrips consumed fixture futureink through the production parser without JSON hash drift 0ms
+     × roundtrips consumed fixture failure through the production parser without JSON hash drift 0ms
+     × roundtrips consumed fixture depth through the production parser without JSON hash drift 27ms
+     × roundtrips consumed fixture magic-bare through the production parser without JSON hash drift 1ms
+     × roundtrips consumed fixture magic-disjoint-mask through the production parser without JSON hash drift 0ms
+     × roundtrips consumed fixture crayon-magic-bare through the production parser without JSON hash drift 0ms
+     × roundtrips consumed fixture crayon-magic-disjoint-mask through the production parser without JSON hash drift 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture reference through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -78,7 +78,7 @@
+        ],
+        "rainbow": 3,
+        "width": 30,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture roundtrip through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -109,7 +109,7 @@
+          },
+        ],
+        "width": 44,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture redreference through the production parser without JSON hash drift
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture failure through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -16,7 +16,7 @@
+          },
+        ],
+        "width": 22,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture futureink through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -55,7 +55,7 @@
+          },
+        ],
+        "width": 44,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture depth through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -10525,7 +10525,7 @@
+          },
+        ],
+        "width": 44,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture magic-bare through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -16,7 +16,7 @@
+        ],
+        "rainbow": 3,
+        "width": 30,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture magic-disjoint-mask through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -26,7 +26,7 @@
+          },
+        ],
+        "width": 44,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture crayon-magic-bare through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -48,7 +48,7 @@
+        ],
+        "rainbow": 3,
+        "width": 30,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  tests/native-eraser-composition.test.mjs > actual browser checkpoint fixture hash contract > roundtrips consumed fixture crayon-magic-disjoint-mask through the production parser without JSON hash drift
+AssertionError: expected { version: 5, pageId: 'blank', …(2) } to deeply equal { version: 4, pageId: 'blank', …(2) }
+
+- Expected
++ Received
+
+@@ -58,7 +58,7 @@
+          },
+        ],
+        "width": 44,
+      },
+    ],
+-   "version": 4,
++   "version": 5,
+  }
+
+ ❯ tests/native-eraser-composition.test.mjs:169:22
+    167|       const stored = JSON.parse(JSON.stringify(fixture));
+    168|       const parsed = parseDrawing(stored);
+    169|       expect(parsed).toEqual(fixture);
+       |                      ^
+    170|       expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+    171|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+
+ Test Files  1 failed | 6 passed (7)
+      Tests  10 failed | 170 passed (180)
+   Start at  22:58:51
+   Duration  12.77s (tests 95%, transform 2%, import 1%, environment 1%)
+

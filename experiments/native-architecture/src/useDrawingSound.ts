@@ -1,15 +1,22 @@
+import { DEFAULT_COLOR_SETTINGS } from './drawing/palette';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingAudio } from './audio/drawingAudio';
 import { createContactSound } from './audio/contactSound';
 import { loadDrawingLoop } from './platform/drawingAudio';
 import { soundSettingsStorage } from './platform/soundSettings';
-import { createSoundSettings, type SoundSettingsState } from './settings/soundSettings';
+import {
+  createSoundSettings,
+  DEFAULT_WIDTH_SETTINGS,
+  type SoundSettingsState,
+} from './settings/soundSettings';
 
 export function useDrawingSound() {
   const [settings, setSettings] = useState<SoundSettingsState>({
     status: 'loading',
     soundEnabled: false,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
     message: '',
   });
   const [audioMessage, setAudioMessage] = useState('');

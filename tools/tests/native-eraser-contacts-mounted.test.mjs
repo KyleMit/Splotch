@@ -122,7 +122,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
 }));
 
 const PAPER_TARGET = 101;
-const marker = { brush: 'marker', color: 'Blue', points: [{ x: 40, y: 60 }] };
+const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 let owner, root, host;
 function Consumer() {
   owner = useDrawingScreen();
@@ -133,9 +133,11 @@ function Consumer() {
     ref: owner.surface,
     drawing: owner.history.drawing,
     currentDrawing: owner.currentDrawing,
-    color: owner.color,
+    color: sound.settings.selectedColor,
+    strokeWidth: sound.settings.strokeWidth,
+    eraserWidth: sound.settings.eraserWidth,
     brush: owner.brush,
-    disabled: owner.busy || owner.settingsOpen,
+    disabled: owner.busy || owner.sheetOpen || sound.settings.status === 'loading',
     ...owner.recovery.callbacks,
   });
 }
@@ -271,25 +273,28 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       ]);
       const expectedStyles = {
         marker: [
-          { brush: 'marker', color: 'Purple' },
-          { brush: 'marker', color: 'Purple' },
+          { brush: 'marker', width: 22, color: 'Purple' },
+          { brush: 'marker', width: 22, color: 'Purple' },
         ],
         crayon: [
-          { brush: 'crayon', color: 'Purple', seed: 1 },
-          { brush: 'crayon', color: 'Purple', seed: 2 },
+          { brush: 'crayon', width: 34, color: 'Purple', seed: 1 },
+          { brush: 'crayon', width: 34, color: 'Purple', seed: 2 },
         ],
         magic: [
-          { brush: 'magic', rainbow: 3 },
-          { brush: 'magic', rainbow: 3 },
+          { brush: 'magic', width: 30, rainbow: 3 },
+          { brush: 'magic', width: 30, rainbow: 3 },
         ],
-        eraser: [{ brush: 'eraser' }, { brush: 'eraser' }],
+        eraser: [
+          { brush: 'eraser', width: 44 },
+          { brush: 'eraser', width: 44 },
+        ],
       };
       expect(added.map(({ points: _points, ...style }) => style)).toEqual(expectedStyles[brush]);
       expect(host.querySelectorAll('[data-mask="true"]')).toHaveLength(brush === 'eraser' ? 1 : 0);
       await settle();
       await act(async () => owner.undo());
       expect(owner.history.drawing).toBe(base);
-      expect(owner.history.drawing).toMatchObject({ version: 3, pageId: 'flower', rainbow: 3 });
+      expect(owner.history.drawing).toMatchObject({ version: 5, pageId: 'flower', rainbow: 3 });
     }
   );
 

@@ -57,7 +57,7 @@ function region(output, x, y, width, height) {
 }
 
 function crayon(color, seed, points) {
-  return { brush: 'crayon', color, seed, points };
+  return { brush: 'crayon', width: 34, color, seed, points };
 }
 
 describe('native brush artwork output', () => {
@@ -65,6 +65,7 @@ describe('native brush artwork output', () => {
     const output = await pixels([
       {
         brush: 'magic',
+        width: 30,
         rainbow: 0,
         points: [
           { x: 100, y: 200 },
@@ -73,6 +74,7 @@ describe('native brush artwork output', () => {
       },
       {
         brush: 'marker',
+        width: 22,
         color: 'Black',
         points: [
           { x: 500, y: 150 },
@@ -143,6 +145,7 @@ describe('native brush artwork output', () => {
   it('reveals the same Magic color at a paper position across separate strokes and taps', async () => {
     const long = {
       brush: 'magic',
+      width: 30,
       rainbow: 3,
       points: [
         { x: 100, y: 200 },
@@ -152,7 +155,7 @@ describe('native brush artwork output', () => {
     const first = await pixels([long]);
     const second = await pixels([
       long,
-      { brush: 'magic', rainbow: 3, points: [{ x: 400, y: 200 }] },
+      { brush: 'magic', width: 30, rainbow: 3, points: [{ x: 400, y: 200 }] },
     ]);
     const offset = (200 * first.info.width + 400) * 4;
     expect(second.data.subarray(offset, offset + 4)).toEqual(
@@ -169,6 +172,7 @@ describe('native brush artwork output', () => {
     let history = addStroke(createHistory(), stroke);
     history = addStroke(history, {
       brush: 'magic',
+      width: 30,
       rainbow: 0,
       points: [
         { x: 100, y: 200 },

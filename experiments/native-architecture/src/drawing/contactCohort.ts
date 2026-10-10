@@ -1,4 +1,4 @@
-import type { PaletteLabel } from './palette';
+import type { PaintColor } from './palette';
 import {
   appendPoint,
   strokeStyle,
@@ -9,6 +9,7 @@ import {
   type Stroke,
 } from './model';
 import type { Brush } from './brushes';
+import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 
 export function createContactCohort() {
   const active = new Map<string, number>();
@@ -25,19 +26,27 @@ export function createContactCohort() {
   }
 
   return {
-    start(identifier: string, color: PaletteLabel, brush: Brush, point: Point, drawing: Drawing) {
+    start(
+      identifier: string,
+      color: PaintColor,
+      brush: Brush,
+      point: Point,
+      drawing: Drawing,
+      width: StrokeWidth = DEFAULT_STROKE_WIDTH
+    ) {
       if (active.has(identifier)) return;
       if (active.size === 0) capacity = drawingCapacity(drawing);
       if (strokes.length >= capacity.strokes || acceptedPoints >= capacity.points) {
         throw new Error(DRAWING_FULL_MESSAGE);
       }
-      active.set(identifier, strokes.length);
       const reserved = strokes.findLast((stroke) => stroke.brush === 'crayon');
       const style = strokeStyle(
         brush,
         color,
-        reserved ? { ...drawing, strokes: [reserved] } : drawing
+        reserved ? { ...drawing, strokes: [reserved] } : drawing,
+        width
       );
+      active.set(identifier, strokes.length);
       strokes = [...strokes, { ...style, points: [point] }];
       acceptedPoints += 1;
     },

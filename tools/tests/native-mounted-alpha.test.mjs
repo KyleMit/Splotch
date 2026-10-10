@@ -73,6 +73,7 @@ vi.mock('react-native', () => {
         return { remove: () => sdk.dimensions.delete(listener) };
       },
     },
+    useWindowDimensions: () => sdk.metrics,
     Platform: { OS: 'android' },
     Image: ({ source, onLoad }) => {
       useEffect(
@@ -188,7 +189,20 @@ function button(label) {
     (node) => node.getAttribute('aria-label') === label
   );
 }
+function toolsButton() {
+  return [...host.querySelectorAll('button')].find((node) =>
+    node.getAttribute('aria-label')?.startsWith('Drawing tools.')
+  );
+}
+async function openTools() {
+  const opener = toolsButton();
+  expect(opener, 'Drawing tools opener').toBeDefined();
+  expect(opener.disabled, 'Drawing tools admission').toBe(false);
+  await act(async () => opener.click());
+}
 async function click(label) {
+  if (['Pictures', 'Save picture', 'Clear', 'Export PNG'].includes(label) && !button(label))
+    await openTools();
   const target = button(label);
   expect(target, label).toBeDefined();
   expect(target.disabled, label).toBe(false);
@@ -238,7 +252,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await opened();
     expect(await saved()).toBe(fixture);
     await click('Clear');
-    expect(button('Save picture').disabled).toBe(true);
+    expect(button('Save picture')).toBeUndefined();
+    expect(toolsButton().disabled).toBe(true);
     await frames();
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));

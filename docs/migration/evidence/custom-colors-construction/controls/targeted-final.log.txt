@@ -1,0 +1,12 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+
+ Test Files  18 passed (18)
+      Tests  270 passed (270)
+   Start at  23:10:20
+   Duration  18.09s (tests 88%, import 6%, transform 3%, environment 2%)
+
+    Isolate  18 workers spawned · ~76ms startup each (spawn + environment, per file)
+             at least ~1.29s faster with isolate: false — reuses workers across files instead of one per file
+

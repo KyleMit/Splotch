@@ -15,6 +15,8 @@ import { DrawingSurface } from '../../experiments/native-architecture/src/drawin
 import {
   PAPER_HEIGHT,
   PAPER_WIDTH,
+  emptyDrawing,
+  strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { COLORING_PAGES } from '../../experiments/native-architecture/src/drawing/pages.ts';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
@@ -71,13 +73,10 @@ vi.mock('react-native-svg', () => ({
 }));
 
 const drawing = {
-  version: 3,
-  rainbow: 0,
-  pageId: 'sunshine',
+  ...emptyDrawing(0, 'sunshine'),
   strokes: [
     {
-      color: 'Green',
-      brush: 'marker',
+      ...strokeStyle('marker', 'Green', emptyDrawing()),
       points: [
         { x: 100, y: 384 },
         { x: 900, y: 384 },

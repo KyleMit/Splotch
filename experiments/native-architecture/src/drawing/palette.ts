@@ -69,3 +69,45 @@ export function paletteHex(label: PaletteLabel): string {
   if (!color) throw new Error(`No palette color labelled "${label}"`);
   return color.hex;
 }
+
+export type CustomColor = `#${string}`;
+export type PaintColor = PaletteLabel | CustomColor;
+export const MAX_CUSTOM_COLORS = 6;
+export const DEFAULT_COLOR_SETTINGS: Readonly<{
+  selectedColor: PaintColor;
+  customColors: readonly CustomColor[];
+}> = { selectedColor: 'Purple', customColors: [] };
+
+export function isPaletteLabel(value: unknown): value is PaletteLabel {
+  return PALETTE_COLORS.some((entry) => entry.label === value);
+}
+
+export function isCustomColor(value: unknown): value is CustomColor {
+  return typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value);
+}
+
+export function isPaintColor(value: unknown): value is PaintColor {
+  return isPaletteLabel(value) || isCustomColor(value);
+}
+
+export function paintHex(color: PaintColor): string {
+  if (isPaletteLabel(color)) return paletteHex(color);
+  if (isCustomColor(color)) return color;
+  throw new Error('Paint color is invalid.');
+}
+
+export function paintId(color: PaintColor): string {
+  return `ink-${paintHex(color).slice(1).toLowerCase()}`;
+}
+
+export function paintLabel(color: PaintColor): string {
+  return isPaletteLabel(color) ? `${color} paint` : `Custom paint ${paintHex(color)}`;
+}
+
+export function rememberColor(
+  colors: readonly CustomColor[],
+  color: CustomColor
+): readonly CustomColor[] {
+  if (!isCustomColor(color)) throw new Error('Custom paint color is invalid.');
+  return [color, ...colors.filter((entry) => entry !== color)].slice(0, MAX_CUSTOM_COLORS);
+}

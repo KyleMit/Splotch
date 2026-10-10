@@ -7,7 +7,71 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current public status, 2026-10-10
+## Current development status, 2026-10-10 15:29 UTC
+
+Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign is active and incomplete; no framework,
+complete product, cutover or release is accepted. The installation checkout is not a product base.
+The fresh-start scope in [the completion contract](CONTRACT.md#migration-completion) remains
+authoritative. Legacy-only L0 work stays held.
+
+* [PNG recovery PR 2747](https://github.com/KyleMit/Splotch/pull/2747) is published at
+  81805edf312587af31d8af526e955ee25c0a536c, tree 0c566da8a341d250d9c61ec12795643e8e034926, based on
+  public composition 650c00bb7c711e415db04a03675802f19df866f5. The same owner repaired all four
+  original findings. Original Claude conversation 1eb8d5ed-f69b-4d6d-b87d-3aebc03b849c
+  [round 2](https://github.com/KyleMit/Splotch/pull/2747#pullrequestreview-5479480271) independently
+  rechecked source and its original repros with no new findings: two rounds used, one remaining. The
+  endpoint passed native TypeScript, check, lint, formatting, 171 affected tests and one default
+  tools run of 393 files / 8759 tests. A real browser journey exported a genuine opaque PNG, kept
+  its exact bytes through later ink and Clear, retried without recapture, restored it after full
+  browser restart without automatic delivery, and removed it through Dismiss and reload. Root
+  independently decoded and compared both PNGs. The reviewer did not repeat that browser journey.
+  Earlier failed runtime attempts and all source/provenance limits remain preserved. Current CI
+  failed its dead-code check on four unused exports/types. The original owner prepared a five-path
+  cleanup that retires the obsolete direct PNG API and retains every save/reopen byte and both
+  active recovery adapters. Its separate qualification is pending; the source review and browser
+  result above apply to the published endpoint, not an unqualified derivative.
+* [Custom colors PR 2745](https://github.com/KyleMit/Splotch/pull/2745) is published at
+  b7dc57e6fc31f970be8faa39375f2e1b76a8a4f1, tree a8e463ea729154be6ad808754da43e85b088328e, based on
+  Widths c8b2a9aac4e9702e61ea0f8bb95951eeb71bb2c2. The same owner's focus repair passed native
+  TypeScript, check, lint, formatting, 81 affected tests and one default tools run of 388 files /
+  8704 tests. Original Claude conversation 783f3bbb-0317-415e-9a98-1a1da43d39ce completed
+  [round 1](https://github.com/KyleMit/Splotch/pull/2745#pullrequestreview-5479541717) without a
+  blocking source finding: one round used, two remaining. Explicit opener focus is qualified only on
+  web; native accessibility/keyboard focus and dismissal ordering remain open. The actual compact
+  browser trace refutes the proposed initial/wrap target, while naming the held explorer field and
+  an actual classic-scrollbar control remain under disposition. Its browser case passed held input,
+  lift, keyboard wrap and web opener focus checks, then failed to establish the required real
+  window-blur event. Actual Use color persistence/restart and the complete
+  drawing/save/reopen/export journey remain unreached.
+* This isolated development branch normally composes those public owners and adds responsive drawing
+  controls. Check, lint and formatting passed, but its first unchanged default tools run failed: 400
+  of 402 files and 8887 of 8900 tests passed. Thirteen failures in two inherited fixtures remain
+  preserved. They construct old drawing records without current stroke widths; the original owner
+  prepared current-record fixtures while retaining exact pixel, ordering and history assertions.
+  Those repairs are unqualified. The pending normal merge has not been committed. Historical private
+  layout observations do not accept this composition, and no dependent unit is merged into
+  integration by this development merge.
+* The RSD alternative made one ordinary Pod attempt. It failed before full dependency resolution
+  because its private OpenSSL installation has no default CA bundle. A separate source guard also
+  refused generated `.xcode.env`; its bytes match the released generator. Both failures are
+  preserved. A bounded proposal binds the existing OS trust bundle with certificate verification
+  retained and declares the exact generated output; no repaired attempt or native build is accepted.
+
+Host-local receipts bind actual source, failures, processes, original conversations and remaining
+validation. The genuine session-lifetime owner is still required after composition; a private
+prerequisite stack must not be merged wholesale to obtain its lifecycle change.
+
+N1 remains source-only and its original review capacity remains exhausted. Further dependent
+integration remains held until exact optimized both-OS compile/mount/draw and applicable composition
+gates are satisfied. PR 2697, F1 and the other exhausted original conversations are not reopened.
+The existing source dispositions and their historical observations remain attached to their units.
+Native PNG recovery, delayed Android recipient reads, lifecycle, permissions, system-bar layout,
+accessible selection, fidelity, whole-product services, web/API/admin/security, fair alternatives,
+performance and physical floors, signing/channel/release and final independent Codex/Claude review
+remain open. Missing physical hardware blocks only its dependent gates, not structural builds.
+
+## Historical public status, 2026-10-10 04:12 UTC
 
 Native GitHub branch and Git-object readback at 2026-10-10 04:12 UTC verifies integration
 c315db4771b99f4957cc283b6760a6f5f14d3f77, tree bc597d5b869d70c9700d79e00fca5b3301a23072, and

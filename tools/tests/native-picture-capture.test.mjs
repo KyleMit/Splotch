@@ -88,10 +88,10 @@ vi.mock('../../experiments/native-architecture/src/drawing/PageOutline.tsx', () 
 }));
 
 const LEGAL_REPLAY_TEST_TIMEOUT_MS = 30_000;
-const crayon = { brush: 'crayon', color: 'Blue', seed: 17, points: [{ x: 40, y: 40 }] };
-const magic = { brush: 'magic', rainbow: 3, points: [{ x: 60, y: 60 }] };
-const marker = { brush: 'marker', color: 'Yellow', points: [{ x: 80, y: 80 }] };
-const erase = { brush: 'eraser', points: [{ x: 960, y: 740 }] };
+const crayon = { brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [{ x: 40, y: 40 }] };
+const magic = { brush: 'magic', width: 30, rainbow: 3, points: [{ x: 60, y: 60 }] };
+const marker = { brush: 'marker', width: 22, color: 'Yellow', points: [{ x: 80, y: 80 }] };
+const erase = { brush: 'eraser', width: 44, points: [{ x: 960, y: 740 }] };
 let root, host, ref, error, busy;
 
 beforeEach(() => {
@@ -217,6 +217,7 @@ async function surface(drawing) {
         currentDrawing: () => drawing,
         color: 'Blue',
         brush: 'marker',
+        width: 22,
         disabled: false,
         onCohort: vi.fn(),
         onDrawingChange: vi.fn(),

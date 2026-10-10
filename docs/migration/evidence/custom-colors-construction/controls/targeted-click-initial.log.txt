@@ -1,0 +1,30 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+ ❯ tests/native-custom-colors.test.mjs (21 tests | 1 failed) 8ms
+   ❯ new candidate custom paints (18)
+     × ignores the installed web renderer physical trailing click while keeping virtual/native activation 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-custom-colors.test.mjs > new candidate custom paints > ignores the installed web renderer physical trailing click while keeping virtual/native activation
+ReferenceError: isDiscreteColorActivation is not defined
+ ❯ tests/native-custom-colors.test.mjs:67:5
+     65|   });
+     66|   it('ignores the installed web renderer physical trailing click while…
+     67|     expect(isDiscreteColorActivation({ detail: 1 })).toBe(false);
+       |     ^
+     68|     expect(isDiscreteColorActivation({ detail: 2 })).toBe(false);
+     69|     expect(isDiscreteColorActivation({ detail: 0 })).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 17 passed (18)
+      Tests  1 failed | 269 passed (270)
+   Start at  23:08:22
+   Duration  17.79s (tests 87%, import 7%, environment 3%, transform 2%)
+
+    Isolate  18 workers spawned · ~80ms startup each (spawn + environment, per file)
+             at least ~1.35s faster with isolate: false — reuses workers across files instead of one per file
+

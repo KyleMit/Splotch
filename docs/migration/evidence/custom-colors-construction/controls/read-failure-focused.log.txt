@@ -1,0 +1,9 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  23:21:54
+   Duration  509ms (tests 46%, transform 24%, environment 19%, import 10%, worker 1%)
+

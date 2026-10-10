@@ -79,6 +79,7 @@ vi.mock('react-native', () => ({
     return createElement('div', { ref: content }, children);
   },
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+  useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
   Platform: { OS: 'android' },
   Image: () => null,
   Dimensions: {

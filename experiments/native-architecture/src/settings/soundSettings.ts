@@ -1,14 +1,38 @@
-export type SoundSettings = Readonly<{ version: 1; soundEnabled: boolean }>;
+import { DEFAULT_STROKE_WIDTH, isStrokeWidth, type StrokeWidth } from '../drawing/strokeWidth';
+import {
+  DEFAULT_COLOR_SETTINGS,
+  MAX_CUSTOM_COLORS,
+  isCustomColor,
+  isPaintColor,
+  rememberColor,
+  type CustomColor,
+  type PaintColor,
+} from '../drawing/palette';
+
+export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
+type ColorSettings = Readonly<{ selectedColor: PaintColor; customColors: readonly CustomColor[] }>;
+type Choices = WidthSettings & ColorSettings & Readonly<{ soundEnabled: boolean }>;
+export type SoundSettings = Choices & Readonly<{ version: 3 }>;
 export type SoundSettingsState =
-  | { status: 'loading'; soundEnabled: false; message: string }
-  | { status: 'saving'; soundEnabled: boolean; message: string }
-  | { status: 'ready'; soundEnabled: boolean; saved: boolean; message: string };
+  | (WidthSettings & ColorSettings & { status: 'loading'; soundEnabled: false; message: string })
+  | (Choices & { status: 'saving'; message: string })
+  | (Choices & { status: 'ready'; saved: boolean; message: string });
 export type SoundSettingsStorage = {
   read: () => Promise<string | null>;
   write: (snapshot: string) => Promise<void>;
 };
 export const MAX_SETTINGS_BYTES = 1024;
 const DEFAULT_SOUND_ENABLED = true;
+export const DEFAULT_WIDTH_SETTINGS: WidthSettings = {
+  strokeWidth: DEFAULT_STROKE_WIDTH,
+  eraserWidth: DEFAULT_STROKE_WIDTH,
+};
+
+function canonical<T>(settings: T, snapshot: string): T {
+  if (JSON.stringify(settings) !== snapshot)
+    throw new Error('Sound settings are not in the saved format.');
+  return settings;
+}
 
 export function parseSoundSettings(snapshot: string): SoundSettings {
   if (snapshot.length > MAX_SETTINGS_BYTES) throw new Error('Sound settings are too large.');
@@ -18,40 +42,96 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
     typeof value !== 'object' ||
     Array.isArray(value) ||
     !('version' in value) ||
-    value.version !== 1 ||
+    (value.version !== 1 && value.version !== 2 && value.version !== 3) ||
     !('soundEnabled' in value) ||
-    typeof value.soundEnabled !== 'boolean' ||
-    Object.keys(value).length !== 2
+    typeof value.soundEnabled !== 'boolean'
   )
     throw new Error('Sound settings are invalid.');
-  const settings: SoundSettings = { version: 1, soundEnabled: value.soundEnabled };
-  if (JSON.stringify(settings) !== snapshot)
-    throw new Error('Sound settings are not in the saved format.');
-  return settings;
+  if (value.version === 1) {
+    canonical({ version: 1, soundEnabled: value.soundEnabled }, snapshot);
+    return {
+      version: 3,
+      soundEnabled: value.soundEnabled,
+      ...DEFAULT_WIDTH_SETTINGS,
+      ...DEFAULT_COLOR_SETTINGS,
+    };
+  }
+  if (
+    !('strokeWidth' in value) ||
+    !isStrokeWidth(value.strokeWidth) ||
+    !('eraserWidth' in value) ||
+    !isStrokeWidth(value.eraserWidth)
+  )
+    throw new Error('Drawing widths are invalid.');
+  const widths = {
+    soundEnabled: value.soundEnabled,
+    strokeWidth: value.strokeWidth,
+    eraserWidth: value.eraserWidth,
+  };
+  if (value.version === 2) {
+    canonical({ version: 2, ...widths }, snapshot);
+    return { version: 3, ...widths, ...DEFAULT_COLOR_SETTINGS };
+  }
+  if (
+    value.version !== 3 ||
+    !('selectedColor' in value) ||
+    !isPaintColor(value.selectedColor) ||
+    !('customColors' in value) ||
+    !Array.isArray(value.customColors) ||
+    value.customColors.length > MAX_CUSTOM_COLORS ||
+    !value.customColors.every(isCustomColor) ||
+    new Set(value.customColors).size !== value.customColors.length ||
+    (isCustomColor(value.selectedColor) && !value.customColors.includes(value.selectedColor))
+  )
+    throw new Error('Paint settings are invalid.');
+  return canonical(
+    { version: 3, ...widths, selectedColor: value.selectedColor, customColors: value.customColors },
+    snapshot
+  );
+}
+
+function snapshot(state: Choices): SoundSettings {
+  return {
+    version: 3,
+    soundEnabled: state.soundEnabled,
+    strokeWidth: state.strokeWidth,
+    eraserWidth: state.eraserWidth,
+    selectedColor: state.selectedColor,
+    customColors: state.customColors,
+  };
 }
 
 export function createSoundSettings(
   storage: SoundSettingsStorage,
   onChange: (state: SoundSettingsState) => void
 ) {
-  let state: SoundSettingsState = { status: 'loading', soundEnabled: false, message: '' };
+  let state: SoundSettingsState = {
+    status: 'loading',
+    soundEnabled: false,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
+    message: '',
+  };
   let disposed = false;
+  let readFailed = false;
   function publish(next: SoundSettingsState) {
     if (disposed) return;
     state = next;
     onChange(state);
   }
-  async function persist(soundEnabled: boolean) {
-    publish({ status: 'saving', soundEnabled, message: '' });
+  async function persist(settings: SoundSettings) {
+    readFailed = false;
+    const { version: _version, ...choices } = settings;
+    publish({ status: 'saving', ...choices, message: '' });
     try {
-      await storage.write(JSON.stringify({ version: 1, soundEnabled } satisfies SoundSettings));
-      publish({ status: 'ready', soundEnabled, saved: true, message: '' });
+      await storage.write(JSON.stringify(settings));
+      publish({ status: 'ready', ...choices, saved: true, message: '' });
     } catch {
       publish({
         status: 'ready',
-        soundEnabled,
+        ...choices,
         saved: false,
-        message: 'Your sound choice works for this session, but could not be saved. Please retry.',
+        message: 'Your settings work for this session, but could not be saved. Please retry.',
       });
     }
   }
@@ -59,27 +139,68 @@ export function createSoundSettings(
     async load() {
       if (disposed || state.status !== 'loading') return;
       try {
-        const snapshot = await storage.read();
-        const soundEnabled =
-          snapshot === null ? DEFAULT_SOUND_ENABLED : parseSoundSettings(snapshot).soundEnabled;
-        publish({ status: 'ready', soundEnabled, saved: true, message: '' });
+        const stored = await storage.read();
+        const settings =
+          stored === null
+            ? {
+                version: 3,
+                soundEnabled: DEFAULT_SOUND_ENABLED,
+                ...DEFAULT_WIDTH_SETTINGS,
+                ...DEFAULT_COLOR_SETTINGS,
+              }
+            : parseSoundSettings(stored);
+        const { version: _version, ...choices } = settings;
+        publish({ status: 'ready', ...choices, saved: true, message: '' });
       } catch {
+        readFailed = true;
         publish({
           status: 'ready',
           soundEnabled: false,
+          ...DEFAULT_WIDTH_SETTINGS,
+          ...DEFAULT_COLOR_SETTINGS,
           saved: false,
           message:
-            'Sound settings could not be read. Sound is off. Choose your setting and retry saving.',
+            'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.',
         });
       }
     },
     async setEnabled(soundEnabled: boolean) {
       if (disposed || state.status !== 'ready') return;
-      await persist(soundEnabled);
+      if (typeof soundEnabled !== 'boolean') throw new Error('Sound choice is invalid.');
+      await persist({ ...snapshot(state), soundEnabled });
+    },
+    async setWidth(tool: 'drawing' | 'eraser', width: StrokeWidth) {
+      if (disposed || state.status !== 'ready') return;
+      if ((tool !== 'drawing' && tool !== 'eraser') || !isStrokeWidth(width))
+        throw new Error('Drawing width choice is invalid.');
+      const choices = {
+        strokeWidth: tool === 'drawing' ? width : state.strokeWidth,
+        eraserWidth: tool === 'eraser' ? width : state.eraserWidth,
+      };
+      if (readFailed) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
+    },
+    async setColor(selectedColor: PaintColor) {
+      if (disposed || state.status !== 'ready') return;
+      if (!isPaintColor(selectedColor)) throw new Error('Paint color is invalid.');
+      const choices = {
+        selectedColor,
+        customColors: isCustomColor(selectedColor)
+          ? rememberColor(state.customColors, selectedColor)
+          : state.customColors,
+      };
+      if (readFailed) {
+        publish({ ...state, ...choices });
+        return;
+      }
+      await persist({ ...snapshot(state), ...choices });
     },
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;
-      await persist(state.soundEnabled);
+      await persist(snapshot(state));
     },
     dispose() {
       disposed = true;

@@ -14,9 +14,11 @@ function useIdleMessage(message: string, drawing: boolean) {
 export function DrawingStatus({
   screen,
   soundMessage,
+  blocked,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   soundMessage: string;
+  blocked: boolean;
 }) {
   const visibleNotice = useIdleMessage(screen.notice, screen.drawing);
   const visibleSoundMessage = useIdleMessage(soundMessage, screen.drawing);
@@ -38,7 +40,9 @@ export function DrawingStatus({
       <PngRecoveryNotice
         state={screen.pngRecovery.state}
         drawing={screen.drawing}
-        blocked={screen.pictures !== null || screen.pagePickerOpen || screen.settingsOpen}
+        blocked={
+          blocked || screen.pictures !== null || screen.pagePickerOpen || screen.settingsOpen
+        }
         retry={() => {
           void screen.pngRecovery.retry();
         }}

@@ -4,7 +4,9 @@ import {
   changePage,
   clearDrawing,
   createHistory,
+  emptyDrawing,
   parseDrawing,
+  strokeStyle,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
@@ -17,8 +19,12 @@ import {
   savePicture,
 } from '../../experiments/native-architecture/src/platform/drawingFiles.web.ts';
 
-function stroke() {
+function legacyStroke() {
   return { color: 'Green', brush: 'marker', points: [{ x: 512, y: 384 }] };
+}
+
+function stroke() {
+  return { ...strokeStyle('marker', 'Green', emptyDrawing()), points: legacyStroke().points };
 }
 
 function picture() {
@@ -31,7 +37,7 @@ describe('native coloring-page composition', () => {
   it('changes the page and paint together as one reversible picture operation', () => {
     const original = picture();
     const next = changePage(original, 'turtle');
-    expect(next.drawing).toEqual({ version: 3, rainbow: 0, pageId: 'turtle', strokes: [] });
+    expect(next.drawing).toEqual(emptyDrawing(0, 'turtle'));
     expect(next.undo.at(-1)).toBe(original.drawing);
     expect(undoDrawing(next).drawing).toBe(original.drawing);
     expect(original.drawing.strokes).toEqual([stroke()]);
@@ -41,15 +47,10 @@ describe('native coloring-page composition', () => {
     const original = picture();
     const cleared = clearDrawing(original, false);
     expect(original.drawing.pageId).toBe('flower');
-    expect(cleared.drawing).toEqual({ version: 3, rainbow: 1, pageId: 'flower', strokes: [] });
+    expect(cleared.drawing).toEqual(emptyDrawing(1, 'flower'));
     expect(undoDrawing(cleared).drawing).toBe(original.drawing);
     const visuallyEmpty = clearDrawing(cleared, true);
-    expect(visuallyEmpty.drawing).toEqual({
-      version: 3,
-      rainbow: 2,
-      pageId: 'flower',
-      strokes: [],
-    });
+    expect(visuallyEmpty.drawing).toEqual(emptyDrawing(2, 'flower'));
     expect(visuallyEmpty.undo).toBe(cleared.undo);
   });
 
@@ -61,7 +62,7 @@ describe('native coloring-page composition', () => {
   it('returns to blank paper without discarding the undoable painted page', () => {
     const original = picture();
     const blank = changePage(original, 'blank');
-    expect(blank.drawing).toEqual({ version: 3, rainbow: 0, pageId: 'blank', strokes: [] });
+    expect(blank.drawing).toEqual(emptyDrawing());
     expect(undoDrawing(blank).drawing).toBe(original.drawing);
   });
 
@@ -84,7 +85,7 @@ describe('native coloring-page composition', () => {
   );
 
   it.each([undefined, null, '', 'foreign', 'toString', {}, 1])(
-    'refuses invalid current-format page identity %#',
+    'refuses invalid legacy joint-format page identity %#',
     (pageId) => {
       expect(() => parseDrawing({ version: 3, rainbow: 0, pageId, strokes: [] })).toThrow(
         'This saved picture contains an invalid coloring page.'
@@ -92,11 +93,26 @@ describe('native coloring-page composition', () => {
     }
   );
 
+  it.each([undefined, null, '', 'foreign', 'toString', {}, 1])(
+    'refuses invalid current-format page identity %#',
+    (pageId) => {
+      expect(() => parseDrawing({ ...emptyDrawing(), pageId })).toThrow(
+        'This saved picture contains an invalid coloring page.'
+      );
+    }
+  );
+
+  it('refuses a missing current-format stroke width while accepting the complete record', () => {
+    const drawing = picture().drawing;
+    expect(parseDrawing(drawing)).toEqual(drawing);
+    expect(() => parseDrawing({ ...drawing, strokes: [legacyStroke()] })).toThrow(
+      'This saved picture contains an invalid stroke width.'
+    );
+  });
+
   it('opens the first native slice’s saved pictures as blank paper', () => {
-    expect(parseDrawing({ version: 1, strokes: [stroke()] })).toEqual({
-      version: 3,
-      rainbow: 0,
-      pageId: 'blank',
+    expect(parseDrawing({ version: 1, strokes: [legacyStroke()] })).toEqual({
+      ...emptyDrawing(),
       strokes: [stroke()],
     });
   });
@@ -106,12 +122,8 @@ describe('native coloring-page composition', () => {
     const captures = createPngCapture();
     const request = captures.begin(original.drawing);
     const next = changePage(original, 'sunshine');
-    expect(request.drawing).toEqual({
-      version: 3,
-      rainbow: 0,
-      pageId: 'flower',
-      strokes: [stroke()],
-    });
+    expect(request.drawing).toBe(original.drawing);
+    expect(request.drawing).toEqual({ ...emptyDrawing(0, 'flower'), strokes: [stroke()] });
     expect(next.drawing.pageId).toBe('sunshine');
     expect(request.complete('snapshot PNG')).toBe(true);
     await expect(request.promise).resolves.toBe('snapshot PNG');
@@ -125,12 +137,10 @@ describe('native coloring-page composition', () => {
     });
     values.set(
       'splotch-picture:picture-1-first',
-      JSON.stringify({ version: 1, strokes: [stroke()] })
+      JSON.stringify({ version: 1, strokes: [legacyStroke()] })
     );
     await expect(reopenPicture('picture-1-first')).resolves.toEqual({
-      version: 3,
-      rainbow: 0,
-      pageId: 'blank',
+      ...emptyDrawing(),
       strokes: [stroke()],
     });
     const original = picture().drawing;

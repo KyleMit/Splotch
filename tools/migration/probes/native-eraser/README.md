@@ -6,7 +6,7 @@ browser registry, exact dirty-source receipt, new output directory, and campaign
 replay/RSS-growth budgets. It launches and closes only its own Chromium process/profile. A failed
 probe preserves result.json and prior exports; no retry hides it.
 
-The actual app reopens v3 fixtures through Pictures and the production parser. Instrumentation
+The actual app reopens v4 fixtures through Pictures and the production parser. Instrumentation
 observes react-native-svg's real browser Canvas PNG capture and actual SVG Image load events.
 Transparent captures from the real checkpoint path are compared before/after lossless PNG/Image
 replacement. A protected Crayon/Magic/solid region remains untouched by disjoint later operations;
@@ -30,7 +30,7 @@ but may double count shared pages; it is browser evidence, not native memory qua
 
 The missing-callback control suppresses one actual web SVG image-load callback, waits for production
 capture timeout, invokes that captured callback twice after settlement, and checks live artwork plus
-real saved v3 data/rainbow retention. It does not prove native callback cancellation or native image
+real saved v4 data/rainbow retention. It does not prove native callback cancellation or native image
 cache behavior. Genuine main-owner faults still need a user-facing recovery flow within this unit;
 manual test remounts do not supply one. Incoming checkpoint-load timeout, stale React onLoad
 dispatch, rejected decoding, Undo/reopen after depth, and native memory/latency require their own

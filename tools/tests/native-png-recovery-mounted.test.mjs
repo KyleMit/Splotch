@@ -39,7 +39,7 @@ describe('mounted failed PNG recovery', () => {
     'retries the exact captured PNG after later ink and a real Clear instead of capturing the current canvas',
     async () => {
       await screen.click('Draw fixture stroke');
-      await screen.click('Export PNG');
+      await screen.menuClick('Export PNG');
       const exported = files.export.mock.calls[0];
       expect(exported[0]).toBe(CAPTURED_PNG);
       expect(screen.container.textContent).toContain('PNG held on this device for retry.');
@@ -49,7 +49,7 @@ describe('mounted failed PNG recovery', () => {
       expect(parseFloat(dismiss.style.minWidth)).toBeGreaterThanOrEqual(48);
       await screen.click('Draw fixture stroke');
       files.ink.mockResolvedValue(rgbaPng(PAPER_WIDTH, PAPER_HEIGHT, 255).toString('base64'));
-      await screen.click('Clear');
+      await screen.menuClick('Clear');
       await vi.waitFor(
         async () => {
           await act(async () => {});
@@ -74,7 +74,7 @@ describe('mounted failed PNG recovery', () => {
   );
 
   it('restores held records on remount without sharing and dismisses them durably', async () => {
-    await screen.click('Export PNG');
+    await screen.menuClick('Export PNG');
     const original = stored;
     screen.close();
     screen = createScreen();
@@ -94,13 +94,13 @@ describe('mounted failed PNG recovery', () => {
 
   it('shows session-only durability and keeps capture failure out of recovery', async () => {
     files.capture.mockRejectedValueOnce(new Error('PNG capture failed'));
-    await screen.click('Export PNG');
+    await screen.menuClick('Export PNG');
     expect(screen.container.textContent).toContain('PNG capture failed');
     expect(screen.button('Try PNG export again')).toBeUndefined();
     expect(files.recoveryWrite).not.toHaveBeenCalled();
     expect(files.export).not.toHaveBeenCalled();
     files.recoveryWrite.mockRejectedValue(new Error('Disk full'));
-    await screen.click('Export PNG');
+    await screen.menuClick('Export PNG');
     expect(screen.container.textContent).toContain('PNG held only while this screen stays open.');
     expect(screen.container.textContent).not.toContain('PNG held on this device for retry.');
     expect(screen.button('Try PNG export again')).toBeDefined();
@@ -108,7 +108,7 @@ describe('mounted failed PNG recovery', () => {
   });
 
   it('defers asynchronously restored record layout until an active drawing cohort finishes', async () => {
-    await screen.click('Export PNG');
+    await screen.menuClick('Export PNG');
     screen.close();
     let restore;
     files.recoveryRead.mockImplementationOnce(

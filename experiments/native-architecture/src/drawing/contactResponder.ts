@@ -3,14 +3,17 @@ import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
 import { paperPoint, type Drawing, type Stroke } from './model';
 import type { Brush } from './brushes';
-import type { PaletteLabel } from './palette';
+import type { PaintColor } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
 import { paperLocation, type PaperFrame } from './paperGeometry';
+import type { StrokeWidth } from './strokeWidth';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
-  color: PaletteLabel;
+  color: PaintColor;
   brush: Brush;
+  strokeWidth: StrokeWidth;
+  eraserWidth: StrokeWidth;
   disabled: boolean;
   onCohort: (strokes: readonly Stroke[]) => void;
   onDrawingChange: (drawing: boolean) => void;
@@ -202,7 +205,8 @@ class ContactResponder {
         current.color,
         current.brush,
         sample,
-        current.currentDrawing()
+        current.currentDrawing(),
+        current.brush === 'eraser' ? current.eraserWidth : current.strokeWidth
       );
       contact.state = 'accepted';
       contact.sound = current.sound?.begin(sample, touch.timestamp) ?? null;

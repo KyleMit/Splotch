@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
-import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
+import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
@@ -65,6 +65,7 @@ vi.mock('react-native', () => {
   });
   return {
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
     Platform: { OS: 'web' },
     Image: () => null,
     findNodeHandle: (target) => target,
@@ -72,8 +73,14 @@ vi.mock('react-native', () => {
     SafeAreaView: View,
     ScrollView: View,
     Text: ({ children }) => createElement('span', null, children),
-    Modal: ({ visible, children }) =>
-      visible ? createElement('div', { role: 'dialog' }, children) : null,
+    Modal: ({ visible, children, onDismiss }) => {
+      const shown = useRef(false);
+      useEffect(() => {
+        if (!visible && shown.current) onDismiss?.();
+        shown.current = visible;
+      }, [visible, onDismiss]);
+      return visible ? createElement('div', { role: 'dialog' }, children) : null;
+    },
     Pressable: ({ children, accessibilityLabel, onPress, disabled }) =>
       createElement(
         'button',
@@ -170,7 +177,20 @@ function button(label) {
     (node) => node.getAttribute('aria-label') === label
   );
 }
+function toolsButton() {
+  return [...host.querySelectorAll('button')].find((node) =>
+    node.getAttribute('aria-label')?.startsWith('Drawing tools.')
+  );
+}
+async function openTools() {
+  const opener = toolsButton();
+  expect(opener, 'Drawing tools opener').toBeDefined();
+  expect(opener.disabled, 'Drawing tools admission').toBe(false);
+  await act(async () => opener.click());
+}
 async function click(label) {
+  if (['Pictures', 'Save picture', 'Clear', 'Export PNG'].includes(label) && !button(label))
+    await openTools();
   const target = button(label);
   expect(target, label).toBeDefined();
   expect(target.disabled, label).toBe(false);
@@ -193,7 +213,8 @@ describe('visible terminal renderer recovery', () => {
     await click('Open picture from Recovery fixture');
     await frames();
     expect(host.textContent).toContain('PNG capture failed. Your picture is still here.');
-    expect(button('Save picture').disabled).toBe(true);
+    expect(button('Save picture')).toBeUndefined();
+    expect(toolsButton().disabled).toBe(true);
     expect(button('Retry drawing').disabled).toBe(false);
     const before = sdk.captures.length,
       late = sdk.captures[0];
@@ -206,7 +227,10 @@ describe('visible terminal renderer recovery', () => {
     await click('Save picture');
     expect(sdk.save).toHaveBeenLastCalledWith(fixture);
     expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
+    await act(async () => toolsButton().click());
+    expect(button('Save picture').disabled).toBe(false);
     expect(host.textContent).toContain('Garden flower');
+    await click('Keep drawing');
     const paper = host.querySelector('[data-testid="drawing-paper"]');
     const input = sdk.responders[Number(paper.getAttribute('data-responder'))];
     const touch = {
@@ -280,12 +304,14 @@ describe('visible terminal renderer recovery', () => {
     expect(button('Retry drawing').disabled).toBe(false);
     await click('Retry drawing');
     await frames();
-    expect(button('Save picture').disabled).toBe(true);
+    expect(button('Save picture')).toBeUndefined();
+    expect(toolsButton().disabled).toBe(true);
     await act(async () => oldImage());
-    expect(button('Save picture').disabled).toBe(true);
+    expect(button('Save picture')).toBeUndefined();
+    expect(toolsButton().disabled).toBe(true);
     await act(async () => sdk.imageLoads.at(-1)());
     await frames();
-    expect(button('Save picture').disabled).toBe(false);
+    expect(toolsButton().disabled).toBe(false);
     expect(host.textContent).toContain('Your picture is ready.');
     await click('Save picture');
     expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
