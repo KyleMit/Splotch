@@ -8,6 +8,11 @@ and reopening pictures in app-private storage. Saved pictures survive an app res
 renderer is `react-native-svg`; PNG export uses its raster `toDataURL` callback and Expo file and
 sharing APIs.
 
+The Stroke Width Selector offers Thin, Medium and Thick for drawing and an independent eraser
+choice. Medium keeps the candidate's prior brush defaults. Widths are captured per contact and
+retained by Undo, save/reopen and PNG rendering. The existing settings owner persists sound and both
+width choices together; see [construction and validation limits](STROKE-WIDTH-CONSTRUCTION.md).
+
 The maintained Android manifest removes Expo FileSystem's legacy READ_EXTERNAL_STORAGE and
 WRITE_EXTERNAL_STORAGE declarations. These private save/cache paths and PNG sharing do not request
 external storage grants. Validate the actual built APK's merged permissions when checking a new

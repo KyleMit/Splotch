@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  emptyDrawing,
+  strokeStyle,
+} from '../../experiments/native-architecture/src/drawing/model.ts';
 import {
   listPictures,
   reopenPicture,
@@ -114,6 +117,29 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('native picture save commit', () => {
+  it('saves and reopens independent actual widths through the verified file commit', async () => {
+    const drawing = {
+      ...emptyDrawing(3, 'flower'),
+      strokes: [
+        { ...strokeStyle('crayon', 'Blue', emptyDrawing(3), 'thin'), points: [{ x: 200, y: 300 }] },
+        { ...strokeStyle('magic', 'Blue', emptyDrawing(3), 'thick'), points: [{ x: 300, y: 300 }] },
+        {
+          ...strokeStyle('eraser', 'Blue', emptyDrawing(3), 'thick'),
+          points: [{ x: 200, y: 300 }],
+        },
+      ],
+    };
+    const saved = await savePicture(drawing);
+    const reopened = await reopenPicture(saved.id);
+    expect(reopened).toEqual(drawing);
+    expect(reopened.strokes.map(({ width }) => width)).toEqual([17, 60, 88]);
+    const stored = JSON.parse(
+      filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)
+    );
+    expect(stored.version).toBe(4);
+    expect(stored.strokes.map(({ width }) => width)).toEqual([17, 60, 88]);
+  });
+
   it('keeps save pending until the asynchronous move commits the reopened picture', async () => {
     const gate = deferred();
     const entered = deferred();

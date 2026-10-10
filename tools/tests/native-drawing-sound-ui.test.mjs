@@ -193,7 +193,9 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
-    expect(sound.write).toHaveBeenLastCalledWith('{"version":1,"soundEnabled":true}');
+    expect(sound.write).toHaveBeenLastCalledWith(
+      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+    );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
     expect(ui.dialog().textContent).not.toContain('could not be saved');
@@ -204,7 +206,9 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Settings');
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
-    expect(sound.write).toHaveBeenLastCalledWith('{"version":1,"soundEnabled":false}');
+    expect(sound.write).toHaveBeenLastCalledWith(
+      '{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'
+    );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });
   it('renders an audio failure then clears it after the next stroke recovers', async () => {
@@ -230,13 +234,13 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(sound.load).not.toHaveBeenCalled();
     await ui.click('Settings');
     expect(ui.switch().disabled).toBe(true);
-    expect(ui.dialog().textContent).toContain('Loading sound settings');
+    expect(ui.dialog().textContent).toContain('Loading settings');
     await act(async () => read.resolve('{"version":1,"soundEnabled":false}'));
     const write = pending();
     sound.write.mockReturnValueOnce(write.promise);
     await ui.click('Drawing sound');
     expect(ui.switch().disabled).toBe(true);
-    expect(ui.dialog().textContent).toContain('Saving sound setting');
+    expect(ui.dialog().textContent).toContain('Saving settings');
     await act(async () => write.resolve());
     expect(ui.switch().disabled).toBe(false);
   });

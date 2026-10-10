@@ -140,6 +140,8 @@ describe('native committed sound settings journal', () => {
     expect(changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: false });
     await owner.setEnabled(true);
     expect(changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
-    expect(await soundSettingsStorage.read()).toBe(on);
+    expect(await soundSettingsStorage.read()).toBe(
+      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+    );
   });
 });

@@ -56,7 +56,15 @@ describe('joint native drawing and eraser ownership', () => {
     ],
   ])('preserves all accepted saved variants %#', (input, pageId, rainbow) => {
     const drawing = parseDrawing(input);
-    expect(drawing).toEqual({ version: 3, pageId, rainbow, strokes: input.strokes });
+    expect(drawing).toEqual({
+      version: 4,
+      pageId,
+      rainbow,
+      strokes: input.strokes.map((stroke) => ({
+        ...stroke,
+        width: { marker: 22, eraser: 44, crayon: 34, magic: 30 }[stroke.brush],
+      })),
+    });
     expect(parseDrawing(JSON.parse(JSON.stringify(drawing)))).toEqual(drawing);
   });
 
@@ -75,7 +83,11 @@ describe('joint native drawing and eraser ownership', () => {
     const initial = createHistory({ ...emptyDrawing(3, 'flower'), strokes: [crayon, magic] });
     const changed = changePage(initial, 'turtle');
     expect(changed.drawing.rainbow).toBe(3);
-    expect(strokeStyle('magic', 'Blue', changed.drawing)).toEqual({ brush: 'magic', rainbow: 3 });
+    expect(strokeStyle('magic', 'Blue', changed.drawing)).toEqual({
+      brush: 'magic',
+      width: 30,
+      rainbow: 3,
+    });
     const blankClear = clearDrawing(changed, true);
     expect(blankClear.undo).toBe(changed.undo);
     expect(blankClear.drawing).toEqual(emptyDrawing(4, 'turtle'));
@@ -94,7 +106,7 @@ describe('joint native drawing and eraser ownership', () => {
 
   it('plans all 1000 legal alternating operations with at most one erase run per stage', () => {
     const strokes = Array.from({ length: 1000 }, (_, index) => ({
-      ...(index % 2 ? erase : marker),
+      ...(index % 2 ? { ...erase, width: 44 } : { ...marker, width: 22 }),
       points: [{ x: index % 1024, y: 40 }],
     }));
     expect(parseDrawing({ ...emptyDrawing(), strokes }).strokes).toHaveLength(1000);

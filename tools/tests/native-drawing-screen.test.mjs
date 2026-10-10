@@ -6,6 +6,7 @@ import { DrawingScreen } from '../../experiments/native-architecture/src/Drawing
 import {
   emptyDrawing,
   parseDrawing,
+  strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const files = vi.hoisted(() => ({
@@ -15,6 +16,8 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
+  settingsWrite: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
@@ -29,8 +32,8 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', ()
 }));
 vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
   soundSettingsStorage: {
-    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
-    write: vi.fn(),
+    read: files.settingsRead,
+    write: files.settingsWrite,
   },
 }));
 
@@ -46,11 +49,28 @@ vi.mock('react-native', () => {
     },
     Platform: { OS: 'android' },
     ActivityIndicator: () => null,
+    Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
+      createElement('button', {
+        role: 'switch',
+        'aria-label': accessibilityLabel,
+        'aria-checked': value,
+        disabled,
+        onClick: () => onValueChange(!value),
+      }),
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
+    Pressable: ({ children, onPress, disabled, accessibilityLabel, accessibilityState, style }) =>
       createElement(
         'button',
-        { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
+        {
+          onClick: onPress,
+          disabled,
+          'aria-label': accessibilityLabel,
+          'aria-pressed': accessibilityState?.selected,
+          style:
+            typeof style === 'function'
+              ? undefined
+              : Object.assign({}, ...[style].flat().filter(Boolean)),
+        },
         children
       ),
     SafeAreaView: container,
@@ -79,6 +99,7 @@ vi.mock('react-native-svg', () => ({
 const STROKE = {
   color: 'Purple',
   brush: 'marker',
+  width: 22,
   points: [
     { x: 10, y: 20 },
     { x: 30, y: 40 },
@@ -86,27 +107,40 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onCohort }, ref) => {
-    useImperativeHandle(
-      ref,
-      () => ({
-        refreshGeometry: vi.fn(),
-        lockInput: files.lock,
-        capturePng: files.capture,
-        captureInk: files.ink,
-      }),
-      []
-    );
-    return createElement(
-      'button',
-      {
-        'data-testid': 'paper',
-        'data-drawing': JSON.stringify(drawing),
-        onClick: () => onCohort([STROKE]),
-      },
-      'Draw fixture stroke'
-    );
-  }),
+  DrawingSurface: forwardRef(
+    ({ drawing, onCohort, color, brush, strokeWidth, eraserWidth }, ref) => {
+      useImperativeHandle(
+        ref,
+        () => ({
+          refreshGeometry: vi.fn(),
+          lockInput: files.lock,
+          capturePng: files.capture,
+          captureInk: files.ink,
+        }),
+        []
+      );
+      return createElement(
+        'button',
+        {
+          'data-testid': 'paper',
+          'data-drawing': JSON.stringify(drawing),
+          onClick: () =>
+            onCohort([
+              {
+                ...strokeStyle(
+                  brush,
+                  color,
+                  drawing,
+                  brush === 'eraser' ? eraserWidth : strokeWidth
+                ),
+                points: STROKE.points,
+              },
+            ]),
+        },
+        'Draw fixture stroke'
+      );
+    }
+  ),
 }));
 
 function createScreen() {
@@ -147,6 +181,8 @@ beforeEach(() => {
   files.ink.mockReset();
   files.export.mockReset();
   files.lock.mockReset().mockReturnValue(() => {});
+  files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
+  files.settingsWrite.mockReset().mockResolvedValue(undefined);
   screen = createScreen();
   screen.mount();
 });
@@ -154,6 +190,53 @@ beforeEach(() => {
 afterEach(() => {
   screen.close();
   vi.clearAllMocks();
+});
+
+describe('drawing width controls', () => {
+  it('keeps accessible, touch-sized independent selections through tool switches and reopening settings', async () => {
+    await screen.click('Marker');
+    const control = (label) => screen.container.querySelector(`[aria-label="${label}"]`);
+    expect(control('Drawing width: Medium').getAttribute('aria-pressed')).toBe('true');
+    expect(parseFloat(control('Drawing width: Thin').style.minHeight)).toBeGreaterThanOrEqual(48);
+    expect(parseFloat(control('Drawing width: Thin').style.minWidth)).toBeGreaterThanOrEqual(48);
+    await screen.click('Drawing width: Thin');
+    await screen.click('Draw fixture stroke');
+    await screen.click('Eraser');
+    expect(control('Eraser width: Medium').getAttribute('aria-pressed')).toBe('true');
+    await screen.click('Eraser width: Thick');
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([11, 88]);
+    await screen.click('Marker');
+    expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
+    expect(control('Drawing width: Thin').textContent).toContain('✓');
+    await screen.click('Settings');
+    await screen.click('Close Settings');
+    expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
+    expect(files.settingsWrite).toHaveBeenLastCalledWith(
+      '{"version":2,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick"}'
+    );
+    const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
+    screen.close();
+    files.settingsRead.mockResolvedValue(snapshot);
+    screen = createScreen();
+    await act(async () => screen.mount());
+    expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
+    await screen.click('Eraser');
+    expect(control('Eraser width: Thick').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('keeps a failed width choice usable and retries the same full settings snapshot', async () => {
+    await screen.click('Marker');
+    files.settingsWrite.mockRejectedValueOnce(new Error('disk full'));
+    await screen.click('Drawing width: Thick');
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].width).toBe(44);
+    expect(screen.container.textContent).toContain('could not be saved');
+    await screen.click('Settings');
+    await screen.click('Retry saving');
+    expect(files.settingsWrite.mock.calls.at(-1)).toEqual(files.settingsWrite.mock.calls.at(-2));
+    expect(screen.dialog().textContent).not.toContain('could not be saved');
+  });
 });
 
 describe('saved-picture failure feedback', () => {

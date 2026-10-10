@@ -3,11 +3,17 @@ const DEPTH_CORNER_OPERATIONS = 995;
 const line = (brush, color, y) => ({
   brush,
   color,
+  width: { pencil: 7, marker: 22, crayon: 34 }[brush],
   points: [120, 680].map((x) => ({ x, y })),
 });
-const cornerErase = () => ({ brush: 'eraser', points: [{ x: 960, y: 740 }] });
-const cornerPaint = () => ({ brush: 'marker', color: 'Green', points: [{ x: 960, y: 690 }] });
-const drawing = (strokes) => ({ version: 3, pageId: 'blank', rainbow: 3, strokes });
+const cornerErase = () => ({ brush: 'eraser', width: 44, points: [{ x: 960, y: 740 }] });
+const cornerPaint = () => ({
+  brush: 'marker',
+  color: 'Green',
+  width: 22,
+  points: [{ x: 960, y: 690 }],
+});
+const drawing = (strokes) => ({ version: 4, pageId: 'blank', rainbow: 3, strokes });
 
 export function checkpointFixtures() {
   const rich = [
@@ -17,17 +23,20 @@ export function checkpointFixtures() {
       brush: 'crayon',
       color: 'Blue',
       seed: 4294967295,
+      width: 34,
       points: line('crayon', 'Blue', 300).points,
     },
     {
       brush: 'crayon',
       color: 'Yellow',
       seed: 17,
+      width: 34,
       points: [240, 360].map((y) => ({ x: 400, y })),
     },
     {
       brush: 'magic',
       rainbow: 3,
+      width: 30,
       points: [120, 680].map((x) => ({ x, y: 450 })),
     },
   ];
@@ -49,7 +58,7 @@ export function checkpointFixtures() {
     redreference: drawing([red]),
     futureink: drawing([
       line('marker', 'Blue', 200),
-      { brush: 'eraser', points: red.points },
+      { brush: 'eraser', width: 44, points: red.points },
       red,
       cornerErase(),
     ]),

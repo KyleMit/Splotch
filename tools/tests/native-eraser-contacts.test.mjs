@@ -12,11 +12,11 @@ import { MAX_CRAYON_SEED } from '../../experiments/native-architecture/src/drawi
 import { planInk } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
 
 const point = { x: 40, y: 60 };
-const marker = { brush: 'marker', color: 'Blue', points: [point] };
+const marker = { brush: 'marker', width: 22, color: 'Blue', points: [point] };
 
 describe('joint contact cohort canonical ownership', () => {
   it.each(['marker', 'eraser', 'magic', 'crayon'])(
-    'commits two %s contacts as one reversible v3 group',
+    'commits two %s contacts as one reversible v4 group',
     (brush) => {
       const drawing = { ...emptyDrawing(3, 'flower'), strokes: [marker] };
       const input = createContactCohort();
@@ -28,7 +28,7 @@ describe('joint contact cohort canonical ownership', () => {
       expect(strokes).toHaveLength(2);
       const history = addStrokes(createHistory(drawing), strokes);
       expect(history.undo).toEqual([drawing]);
-      expect(history.drawing).toMatchObject({ version: 3, pageId: 'flower', rainbow: 3 });
+      expect(history.drawing).toMatchObject({ version: 4, pageId: 'flower', rainbow: 3 });
       expect(parseDrawing(JSON.parse(JSON.stringify(history.drawing)))).toEqual(history.drawing);
       expect(undoDrawing(history).drawing).toBe(drawing);
     }
@@ -37,7 +37,7 @@ describe('joint contact cohort canonical ownership', () => {
   it('reserves distinct rich metadata across active and already-ended cohort contacts', () => {
     const drawing = {
       ...emptyDrawing(4, 'turtle'),
-      strokes: [{ brush: 'crayon', color: 'Blue', seed: 17, points: [point] }],
+      strokes: [{ brush: 'crayon', width: 34, color: 'Blue', seed: 17, points: [point] }],
     };
     const input = createContactCohort();
     input.start('a', 'Yellow', 'crayon', point, drawing);
@@ -52,7 +52,9 @@ describe('joint contact cohort canonical ownership', () => {
   it('uses the style owner seed wrap without adding color to Magic or eraser records', () => {
     const drawing = {
       ...emptyDrawing(5),
-      strokes: [{ brush: 'crayon', color: 'Blue', seed: MAX_CRAYON_SEED - 1, points: [point] }],
+      strokes: [
+        { brush: 'crayon', width: 34, color: 'Blue', seed: MAX_CRAYON_SEED - 1, points: [point] },
+      ],
     };
     const input = createContactCohort();
     input.start('a', 'Red', 'crayon', point, drawing);
@@ -60,9 +62,14 @@ describe('joint contact cohort canonical ownership', () => {
     input.start('a3', 'Red', 'crayon', point, drawing);
     expect(input.interrupt().map(({ seed }) => seed)).toEqual([MAX_CRAYON_SEED, 1, 2]);
     input.start('b', 'Red', 'magic', point, drawing);
-    expect(input.finish('b')[0]).toEqual({ brush: 'magic', rainbow: 5, points: [point] });
+    expect(input.finish('b')[0]).toEqual({
+      brush: 'magic',
+      width: 30,
+      rainbow: 5,
+      points: [point],
+    });
     input.start('c', 'Red', 'eraser', point, drawing);
-    expect(input.finish('c')[0]).toEqual({ brush: 'eraser', points: [point] });
+    expect(input.finish('c')[0]).toEqual({ brush: 'eraser', width: 44, points: [point] });
   });
 
   it('reserves the remaining legal stroke and point capacity before admitting another contact', () => {

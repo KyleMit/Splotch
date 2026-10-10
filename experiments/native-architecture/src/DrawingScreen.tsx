@@ -21,6 +21,7 @@ import type { History } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
+import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 
 const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
@@ -147,6 +148,7 @@ export function DrawingScreen() {
             void clear();
           }}
         />
+        <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
         <Text style={styles.subtitle}>{COLORING_PAGES[history.drawing.pageId].label}</Text>
         <DrawingSurface
           key={recovery.generation}
@@ -155,6 +157,8 @@ export function DrawingScreen() {
           currentDrawing={currentDrawing}
           color={color}
           brush={brush}
+          strokeWidth={sound.settings.strokeWidth}
+          eraserWidth={sound.settings.eraserWidth}
           disabled={busy || pictures !== null || pagePickerOpen || settingsOpen}
           sound={sound.owner?.contacts ?? null}
           {...recovery.callbacks}
@@ -213,6 +217,28 @@ export function DrawingScreen() {
         onClose={() => setPictures(null)}
       />
     </SafeAreaView>
+  );
+}
+
+function DrawingWidth({
+  brush,
+  disabled,
+  sound,
+}: {
+  brush: Brush;
+  disabled: boolean;
+  sound: ReturnType<typeof useDrawingSound>;
+}) {
+  const tool = brush === 'eraser' ? 'eraser' : 'drawing';
+  return (
+    <StrokeWidthSelector
+      tool={tool}
+      selected={tool === 'eraser' ? sound.settings.eraserWidth : sound.settings.strokeWidth}
+      disabled={disabled || sound.settings.status !== 'ready'}
+      onChange={(width) => {
+        void sound.owner?.settings.setWidth(tool, width);
+      }}
+    />
   );
 }
 
