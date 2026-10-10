@@ -9,6 +9,8 @@ import {
   useRef,
 } from 'react';
 import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
@@ -22,9 +24,10 @@ import { COLORING_PAGES } from '../../experiments/native-architecture/src/drawin
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing/theme.ts';
 
-const responder = vi.hoisted(() => ({ current: null }));
+const responder = vi.hoisted(() => ({ current: null, scheme: 'light' }));
 
 vi.mock('react-native', () => ({
+  useColorScheme: () => responder.scheme,
   PanResponder: {
     create: (handlers) => {
       responder.current = handlers;
@@ -70,6 +73,9 @@ vi.mock('react-native-svg', () => ({
   Rect: (props) => createElement('rect', props),
   Path: (props) => createElement('path', props),
   Circle: (props) => createElement('circle', props),
+  Pattern: ({ children, ...props }) => createElement('pattern', props, children),
+  LinearGradient: ({ children, ...props }) => createElement('linearGradient', props, children),
+  Stop: (props) => createElement('stop', props),
 }));
 
 const drawing = {
@@ -182,6 +188,7 @@ beforeEach(() => {
   document.body.append(container);
   root = createRoot(container);
   capturedOutputs = [];
+  responder.scheme = 'light';
 });
 
 afterEach(() => {
@@ -191,6 +198,68 @@ afterEach(() => {
 });
 
 describe('coloring outlines over live and exported paint', () => {
+  it('recodes real live Magic through the system-theme hook without replacing its Drawing', async () => {
+    const snapshot = {
+      ...emptyDrawing(3, 'sunshine'),
+      strokes: [
+        {
+          brush: 'magic',
+          width: 100,
+          rainbow: 3,
+          points: [
+            { x: 100, y: 384 },
+            { x: 924, y: 384 },
+          ],
+        },
+      ],
+    };
+    mount(snapshot);
+    const day = await sharp(Buffer.from(liveArtwork().outerHTML))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expectPixel(day, { x: 512, y: 384 }, paletteHex('Yellow'));
+    responder.scheme = 'dark';
+    const ref = mount(snapshot);
+    const nightSvg = liveArtwork();
+    const night = await sharp(Buffer.from(nightSvg.outerHTML))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expectPixel(night, { x: 512, y: 384 }, paletteHex('Orange'));
+    const outlines = [...nightSvg.querySelectorAll('path[fill="none"]')].filter(
+      (path) => path.getAttribute('stroke') === '#eceaf2'
+    );
+    expect(outlines.map((path) => path.getAttribute('d'))).toEqual(COLORING_PAGES.sunshine.paths);
+    const unlock = ref.current.lockInput();
+    let completed;
+    act(() => {
+      completed = ref.current.capturePng(snapshot);
+    });
+    let result;
+    completed.then((value) => {
+      result = value;
+    });
+    await vi.waitFor(async () => {
+      await act(async () => {});
+      expect(result).toBeDefined();
+    });
+    unlock();
+    const exported = await sharp(Buffer.from(result, 'base64'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expectPixel(exported, { x: 512, y: 384 }, paletteHex('Orange'));
+    expectPixel(exported, { x: 20, y: 20 }, '#211f29');
+    expect(snapshot.strokes[0].rainbow).toBe(3);
+  });
+
+  it('refuses a direct outline without the required appearance owner', () => {
+    expect(() => renderToStaticMarkup(createElement(PageOutline, { pageId: 'sunshine' }))).toThrow(
+      'current paper appearance'
+    );
+  });
+
   it('keeps committed and draft crossings visible on the live paper', async () => {
     mount();
     const first = touch(512, 100);

@@ -42,6 +42,7 @@ vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', (
   },
 }));
 vi.mock('react-native', () => ({
+  useColorScheme: () => 'light',
   AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
   findNodeHandle: (owner) => owner,
   View: forwardRef(({ children, style }, ref) => {

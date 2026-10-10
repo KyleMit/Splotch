@@ -54,6 +54,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   reopenPicture: vi.fn(),
 }));
 vi.mock('react-native', () => ({
+  useColorScheme: () => 'light',
   ActivityIndicator: () => null,
   Modal: () => null,
   Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>

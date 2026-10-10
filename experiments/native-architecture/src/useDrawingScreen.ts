@@ -328,6 +328,7 @@ function useSurfaceCommands({
     try {
       release = surface.current?.lockInput();
       setHistory(undoDrawing);
+      setNotice('');
     } catch (error) {
       report(error);
     } finally {

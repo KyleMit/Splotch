@@ -37,10 +37,32 @@ describe('native coloring-page composition', () => {
   it('changes the page and paint together as one reversible picture operation', () => {
     const original = picture();
     const next = changePage(original, 'turtle');
-    expect(next.drawing).toEqual(emptyDrawing(0, 'turtle'));
+    expect(next.drawing).toEqual({ ...original.drawing, pageId: 'turtle' });
+    expect(next.drawing.strokes).toBe(original.drawing.strokes);
     expect(next.undo.at(-1)).toBe(original.drawing);
     expect(undoDrawing(next).drawing).toBe(original.drawing);
     expect(original.drawing.strokes).toEqual([stroke()]);
+  });
+
+  it('retains mixed brush metadata and one page Undo unit through page removal and later ink', () => {
+    const strokes = [
+      { brush: 'magic', width: 30, rainbow: 3, points: [{ x: 512, y: 384 }] },
+      { brush: 'crayon', width: 34, color: 'Blue', seed: 20, points: [{ x: 300, y: 384 }] },
+      { brush: 'eraser', width: 44, points: [{ x: 400, y: 384 }] },
+      stroke(),
+    ];
+    const original = createHistory({ ...emptyDrawing(3, 'flower'), strokes });
+    const changed = changePage(original, 'sunshine');
+    const removed = changePage(changed, 'blank');
+    expect(changed.drawing.strokes).toBe(strokes);
+    expect(removed.drawing.strokes).toBe(strokes);
+    expect(removed.drawing.rainbow).toBe(3);
+    expect(changed.undo).toEqual([original.drawing]);
+    expect(undoDrawing(removed).drawing).toBe(changed.drawing);
+    expect(undoDrawing(undoDrawing(removed)).drawing).toBe(original.drawing);
+    const painted = addStroke(changed, stroke());
+    expect(undoDrawing(painted).drawing).toBe(changed.drawing);
+    expect(parseDrawing(JSON.parse(JSON.stringify(removed.drawing)))).toEqual(removed.drawing);
   });
 
   it('keeps the page through new ink and undoable clear', () => {
@@ -62,7 +84,8 @@ describe('native coloring-page composition', () => {
   it('returns to blank paper without discarding the undoable painted page', () => {
     const original = picture();
     const blank = changePage(original, 'blank');
-    expect(blank.drawing).toEqual(emptyDrawing());
+    expect(blank.drawing).toEqual({ ...original.drawing, pageId: 'blank' });
+    expect(blank.drawing.strokes).toBe(original.drawing.strokes);
     expect(undoDrawing(blank).drawing).toBe(original.drawing);
   });
 

@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -27,7 +28,11 @@ async function pixels(strokes) {
     createElement(
       Svg,
       { width: 1024, height: 768, viewBox: '0 0 1024 768' },
-      createElement(InkScene, { strokes, checkpoint: null, onImageLoad() {} })
+      createElement(
+        InkAppearanceScope.Provider,
+        { value: { pageId: 'blank', theme: 'light' } },
+        createElement(InkScene, { strokes, checkpoint: null, onImageLoad() {} })
+      )
     )
   );
   return sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer();

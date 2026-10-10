@@ -33,6 +33,7 @@ describe('candidate source import ownership', () => {
       'src/drawing/DrawingSurface.tsx',
       'src/drawing/FixedInkCapture.tsx',
       'src/drawing/Ink.tsx',
+      'src/drawing/InkAppearance.tsx',
       'src/drawing/InkScene.tsx',
       'src/drawing/PageOutline.tsx',
       'src/drawing/PaintColors.tsx',
