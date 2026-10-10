@@ -1,0 +1,21 @@
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> splotch@1.6.0 preformat:md:check
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md:check
+> dprint check --incremental=false
+
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/markdown/plugin.wasm
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/typescript/plugin.wasm
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/json/plugin.wasm
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/json/plugin.wasm
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/markdown/plugin.wasm
+Compiling /private/tmp/native-custom-colors/repository/node_modules/@dprint/typescript/plugin.wasm
+Error resolving plugin /private/tmp/native-custom-colors/repository/node_modules/@dprint/markdown/plugin.wasm: Operation not permitted (os error 1) (for '/Users/kylemit/Library/Caches/dprint/cache/plugins/dccf2e03c7c5312b.cwasm')

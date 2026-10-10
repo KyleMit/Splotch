@@ -141,7 +141,7 @@ describe('native committed sound settings journal', () => {
     await owner.setEnabled(true);
     expect(changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
     expect(await soundSettingsStorage.read()).toBe(
-      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
   });
 });

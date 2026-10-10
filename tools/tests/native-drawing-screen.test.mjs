@@ -101,6 +101,9 @@ vi.mock('react-native', () => {
 
 vi.mock('react-native-svg', () => ({
   default: ({ children }) => createElement('svg', null, children),
+  Defs: ({ children }) => createElement('defs', null, children),
+  LinearGradient: ({ children }) => createElement('linearGradient', null, children),
+  Stop: () => null,
   Rect: () => null,
   Path: () => null,
 }));
@@ -201,6 +204,39 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+describe('custom paints wired to the drawing screen', () => {
+  it('locks input for exploration, persists only the chosen color and carries it through drawing and remount', async () => {
+    await act(async () => {});
+    await screen.click('More colors');
+    expect(files.lock).toHaveBeenCalledTimes(1);
+    const tile = screen.dialog().querySelector('[aria-label^="Explore "]');
+    const chosen = tile.getAttribute('aria-label').slice('Explore '.length);
+    await screen.click(`Explore ${chosen}`);
+    expect(files.settingsWrite).not.toHaveBeenCalled();
+    await screen.click('Use color');
+    expect(screen.dialog()).toBeNull();
+    const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
+    expect(JSON.parse(snapshot)).toMatchObject({
+      version: 3,
+      selectedColor: chosen,
+      customColors: [chosen],
+    });
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
+    screen.close();
+    files.settingsRead.mockResolvedValue(snapshot);
+    screen = createScreen();
+    await act(async () => screen.mount());
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
+    expect(
+      screen.container
+        .querySelector(`[aria-label="Custom paint ${chosen}"]`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+  });
+});
+
 describe('drawing width controls', () => {
   it('keeps accessible, touch-sized independent selections through tool switches and reopening settings', async () => {
     await screen.click('Marker');
@@ -223,7 +259,7 @@ describe('drawing width controls', () => {
     await screen.click('Close Settings');
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick"}'
+      '{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[]}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();

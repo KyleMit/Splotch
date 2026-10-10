@@ -1,4 +1,4 @@
-import { PALETTE_COLORS, type PaletteLabel } from './palette';
+import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
 import { INITIAL_RAINBOW, MAGIC_RAINBOW_COUNT, MAX_CRAYON_SEED, type Brush } from './brushes';
 import {
@@ -17,15 +17,15 @@ export const DRAWING_FULL_MESSAGE = 'This picture is full. Save it, then start a
 const MIN_SAMPLE_DISTANCE = 1;
 export type Point = Readonly<{ x: number; y: number }>;
 type BrushStyle =
-  | Readonly<{ color: PaletteLabel; brush: 'pencil' | 'marker' }>
-  | Readonly<{ color: PaletteLabel; brush: 'crayon'; seed: number }>
+  | Readonly<{ color: PaintColor; brush: 'pencil' | 'marker' }>
+  | Readonly<{ color: PaintColor; brush: 'crayon'; seed: number }>
   | Readonly<{ brush: 'magic'; rainbow: number }>
   | Readonly<{ brush: 'eraser' }>;
 export type StrokeStyle = BrushStyle & Readonly<{ width: StrokeWidthPx }>;
 export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 export type Drawing = Readonly<{
-  version: 4;
+  version: 5;
   pageId: PageId;
   rainbow: number;
   strokes: readonly Stroke[];
@@ -36,15 +36,16 @@ const HISTORY_LIMIT = 50;
 const HISTORY_POINT_BUDGET = 200_000;
 
 export function emptyDrawing(rainbow = INITIAL_RAINBOW, pageId: PageId = 'blank'): Drawing {
-  return { version: 4, pageId, rainbow, strokes: [] };
+  return { version: 5, pageId, rainbow, strokes: [] };
 }
 
 export function strokeStyle(
   brush: Brush,
-  color: PaletteLabel,
+  color: PaintColor,
   drawing: Drawing,
   selection: StrokeWidth = DEFAULT_STROKE_WIDTH
 ): StrokeStyle {
+  if (!isPaintColor(color)) throw new Error('Paint color is invalid.');
   const width = strokeWidthPx(brush, selection);
   if (brush === 'eraser') return { brush, width };
   if (brush === 'magic') return { brush, width, rainbow: drawing.rainbow };
@@ -157,7 +158,7 @@ function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width';
+type SavedFormat = 'legacy' | 'page' | 'brush' | 'joint' | 'width' | 'color';
 
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
   return (
@@ -173,6 +174,8 @@ function savedFormat(value: Record<string, unknown>): SavedFormat {
     return 'joint';
   if (value.version === 4 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
     return 'width';
+  if (value.version === 5 && exactKeys(value, ['version', 'pageId', 'rainbow', 'strokes']))
+    return 'color';
   throw new Error('This saved picture is not a supported drawing.');
 }
 
@@ -193,12 +196,12 @@ function readStyle(
   rainbow: number
 ): BrushStyle {
   if (
-    (format === 'joint' || format === 'width') &&
+    (format === 'joint' || format === 'width' || format === 'color') &&
     item.brush === 'eraser' &&
     exactKeys(item, ['brush', 'points'])
   )
     return { brush: 'eraser' };
-  const rich = format === 'brush' || format === 'joint' || format === 'width';
+  const rich = format === 'brush' || format === 'joint' || format === 'width' || format === 'color';
   if (
     rich &&
     item.brush === 'magic' &&
@@ -206,11 +209,9 @@ function readStyle(
     exactKeys(item, ['brush', 'rainbow', 'points'])
   )
     return { brush: 'magic', rainbow };
-  if (
-    typeof item.color === 'string' &&
-    PALETTE_COLORS.some((color) => color.label === item.color)
-  ) {
-    const color = item.color as PaletteLabel;
+  if (format === 'color' ? isPaintColor(item.color) : isPaletteLabel(item.color)) {
+    const color = item.color;
+    if (!isPaintColor(color)) throw new Error('This saved picture contains an invalid color.');
     if (
       (item.brush === 'pencil' || item.brush === 'marker') &&
       exactKeys(item, ['brush', 'color', 'points'])
@@ -260,14 +261,20 @@ export function parseDrawing(value: unknown): Drawing {
     if (!record(item) || !Array.isArray(item.points) || item.points.length === 0)
       throw new Error('This saved picture contains an invalid stroke.');
     const { width, ...withoutWidth } = item;
-    const style = readStyle(format === 'width' ? withoutWidth : item, format, rainbow);
+    const style = readStyle(
+      format === 'width' || format === 'color' ? withoutWidth : item,
+      format,
+      rainbow
+    );
     const actualWidth =
-      format === 'width' ? width : strokeWidthPx(style.brush, DEFAULT_STROKE_WIDTH);
+      format === 'width' || format === 'color'
+        ? width
+        : strokeWidthPx(style.brush, DEFAULT_STROKE_WIDTH);
     if (!isStrokeWidthPx(style.brush, actualWidth))
       throw new Error('This saved picture contains an invalid stroke width.');
     total += item.points.length;
     if (total > MAX_POINTS) throw new Error('This saved picture is too large.');
     return { ...style, width: actualWidth, points: item.points.map(readPoint) };
   });
-  return { version: 4, pageId, rainbow, strokes };
+  return { version: 5, pageId, rainbow, strokes };
 }

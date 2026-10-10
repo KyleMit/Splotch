@@ -1,0 +1,37 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+stderr | tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+props.pointerEvents is deprecated. Use style.pointerEvents
+
+stderr | tests/native-custom-color-ui.test.mjs
+"textShadow*" style props are deprecated. Use "textShadow".
+
+ ❯ tests/native-custom-color-ui.test.mjs (3 tests | 1 failed) 44ms
+   ❯ custom color controls through installed React Native Web (3)
+     × uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close 20ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+AssertionError: expected 'false' to be 'true' // Object.is equality
+
+Expected: "true"
+Received: "false"
+
+ ❯ tests/native-custom-color-ui.test.mjs:94:47
+     92|       tile.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bu…
+     93|     });
+     94|     expect(tile.getAttribute('aria-pressed')).toBe('true');
+       |                                               ^
+     95|     expect(chosen).not.toHaveBeenCalled();
+     96|     const use = modal.querySelector('[aria-label="Use color"]');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 9 passed (10)
+   Start at  23:01:21
+   Duration  1.23s (tests 56%, import 26%, transform 10%, environment 8%)
+

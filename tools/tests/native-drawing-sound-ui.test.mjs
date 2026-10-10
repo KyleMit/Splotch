@@ -194,7 +194,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -207,7 +207,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });

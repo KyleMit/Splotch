@@ -28,7 +28,7 @@ describe('joint contact cohort canonical ownership', () => {
       expect(strokes).toHaveLength(2);
       const history = addStrokes(createHistory(drawing), strokes);
       expect(history.undo).toEqual([drawing]);
-      expect(history.drawing).toMatchObject({ version: 4, pageId: 'flower', rainbow: 3 });
+      expect(history.drawing).toMatchObject({ version: 5, pageId: 'flower', rainbow: 3 });
       expect(parseDrawing(JSON.parse(JSON.stringify(history.drawing)))).toEqual(history.drawing);
       expect(undoDrawing(history).drawing).toBe(drawing);
     }

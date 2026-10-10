@@ -1,4 +1,4 @@
-import type { PaletteLabel } from './palette';
+import type { PaintColor } from './palette';
 import {
   appendPoint,
   strokeStyle,
@@ -28,7 +28,7 @@ export function createContactCohort() {
   return {
     start(
       identifier: string,
-      color: PaletteLabel,
+      color: PaintColor,
       brush: Brush,
       point: Point,
       drawing: Drawing,
@@ -39,7 +39,6 @@ export function createContactCohort() {
       if (strokes.length >= capacity.strokes || acceptedPoints >= capacity.points) {
         throw new Error(DRAWING_FULL_MESSAGE);
       }
-      active.set(identifier, strokes.length);
       const reserved = strokes.findLast((stroke) => stroke.brush === 'crayon');
       const style = strokeStyle(
         brush,
@@ -47,6 +46,7 @@ export function createContactCohort() {
         reserved ? { ...drawing, strokes: [reserved] } : drawing,
         width
       );
+      active.set(identifier, strokes.length);
       strokes = [...strokes, { ...style, points: [point] }];
       acceptedPoints += 1;
     },

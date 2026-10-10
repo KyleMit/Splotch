@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
@@ -25,7 +24,6 @@ import { useRendererRecovery } from './useRendererRecovery';
 
 export function useDrawingScreen() {
   const { history, historyRef, setHistory, currentDrawing } = useDrawingHistory();
-  const [color, setColor] = useState<PaletteLabel>('Purple');
   const [brush, setBrush] = useState<Brush>('marker');
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useState(false);
@@ -74,7 +72,7 @@ export function useDrawingScreen() {
       rendererFault.current,
     report,
   });
-  const disabled = drawing || busy || preparing || pagePickerOpen || settings.settingsOpen;
+  const disabled = drawing || busy || preparing || pagePickerOpen || settings.sheetOpen;
 
   function commandsBlocked() {
     return (
@@ -120,7 +118,7 @@ export function useDrawingScreen() {
     surface,
     rendererFault,
     command,
-    blocked: drawing || busy || pagePickerOpen || settings.settingsOpen || pictures !== null,
+    blocked: drawing || busy || pagePickerOpen || settings.sheetOpen || pictures !== null,
     setPreparing,
     setDrawing,
     finishCohort,
@@ -131,8 +129,6 @@ export function useDrawingScreen() {
   return {
     recovery,
     history,
-    color,
-    setColor,
     brush,
     setBrush,
     drawing,
@@ -189,24 +185,32 @@ function useDrawingSettings({
   blocked: () => boolean;
   report: (error: unknown) => void;
 }) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sheet, setSheet] = useState<'settings' | 'colors' | null>(null);
   useEffect(() => () => settingsLease.current?.(), [settingsLease]);
-  function openSettings() {
+  function openSheet(next: 'settings' | 'colors') {
     if (blocked() || settingsLease.current) return;
     try {
       if (!surface.current) throw new Error('The drawing paper is not ready.');
       settingsLease.current = surface.current.lockInput();
-      setSettingsOpen(true);
+      setSheet(next);
     } catch (error) {
       report(error);
     }
   }
-  function closeSettings() {
+  function closeSheet() {
     settingsLease.current?.();
     settingsLease.current = null;
-    setSettingsOpen(false);
+    setSheet(null);
   }
-  return { settingsOpen, openSettings, closeSettings };
+  return {
+    sheetOpen: sheet !== null,
+    settingsOpen: sheet === 'settings',
+    colorPickerOpen: sheet === 'colors',
+    openSettings: () => openSheet('settings'),
+    closeSettings: closeSheet,
+    openColorPicker: () => openSheet('colors'),
+    closeColorPicker: closeSheet,
+  };
 }
 
 function usePictureActions({

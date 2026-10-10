@@ -15,7 +15,7 @@ import {
   waxColor,
 } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { BRUSHES } from '../../experiments/native-architecture/src/drawing/brushes.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { paletteHex, paintId } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', async () => {
@@ -313,7 +313,7 @@ describe('per-Artwork explicit pigment definitions', () => {
     for (const color of ['Red', 'Blue']) {
       expect(
         definitions(svg)
-          .filter((path) => path.id.includes(`-wax-${color}-`))
+          .filter((path) => path.id.includes(`-wax-${paintId(color)}-`))
           .map(({ d, fill }) => ({ d, fill }))
       ).toEqual(
         TEXTURES.flatMap((band) =>

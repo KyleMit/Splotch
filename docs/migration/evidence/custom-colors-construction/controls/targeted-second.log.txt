@@ -1,0 +1,40 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+stderr | tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+The current testing environment is not configured to support act(...)
+
+stderr | tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+props.pointerEvents is deprecated. Use style.pointerEvents
+The current testing environment is not configured to support act(...)
+
+stderr | tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+The current testing environment is not configured to support act(...)
+
+stderr | tests/native-custom-color-ui.test.mjs
+"textShadow*" style props are deprecated. Use "textShadow".
+
+ ❯ tests/native-custom-color-ui.test.mjs (3 tests | 1 failed) 35ms
+   ❯ custom color controls through installed React Native Web (3)
+     × uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-custom-color-ui.test.mjs > custom color controls through installed React Native Web > uses the actual modal focus trap and keyboard color tiles, applies only Use color and restores focus on close
+TypeError: Cannot read properties of null (reading 'getAttribute')
+ ❯ tests/native-custom-color-ui.test.mjs:79:18
+     77|     );
+     78|     const modal = document.querySelector('[role="dialog"]');
+     79|     expect(modal.getAttribute('aria-label')).toBe('Color picker');
+       |                  ^
+     80|     const tile = modal.querySelector('[aria-label^="Explore "]');
+     81|     await act(async () => tile.click());
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 8 passed (9)
+      Tests  1 failed | 187 passed (188)
+   Start at  23:00:35
+   Duration  13.88s (tests 92%, import 4%, transform 2%, environment 2%)
+

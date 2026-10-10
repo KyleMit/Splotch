@@ -1,3 +1,4 @@
+import { DEFAULT_COLOR_SETTINGS } from './drawing/palette';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingAudio } from './audio/drawingAudio';
@@ -15,6 +16,7 @@ export function useDrawingSound() {
     status: 'loading',
     soundEnabled: false,
     ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
     message: '',
   });
   const [audioMessage, setAudioMessage] = useState('');

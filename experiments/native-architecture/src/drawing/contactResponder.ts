@@ -3,14 +3,14 @@ import type { ContactSound, SoundContact } from '../audio/contactSound';
 import { createContactCohort } from './contactCohort';
 import { paperPoint, type Drawing, type Stroke } from './model';
 import type { Brush } from './brushes';
-import type { PaletteLabel } from './palette';
+import type { PaintColor } from './palette';
 import { contactLifetime, readStartBatch, responderTarget } from './touchBoundary';
 import { paperLocation, type PaperFrame } from './paperGeometry';
 import type { StrokeWidth } from './strokeWidth';
 
 export type ContactDrawingProps = {
   currentDrawing: () => Drawing;
-  color: PaletteLabel;
+  color: PaintColor;
   brush: Brush;
   strokeWidth: StrokeWidth;
   eraserWidth: StrokeWidth;

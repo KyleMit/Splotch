@@ -53,7 +53,7 @@ describe('candidate stroke widths', () => {
   ])('normalizes only supported old candidate formats with their exact geometry %#', (input) => {
     const expected = { pencil: 7, marker: 22, crayon: 34, magic: 30, eraser: 44 };
     const drawing = parseDrawing(input);
-    expect(drawing.version).toBe(4);
+    expect(drawing.version).toBe(5);
     expect(drawing.strokes[0]).toEqual({
       ...input.strokes[0],
       width: expected[input.strokes[0].brush],
@@ -160,7 +160,9 @@ describe('candidate stroke widths', () => {
 describe('one persisted candidate settings owner', () => {
   it('defaults old candidate sound settings without changing either prior brush geometry', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 2,
+      version: 3,
+      selectedColor: 'Purple',
+      customColors: [],
       soundEnabled: false,
       strokeWidth: 'medium',
       eraserWidth: 'medium',
@@ -201,7 +203,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":2,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick"}'
+      '{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[]}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -213,7 +215,9 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 2,
+      version: 3,
+      selectedColor: 'Purple',
+      customColors: [],
       soundEnabled: true,
       strokeWidth: 'thin',
       eraserWidth: 'thick',

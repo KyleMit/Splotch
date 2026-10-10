@@ -136,7 +136,7 @@ describe('native picture save commit', () => {
     const stored = JSON.parse(
       filesystem.contents.get(`document/splotch-pictures/${saved.id}.json`)
     );
-    expect(stored.version).toBe(4);
+    expect(stored.version).toBe(5);
     expect(stored.strokes.map(({ width }) => width)).toEqual([17, 60, 88]);
   });
 

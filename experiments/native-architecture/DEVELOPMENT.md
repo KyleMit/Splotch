@@ -13,6 +13,11 @@ choice. Medium keeps the candidate's prior brush defaults. Widths are captured p
 retained by Undo, save/reopen and PNG rendering. The existing settings owner persists sound and both
 width choices together; see [construction and validation limits](STROKE-WIDTH-CONSTRUCTION.md).
 
+“More colors” opens a continuous color explorer. “Use color” remembers a selected custom paint in
+six recent swatches alongside the named palette. Paint, sound and both widths persist through the
+same settings owner. Saved strokes keep their exact pigment through palette changes, Undo, reopen
+and PNG rendering; see [construction and validation limits](CUSTOM-COLORS-CONSTRUCTION.md).
+
 The maintained Android manifest removes Expo FileSystem's legacy READ_EXTERNAL_STORAGE and
 WRITE_EXTERNAL_STORAGE declarations. These private save/cache paths and PNG sharing do not request
 external storage grants. Validate the actual built APK's merged permissions when checking a new
