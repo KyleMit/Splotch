@@ -1,7 +1,7 @@
 # Migration progress checklist
 
 The maintainer resumed the full campaign on 2026-10-06. The
-[public campaign register](CAMPAIGN.md#current-public-status-2026-10-09) tracks current source,
+[public campaign register](CAMPAIGN.md#current-public-status-2026-10-10) tracks current source,
 review dependencies and acceptance; host-local CURRENT mirrors pending execution and lease receipts.
 Accepted technical evidence remains committed or publicly linked. The dated checklist below
 preserves the pause frontier.
