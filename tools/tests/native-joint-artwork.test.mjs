@@ -8,6 +8,8 @@ import { paletteHex } from '../../experiments/native-architecture/src/drawing/pa
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
+  emptyDrawing,
+  strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
@@ -82,7 +84,10 @@ describe('joint artwork definitions and chronological mask composition', () => {
     document.body.append(host);
     const mounted = createRoot(host);
     const errors = vi.spyOn(console, 'error');
-    const erase = { brush: 'eraser', points: [{ x: 400, y: 100 }] };
+    const erase = {
+      ...strokeStyle('eraser', 'Blue', emptyDrawing()),
+      points: [{ x: 400, y: 100 }],
+    };
     try {
       await act(() =>
         mounted.render(
@@ -108,21 +113,23 @@ describe('joint artwork definitions and chronological mask composition', () => {
   });
   it('erases earlier ink with black luminance while preserving white-mask ink and later paint', async () => {
     const earlier = {
-      brush: 'marker',
-      color: 'Blue',
+      ...strokeStyle('marker', 'Blue', emptyDrawing()),
       points: [
         { x: 100, y: 200 },
         { x: 700, y: 200 },
       ],
     };
     const erase = {
-      brush: 'eraser',
+      ...strokeStyle('eraser', 'Blue', emptyDrawing()),
       points: [
         { x: 400, y: 150 },
         { x: 400, y: 250 },
       ],
     };
-    const later = { brush: 'marker', color: 'Yellow', points: [{ x: 400, y: 200 }] };
+    const later = {
+      ...strokeStyle('marker', 'Yellow', emptyDrawing()),
+      points: [{ x: 400, y: 200 }],
+    };
     const before = await raw(scene([earlier]));
     const erased = await raw(scene([earlier, erase]));
     const repainted = await raw(scene([earlier, erase, later]));
