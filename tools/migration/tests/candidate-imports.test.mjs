@@ -72,6 +72,7 @@ describe('candidate source import ownership', () => {
       'src/platform/soundSettings.web.ts',
       'src/settings/SoundSettingsSheet.tsx',
       'src/settings/soundSettings.ts',
+      'src/useColorPickerFocus.ts',
       'src/useDrawingScreen.ts',
       'src/useDrawingSound.ts',
       'src/useRendererRecovery.ts',

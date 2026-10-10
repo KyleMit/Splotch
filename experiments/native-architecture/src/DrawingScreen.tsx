@@ -23,6 +23,7 @@ import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './draw
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
+import { useColorPickerFocus } from './useColorPickerFocus';
 
 const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
@@ -115,11 +116,24 @@ export function DrawingScreen() {
     showPictures,
   } = screen;
   const sound = useDrawingSound();
+  const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  const focusReturn = useColorPickerFocus({
+    pickerOpen: colorPickerOpen,
+    closePicker: screen.closeColorPicker,
+    disabled: paintsDisabled,
+    blocked: disabled || pictures !== null,
+  });
   const color = sound.settings.selectedColor;
   const visibleNotice = useIdleMessage(notice, drawing);
   const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
   return (
-    <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
+    <SafeAreaView
+      style={styles.screen}
+      onLayout={() => surface.current?.refreshGeometry()}
+      onFocus={focusReturn.cancel}
+      onPointerDown={focusReturn.cancel}
+      onTouchStart={focusReturn.cancel}
+    >
       <DrawingScroll drawing={drawing} surface={surface}>
         <View style={styles.heading}>
           <Text style={styles.title}>Splotch</Text>
@@ -128,8 +142,8 @@ export function DrawingScreen() {
         <PaintColors
           color={color}
           customColors={sound.settings.customColors}
-          disabled={disabled || sound.settings.status !== 'ready'}
-          pickerOpen={colorPickerOpen}
+          disabled={paintsDisabled}
+          openerRef={focusReturn.opener}
           onExplore={openColorPicker}
           onChange={(next) => {
             void sound.owner?.settings.setColor(next);
@@ -194,7 +208,7 @@ export function DrawingScreen() {
           </Text>
         ) : null}
       </DrawingScroll>
-      <DrawingSheets screen={screen} sound={sound} />
+      <DrawingSheets screen={screen} sound={sound} onCloseColors={focusReturn.close} />
     </SafeAreaView>
   );
 }
@@ -202,14 +216,15 @@ export function DrawingScreen() {
 function DrawingSheets({
   screen,
   sound,
+  onCloseColors,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
+  onCloseColors: () => void;
 }) {
   const {
     history,
     colorPickerOpen,
-    closeColorPicker,
     pagePickerOpen,
     choosePage,
     setPagePickerOpen,
@@ -227,10 +242,10 @@ function DrawingSheets({
       {colorPickerOpen ? (
         <ColorPicker
           selected={color}
-          onClose={closeColorPicker}
+          onClose={onCloseColors}
           onChoose={(next) => {
             void sound.owner?.settings.setColor(next);
-            closeColorPicker();
+            onCloseColors();
           }}
         />
       ) : null}
