@@ -1,6 +1,6 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
 import { Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
-import { paletteHex } from './palette';
+import { paintHex, paintId } from './palette';
 import { rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
@@ -24,7 +24,7 @@ const CrayonDefinitionScope = createContext<string | null>(null);
 const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
 function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> }) {
-  const id = useId();
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const width = stroke.width;
   const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
   const textureId = useContext(CrayonDefinitionScope);
@@ -51,7 +51,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                         {CRAYON_TEXTURES[bandIndex].map(({ shade }) => (
                           <Use
                             key={shade}
-                            href={`#${textureId}-wax-${stroke.color}-${bandIndex}-${shade}`}
+                            href={`#${textureId}-wax-${paintId(stroke.color)}-${bandIndex}-${shade}`}
                           />
                         ))}
                       </G>
@@ -78,7 +78,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
 }
 
 function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
-  const id = useId();
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <G>
       <Defs>
@@ -104,21 +104,22 @@ export function InkArtwork({
   strokes: readonly Stroke[];
   children: ReactNode;
 }) {
-  const id = useId();
-  const colors = [
-    ...new Set(strokes.flatMap((stroke) => (stroke.brush === 'crayon' ? [stroke.color] : []))),
-  ];
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const colors = new Map<string, string>();
+  for (const stroke of strokes) {
+    if (stroke.brush === 'crayon') colors.set(paintId(stroke.color), paintHex(stroke.color));
+  }
   return (
     <CrayonDefinitionScope.Provider value={id}>
       <Defs>
-        {colors.flatMap((color) =>
+        {Array.from(colors).flatMap(([colorId, hex]) =>
           CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
             paths.map(({ path, shade }) => (
               <Path
-                key={`${color}-${bandIndex}-${shade}`}
-                id={`${id}-wax-${color}-${bandIndex}-${shade}`}
+                key={`${colorId}-${bandIndex}-${shade}`}
+                id={`${id}-wax-${colorId}-${bandIndex}-${shade}`}
                 d={path}
-                fill={waxColor(paletteHex(color), shade)}
+                fill={waxColor(hex, shade)}
               />
             ))
           )
@@ -132,7 +133,5 @@ export function InkArtwork({
 export function Ink({ stroke }: { stroke: PaintStroke }) {
   if (stroke.brush === 'crayon') return <CrayonInk stroke={stroke} />;
   if (stroke.brush === 'magic') return <MagicInk stroke={stroke} />;
-  return (
-    <StrokeShape points={stroke.points} width={stroke.width} paint={paletteHex(stroke.color)} />
-  );
+  return <StrokeShape points={stroke.points} width={stroke.width} paint={paintHex(stroke.color)} />;
 }

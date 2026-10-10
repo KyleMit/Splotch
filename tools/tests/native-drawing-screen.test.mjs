@@ -101,6 +101,9 @@ vi.mock('react-native', () => {
 
 vi.mock('react-native-svg', () => ({
   default: ({ children }) => createElement('svg', null, children),
+  Defs: ({ children }) => createElement('defs', null, children),
+  LinearGradient: ({ children }) => createElement('linearGradient', null, children),
+  Stop: () => null,
   Rect: () => null,
   Path: () => null,
 }));
@@ -201,6 +204,90 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+describe('custom paints wired to the drawing screen', () => {
+  it.each(['Retry saving', 'Drawing sound'])(
+    'uses a session custom paint without replacing unread preferences until explicit %s',
+    async (recovery) => {
+      await act(async () => screen.close());
+      const original = JSON.stringify({
+        version: 3,
+        soundEnabled: true,
+        strokeWidth: 'thick',
+        eraserWidth: 'thin',
+        selectedColor: '#FEDCBA',
+        customColors: ['#FEDCBA'],
+      });
+      let stored = original;
+      files.settingsRead.mockImplementation(async () => stored);
+      files.settingsRead.mockRejectedValueOnce(new Error('temporarily unreadable'));
+      files.settingsWrite.mockImplementation(async (snapshot) => {
+        stored = snapshot;
+      });
+      screen = createScreen();
+      await act(async () => screen.mount());
+      const warning =
+        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('More colors');
+      await screen.click('Use color');
+      await screen.click('Marker');
+      await screen.click('Draw fixture stroke');
+      expect(JSON.parse(screen.paper()).strokes[0].color).toBe('#AB71E1');
+      expect(
+        screen.container
+          .querySelector('[aria-label="Custom paint #AB71E1"]')
+          .getAttribute('aria-pressed')
+      ).toBe('true');
+      expect(files.settingsWrite).not.toHaveBeenCalled();
+      expect(stored).toBe(original);
+      expect(screen.container.textContent).toContain(warning);
+      await screen.click('Settings');
+      expect(screen.dialog().textContent).toContain(warning);
+      await screen.click(recovery);
+      expect(files.settingsWrite).toHaveBeenCalledOnce();
+      expect(JSON.parse(stored)).toEqual({
+        version: 3,
+        soundEnabled: recovery === 'Drawing sound',
+        strokeWidth: 'medium',
+        eraserWidth: 'medium',
+        selectedColor: '#AB71E1',
+        customColors: ['#AB71E1'],
+      });
+      expect(screen.dialog().textContent).not.toContain(warning);
+    }
+  );
+  it('locks input for exploration, persists only the chosen color and carries it through drawing and remount', async () => {
+    await act(async () => {});
+    await screen.click('More colors');
+    expect(files.lock).toHaveBeenCalledTimes(1);
+    const tile = screen.dialog().querySelector('[aria-label^="Explore "]');
+    const chosen = tile.getAttribute('aria-label').slice('Explore '.length);
+    await screen.click(`Explore ${chosen}`);
+    expect(files.settingsWrite).not.toHaveBeenCalled();
+    await screen.click('Use color');
+    expect(screen.dialog()).toBeNull();
+    const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
+    expect(JSON.parse(snapshot)).toMatchObject({
+      version: 3,
+      selectedColor: chosen,
+      customColors: [chosen],
+    });
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
+    screen.close();
+    files.settingsRead.mockResolvedValue(snapshot);
+    screen = createScreen();
+    await act(async () => screen.mount());
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
+    expect(
+      screen.container
+        .querySelector(`[aria-label="Custom paint ${chosen}"]`)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+  });
+});
+
 describe('drawing width controls', () => {
   it('keeps accessible, touch-sized independent selections through tool switches and reopening settings', async () => {
     await screen.click('Marker');
@@ -223,7 +310,7 @@ describe('drawing width controls', () => {
     await screen.click('Close Settings');
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick"}'
+      '{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[]}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();
@@ -263,7 +350,7 @@ describe('drawing width controls', () => {
       screen = createScreen();
       await act(async () => screen.mount());
       const warning =
-        'Drawing settings could not be read. Sound is off. Width choices work for this session. Choose your settings and retry saving.';
+        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
       expect(screen.container.textContent).toContain(warning);
       await screen.click('Marker');
       await screen.click('Drawing width: Thin');
@@ -280,10 +367,12 @@ describe('drawing width controls', () => {
       await screen.click(recovery);
       expect(files.settingsWrite).toHaveBeenCalledOnce();
       expect(JSON.parse(saved)).toEqual({
-        version: 2,
+        version: 3,
         soundEnabled: recovery === 'Drawing sound',
         strokeWidth: 'thin',
         eraserWidth: 'thick',
+        selectedColor: 'Purple',
+        customColors: [],
       });
       expect(screen.dialog().textContent).not.toContain(warning);
     }

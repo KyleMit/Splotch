@@ -9,7 +9,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { paletteHex, type PaletteLabel } from './drawing/palette';
+import { PaintColors } from './drawing/PaintColors';
+import { ColorPicker } from './drawing/ColorPicker';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
@@ -22,18 +23,9 @@ import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './draw
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
+import { useColorPickerFocus } from './useColorPickerFocus';
 
 const SCROLL_GEOMETRY_THROTTLE_MS = 16;
-
-const COLORS: readonly PaletteLabel[] = [
-  'Purple',
-  'Blue',
-  'Green',
-  'Yellow',
-  'Orange',
-  'Red',
-  'Black',
-];
 
 function Action({
   label,
@@ -98,45 +90,65 @@ function useIdleMessage(message: string, drawing: boolean) {
 }
 
 export function DrawingScreen() {
+  const screen = useDrawingScreen();
   const {
     history,
     currentDrawing,
     clear,
     undo,
     recovery,
-    color,
-    setColor,
     brush,
     setBrush,
     drawing,
     busy,
     notice,
     pictures,
-    setPictures,
     surface,
     pagePickerOpen,
     setPagePickerOpen,
     settingsOpen,
+    colorPickerOpen,
+    openColorPicker,
     openSettings,
-    closeSettings,
-    choosePage,
     disabled,
     save,
     exportPicture,
     showPictures,
-    openPicture,
-  } = useDrawingScreen();
+  } = screen;
   const sound = useDrawingSound();
+  const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  const focusReturn = useColorPickerFocus({
+    pickerOpen: colorPickerOpen,
+    closePicker: screen.closeColorPicker,
+    disabled: paintsDisabled,
+    blocked: disabled || pictures !== null,
+  });
+  const color = sound.settings.selectedColor;
   const visibleNotice = useIdleMessage(notice, drawing);
   const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
   return (
-    <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
+    <SafeAreaView
+      style={styles.screen}
+      onLayout={() => surface.current?.refreshGeometry()}
+      onFocus={focusReturn.cancel}
+      onPointerDown={focusReturn.cancel}
+      onTouchStart={focusReturn.cancel}
+    >
       <DrawingScroll drawing={drawing} surface={surface}>
         <View style={styles.heading}>
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
         </View>
-        <PaintColors color={color} disabled={disabled} onChange={setColor} />
+        <PaintColors
+          color={color}
+          customColors={sound.settings.customColors}
+          disabled={paintsDisabled}
+          openerRef={focusReturn.opener}
+          onExplore={openColorPicker}
+          onChange={(next) => {
+            void sound.owner?.settings.setColor(next);
+          }}
+        />
         <DrawingTools
           history={history}
           brush={brush}
@@ -159,7 +171,14 @@ export function DrawingScreen() {
           brush={brush}
           strokeWidth={sound.settings.strokeWidth}
           eraserWidth={sound.settings.eraserWidth}
-          disabled={busy || pictures !== null || pagePickerOpen || settingsOpen}
+          disabled={
+            busy ||
+            pictures !== null ||
+            pagePickerOpen ||
+            settingsOpen ||
+            colorPickerOpen ||
+            sound.settings.status === 'loading'
+          }
           sound={sound.owner?.contacts ?? null}
           {...recovery.callbacks}
         />
@@ -189,6 +208,47 @@ export function DrawingScreen() {
           </Text>
         ) : null}
       </DrawingScroll>
+      <DrawingSheets screen={screen} sound={sound} onCloseColors={focusReturn.close} />
+    </SafeAreaView>
+  );
+}
+
+function DrawingSheets({
+  screen,
+  sound,
+  onCloseColors,
+}: {
+  screen: ReturnType<typeof useDrawingScreen>;
+  sound: ReturnType<typeof useDrawingSound>;
+  onCloseColors: () => void;
+}) {
+  const {
+    history,
+    colorPickerOpen,
+    pagePickerOpen,
+    choosePage,
+    setPagePickerOpen,
+    settingsOpen,
+    closeSettings,
+    pictures,
+    busy,
+    notice,
+    openPicture,
+    setPictures,
+  } = screen;
+  const color = sound.settings.selectedColor;
+  return (
+    <>
+      {colorPickerOpen ? (
+        <ColorPicker
+          selected={color}
+          onClose={onCloseColors}
+          onChoose={(next) => {
+            void sound.owner?.settings.setColor(next);
+            onCloseColors();
+          }}
+        />
+      ) : null}
       {pagePickerOpen ? (
         <ColoringPagePicker
           selected={history.drawing.pageId}
@@ -216,7 +276,7 @@ export function DrawingScreen() {
         onOpen={openPicture}
         onClose={() => setPictures(null)}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
@@ -239,38 +299,6 @@ function DrawingWidth({
         void sound.owner?.settings.setWidth(tool, width);
       }}
     />
-  );
-}
-
-function PaintColors({
-  color,
-  disabled,
-  onChange,
-}: {
-  color: PaletteLabel;
-  disabled: boolean;
-  onChange: (color: PaletteLabel) => void;
-}) {
-  return (
-    <View style={styles.palette}>
-      {COLORS.map((label) => (
-        <Pressable
-          key={label}
-          accessibilityRole="button"
-          accessibilityLabel={`${label} paint`}
-          accessibilityState={{ selected: label === color, disabled }}
-          disabled={disabled}
-          onPress={() => onChange(label)}
-          style={[
-            styles.swatch,
-            { backgroundColor: paletteHex(label) },
-            label === color && styles.selectedSwatch,
-          ]}
-        >
-          {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
-        </Pressable>
-      ))}
-    </View>
   );
 }
 
@@ -415,24 +443,6 @@ const styles = StyleSheet.create({
   heading: { width: '100%', maxWidth: 1024, gap: 4 },
   title: { fontSize: 32, fontWeight: '800', color: DRAWING_THEME.brandSolid },
   subtitle: { fontSize: 16, color: DRAWING_THEME.textSoft },
-  palette: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: CONTROL_GAP },
-  swatch: {
-    width: TOUCH_TARGET,
-    height: TOUCH_TARGET,
-    borderRadius: TOUCH_TARGET / 2,
-    borderWidth: 3,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectedSwatch: { borderColor: DRAWING_THEME.textStrong },
-  swatchMark: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: DRAWING_THEME.surface,
-    textShadowColor: DRAWING_THEME.textStrong,
-    textShadowRadius: 2,
-  },
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: CONTROL_GAP },
   action: {
     minHeight: TOUCH_TARGET,

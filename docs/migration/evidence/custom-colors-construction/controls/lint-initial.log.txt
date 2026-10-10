@@ -1,0 +1,17 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/private/tmp/native-custom-colors/repository/experiments/native-architecture/src/DrawingScreen.tsx
+  107:8  error  Function 'DrawingScreen' has too many lines (149). Maximum allowed is 125  max-lines-per-function
+  515:1  error  File has too many lines (550). Maximum allowed is 500                      max-lines
+
+/private/tmp/native-custom-colors/repository/experiments/native-architecture/src/drawing/ColorPicker.tsx
+  23:8  error  Function 'ColorPicker' has too many lines (165). Maximum allowed is 125  max-lines-per-function
+
+/private/tmp/native-custom-colors/repository/experiments/native-architecture/src/useDrawingScreen.ts
+  25:8  error  Function 'useDrawingScreen' has too many lines (133). Maximum allowed is 125  max-lines-per-function
+
+✖ 4 problems (4 errors, 0 warnings)
+

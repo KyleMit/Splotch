@@ -57,7 +57,7 @@ describe('joint native drawing and eraser ownership', () => {
   ])('preserves all accepted saved variants %#', (input, pageId, rainbow) => {
     const drawing = parseDrawing(input);
     expect(drawing).toEqual({
-      version: 4,
+      version: 5,
       pageId,
       rainbow,
       strokes: input.strokes.map((stroke) => ({
@@ -162,12 +162,13 @@ describe('actual browser checkpoint fixture hash contract', () => {
     ...Object.entries(browserFixtures),
     ...causal.map(({ name, drawing }) => [name, drawing]),
   ])(
-    'roundtrips consumed fixture %s through the production parser without JSON hash drift',
+    'normalizes only the version of consumed v4 fixture %s and preserves stroke JSON bytes',
     (_name, fixture) => {
       const stored = JSON.parse(JSON.stringify(fixture));
       const parsed = parseDrawing(stored);
-      expect(parsed).toEqual(fixture);
-      expect(JSON.stringify(parsed)).toBe(JSON.stringify(fixture));
+      expect(parsed).toEqual({ ...fixture, version: 5 });
+      expect(JSON.stringify(parsed.strokes)).toBe(JSON.stringify(fixture.strokes));
+      expect(parseDrawing(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
     }
   );
 });

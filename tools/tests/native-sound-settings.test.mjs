@@ -30,6 +30,8 @@ describe('candidate sound settings', () => {
         soundEnabled,
         strokeWidth: 'medium',
         eraserWidth: 'medium',
+        selectedColor: 'Purple',
+        customColors: [],
         saved: true,
         message: '',
       },
@@ -64,7 +66,7 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1).message).toContain('could not be read');
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -80,8 +82,12 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: false });
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
-      ['{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'],
-      ['{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'],
+      [
+        '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}',
+      ],
+      [
+        '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}',
+      ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
   });

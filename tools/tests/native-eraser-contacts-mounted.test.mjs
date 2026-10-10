@@ -124,9 +124,11 @@ function Consumer() {
     ref: owner.surface,
     drawing: owner.history.drawing,
     currentDrawing: owner.currentDrawing,
-    color: owner.color,
+    color: sound.settings.selectedColor,
+    strokeWidth: sound.settings.strokeWidth,
+    eraserWidth: sound.settings.eraserWidth,
     brush: owner.brush,
-    disabled: owner.busy || owner.settingsOpen,
+    disabled: owner.busy || owner.sheetOpen || sound.settings.status === 'loading',
     ...owner.recovery.callbacks,
   });
 }
@@ -283,7 +285,7 @@ describe('mounted joint cohort, canonical history and capture ownership', () => 
       await settle();
       await act(async () => owner.undo());
       expect(owner.history.drawing).toBe(base);
-      expect(owner.history.drawing).toMatchObject({ version: 4, pageId: 'flower', rainbow: 3 });
+      expect(owner.history.drawing).toMatchObject({ version: 5, pageId: 'flower', rainbow: 3 });
     }
   );
 

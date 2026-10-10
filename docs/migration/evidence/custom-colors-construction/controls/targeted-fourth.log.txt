@@ -1,0 +1,57 @@
+
+ RUN  v5.0.2 /private/tmp/native-custom-colors/repository/tools
+
+stderr | tests/native-drawing-screen.test.mjs > custom paints wired to the drawing screen > locks input for exploration, persists only the chosen color and carries it through drawing and remount
+An update to DrawingScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to DrawingScreen inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ❯ tests/native-drawing-screen.test.mjs (10 tests | 1 failed) 133ms
+   ❯ custom paints wired to the drawing screen (1)
+     × locks input for exploration, persists only the chosen color and carries it through drawing and remount 20ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-drawing-screen.test.mjs > custom paints wired to the drawing screen > locks input for exploration, persists only the chosen color and carries it through drawing and remount
+AssertionError: More colors: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ Object.click tests/native-drawing-screen.test.mjs:174:38
+    172|       );
+    173|       expect(button, label).toBeDefined();
+    174|       expect(button.disabled, label).toBe(false);
+       |                                      ^
+    175|       await act(async () => button.click());
+    176|     },
+ ❯ tests/native-drawing-screen.test.mjs:209:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 12 passed (13)
+   Start at  23:02:26
+   Duration  763ms (environment 31%, import 26%, tests 26%, transform 17%)
+

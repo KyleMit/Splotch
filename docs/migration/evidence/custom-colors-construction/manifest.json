@@ -1,0 +1,195 @@
+{
+  "kind": "development-construction-controls",
+  "baseCommit": "4b1882fb7dd41cf7b4387bdc323c6698f798d6e9",
+  "baseTree": "2805de485bc7d394a08e0e87a1cfb87cc1860151",
+  "finalChecks": {
+    "scoped": {
+      "exitCode": 0,
+      "files": 18,
+      "tests": 270,
+      "maxWorkers": 1
+    },
+    "candidateTypeScript": {
+      "exitCode": 0
+    },
+    "check": {
+      "exitCode": 0
+    },
+    "lint": {
+      "exitCode": 0
+    },
+    "format": {
+      "exitCode": 0
+    }
+  },
+  "pending": ["compact-browser-and-resize", "native-feedback", "independent-review"],
+  "files": [
+    {
+      "path": "READ-FAILURE-REPAIR.md",
+      "bytes": 2392,
+      "sha256": "75f7e764366e35d4e6cdcd94200d94833f8f47d3ae01ecb71db09e724d6fdf00"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2583,
+      "sha256": "a8abd3a0f215cbd1c58b5cdda6485ba1ab8564e1b4470d40f7c8cc414682b7cc"
+    },
+    {
+      "path": "controls/check-final.log.txt",
+      "bytes": 2341,
+      "sha256": "57387cfdf60bd07488ab8b183ed842167054801772bd90aebfaf121a56c9fbb2"
+    },
+    {
+      "path": "controls/format-final.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/format-initial.log.txt",
+      "bytes": 1097,
+      "sha256": "65fdc185be7c2a71e6f08d3758380cc5389832cdedcc4a9ece0502b8a6df1af9"
+    },
+    {
+      "path": "controls/lint-click-initial.log.txt",
+      "bytes": 507,
+      "sha256": "e3380ba821e1195f8a118f9bfe894117eb6b44bb5261811b753c1c98c0af9987"
+    },
+    {
+      "path": "controls/lint-final.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/lint-initial.log.txt",
+      "bytes": 824,
+      "sha256": "ccb1ad141c206a99f9c6695f4aa3c6f165fe5ffe43aabd1887f22d169ed5eec9"
+    },
+    {
+      "path": "controls/read-failure-check.log.txt",
+      "bytes": 2341,
+      "sha256": "57387cfdf60bd07488ab8b183ed842167054801772bd90aebfaf121a56c9fbb2"
+    },
+    {
+      "path": "controls/read-failure-focused.log.txt",
+      "bytes": 230,
+      "sha256": "315667a1ad4b513688119cb92065d365ebf36e7c27666ad583c9f12435a92566"
+    },
+    {
+      "path": "controls/read-failure-format.log.txt",
+      "bytes": 289,
+      "sha256": "bd3a3fc08dbda35aca709ac2c5524f25eded28b52e7ac70db1545f7a957f296b"
+    },
+    {
+      "path": "controls/read-failure-initial.log.txt",
+      "bytes": 3911,
+      "sha256": "793a6bb49ab93b226f879ffef88c57c10344afc88b76c0cbaea958ac6b0db2dd"
+    },
+    {
+      "path": "controls/read-failure-lint.log.txt",
+      "bytes": 34,
+      "sha256": "3500b9d861f580aecc86f29af131e51a5278c2836bbcaca933fd4d0b55643fbd"
+    },
+    {
+      "path": "controls/read-failure-scoped.log.txt",
+      "bytes": 420,
+      "sha256": "66279c541fc6ded1ea81617fe5deeaef706843d10f5698e3cbc291e602f82f3a"
+    },
+    {
+      "path": "controls/read-failure-types.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/targeted-click-initial.log.txt",
+      "bytes": 1418,
+      "sha256": "f763a3e8f66bf7296a8afb356eb28fe9f44ffdb930b99ec590bc1353dfe727c9"
+    },
+    {
+      "path": "controls/targeted-expanded-initial.log.txt",
+      "bytes": 287752,
+      "sha256": "eed972a0f17c99e68324e4eccbb048b49dcd652ae4b88cdfcad2894c39e63642"
+    },
+    {
+      "path": "controls/targeted-final.log.txt",
+      "bytes": 420,
+      "sha256": "aba70c4fb24820cf1b7ee71b794c964495541a7e61159886727d9999844541d0"
+    },
+    {
+      "path": "controls/targeted-fourth.log.txt",
+      "bytes": 2240,
+      "sha256": "446268adbf0a15fb1b535176c2f01d2ce778919f13b28c87fdb89bdf583d87f5"
+    },
+    {
+      "path": "controls/targeted-initial.log.txt",
+      "bytes": 9708,
+      "sha256": "ff663acae364ba7aec20a901cedccfd8299b187e4175c310aec6de716c007330"
+    },
+    {
+      "path": "controls/targeted-second.log.txt",
+      "bytes": 2326,
+      "sha256": "157e1b8d941ad85bf2565193d7d23365307675bc99fcd66788e309d27ac5f3a9"
+    },
+    {
+      "path": "controls/targeted-third.log.txt",
+      "bytes": 1751,
+      "sha256": "e3087971d6d019b2bbc579b842cfe9d56bd5b052990fc3de427d6e902e64da4e"
+    },
+    {
+      "path": "controls/types-final.log.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "controls/types-initial.log.txt",
+      "bytes": 948,
+      "sha256": "3eb36bffb277bd37bdbfe816d80db9f5e1feff32226205279bff6ef2ac946907"
+    }
+  ],
+  "readFailureRepair": {
+    "fromHead": "79b6c9c4dee609c9825288b297e0c90030a479c6",
+    "widthOwnerCommit": "8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9",
+    "widthOwnerTree": "3ed898cc6783ebc00c4d8b75e0024415b02a1fef",
+    "checks": {
+      "focused": {
+        "exitCode": 0,
+        "files": 3,
+        "tests": 73,
+        "maxWorkers": 1
+      },
+      "scoped": {
+        "exitCode": 0,
+        "files": 18,
+        "tests": 280,
+        "maxWorkers": 1
+      },
+      "candidateTypeScript": {
+        "exitCode": 0
+      },
+      "check": {
+        "exitCode": 0
+      },
+      "lint": {
+        "exitCode": 0
+      },
+      "format": {
+        "exitCode": 0
+      }
+    }
+  },
+  "fullTools": {
+    "source": "eaec39978fe37660c4f8a4bd30c355b68ca1f36f",
+    "tree": "bb048745fb89a518ede43cdc36fa7498f305cf32",
+    "exitCode": 0,
+    "files": 388,
+    "tests": 8697,
+    "maxWorkers": 2,
+    "suiteSeconds": 157.78,
+    "supervisedSeconds": 160.165363,
+    "trackedFilesPreserved": 9015,
+    "rawAndSemanticIndicesPreserved": true,
+    "observedLifetimesClosed": 1646,
+    "ownedGroupsClosed": 40,
+    "supervisorGroupClosed": true,
+    "postToolClosureSha256": "32de33745e12fe54e696c63a6f6d3f14bd9fe10b9808a3f5d42d12757dea62c5"
+  }
+}

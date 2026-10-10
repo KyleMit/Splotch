@@ -9,7 +9,7 @@ const sound = vi.hoisted(() => ({
   write: vi.fn(),
   load: vi.fn(),
   current: 'active',
-  listener: null,
+  listeners: new Set(),
   remove: vi.fn(),
   subscribe: vi.fn(),
 }));
@@ -150,16 +150,21 @@ async function mount(component = DrawingScreen) {
   await act(async () => root.render(createElement(component)));
 }
 async function appState(state) {
-  await act(async () => sound.listener(state));
+  await act(async () => sound.listeners.forEach((listener) => listener(state)));
 }
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   sound.current = 'active';
-  sound.listener = null;
+  sound.listeners.clear();
   sound.remove.mockReset();
   sound.subscribe.mockReset().mockImplementation((_name, listener) => {
-    sound.listener = listener;
-    return { remove: sound.remove };
+    sound.listeners.add(listener);
+    return {
+      remove() {
+        sound.listeners.delete(listener);
+        sound.remove();
+      },
+    };
   });
   sound.read.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   sound.write.mockReset().mockResolvedValue();
@@ -194,7 +199,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -207,7 +212,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'
+      '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });
@@ -260,7 +265,8 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Move stroke');
     expect(loop.start).toHaveBeenCalledOnce();
     ui.close();
-    expect(sound.remove).toHaveBeenCalledOnce();
+    expect(sound.remove).toHaveBeenCalledTimes(sound.subscribe.mock.calls.length);
+    expect(sound.listeners.size).toBe(0);
   });
   it('unsubscribes before releasing the player and stops disposed settings from writing', async () => {
     sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
