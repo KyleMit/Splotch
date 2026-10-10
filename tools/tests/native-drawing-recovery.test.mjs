@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { URL as NodeURL } from 'node:url';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +8,10 @@ import { DrawingScreen } from '../../experiments/native-architecture/src/Drawing
 import { parseDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
+
+const capturePngFixture = readFileSync(
+  new NodeURL('./fixtures/native-png-android-rgba-sbit.png', import.meta.url)
+).toString('base64');
 
 const sdk = vi.hoisted(() => ({
   captures: [],
@@ -19,6 +25,16 @@ const sdk = vi.hoisted(() => ({
   open: vi.fn(),
   export: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: async () => null, write: async () => {} },
+    deliver: async (picture) => {
+      await sdk.export(picture.base64);
+      return 'sharing-closed';
+    },
+  },
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: () => [{ id: 'picture-1-recovery', name: 'Recovery fixture', modifiedAt: 1 }],
   reopenPicture: sdk.open,
@@ -82,7 +98,7 @@ vi.mock('react-native-svg', () => {
         toDataURL(callback) {
           sdk.captures.push(callback);
           if (sdk.fail) throw new Error('SDK capture failure');
-          callback('transparent-fixture-png');
+          callback(capturePngFixture);
         },
       }));
       return createElement('div', null, children);
@@ -279,6 +295,7 @@ describe('visible terminal renderer recovery', () => {
     await act(async () => root.render(createElement(DrawingScreen)));
     await click('Export PNG');
     await frames();
+    await act(async () => vi.runAllTimersAsync());
     expect(host.textContent).toContain('Sharing was declined');
     expect(button('Retry drawing')).toBeUndefined();
   });

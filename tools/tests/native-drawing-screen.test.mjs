@@ -20,6 +20,16 @@ const files = vi.hoisted(() => ({
   cohort: null,
 }));
 
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: async () => null, write: async () => {} },
+    deliver: async (picture) => {
+      await files.export(picture.base64);
+      return 'sharing-closed';
+    },
+  },
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
