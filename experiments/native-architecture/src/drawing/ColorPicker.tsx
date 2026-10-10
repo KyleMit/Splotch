@@ -76,6 +76,7 @@ export function ColorPicker({
             <Text style={styles.help}>Slide to explore. Lift to keep a color here.</Text>
             <View
               ref={field}
+              tabIndex={-1}
               collapsable={false}
               onLayout={refresh}
               style={styles.field}
@@ -84,6 +85,7 @@ export function ColorPicker({
                 event.preventDefault();
                 const touch = event.nativeEvent.touches[0];
                 if (!touch || event.nativeEvent.touches.length !== 1) return;
+                field.current?.focus();
                 gesture.current = { identifier: String(touch.identifier), previous: draft };
                 setExploring(true);
                 sample(event);
