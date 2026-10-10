@@ -1,6 +1,8 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
-import { Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
-import { paintHex, paintId } from './palette';
+import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
+import { paintHex, paintId, paletteHex } from './palette';
+import { COLORING_FILLS } from './pages';
+import { useInkAppearance } from './InkAppearance';
 import { rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
@@ -79,18 +81,46 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
 
 function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const { pageId, theme } = useInkAppearance();
+  const fill = pageId === 'blank' ? null : COLORING_FILLS[pageId];
   return (
     <G>
       <Defs>
-        <LinearGradient
-          id={id}
-          gradientUnits="userSpaceOnUse"
-          {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
-        >
-          {rainbow(stroke.rainbow).stops.map((stop) => (
-            <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
-          ))}
-        </LinearGradient>
+        {fill ? (
+          <Pattern
+            id={id}
+            x={0}
+            y={0}
+            width={PAPER_WIDTH}
+            height={PAPER_HEIGHT}
+            patternUnits="userSpaceOnUse"
+            patternContentUnits="userSpaceOnUse"
+          >
+            <Rect
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              fill={paletteHex(fill.background[theme])}
+            />
+            {fill.regions.map((region, index) => (
+              <Path
+                key={index}
+                d={region.path}
+                fill={paletteHex(region.colors[theme])}
+                stroke="none"
+              />
+            ))}
+          </Pattern>
+        ) : (
+          <LinearGradient
+            id={id}
+            gradientUnits="userSpaceOnUse"
+            {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
+          >
+            {rainbow(stroke.rainbow).stops.map((stop) => (
+              <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+            ))}
+          </LinearGradient>
+        )}
       </Defs>
       <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${id})`} />
     </G>

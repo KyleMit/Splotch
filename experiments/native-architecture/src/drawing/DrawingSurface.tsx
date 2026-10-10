@@ -4,12 +4,13 @@ import {
   useLayoutEffect,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
   type ForwardedRef,
   type RefObject,
 } from 'react';
-import { PanResponder, StyleSheet, View } from 'react-native';
+import { PanResponder, StyleSheet, View, useColorScheme } from 'react-native';
 import Svg from 'react-native-svg';
 import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
@@ -18,7 +19,8 @@ import { measurePaper } from './measurePaper';
 import { PageOutline } from './PageOutline';
 import { RasterInk, type RasterInkHandle } from './RasterInk';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
-import { DRAWING_THEME } from './theme';
+import { DRAWING_THEME, PAPER_THEMES } from './theme';
+import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 
 export type DrawingSurfaceHandle = {
@@ -35,6 +37,11 @@ type Props = ContactDrawingProps & {
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
+    const colorScheme = useColorScheme();
+    const appearance = useMemo<InkAppearance>(
+      () => ({ pageId: props.drawing.pageId, theme: colorScheme === 'dark' ? 'dark' : 'light' }),
+      [props.drawing.pageId, colorScheme]
+    );
     const propsRef = useRef(props);
     propsRef.current = props;
     const paper = useRef<View>(null);
@@ -70,6 +77,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
       setPacket,
       raster,
       props.drawing,
+      appearance,
       refreshGeometry
     );
     useLayoutEffect(() => {
@@ -95,41 +103,45 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     ).current;
 
     return (
-      <View style={styles.container}>
-        <View
-          ref={paper}
-          accessibilityLabel="Drawing paper"
-          testID="drawing-paper"
-          style={styles.paper}
-          pointerEvents="box-only"
-          onLayout={refreshGeometry}
-          {...responder.panHandlers}
-          onTouchEnd={(event) => input.endRaw(event)}
-          onTouchCancel={() => input.interrupt()}
-        >
-          <RasterInk
-            ref={raster}
-            strokes={props.drawing.strokes}
-            drafts={drafts}
-            prepareEraser={props.brush === 'eraser'}
-            onBusy={props.onPreparingChange}
-            onError={(error) => {
-              input.silence();
-              props.onRendererFault(error);
-            }}
-          />
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
+      <InkAppearanceScope.Provider value={appearance}>
+        <View style={styles.container}>
+          <View
+            ref={paper}
+            accessibilityLabel="Drawing paper"
+            testID="drawing-paper"
+            style={[styles.paper, { backgroundColor: PAPER_THEMES[appearance.theme].paper }]}
+            pointerEvents="box-only"
+            onLayout={refreshGeometry}
+            {...responder.panHandlers}
+            onTouchEnd={(event) => input.endRaw(event)}
+            onTouchCancel={() => input.interrupt()}
           >
-            <PageOutline pageId={props.drawing.pageId} />
-          </Svg>
+            {/* Checkpoints contain Magic colors; appearance changes must replay semantic strokes. */}
+            <RasterInk
+              key={`${appearance.pageId}:${appearance.theme}`}
+              ref={raster}
+              strokes={props.drawing.strokes}
+              drafts={drafts}
+              prepareEraser={props.brush === 'eraser'}
+              onBusy={props.onPreparingChange}
+              onError={(error) => {
+                input.silence();
+                props.onRendererFault(error);
+              }}
+            />
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <PageOutline pageId={props.drawing.pageId} />
+            </Svg>
+          </View>
+          {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
         </View>
-        {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
-      </View>
+      </InkAppearanceScope.Provider>
     );
   }
 );
@@ -140,12 +152,16 @@ function useSurfaceCapture(
   setPacket: (packet: PictureRequest | null) => void,
   raster: RefObject<RasterInkHandle | null>,
   drawing: Drawing,
+  appearance: InkAppearance,
   refreshGeometry: () => void
 ) {
   const captures = useRef(createPngCapture()).current;
   const captureLock = useRef<PngCaptureRequest | null>(null);
   const commandLock = useRef<object | null>(null);
 
+  const currentAppearance = useRef(appearance);
+  currentAppearance.current = appearance;
+  const captureAppearance = useRef<InkAppearance | null>(null);
   const currentDrawing = useRef(drawing);
   currentDrawing.current = drawing;
   const mounted = useRef(true);
@@ -159,28 +175,33 @@ function useSurfaceCapture(
     const plan = raster.current.readyPlan(snapshot.strokes);
     const request = captures.begin(snapshot);
     captureLock.current = request;
+    const capturedAppearance = currentAppearance.current;
+    captureAppearance.current = capturedAppearance;
     setPacket({
       id: nextId.current++,
       request,
       kind,
       plan,
+      appearance: capturedAppearance,
       isCurrent: () =>
         captureLock.current === request &&
         commandLock.current === lease &&
-        currentDrawing.current === snapshot,
+        currentDrawing.current === snapshot &&
+        currentAppearance.current === capturedAppearance,
     });
     return request.promise.finally(() => {
       if (captureLock.current !== request) return;
       captureLock.current = null;
+      captureAppearance.current = null;
       if (mounted.current) setPacket(null);
     });
   }
 
   useEffect(() => {
     const request = captureLock.current;
-    if (request && request.drawing !== drawing)
+    if (request && (request.drawing !== drawing || captureAppearance.current !== appearance))
       request.cancel('The picture changed before capture finished.');
-  }, [drawing]);
+  }, [drawing, appearance]);
 
   useImperativeHandle(
     ref,

@@ -19,6 +19,7 @@ const files = vi.hoisted(() => ({
   cohort: null,
   cohortDrivers: false,
   platform: 'android',
+  scheme: 'light',
   retainClosingModal: false,
   dismissModal: null,
 }));
@@ -61,6 +62,7 @@ vi.mock('react-native', () => {
       addEventListener: () => ({ remove: vi.fn() }),
     },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+    useColorScheme: () => files.scheme,
     Platform: {
       get OS() {
         return files.platform;

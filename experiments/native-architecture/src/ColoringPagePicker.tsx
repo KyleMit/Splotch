@@ -1,9 +1,16 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
+import { InkAppearanceScope } from './drawing/InkAppearance';
 import { PageOutline } from './drawing/PageOutline';
 import { COLORING_PAGES, PAGE_IDS, type PageId } from './drawing/pages';
-import { DRAWING_SCALE, DRAWING_SCRIM, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+import {
+  DRAWING_SCALE,
+  DRAWING_SCRIM,
+  DRAWING_THEME,
+  PAPER_THEMES,
+  TOUCH_TARGET,
+} from './drawing/theme';
 
 const PICKER_MAX_WIDTH_PX = 512;
 const TILE_MIN_WIDTH_PX = 132;
@@ -18,6 +25,7 @@ export function ColoringPagePicker({
   onChoose: (pageId: PageId) => void;
   onClose: () => void;
 }) {
+  const theme = useColorScheme() === 'dark' ? 'dark' : 'light';
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -30,7 +38,7 @@ export function ColoringPagePicker({
           <Text accessibilityRole="header" style={styles.title}>
             Choose a page
           </Text>
-          <Text style={styles.help}>A new page starts fresh. Undo brings your picture back.</Text>
+          <Text style={styles.help}>Your drawing stays. Undo brings the last page back.</Text>
           <ScrollView contentContainerStyle={styles.grid}>
             {PAGE_IDS.map((pageId) => (
               <Pressable
@@ -47,10 +55,16 @@ export function ColoringPagePicker({
                 ]}
               >
                 <View pointerEvents="none" style={styles.preview}>
-                  <Svg width="100%" height="100%" viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}>
-                    <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-                    <PageOutline pageId={pageId} />
-                  </Svg>
+                  <InkAppearanceScope.Provider value={{ pageId, theme }}>
+                    <Svg width="100%" height="100%" viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}>
+                      <Rect
+                        width={PAPER_WIDTH}
+                        height={PAPER_HEIGHT}
+                        fill={PAPER_THEMES[theme].paper}
+                      />
+                      <PageOutline pageId={pageId} />
+                    </Svg>
+                  </InkAppearanceScope.Provider>
                 </View>
                 <Text style={styles.label}>{COLORING_PAGES[pageId].label}</Text>
                 <Text style={styles.selection}>{pageId === selected ? 'Selected' : 'Choose'}</Text>

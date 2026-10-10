@@ -49,6 +49,7 @@ vi.mock('react-native', () => {
       addEventListener: () => ({ remove() {} }),
     },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+    useColorScheme: () => 'light',
     Platform: { OS: 'android' },
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),

@@ -2,6 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
@@ -32,7 +33,11 @@ function svg(children) {
         height: PAPER_HEIGHT,
         viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`,
       },
-      children
+      createElement(
+        InkAppearanceScope.Provider,
+        { value: { pageId: 'blank', theme: 'light' } },
+        children
+      )
     )
   );
 }
@@ -97,7 +102,15 @@ describe('joint artwork definitions and chronological mask composition', () => {
           createElement(
             Svg,
             { width: PAPER_WIDTH, height: PAPER_HEIGHT },
-            createElement(InkScene, { strokes: [blue, erase], checkpoint: null, onImageLoad() {} })
+            createElement(
+              InkAppearanceScope.Provider,
+              { value: { pageId: 'blank', theme: 'light' } },
+              createElement(InkScene, {
+                strokes: [blue, erase],
+                checkpoint: null,
+                onImageLoad() {},
+              })
+            )
           )
         )
       );

@@ -11,6 +11,14 @@ export const DRAWING_THEME = {
   paperMargin: '#f1efeb',
 } as const;
 
+export type PaperTheme = 'light' | 'dark';
+
+// Paper colors project the design tokens across the candidate source boundary.
+export const PAPER_THEMES = {
+  light: { paper: DRAWING_THEME.paper, outline: DRAWING_THEME.textStrong },
+  dark: { paper: '#211f29', outline: '#eceaf2' },
+} as const satisfies Record<PaperTheme, { paper: string; outline: string }>;
+
 const scale = {
   space1: '4px',
   space2: '8px',

@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
@@ -66,9 +67,13 @@ function scene(strokes) {
     { width: PAPER_WIDTH, height: PAPER_HEIGHT, viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}` },
     createElement(Rect, { width: PAPER_WIDTH, height: PAPER_HEIGHT, fill: '#ffffff' }),
     createElement(
-      InkArtwork,
-      { strokes },
-      ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      InkAppearanceScope.Provider,
+      { value: { pageId: 'blank', theme: 'light' } },
+      createElement(
+        InkArtwork,
+        { strokes },
+        ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      )
     )
   );
 }

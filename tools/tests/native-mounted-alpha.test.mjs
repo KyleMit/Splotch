@@ -64,6 +64,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     findNodeHandle: (target) => target,
     Dimensions: {
