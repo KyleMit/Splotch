@@ -172,3 +172,24 @@ both patch bytes and candidate inputs, performs the SVG projection and actual in
 checks, then consumes the Audio owner’s explicit view. Standalone feature tests keep their original
 exact lock inputs. The installed graph still requires a separate frozen provision and qualification;
 current source tests are unrun.
+
+## Current runtime repair candidate
+
+The joined Android artifact drew Crayon and Magic over a coloring page, erased Crayon while
+retaining Magic and the outline, restored it with Undo, and saved/reopened canonical v3 pictures.
+Reopen then faulted at the unchanged image-readiness deadline; PNG export remains unproven. The
+pinned Android SVG cache-hit branch draws a decoded image without emitting its load event. An
+Android-only RN Image witness uses the decoded-final callback, exact captured URI and fixed paper
+dimensions, with resizeMethod none. Raster replay, fixed-grid capture and flattened picture output
+consume that witness. Stale callbacks, decode errors and unexpected grids refuse readiness. Existing
+web/iOS SVG callbacks remain their readiness owners. This is a source repair awaiting native
+confirmation, not evidence that the failed runtime actually took the cache-hit branch or that native
+allocation and memory budgets are met.
+
+Incomplete planner prefixes stay off the visible paper during loaded-history/Undo preparation; the
+separate fixed-grid capture owner still receives their exact ink. Screen status and sound messages
+settle after the last contact so their layout changes cannot interrupt a stroke. Genuine paper-frame
+changes still settle the active cohort. The Audio owner's adapter checks the documented aborted flag
+rather than a method absent from RN's installed AbortSignal provider. Source controls exercise the
+actual composed screen and sound controllers; actual sound output and the complete reopen/export
+workflow require the repaired artifact.

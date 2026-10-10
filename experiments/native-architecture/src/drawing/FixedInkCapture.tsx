@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import type Svg from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { InkPlan, InkCheckpoint } from './checkpoints';
 import { PNG_TIMEOUT_MS } from './svgCapture';
 import { InkScene } from './InkScene';
 import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
+import { DecodedPng } from './DecodedPng';
 
 export function FixedInkCapture({
   plan,
@@ -34,8 +35,21 @@ export function FixedInkCapture({
     }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [plan, loaded]);
+  function imageLoaded() {
+    if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
+  }
   return (
     <View style={styles.capture} pointerEvents="none">
+      {plan.checkpoint ? (
+        <DecodedPng
+          key={plan.checkpoint.id}
+          base64={plan.checkpoint.base64}
+          onLoad={imageLoaded}
+          onError={(error) => {
+            if (current.current.plan === plan) current.current.onError(error);
+          }}
+        />
+      ) : null}
       <CaptureSvg
         ref={svgRef}
         width={PAPER_WIDTH}
@@ -46,7 +60,7 @@ export function FixedInkCapture({
           checkpoint={plan.checkpoint}
           strokes={plan.strokes}
           onImageLoad={() => {
-            if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
+            if (Platform.OS !== 'android') imageLoaded();
           }}
         />
       </CaptureSvg>

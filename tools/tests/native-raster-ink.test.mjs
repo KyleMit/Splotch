@@ -8,8 +8,20 @@ import {
   PNG_TIMEOUT_MS,
 } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
-const state = vi.hoisted(() => ({ captures: [], imageLoads: [], frames: new Map(), nextFrame: 0 }));
+const state = vi.hoisted(() => ({
+  captures: [],
+  imageLoads: [],
+  nativeImages: [],
+  platform: { OS: 'web' },
+  frames: new Map(),
+  nextFrame: 0,
+}));
 vi.mock('react-native', () => ({
+  Platform: state.platform,
+  Image: (props) => {
+    state.nativeImages.push(props);
+    return null;
+  },
   View: ({ children, style }) => createElement('div', { style }, children),
   StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
 }));
@@ -49,6 +61,8 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
   state.captures.length = 0;
+  state.nativeImages.length = 0;
+  state.platform.OS = 'web';
   state.imageLoads.length = 0;
   state.frames.clear();
   vi.stubGlobal('requestAnimationFrame', (callback) => {
@@ -366,4 +380,87 @@ describe('consumed SVG raster disposal', () => {
     await expect(job.promise).resolves.toBe('native-result');
     capture.dispose();
   });
+});
+
+describe('visible replay and Android cached image readiness', () => {
+  it('keeps incomplete capture prefixes off the visible paper across loaded history and Undo', async () => {
+    const history = [crayon, erase, marker, erase];
+    await render(history);
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    await frames();
+    expect(state.captures[0].children.props.strokes).toEqual([crayon]);
+    await png(0, 'first');
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    await load();
+    await load('1024');
+    await frames();
+    await png(1, 'second');
+    await load();
+    expect(ref.current.isReady()).toBe(true);
+    await render(history.slice(0, 2));
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    await frames();
+    expect(state.captures[2].children.props.strokes).toEqual([crayon]);
+    await png(2, 'undo-prefix');
+    await load();
+    expect(ref.current.isReady()).toBe(true);
+    expect(host.querySelector('[data-opacity="1"] [data-strokes]').dataset.strokes).toBe('eraser');
+  });
+  it('promotes a cache-hit PNG from the decoded RN callback without an SVG load event', async () => {
+    state.platform.OS = 'android';
+    await render([crayon, erase]);
+    await frames();
+    await png(0, 'cached-native-prefix');
+    const image = state.nativeImages.at(-1);
+    expect(image.resizeMethod).toBe('none');
+    await load();
+    expect(ref.current.isReady()).toBe(false);
+    await act(async () =>
+      image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
+    );
+    expect(ref.current.isReady()).toBe(true);
+    expect(error).not.toHaveBeenCalled();
+  });
+  it('keeps decode failures terminal and refuses later readiness from the same image', async () => {
+    state.platform.OS = 'android';
+    await render([crayon, erase]);
+    await frames();
+    await png(0);
+    const image = state.nativeImages.at(-1);
+    await act(async () => image.onError({ nativeEvent: { error: 'decode failed' } }));
+    await act(async () =>
+      image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
+    );
+    expect(error).toHaveBeenCalledOnce();
+    expect(ref.current.isReady()).toBe(false);
+    await frames();
+    expect(state.captures).toHaveLength(1);
+  });
+});
+
+it('refuses an Android SVG-first callback when the decoded witness is missing or has the wrong grid', async () => {
+  state.platform.OS = 'android';
+  await render([crayon, erase]);
+  await frames();
+  await png(0);
+  await load();
+  expect(ref.current.isReady()).toBe(false);
+  await act(async () => vi.advanceTimersByTimeAsync(PNG_TIMEOUT_MS));
+  expect(error).toHaveBeenCalledOnce();
+  expect(error.mock.calls[0][0].message).toContain('did not load');
+  expect(ref.current.isReady()).toBe(false);
+});
+it('keeps a wrong-grid decoded callback terminal after SVG loads first', async () => {
+  state.platform.OS = 'android';
+  await render([crayon, erase]);
+  await frames();
+  await png(0);
+  await load();
+  const image = state.nativeImages.at(-1);
+  await act(async () =>
+    image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1023, height: 768 } } })
+  );
+  expect(error).toHaveBeenCalledOnce();
+  expect(error.mock.calls[0][0].message).toContain('unexpected image or sampling grid');
+  expect(ref.current.isReady()).toBe(false);
 });

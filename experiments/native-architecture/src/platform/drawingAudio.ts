@@ -54,7 +54,7 @@ export const loadDrawingLoop: DrawingLoopLoader = async (signal, onFailure) => {
     shouldRouteThroughEarpiece: false,
     allowsBackgroundRecording: false,
   });
-  signal.throwIfAborted();
+  if (signal.aborted) throw new Error('Drawing sound was cancelled.');
   const player = createAudioPlayer(null, { keepAudioSessionActive: false });
   let disposed = false;
   let settled = false;

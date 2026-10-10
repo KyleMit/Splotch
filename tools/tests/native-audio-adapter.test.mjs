@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +7,11 @@ import {
   AUDIO_LOAD_TIMEOUT_MS,
   GAIN_RAMP_S,
 } from '../../experiments/native-architecture/src/audio/drawingAudio.ts';
+const runtimeRequire = createRequire(import.meta.url);
+const reactNativeRequire = createRequire(runtimeRequire.resolve('react-native/package.json'));
+const { AbortController: NativeAbortController } = reactNativeRequire(
+  'abort-controller/dist/abort-controller'
+);
 const native = vi.hoisted(() => ({ players: [], mode: vi.fn(async () => {}), create: vi.fn() }));
 vi.mock('expo-audio', () => ({ setAudioModeAsync: native.mode, createAudioPlayer: native.create }));
 import { loadDrawingLoop } from '../../experiments/native-architecture/src/platform/drawingAudio.ts';
@@ -28,7 +34,7 @@ function fixture(loader = loadDrawingLoop) {
   });
   native.players.push(player);
   native.create.mockReturnValueOnce(player);
-  const controller = new AbortController();
+  const controller = new NativeAbortController();
   const failure = vi.fn();
   const promise = loader(controller.signal, failure);
   return { player, controller, failure, promise };
@@ -89,6 +95,44 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('supported Expo native audio binding', () => {
+  it('loads with the actual React Native signal without DOM throwIfAborted', async () => {
+    const f = fixture();
+    expect('throwIfAborted' in f.controller.signal).toBe(false);
+    const outcome = f.promise.catch((error) => error);
+    await Promise.resolve();
+    expect(native.create).toHaveBeenCalledOnce();
+    f.player.listener({ isLoaded: true, playing: false, error: null });
+    const loop = await outcome;
+    expect(loop).not.toBeInstanceOf(Error);
+    loop.dispose();
+    expect(f.failure).not.toHaveBeenCalled();
+  });
+  it('refuses an already-aborted React Native signal before creating a player', async () => {
+    const controller = new NativeAbortController();
+    controller.abort();
+    const failure = vi.fn();
+    await expect(loadDrawingLoop(controller.signal, failure)).rejects.toThrow(
+      'Drawing sound was cancelled.'
+    );
+    expect(native.create).not.toHaveBeenCalled();
+    expect(failure).not.toHaveBeenCalled();
+  });
+  it('refuses React Native cancellation while the native audio mode is pending', async () => {
+    let releaseMode;
+    native.mode.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releaseMode = resolve;
+      })
+    );
+    const f = fixture();
+    const refused = f.promise.catch((error) => error.message);
+    f.controller.abort();
+    releaseMode();
+    expect(await refused).toBe('Drawing sound was cancelled.');
+    expect(native.create).not.toHaveBeenCalled();
+    expect(f.failure).not.toHaveBeenCalled();
+  });
+
   it('subscribes before replacing the bundled asset and never enables recording or background playback', async () => {
     const f = fixture();
     const loop = await loaded(f);

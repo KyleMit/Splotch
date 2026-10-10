@@ -11,6 +11,8 @@ import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawin
 
 const state = vi.hoisted(() => ({
   captures: [],
+  nativeImages: [],
+  platform: { OS: 'web' },
   packets: [],
   imageLoads: [],
   responders: [],
@@ -19,6 +21,11 @@ const state = vi.hoisted(() => ({
   nextFrame: 0,
 }));
 vi.mock('react-native', () => ({
+  Platform: state.platform,
+  Image: (props) => {
+    state.nativeImages.push(props);
+    return null;
+  },
   findNodeHandle: (target) => target,
   View: forwardRef(({ children, style, onLayout }, ref) => {
     useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
@@ -91,6 +98,8 @@ beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
   state.captures.length = 0;
+  state.nativeImages.length = 0;
+  state.platform.OS = 'web';
   state.packets.length = 0;
   state.imageLoads.length = 0;
   state.responders.length = 0;
@@ -396,4 +405,43 @@ describe('mounted canonical output identity', () => {
     expect(host.querySelector('[data-strokes="marker"]')).not.toBeNull();
     release();
   });
+});
+
+it('loads cached Android checkpoints and flattened output through decoded RN callbacks', async () => {
+  state.platform.OS = 'android';
+  const drawing = { ...emptyDrawing(), strokes: [crayon, erase] };
+  const decode = async () => {
+    const image = state.nativeImages.at(-1);
+    await act(async () =>
+      image.onLoad({ nativeEvent: { source: { uri: image.source.uri, width: 1024, height: 768 } } })
+    );
+  };
+  await surface(drawing);
+  await frames();
+  await png(0, 'cached-prefix');
+  await decode();
+  const { promise, release } = await beginOutput(drawing, 'capturePng');
+  await frames();
+  expect(state.captures).toHaveLength(1);
+  await load('1024');
+  await frames();
+  expect(state.captures).toHaveLength(1);
+  await decode();
+  await frames();
+  expect(state.captures).toHaveLength(2);
+  await png(1, 'flattened-ink');
+  expect(state.captures).toHaveLength(2);
+  expect(host.querySelector('[data-output-image]').dataset.outputImage).toBe(
+    'data:image/png;base64,flattened-ink'
+  );
+  await act(async () => host.querySelector('[data-output-image]').click());
+  await frames();
+  expect(state.captures).toHaveLength(2);
+  await decode();
+  await frames();
+  expect(state.captures).toHaveLength(3);
+  await png(2, 'picture-output');
+  await expect(promise).resolves.toBe('picture-output');
+  expect(error).not.toHaveBeenCalled();
+  release();
 });

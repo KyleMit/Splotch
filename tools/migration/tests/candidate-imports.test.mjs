@@ -26,6 +26,7 @@ describe('candidate source import ownership', () => {
       'src/drawing/CaptureSvg.web.tsx',
       'src/drawing/CrayonGlaze.tsx',
       'src/drawing/CrayonGlaze.web.tsx',
+      'src/drawing/DecodedPng.tsx',
       'src/drawing/DrawingSurface.tsx',
       'src/drawing/FixedInkCapture.tsx',
       'src/drawing/Ink.tsx',

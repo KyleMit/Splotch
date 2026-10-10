@@ -1,4 +1,5 @@
 import {
+  Fragment,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -7,11 +8,12 @@ import {
   useState,
   type RefObject,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Svg, { G } from 'react-native-svg';
 import { checkpointMatches, planInk, type InkCheckpoint, type InkPlan } from './checkpoints';
 import { InkScene } from './InkScene';
 import { FixedInkCapture } from './FixedInkCapture';
+import { DecodedPng } from './DecodedPng';
 import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
 import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCapture';
 
@@ -109,8 +111,18 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
     setIncoming(null);
   }
 
+  function imageFailed(frame: InkCheckpoint, error: Error) {
+    if (incomingRef.current !== frame || !checkpointMatches(currentStrokes.current, frame)) return;
+    incomingRef.current = null;
+    setIncoming(null);
+    setFault(error);
+    propsRef.current.onError(error);
+  }
+
   const frames = [
-    { id: plan.checkpoint?.id ?? 0, plan, hidden: false },
+    ...(plan.prefix.length === strokes.length
+      ? [{ id: plan.checkpoint?.id ?? 0, plan, hidden: false }]
+      : []),
     ...(incoming
       ? [{ id: incoming.id, plan: planInk(strokes, incoming, props.prepareEraser), hidden: true }]
       : []),
@@ -128,7 +140,7 @@ export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(p
           }}
         />
       ) : null}
-      <RasterFrames frames={frames} onImageLoad={imageLoaded} />
+      <RasterFrames frames={frames} onImageLoad={imageLoaded} onImageError={imageFailed} />
     </View>
   );
 });
@@ -185,31 +197,47 @@ function useCheckpointJob(options: {
 function RasterFrames({
   frames,
   onImageLoad,
+  onImageError,
 }: {
   frames: readonly { id: number; plan: InkPlan; hidden: boolean }[];
   onImageLoad: (frame: InkCheckpoint) => void;
+  onImageError: (frame: InkCheckpoint, error: Error) => void;
 }) {
   return (
     <>
       {frames.map((frame) => (
-        <Svg
-          key={frame.id}
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        >
-          <G opacity={frame.hidden ? 0 : 1}>
-            <InkScene
-              checkpoint={frame.plan.checkpoint}
-              strokes={frame.plan.strokes}
-              onImageLoad={() => {
+        <Fragment key={frame.id}>
+          {frame.hidden && frame.plan.checkpoint ? (
+            <DecodedPng
+              key={frame.plan.checkpoint.id}
+              base64={frame.plan.checkpoint.base64}
+              onLoad={() => {
                 if (frame.plan.checkpoint) onImageLoad(frame.plan.checkpoint);
               }}
+              onError={(error) => {
+                if (frame.plan.checkpoint) onImageError(frame.plan.checkpoint, error);
+              }}
             />
-          </G>
-        </Svg>
+          ) : null}
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          >
+            <G opacity={frame.hidden ? 0 : 1}>
+              <InkScene
+                checkpoint={frame.plan.checkpoint}
+                strokes={frame.plan.strokes}
+                onImageLoad={() => {
+                  if (Platform.OS !== 'android' && frame.plan.checkpoint)
+                    onImageLoad(frame.plan.checkpoint);
+                }}
+              />
+            </G>
+          </Svg>
+        </Fragment>
       ))}
     </>
   );

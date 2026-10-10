@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Image, Rect, type Svg } from 'react-native-svg';
 import { CaptureSvg } from './CaptureSvg';
 import type { PngCaptureRequest } from './interactions';
@@ -9,6 +9,7 @@ import { PageOutline } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
 import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
 import { DRAWING_THEME } from './theme';
+import { DecodedPng } from './DecodedPng';
 
 export type PictureRequest = Readonly<{
   id: number;
@@ -38,6 +39,9 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
     }
     if (kind === 'ink' && packet.kind === 'picture') setBase64(pixels);
     else request.complete(pixels);
+  }
+  function loaded() {
+    if (current.current && packet.isCurrent()) setImageLoaded(true);
   }
 
   useEffect(() => {
@@ -77,6 +81,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
 
   return (
     <View style={styles.capture} pointerEvents="none">
+      {base64 ? <DecodedPng base64={base64} onLoad={loaded} onError={fail} /> : null}
       {!base64 ? (
         <FixedInkCapture
           plan={packet.plan}
@@ -100,7 +105,7 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
             height={PAPER_HEIGHT}
             preserveAspectRatio="none"
             onLoad={() => {
-              if (current.current && packet.isCurrent()) setImageLoaded(true);
+              if (Platform.OS !== 'android') loaded();
             }}
           />
           <PageOutline pageId={request.drawing.pageId} />

@@ -65,6 +65,13 @@ vi.mock('react-native', () => ({
     addEventListener: () => ({ remove() {} }),
   },
   Platform: { OS: 'android' },
+  Image: ({ source, onLoad }) => {
+    useEffect(
+      () => onLoad({ nativeEvent: { source: { uri: source.uri, width: 1024, height: 768 } } }),
+      [source.uri]
+    );
+    return null;
+  },
 }));
 vi.mock('react-native-svg', () => {
   const group = ({ children }) => createElement('div', null, children);

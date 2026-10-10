@@ -61,7 +61,7 @@ function scene(strokes, checkpoint = null) {
   return svg(createElement(InkScene, { strokes, checkpoint, onImageLoad() {} }));
 }
 async function raw(source) {
-  return sharp(Buffer.from(source)).ensureAlpha().raw().toBuffer();
+  return sharp(Buffer.from(source)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 }
 function tags(source, name) {
   return [...source.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map(([tag]) => tag);
@@ -77,7 +77,10 @@ describe('joint artwork definitions and chronological mask composition', () => {
         ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
       )
     );
-    expect(await raw(scene(strokes))).toEqual(await raw(direct));
+    const actual = await raw(scene(strokes));
+    const expected = await raw(direct);
+    expect(actual.info).toEqual(expected.info);
+    expect(actual.data.equals(expected.data)).toBe(true);
   });
   it('shares explicit-color definitions across committed and later ink outside the ordered mask', async () => {
     const prefix = [blue, magic];

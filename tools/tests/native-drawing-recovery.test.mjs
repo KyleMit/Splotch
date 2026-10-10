@@ -49,6 +49,8 @@ vi.mock('react-native', () => {
   });
   return {
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    Platform: { OS: 'web' },
+    Image: () => null,
     findNodeHandle: (target) => target,
     View,
     SafeAreaView: View,
