@@ -1,8 +1,8 @@
 import { createPngAlphaDecoder } from '../drawing/pngAlpha';
 
-export const MAX_HELD_PNG_COUNT = 3;
+const MAX_HELD_PNG_COUNT = 3;
 export const MAX_HELD_PNG_CHARACTERS = 16 * 1024 * 1024;
-export const MAX_HELD_PNG_TOTAL_CHARACTERS = 32 * 1024 * 1024;
+const MAX_HELD_PNG_TOTAL_CHARACTERS = 32 * 1024 * 1024;
 export const MAX_HELD_PNG_ARCHIVE_CHARACTERS = MAX_HELD_PNG_TOTAL_CHARACTERS + 4096;
 
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
