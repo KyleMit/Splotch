@@ -1,0 +1,225 @@
+Pass --device-id=, --capabilities-file=, or --session-id=
+Pass --device-id=, --capabilities-file=, or --session-id=
+Pass --device-id=, --capabilities-file=, or --session-id=
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  migration/tests/forge-mitigation.test.mjs > the exact Forge mitigation policy > accepts only the reviewed patch hash and complete candidate-owned paths
+AssertionError: Forge patch registration changed
++ actual - expected
+
+  {
++   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
+    'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
+  }
+
+
+- Expected
++ Received
+
+  {
++   "expo-audio@57.0.5": "patches/expo-audio@57.0.5.patch",
+    "node-forge@1.4.0": "patches/node-forge@1.4.0.patch",
+  }
+
+ ❯ assertForgeMitigationPolicy migration/lib/forge-mitigation.mjs:52:10
+     50|     'Unused patch bypass or ambiguous option is forbidden'
+     51|   );
+     52|   assert.deepEqual(
+       |          ^
+     53|     workspace.patchedDependencies,
+     54|     { [PATCH_IDENTITY]: mitigation.patchPath },
+ ❯ migration/tests/forge-mitigation.test.mjs:72:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  migration/tests/forge-mitigation.test.mjs > the exact Forge mitigation policy > rejects missing, corrupted, count-only and wrong patch registration
+AssertionError: expected [Function] to throw error including 'patch bytes' but got 'Forge patch registration changed\n+ a…'
+
+- Expected
++ Received
+
+- patch bytes
++ Forge patch registration changed
++ + actual - expected
++
++   {
++ +   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
++     'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
++   }
++
+
+ ❯ migration/tests/forge-mitigation.test.mjs:80:82
+     78|     const path = policyFixture();
+     79|     write(join(path, mitigation.patchPath), 'count-only or corrupted p…
+     80|     expect(() => assertForgeMitigationPolicy(path, lock, workspace, mi…
+       |                                                                                  ^
+     81|       'patch bytes'
+     82|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  migration/tests/forge-mitigation.test.mjs > the exact Forge mitigation policy > rejects changed registry integrity and unsupported installed version policy
+AssertionError: expected [Function] to throw error including 'integrity' but got 'Forge patch registration changed\n+ a…'
+
+- Expected
++ Received
+
+- integrity
++ Forge patch registration changed
++ + actual - expected
++
++   {
++ +   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
++     'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
++   }
++
+
+ ❯ migration/tests/forge-mitigation.test.mjs:100:7
+     98|     expect(() =>
+     99|       assertForgeMitigationPolicy(policyFixture(), selected, workspace…
+    100|     ).toThrow('integrity');
+       |       ^
+    101|     selected.packages['node-forge@1.4.1'] = selected.packages['node-fo…
+    102|     expect(() =>
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  migration/tests/forge-mitigation.test.mjs > the exact Forge mitigation policy > rejects patch bypass flags and an unpatched dependency reference
+AssertionError: expected [Function] to not throw an error but 'AssertionError [ERR_ASSERTION]: Forge…' was thrown
+
+- Expected:
+undefined
+
++ Received:
+"AssertionError [ERR_ASSERTION]: Forge patch registration changed
++ actual - expected
+
+  {
++   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
+    'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
+  }
+"
+
+ ❯ migration/tests/forge-mitigation.test.mjs:124:11
+    122|         mitigation
+    123|       )
+    124|     ).not.toThrow();
+       |           ^
+    125|     const selected = structuredClone(lock);
+    126|     selected.snapshots['node-forge@1.4.0'] = {};
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  migration/tests/forge-mitigation.test.mjs > the exact Forge mitigation policy > rejects a new importer, extra path and production reachability
+AssertionError: expected [Function] to throw error including 'path' but got 'Forge patch registration changed\n+ a…'
+
+- Expected
++ Received
+
+- path
++ Forge patch registration changed
++ + actual - expected
++
++   {
++ +   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
++     'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
++   }
++
+
+ ❯ migration/tests/forge-mitigation.test.mjs:142:7
+    140|     expect(() =>
+    141|       assertForgeMitigationPolicy(policyFixture(), selected, workspace…
+    142|     ).toThrow('path');
+       |       ^
+    143|     delete selected.importers['experiments/unreviewed'];
+    144|     selected.importers[CANDIDATE_DIRECTORY].devDependencies['node-forg…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  migration/tests/native-drawing-forge-paths.test.mjs > the N1 save/share Forge adjunct > checks the real eight routes before preserving every other lock entry for the old guard
+AssertionError: Forge patch registration changed
++ actual - expected
+
+  {
++   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
+    'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
+  }
+
+
+- Expected
++ Received
+
+  {
++   "expo-audio@57.0.5": "patches/expo-audio@57.0.5.patch",
+    "node-forge@1.4.0": "patches/node-forge@1.4.0.patch",
+  }
+
+ ❯ assertForgeMitigationPolicy migration/lib/forge-mitigation.mjs:52:10
+     50|     'Unused patch bypass or ambiguous option is forbidden'
+     51|   );
+     52|   assert.deepEqual(
+       |          ^
+     53|     workspace.patchedDependencies,
+     54|     { [PATCH_IDENTITY]: mitigation.patchPath },
+ ❯ policy migration/tests/native-drawing-forge-paths.test.mjs:50:10
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs:97:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  migration/tests/native-drawing-forge-paths.test.mjs > the N1 save/share Forge adjunct > retains the accepted guard refusal for unpatched or corrupt Forge references and bytes
+AssertionError: expected [Function] to throw error including 'Unpatched' but got 'Forge patch registration changed\n+ a…'
+
+- Expected
++ Received
+
+- Unpatched
++ Forge patch registration changed
++ + actual - expected
++
++   {
++ +   'expo-audio@57.0.5': 'patches/expo-audio@57.0.5.patch',
++     'node-forge@1.4.0': 'patches/node-forge@1.4.0.patch'
++   }
++
+
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs:175:37
+    173|     unpatched.snapshots['@expo/code-signing-certificates@0.0.6'].depen…
+    174|       '1.4.0';
+    175|     expect(() => policy(unpatched)).toThrow('Unpatched');
+       |                                     ^
+    176|     const orphan = structuredClone(lock);
+    177|     orphan.snapshots['unrooted@1.0.0'] = { dependencies: { 'node-forge…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+

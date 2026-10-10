@@ -1,9 +1,8 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { readLockFile } from '../lib/lock-artifacts.mjs';
+import { qualifyAudioInputs } from '../lib/native-audio-qualification.mjs';
 import { readDrawingArchiveInventory } from '../lib/native-drawing-inventory.mjs';
 import { assertCandidateArchiveInventory } from '../lib/topology-policy.mjs';
 
@@ -14,10 +13,9 @@ const original = JSON.parse(readFileSync(join(originalEvidence, 'script-inventor
 const baseline = JSON.parse(
   readFileSync(join(originalEvidence, 'baseline-artifact-resolutions.json'))
 );
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
-const lockSha256 = createHash('sha256')
-  .update(readFileSync(join(root, 'pnpm-lock.yaml')))
-  .digest('hex');
+const audio = qualifyAudioInputs(root);
+const lock = audio.lock;
+const lockSha256 = audio.baselineLockSha256;
 const fixtures = [];
 
 function fixture(mutate) {

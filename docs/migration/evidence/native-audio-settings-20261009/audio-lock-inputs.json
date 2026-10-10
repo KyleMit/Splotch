@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "lockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "roots": [
+    {
+      "name": "expo-audio",
+      "entry": {
+        "specifier": "57.0.5",
+        "version": "57.0.5(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)"
+      },
+      "artifactKey": "expo-audio@57.0.5",
+      "artifact": {
+        "resolution": {
+          "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ=="
+        },
+        "peerDependencies": {
+          "expo": "*",
+          "expo-asset": "*",
+          "react": "*",
+          "react-native": "*"
+        }
+      },
+      "snapshotKey": "expo-audio@57.0.5(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)",
+      "snapshot": {
+        "dependencies": {
+          "expo": "57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+          "expo-asset": "57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+          "react": "19.2.3",
+          "react-native": "0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)"
+        }
+      },
+      "manifestSha256": "414f4117da273107eb8617f99caa7e78769a490ff4ffc22412e86a8246fbd98c",
+      "archive": "package-provenance/expo-audio-57.0.5.tar.gz",
+      "archiveSha256": "5b26f87d644dfe05c7259d66078de98de7c9658c1e8a2041d2fe1fd51cf2f9b8",
+      "peers": {
+        "expo": "*",
+        "react": "*",
+        "react-native": "*",
+        "expo-asset": "*"
+      }
+    },
+    {
+      "name": "expo-asset",
+      "entry": {
+        "specifier": "57.0.18",
+        "version": "57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)"
+      },
+      "artifactKey": "expo-asset@57.0.18",
+      "artifact": {
+        "resolution": {
+          "integrity": "sha512-zDIQkUr0NM2S7YRj98Zohf/OBuM1q0o4ctxLz1C1oe4/33lHNLjp+2v3qUtBWVwn0zKka8UGADmS8M+83Wi6pw=="
+        },
+        "peerDependencies": {
+          "expo": "*",
+          "react": "*",
+          "react-native": "*"
+        }
+      },
+      "snapshotKey": "expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+      "snapshot": {
+        "dependencies": {
+          "@expo/image-utils": "0.11.5(supports-color@10.2.2)(typescript@6.0.3)",
+          "expo": "57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)",
+          "expo-constants": "57.0.20(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(supports-color@10.2.2)",
+          "react": "19.2.3",
+          "react-native": "0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)"
+        },
+        "transitivePeerDependencies": ["supports-color", "typescript"]
+      },
+      "manifestSha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa",
+      "archive": "package-provenance/expo-asset-57.0.18.tar.gz",
+      "archiveSha256": "b6533829c589a7acc746f4666dfd45188eaf2e5f717f8c8fbff2cf6c104bdda2",
+      "peers": {
+        "expo": "*",
+        "react": "*",
+        "react-native": "*"
+      }
+    }
+  ],
+  "forgePaths": [
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-asset>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-audio>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-audio>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo>@expo/cli>node-forge"
+  ]
+}

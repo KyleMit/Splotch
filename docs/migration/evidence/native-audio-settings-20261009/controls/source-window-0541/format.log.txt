@@ -1,0 +1,27 @@
+experiments/native-architecture/src/audio/assets.d.ts 26ms (unchanged)
+experiments/native-architecture/src/audio/drawingAudio.ts 18ms
+experiments/native-architecture/src/drawing/DrawingSurface.tsx 12ms
+experiments/native-architecture/src/drawing/interactions.ts 3ms (unchanged)
+experiments/native-architecture/src/drawing/model.ts 7ms (unchanged)
+experiments/native-architecture/src/drawing/palette.ts 2ms (unchanged)
+experiments/native-architecture/src/drawing/theme.ts 1ms
+experiments/native-architecture/src/DrawingScreen.tsx 10ms
+experiments/native-architecture/src/index.ts 1ms (unchanged)
+experiments/native-architecture/src/platform/drawingAudio.ts 4ms
+experiments/native-architecture/src/platform/drawingAudio.web.ts 3ms
+experiments/native-architecture/src/platform/drawingFiles.ts 3ms (unchanged)
+experiments/native-architecture/src/platform/drawingFiles.web.ts 2ms (unchanged)
+experiments/native-architecture/src/platform/soundSettings.ts 2ms
+experiments/native-architecture/src/platform/soundSettings.web.ts 1ms
+experiments/native-architecture/src/ProbeApp.tsx 0ms (unchanged)
+experiments/native-architecture/src/settings/soundSettings.ts 2ms
+experiments/native-architecture/src/settings/SoundSettings.tsx 3ms
+experiments/native-architecture/src/useDrawingScreen.ts 2ms (unchanged)
+experiments/native-architecture/src/useDrawingSound.ts 1ms
+experiments/native-architecture/package.json 7ms (unchanged)
+tools/tests/native-audio-adapter.test.mjs 7ms
+tools/tests/native-audio-projection.test.mjs 2ms
+tools/tests/native-drawing-audio.test.mjs 4ms
+tools/tests/native-sound-settings.test.mjs 3ms
+tools/tests/native-sound-settings-files.test.mjs 4ms
+tools/migration/tests/candidate-imports.test.mjs 7ms

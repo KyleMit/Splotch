@@ -1,0 +1,15 @@
+{
+  "command": [
+    "node",
+    "tools/migration/check-native-audio-inputs.mjs"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:50:50.776799+00:00",
+  "ownerPID": 65926,
+  "ownerStart": "Fri Oct  9 01:50:50 2026",
+  "childPID": 65933,
+  "childStart": "Fri Oct  9 01:50:50 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:50:51.212236+00:00",
+  "ownedChildClosed": true
+}

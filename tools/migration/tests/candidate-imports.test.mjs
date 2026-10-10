@@ -18,15 +18,24 @@ describe('candidate source import ownership', () => {
       'scripts/check-transform.cjs',
       'src/DrawingScreen.tsx',
       'src/ProbeApp.tsx',
+      'src/audio/assets.d.ts',
+      'src/audio/drawingAudio.ts',
       'src/drawing/DrawingSurface.tsx',
       'src/drawing/interactions.ts',
       'src/drawing/model.ts',
       'src/drawing/palette.ts',
       'src/drawing/theme.ts',
       'src/index.ts',
+      'src/platform/drawingAudio.ts',
+      'src/platform/drawingAudio.web.ts',
       'src/platform/drawingFiles.ts',
       'src/platform/drawingFiles.web.ts',
+      'src/platform/soundSettings.ts',
+      'src/platform/soundSettings.web.ts',
+      'src/settings/SoundSettingsSheet.tsx',
+      'src/settings/soundSettings.ts',
       'src/useDrawingScreen.ts',
+      'src/useDrawingSound.ts',
       'tsconfig.json',
     ]);
     expect(result.generatedSubpathExclusions).toContain('android/app/build');
@@ -35,6 +44,23 @@ describe('candidate source import ownership', () => {
     expect(result.nonCoverage).toContain('Podfile/Gradle provider-context');
     expect(result.nonCoverage).toContain('Metro string module references');
     expect(result.nonCoverage).toContain('alternate config lookup');
+  });
+
+  it.each([
+    'src/platform/drawingAudio.ts',
+    'src/platform/drawingAudio.web.ts',
+    'src/platform/soundSettings.ts',
+    'src/platform/soundSettings.web.ts',
+    'src/useDrawingSound.ts',
+  ])('rejects an undeclared edge in new audio/settings owner %s', (path) => {
+    const target = fixture();
+    const source = readFileSync(join(target, path), 'utf8');
+    expectRejectedMutationAndRestore(
+      target,
+      path,
+      `${source}\nimport 'yaml';`,
+      `${path} imports undeclared yaml`
+    );
   });
 
   it('accepts maintained platform, extension, dotfile, rename and Node-role positives', () => {

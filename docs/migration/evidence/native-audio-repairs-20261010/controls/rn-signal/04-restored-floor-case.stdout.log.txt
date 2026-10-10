@@ -1,0 +1,15 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs native-audio-adapter.test.mjs --maxWorkers=2 --testNamePattern loads with the actual React Native signal without DOM throwIfAborted --reporter=default --reporter=json --outputFile /private/tmp/audio-rn-abort-checks-0146/restored-tests.json
+
+
+ RUN  v5.0.2 /private/tmp/audio-q5-native-development/repository/tools
+
+ ✓ tests/native-audio-adapter.test.mjs (17 tests | 16 skipped) 2ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 16 skipped (17)
+   Start at  21:46:15
+   Duration  184ms (import 66%, transform 32%, tests 1%, worker 1%)
+
+JSON report written to /private/tmp/audio-rn-abort-checks-0146/restored-tests.json

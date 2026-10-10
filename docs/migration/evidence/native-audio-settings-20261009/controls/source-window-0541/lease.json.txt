@@ -1,0 +1,15 @@
+{
+  "state": "ready",
+  "owner": "/root/native_audio_settings",
+  "dependency": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "worktree": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "wholeSeconds": 600,
+  "scope": "Preserve dirty source, compose exact final N1, resolve only new Audio/Asset dependency delta with ignore-scripts and ignore-pnpmfile, own frozen install, focused regression/source checks and format/check/lint",
+  "fullToolsGranted": false,
+  "browserGranted": false,
+  "nativeGranted": false,
+  "hooksGranted": false,
+  "beforeExecution": "Record exact source/lock/dirty identity and owned command/handle/start identities; no accepted F1 scanner/input rewrite or replay of closed baseline work",
+  "release": "Report each terminal result, concrete bounded failure/repair, preserved dirty source and exact owned process closure; return window before broader execution",
+  "reviewBudgets": "All unaffected; genuinely new Audio unit remains unopened default3"
+}

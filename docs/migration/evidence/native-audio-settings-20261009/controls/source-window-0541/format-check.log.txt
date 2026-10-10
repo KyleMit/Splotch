@@ -1,0 +1,11 @@
+
+> splotch@1.6.0 format:check
+> prettier --check . && npm run format:md:check
+
+Checking formatting...
+[warn] docs/migration/evidence/native-audio-settings-20261009/audio-lock-inputs.json
+[warn] docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.metadata.json
+[warn] docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-asset-57.0.18.package.json
+[warn] docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.metadata.json
+[warn] docs/migration/evidence/native-audio-settings-20261009/package-provenance/expo-audio-57.0.5.package.json
+[warn] Code style issues found in 5 files. Run Prettier with --write to fix.

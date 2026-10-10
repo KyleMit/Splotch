@@ -1,0 +1,58 @@
+{
+  "actualFailedCase": [
+    {
+      "children": [
+        {
+          "name": "XCTAssertTrue failed - reset-does-not-create-default-volume-replacement",
+          "nodeType": "Failure Message",
+          "sourceLocation": {
+            "filePath": "/tmp/audio-q5-native-development/repository/node_modules/expo-audio/ios/Tests/AudioPlayerResetTests.swift",
+            "lineNumber": 37
+          }
+        },
+        {
+          "name": "XCTAssertEqual failed: (\"0.2\") is not equal to (\"0.0\") - reset-mutes-existing-player",
+          "nodeType": "Failure Message",
+          "sourceLocation": {
+            "filePath": "/tmp/audio-q5-native-development/repository/node_modules/expo-audio/ios/Tests/AudioPlayerResetTests.swift",
+            "lineNumber": 38
+          }
+        },
+        {
+          "name": "XCTAssertFalse failed - reset-clears-upstream-resume-marker",
+          "nodeType": "Failure Message",
+          "sourceLocation": {
+            "filePath": "/tmp/audio-q5-native-development/repository/node_modules/expo-audio/ios/Tests/AudioPlayerResetTests.swift",
+            "lineNumber": 40
+          }
+        },
+        {
+          "name": "XCTUnwrap failed: expected non-nil value of type \"ResetSnapshot\"",
+          "nodeType": "Failure Message",
+          "sourceLocation": {
+            "filePath": "/tmp/audio-q5-native-development/repository/node_modules/expo-audio/ios/Tests/AudioPlayerResetTests.swift",
+            "lineNumber": 41
+          }
+        }
+      ],
+      "duration": "0.049s",
+      "durationInSeconds": 0.048764944076538086,
+      "name": "testResetWithNonNilSourceAndPendingReadiness()",
+      "nodeIdentifier": "AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness()",
+      "nodeIdentifierURL": "test://com.apple.xcode/Pods/ExpoAudio-Unit-Tests/AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness",
+      "nodeType": "Test Case",
+      "result": "Failed"
+    }
+  ],
+  "failures": [
+    {
+      "failureText": "XCTAssertTrue failed - reset-does-not-create-default-volume-replacement",
+      "targetName": "ExpoAudio-Unit-Tests",
+      "testIdentifier": 1,
+      "testIdentifierString": "AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness()",
+      "testIdentifierURL": "test://com.apple.xcode/Pods/ExpoAudio-Unit-Tests/AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness",
+      "testName": "testResetWithNonNilSourceAndPendingReadiness()"
+    }
+  ],
+  "qualifiedUpstreamResetNegative": true
+}

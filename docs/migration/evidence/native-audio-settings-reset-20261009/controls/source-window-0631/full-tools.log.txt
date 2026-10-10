@@ -1,0 +1,300 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/tools
+
+ ❯ ci-mirror/tests/run-quality-checks.test.mjs (15 tests | 1 failed) 37ms
+   ❯ the guard-qualified Forge advisory exception (5)
+     × requires the actual installed guard before the unchanged Quality audit 12ms
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-FpkOGU/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-zS9L9L/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-zS9L9L/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs (10 tests | 2 failed) 166ms
+   ❯ the N1 save/share Forge adjunct (10)
+     × checks the real eight routes before preserving every other lock entry for the old guard 22ms
+     × retains the accepted guard refusal for unpatched or corrupt Forge references and bytes 15ms
+ ❯ migration/tests/native-drawing-inventory.test.mjs (4 tests | 2 failed) 48ms
+   ❯ the new drawing dependency archive adjunct (4)
+     × retains every old row and separately reports the actual inspected delta 8ms
+     × rejects changed integrity and lock ownership through the production composition 6ms
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  ci-mirror/tests/run-quality-checks.test.mjs > the guard-qualified Forge advisory exception > requires the actual installed guard before the unchanged Quality audit
+AssertionError: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "mandatory installed mitigation call absent",
++ ]
+
+ ❯ ci-mirror/tests/run-quality-checks.test.mjs:360:87
+    358|
+    359|   it('requires the actual installed guard before the unchanged Quality…
+    360|     expect(forgeMitigationWiringViolations(pnpmWorkspace, checker, QUA…
+       |                                                                                       ^
+    361|     expect(forgeInvocationWiringViolations(checker, scripts)).toEqual(…
+    362|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  migration/tests/native-drawing-forge-paths.test.mjs > the N1 save/share Forge adjunct > checks the real eight routes before preserving every other lock entry for the old guard
+AssertionError: Unsupported actual drawing Forge path
++ actual - expected
+
+  [
+    'experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
+    'experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge',
++   'experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++   'experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>node-forge',
++   'experiments/native-architecture>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++   'experiments/native-architecture>expo-asset>expo>@expo/cli>node-forge',
++   'experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++   'experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>node-forge',
++   'experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++   'experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>node-forge',
++   'experiments/native-architecture>expo-audio>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++   'experiments/native-architecture>expo-audio>expo>@expo/cli>node-forge',
+    'experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
+    'experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge',
+    'experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
+    'experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge',
+    'experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
+
+
+- Expected
++ Received
+
+@@ -1,8 +1,18 @@
+  [
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge",
++   "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
++   "experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>node-forge",
++   "experiments/native-architecture>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
++   "experiments/native-architecture>expo-asset>expo>@expo/cli>node-forge",
++   "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
++   "experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>node-forge",
++   "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
++   "experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>node-forge",
++   "experiments/native-architecture>expo-audio>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
++   "experiments/native-architecture>expo-audio>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+    "experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge",
+    "experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge",
+
+ ❯ projectDrawingForgeLock migration/lib/native-drawing-forge-paths.mjs:89:10
+     87|   }
+     88|   const actualLockedPaths = getImporterDependencyPaths(lock, FORGE_IDE…
+     89|   assert.deepEqual(
+       |          ^
+     90|     actualLockedPaths,
+     91|     expectedPaths(['babel-preset-expo', 'expo', ...DRAWING_ROOTS]),
+ ❯ project migration/tests/native-drawing-forge-paths.test.mjs:44:10
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs:78:45
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  migration/tests/native-drawing-forge-paths.test.mjs > the N1 save/share Forge adjunct > retains the accepted guard refusal for unpatched or corrupt Forge references and bytes
+AssertionError: expected [Function] to throw error including 'Unpatched' but got 'Unsupported actual drawing Forge path…'
+
+- Expected
++ Received
+
+- Unpatched
++ Unsupported actual drawing Forge path
++ + actual - expected
++
++   [
++     'experiments/native-architecture>babel-preset-expo>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++     'experiments/native-architecture>babel-preset-expo>expo>@expo/cli>node-forge',
++ +   'experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++ +   'experiments/native-architecture>expo-asset>expo-constants>expo>@expo/cli>node-forge',
++ +   'experiments/native-architecture>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++ +   'experiments/native-architecture>expo-asset>expo>@expo/cli>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo-asset>expo-constants>expo>@expo/cli>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo-asset>expo>@expo/cli>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++ +   'experiments/native-architecture>expo-audio>expo>@expo/cli>node-forge',
++     'experiments/native-architecture>expo-file-system>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++     'experiments/native-architecture>expo-file-system>expo>@expo/cli>node-forge',
++     'experiments/native-architecture>expo-sharing>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++     'experiments/native-architecture>expo-sharing>expo>@expo/cli>node-forge',
++     'experiments/native-architecture>expo>@expo/cli>@expo/code-signing-certificates>node-forge',
++
+
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs:173:37
+    171|     unpatched.snapshots['@expo/code-signing-certificates@0.0.6'].depen…
+    172|       '1.4.0';
+    173|     expect(() => policy(unpatched)).toThrow('Unpatched');
+       |                                     ^
+    174|     const orphan = structuredClone(lock);
+    175|     orphan.snapshots['unrooted@1.0.0'] = { dependencies: { 'node-forge…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  migration/tests/native-drawing-inventory.test.mjs > the new drawing dependency archive adjunct > retains every old row and separately reports the actual inspected delta
+AssertionError: Inventory selection differs from the actual baseline-to-current lock diff
++ actual - expected
+... Skipped lines
+
+  [
+    {
+      integrity: 'sha512-qoMMXddVKVhZ8PA1AbUCk83trpd6N+1nF2A6k1i6LsQObyS92fELuk8kU/lQs6M7BsMHwqyLCpQJ1uFgNvIQXg==',
+      key: '@react-native/normalize-colors@0.74.89'
+    },
+...
+    {
+-     integrity: 'sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==',
+-     key: 'expo-audio@57.0.5'
+-   },
+-   {
+      integrity: 'sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==',
+      key: 'expo-sharing@57.0.22'
+    },
+    {
+      integrity: 'sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ==',
+
+
+- Expected
++ Received
+
+@@ -18,14 +18,10 @@
+    {
+      "integrity": "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q==",
+      "key": "css-tree@1.1.3",
+    },
+    {
+-     "integrity": "sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==",
+-     "key": "expo-audio@57.0.5",
+-   },
+-   {
+      "integrity": "sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==",
+      "key": "expo-sharing@57.0.22",
+    },
+    {
+      "integrity": "sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ==",
+
+ ❯ assertArtifactInventory migration/lib/topology-policy.mjs:195:10
+    193|   ).map(({ key, integrity }) => ({ key, integrity }));
+    194|   const byKey = (left, right) => (left.key < right.key ? -1 : left.key…
+    195|   assert.deepEqual(
+       |          ^
+    196|     [...inventory.selectedArtifacts].sort(byKey),
+    197|     selection.sort(byKey),
+ ❯ readDrawingArchiveInventory migration/lib/native-drawing-inventory.mjs:12:25
+ ❯ verify migration/tests/native-drawing-inventory.test.mjs:35:18
+ ❯ migration/tests/native-drawing-inventory.test.mjs:44:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  migration/tests/native-drawing-inventory.test.mjs > the new drawing dependency archive adjunct > rejects changed integrity and lock ownership through the production composition
+AssertionError: expected [Function] to throw error including 'Artifact changed' but got 'Inventory selection differs from the …'
+
+- Expected
++ Received
+
+- Artifact changed
++ Inventory selection differs from the actual baseline-to-current lock diff
++ + actual - expected
++ ... Skipped lines
++
++   [
++     {
++       integrity: 'sha512-qoMMXddVKVhZ8PA1AbUCk83trpd6N+1nF2A6k1i6LsQObyS92fELuk8kU/lQs6M7BsMHwqyLCpQJ1uFgNvIQXg==',
++       key: '@react-native/normalize-colors@0.74.89'
++     },
++ ...
++     {
++ -     integrity: 'sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==',
++ -     key: 'expo-audio@57.0.5'
++ -   },
++ -   {
++       integrity: 'sha512-IWmiz0Dnjd7ifsZ2Gg5XODxb6DQoJ4/H6FofW9bTL9gDjfX2+va8SV1BYVkFvJ8vKQoKR4HgkMCKDCZlrrbKkg==',
++       key: 'expo-sharing@57.0.22'
++     },
++     {
++       integrity: 'sha512-b2XGFAFdWZWg0phtAWLHCk836A1Xann+I+Dgd3Gk64MHKZO44FfoD1KxyvbSh0qZsIoXQGGlVztIY+oitJPpRQ==',
++
+
+ ❯ migration/tests/native-drawing-inventory.test.mjs:69:7
+     67|         })
+     68|       )
+     69|     ).toThrow('Artifact changed');
+       |       ^
+     70|     expect(() =>
+     71|       verify(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  3 failed | 349 passed (352)
+      Tests  5 failed | 8164 passed (8169)
+   Start at  02:34:16
+   Duration  46.30s (tests 92%, import 6%, transform 1%)
+
+    Isolate  352 workers spawned · ~67ms startup each (spawn + environment, per file)
+             at least ~2.56s faster with isolate: false — reuses workers across files instead of one per file
+

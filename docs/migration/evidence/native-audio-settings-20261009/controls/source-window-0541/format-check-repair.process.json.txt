@@ -1,0 +1,16 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "format:check"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:50:33.119225+00:00",
+  "ownerPID": 65194,
+  "ownerStart": "Fri Oct  9 01:50:32 2026",
+  "childPID": 65209,
+  "childStart": "Fri Oct  9 01:50:33 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:50:45.307632+00:00",
+  "ownedChildClosed": true
+}

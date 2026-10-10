@@ -62,6 +62,7 @@ auditConfig:
 
 patchedDependencies:
   node-forge@1.4.0: patches/node-forge@1.4.0.patch
+  expo-audio@57.0.5: patches/expo-audio@57.0.5.patch
 
 # pnpm refuses to run a dependency's install scripts until that dependency is named
 # here, and fails the install rather than silently skipping one — so this list is the

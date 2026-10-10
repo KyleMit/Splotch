@@ -10,6 +10,7 @@ import {
   strokePath,
   type Brush,
   type Drawing,
+  type Point,
   type Stroke,
 } from './model';
 import { DRAWING_THEME } from './theme';
@@ -25,6 +26,9 @@ type Props = {
   onStroke: (stroke: Stroke) => void;
   onDrawingChange: (drawing: boolean) => void;
   onError: (error: unknown) => void;
+  onSoundStart: (point: Point, timestamp: number) => void;
+  onSoundSample: (point: Point, timestamp: number) => void;
+  onSoundEnd: () => void;
 };
 
 function Ink({ stroke }: { stroke: Stroke }) {
@@ -145,6 +149,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
       if (!nextPoint) return;
       try {
         setDraft(input.sample(identifier, nextPoint));
+        propsRef.current.onSoundSample(nextPoint, event.nativeEvent.timestamp);
       } catch (error) {
         propsRef.current.onError(error);
       }
@@ -155,6 +160,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
       if (identifier === undefined) return;
       const stroke = input.finish(identifier, event ? point(event, identifier) : undefined);
       setDraft(null);
+      propsRef.current.onSoundEnd();
       propsRef.current.onDrawingChange(false);
       if (stroke) propsRef.current.onStroke(stroke);
     }
@@ -179,6 +185,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
           );
           setDraft(input.start(touch.identifier, current.color, current.brush, first));
           current.onDrawingChange(true);
+          current.onSoundStart(first, event.nativeEvent.timestamp);
         },
         onPanResponderStart: (event) => {
           if (event.nativeEvent.touches.length > 1) finish();
@@ -198,6 +205,13 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
         onShouldBlockNativeResponder: () => true,
       })
     ).current;
+
+    useEffect(
+      () => () => {
+        propsRef.current.onSoundEnd();
+      },
+      []
+    );
 
     return (
       <View style={styles.container}>

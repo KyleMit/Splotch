@@ -1,0 +1,19 @@
+{
+  "command": [
+    "node",
+    "node_modules/prettier/bin/prettier.cjs",
+    "--write",
+    "docs/migration/evidence/native-audio-settings-20261009/audio-lock-inputs.json",
+    "tools/migration/lib/native-audio-qualification.mjs",
+    "tools/migration/check-native-topology.mjs"
+  ],
+  "cwd": "/Users/kylemit/.codex/worktrees/native-audio-settings/Splotch",
+  "startUTC": "2026-10-09T05:50:32.975703+00:00",
+  "ownerPID": 65201,
+  "ownerStart": "Fri Oct  9 01:50:32 2026",
+  "childPID": 65203,
+  "childStart": "Fri Oct  9 01:50:32 2026",
+  "exitCode": 0,
+  "endUTC": "2026-10-09T05:50:33.070289+00:00",
+  "ownedChildClosed": true
+}

@@ -17,6 +17,14 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   exportPng: vi.fn(),
 }));
 
+vi.mock('../../experiments/native-architecture/src/useDrawingSound.ts', () => ({
+  useDrawingSound: () => ({
+    settings: { status: 'ready', soundEnabled: false, saved: true, message: '' },
+    audioMessage: '',
+    owner: null,
+  }),
+}));
+
 vi.mock('react-native', () => {
   function container({ children }) {
     return createElement('div', null, children);

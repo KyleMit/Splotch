@@ -1,0 +1,50 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs --maxWorkers=2
+
+
+ RUN  v5.0.2 /private/tmp/audio-q5-native-development/repository/tools
+
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-zPhbXV/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-gut6Sa/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-gut6Sa/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+ ❯ migration/tests/forge-mitigation.test.mjs (18 tests | 5 failed) 62ms
+   ❯ the exact Forge mitigation policy (6)
+     × accepts only the reviewed patch hash and complete candidate-owned paths 4ms
+     × rejects missing, corrupted, count-only and wrong patch registration 2ms
+     × rejects changed registry integrity and unsupported installed version policy 7ms
+     × rejects patch bypass flags and an unpatched dependency reference 3ms
+     × rejects a new importer, extra path and production reachability 3ms
+ ❯ migration/tests/native-drawing-forge-paths.test.mjs (10 tests | 2 failed) 85ms
+   ❯ the N1 save/share Forge adjunct (10)
+     × checks the real eight routes before preserving every other lock entry for the old guard 31ms
+     × retains the accepted guard refusal for unpatched or corrupt Forge references and bytes 8ms
+
+ Test Files  2 failed | 357 passed (359)
+      Tests  7 failed | 8264 passed (8271)
+   Start at  22:01:51
+   Duration  140.34s (tests 93%, import 6%, transform 1%)
+
+    Isolate  359 workers spawned · ~44ms startup each (spawn + environment, per file)
+             at least ~7.80s faster with isolate: false — reuses workers across files instead of one per file
+

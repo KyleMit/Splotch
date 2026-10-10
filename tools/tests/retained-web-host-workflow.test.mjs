@@ -111,9 +111,9 @@ describe('retained host CI wiring', () => {
     expect(job.steps[2].with).toEqual({ browsers: 'chromium' });
     expect(Number.isInteger(job['timeout-minutes'])).toBe(true);
     expect(job['timeout-minutes']).toBe(RETAINED_CONTROL_JOB_DEADLINE_MINUTES);
-    expect(job.env.TOPOLOGY_SHA).toBe('1b057679d5837b3c6e298fd8131203e51048d4f1');
+    expect(job.env.TOPOLOGY_SHA).toBe('4e593d20c084c8ea8ff4cb85455bf499c3b3b858');
     expect(job.env.TOPOLOGY_LOCK_SHA256).toBe(
-      '9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57'
+      '72a17493f6420ecb78fd914976aac577fa57eceb5124cb44985f97db9176dfce'
     );
     expect(job.env.ARTIFACT_PARENT).toBeUndefined();
     expect(controlStep().env).toEqual({

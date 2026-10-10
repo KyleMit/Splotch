@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "preparedUTC": "2026-10-09T06:29:16.372002+00:00",
+  "baseSource": "64af9ba7c32b785dcef71ce7d9e3549f392cf5e5",
+  "candidateLockSha256": "2fb897cebba278335aa1ae82f7d6778586f937b7c317db58394187b8669f4a15",
+  "before": {
+    "experiments/native-architecture/src/platform/drawingAudio.ts": {
+      "bytes": 4258,
+      "sha256": "6793da1b9348b41504058806e27b62aeba1c6899a1086c0bdd69fac2032b8364"
+    },
+    "tools/tests/native-audio-adapter.test.mjs": {
+      "bytes": 5591,
+      "sha256": "7ab15b26a3d7ae62d755bf39c16994a7a81f9084c8da8c90357addaca548e472"
+    }
+  },
+  "after": {
+    "experiments/native-architecture/src/platform/drawingAudio.ts": {
+      "bytes": 4358,
+      "sha256": "9063362e63e7727a9073abb0fabf95254afdd0d8e1a31675021045d1cb9561c8"
+    },
+    "tools/tests/native-audio-adapter.test.mjs": {
+      "bytes": 10629,
+      "sha256": "a39921f68a899b9215e20a0f7cde0df218d25c90741a087dde465ef0fccc9b14"
+    }
+  },
+  "sourceOnly": true,
+  "checksExecuted": false,
+  "speakerClaim": false
+}

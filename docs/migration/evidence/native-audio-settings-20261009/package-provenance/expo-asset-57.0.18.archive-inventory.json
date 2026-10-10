@@ -1,0 +1,807 @@
+[
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.aar",
+    "size": 29619,
+    "sha256": "1e71ea20d2ce42ff6ab775611fd7a0bd7f6dbb02af4e8b16c31e3ea1251d3c21"
+  },
+  {
+    "path": "package/android/build.gradle",
+    "size": 549,
+    "sha256": "5a2b1139e793e201fa789892ab54cb99a58516c219e907de69a0e578f396f3ac"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18-sources.jar",
+    "size": 4369,
+    "sha256": "3e0978bd705ddf8bbe335aa372165f5bc4fdb569d98214fa9e8f68d9657f083e"
+  },
+  {
+    "path": "package/.eslintrc.js",
+    "size": 103,
+    "sha256": "fe55757d154f21bc2d929a503441b247d05191782a2e0c63349fc41560367fab"
+  },
+  {
+    "path": "package/app.plugin.js",
+    "size": 55,
+    "sha256": "9df38eaf9dd525857b5fc8dad4ecd02d6689283e4f4553fd9095f581b44a3729"
+  },
+  {
+    "path": "package/build/Asset.fx.js",
+    "size": 1671,
+    "sha256": "2c75d3d8f7795fd72552733df23dbbaf92c2e631602988552d7f462962508c47"
+  },
+  {
+    "path": "package/build/Asset.js",
+    "size": 10489,
+    "sha256": "dae936a9d6522900a9d728b742b473db0bc16928a46741577fa98df12a3698bb"
+  },
+  {
+    "path": "package/build/Asset.server.js",
+    "size": 5596,
+    "sha256": "f63b09c44a513748e465c6c586a3114bd5c2bf1878a40f3fc14e462336dd0f94"
+  },
+  {
+    "path": "package/plugin/build/AssetContents.js",
+    "size": 1337,
+    "sha256": "3ba8b49fc0642a97fa92e7ae74bcaf0c0181618fee93e1c6cb3e52a7d0178fc4"
+  },
+  {
+    "path": "package/build/AssetHooks.js",
+    "size": 1173,
+    "sha256": "752d1dec7a9ac4a88de3a4fdc4af626609e1d56da66bbf1fba27ec89783cbc30"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.js",
+    "size": 2288,
+    "sha256": "4f044a3ea9597ecc946ea01e9a6e9591180626a7bb188f7a691951f984806ffd"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.native.js",
+    "size": 240,
+    "sha256": "c8e3edc53699f54738b7027becb1129ceefefc24912a06bb2b141a5f5be234c1"
+  },
+  {
+    "path": "package/build/AssetSources.js",
+    "size": 3490,
+    "sha256": "0e8151e4adcabf2b063d74d4d921bac096cac2134d9476f35a3f5c2ee7e662c4"
+  },
+  {
+    "path": "package/build/AssetUris.js",
+    "size": 2510,
+    "sha256": "2822860ee692dafebd5f531faf545e5cb62c0a98c6375daac8f85b520da17997"
+  },
+  {
+    "path": "package/build/ExpoAsset.js",
+    "size": 740,
+    "sha256": "a65680c7fcc61e815be727c1300dc01123c077e413c90d369611964bfcba083a"
+  },
+  {
+    "path": "package/build/ExpoAsset.web.js",
+    "size": 116,
+    "sha256": "7387eb40ca99e2f68ce4a668c754e191ac343dc98a9e4620c880f1e1b5148d53"
+  },
+  {
+    "path": "package/tools/hashAssetFiles.js",
+    "size": 2099,
+    "sha256": "edfb7c991cda12b73e119dcfae1bde17221f51514a421b42c47f28352615d0d4"
+  },
+  {
+    "path": "package/build/ImageAssets.js",
+    "size": 719,
+    "sha256": "18638647c83b26f6b3891214388ee9d02fe4f5e378b37032bfc1064e760dafdf"
+  },
+  {
+    "path": "package/build/index.js",
+    "size": 109,
+    "sha256": "83de3fb397f3d9488c8dc15e915d5c5dfe18af9bd044f24e26b8e69cbe498ab7"
+  },
+  {
+    "path": "package/plugin/build/index.js",
+    "size": 134,
+    "sha256": "4ae7946f4f678725eaf4a18010ee75eb8df203163680a0bb193a40a54421775b"
+  },
+  {
+    "path": "package/build/index.server.js",
+    "size": 132,
+    "sha256": "4bcf6fbbc7d50e89a212cf32ff1e764ed34f7fe8c6039565898d1e5bab1ce775"
+  },
+  {
+    "path": "package/jest-rsc.config.js",
+    "size": 55,
+    "sha256": "b53df3dc7993f376b42a1913b2163372896d38df383f9e12f1c68c27bf6df30a"
+  },
+  {
+    "path": "package/build/LocalAssets.js",
+    "size": 792,
+    "sha256": "348eebca6e5017fcf0d83d7a0e11e09e01bed5eb8bde18173f86e778d6d1073c"
+  },
+  {
+    "path": "package/build/LocalAssets.web.js",
+    "size": 128,
+    "sha256": "c51a9a1ca4f3a2f363fbbc206d68419f0a9041572133bd54c464b1fc0a8c7ae4"
+  },
+  {
+    "path": "package/build/PlatformUtils.js",
+    "size": 1751,
+    "sha256": "8a7c737c9753c56dd8c9655230f2e2ac93317b61eb37cd6e3d8aa692dffbc9dc"
+  },
+  {
+    "path": "package/build/PlatformUtils.web.js",
+    "size": 273,
+    "sha256": "667d29f70d43ed36c745d5fb8605d278601ad51d36d12247e8aaa49d4833022b"
+  },
+  {
+    "path": "package/build/resolveAssetSource.js",
+    "size": 1143,
+    "sha256": "2db350ee9f002f53529111627f03157c019b49208b240f5a711a0d2133212ef2"
+  },
+  {
+    "path": "package/build/resolveAssetSource.native.js",
+    "size": 235,
+    "sha256": "6faff3f77bc2cd8a1f44d2250c38ccdeb4237f18773077ea40d8b5857718e8f8"
+  },
+  {
+    "path": "package/plugin/build/utils.js",
+    "size": 2632,
+    "sha256": "017493e31c588e37438508f4dde8b2a7a42927ab933ceb7e99f9dd3c90a719dc"
+  },
+  {
+    "path": "package/plugin/build/withAssets.js",
+    "size": 738,
+    "sha256": "dc627fb61aa7c2c95345b30185ee3945546a68650f9c90bd2ba575f7b334129c"
+  },
+  {
+    "path": "package/plugin/build/withAssetsAndroid.js",
+    "size": 2131,
+    "sha256": "4c7551b10d53b1fa10ec5770dcac0bb0434e83dc1c609af564fbef86864d92c0"
+  },
+  {
+    "path": "package/plugin/build/withAssetsIos.js",
+    "size": 3332,
+    "sha256": "7a3aec56bc14d60cdb0b3d968fa4a37c6904703bf8ee38022bf6e76812ba3493"
+  },
+  {
+    "path": "package/expo-module.config.json",
+    "size": 342,
+    "sha256": "922d248af82a42e49218a54dd08a72c0451eaf4f2fe106c582b43690da505db4"
+  },
+  {
+    "path": "package/package.json",
+    "size": 1757,
+    "sha256": "39a3accfa83784f2c13b8bb69c28ab8d6feb1f0296c72f073c73f9bdc31b70aa"
+  },
+  {
+    "path": "package/spm.config.json",
+    "size": 777,
+    "sha256": "ee6eab899bb115fef133fb24427e2697701fbca185790d4862e7442a073baa05"
+  },
+  {
+    "path": "package/plugin/tsconfig.json",
+    "size": 225,
+    "sha256": "f082fe94b93c19c318b6cf5b1d6f4b7100703bf239f120de1aab58034a79f423"
+  },
+  {
+    "path": "package/tsconfig.json",
+    "size": 263,
+    "sha256": "c47e79bd86e360fc929d8bef85e0c111e005c324ff450109e8a821aa64096992"
+  },
+  {
+    "path": "package/android/src/main/java/expo/modules/asset/AssetModule.kt",
+    "size": 3499,
+    "sha256": "b5c854977dc32a50bd1b69dd7ef0818f650d3a005d2108e637a8450a2f05454f"
+  },
+  {
+    "path": "package/android/src/main/java/expo/modules/asset/FileUtils.kt",
+    "size": 635,
+    "sha256": "3a5aed27d42385bf626f15077b82ed565d507d8de0b214c809890a360b66be58"
+  },
+  {
+    "path": "package/android/src/main/java/expo/modules/asset/OkHttpExtensions.kt",
+    "size": 838,
+    "sha256": "6386d28c0c3c44c30f01810e6b13cea4f63df83bb4814136191057364cc618bc"
+  },
+  {
+    "path": "package/android/src/main/java/expo/modules/asset/ResourceAsset.kt",
+    "size": 2791,
+    "sha256": "c2dda514221582c7bb616d560b2620925ff7d497fb830373bf54cd4c6e6a6288"
+  },
+  {
+    "path": "package/build/Asset.d.ts.map",
+    "size": 1543,
+    "sha256": "f66fccdadf38f7ea737e01d552642c77a42e6bfed3956ab085e38ee733ede355"
+  },
+  {
+    "path": "package/build/Asset.fx.d.ts.map",
+    "size": 110,
+    "sha256": "c7bd501829b0088921ca1282506a68b2b26503caa6f5a5c4340368d81380c3b5"
+  },
+  {
+    "path": "package/build/Asset.fx.js.map",
+    "size": 2731,
+    "sha256": "d5f40b19a7e7efcc973522f1203b08a663953ada173d2f95ff78950314c1bd68"
+  },
+  {
+    "path": "package/build/Asset.js.map",
+    "size": 17199,
+    "sha256": "8a5316562c88a058253ed125f47ad988ca5fe9bfc8ecaf0b8123b14e9c8d8501"
+  },
+  {
+    "path": "package/build/Asset.server.d.ts.map",
+    "size": 1056,
+    "sha256": "8dbe1ac2d8f537b56303d2ae3684968b9a97f0a9702b598cdc852e006a5a7c52"
+  },
+  {
+    "path": "package/build/Asset.server.js.map",
+    "size": 11248,
+    "sha256": "e4886c96da43be1a7a7697c2ccee17cf1b63407e39f66bc2b8af8685e332a91f"
+  },
+  {
+    "path": "package/build/AssetHooks.d.ts.map",
+    "size": 296,
+    "sha256": "9990a2e334a374d3c123b12e624ad747757e2b37cc449d1350f9797ebd253ea1"
+  },
+  {
+    "path": "package/build/AssetHooks.js.map",
+    "size": 1844,
+    "sha256": "ba637407096fc26bd7ea3dbe12fedeaf0fe5a6696d1f46bcc26d90d54cda8f75"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.d.ts.map",
+    "size": 883,
+    "sha256": "664b74a5b9e8ab6c7be61838f551015d612efc4654fd0f1be9ca5551276ec1b9"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.js.map",
+    "size": 5031,
+    "sha256": "029c4af9fb87e793dc5288f5805f9540f59f41a850b6573b4040243bf85cfdb4"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.native.d.ts.map",
+    "size": 225,
+    "sha256": "f93a56eb89deef5d88f622788f5a72253b444989bbdeccd516f81d2bc4a50264"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.native.js.map",
+    "size": 434,
+    "sha256": "d4cb72e3eeced3bf1de2e133214a163d07e90ff4f147a844915e8990d360b7b5"
+  },
+  {
+    "path": "package/build/AssetSources.d.ts.map",
+    "size": 623,
+    "sha256": "cc73695d5dd06da12dfd397b0acbc66cb7c9dd0c584a27969ef427f2d410c2f9"
+  },
+  {
+    "path": "package/build/AssetSources.js.map",
+    "size": 6488,
+    "sha256": "5c978915463f9683aa72d17ca0b7914c96d56fc3d8f4b10e8ad53d12ae82444f"
+  },
+  {
+    "path": "package/build/AssetUris.d.ts.map",
+    "size": 294,
+    "sha256": "c6380344db551819450f0c9a7900e8ceb44771109f88dbcf1354acc79a7961af"
+  },
+  {
+    "path": "package/build/AssetUris.js.map",
+    "size": 4196,
+    "sha256": "11552238bbef7951294495644a243f0da02f300b863cb6158cbf727ae86fdca7"
+  },
+  {
+    "path": "package/build/ExpoAsset.d.ts.map",
+    "size": 248,
+    "sha256": "59fff42c0aa2f3e76241694f32a9780406771449d2c10d24cede2f6e9cbd2e14"
+  },
+  {
+    "path": "package/build/ExpoAsset.js.map",
+    "size": 1159,
+    "sha256": "ca1d73a72b96a4e9419d6553f56b7cc0ab6ccb07a87f9d1eb5a8c4f315edded5"
+  },
+  {
+    "path": "package/build/ExpoAsset.web.d.ts.map",
+    "size": 239,
+    "sha256": "a72883e18a8304b02a0c9c04510f10a6e785736a9040f3544183d5274848590f"
+  },
+  {
+    "path": "package/build/ExpoAsset.web.js.map",
+    "size": 368,
+    "sha256": "988243ace0b42e727adc2dafcd596584f816ccc7e861f95a528c3d6873d7f2cb"
+  },
+  {
+    "path": "package/build/ImageAssets.d.ts.map",
+    "size": 345,
+    "sha256": "8bf9a799f1e71c659c4667174d8aecd13444f602246505e4297b48b53dde9a1e"
+  },
+  {
+    "path": "package/build/ImageAssets.js.map",
+    "size": 1625,
+    "sha256": "657ac382c3e9f36cfcd406faf0be6bf687748176223f469e34a9430ef63f18db"
+  },
+  {
+    "path": "package/build/index.d.ts.map",
+    "size": 165,
+    "sha256": "2bf3d9cf2ef2892370c0eaff502f73f060e149202196029c5e10174ef2fbe747"
+  },
+  {
+    "path": "package/build/index.js.map",
+    "size": 266,
+    "sha256": "78424b7ff6369aeee7316a6a3fa43de30e30b99f6df10046fadf394f68bac1a1"
+  },
+  {
+    "path": "package/build/index.server.d.ts.map",
+    "size": 164,
+    "sha256": "8df9bed09cc5c742d7a26f5f36b0480eadcac427cf54e7b4f979c220b2dff729"
+  },
+  {
+    "path": "package/build/index.server.js.map",
+    "size": 328,
+    "sha256": "43869f33317603708b2cb2332640c0befd536d40bb345e5bed31eea737067ce9"
+  },
+  {
+    "path": "package/build/LocalAssets.d.ts.map",
+    "size": 221,
+    "sha256": "278e9af03af7dfb79a931ea0ec39351e9212e47424a3398d2ff6ab2e24567909"
+  },
+  {
+    "path": "package/build/LocalAssets.js.map",
+    "size": 1424,
+    "sha256": "4b1438eb76d605aa9ef7aa26eec7b630f8a2cf9fa5d0c403bb39f8dea25f0439"
+  },
+  {
+    "path": "package/build/LocalAssets.web.d.ts.map",
+    "size": 218,
+    "sha256": "60cacda80e009806229e94e6377475a1b96fb818220832888118ea15847700a0"
+  },
+  {
+    "path": "package/build/LocalAssets.web.js.map",
+    "size": 350,
+    "sha256": "2fc06461819d335187b53105fa7fef44edf330d478351d3fd7ee2b2596ad2982"
+  },
+  {
+    "path": "package/build/PlatformUtils.d.ts.map",
+    "size": 326,
+    "sha256": "eb1c4eed004fee2c128f642bfcd6eecd61ae3d1d52ba01173f459454af97e142"
+  },
+  {
+    "path": "package/build/PlatformUtils.js.map",
+    "size": 3117,
+    "sha256": "9bf39cd9b87d058619947e6959c57cc8008be281cc12883cfa88c5455901a263"
+  },
+  {
+    "path": "package/build/PlatformUtils.web.d.ts.map",
+    "size": 271,
+    "sha256": "380bb429de5bd462b84fcef3055c6ebf9e36e008a0a3789b5b9d429093db0615"
+  },
+  {
+    "path": "package/build/PlatformUtils.web.js.map",
+    "size": 608,
+    "sha256": "1aa02a16f89642a4dfb75b43b7a789964677e5593c17ac991fe9cf38da3eebdb"
+  },
+  {
+    "path": "package/build/resolveAssetSource.d.ts.map",
+    "size": 595,
+    "sha256": "1868544f9f88852057405563fccb3a7b242912ec4b26a4c6fdc4c1726cd23415"
+  },
+  {
+    "path": "package/build/resolveAssetSource.js.map",
+    "size": 2517,
+    "sha256": "69bb049ad3e0a3189d7d9095d257b3f40720d9fa62a025de8a1a5a0fb597fb80"
+  },
+  {
+    "path": "package/build/resolveAssetSource.native.d.ts.map",
+    "size": 223,
+    "sha256": "295c79f49bac4f651d70595efa8a2f844ca1eea3807939f6cc7bb6e6e14649c5"
+  },
+  {
+    "path": "package/build/resolveAssetSource.native.js.map",
+    "size": 428,
+    "sha256": "dbbfe506dcd6978fbe2b0d942003f398356684a1167a58b92fbe49ccc6bc2212"
+  },
+  {
+    "path": "package/CHANGELOG.md",
+    "size": 21761,
+    "sha256": "3c1e9b3642d29bd6ba81fcbd82b05c7e757d600b8e91699583d03d9a8052553e"
+  },
+  {
+    "path": "package/README.md",
+    "size": 1232,
+    "sha256": "f8833143c90b30ea198e4614ee74c5129d484bf3f111ac6beb8675eff63f876a"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18-sources.jar.md5",
+    "size": 32,
+    "sha256": "1bb610f7857f6912430d2e0a6b0b46b06c1dc98bef0b5ccf3bdc613323c7217b"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.aar.md5",
+    "size": 32,
+    "sha256": "12362e51079fd24b4b5e3ba5eb0f232967bf50edad2fc00f94b29a04fb94f21d"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.module.md5",
+    "size": 32,
+    "sha256": "6e4f90ea25ec61936ab459bc4c1b561365be5bc403715c913880f9a485eff33b"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.pom.md5",
+    "size": 32,
+    "sha256": "414fd532728f16d13795c5cd9151016eadeaf8343be971fed8a519fc32a46a4e"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/maven-metadata.xml.md5",
+    "size": 32,
+    "sha256": "cea75deedf41943bdefd103f95d9614bc98240028cf850b2103b84888ccb794f"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.module",
+    "size": 3537,
+    "sha256": "c38f36a03c33d1178174ff31e1d818894ebaedfbfad84eab6c669be105987b83"
+  },
+  {
+    "path": "package/ios/ExpoAsset.podspec",
+    "size": 823,
+    "sha256": "1718cbff56334111fd5fc9eda65bd8724bfc4ec7de39b46f260e41cc8db78d7b"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.pom",
+    "size": 2546,
+    "sha256": "b077e6fc32eb306a434ea8398e01736b9d43b7e5a6fa719794c827053b85aa7d"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18-sources.jar.sha1",
+    "size": 40,
+    "sha256": "9cbd27bdeb9ccf801c8ae8cf41b9e9c3dc103fdabdd1baa64729001c4e91c21c"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.aar.sha1",
+    "size": 40,
+    "sha256": "9716bad0b0a981a6b9935b72268b8972549f97c47fb3103c11dcdb2471224373"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.module.sha1",
+    "size": 40,
+    "sha256": "a22c473061c3c9e6e4fe0bd5232339cadc5d029284243fce473c90d9fc2be2e6"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.pom.sha1",
+    "size": 40,
+    "sha256": "30c4cfb5adad7047f78028d024684fd29a20820fda6068b5b149bc6fc9e039b7"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/maven-metadata.xml.sha1",
+    "size": 40,
+    "sha256": "94ca4a1a3a4f8b8fc501fd749f27f5dd9a13c8d9aac2669cf657979f83eda23c"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18-sources.jar.sha256",
+    "size": 64,
+    "sha256": "a3810592e4e99ddadd78a885cc729b9fa7be71f56e9925c6957f4f1eb978a92f"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.aar.sha256",
+    "size": 64,
+    "sha256": "6185eaf27ce5539e4e2757f234dd9e6f0de7fc69d91ae352e341bae458fdca09"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.module.sha256",
+    "size": 64,
+    "sha256": "c1ca0d89ba9ff4d3cf3ead8f30a8e6b3df1405142007bc9cf14ad04cd39bb291"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.pom.sha256",
+    "size": 64,
+    "sha256": "597ee9c8e94cb32ea024fb302c7be91fc42852f3b35e77a04d940a2ecee219d0"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/maven-metadata.xml.sha256",
+    "size": 64,
+    "sha256": "959c021360ec25ed12f82754fed4f019f151d8a27470882a71dfc030dfcdeb06"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18-sources.jar.sha512",
+    "size": 128,
+    "sha256": "fb8915e42129749e71ae135a3d435fa9e344c6eb1203e6fa02b6328bf2047671"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.aar.sha512",
+    "size": 128,
+    "sha256": "04e9af82b45c38a67de7cfb114eee950929c88e484c3d2d80146294d5b1378da"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.module.sha512",
+    "size": 128,
+    "sha256": "5e0cc9f277435c05cb9e613f9fe1134bdea0a90f80a0d9818fbba2e14dcf0938"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/57.0.18/expo.modules.asset-57.0.18.pom.sha512",
+    "size": 128,
+    "sha256": "276acb53baa94e4fda2268b8633a84efb38b273fac44d49d0bce96f4f8ef3022"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/maven-metadata.xml.sha512",
+    "size": 128,
+    "sha256": "1ac6ed3ca94cd28c5cae21f17ad320ce944993012a5ada206a4bf5684816c17b"
+  },
+  {
+    "path": "package/ios/AssetModule.swift",
+    "size": 3396,
+    "sha256": "8756b54e0a2301c03b9fb88019844d157952aab88efe5b2dea6f644110d0074b"
+  },
+  {
+    "path": "package/build/Asset.d.ts",
+    "size": 4936,
+    "sha256": "42a7cdcf9141aa52af3732ad79919e07c9706493cc131b8006cdcb7e4e4c3e15"
+  },
+  {
+    "path": "package/build/Asset.fx.d.ts",
+    "size": 49,
+    "sha256": "990ac72f56c8305398fdde2ba6a4dc37516016eb0cc7a91f3fffc364736f8d8b"
+  },
+  {
+    "path": "package/src/Asset.fx.ts",
+    "size": 1665,
+    "sha256": "a7fc02b04b7f839a9c2fb1be9aadc6e5c15b474e046d0a7ec17679ef893142dd"
+  },
+  {
+    "path": "package/build/Asset.server.d.ts",
+    "size": 878,
+    "sha256": "64a429f4030f9bca79d04edfb091f53e092ac0f2016584ceafbbb311f800e511"
+  },
+  {
+    "path": "package/src/Asset.server.ts",
+    "size": 5698,
+    "sha256": "57be0a266e336f97259a0af924c66becb3edac9385d8500c5275b368e155cfc5"
+  },
+  {
+    "path": "package/src/Asset.ts",
+    "size": 10324,
+    "sha256": "b3723df6b2b6345d7fea3c04cf55b351c9e129099ba7c9c0a57e1854ef4c0cfd"
+  },
+  {
+    "path": "package/plugin/build/AssetContents.d.ts",
+    "size": 953,
+    "sha256": "a4f53ad2346ead7c949eb3222917949b323de1fdad22b79e0f04a5dc6dd2bfe4"
+  },
+  {
+    "path": "package/plugin/src/AssetContents.ts",
+    "size": 1561,
+    "sha256": "de37b7e6e22b339e00be50574a8a7a4248b7e725735f40613d06c1795744db15"
+  },
+  {
+    "path": "package/build/AssetHooks.d.ts",
+    "size": 965,
+    "sha256": "b1af80962dac8421be9460e493bea138165484dcb0467265b36e0c8387a12565"
+  },
+  {
+    "path": "package/src/AssetHooks.ts",
+    "size": 1202,
+    "sha256": "4e7089bc2fb5636d64355e1e5dd18aa7292c36da7c44cbb4400e646e89bed2fb"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.d.ts",
+    "size": 959,
+    "sha256": "5dd7965c10254cc47a8b0e942608da7bce6cf5d619551f64d1a3a43337827aae"
+  },
+  {
+    "path": "package/build/AssetSourceResolver.native.d.ts",
+    "size": 242,
+    "sha256": "7f111138d57cfd52dfd826aa8d3fe35db9dde8aa875459d63e415cbf3a926dc3"
+  },
+  {
+    "path": "package/src/AssetSourceResolver.native.ts",
+    "size": 186,
+    "sha256": "66446484e820aef05309f53d4ce36ff5e67e84f3fb3839157f1ca4003d28fce2"
+  },
+  {
+    "path": "package/src/AssetSourceResolver.ts",
+    "size": 2689,
+    "sha256": "a4d2b937970f625b5b68fa1ed94378ef831148317d2c98cc901955aa4e5a0462"
+  },
+  {
+    "path": "package/build/AssetSources.d.ts",
+    "size": 984,
+    "sha256": "a0a0e8a2aff3b8cbebb3258529cd9d6ad9b6df1fcdb668fe4b6055401d621379"
+  },
+  {
+    "path": "package/src/AssetSources.ts",
+    "size": 3734,
+    "sha256": "11fb1db42ada31fce406fad50be70c655fc8150cf644c5b488a228a42d56c394"
+  },
+  {
+    "path": "package/build/AssetUris.d.ts",
+    "size": 791,
+    "sha256": "6aa031a67a4bd5bc215db421f94d66b335e913176b70efbde9915e7bf518422e"
+  },
+  {
+    "path": "package/src/AssetUris.ts",
+    "size": 2450,
+    "sha256": "18d464c8a983fbaa2dd3d6d176685f429c22fbc012c02be35a4b2c6de54ba2bc"
+  },
+  {
+    "path": "package/build/ExpoAsset.d.ts",
+    "size": 620,
+    "sha256": "3beb02e2611c2e0fa4530515db2ca756b9430fb0772b9e2d32879ca8be921720"
+  },
+  {
+    "path": "package/mocks/ExpoAsset.ts",
+    "size": 329,
+    "sha256": "b3cde4267c63af81865690aef2e285d0126b9f863972adb3e4e74aa8831258cc"
+  },
+  {
+    "path": "package/src/ExpoAsset.ts",
+    "size": 759,
+    "sha256": "aa6242252197244d06e3da57df3fedcf99fb5f191e0d1ae55f822e27fe0465bb"
+  },
+  {
+    "path": "package/build/ExpoAsset.web.d.ts",
+    "size": 149,
+    "sha256": "dd45c05600ff790bb69036c4e67c2c9b6b37cb7016023ebee2f4f9d9bde31fd2"
+  },
+  {
+    "path": "package/src/ExpoAsset.web.ts",
+    "size": 129,
+    "sha256": "ce436e89e0d6aad6cd70762aea076f423418ef41746a678fa55b71f82223ffa8"
+  },
+  {
+    "path": "package/build/ImageAssets.d.ts",
+    "size": 267,
+    "sha256": "aa9b7b08dc9eea24c07d415c841cd09cdfd877feb4701452abdbe3b83c8b8566"
+  },
+  {
+    "path": "package/src/ImageAssets.ts",
+    "size": 731,
+    "sha256": "aa865f6415deb8be29d8949896f4f6ce4dbd1ed3c6e7d5143bb07682a9618816"
+  },
+  {
+    "path": "package/build/index.d.ts",
+    "size": 111,
+    "sha256": "ee9e4b449ea85e74e9101e048e9cc8f1199e6c4fdf83826127a5c9e848cbbfc1"
+  },
+  {
+    "path": "package/plugin/build/index.d.ts",
+    "size": 137,
+    "sha256": "0e68846bd1064104d2e0bd760f88c4e8d14f52623111d0ed6772db1468a7011b"
+  },
+  {
+    "path": "package/build/index.server.d.ts",
+    "size": 136,
+    "sha256": "687ad4cf63405d8bf85d87e4dde33e9c43100b59c2dff7875a51fa0ff9527ea3"
+  },
+  {
+    "path": "package/src/index.server.ts",
+    "size": 91,
+    "sha256": "6bf23c7aa876512dbd0411b2c7c650594a731ac989b4b73401c9e3e3c14b05d7"
+  },
+  {
+    "path": "package/plugin/src/index.ts",
+    "size": 131,
+    "sha256": "bf0fdfbb330099e8791c1f98681da9c3308dd05206d5c07e30b4bf17f3c6ff91"
+  },
+  {
+    "path": "package/src/index.ts",
+    "size": 77,
+    "sha256": "d6be3d28bce308e7f7c62a15f183ff220b89458a41ea29e499b9a4e068a95d69"
+  },
+  {
+    "path": "package/build/LocalAssets.d.ts",
+    "size": 238,
+    "sha256": "36386d9e9010751001fc3965f3e3a75703d290b0713bca7a6378c9b5c2f36990"
+  },
+  {
+    "path": "package/src/LocalAssets.ts",
+    "size": 742,
+    "sha256": "5d2d11e5986a3120c0b3a993194ee220537f7fc41f3255680624701b096ba760"
+  },
+  {
+    "path": "package/build/LocalAssets.web.d.ts",
+    "size": 137,
+    "sha256": "45b21f7ef86e32f5091e56f7ce1c9963b7d4b975ee61c0ae7c60f83872dc37fb"
+  },
+  {
+    "path": "package/src/LocalAssets.web.ts",
+    "size": 119,
+    "sha256": "53d7a0b94ef50c61ac153bf7edff1481e62e02f895a982f12680c8835e162db5"
+  },
+  {
+    "path": "package/build/PlatformUtils.d.ts",
+    "size": 340,
+    "sha256": "efa4b952a4dbc8f96a672a88afd25aa97891e693e5455f3b626df705b73fee18"
+  },
+  {
+    "path": "package/src/PlatformUtils.ts",
+    "size": 1930,
+    "sha256": "95aeecf9bbfff1038efa123b6c2c2897c79f0c89ff4a1f3ba38c244da02ee6bd"
+  },
+  {
+    "path": "package/build/PlatformUtils.web.d.ts",
+    "size": 256,
+    "sha256": "5579665b0a78d049a7b9fed70250c09688097a8a8ef56a993356bdaae4f65f9b"
+  },
+  {
+    "path": "package/src/PlatformUtils.web.ts",
+    "size": 251,
+    "sha256": "f8e7c72ba93678e6b13a6e6aac1339c3057d37616a467268c1d6d3f0f86fc565"
+  },
+  {
+    "path": "package/src/ts-declarations/react-native-assets.d.ts",
+    "size": 1958,
+    "sha256": "3ebb7d8bc66363fde2951614385aea3a28808384984df6b0e995e6e97e82c5de"
+  },
+  {
+    "path": "package/build/resolveAssetSource.d.ts",
+    "size": 871,
+    "sha256": "73b13c0460bffc1d7386d81ac6ed27d9dcd6993b4e458e7815dc0381c1ebb6d8"
+  },
+  {
+    "path": "package/build/resolveAssetSource.native.d.ts",
+    "size": 237,
+    "sha256": "9bfe588522b04eda5e73baa108809f80ad40d5b620a557999a22bea20065044c"
+  },
+  {
+    "path": "package/src/resolveAssetSource.native.ts",
+    "size": 182,
+    "sha256": "09c637e8cec486016810ed34b9211c311f813d1f21d4769f5826e1481b5af16b"
+  },
+  {
+    "path": "package/src/resolveAssetSource.ts",
+    "size": 1527,
+    "sha256": "40620b25eb846621c31572b93ea08cd1146f14ab8f99cd8f2eecd9b395722c93"
+  },
+  {
+    "path": "package/plugin/build/utils.d.ts",
+    "size": 420,
+    "sha256": "e6e59651711ca05c0f9987a79a56da808276ee41dbe2533525d0ad4a1e112145"
+  },
+  {
+    "path": "package/plugin/src/utils.ts",
+    "size": 2036,
+    "sha256": "2d933ae2712ffd04a0d35012c22af36b39503c32620182758b63b6ce98411f60"
+  },
+  {
+    "path": "package/plugin/build/withAssets.d.ts",
+    "size": 303,
+    "sha256": "a4e34673cb7b3e6784235448fe4ff5f23133da55c5120f8b92fec552a30d5687"
+  },
+  {
+    "path": "package/plugin/src/withAssets.ts",
+    "size": 784,
+    "sha256": "708fcc4fcb5d2100e09d78e79b547ae91aab9a24b7a7a6635cbaa706a24e713a"
+  },
+  {
+    "path": "package/plugin/build/withAssetsAndroid.d.ts",
+    "size": 121,
+    "sha256": "29bf90ede0f8fe378fa18a0a15374f83839a3f160456211f214c799ae5f8b4a4"
+  },
+  {
+    "path": "package/plugin/src/withAssetsAndroid.ts",
+    "size": 1604,
+    "sha256": "3fb02fffe03dbd731f8015dfb10cfce865cd1307ea11c2a83404d3457a86e781"
+  },
+  {
+    "path": "package/plugin/build/withAssetsIos.d.ts",
+    "size": 117,
+    "sha256": "4e49dd4a6bb04042ce3f1882f73d8b25127a4870080f6b0a0b3f2b3cbf5c974e"
+  },
+  {
+    "path": "package/plugin/src/withAssetsIos.ts",
+    "size": 2988,
+    "sha256": "c26128356f39928048a16bef60f3d452e4afb7bd72fd7f6f142dac8eb737225c"
+  },
+  {
+    "path": "package/plugin/tsconfig.tsbuildinfo",
+    "size": 146,
+    "sha256": "d61c0fb00516bd4f4d5a75ad71319a110a59726ce42f51ab408e8fd8cd8b1c7f"
+  },
+  {
+    "path": "package/android/src/main/AndroidManifest.xml",
+    "size": 23,
+    "sha256": "21058c692532098e42afc39cf09de946c38229ec414bb7ac32f4fc90ba9a5f45"
+  },
+  {
+    "path": "package/local-maven-repo/expo/modules/asset/expo.modules.asset/maven-metadata.xml",
+    "size": 349,
+    "sha256": "7e5b8e255f2e9f00a0ec07a570c609754e12c5194a058201ef6429a85fe42194"
+  },
+  {
+    "path": "package/LICENSE",
+    "size": 1106,
+    "sha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4"
+  }
+]

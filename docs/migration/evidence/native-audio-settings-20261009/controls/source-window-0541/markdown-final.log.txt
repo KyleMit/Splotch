@@ -1,0 +1,12 @@
+
+> splotch@1.6.0 preformat:md
+> node tools/check-dprint-plugins.mjs
+
+
+> splotch@1.6.0 format:md
+> dprint fmt docs/migration/evidence/native-audio-settings-20261009/README.md
+
+Compiling /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/node_modules/@dprint/markdown/plugin.wasm
+Compiling /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/node_modules/@dprint/typescript/plugin.wasm
+Compiling /Users/kylemit/.codex/worktrees/native-audio-settings/Splotch/node_modules/@dprint/json/plugin.wasm
+Formatted 1 file.

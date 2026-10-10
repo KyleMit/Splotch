@@ -1,0 +1,19 @@
+{
+  "status": "OLD_MISSING_METHOD_CALL_PREVENTS_PLAYER_ALLOCATION",
+  "actualChildExit": 1,
+  "failure": {
+    "ancestorTitles": [
+      "supported Expo native audio binding"
+    ],
+    "fullName": "supported Expo native audio binding loads with the actual React Native signal without DOM throwIfAborted",
+    "status": "failed",
+    "title": "loads with the actual React Native signal without DOM throwIfAborted",
+    "duration": 2.1999580000000094,
+    "failureMessages": [
+      "AssertionError: expected \"vi.fn()\" to be called once, but got 0 times\n    at /private/tmp/audio-q5-native-development/repository/tools/tests/native-audio-adapter.test.mjs:103:27\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)"
+    ],
+    "meta": {},
+    "tags": [],
+    "benchmarks": []
+  }
+}
