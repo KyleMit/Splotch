@@ -1,0 +1,188 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs --maxWorkers=2
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-coloring-pages/Splotch/tools
+
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+  drawing — done             
+ ❯ migration/tests/candidate-configs.test.mjs (71 tests | 70 failed) 2818ms
+   ❯ candidate configuration dependency ownership (71)
+     × accepts explicit current Babel, Expo and tsconfig dependency references 60ms
+     × rejects babel.config.cjs configuration for its stated reason 51ms
+     × rejects babel.config.cjs configuration for its stated reason 42ms
+     × rejects babel.config.cjs configuration for its stated reason 42ms
+     × rejects babel.config.cjs configuration for its stated reason 43ms
+     × rejects babel.config.cjs configuration for its stated reason 47ms
+     × rejects babel.config.cjs configuration for its stated reason 42ms
+     × rejects babel.config.cjs configuration for its stated reason 41ms
+     × rejects tsconfig.json configuration for its stated reason 36ms
+     × rejects tsconfig.json configuration for its stated reason 35ms
+     × rejects tsconfig.json configuration for its stated reason 35ms
+     × rejects app.json configuration for its stated reason 51ms
+     × rejects babel.config.cjs configuration for its stated reason 60ms
+     × rejects babel.config.cjs configuration for its stated reason 40ms
+     × rejects babel.config.cjs configuration for its stated reason 40ms
+     × rejects babel.config.cjs configuration for its stated reason 54ms
+     × rejects babel.config.cjs configuration for its stated reason 42ms
+     × rejects tsconfig.json configuration for its stated reason 53ms
+     × rejects tsconfig.json configuration for its stated reason 55ms
+     × rejects tsconfig.json configuration for its stated reason 54ms
+     × rejects tsconfig.json configuration for its stated reason 54ms
+     × qualifies default and literal-empty Babel presets options 35ms
+     × qualifies default and literal-empty Babel plugins options 35ms
+     × preserves Expo plugin option handling under its own consumer 38ms
+     × rejects dotfile Babel JSON and triple-slash undeclared type references 56ms
+     × covers both Expo JSON forms in app.json 36ms
+     × covers both Expo JSON forms in app.config.json 36ms
+     × accepts finite literal configuration exports in babel.config.cjs 37ms
+     × accepts finite literal configuration exports in babel.config.cjs 37ms
+     × accepts finite literal configuration exports in app.config.ts 34ms
+     × accepts finite literal configuration exports in app.config.cjs 36ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 37ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 37ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 39ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 39ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 44ms
+     × visibly refuses unestablished dependency configuration in babel.config.cjs 36ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 38ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 38ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 39ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 38ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 37ms
+     × visibly refuses unestablished dependency configuration in app.config.cjs 37ms
+     × refuses unowned Babel vocabulary: const {plugins}={}; 40ms
+     × refuses unowned Babel vocabulary: const {presets:list}={}; 37ms
+     × refuses unowned Babel vocabulary: const {['plugins']:list}={}; 37ms
+     × refuses unowned Babel vocabulary: const extra={plugins:[]}; 37ms
+     × refuses unowned Babel vocabulary: const extra={presets:[]}; 39ms
+     × refuses unowned Expo vocabulary: const {expo}={}; 39ms
+     × refuses unowned Expo vocabulary: const extra={expo:{plugins:[]}}; 40ms
+     × accepts nested ordinary app modules named app.config.ts 37ms
+     × accepts nested ordinary app modules named babel.config.ts 36ms
+     × accepts nested ordinary app modules named .babelrc.ts 36ms
+     × accepts nested ordinary JSON modules named app.config.json 37ms
+     × accepts nested ordinary JSON modules named babel.config.json 37ms
+     × accepts nested ordinary JSON modules named .babelrc.json 36ms
+     × refuses unsupported literal configuration key shapes: module.exports={expo:{plugins:[]},expo:{plugins:['expo-font']}}; 37ms
+     × refuses unsupported literal configuration key shapes: module.exports={expo:{plugins:[],['plugins']:['expo-font']}}; 35ms
+     × refuses unsupported literal configuration key shapes: module.exports={__proto__:{plugins:['expo-font']}}; 36ms
+     × refuses unsupported literal configuration key shapes: Object.prototype.plugins=['expo-font']; module.exports={}; 37ms
+     × refuses unsupported literal configuration key shapes: module.exports={['plu'+'gins']:['expo-font']}; 36ms
+     × refuses unsupported literal configuration key shapes: module.exports={plugins(){return ['expo-font'];}}; 36ms
+     × visibly refuses Babel JSON env ownership 36ms
+     × visibly refuses Babel JSON overrides ownership 36ms
+     × visibly refuses Babel JSON extends ownership 36ms
+     × selects config.json when an extensionless tsconfig target is a directory 34ms
+     × selects dist.json when an extensionless tsconfig target is a directory 34ms
+     × prefers an existing extensionless tsconfig file over the JSON fallback 35ms
+     × refuses a local tsconfig alias before physical-file cache reuse can erase its lexical context 52ms
+     × refuses semantic configuration aliases and restores their current owners 35ms
+ ❯ migration/tests/candidate-imports.test.mjs (64 tests | 64 failed) 2377ms
+   ❯ candidate source import ownership (64)
+     × accepts the actual candidate and exposes finite generated subpath exclusions 35ms
+     × accepts maintained platform, extension, dotfile, rename and Node-role positives 47ms
+     × rejects direct and reachable root-only yaml and restores real positives 38ms
+     × rejects undeclared import-equals syntax for its dependency reason 35ms
+     × rejects undeclared static-template-require syntax for its dependency reason 35ms
+     × rejects undeclared static-template-import syntax for its dependency reason 35ms
+     × rejects undeclared element-resolve syntax for its dependency reason 34ms
+     × rejects undeclared import-type syntax for its dependency reason 35ms
+     × rejects undeclared escaped-string syntax for its dependency reason 35ms
+     × rejects undeclared JSDoc-type syntax for its dependency reason 36ms
+     × discovers previously unlisted maintained source src/helper.jsx 33ms
+     × discovers previously unlisted maintained source src/helper.ios.tsx 34ms
+     × discovers previously unlisted maintained source src/helper.mts 36ms
+     × discovers previously unlisted maintained source src/helper.cts 34ms
+     × discovers previously unlisted maintained source .extra.config.mjs 51ms
+     × discovers previously unlisted maintained source scripts/build/helper.cjs 56ms
+     × discovers previously unlisted maintained source android/maintained-helper.js 50ms
+     × rejects malformed package expo/../yaml 33ms
+     × rejects malformed package expo/./types 33ms
+     × rejects malformed package expo//types 34ms
+     × rejects malformed package @scope 33ms
+     × rejects malformed package expo\..\yaml 34ms
+     × rejects malformed package file:///tmp/helper.js 34ms
+     × rejects malformed package data:text/javascript,0 34ms
+     × rejects malformed package /tmp/helper.js 34ms
+     × rejects malformed package node:invented 33ms
+     × rejects Node builtin node:fs in the application bundle 34ms
+     × rejects Node builtin path in the application bundle 34ms
+     × treats dot-prefixed bare packages as dependencies 34ms
+     × refuses app imports of Node-owned config and script sources 35ms
+     × accepts an explicitly declared bare buffer polyfill 33ms
+     × accepts an explicitly declared bare events polyfill 33ms
+     × accepts an explicitly declared bare url polyfill 33ms
+     × accepts an explicitly declared bare util polyfill 34ms
+     × rejects an extensionless app import through a Node-owned file alias 36ms
+     × rejects an extensionless app import through a Node-owned directory alias 36ms
+     × keeps canonical app roles when an internal directory alias is discovered first 34ms
+     × visibly refuses unsupported resolution syntax const name = 'expo'; import(name); 44ms
+     × visibly refuses unsupported resolution syntax require('expo' + '/types'); 37ms
+     × visibly refuses unsupported resolution syntax const r = require; r('yaml'); 36ms
+     × visibly refuses unsupported resolution syntax const r = require.resolve; r('yaml'); 35ms
+     × visibly refuses unsupported resolution syntax import { createRequire as cr } from 'node:module'; const r = cr(import.meta.url); r('yaml'); 36ms
+     × visibly refuses unsupported resolution syntax import.meta.resolve('yaml'); 36ms
+     × visibly refuses unsupported resolution syntax const { resolve } = import.meta; resolve('yaml'); 36ms
+     × visibly refuses unsupported resolution syntax module.require('yaml'); 34ms
+     × visibly refuses unsupported resolution syntax require.resolve('hermes-compiler', { paths: [require.resolve('react-native/package.json')] }); 35ms
+     × accepts owned local references and rejects lexical and canonical escapes 34ms
+     × excludes only generated outputs and refuses local edges back into them 33ms
+     × visibly refuses per-file JSX import-source pragmas: /** @jsxImportSource yaml */
+export const probe=<>probe</>; 41ms
+     × visibly refuses per-file JSX import-source pragmas: // @jsxImportSource yaml
+export const probe=<>probe</>; 41ms
+     × visibly refuses per-file JSX import-source pragmas: import {Fragment} from 'react';
+/** @jsxImportSource yaml */
+export const probe=<>probe</>; 42ms
+     × visibly refuses per-file JSX import-source pragmas: export const probe=<>probe</>;
+/** @jsxImportSource yaml */ 41ms
+     × visibly refuses per-file JSX import-source pragmas: export const probe=<>probe</>;
+// @jsxImportSource yaml 42ms
+     × visibly refuses per-file JSX import-source pragmas: /** @jsxImportSource yaml extra */
+export const probe=<>probe</>; 40ms
+     × visibly refuses per-file JSX import-source pragmas: export const probe=<>{/* @jsxImportSource yaml */}</>; 40ms
+     × visibly refuses per-file JSX import-source pragmas: export function noop(){/* @jsxImportSource yaml */}
+export const probe=<>probe</>; 42ms
+     × visibly refuses per-file JSX import-source pragmas: export const text=`value ${/* @jsxImportSource yaml */ 1}`;
+export const probe=<>probe</>; 40ms
+     × visibly refuses per-file JSX import-source pragmas: /** @jsxImportSource react */
+export const probe=<>probe</>; 44ms
+     × preserves ordinary JSX content and automatic React runtime: export const probe=<>probe</>; 35ms
+     × preserves ordinary JSX content and automatic React runtime: export const text='/** @jsxImportSource yaml */';
+export const probe=<>probe</>; 37ms
+     × preserves ordinary JSX content and automatic React runtime: export const text=`/** @jsxImportSource yaml */`;
+export const probe=<>probe</>; 36ms
+     × preserves ordinary JSX content and automatic React runtime: export const probe=<>/** @jsxImportSource yaml */</>; 38ms
+     × preserves ordinary JSX content and automatic React runtime: export const pattern=/@jsxImportSource yaml/;
+export const probe=<>probe</>; 40ms
+     × leaves maintained native provider commands to their visible native qualification owner 40ms
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-web-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-avjZyL/out/ipad-simulator-web/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-mFiBm9/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+
+> splotch@1.6.0 perf:ios:xcuitest:screen
+> PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/ios/capture-xcuitest-screen.mjs --native-app --brush=pen --gesture-repeats=10 --undo-count=10 --orientation=PORTRAIT --theme=light --label=ipad-simulator-native-portrait-light-pen-undo --output=/var/folders/ll/rmzx9thn4f1_824cndjcv8h80000gn/T/splotch-resume-mFiBm9/out/ipad-simulator-native/portrait-light/pen-real-screen.json --report-only
+
+Pass --device-id=, --capabilities-file=, or --session-id=
+ ❯ migration/tests/forge-mitigation.test.mjs (17 tests | 2 failed) 77ms
+   ❯ the exact Forge mitigation policy (5)
+     × accepts only the reviewed patch hash and complete candidate-owned paths 9ms
+     × rejects patch bypass flags and an unpatched dependency reference 6ms

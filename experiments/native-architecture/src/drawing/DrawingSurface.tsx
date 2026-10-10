@@ -12,6 +12,7 @@ import {
   type Drawing,
   type Stroke,
 } from './model';
+import { PageOutline } from './PageOutline';
 import { DRAWING_THEME } from './theme';
 import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
 
@@ -68,6 +69,7 @@ function Artwork({
         <Ink key={index} stroke={stroke} />
       ))}
       {draft ? <Ink stroke={draft} /> : null}
+      <PageOutline pageId={drawing.pageId} />
     </Svg>
   );
 }

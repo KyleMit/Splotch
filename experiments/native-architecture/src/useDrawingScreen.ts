@@ -1,7 +1,14 @@
 import { useRef, useState } from 'react';
 import type { PaletteLabel } from './drawing/palette';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
-import { addStroke, commitDrawing, createHistory, type Brush, type Stroke } from './drawing/model';
+import {
+  changePage,
+  addStroke,
+  commitDrawing,
+  createHistory,
+  type Brush,
+  type Stroke,
+} from './drawing/model';
 import {
   exportPng,
   listPictures,
@@ -9,6 +16,8 @@ import {
   savePicture,
   type SavedPicture,
 } from './platform/drawingFiles';
+import { COLORING_PAGES, type PageId } from './drawing/pages';
+
 export function useDrawingScreen() {
   const [history, setHistory] = useState(createHistory);
   const historyRef = useRef(history);
@@ -19,8 +28,9 @@ export function useDrawingScreen() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('Pick a color and draw.');
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
+  const [pagePickerOpen, setPagePickerOpen] = useState(false);
   const surface = useRef<DrawingSurfaceHandle>(null);
-  const disabled = drawing || busy;
+  const disabled = drawing || busy || pagePickerOpen;
 
   function report(error: unknown) {
     setNotice(
@@ -37,6 +47,16 @@ export function useDrawingScreen() {
     } catch (error) {
       report(error);
     }
+  }
+
+  function choosePage(pageId: PageId) {
+    const next = changePage(historyRef.current, pageId);
+    if (next !== historyRef.current) {
+      historyRef.current = next;
+      setHistory(next);
+      setNotice(`${COLORING_PAGES[pageId].label} ready. Undo brings your picture back.`);
+    }
+    setPagePickerOpen(false);
   }
 
   async function save() {
@@ -105,6 +125,9 @@ export function useDrawingScreen() {
     pictures,
     setPictures,
     surface,
+    pagePickerOpen,
+    setPagePickerOpen,
+    choosePage,
     disabled,
     report,
     finishStroke,

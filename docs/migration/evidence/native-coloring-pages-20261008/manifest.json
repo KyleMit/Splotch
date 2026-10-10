@@ -1,0 +1,68 @@
+{
+  "source": "fed2bab73711c865ff5dfa1139902cb4c4f0097c",
+  "sourceBase": "ae4038f200f47d3b8f7f508c49c51a86197c8066",
+  "sourceDependencyAcceptance": "N1 remains unaccepted; integration also requires its separately owned cap-recovery repair.",
+  "port": 5310,
+  "metroWorkers": 2,
+  "metroFinalHandle": 58595,
+  "metroBeforeHandle": 25840,
+  "metroHandlesStopped": true,
+  "artifacts": [
+    {
+      "name": "before-n1.png",
+      "sha256": "88271a421429b672993253f76dbfc3da6230854e584c6c43b20628915de98122",
+      "bytes": 25799,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/before-n1.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/before-n1.png"
+    },
+    {
+      "name": "blank.png",
+      "sha256": "680a86a09972c990529bfc9604357700e584a1a62527d09c562c1bfcef05c9d9",
+      "bytes": 29896,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/blank.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/blank.png"
+    },
+    {
+      "name": "flower-painted.png",
+      "sha256": "4e7a1c1df29ea5f43e2d859d7a597109502fc340a54fa16639eee241c77abf82",
+      "bytes": 55385,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/flower-painted.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/flower-painted.png"
+    },
+    {
+      "name": "flower-painted.png.export.png",
+      "sha256": "1da4f6cdb9ff315b51e9e82ba23a3bf39dcedb8a96eeed5bee610b40e24baeb0",
+      "bytes": 56173,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/flower-painted.png.export.png"
+    },
+    {
+      "name": "picker-phone.png",
+      "sha256": "e3811f8f6aafa86bed2397d9fe83387a3bac12ca356cee81f4e553309b7ca790",
+      "bytes": 49619,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/picker-phone.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/picker-phone.png"
+    },
+    {
+      "name": "picker.png",
+      "sha256": "9781a3cfb9295cb2be519ebcb09a862057466f8081f868965ed2f28b1759febd",
+      "bytes": 38911,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/picker.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/picker.png"
+    },
+    {
+      "name": "sunshine.png",
+      "sha256": "d3ba76d82b33a7f621ac3ad6e04a625eaf2c1c39ad2caab50d55e9363ca1b575",
+      "bytes": 46127,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/sunshine.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/sunshine.png"
+    },
+    {
+      "name": "turtle.png",
+      "sha256": "8b0e26fbc3cbb584b09a838812399d6102a7f78a79d83a8da05e7eb8adf6fc5a",
+      "bytes": 61062,
+      "preparedLocalPath": "/private/tmp/splotch-native-coloring-pages/turtle.png",
+      "hostedUrl": "https://raw.githubusercontent.com/KyleMit/Splotch/10bbcdbf75bbd257c938b724c88c6319a6683b4d/native-coloring-pages/turtle.png"
+    }
+  ],
+  "screenshotAssetsCommit": "10bbcdbf75bbd257c938b724c88c6319a6683b4d"
+}

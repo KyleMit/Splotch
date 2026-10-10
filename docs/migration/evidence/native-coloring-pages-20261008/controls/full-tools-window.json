@@ -1,0 +1,8 @@
+{
+  "startUtc": "2026-10-09T04:06:10.484701+00:00",
+  "endUtc": "2026-10-09T04:07:35.511215+00:00",
+  "command": "npm run test:tools -- --maxWorkers=2",
+  "exitCode": 124,
+  "childPid": 45913,
+  "timeoutSeconds": 85
+}

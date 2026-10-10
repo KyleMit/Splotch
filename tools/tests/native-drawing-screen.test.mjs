@@ -24,10 +24,23 @@ vi.mock('react-native', () => {
   return {
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({ children, onPress, disabled, accessibilityLabel }) =>
+    Pressable: ({
+      children,
+      onPress,
+      disabled,
+      accessibilityLabel,
+      accessibilityRole,
+      accessibilityState,
+    }) =>
       createElement(
         'button',
-        { onClick: onPress, disabled, 'aria-label': accessibilityLabel },
+        {
+          onClick: onPress,
+          disabled,
+          role: accessibilityRole,
+          'aria-label': accessibilityLabel,
+          'aria-checked': accessibilityState?.checked,
+        },
         children
       ),
     SafeAreaView: container,
@@ -47,6 +60,12 @@ vi.mock('react-native', () => {
   };
 });
 
+vi.mock('react-native-svg', () => ({
+  default: ({ children }) => createElement('svg', null, children),
+  Rect: (props) => createElement('rect', props),
+  Path: (props) => createElement('path', props),
+}));
+
 const STROKE = {
   color: 'Purple',
   brush: 'marker',
@@ -57,11 +76,12 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onStroke }, _ref) =>
+  DrawingSurface: forwardRef(({ drawing, onStroke, disabled }, _ref) =>
     createElement(
       'button',
       {
         'data-testid': 'paper',
+        disabled,
         'data-drawing': JSON.stringify(drawing),
         onClick: () => onStroke(STROKE),
       },
@@ -74,7 +94,13 @@ function createScreen() {
   const container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
   const root = createRoot(container);
+  function button(label) {
+    return [...container.querySelectorAll('button')].find(
+      (element) => element.getAttribute('aria-label') === label || element.textContent === label
+    );
+  }
   return {
+    button,
     container,
     mount: () => act(() => root.render(createElement(DrawingScreen))),
     close: () => {
@@ -82,12 +108,10 @@ function createScreen() {
       container.remove();
     },
     async click(label) {
-      const button = [...container.querySelectorAll('button')].find(
-        (element) => element.getAttribute('aria-label') === label || element.textContent === label
-      );
-      expect(button, label).toBeDefined();
-      expect(button.disabled, label).toBe(false);
-      await act(async () => button.click());
+      const target = button(label);
+      expect(target, label).toBeDefined();
+      expect(target.disabled, label).toBe(false);
+      await act(async () => target.click());
     },
     paper: () => container.querySelector('[data-testid="paper"]').getAttribute('data-drawing'),
     dialog: () => container.querySelector('[role="dialog"]'),
@@ -188,5 +212,80 @@ describe('saved-picture failure feedback', () => {
     expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
     await act(async () => finish(emptyDrawing()));
     expect(screen.dialog()).toBeNull();
+  });
+});
+
+describe('coloring-page controls through the real drawing screen', () => {
+  it('disables the underlying toolbar and paper while the real picker is open', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Coloring pages');
+    const choices = [...screen.dialog().querySelectorAll('[role="radio"]')];
+    expect(choices.map((choice) => choice.getAttribute('aria-label'))).toEqual([
+      'Blank paper',
+      'Sunshine',
+      'Garden flower',
+      'Little turtle',
+    ]);
+    expect(choices.map((choice) => choice.getAttribute('aria-checked'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
+    ]);
+    const underlying = [...screen.container.querySelectorAll('button')].filter(
+      (button) => !screen.dialog().contains(button)
+    );
+    expect(underlying.length).toBeGreaterThan(10);
+    expect(underlying.every((button) => button.disabled)).toBe(true);
+    await act(async () => screen.button('Clear').click());
+    expect(screen.paper()).toBe(original);
+    await screen.click('Keep drawing');
+    expect(screen.dialog()).toBeNull();
+    expect(screen.paper()).toBe(original);
+    expect(screen.button('Save picture').disabled).toBe(false);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+    expect(screen.button('Undo').disabled).toBe(true);
+  });
+
+  it('changes page and paint in one history entry and keeps same-page paint intact', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Coloring pages');
+    await screen.click('Garden flower');
+    expect(screen.dialog()).toBeNull();
+    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'flower', strokes: [] });
+    expect(screen.container.textContent).toContain(
+      'Garden flower ready. Undo brings your picture back.'
+    );
+    await screen.click('Draw fixture stroke');
+    const painted = screen.paper();
+    await screen.click('Coloring pages');
+    expect(screen.button('Garden flower').getAttribute('aria-checked')).toBe('true');
+    await screen.click('Garden flower');
+    expect(screen.dialog()).toBeNull();
+    expect(screen.paper()).toBe(painted);
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'flower', strokes: [] });
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(original);
+  });
+
+  it('preserves the selected page through Clear and restores blank selection atomically with Undo', async () => {
+    await screen.click('Coloring pages');
+    await screen.click('Little turtle');
+    await screen.click('Draw fixture stroke');
+    const painted = screen.paper();
+    await screen.click('Clear');
+    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'turtle', strokes: [] });
+    expect(screen.button('Clear').disabled).toBe(true);
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(painted);
+    await screen.click('Coloring pages');
+    await screen.click('Blank paper');
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(painted);
   });
 });
