@@ -3,6 +3,8 @@ import { act, createElement, forwardRef, useEffect, useImperativeHandle } from '
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
+import { useState } from 'react';
+import { createDrawingSession } from '../../experiments/native-architecture/src/drawing/session.ts';
 import { useDrawingScreen } from '../../experiments/native-architecture/src/useDrawingScreen.ts';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -116,7 +118,8 @@ const PAPER_TARGET = 101;
 const marker = { brush: 'marker', width: 22, color: 'Blue', points: [{ x: 40, y: 60 }] };
 let owner, root, host;
 function Consumer() {
-  owner = useDrawingScreen();
+  const [session] = useState(createDrawingSession);
+  owner = useDrawingScreen(session);
   const sound = useDrawingSound();
   return createElement(DrawingSurface, {
     sound: sound.owner?.contacts ?? null,

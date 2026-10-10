@@ -2,7 +2,7 @@
 import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 const sound = vi.hoisted(() => ({
   read: vi.fn(),
@@ -82,6 +82,11 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
       () => ({
         lockInput: () => () => {},
         refreshGeometry() {},
+        interrupt() {
+          contact.current?.end();
+          contact.current = null;
+        },
+        isReady: () => true,
       }),
       []
     );

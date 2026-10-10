@@ -3,6 +3,7 @@ import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import type { Stroke } from './drawing/model';
 
 type RecoveryOptions = {
+  isCurrent: () => boolean;
   surface: RefObject<DrawingSurfaceHandle | null>;
   command: RefObject<boolean>;
   rendererFault: RefObject<boolean>;
@@ -30,8 +31,12 @@ export function useRendererRecovery(options: RecoveryOptions) {
     };
   }, []);
 
-  function valid() {
+  function currentRenderer() {
     return mounted.current && currentGeneration.current === generation;
+  }
+
+  function valid() {
+    return currentRenderer() && options.isCurrent();
   }
 
   function retry() {
@@ -66,7 +71,7 @@ export function useRendererRecovery(options: RecoveryOptions) {
     generation,
     failed,
     retry,
-    retryDisabled: options.blocked,
+    retryDisabled: options.blocked || !options.isCurrent(),
     callbacks: {
       onCohort(strokes: readonly Stroke[]) {
         if (valid()) current.current.finishCohort(strokes);
@@ -86,7 +91,7 @@ export function useRendererRecovery(options: RecoveryOptions) {
         if (valid()) current.current.report(error);
       },
       onRendererFault(error: unknown) {
-        if (!valid()) return;
+        if (!currentRenderer()) return;
         faultGeneration.current = generation;
         current.current.rendererFault.current = true;
         current.current.setPreparing(true);

@@ -16,6 +16,7 @@ import { COLORING_PAGES } from './drawing/pages';
 import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
+import type { DrawingSession } from './drawing/session';
 import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
 import type { History } from './drawing/model';
@@ -89,8 +90,8 @@ function useIdleMessage(message: string, drawing: boolean) {
   return drawing ? settled : message;
 }
 
-export function DrawingScreen() {
-  const screen = useDrawingScreen();
+export function DrawingScreen({ session }: { session: DrawingSession }) {
+  const screen = useDrawingScreen(session);
   const {
     history,
     currentDrawing,

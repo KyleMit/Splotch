@@ -59,6 +59,7 @@ describe('candidate source import ownership', () => {
       'src/drawing/pngInflate.ts',
       'src/drawing/pngLimits.ts',
       'src/drawing/pngWork.ts',
+      'src/drawing/session.ts',
       'src/drawing/strokeWidth.ts',
       'src/drawing/svgCapture.ts',
       'src/drawing/theme.ts',

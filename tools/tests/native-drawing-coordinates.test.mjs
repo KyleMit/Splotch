@@ -13,7 +13,7 @@ import {
   pageTouch,
   refresh,
 } from './native-drawing-coordinates-harness.mjs';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import { act, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { undoDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';

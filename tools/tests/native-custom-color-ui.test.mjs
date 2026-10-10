@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PaintColors } from '../../experiments/native-architecture/src/drawing/PaintColors.tsx';
 import { ColorPicker } from '../../experiments/native-architecture/src/drawing/ColorPicker.tsx';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import { AppState } from 'react-native';
 
 const platform = vi.hoisted(() => ({
@@ -31,6 +31,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
     useImperativeHandle(ref, () => ({
       lockInput: platform.lock,
       refreshGeometry() {},
+      interrupt() {},
+      isReady: () => true,
     }));
     return null;
   }),
@@ -216,6 +218,8 @@ describe('custom color controls through installed React Native Web', () => {
             .dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: false }))
         );
       }
+      expect(pending.opener.disabled).toBe(interruption === 'background');
+      await act(async () => listeners.forEach((listener) => listener('active')));
       expect(pending.opener.disabled).toBe(false);
       expect(document.activeElement).not.toBe(pending.opener);
       expect(platform.write).toHaveBeenCalledTimes(1);

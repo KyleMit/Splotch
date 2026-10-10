@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 
 const sdk = vi.hoisted(() => ({
   handlers: null,
@@ -22,8 +22,8 @@ vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', async (
   const actual = await original();
   return {
     ...actual,
-    useDrawingScreen: () => {
-      owner = actual.useDrawingScreen();
+    useDrawingScreen: (...args) => {
+      owner = actual.useDrawingScreen(...args);
       return owner;
     },
   };

@@ -2,7 +2,7 @@
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const files = vi.hoisted(() => ({
@@ -12,16 +12,26 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  save: vi.fn(),
+  appState: new Set(),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
   settingsWrite: vi.fn().mockResolvedValue(undefined),
   cohort: null,
   cohortDrivers: false,
+  scene: 0,
 }));
+
+vi.mock('../../experiments/native-architecture/src/DrawingScreen.tsx', async (original) => {
+  const actual = await original();
+  return {
+    DrawingScreen: (props) => createElement(actual.DrawingScreen, { ...props, key: files.scene }),
+  };
+});
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
-  savePicture: vi.fn(),
+  savePicture: files.save,
   exportPng: files.export,
 }));
 
@@ -40,7 +50,13 @@ vi.mock('react-native', () => {
     return createElement('div', null, children);
   }
   return {
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    AppState: {
+      currentState: 'active',
+      addEventListener: (_event, listener) => {
+        files.appState.add(listener);
+        return { remove: () => files.appState.delete(listener) };
+      },
+    },
     Dimensions: {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
       addEventListener: () => ({ remove: vi.fn() }),
@@ -129,6 +145,8 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
         ref,
         () => ({
           refreshGeometry: vi.fn(),
+          interrupt: vi.fn(),
+          isReady: () => true,
           lockInput: files.lock,
           capturePng: files.capture,
           captureInk: files.ink,
@@ -194,6 +212,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
 
 export function createScreen({ cohortDrivers = false } = {}) {
   files.cohortDrivers = cohortDrivers;
+  files.scene = 0;
   const container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
   const root = createRoot(container);
@@ -205,7 +224,11 @@ export function createScreen({ cohortDrivers = false } = {}) {
   return {
     button,
     container,
-    mount: () => act(() => root.render(createElement(DrawingScreen))),
+    mount: () => act(() => root.render(createElement(ProbeApp))),
+    replace: () => {
+      files.scene += 1;
+      return act(() => root.render(createElement(ProbeApp)));
+    },
     close: () => {
       act(() => root.unmount());
       container.remove();

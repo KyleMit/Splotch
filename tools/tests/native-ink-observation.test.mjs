@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 import { createInkObservationController } from '../../experiments/native-architecture/src/drawing/inkObservation.ts';
 
 function fixture() {
@@ -18,7 +20,108 @@ function fixture() {
     },
   };
 }
+
+function findNode(root, predicate) {
+  const matches = [];
+  function visit(node) {
+    if (predicate(node)) matches.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(root);
+  expect(matches).toHaveLength(1);
+  return matches[0];
+}
+
+function initializer(root, name) {
+  return findNode(
+    root,
+    (node) => ts.isVariableDeclaration(node) && node.name.getText() === name
+  ).initializer.getText();
+}
+
+function admissionFixture(source) {
+  const release = vi.fn();
+  const lockInput = vi.fn(() => release);
+  const operationWrites = vi.fn();
+  let operation = null;
+  const state = {
+    scene: { current: { current: () => true } },
+    command: { current: false },
+    blocked: () => false,
+    mounted: { current: true },
+    operation: {
+      get current() {
+        return operation;
+      },
+      set current(next) {
+        operationWrites(next);
+        operation = next;
+      },
+    },
+    surface: { current: { lockInput } },
+    setBusy: vi.fn(),
+    report: vi.fn(),
+  };
+  return { state, lockInput, release, operationWrites, run: runInNewContext(source, state) };
+}
+
 describe('owned ink observation request', () => {
+  it('executes actual command admission before action, lock, token and busy effects', async () => {
+    const caller = readFileSync(
+      new URL('../../experiments/native-architecture/src/useDrawingScreen.ts', import.meta.url),
+      'utf8'
+    );
+    const parsed = ts.createSourceFile('screen.ts', caller, ts.ScriptTarget.Latest, true);
+    const declaration = findNode(
+      parsed,
+      (node) => ts.isFunctionDeclaration(node) && node.name?.text === 'runCommand'
+    );
+    const source = ts.transpileModule(`(${declaration.getText()})`, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+    }).outputText;
+    for (const reject of [
+      (state) => {
+        state.scene.current.current = () => false;
+      },
+      (state) => {
+        state.scene.current = null;
+      },
+      (state) => {
+        state.command.current = true;
+      },
+      (state) => {
+        state.blocked = () => true;
+      },
+    ]) {
+      const f = admissionFixture(source);
+      reject(f.state);
+      const command = f.state.command.current;
+      const action = vi.fn();
+      await f.run(action);
+      expect(action).not.toHaveBeenCalled();
+      expect(f.lockInput).not.toHaveBeenCalled();
+      expect(f.release).not.toHaveBeenCalled();
+      expect(f.operationWrites).not.toHaveBeenCalled();
+      expect(f.state.setBusy).not.toHaveBeenCalled();
+      expect(f.state.report).not.toHaveBeenCalled();
+      expect(f.state.command.current).toBe(command);
+    }
+    const f = admissionFixture(source);
+    const action = vi.fn(async (current) => {
+      expect(current()).toBe(true);
+      expect(f.operationWrites).toHaveBeenCalledTimes(1);
+      expect(f.state.command.current).toBe(true);
+    });
+    await f.run(action);
+    expect(action).toHaveBeenCalledOnce();
+    expect(f.lockInput).toHaveBeenCalledOnce();
+    expect(f.release).toHaveBeenCalledOnce();
+    expect(f.operationWrites).toHaveBeenCalledTimes(2);
+    expect(f.operationWrites).toHaveBeenLastCalledWith(null);
+    expect(f.state.setBusy.mock.calls).toEqual([[true], [false]]);
+    expect(f.state.command.current).toBe(false);
+    expect(f.state.report).not.toHaveBeenCalled();
+  });
   it('binds the exact prepared grid and current callback into the consumed decoder', async () => {
     const f = fixture(),
       request = f.controller.begin(() => true);
@@ -78,16 +181,70 @@ describe('owned ink observation request', () => {
       new URL('../../experiments/native-architecture/src/useDrawingScreen.ts', import.meta.url),
       'utf8'
     );
-    expect(caller.indexOf('observations.current?.begin(isCurrent)')).toBeLessThan(
-      caller.indexOf('await owner?.captureInk')
+    const parsed = ts.createSourceFile('screen.ts', caller, ts.ScriptTarget.Latest, true);
+    const runCommand = findNode(
+      parsed,
+      (node) => ts.isFunctionDeclaration(node) && node.name?.text === 'runCommand'
     );
-    expect(caller).toContain('historyRef.current === snapshot');
-    expect(caller).toContain('surface.current === owner');
-    expect(caller).toMatch(/mounted\.current\s*&&\s*command\.current\s*&&\s*!blocked\(\)/);
-    expect(caller.indexOf('if (!isCurrent())')).toBeLessThan(
-      caller.indexOf('setHistory(clearDrawing(snapshot, empty))')
+    const clear = findNode(
+      parsed,
+      (node) => ts.isFunctionDeclaration(node) && node.name?.text === 'clear'
+    ).getText();
+    expect(initializer(runCommand, 'lease')).toBe('scene.current');
+    expect(initializer(runCommand, 'token')).toBe('{}');
+    expect(runCommand.getText().indexOf('operation.current = token')).toBeGreaterThan(0);
+    expect(runCommand.getText().indexOf('operation.current = token')).toBeLessThan(
+      runCommand.getText().indexOf('await action(current)')
     );
-    expect(caller).toContain('observation?.cancel()');
+    const state = {
+      mounted: { current: true },
+      lease: { current: () => true },
+      token: {},
+      operation: { current: null },
+      command: { current: true },
+      blocked: () => false,
+      snapshot: {},
+      owner: {},
+      historyRef: { current: null },
+      surface: { current: null },
+    };
+    state.operation.current = state.token;
+    state.historyRef.current = state.snapshot;
+    state.surface.current = state.owner;
+    state.current = runInNewContext(initializer(runCommand, 'current'), state);
+    const clearNode = findNode(
+      parsed,
+      (node) => ts.isFunctionDeclaration(node) && node.name?.text === 'clear'
+    );
+    expect(clear).toContain('await runCommand(async (current) =>');
+    expect(initializer(clearNode, 'snapshot')).toBe('historyRef.current');
+    expect(initializer(clearNode, 'owner')).toBe('surface.current');
+    const isCurrent = runInNewContext(initializer(clearNode, 'isCurrent'), state);
+    expect(isCurrent()).toBe(true);
+    for (const [target, key, obsolete] of [
+      [state.mounted, 'current', false],
+      [state.lease, 'current', () => false],
+      [state.operation, 'current', {}],
+      [state.command, 'current', false],
+      [state, 'blocked', () => true],
+      [state.historyRef, 'current', {}],
+      [state.surface, 'current', {}],
+    ]) {
+      const original = target[key];
+      target[key] = obsolete;
+      expect(isCurrent()).toBe(false);
+      target[key] = original;
+      expect(isCurrent()).toBe(true);
+    }
+    expect(clear.indexOf('observations.current?.begin(isCurrent)')).toBeGreaterThan(0);
+    expect(clear.indexOf('observations.current?.begin(isCurrent)')).toBeLessThan(
+      clear.indexOf('await owner?.captureInk')
+    );
+    expect(clear.indexOf('if (!isCurrent())')).toBeGreaterThan(0);
+    expect(clear.indexOf('if (!isCurrent())')).toBeLessThan(
+      clear.indexOf('setHistory(clearDrawing(snapshot, empty))')
+    );
+    expect(clear).toContain('observation?.cancel()');
     const surface = readFileSync(
       new URL(
         '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx',

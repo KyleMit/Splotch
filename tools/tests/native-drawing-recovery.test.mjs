@@ -2,13 +2,14 @@
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import { parseDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
-import { useRendererRecovery } from '../../experiments/native-architecture/src/useRendererRecovery.ts';
 
 const sdk = vi.hoisted(() => ({
   captures: [],
+  scene: 0,
+  appState: new Set(),
   frames: new Map(),
   next: 0,
   fail: false,
@@ -19,6 +20,12 @@ const sdk = vi.hoisted(() => ({
   open: vi.fn(),
   export: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/DrawingScreen.tsx', async (original) => {
+  const actual = await original();
+  return {
+    DrawingScreen: (props) => createElement(actual.DrawingScreen, { ...props, key: sdk.scene }),
+  };
+});
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: () => [{ id: 'picture-1-recovery', name: 'Recovery fixture', modifiedAt: 1 }],
   reopenPicture: sdk.open,
@@ -48,7 +55,13 @@ vi.mock('react-native', () => {
     );
   });
   return {
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    AppState: {
+      currentState: 'active',
+      addEventListener: (_event, listener) => {
+        sdk.appState.add(listener);
+        return { remove: () => sdk.appState.delete(listener) };
+      },
+    },
     Platform: { OS: 'web' },
     Image: () => null,
     findNodeHandle: (target) => target,
@@ -123,6 +136,7 @@ let host, root;
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
+  sdk.scene = 0;
   sdk.frames.clear();
   sdk.captures.length = 0;
   sdk.responders.length = 0;
@@ -170,6 +184,49 @@ async function frames() {
 }
 
 describe('visible terminal renderer recovery', () => {
+  it('recovers a surviving raster fault during suspension and preserves every Undo step', async () => {
+    await act(async () => root.render(createElement(DrawingScreen)));
+    await click('Coloring pages');
+    await click('Sunshine');
+    await frames();
+    sdk.load = false;
+    const loadedImages = sdk.imageLoads.length;
+    await click('Pictures');
+    await click('Open picture from Recovery fixture');
+    await frames();
+    expect(sdk.imageLoads.length).toBeGreaterThan(loadedImages);
+    expect(button('Save picture').disabled).toBe(true);
+    const paper = host.querySelector('[data-testid="drawing-paper"]');
+    await act(async () => {
+      for (const notify of sdk.appState) notify('background');
+    });
+    await act(async () => vi.advanceTimersByTime(PNG_TIMEOUT_MS));
+    expect(button('Retry drawing').disabled).toBe(true);
+    await act(async () => {
+      for (const notify of sdk.appState) notify('active');
+    });
+    expect(host.querySelector('[data-testid="drawing-paper"]')).toBe(paper);
+    expect(button('Retry drawing')).toBeDefined();
+    expect(button('Retry drawing').disabled).toBe(false);
+    sdk.load = true;
+    await click('Retry drawing');
+    await frames();
+    await click('Save picture');
+    expect(sdk.save.mock.calls.at(-1)[0]).toBe(fixture);
+    await click('Undo');
+    await frames();
+    await click('Save picture');
+    expect(sdk.save.mock.calls.at(-1)[0]).toMatchObject({ pageId: 'sunshine', strokes: [] });
+    await click('Undo');
+    await frames();
+    await click('Save picture');
+    expect(sdk.save.mock.calls.at(-1)[0]).toMatchObject({
+      pageId: 'blank',
+      rainbow: 0,
+      strokes: [],
+    });
+    expect(button('Undo').disabled).toBe(true);
+  });
   it('retries the actual DrawingSurface/RasterInk failure through the real button and retains canonical page/rainbow/history', async () => {
     await act(async () => root.render(createElement(DrawingScreen)));
     await click('Pictures');
@@ -284,86 +341,92 @@ describe('visible terminal renderer recovery', () => {
   });
 });
 
-describe('generation and real input/command admission', () => {
-  function harness() {
-    let recovery;
-    const rendererFault = { current: false },
-      command = { current: false };
-    const release = vi.fn(),
-      lockInput = vi.fn(() => release);
-    const options = {
-      rendererFault,
-      command,
-      blocked: false,
-      surface: { current: { lockInput } },
-      setPreparing: vi.fn(),
-      setDrawing: vi.fn(),
-      finishCohort: vi.fn(),
-      report: vi.fn(),
-      setNotice: vi.fn(),
+it('flushes accepted input exactly once before real scene teardown and retains its Undo entries', async () => {
+  await act(async () => root.render(createElement(DrawingScreen)));
+  await frames();
+  const paper = host.querySelector('[data-testid="drawing-paper"]');
+  const input = sdk.responders[Number(paper.getAttribute('data-responder'))];
+  function event(identifier, timestamp, ended = false) {
+    const touch = {
+      identifier,
+      locationX: 200,
+      locationY: 200,
+      pageX: 200,
+      pageY: 200,
+      target: 101,
+      timestamp,
     };
-    function Consumer() {
-      recovery = useRendererRecovery(options);
-      return null;
-    }
-    act(() => root.render(createElement(Consumer)));
     return {
-      options,
-      release,
-      lockInput,
-      get: () => recovery,
-      render: () => act(() => root.render(createElement(Consumer))),
+      currentTarget: 101,
+      nativeEvent: { changedTouches: [touch], touches: ended ? [] : [touch], target: 101 },
+      touchHistory: {
+        touchBank: {
+          [identifier]: { touchActive: !ended, startTimeStamp: identifier === 'first' ? 100 : 300 },
+        },
+        mostRecentTimeStamp: timestamp,
+      },
     };
   }
-  it('ignores every old renderer callback and a duplicate Retry before React commits', () => {
-    const h = harness(),
-      old = h.get();
-    act(() => old.callbacks.onRendererFault(new Error('fault')));
-    const retry = h.get().retry;
-    act(() => {
-      retry();
-      retry();
-    });
-    expect(h.lockInput).toHaveBeenCalledTimes(1);
-    expect(h.release).toHaveBeenCalledTimes(1);
-    expect(h.get().generation).toBe(1);
-    const counts = [h.options.setPreparing.mock.calls.length, h.options.report.mock.calls.length];
-    act(() => {
-      old.callbacks.onPreparingChange(false);
-      old.callbacks.onRendererFault(new Error('late'));
-      old.callbacks.onDrawingChange(true);
-      old.callbacks.onCohort([fixture.strokes[0]]);
-      old.callbacks.onError(new Error('late ordinary'));
-    });
-    expect(h.options.setPreparing).toHaveBeenCalledTimes(counts[0]);
-    expect(h.options.report).toHaveBeenCalledTimes(counts[1]);
-    expect(h.options.setDrawing).not.toHaveBeenCalled();
-    expect(h.options.finishCohort).not.toHaveBeenCalled();
-    act(() => h.get().callbacks.onPreparingChange(false));
-    expect(h.options.setPreparing).toHaveBeenLastCalledWith(false);
+  await act(async () => {
+    const start = event('first', 100);
+    input.onPanResponderGrant(start);
+    input.onPanResponderStart(start);
+    const end = event('first', 200, true);
+    input.onPanResponderEnd(end);
+    input.onPanResponderRelease(end);
   });
-  it('refuses command/modal admission and an actual active-contact lock failure without losing the fault', () => {
-    const h = harness();
-    act(() => h.get().callbacks.onRendererFault(new Error('fault')));
-    h.options.command.current = true;
-    act(() => h.get().retry());
-    expect(h.lockInput).not.toHaveBeenCalled();
-    h.options.command.current = false;
-    h.options.blocked = true;
-    h.render();
-    act(() => h.get().retry());
-    expect(h.lockInput).not.toHaveBeenCalled();
-    h.options.blocked = false;
-    h.render();
-    h.lockInput.mockImplementationOnce(() => {
-      throw new Error('active contact');
-    });
-    act(() => h.get().retry());
-    expect(h.get().generation).toBe(0);
-    expect(h.get().failed).toBe(true);
-    expect(h.options.rendererFault.current).toBe(true);
-    expect(h.options.report).toHaveBeenLastCalledWith(
-      expect.objectContaining({ message: 'active contact' })
+  await frames();
+  await act(async () => {
+    const start = event('second', 300);
+    input.onPanResponderGrant(start);
+    input.onPanResponderStart(start);
+  });
+  sdk.scene += 1;
+  await act(async () => root.render(createElement(DrawingScreen)));
+  expect(paper.isConnected).toBe(false);
+  await frames();
+  await act(async () => {
+    input.onPanResponderTerminate();
+    input.onPanResponderEnd(event('second', 400, true));
+  });
+  await click('Save picture');
+  expect(sdk.save.mock.calls.at(-1)[0].strokes).toHaveLength(2);
+  await click('Undo');
+  await frames();
+  await click('Save picture');
+  expect(sdk.save.mock.calls.at(-1)[0].strokes).toHaveLength(1);
+  await click('Undo');
+  await frames();
+  await click('Save picture');
+  expect(sdk.save.mock.calls.at(-1)[0].strokes).toEqual([]);
+});
+
+it('releases the actual surface lock on suspension without letting an old save unlock its successor', async () => {
+  let finishOld, finishNew;
+  sdk.save
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishOld = resolve;
+      })
+    )
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishNew = resolve;
+      })
     );
+  await act(async () => root.render(createElement(DrawingScreen)));
+  await frames();
+  await click('Save picture');
+  await act(async () => {
+    for (const notify of sdk.appState) notify('background');
   });
+  await act(async () => {
+    for (const notify of sdk.appState) notify('active');
+  });
+  await click('Save picture');
+  expect(sdk.save).toHaveBeenCalledTimes(2);
+  await act(async () => finishOld());
+  expect(button('Save picture').disabled).toBe(true);
+  await act(async () => finishNew());
+  expect(button('Save picture').disabled).toBe(false);
 });

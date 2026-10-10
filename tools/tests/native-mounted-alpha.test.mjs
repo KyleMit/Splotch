@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
+import { createDrawingSession } from '../../experiments/native-architecture/src/drawing/session.ts';
+import { act, createElement, forwardRef, useEffect, useState, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { ProbeApp as DrawingScreen } from '../../experiments/native-architecture/src/ProbeApp.tsx';
 import {
   emptyDrawing,
   parseDrawing,
@@ -207,7 +208,8 @@ async function saved() {
   return sdk.save.mock.calls.at(-1)[0];
 }
 function HookSurface() {
-  state = useDrawingScreen();
+  const [session] = useState(createDrawingSession);
+  state = useDrawingScreen(session);
   return createElement(DrawingSurface, {
     key: state.recovery.generation,
     ref: state.surface,

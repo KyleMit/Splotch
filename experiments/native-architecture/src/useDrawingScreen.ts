@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
+import { AppState } from 'react-native';
+import type { DrawingSession } from './drawing/session';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
   changePage,
   addStrokes,
   commitDrawing,
-  createHistory,
   clearDrawing,
   undoDrawing,
   type History,
@@ -22,8 +30,9 @@ import { createInkObservation } from './drawing/inkCoverage';
 import { COLORING_PAGES, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 
-export function useDrawingScreen() {
-  const { history, historyRef, setHistory, currentDrawing } = useDrawingHistory();
+export function useDrawingScreen(session: DrawingSession) {
+  const drawingHistory = useDrawingHistory(session);
+  const { history, historyRef, setHistory, currentDrawing, scene, sceneCurrent } = drawingHistory;
   const [brush, setBrush] = useState<Brush>('marker');
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useState(false);
@@ -35,15 +44,23 @@ export function useDrawingScreen() {
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
 
-  const { command, runCommand, undo, clear } = useSurfaceCommands({
+  const { command, runCommand, undo, clear, interruptCommands } = useSurfaceCommands({
     historyRef,
     setHistory,
     surface,
     setBusy,
     setNotice,
     report,
+    scene,
     blocked: () => rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
+  const foreground = useSceneLifetime(
+    session,
+    drawingHistory,
+    surface,
+    interruptCommands,
+    setPreparing
+  );
 
   function report(error: unknown) {
     setNotice(drawingErrorMessage(error));
@@ -62,17 +79,11 @@ export function useDrawingScreen() {
   const settings = useDrawingSettings({
     surface,
     settingsLease,
-    blocked: () =>
-      drawing ||
-      busy ||
-      preparing ||
-      pagePickerOpen ||
-      pictures !== null ||
-      command.current ||
-      rendererFault.current,
+    blocked: () => commandsBlocked() || pagePickerOpen || pictures !== null,
     report,
   });
-  const disabled = drawing || busy || preparing || pagePickerOpen || settings.sheetOpen;
+  const disabled =
+    !foreground || drawing || busy || preparing || pagePickerOpen || settings.sheetOpen;
 
   function commandsBlocked() {
     return (
@@ -124,6 +135,7 @@ export function useDrawingScreen() {
     finishCohort,
     report,
     setNotice,
+    isCurrent: sceneCurrent,
   });
 
   return {
@@ -133,7 +145,7 @@ export function useDrawingScreen() {
     setBrush,
     drawing,
     setDrawing,
-    busy: busy || preparing,
+    busy: busy || preparing || !foreground,
     setPreparing,
     clear,
     undo,
@@ -154,24 +166,72 @@ export function useDrawingScreen() {
   };
 }
 
+function useSceneLifetime(
+  session: DrawingSession,
+  { scene, renderScene }: ReturnType<typeof useDrawingHistory>,
+  surface: RefObject<DrawingSurfaceHandle | null>,
+  interruptCommands: () => void,
+  setPreparing: (preparing: boolean) => void
+) {
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  useLayoutEffect(() => {
+    scene.current = session.attach();
+    if (AppState.currentState !== 'active') scene.current.revoke();
+    renderScene(scene.current);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        surface.current?.interrupt();
+        scene.current?.revoke();
+        interruptCommands();
+        setForeground(false);
+        renderScene(null);
+      } else if (!scene.current?.current()) {
+        scene.current = session.attach();
+        renderScene(scene.current);
+        setForeground(true);
+        surface.current?.refreshGeometry();
+        setPreparing(surface.current?.isReady() !== true);
+      }
+    });
+    return () => {
+      surface.current?.interrupt();
+      scene.current?.revoke();
+      subscription.remove();
+    };
+  }, [session]);
+  return foreground;
+}
+
 function drawingErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : 'That did not finish. Your picture is still here.';
 }
 
-function useDrawingHistory() {
-  const [history, renderHistory] = useState(createHistory);
-  const historyRef = useRef(history);
+function useDrawingHistory(session: DrawingSession) {
+  const history = useSyncExternalStore(session.subscribe, session.current, session.current);
+  const historyRef = {
+    get current() {
+      return session.current();
+    },
+  };
+  const scene = useRef<ReturnType<DrawingSession['attach']> | null>(null);
+  const [lease, renderScene] = useState<ReturnType<DrawingSession['attach']> | null>(null);
   function setHistory(next: History | ((current: History) => History)) {
-    const value = typeof next === 'function' ? next(historyRef.current) : next;
-    historyRef.current = value;
-    renderHistory(value);
+    scene.current?.update(next);
   }
   function currentDrawing() {
-    return historyRef.current.drawing;
+    return session.current().drawing;
   }
-  return { history, historyRef, setHistory, currentDrawing };
+  return {
+    history,
+    historyRef,
+    setHistory,
+    currentDrawing,
+    scene,
+    renderScene,
+    sceneCurrent: () => lease?.current() === true,
+  };
 }
 
 function useDrawingSettings({
@@ -224,34 +284,36 @@ function usePictureActions({
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
   surface: RefObject<DrawingSurfaceHandle | null>;
-  runCommand: (action: () => Promise<void>) => Promise<void>;
+  runCommand: (action: (current: () => boolean) => Promise<void>) => Promise<void>;
   setNotice: (notice: string) => void;
   setPictures: (pictures: SavedPicture[] | null) => void;
 }) {
   async function save() {
-    await runCommand(async () => {
+    await runCommand(async (current) => {
       const snapshot = historyRef.current.drawing;
       await savePicture(snapshot);
-      setNotice('Picture saved on this device.');
+      if (current()) setNotice('Picture saved on this device.');
     });
   }
 
   async function exportPicture() {
-    await runCommand(async () => {
+    await runCommand(async (current) => {
       const snapshot = historyRef.current.drawing;
       const base64 = await surface.current?.capturePng(snapshot);
+      if (!current()) return;
       if (!base64) throw new Error('The drawing paper is not ready to export.');
       if (historyRef.current.drawing !== snapshot)
         throw new Error('The picture changed before export finished. Please try again.');
       await exportPng(base64);
-      setNotice('PNG ready. Your picture is still here.');
+      if (current()) setNotice('PNG ready. Your picture is still here.');
     });
   }
 
   async function openPicture(picture: SavedPicture) {
-    await runCommand(async () => {
+    await runCommand(async (current) => {
       setNotice('');
       const saved = await reopenPicture(picture.id);
+      if (!current()) return;
       setHistory((current) => commitDrawing(current, saved));
       setPictures(null);
       setNotice('Picture opened. Undo returns to your previous picture.');
@@ -269,6 +331,7 @@ function useSurfaceCommands({
   setNotice,
   report,
   blocked,
+  scene,
 }: {
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
@@ -277,35 +340,48 @@ function useSurfaceCommands({
   setNotice: (notice: string) => void;
   report: (error: unknown) => void;
   blocked: () => boolean;
+  scene: RefObject<ReturnType<DrawingSession['attach']> | null>;
 }) {
   const command = useRef(false);
   const mounted = useRef(true);
+  const operation = useRef<object | null>(null);
   const observations = useRef<ReturnType<typeof createInkObservation> | null>(null);
   if (!observations.current) observations.current = createInkObservation();
   useEffect(() => {
     if (!observations.current) observations.current = createInkObservation();
-    const owner = observations.current;
     mounted.current = true;
     return () => {
       mounted.current = false;
-      owner.dispose();
-      if (observations.current === owner) observations.current = null;
+      observations.current?.dispose();
+      observations.current = null;
     };
   }, []);
-  async function runCommand(action: () => Promise<void>) {
-    if (command.current || blocked()) return;
+  function interruptCommands() {
+    operation.current = null;
+    command.current = false;
+    observations.current?.dispose();
+    observations.current = createInkObservation();
+    setBusy(false);
+  }
+  async function runCommand(action: (current: () => boolean) => Promise<void>) {
+    const lease = scene.current;
+    if (!lease?.current() || command.current || blocked()) return;
+    const token = {};
+    operation.current = token;
+    const current = () => mounted.current && lease.current() && operation.current === token;
     let release: (() => void) | undefined;
     try {
       if (!surface.current) throw new Error('The drawing paper is not ready.');
       release = surface.current.lockInput();
       command.current = true;
       setBusy(true);
-      await action();
+      await action(current);
     } catch (error) {
-      report(error);
+      if (current()) report(error);
     } finally {
-      if (release) {
-        release();
+      release?.();
+      if (current()) {
+        operation.current = null;
         command.current = false;
         setBusy(false);
       }
@@ -326,11 +402,11 @@ function useSurfaceCommands({
   }
 
   async function clear() {
-    await runCommand(async () => {
+    await runCommand(async (current) => {
       const snapshot = historyRef.current;
       const owner = surface.current;
       const isCurrent = () =>
-        mounted.current &&
+        current() &&
         command.current &&
         !blocked() &&
         historyRef.current === snapshot &&
@@ -355,5 +431,5 @@ function useSurfaceCommands({
     });
   }
 
-  return { command, runCommand, undo, clear };
+  return { command, runCommand, undo, clear, interruptCommands };
 }

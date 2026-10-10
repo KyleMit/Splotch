@@ -26,6 +26,8 @@ export type DrawingSurfaceHandle = {
   captureInk: (snapshot: Drawing) => Promise<string>;
   lockInput: () => () => void;
   refreshGeometry: () => void;
+  interrupt: () => void;
+  isReady: () => boolean;
 };
 type Props = ContactDrawingProps & {
   drawing: Drawing;
@@ -188,6 +190,12 @@ function useSurfaceCapture(
       capturePng: (snapshot) => capture(snapshot, 'picture'),
       captureInk: (snapshot) => capture(snapshot, 'ink'),
       refreshGeometry,
+      isReady: () => raster.current?.isReady() === true,
+      interrupt() {
+        input.interrupt();
+        captureLock.current?.cancel('Picture capture was cancelled.');
+        commandLock.current = null;
+      },
       lockInput() {
         if (input.hasActive() || commandLock.current)
           throw new Error('Finish drawing before using this control.');
