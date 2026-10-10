@@ -1,0 +1,171 @@
+{
+  "scope": "Widths original R1 same-owner source repair; no runtime or campaign acceptance",
+  "productSource": "8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9",
+  "productTree": "3ed898cc6783ebc00c4d8b75e0024415b02a1fef",
+  "review": {
+    "conversation": "63f22c12-5187-468b-8cb8-ad1607c1718e",
+    "reviewId": 5477308918,
+    "reviewedHead": "7bcc4ff65139d6305e70e456d0911c1fdf60e840"
+  },
+  "policy": "After a read failure, width taps affect session choices only and keep the warning. Explicit Settings sound choice or Retry permits saving through the existing writer. Failed writes after successful reads retain normal width persistence.",
+  "focused": {
+    "files": 4,
+    "tests": 68,
+    "actualExit": 0
+  },
+  "quality": [
+    {
+      "name": "candidate-types",
+      "start": "2026-10-10T03:14:57.441667+00:00",
+      "terminal": "2026-10-10T03:14:58.040160+00:00",
+      "argv": [
+        "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+        "/private/tmp/native-stroke-widths/repository/node_modules/typescript/bin/tsc",
+        "--project",
+        "experiments/native-architecture/tsconfig.json",
+        "--noEmit"
+      ],
+      "actualExit": 0
+    },
+    {
+      "name": "check",
+      "start": "2026-10-10T03:14:58.040450+00:00",
+      "terminal": "2026-10-10T03:15:05.477701+00:00",
+      "argv": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "actualExit": 0
+    },
+    {
+      "name": "lint",
+      "start": "2026-10-10T03:15:05.478006+00:00",
+      "terminal": "2026-10-10T03:15:22.883456+00:00",
+      "argv": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "actualExit": 0
+    },
+    {
+      "name": "format",
+      "start": "2026-10-10T03:15:22.883755+00:00",
+      "terminal": "2026-10-10T03:15:35.745499+00:00",
+      "argv": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "actualExit": 0
+    }
+  ],
+  "fullTools": {
+    "status": "PASS",
+    "terminalUtc": "2026-10-10T03:28:27.499340+00:00",
+    "failure": null,
+    "commands": [
+      {
+        "argv": [
+          "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/npm",
+          "run",
+          "test:tools",
+          "--",
+          "--maxWorkers=2"
+        ],
+        "cwd": "/private/tmp/native-stroke-widths/repository",
+        "startUtc": "2026-10-10T03:25:51.682610+00:00",
+        "pid": 47269,
+        "expectedPgid": 47269,
+        "workDeadlineSecondsRemaining": 239.21911074989475,
+        "actualExit": 0,
+        "timedOut": false,
+        "terminalUtc": "2026-10-10T03:28:26.599364+00:00",
+        "directChildReaped": true
+      }
+    ],
+    "observedLifetimeCount": 1727,
+    "observedGroupCount": 43,
+    "elapsedSeconds": 156.59826016705483,
+    "noInstallNativeBrowserReview": true,
+    "files": 385,
+    "tests": 8657,
+    "vitestDurationSeconds": 154.51
+  },
+  "freshClosure": {
+    "utc": "2026-10-10T03:28:51.088805+00:00",
+    "observedLifetimeCountIncludingObserver": 1728,
+    "observedGroupCountIncludingObserver": 44,
+    "remainingOwnedBirths": [],
+    "remainingGroupMembers": [],
+    "allFreshBirthsAndGroupsAbsent": true,
+    "trackedFileCount": 8983,
+    "changedSourceFiles": [],
+    "rawIndexSha256": "9bd399d963086fb4fbbcec38a44785ff5a9b44304167b902c51f2dcb6d1f2e95",
+    "semanticIndexSha256": "e6307d3b94b3a0ecf20a200a3780bd872c6859390068ec95856cf27cd534e67f",
+    "head": "8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9",
+    "tree": "3ed898cc6783ebc00c4d8b75e0024415b02a1fef",
+    "status": "",
+    "signals": []
+  },
+  "sourcePreservation": {
+    "trackedFiles": 8983,
+    "beforeEqualsAfter": true,
+    "rawIndexSha256": "9bd399d963086fb4fbbcec38a44785ff5a9b44304167b902c51f2dcb6d1f2e95",
+    "semanticIndexSha256": "e6307d3b94b3a0ecf20a200a3780bd872c6859390068ec95856cf27cd534e67f",
+    "completeSourceBeforeSha256": "01b5a9d7cbd8e0a3fab84344f1f4945c16a360a084b67da1b3efcabccd364bb1",
+    "completeSourceAfterSha256": "01b5a9d7cbd8e0a3fab84344f1f4945c16a360a084b67da1b3efcabccd364bb1"
+  },
+  "negativeControls": [
+    {
+      "name": "bypass-read-failure-barrier",
+      "start": "2026-10-10T03:16:02.970631+00:00",
+      "terminal": "2026-10-10T03:16:03.725898+00:00",
+      "actualExit": 1,
+      "mutatedSha256": "579abfcecc67542b74d92fc592a284c849bf843f4e20d241ab88c9bed1ba6a61",
+      "originalSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529",
+      "restoredSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529"
+    },
+    {
+      "name": "retain-barrier-after-explicit-recovery",
+      "start": "2026-10-10T03:16:03.726224+00:00",
+      "terminal": "2026-10-10T03:16:04.329396+00:00",
+      "actualExit": 1,
+      "mutatedSha256": "4263b17c9accae0840197acb426fa42864ed40306ba68330f965ffa538d86e9d",
+      "originalSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529",
+      "restoredSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529"
+    },
+    {
+      "name": "treat-write-failure-as-read-failure",
+      "start": "2026-10-10T03:16:04.329693+00:00",
+      "terminal": "2026-10-10T03:16:04.909378+00:00",
+      "actualExit": 1,
+      "mutatedSha256": "b13d421c9c63fb402d34370b5cf2b574a22a5a2c888289e9273a9a24a76f8009",
+      "originalSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529",
+      "restoredSha256": "7bc96afd3e0d663ee0e7953a1a3d098cbf751ff07893381c69617f9970553529"
+    }
+  ],
+  "qualifiedObserver": {
+    "utc": "2026-10-10T03:23:38.356243+00:00",
+    "source": "8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9",
+    "tree": "3ed898cc6783ebc00c4d8b75e0024415b02a1fef",
+    "trackedFiles": 8983,
+    "driverPath": "/private/tmp/native-stroke-widths/r1-full-tools-qualified.py",
+    "driverSha256": "0b7160971035c7676264982619d5b7ac9d79a82ab5198b3772bd0c76e5b55cd9",
+    "brushRunnerSha256": "a06f057073b3082cf143f4e4b51441255f2916b2cf948d2bbc50a72bc1aaf66b",
+    "brushManifestSha256": "158cac3f6153c8ef387e899c6532b374e4917ba9be9dfe716a7ea0e69800f8bc",
+    "observerCoreSha256": "9f4bd61410e121777b173a665a25a31b8764f20b4e97b0620a1dd9247bc62d84",
+    "preparedSourceSha256": "01b5a9d7cbd8e0a3fab84344f1f4945c16a360a084b67da1b3efcabccd364bb1",
+    "absoluteWorkCapSeconds": 240,
+    "cleanupReserveSeconds": 60,
+    "processPolicy": "observed ancestry only; fresh PID/birth/PGID/fullargv before every single-PID signal; no killpg or group adoption"
+  },
+  "runtimeLimits": [
+    "No new browser/native run after source repair",
+    "Previous final compact browser command exited1 at malformed snapshot picker",
+    "Captured Undo/save storage equals six-minus-last; reopen/restored choices not reached",
+    "maskType DOM warning and all prior failures remain preserved"
+  ]
+}
+
