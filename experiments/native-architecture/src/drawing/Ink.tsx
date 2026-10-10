@@ -1,7 +1,7 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
 import { Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
 import { paletteHex } from './palette';
-import { BRUSHES, rainbow, rainbowLine } from './brushes';
+import { rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
   CRAYON_TILE_PX,
@@ -25,7 +25,7 @@ const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
 function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> }) {
   const id = useId();
-  const width = BRUSHES.crayon.width;
+  const width = stroke.width;
   const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
   const textureId = useContext(CrayonDefinitionScope);
   if (textureId === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
@@ -92,7 +92,7 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
           ))}
         </LinearGradient>
       </Defs>
-      <StrokeShape points={stroke.points} width={BRUSHES.magic.width} paint={`url(#${id})`} />
+      <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${id})`} />
     </G>
   );
 }
@@ -133,10 +133,6 @@ export function Ink({ stroke }: { stroke: PaintStroke }) {
   if (stroke.brush === 'crayon') return <CrayonInk stroke={stroke} />;
   if (stroke.brush === 'magic') return <MagicInk stroke={stroke} />;
   return (
-    <StrokeShape
-      points={stroke.points}
-      width={BRUSHES[stroke.brush].width}
-      paint={paletteHex(stroke.color)}
-    />
+    <StrokeShape points={stroke.points} width={stroke.width} paint={paletteHex(stroke.color)} />
   );
 }

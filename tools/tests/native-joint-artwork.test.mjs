@@ -33,6 +33,7 @@ function svg(children) {
 }
 const blue = {
   brush: 'crayon',
+  width: 34,
   color: 'Blue',
   seed: 20,
   points: [
@@ -42,6 +43,7 @@ const blue = {
 };
 const yellow = {
   brush: 'crayon',
+  width: 34,
   color: 'Yellow',
   seed: 21,
   points: [
@@ -51,6 +53,7 @@ const yellow = {
 };
 const magic = {
   brush: 'magic',
+  width: 30,
   rainbow: 3,
   points: [
     { x: 100, y: 200 },
@@ -89,7 +92,7 @@ describe('joint artwork definitions and chronological mask composition', () => {
         .png()
         .toBuffer()
     ).toString('base64');
-    const eraser = { brush: 'eraser', points: [{ x: 900, y: 600 }] };
+    const eraser = { brush: 'eraser', width: 44, points: [{ x: 900, y: 600 }] };
     const rendered = scene([eraser, yellow, blue], { id: 1, strokes: prefix, base64 });
     const patterns = tags(rendered, 'pattern');
     const uses = tags(rendered, 'use');
@@ -104,7 +107,7 @@ describe('joint artwork definitions and chronological mask composition', () => {
     expect(rendered.indexOf('<image')).toBeLessThan(rendered.lastIndexOf('<pattern'));
   });
   it('rejects an uncheckpointed second erase layer without silently changing paint order', () => {
-    const erase = { brush: 'eraser', points: [{ x: 100, y: 100 }] };
+    const erase = { brush: 'eraser', width: 44, points: [{ x: 100, y: 100 }] };
     expect(() => scene([blue, erase, yellow, erase])).toThrow('checkpointed');
   });
 });

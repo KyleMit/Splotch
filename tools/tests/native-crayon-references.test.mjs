@@ -50,6 +50,7 @@ const TEXTURES = CRAYON_BANDS.map((band) =>
 function line(color = 'Red', seed = 20, y = 550) {
   return {
     brush: 'crayon',
+    width: 34,
     color,
     seed,
     points: [
@@ -336,6 +337,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               line('Red', 22, 550),
               {
                 brush: 'pencil',
+                width: 7,
                 color: 'Black',
                 points: [
                   { x: 300, y: 500 },
@@ -344,6 +346,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               },
               {
                 brush: 'marker',
+                width: 22,
                 color: 'Mint',
                 points: [
                   { x: 500, y: 500 },
@@ -356,6 +359,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               line('Blue', 21, 550),
               {
                 brush: 'magic',
+                width: 30,
                 rainbow: 3,
                 points: [
                   { x: 100, y: 350 },

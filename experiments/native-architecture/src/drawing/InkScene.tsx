@@ -1,6 +1,5 @@
 import { useId } from 'react';
 import { Defs, G, Image, Mask, Rect } from 'react-native-svg';
-import { BRUSHES } from './brushes';
 import type { InkCheckpoint } from './checkpoints';
 import { Ink, InkArtwork } from './Ink';
 import { PAPER_WIDTH, PAPER_HEIGHT, type Stroke } from './model';
@@ -62,7 +61,7 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
                 <StrokeShape
                   key={index}
                   points={stroke.points}
-                  width={BRUSHES.eraser.width}
+                  width={stroke.width}
                   paint="black"
                 />
               ))}

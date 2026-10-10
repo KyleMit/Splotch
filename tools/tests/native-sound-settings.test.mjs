@@ -24,7 +24,16 @@ describe('candidate sound settings', () => {
   it.each([true, false])('restores exactly the persisted %s choice', async (soundEnabled) => {
     const f = fixture(JSON.stringify({ version: 1, soundEnabled }));
     await f.settings.load();
-    expect(f.changes).toEqual([{ status: 'ready', soundEnabled, saved: true, message: '' }]);
+    expect(f.changes).toEqual([
+      {
+        status: 'ready',
+        soundEnabled,
+        strokeWidth: 'medium',
+        eraserWidth: 'medium',
+        saved: true,
+        message: '',
+      },
+    ]);
   });
   it('enables sound for a new installation after the storage read completes', async () => {
     const f = fixture();
@@ -54,7 +63,9 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: false, saved: false });
     expect(f.changes.at(-1).message).toContain('could not be read');
     await f.settings.setEnabled(true);
-    expect(f.storage.write).toHaveBeenCalledWith('{"version":1,"soundEnabled":true}');
+    expect(f.storage.write).toHaveBeenCalledWith(
+      '{"version":2,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium"}'
+    );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
   it('applies mute immediately, retains a failed choice, and retries that exact snapshot', async () => {
@@ -69,8 +80,8 @@ describe('candidate sound settings', () => {
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: false });
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
-      ['{"version":1,"soundEnabled":false}'],
-      ['{"version":1,"soundEnabled":false}'],
+      ['{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'],
+      ['{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
   });

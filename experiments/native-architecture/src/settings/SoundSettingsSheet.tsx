@@ -40,12 +40,8 @@ export function SoundSettings({
               trackColor={{ true: DRAWING_THEME.brandSolid, false: DRAWING_THEME.textSoft }}
             />
           </View>
-          {state.status === 'loading' ? (
-            <Text style={styles.help}>Loading sound settings…</Text>
-          ) : null}
-          {state.status === 'saving' ? (
-            <Text style={styles.help}>Saving sound setting…</Text>
-          ) : null}
+          {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
+          {state.status === 'saving' ? <Text style={styles.help}>Saving settings…</Text> : null}
           <Text accessibilityLiveRegion="polite" style={styles.help}>
             {state.message || audioMessage}
           </Text>

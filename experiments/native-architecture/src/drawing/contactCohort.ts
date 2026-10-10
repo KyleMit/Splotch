@@ -9,6 +9,7 @@ import {
   type Stroke,
 } from './model';
 import type { Brush } from './brushes';
+import { DEFAULT_STROKE_WIDTH, type StrokeWidth } from './strokeWidth';
 
 export function createContactCohort() {
   const active = new Map<string, number>();
@@ -25,7 +26,14 @@ export function createContactCohort() {
   }
 
   return {
-    start(identifier: string, color: PaletteLabel, brush: Brush, point: Point, drawing: Drawing) {
+    start(
+      identifier: string,
+      color: PaletteLabel,
+      brush: Brush,
+      point: Point,
+      drawing: Drawing,
+      width: StrokeWidth = DEFAULT_STROKE_WIDTH
+    ) {
       if (active.has(identifier)) return;
       if (active.size === 0) capacity = drawingCapacity(drawing);
       if (strokes.length >= capacity.strokes || acceptedPoints >= capacity.points) {
@@ -36,7 +44,8 @@ export function createContactCohort() {
       const style = strokeStyle(
         brush,
         color,
-        reserved ? { ...drawing, strokes: [reserved] } : drawing
+        reserved ? { ...drawing, strokes: [reserved] } : drawing,
+        width
       );
       strokes = [...strokes, { ...style, points: [point] }];
       acceptedPoints += 1;

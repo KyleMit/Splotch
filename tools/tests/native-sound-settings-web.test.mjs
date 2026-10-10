@@ -19,7 +19,7 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":1,"soundEnabled":false}'
+      '{"version":2,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium"}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();

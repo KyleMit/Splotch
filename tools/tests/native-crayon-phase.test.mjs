@@ -59,7 +59,7 @@ function coverage(output, x, y) {
 }
 
 function crayon(seed, points) {
-  return { brush: 'crayon', color: 'Red', seed, points };
+  return { brush: 'crayon', width: 34, color: 'Red', seed, points };
 }
 
 function line(seed, y) {
