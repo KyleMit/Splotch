@@ -11,7 +11,6 @@ import {
   type Stroke,
 } from './drawing/model';
 import {
-  exportPng,
   listPictures,
   reopenPicture,
   savePicture,
@@ -21,6 +20,7 @@ import type { Brush } from './drawing/brushes';
 import { createInkObservation } from './drawing/inkCoverage';
 import { COLORING_PAGES, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
+import { usePngRecovery } from './usePngRecovery';
 
 export function useDrawingScreen() {
   const { history, historyRef, setHistory, currentDrawing } = useDrawingHistory();
@@ -34,6 +34,7 @@ export function useDrawingScreen() {
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
+  const pngRecovery = usePngRecovery();
 
   const { command, runCommand, undo, clear } = useSurfaceCommands({
     historyRef,
@@ -102,6 +103,7 @@ export function useDrawingScreen() {
     runCommand,
     setNotice,
     setPictures,
+    pngRecovery,
   });
 
   function showPictures() {
@@ -128,6 +130,7 @@ export function useDrawingScreen() {
 
   return {
     recovery,
+    pngRecovery,
     history,
     brush,
     setBrush,
@@ -220,6 +223,7 @@ function usePictureActions({
   runCommand,
   setNotice,
   setPictures,
+  pngRecovery,
 }: {
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
@@ -227,6 +231,7 @@ function usePictureActions({
   runCommand: (action: () => Promise<void>) => Promise<void>;
   setNotice: (notice: string) => void;
   setPictures: (pictures: SavedPicture[] | null) => void;
+  pngRecovery: ReturnType<typeof usePngRecovery>;
 }) {
   async function save() {
     await runCommand(async () => {
@@ -243,8 +248,8 @@ function usePictureActions({
       if (!base64) throw new Error('The drawing paper is not ready to export.');
       if (historyRef.current.drawing !== snapshot)
         throw new Error('The picture changed before export finished. Please try again.');
-      await exportPng(base64);
-      setNotice('PNG ready. Your picture is still here.');
+      setNotice('');
+      await pngRecovery.submit(base64);
     });
   }
 

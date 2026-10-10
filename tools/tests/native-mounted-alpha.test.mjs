@@ -27,6 +27,13 @@ const sdk = vi.hoisted(() => ({
   open: vi.fn(),
   export: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: async () => null, write: async () => {} },
+    deliver: async () => 'sharing-closed',
+  },
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: () => [{ id: 'picture-1-recovery', name: 'Recovery fixture', modifiedAt: 1 }],
   reopenPicture: sdk.open,

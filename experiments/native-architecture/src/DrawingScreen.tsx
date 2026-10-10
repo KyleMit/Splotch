@@ -1,14 +1,5 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useRef, type ReactNode, type RefObject } from 'react';
+import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PaintColors } from './drawing/PaintColors';
 import { ColorPicker } from './drawing/ColorPicker';
 import { ColoringPagePicker } from './ColoringPagePicker';
@@ -24,6 +15,7 @@ import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 import { useColorPickerFocus } from './useColorPickerFocus';
+import { DrawingStatus } from './DrawingStatus';
 
 const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
@@ -82,13 +74,6 @@ function DrawingScroll({
   );
 }
 
-function useIdleMessage(message: string, drawing: boolean) {
-  const [settled, setSettled] = useState(message);
-  // Changing status layout invalidates the paper frame owned by the active contacts.
-  if (!drawing && settled !== message) setSettled(message);
-  return drawing ? settled : message;
-}
-
 export function DrawingScreen() {
   const screen = useDrawingScreen();
   const {
@@ -101,7 +86,6 @@ export function DrawingScreen() {
     setBrush,
     drawing,
     busy,
-    notice,
     pictures,
     surface,
     pagePickerOpen,
@@ -124,8 +108,6 @@ export function DrawingScreen() {
     blocked: disabled || pictures !== null,
   });
   const color = sound.settings.selectedColor;
-  const visibleNotice = useIdleMessage(notice, drawing);
-  const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
   return (
     <SafeAreaView
       style={styles.screen}
@@ -196,17 +178,10 @@ export function DrawingScreen() {
             onPress={recovery.retry}
           />
         ) : null}
-        <View style={styles.status}>
-          {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleNotice}
-          </Text>
-        </View>
-        {visibleSoundMessage ? (
-          <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {visibleSoundMessage}
-          </Text>
-        ) : null}
+        <DrawingStatus
+          screen={screen}
+          soundMessage={sound.settings.message || sound.audioMessage}
+        />
       </DrawingScroll>
       <DrawingSheets screen={screen} sound={sound} onCloseColors={focusReturn.close} />
     </SafeAreaView>
@@ -464,13 +439,6 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.75 },
-  status: {
-    minHeight: 32,
-    flexDirection: 'row',
-    gap: CONTROL_GAP,
-    alignItems: 'center',
-    maxWidth: 1024,
-  },
   notice: { fontSize: 15, color: DRAWING_THEME.text, flexShrink: 1 },
   modalBackdrop: {
     flex: 1,

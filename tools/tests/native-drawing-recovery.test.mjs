@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
+import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { parseDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -19,6 +20,16 @@ const sdk = vi.hoisted(() => ({
   open: vi.fn(),
   export: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: async () => null, write: async () => {} },
+    deliver: async (picture) => {
+      await sdk.export(picture.base64);
+      return 'sharing-closed';
+    },
+  },
+}));
+
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: () => [{ id: 'picture-1-recovery', name: 'Recovery fixture', modifiedAt: 1 }],
   reopenPicture: sdk.open,
@@ -82,7 +93,7 @@ vi.mock('react-native-svg', () => {
         toDataURL(callback) {
           sdk.captures.push(callback);
           if (sdk.fail) throw new Error('SDK capture failure');
-          callback('transparent-fixture-png');
+          callback(rgbaPng(2, 2).toString('base64'));
         },
       }));
       return createElement('div', null, children);

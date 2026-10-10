@@ -12,10 +12,22 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  recoveryRead: vi.fn().mockResolvedValue(null),
+  recoveryWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
   settingsWrite: vi.fn().mockResolvedValue(undefined),
   cohort: null,
   cohortDrivers: false,
+}));
+
+vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
+  pngRecoveryPlatform: {
+    storage: { read: files.recoveryRead, write: files.recoveryWrite },
+    deliver: async (picture) => {
+      await files.export(picture.base64, picture.filename);
+      return 'sharing-closed';
+    },
+  },
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
@@ -76,10 +88,12 @@ vi.mock('react-native', () => {
           'aria-checked': accessibilityState?.checked,
           'aria-pressed': pressed,
           'data-native-selected': accessibilityState?.selected,
-          style:
-            typeof style === 'function'
-              ? undefined
-              : Object.assign({}, ...[style].flat().filter(Boolean)),
+          style: Object.assign(
+            {},
+            ...[typeof style === 'function' ? style({ pressed: false }) : style]
+              .flat(Infinity)
+              .filter(Boolean)
+          ),
         },
         children
       ),

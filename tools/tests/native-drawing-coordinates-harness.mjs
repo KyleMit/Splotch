@@ -12,6 +12,7 @@ import {
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
+import { INITIAL_PNG_RECOVERY } from '../../experiments/native-architecture/src/export/pngRecovery.ts';
 import {
   addStrokes,
   createHistory,
@@ -82,6 +83,12 @@ vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', () => (
       setHistory: vi.fn(),
       clear: vi.fn(),
       undo: vi.fn(),
+      pngRecovery: {
+        state: INITIAL_PNG_RECOVERY,
+        submit: vi.fn().mockResolvedValue(undefined),
+        retry: vi.fn().mockResolvedValue(undefined),
+        dismiss: vi.fn().mockResolvedValue(undefined),
+      },
       recovery: {
         generation: 0,
         failed: false,
