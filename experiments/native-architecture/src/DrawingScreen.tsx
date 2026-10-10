@@ -129,6 +129,7 @@ export function DrawingScreen() {
           color={color}
           customColors={sound.settings.customColors}
           disabled={disabled || sound.settings.status !== 'ready'}
+          pickerOpen={colorPickerOpen}
           onExplore={openColorPicker}
           onChange={(next) => {
             void sound.owner?.settings.setColor(next);

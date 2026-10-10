@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,6 +29,7 @@ describe('custom color controls through installed React Native Web', () => {
         color: '#123ABC',
         customColors: ['#123ABC', '#FFFFFF'],
         disabled: false,
+        pickerOpen: false,
         onChange() {},
         onExplore() {},
       })
@@ -52,6 +53,7 @@ describe('custom color controls through installed React Native Web', () => {
           color: '#123ABC',
           customColors: ['#123ABC'],
           disabled: true,
+          pickerOpen: false,
           onChange: changed,
           onExplore() {},
         })
@@ -62,6 +64,77 @@ describe('custom color controls through installed React Native Web', () => {
     expect(selected.tabIndex).toBe(-1);
     await act(async () => selected.click());
     expect(changed).not.toHaveBeenCalled();
+  });
+  it.each([false, true])(
+    'keeps initial focus with pickerOpen %s under StrictMode',
+    async (pickerOpen) => {
+      const outside = document.createElement('button');
+      document.body.append(outside);
+      outside.focus();
+      const host = document.createElement('div');
+      document.body.append(host);
+      root = createRoot(host);
+      await act(async () =>
+        root.render(
+          createElement(
+            StrictMode,
+            null,
+            createElement(PaintColors, {
+              color: 'Purple',
+              customColors: [],
+              disabled: pickerOpen,
+              pickerOpen,
+              onChange() {},
+              onExplore() {},
+            })
+          )
+        )
+      );
+      expect(document.activeElement).toBe(outside);
+    }
+  );
+  it('restores the opener only when an enabled picker closes under StrictMode', async () => {
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    outside.focus();
+    const host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    const renderColors = async (pickerOpen, disabled) =>
+      act(async () =>
+        root.render(
+          createElement(
+            StrictMode,
+            null,
+            createElement(PaintColors, {
+              color: 'Purple',
+              customColors: [],
+              disabled,
+              pickerOpen,
+              onChange() {},
+              onExplore() {},
+            })
+          )
+        )
+      );
+    await renderColors(false, false);
+    await renderColors(false, true);
+    await renderColors(false, false);
+    expect(document.activeElement).toBe(outside);
+    await renderColors(true, true);
+    expect(document.activeElement).toBe(outside);
+    await renderColors(false, false);
+    const opener = host.querySelector('[aria-label="More colors"]');
+    expect(document.activeElement).toBe(opener);
+    outside.focus();
+    await renderColors(true, true);
+    await renderColors(false, true);
+    expect(document.activeElement).toBe(outside);
+    await renderColors(false, false);
+    expect(document.activeElement).toBe(outside);
+    await renderColors(true, true);
+    await renderColors(false, false);
+    expect(document.activeElement).toBe(opener);
   });
   it('uses the actual modal focus trap and native color buttons, applies only Use color and restores focus on close', async () => {
     const chosen = vi.fn();

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   paintHex,
@@ -21,15 +22,24 @@ export function PaintColors({
   color,
   customColors,
   disabled,
+  pickerOpen,
   onChange,
   onExplore,
 }: {
   color: PaintColor;
   customColors: readonly CustomColor[];
   disabled: boolean;
+  pickerOpen: boolean;
   onChange: (color: PaintColor) => void;
   onExplore: () => void;
 }) {
+  const explore = useRef<View>(null);
+  const wasPickerOpen = useRef(pickerOpen);
+  useEffect(() => {
+    const closing = wasPickerOpen.current && !pickerOpen;
+    wasPickerOpen.current = pickerOpen;
+    if (closing && !disabled) explore.current?.focus();
+  }, [pickerOpen, disabled]);
   return (
     <View style={styles.colors}>
       <View style={styles.palette}>
@@ -43,6 +53,7 @@ export function PaintColors({
           />
         ))}
         <Pressable
+          ref={explore}
           accessibilityRole="button"
           accessibilityLabel="More colors"
           disabled={disabled}
