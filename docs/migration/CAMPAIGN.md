@@ -13,24 +13,33 @@ Accepted N1 remains integration 9f64c4cb5604361f223690f1143296e8cd747c7d. The fo
 construction sources and observations do not select a framework, accept another feature or waive
 native fidelity, allocation, RSS, performance, security or release gates.
 
-* **Widths:** draft [PR 2744](https://github.com/KyleMit/Splotch/pull/2744), product source
-  4b1882fb7dd41cf7b4387bdc323c6698f798d6e9, tree 2805de485bc7d394a08e0e87a1cfb87cc1860151.
+* **Widths:** draft [PR 2744](https://github.com/KyleMit/Splotch/pull/2744), R1 repair source
+  8a0e0e72e17219d0c2f921b0d71b5357b3fcf3c9, tree 3ed898cc6783ebc00c4d8b75e0024415b02a1fef.
   Selectable drawing and independent eraser choices are captured per contact and retained in strict
-  v4 drawings and the existing settings owner's v2 snapshot. Check, lint, formatting and the
-  repaired full tools tier passed: 385 files / 8652 tests, two workers, 154.54 seconds. The final
-  360-by-640 browser attempt kept its 328-by-246 paper at one frame throughout six real contacts,
-  saved widths 11/44/17/68/22/88, and exported a decoded 1024-by-768 PNG with 21/87-pixel eraser
-  gaps. After Undo/save, its snapshot picker selected the older record and the command exited 1;
-  preserved newer storage equals the six-stroke drawing minus its last stroke. Reopen and restored
-  choices were not reached; a `maskType` DOM warning remains recorded. Earlier readiness and
-  positioning failures and all three fresh owned-process/port closures are preserved. The dependency
-  is PR 2742 at 76969fea63fe1f9ac84983a74d04f4d344b39bdd; its actual Android basic workflow remains
-  bound to c81312b3acc49f77890741d7042970dfa4b3f527, before this width feature. Widths' original
-  first review is pending.
+  v4 drawings and the existing settings owner's v2 snapshot. Original Claude
+  63f22c12-5187-468b-8cb8-ad1607c1718e
+  [round 1](https://github.com/KyleMit/Splotch/pull/2744#pullrequestreview-5477308918) confirmed
+  that a width tap after a read failure overwrote stored preferences with fallback values. The same
+  owner's repair keeps widths session-only and the read warning visible until explicit Settings
+  sound choice or Retry. Four focused files / 68 tests, candidate TypeScript, check, lint and
+  formatting passed; three production mutations failed their intended controls and exact source was
+  restored. The applicable repair full tier passed: 385 files / 8657 tests, two workers, 154.51
+  seconds. One original round used / two remaining; subsequent independent review is pending. Prior
+  product source 4b1882fb7dd41cf7b4387bdc323c6698f798d6e9 passed 385 files / 8652 tests. Its final
+  360-by-640 browser attempt kept 328-by-246 paper stable through six contacts, saved widths
+  11/44/17/68/22/88 and exported a decoded 1024-by-768 PNG with 21/87-pixel eraser gaps. After
+  Undo/save, its snapshot picker selected the older record and the command exited 1; preserved newer
+  storage equals the six-stroke drawing minus its last stroke. Reopen and restored choices were not
+  reached; a `maskType` DOM warning remains recorded. Earlier readiness and positioning failures and
+  all three fresh owned-process/port closures are preserved. No browser attempt was repeated for the
+  R1 source repair. The dependency is PR 2742 at 76969fea63fe1f9ac84983a74d04f4d344b39bdd; its
+  actual Android basic workflow remains bound to c81312b3acc49f77890741d7042970dfa4b3f527, before
+  this width feature.
 * **Audio:** [PR 2743](https://github.com/KyleMit/Splotch/pull/2743), source
   9c3d1fc22dd17e5ff5aad79d5fc6277ee9b6ec97,
   [original round 2](https://github.com/KyleMit/Splotch/pull/2743#pullrequestreview-5477165275): no
-  new source findings; two used / one remaining. Runtime and speaker/reset holds remain open.
+  new source findings; two used / one remaining. The same source's arm64 iOS structural compile
+  exited 0 and the patched object was verified; runtime and speaker/reset holds remain open.
 * **Eraser/composition:** [PR 2742](https://github.com/KyleMit/Splotch/pull/2742), source
   76969fea63fe1f9ac84983a74d04f4d344b39bdd,
   [original round 2](https://github.com/KyleMit/Splotch/pull/2742#pullrequestreview-5477200015): no
@@ -39,8 +48,12 @@ native fidelity, allocation, RSS, performance, security or release gates.
 * **Crayon/Magic:** [PR 2740](https://github.com/KyleMit/Splotch/pull/2740), source
   41aff66436d01d5fd7499f94db3e7a216a20b444,
   [original round 2](https://github.com/KyleMit/Splotch/pull/2740#pullrequestreview-5477215329): no
-  new source findings; two used / one remaining. Hosted setup and retained failures remain under the
-  same Brush owner's repair; earlier native mismatch and RSS failures remain held.
+  new source findings; two used / one remaining. The same owner's CI-only follow-up is published at
+  f8539fc673a1bcce27f58d99bf6db6c2c98500b6. At 03:26 UTC, its
+  [Native compile workflow](https://github.com/KyleMit/Splotch/actions/runs/38019493941) succeeded;
+  the [Tests workflow](https://github.com/KyleMit/Splotch/actions/runs/38019493890) remained in
+  progress. Earlier setup/retained failures, native mismatch and RSS failures remain preserved and
+  broader native/runtime qualification stays held.
 
 These are the same original review ledgers. Widths owns its new model/settings/control delta;
 neither this record nor its first review resets or reassigns another unit's exhausted capacity.
