@@ -7,7 +7,33 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current development status, 2026-10-10 16:34 UTC
+## Current development status, 2026-10-10 16:43 UTC
+
+The isolated development candidate normally merges the published Eraser fixture successor
+aa86ac4614844913eecb79bd567c82e83be880ee, tree 7420e761479dc594e43755b61d37a5ddcd8a263f, into local
+WIP composition 8182155da33e7a8c296e405d567ae1c0409cdd39, tree
+57a41a1472256cc9ca87ddca2a8711a5b2bb4803. That WIP commit retains exact parents
+74599a45168e6d3383baf94452dd7c803ea48438, a4930d54b7d97c0dac53af09dbbf0a964c81d233 and
+b922bf14833d09d22a032ce65b6bb1dc12228562. It was explicitly committed unqualified: native
+TypeScript, check, lint and formatting passed, while its one default tools run passed 401 files and
+8908 tests and failed two new mask-fixture tests. Those new records omitted the composed product's
+required stroke widths. The original Eraser owner repaired only their construction through
+`strokeStyle` and `emptyDrawing`; all exact DOM-console, mask and pixel assertions remain. The
+successor's qualification is recorded against its exact composition, not inherited from the owner's
+separate endpoint.
+
+The prior real composed journey remains a first fault on React's `maskType` DOM prop after Eraser.
+Purple keyboard selection completed; final Marker, save, Clear/ONE Undo, catalog reopen, PNG export
+and landscape were unreached. The source fix and fixture repair do not establish another browser
+result. Existing ignored `.expo` output and all failed attempts remain preserved. Another browser
+launch requires a separately admitted exact source, helper and finite host lease.
+
+Verified integration and shipping main remain the endpoints below. This local composition is
+unpublished and does not accept a framework, native execution, whole product, integration, cutover
+or release. All original unit review capacities and native focus/window ordering, insets, text
+scale, lifecycle, permissions, fidelity, archive restart and release gates remain unchanged.
+
+## Historical development status, 2026-10-10 16:34 UTC
 
 Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
 ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. This isolated development candidate normally merges Custom
