@@ -1,4 +1,4 @@
-import { useRef, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -84,6 +84,13 @@ function DrawingScroll({
   );
 }
 
+function useIdleMessage(message: string, drawing: boolean) {
+  const [settled, setSettled] = useState(message);
+  // Changing status layout invalidates the paper frame owned by the active contacts.
+  if (!drawing && settled !== message) setSettled(message);
+  return drawing ? settled : message;
+}
+
 export function DrawingScreen() {
   const {
     history,
@@ -108,6 +115,7 @@ export function DrawingScreen() {
     showPictures,
     openPicture,
   } = useDrawingScreen();
+  const visibleNotice = useIdleMessage(notice, drawing);
   return (
     <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
       <DrawingScroll drawing={drawing} surface={surface}>
@@ -191,7 +199,7 @@ export function DrawingScreen() {
         <View style={styles.status}>
           {busy ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
           <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {notice}
+            {visibleNotice}
           </Text>
         </View>
       </DrawingScroll>

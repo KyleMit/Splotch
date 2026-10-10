@@ -1,5 +1,14 @@
 // @vitest-environment happy-dom
-import { act, createElement, createRef, forwardRef, useImperativeHandle } from 'react';
+import {
+  act,
+  createElement,
+  createRef,
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
@@ -19,16 +28,30 @@ const native = vi.hoisted(() => ({
   autoMeasure: true,
   measurements: [],
   scroll: null,
+  notice: '',
+  setNotice: null,
+  contentChanges: 0,
 }));
 vi.mock('react-native', () => ({
   ActivityIndicator: () => null,
   Modal: () => null,
   Pressable: ({ children }) => createElement('div', null, children),
-  Text: ({ children }) => createElement('span', null, children),
+  Text: ({ children, accessibilityLiveRegion }) =>
+    createElement('span', { 'aria-live': accessibilityLiveRegion }, children),
   SafeAreaView: ({ children }) => createElement('div', null, children),
-  ScrollView: ({ children, onScroll }) => {
+  ScrollView: ({ children, onScroll, onContentSizeChange }) => {
     if (onScroll) native.scroll = onScroll;
-    return createElement('div', null, children);
+    const content = useRef(null);
+    const previous = useRef(null);
+    useLayoutEffect(() => {
+      const text = content.current.textContent;
+      if (previous.current !== null && previous.current !== text) {
+        native.contentChanges += 1;
+        onContentSizeChange?.(1024, text.length);
+      }
+      previous.current = text;
+    });
+    return createElement('div', { ref: content }, children);
   },
   findNodeHandle: (target) => target,
   PanResponder: {
@@ -50,29 +73,37 @@ vi.mock('react-native', () => ({
   }),
 }));
 vi.mock('../../experiments/native-architecture/src/useDrawingScreen.ts', () => ({
-  useDrawingScreen: () => ({
-    history,
-    setHistory: vi.fn(),
-    color: props.color,
-    setColor: vi.fn(),
-    brush: props.brush,
-    setBrush: vi.fn(),
-    drawing: false,
-    setDrawing: props.onDrawingChange,
-    busy: false,
-    notice: '',
-    pictures: null,
-    setPictures: vi.fn(),
-    surface,
-    disabled: false,
-    report: props.onError,
-    currentDrawing: props.currentDrawing,
-    finishCohort: props.onCohort,
-    save: vi.fn(),
-    exportPicture: vi.fn(),
-    showPictures: vi.fn(),
-    openPicture: vi.fn(),
-  }),
+  useDrawingScreen: () => {
+    const [notice, setNotice] = useState(native.notice);
+    const [drawing, setDrawing] = useState(false);
+    native.setNotice = setNotice;
+    return {
+      history,
+      setHistory: vi.fn(),
+      color: props.color,
+      setColor: vi.fn(),
+      brush: props.brush,
+      setBrush: vi.fn(),
+      drawing,
+      setDrawing: (value) => {
+        props.onDrawingChange(value);
+        setDrawing(value);
+      },
+      busy: false,
+      notice,
+      pictures: null,
+      setPictures: vi.fn(),
+      surface,
+      disabled: false,
+      report: props.onError,
+      currentDrawing: props.currentDrawing,
+      finishCohort: props.onCohort,
+      save: vi.fn(),
+      exportPicture: vi.fn(),
+      showPictures: vi.fn(),
+      openPicture: vi.fn(),
+    };
+  },
 }));
 vi.mock('react-native-svg', () => ({
   default: forwardRef(({ children }, ref) => createElement('div', { ref }, children)),
@@ -168,6 +199,9 @@ beforeEach(() => {
     frame: [0, 0, 992 / DENSITY, 744 / DENSITY, 44 / DENSITY, 814 / DENSITY],
     autoMeasure: true,
     measurements: [],
+    notice: '',
+    setNotice: null,
+    contentChanges: 0,
   });
   container = document.createElement('div');
   document.body.append(container);
@@ -261,6 +295,34 @@ function refresh() {
 }
 
 describe('measured paper readiness and invalidation', () => {
+  it.each([
+    ['', 'Drawing sound is unavailable. You can keep drawing. Try another stroke.'],
+    ['Drawing sound is unavailable. You can keep drawing. Try another stroke.', ''],
+  ])('keeps notice layout stable through an active cohort (%s → %s)', (initial, next) => {
+    native.notice = initial;
+    native.frame = [0, 0, 1024, 768, 40, 800];
+    native.handlers = null;
+    act(() => root.render(createElement(DrawingScreen)));
+    layout();
+    send('onPanResponderGrant', event([pageTouch(0, 50, 820, 100)]));
+    send('onPanResponderMove', event([pageTouch(0, 70, 840, 200)], undefined, { 0: 100 }));
+    act(() => native.setNotice(next));
+    expect(container.querySelector('[aria-live="polite"]').textContent).toBe(initial);
+    expect(props.onCohort).not.toHaveBeenCalled();
+    expect(native.contentChanges).toBe(0);
+    send('onPanResponderMove', event([pageTouch(0, 240, 1000, 300)], undefined, { 0: 100 }));
+    send('onPanResponderEnd', event([], [pageTouch(0, 440, 1200, 400)], { 0: 100 }));
+    expect(props.onCohort).toHaveBeenCalledTimes(1);
+    expect(props.onCohort.mock.calls[0][0][0].points).toEqual([
+      { x: 10, y: 20 },
+      { x: 30, y: 40 },
+      { x: 200, y: 200 },
+      { x: 400, y: 400 },
+    ]);
+    expect(container.querySelector('[aria-live="polite"]').textContent).toBe(next);
+    expect(native.contentChanges).toBe(1);
+  });
+
   it.each([
     [0, 768, 40, 800],
     [1024, -1, 40, 800],
