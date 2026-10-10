@@ -7,6 +7,11 @@ fresh-start/functional-development contract and color acceptance were read from 
 9f64c4cb5604361f223690f1143296e8cd747c7d. This construction neither accepts its dependencies nor
 selects a framework or completes the campaign.
 
+The feature includes a normal merge of Width's documentation-only update
+7bcc4ff65139d6305e70e456d0911c1fdf60e840 without rebasing or replacing product source. The planned
+dependent draft targets `codex/native-stroke-widths`; publication waits for the applicable full test
+tier.
+
 “More colors” opens a continuous hue/tone field with a visible color preview. Dragging explores;
 lifting keeps a tentative color in the picker. “Use color” selects it for drawing and remembers it
 with six distinct recent custom paints. Reusing a custom paint moves it to the front. Named paints

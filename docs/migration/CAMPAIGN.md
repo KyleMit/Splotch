@@ -27,6 +27,18 @@ native fidelity, allocation, RSS, performance, security or release gates.
   is PR 2742 at 76969fea63fe1f9ac84983a74d04f4d344b39bdd; its actual Android basic workflow remains
   bound to c81312b3acc49f77890741d7042970dfa4b3f527, before this width feature. Widths' original
   first review is pending.
+* **Custom paints:** isolated branch `codex/native-custom-colors`, construction source
+  fb36345bce9ab9036bd8acabb33161c65f3d02ce, tree bf77fafd6fdae41d4b9b5879b8daed2817a71a37. A
+  continuous color picker and six recent custom paints use the existing settings writer; strict v5
+  drawings and v3 settings preserve per-contact paint/width and explicit earlier new-app
+  normalization. The feature starts from Width product source
+  4b1882fb7dd41cf7b4387bdc323c6698f798d6e9 and includes a normal merge of its documentation-only
+  7bcc4ff65139d6305e70e456d0911c1fdf60e840 update. Candidate TypeScript, check, lint, format and 18
+  scoped files / 270 tests pass, including installed React Native Web controls and Sharp PNG pigment
+  controls. Initial failures and repairs remain in the
+  [construction controls](evidence/custom-colors-construction/README.md). These controls do not
+  establish platform export or running layout. Full tools, compact browser and resize/cancellation,
+  native feedback, publication and the original first independent review remain pending.
 * **Audio:** [PR 2743](https://github.com/KyleMit/Splotch/pull/2743), source
   9c3d1fc22dd17e5ff5aad79d5fc6277ee9b6ec97,
   [original round 2](https://github.com/KyleMit/Splotch/pull/2743#pullrequestreview-5477165275): no
