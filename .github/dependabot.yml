@@ -45,6 +45,8 @@ updates:
       - dependency-name: 'react-dom'
       - dependency-name: 'react-native-web'
       - dependency-name: 'react-native-svg'
+      - dependency-name: 'expo-asset'
+      - dependency-name: 'expo-audio'
       - dependency-name: 'expo-file-system'
       - dependency-name: 'expo-sharing'
       - dependency-name: '@types/react'

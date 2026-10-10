@@ -15,7 +15,9 @@ overrides:
   tar: ^7.5.19
 
 patchedDependencies:
+  expo-audio@57.0.5: 7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2
   node-forge@1.4.0: 2f0f3be76c7a0502b8579e71f32b7df98954a90a7e448084ac08dd86bd55286d
+  react-native-svg@15.15.4: 894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82
 
 importers:
 
@@ -214,6 +216,12 @@ importers:
       expo:
         specifier: 57.0.26
         version: 57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)
+      expo-asset:
+        specifier: 57.0.18
+        version: 57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)
+      expo-audio:
+        specifier: 57.0.5
+        version: 57.0.5(patch_hash=7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2)(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)
       expo-file-system:
         specifier: 57.0.7
         version: 57.0.7(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))
@@ -231,7 +239,7 @@ importers:
         version: 0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)
       react-native-svg:
         specifier: 15.15.4
-        version: 15.15.4(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)
+        version: 15.15.4(patch_hash=894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)
       react-native-web:
         specifier: 0.21.0
         version: 0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -4000,6 +4008,14 @@ packages:
     resolution: {integrity: sha512-zDIQkUr0NM2S7YRj98Zohf/OBuM1q0o4ctxLz1C1oe4/33lHNLjp+2v3qUtBWVwn0zKka8UGADmS8M+83Wi6pw==}
     peerDependencies:
       expo: '*'
+      react: '*'
+      react-native: '*'
+
+  expo-audio@57.0.5:
+    resolution: {integrity: sha512-39fX5JC5zDvELB4/eDJPj2XAYRN0W9+K2DfDWm5N3aC5WZ7HRrhupWtT6hbH09NlfYpsRSqYOwEZnocFM42ynQ==}
+    peerDependencies:
+      expo: '*'
+      expo-asset: '*'
       react: '*'
       react-native: '*'
 
@@ -11131,6 +11147,13 @@ snapshots:
       - supports-color
       - typescript
 
+  expo-audio@57.0.5(patch_hash=7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2)(expo-asset@57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3))(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3):
+    dependencies:
+      expo: 57.0.26(@babel/core@7.29.7(supports-color@10.2.2))(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)
+      expo-asset: 57.0.18(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@6.0.3)
+      react: 19.2.3
+      react-native: 0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)
+
   expo-constants@57.0.20(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
       '@expo/env': 2.4.3(supports-color@10.2.2)
@@ -13150,7 +13173,7 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-native-svg@15.15.4(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3):
+  react-native-svg@15.15.4(patch_hash=894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3):
     dependencies:
       css-select: 5.2.2
       css-tree: 1.1.3

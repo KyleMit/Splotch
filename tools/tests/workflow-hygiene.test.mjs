@@ -291,6 +291,13 @@ describe('workflow hygiene', () => {
       expect(runtimeMajor).toBe(floorMajor);
     });
 
+    it('copies package files at the actual pnpm setup step for independent installed ownership', () => {
+      const setup = setupPnpmAction.lines.join('\n');
+      const step = setup.slice(setup.indexOf('    - uses: pnpm/setup@'));
+      expect(step).toMatch(/\n {6}env:\n {8}PNPM_CONFIG_PACKAGE_IMPORT_METHOD: copy\n/);
+      expect(step).not.toContain('npm_config_package_import_method');
+    });
+
     it('keeps Node setup active when the hosted deploy smoke skips dependencies', () => {
       expect(setupPnpmAction.lines.some((line) => /^\s+if:/.test(line))).toBe(false);
       expect(hostedSmoke.lines).toContain('      - uses: ./.github/actions/setup-pnpm');

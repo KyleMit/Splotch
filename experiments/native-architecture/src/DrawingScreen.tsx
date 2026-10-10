@@ -1,3 +1,4 @@
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -11,11 +12,17 @@ import {
 import { paletteHex, type PaletteLabel } from './drawing/palette';
 import { ColoringPagePicker } from './ColoringPagePicker';
 import { COLORING_PAGES } from './drawing/pages';
-import { DrawingSurface } from './drawing/DrawingSurface';
+import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
-import { BRUSHES, clearDrawing, undoDrawing, type Brush, type History } from './drawing/model';
+import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
+import type { History } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+import { useDrawingSound } from './useDrawingSound';
+import { SoundSettings } from './settings/SoundSettingsSheet';
+
+const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
 const COLORS: readonly PaletteLabel[] = [
   'Purple',
@@ -56,16 +63,51 @@ function Action({
   );
 }
 
+function DrawingScroll({
+  children,
+  drawing,
+  surface,
+}: {
+  children: ReactNode;
+  drawing: boolean;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+}) {
+  const scrollGeometry = useRef(
+    createPaperScroll(() => surface.current?.refreshGeometry())
+  ).current;
+  return (
+    <ScrollView
+      contentContainerStyle={styles.content}
+      scrollEnabled={!drawing}
+      onLayout={() => surface.current?.refreshGeometry()}
+      onScroll={({ nativeEvent }) => scrollGeometry(nativeEvent.contentOffset)}
+      onContentSizeChange={() => surface.current?.refreshGeometry()}
+      scrollEventThrottle={SCROLL_GEOMETRY_THROTTLE_MS}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
+function useIdleMessage(message: string, drawing: boolean) {
+  const [settled, setSettled] = useState(message);
+  // Changing status layout invalidates the paper frame owned by the active contacts.
+  if (!drawing && settled !== message) setSettled(message);
+  return drawing ? settled : message;
+}
+
 export function DrawingScreen() {
   const {
     history,
-    setHistory,
+    currentDrawing,
+    clear,
+    undo,
+    recovery,
     color,
     setColor,
     brush,
     setBrush,
     drawing,
-    setDrawing,
     busy,
     notice,
     pictures,
@@ -73,91 +115,94 @@ export function DrawingScreen() {
     surface,
     pagePickerOpen,
     setPagePickerOpen,
+    settingsOpen,
+    openSettings,
+    closeSettings,
     choosePage,
     disabled,
-    report,
-    finishStroke,
     save,
     exportPicture,
     showPictures,
     openPicture,
   } = useDrawingScreen();
+  const sound = useDrawingSound();
+  const visibleNotice = useIdleMessage(notice, drawing);
+  const visibleSoundMessage = useIdleMessage(sound.settings.message || sound.audioMessage, drawing);
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!drawing}>
+    <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
+      <DrawingScroll drawing={drawing} surface={surface}>
         <View style={styles.heading}>
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
         </View>
-        <View style={styles.palette}>
-          {COLORS.map((label) => (
-            <Pressable
-              key={label}
-              accessibilityRole="button"
-              accessibilityLabel={`${label} paint`}
-              accessibilityState={{ selected: label === color, disabled }}
-              disabled={disabled}
-              onPress={() => setColor(label)}
-              style={[
-                styles.swatch,
-                { backgroundColor: paletteHex(label) },
-                label === color && styles.selectedSwatch,
-              ]}
-            >
-              {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
-            </Pressable>
-          ))}
-        </View>
+        <PaintColors color={color} disabled={disabled} onChange={setColor} />
         <DrawingTools
           history={history}
           brush={brush}
           disabled={disabled}
           onBrush={setBrush}
           onPages={() => setPagePickerOpen(true)}
-          onUndo={() => setHistory(undoDrawing)}
-          onClear={() => setHistory(clearDrawing)}
+          onUndo={undo}
+          onClear={() => {
+            void clear();
+          }}
         />
         <Text style={styles.subtitle}>{COLORING_PAGES[history.drawing.pageId].label}</Text>
         <DrawingSurface
+          key={recovery.generation}
           ref={surface}
           drawing={history.drawing}
+          currentDrawing={currentDrawing}
           color={color}
           brush={brush}
-          disabled={busy || pictures !== null || pagePickerOpen}
-          onStroke={finishStroke}
-          onDrawingChange={setDrawing}
-          onError={report}
+          disabled={busy || pictures !== null || pagePickerOpen || settingsOpen}
+          sound={sound.owner?.contacts ?? null}
+          {...recovery.callbacks}
         />
-        <View style={styles.toolbar}>
+        <DrawingActions
+          disabled={disabled}
+          save={save}
+          showPictures={showPictures}
+          exportPicture={exportPicture}
+          openSettings={openSettings}
+        />
+        {recovery.failed ? (
           <Action
-            label="Save picture"
-            primary
-            disabled={disabled}
-            onPress={() => {
-              void save();
-            }}
+            label="Retry drawing"
+            disabled={recovery.retryDisabled}
+            onPress={recovery.retry}
           />
-          <Action label="Pictures" disabled={disabled} onPress={showPictures} />
-          <Action
-            label="Export PNG"
-            disabled={disabled}
-            onPress={() => {
-              void exportPicture();
-            }}
-          />
-        </View>
+        ) : null}
         <View style={styles.status}>
-          {busy ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
+          {busy && !recovery.failed ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
           <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {notice}
+            {visibleNotice}
           </Text>
         </View>
-      </ScrollView>
+        {visibleSoundMessage ? (
+          <Text accessibilityLiveRegion="polite" style={styles.notice}>
+            {visibleSoundMessage}
+          </Text>
+        ) : null}
+      </DrawingScroll>
       {pagePickerOpen ? (
         <ColoringPagePicker
           selected={history.drawing.pageId}
           onChoose={choosePage}
           onClose={() => setPagePickerOpen(false)}
+        />
+      ) : null}
+      {settingsOpen ? (
+        <SoundSettings
+          state={sound.settings}
+          audioMessage={sound.audioMessage}
+          onChange={(enabled) => {
+            void sound.owner?.settings.setEnabled(enabled);
+          }}
+          onRetrySave={() => {
+            void sound.owner?.settings.retrySave();
+          }}
+          onClose={closeSettings}
         />
       ) : null}
       <SavedPictures
@@ -168,6 +213,71 @@ export function DrawingScreen() {
         onClose={() => setPictures(null)}
       />
     </SafeAreaView>
+  );
+}
+
+function PaintColors({
+  color,
+  disabled,
+  onChange,
+}: {
+  color: PaletteLabel;
+  disabled: boolean;
+  onChange: (color: PaletteLabel) => void;
+}) {
+  return (
+    <View style={styles.palette}>
+      {COLORS.map((label) => (
+        <Pressable
+          key={label}
+          accessibilityRole="button"
+          accessibilityLabel={`${label} paint`}
+          accessibilityState={{ selected: label === color, disabled }}
+          disabled={disabled}
+          onPress={() => onChange(label)}
+          style={[
+            styles.swatch,
+            { backgroundColor: paletteHex(label) },
+            label === color && styles.selectedSwatch,
+          ]}
+        >
+          {label === color ? <Text style={styles.swatchMark}>✓</Text> : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function DrawingActions({
+  disabled,
+  save,
+  showPictures,
+  exportPicture,
+  openSettings,
+}: Pick<
+  ReturnType<typeof useDrawingScreen>,
+  'disabled' | 'save' | 'showPictures' | 'exportPicture' | 'openSettings'
+>) {
+  return (
+    <View style={styles.toolbar}>
+      <Action
+        label="Save picture"
+        primary
+        disabled={disabled}
+        onPress={() => {
+          void save();
+        }}
+      />
+      <Action label="Settings" disabled={disabled} onPress={openSettings} />
+      <Action label="Pictures" disabled={disabled} onPress={showPictures} />
+      <Action
+        label="Export PNG"
+        disabled={disabled}
+        onPress={() => {
+          void exportPicture();
+        }}
+      />
+    </View>
   );
 }
 
@@ -191,7 +301,7 @@ function DrawingTools({
   return (
     <View style={styles.toolbar}>
       <Action label="Coloring pages" disabled={disabled} onPress={onPages} />
-      {(Object.keys(BRUSHES) as Brush[]).map((key) => (
+      {BRUSH_ORDER.map((key) => (
         <Pressable
           key={key}
           accessibilityRole="button"
@@ -205,11 +315,7 @@ function DrawingTools({
         </Pressable>
       ))}
       <Action label="Undo" disabled={disabled || history.undo.length === 0} onPress={onUndo} />
-      <Action
-        label="Clear"
-        disabled={disabled || history.drawing.strokes.length === 0}
-        onPress={onClear}
-      />
+      <Action label="Clear" disabled={disabled} onPress={onClear} />
     </View>
   );
 }

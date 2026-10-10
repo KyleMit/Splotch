@@ -49,3 +49,12 @@ export const DRAWING_SCALE = {
   fontWeightSemibold: scale.fontWeightSemibold,
   fontWeightBold: scale.fontWeightBold,
 };
+
+// native-audio-projection.test.mjs pins these Settings metrics to the design scale.
+export const SETTINGS_METRICS = {
+  radius: 16,
+  padding: 24,
+  titleSize: 22,
+  textSize: 16,
+  gap: 8,
+} as const;

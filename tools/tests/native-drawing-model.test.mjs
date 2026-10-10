@@ -30,7 +30,7 @@ describe('native development drawing model', () => {
   it('undoes clear and reopening without mutating an earlier save snapshot', () => {
     const original = addStroke(createHistory(), firstStroke);
     const snapshot = JSON.stringify(original.drawing);
-    const cleared = clearDrawing(original);
+    const cleared = clearDrawing(original, false);
     expect(cleared.drawing.strokes).toEqual([]);
     expect(undoDrawing(cleared).drawing).toEqual(original.drawing);
     const opened = commitDrawing(cleared, parseDrawing(JSON.parse(snapshot)));

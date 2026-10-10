@@ -127,14 +127,16 @@ The topology commit and lock digest are required execution inputs. Take `--topol
 [the CI workflow](../../.github/workflows/test.yml). The
 [retained-control acceptance record](../../docs/migration/evidence/retained-control/README.md)
 preserves historical execution inputs and results. The active source must contain the workflow's
-checkpoint commit and retain its exact lock. A normal merge commit must preserve that checkpoint's
-ancestry; squash or rebase merging this security-lock update would remove the required ancestor. A
-frozen full dependency install must already exist and have the same installed lock; this runner
-never installs. Final evidence exports a clean committed source slice, records its real commit and
-source hashes, and derives version metadata through `web/buildVersion.ts`. `--provisional` permits
-local iteration with HEAD, binary patch and actual file hashes; it cannot supply final review
-evidence. `--artifact=mechanism` enables only the existing private harness, with performance marks
-disabled. It is distinct from the release artifact and cannot score release startup costs.
+checkpoint commit. A changed lock must pass the complete joint native SVG and Audio qualification,
+bind its inherited baseline to the reviewed lock, and retain the actual lock digest in the snapshot.
+A normal merge commit must preserve that checkpoint's ancestry; squash or rebase merging this
+security-lock update would remove the required ancestor. A frozen full dependency install must
+already exist and have the same installed lock; this runner never installs. Final evidence exports a
+clean committed source slice, records its real commit and source hashes, and derives version
+metadata through `web/buildVersion.ts`. `--provisional` permits local iteration with HEAD, binary
+patch and actual file hashes; it cannot supply final review evidence. `--artifact=mechanism` enables
+only the existing private harness, with performance marks disabled. It is distinct from the release
+artifact and cannot score release startup costs.
 
 Outputs are a new `splotch-web-host-*` temporary root (or under the explicitly separate existing
 `--output-parent`), a fresh ownership marker, frozen inputs, reference/control copies, both wrapper

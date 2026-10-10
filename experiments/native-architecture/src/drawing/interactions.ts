@@ -1,18 +1,17 @@
-import type { PaletteLabel } from './palette';
 import {
   appendPoint,
   MAX_POINTS,
-  type Brush,
   type Drawing,
   type Point,
   type Stroke,
+  type StrokeStyle,
 } from './model';
 
 export function createStrokeInput() {
   let current: { identifier: string; stroke: Stroke } | null = null;
   return {
-    start(identifier: string, color: PaletteLabel, brush: Brush, point: Point): Stroke {
-      const stroke = { color, brush, points: [point] };
+    start(identifier: string, style: StrokeStyle, point: Point): Stroke {
+      const stroke = { ...style, points: [point] };
       current = { identifier, stroke };
       return stroke;
     },

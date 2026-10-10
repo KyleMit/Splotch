@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "d8fb32f15e9af0f4657452f62cd09a968080addf",
+  "files": [
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 529961,
+      "sha256": "45d731eb5385e67970e2ec59941de4a668aeb78a67eb68eda023dc6d652a16a2"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 4947,
+      "sha256": "7d4490e0657569fc25752b4780d94e4b9b2ba51d47d89f2df4350ab2aee02734"
+    },
+    {
+      "path": "package.json",
+      "bytes": 123360,
+      "sha256": "2f34502e3f9f63adcec04e04cb94387f1a282f6e4d797861351ba17b3db831fc"
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 506,
+      "sha256": "9309cd353cb1a1844ac1f729c3efb6c6078573ee5020d06a3f839b0934be5659"
+    },
+    {
+      "path": "experiments/native-architecture/alignment.json",
+      "bytes": 1108,
+      "sha256": "f967b48113d287e953d7e122554806f2ad79ed8d3c3cd86531a970b7b7991e65"
+    },
+    {
+      "path": "patches/expo-audio@57.0.5.patch",
+      "bytes": 1751,
+      "sha256": "7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2"
+    },
+    {
+      "path": "patches/react-native-svg@15.15.4.patch",
+      "bytes": 1387,
+      "sha256": "894b760c9bffc35eca0fcdd8161a3778c8d983c54a0011f40a405db618fbeb82"
+    },
+    {
+      "path": "docs/migration/evidence/native-joint-graph-20261010/audio-pnpm-lock.yaml.txt",
+      "bytes": 529714,
+      "sha256": "72a17493f6420ecb78fd914976aac577fa57eceb5124cb44985f97db9176dfce"
+    },
+    {
+      "path": "docs/migration/evidence/native-joint-graph-20261010/audio-pnpm-workspace.yaml.txt",
+      "bytes": 4880,
+      "sha256": "1b806c1bad7f198d3ebb4612897e24b3993223444d10d80317ecf613f2681e03"
+    }
+  ],
+  "audioLock": "docs/migration/evidence/native-joint-graph-20261010/audio-pnpm-lock.yaml.txt",
+  "audioWorkspace": "docs/migration/evidence/native-joint-graph-20261010/audio-pnpm-workspace.yaml.txt",
+  "scope": "Only declared SVG patch delta from exact Audio72/1b, followed by original Audio source/archive/reset projection; no native, renderer, resource or feature acceptance."
+}

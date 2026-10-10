@@ -1,0 +1,60 @@
+diff --git a/ios/AudioPlayer.swift b/ios/AudioPlayer.swift
+--- a/ios/AudioPlayer.swift
++++ b/ios/AudioPlayer.swift
+@@ -286,36 +286,12 @@
+   }
+ 
+   func handleMediaServicesReset() {
+-    guard let source else {
+-      updateStatus(with: ["mediaServicesDidReset": true])
+-      return
+-    }
+-
+-    // Store these before we reset
+-    let shouldResume = wasPlaying
+-    let savedTime = currentTime
+-    let savedRate = currentRate > 0 ? currentRate : 1.0
+-    let wasSamplingEnabled = samplingEnabled
+-
+-    replacePlayer(with: source, restoreSampling: wasSamplingEnabled)
+-
+-    onReady { [weak self] in
+-      guard let self else { return }
+-      self.restorePlaybackState(time: savedTime, shouldResume: shouldResume, rate: savedRate)
+-      self.wasPlaying = false
+-      self.updateStatus(with: ["mediaServicesDidReset": true])
+-    }
+-  }
+-
+-  private func replacePlayer(with source: AudioSource, restoreSampling: Bool) {
++    wasPlaying = false
++    ref.volume = 0
++    ref.pause()
++    ref.currentItem?.cancelPendingSeeks()
+     teardownPlayer()
+-
+-    ref = AudioUtils.createAVPlayer(from: source)
+-    setupPublisher()
+-
+-    if restoreSampling {
+-      shouldInstallAudioTap = true
+-    }
++    updateStatus(with: ["mediaServicesDidReset": true])
+   }
+ 
+   private func teardownPlayer() {
+@@ -342,14 +318,6 @@
+       .first()
+       .sink { _ in completion() }
+       .store(in: &cancellables)
+-  }
+-
+-  private func restorePlaybackState(time: Double, shouldResume: Bool, rate: Float) {
+-    let cmTime = CMTime(seconds: time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+-    ref.seek(to: cmTime) { [weak self] _ in
+-      guard let self, shouldResume else { return }
+-      self.play(at: rate)
+-    }
+   }
+ 
+   private func installTap() {

@@ -1,201 +1,94 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { PanResponder, StyleSheet, View, type GestureResponderEvent } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { paletteHex, type PaletteLabel } from './palette';
 import {
-  BRUSHES,
-  PAPER_HEIGHT,
-  PAPER_WIDTH,
-  paperPoint,
-  strokePath,
-  type Brush,
-  type Drawing,
-  type Stroke,
-} from './model';
+  forwardRef,
+  useCallback,
+  useLayoutEffect,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ForwardedRef,
+  type RefObject,
+} from 'react';
+import { PanResponder, StyleSheet, View } from 'react-native';
+import Svg from 'react-native-svg';
+import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
+import { createContactResponder, type ContactDrawingProps } from './contactResponder';
+import { createPaperGeometry } from './paperGeometry';
+import { measurePaper } from './measurePaper';
 import { PageOutline } from './PageOutline';
+import { RasterInk, type RasterInkHandle } from './RasterInk';
+import { PictureCapture, type PictureRequest } from './PictureCapture';
 import { DRAWING_THEME } from './theme';
-import { createPngCapture, createStrokeInput, type PngCaptureRequest } from './interactions';
+import { createPngCapture, type PngCaptureRequest } from './interactions';
 
-const EXPORT_TIMEOUT_MS = 10_000;
-export type DrawingSurfaceHandle = { capturePng: (snapshot: Drawing) => Promise<string> };
-type Props = {
-  drawing: Drawing;
-  color: PaletteLabel;
-  brush: Brush;
-  disabled: boolean;
-  onStroke: (stroke: Stroke) => void;
-  onDrawingChange: (drawing: boolean) => void;
-  onError: (error: unknown) => void;
+export type DrawingSurfaceHandle = {
+  capturePng: (snapshot: Drawing) => Promise<string>;
+  captureInk: (snapshot: Drawing) => Promise<string>;
+  lockInput: () => () => void;
+  refreshGeometry: () => void;
 };
-
-function Ink({ stroke }: { stroke: Stroke }) {
-  const color = paletteHex(stroke.color);
-  const width = BRUSHES[stroke.brush].width;
-  const first = stroke.points[0];
-  if (!first) return null;
-  return stroke.points.length === 1 ? (
-    <Circle cx={first.x} cy={first.y} r={width / 2} fill={color} />
-  ) : (
-    <Path
-      d={strokePath(stroke.points)}
-      stroke={color}
-      strokeWidth={width}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
-  );
-}
-
-function Artwork({
-  drawing,
-  draft,
-  svgRef,
-}: {
+type Props = ContactDrawingProps & {
   drawing: Drawing;
-  draft?: Stroke | null;
-  svgRef?: Ref<Svg>;
-}) {
-  return (
-    <Svg
-      ref={svgRef}
-      width="100%"
-      height="100%"
-      viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-      pointerEvents="none"
-    >
-      <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-      {drawing.strokes.map((stroke, index) => (
-        <Ink key={index} stroke={stroke} />
-      ))}
-      {draft ? <Ink stroke={draft} /> : null}
-      <PageOutline pageId={drawing.pageId} />
-    </Svg>
-  );
-}
-
-function usePngExport(ref: Ref<DrawingSurfaceHandle>) {
-  const captures = useRef(createPngCapture()).current;
-  const [exportRequest, setExportRequest] = useState<PngCaptureRequest | null>(null);
-  const exportSvg = useRef<Svg>(null);
-  useImperativeHandle(
-    ref,
-    () => ({
-      capturePng(snapshot) {
-        const request = captures.begin(snapshot);
-        setExportRequest(request);
-        return request.promise;
-      },
-    }),
-    [captures]
-  );
-
-  useEffect(() => {
-    if (!exportRequest) return;
-    const cancel = () => {
-      if (exportRequest.cancel('PNG export did not finish. Please try again.'))
-        setExportRequest(null);
-    };
-    const timeout = setTimeout(cancel, EXPORT_TIMEOUT_MS);
-    const frame = requestAnimationFrame(() => {
-      try {
-        exportSvg.current?.toDataURL(
-          (base64) => {
-            if (exportRequest.complete(base64)) {
-              clearTimeout(timeout);
-              setExportRequest(null);
-            }
-          },
-          { width: PAPER_WIDTH, height: PAPER_HEIGHT }
-        );
-      } catch {
-        cancel();
-      }
-    });
-    return () => {
-      clearTimeout(timeout);
-      cancelAnimationFrame(frame);
-      exportRequest.cancel('PNG export was cancelled.');
-    };
-  }, [exportRequest]);
-
-  return { exportRequest, exportSvg };
-}
+  onPreparingChange: (busy: boolean) => void;
+  onRendererFault: (error: unknown) => void;
+};
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
     const propsRef = useRef(props);
     propsRef.current = props;
-    const size = useRef({ width: 0, height: 0 });
-    const input = useRef(createStrokeInput()).current;
-    const [draft, setDraft] = useState<Stroke | null>(null);
-    const { exportRequest, exportSvg } = usePngExport(ref);
-
-    function point(event: GestureResponderEvent, identifier: string) {
-      const touch = [...event.nativeEvent.touches, ...event.nativeEvent.changedTouches].find(
-        (item) => item.identifier === identifier
-      );
-      return touch
-        ? paperPoint(touch.locationX, touch.locationY, size.current.width, size.current.height)
-        : undefined;
-    }
-
-    function sample(event: GestureResponderEvent) {
-      const identifier = input.identifier();
-      if (identifier === undefined) return;
-      const nextPoint = point(event, identifier);
-      if (!nextPoint) return;
-      try {
-        setDraft(input.sample(identifier, nextPoint));
-      } catch (error) {
-        propsRef.current.onError(error);
-      }
-    }
-
-    function finish(event?: GestureResponderEvent) {
-      const identifier = input.identifier();
-      if (identifier === undefined) return;
-      const stroke = input.finish(identifier, event ? point(event, identifier) : undefined);
-      setDraft(null);
-      propsRef.current.onDrawingChange(false);
-      if (stroke) propsRef.current.onStroke(stroke);
-    }
-
-    function ready() {
-      return !propsRef.current.disabled && size.current.width > 0 && size.current.height > 0;
-    }
-
+    const paper = useRef<View>(null);
+    const inputRef = useRef<ReturnType<typeof createContactResponder> | null>(null);
+    const geometry = useRef(createPaperGeometry(() => inputRef.current?.resize())).current;
+    const [drafts, setDrafts] = useState<readonly Stroke[]>([]);
+    const raster = useRef<RasterInkHandle>(null);
+    const input = useRef(
+      createContactResponder(
+        () => ({
+          ...propsRef.current,
+          disabled:
+            propsRef.current.disabled ||
+            commandLock.current !== null ||
+            captureLock.current !== null ||
+            raster.current?.isReady() !== true,
+        }),
+        geometry.current,
+        setDrafts
+      )
+    ).current;
+    inputRef.current = input;
+    useLayoutEffect(() => {
+      if (props.disabled) input.silence();
+    }, [input, props.disabled]);
+    const refreshGeometry = useCallback(() => {
+      geometry.refresh((complete) => measurePaper(paper.current, complete));
+    }, [geometry]);
+    const [packet, setPacket] = useState<PictureRequest | null>(null);
+    const { captureLock, commandLock } = useSurfaceCapture(
+      input,
+      ref,
+      setPacket,
+      raster,
+      props.drawing,
+      refreshGeometry
+    );
+    useLayoutEffect(() => {
+      refreshGeometry();
+      return () => {
+        input.detach();
+        geometry.clear();
+      };
+    }, [input, geometry, refreshGeometry]);
     const responder = useRef(
       PanResponder.create({
-        onStartShouldSetPanResponder: ready,
-        onMoveShouldSetPanResponder: ready,
-        onPanResponderGrant: (event) => {
-          const current = propsRef.current;
-          const touch = event.nativeEvent.changedTouches[0];
-          if (!touch) return;
-          const first = paperPoint(
-            touch.locationX,
-            touch.locationY,
-            size.current.width,
-            size.current.height
-          );
-          setDraft(input.start(touch.identifier, current.color, current.brush, first));
-          current.onDrawingChange(true);
-        },
-        onPanResponderStart: (event) => {
-          if (event.nativeEvent.touches.length > 1) finish();
-        },
-        onPanResponderMove: sample,
-        onPanResponderEnd: (event) => {
-          if (
-            event.nativeEvent.changedTouches.some(
-              (touch) => touch.identifier === input.identifier()
-            )
-          )
-            finish(event);
-        },
-        onPanResponderRelease: (event) => finish(event),
-        onPanResponderTerminate: () => finish(),
+        onStartShouldSetPanResponder: () => input.ready(),
+        onMoveShouldSetPanResponder: () => input.ready(),
+        onPanResponderGrant: (event) => input.grant(event),
+        onPanResponderStart: (event) => input.start(event),
+        onPanResponderMove: (event) => input.move(event),
+        onPanResponderEnd: (event) => input.end(event),
+        onPanResponderRelease: (event) => input.release(event),
+        onPanResponderTerminate: () => input.interrupt(),
         onPanResponderTerminationRequest: () => false,
         onShouldBlockNativeResponder: () => true,
       })
@@ -204,25 +97,120 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
     return (
       <View style={styles.container}>
         <View
+          ref={paper}
           accessibilityLabel="Drawing paper"
           testID="drawing-paper"
           style={styles.paper}
-          onLayout={({ nativeEvent }) => {
-            size.current = nativeEvent.layout;
-          }}
+          pointerEvents="box-only"
+          onLayout={refreshGeometry}
           {...responder.panHandlers}
+          onTouchEnd={(event) => input.endRaw(event)}
+          onTouchCancel={() => input.interrupt()}
         >
-          <Artwork drawing={props.drawing} draft={draft} />
+          <RasterInk
+            ref={raster}
+            strokes={props.drawing.strokes}
+            drafts={drafts}
+            prepareEraser={props.brush === 'eraser'}
+            onBusy={props.onPreparingChange}
+            onError={(error) => {
+              input.silence();
+              props.onRendererFault(error);
+            }}
+          />
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          >
+            <PageOutline pageId={props.drawing.pageId} />
+          </Svg>
         </View>
-        {exportRequest ? (
-          <View pointerEvents="none" style={styles.export}>
-            <Artwork drawing={exportRequest.drawing} svgRef={exportSvg} />
-          </View>
-        ) : null}
+        {packet ? <PictureCapture key={packet.id} packet={packet} /> : null}
       </View>
     );
   }
 );
+
+function useSurfaceCapture(
+  input: ReturnType<typeof createContactResponder>,
+  ref: ForwardedRef<DrawingSurfaceHandle>,
+  setPacket: (packet: PictureRequest | null) => void,
+  raster: RefObject<RasterInkHandle | null>,
+  drawing: Drawing,
+  refreshGeometry: () => void
+) {
+  const captures = useRef(createPngCapture()).current;
+  const captureLock = useRef<PngCaptureRequest | null>(null);
+  const commandLock = useRef<object | null>(null);
+
+  const currentDrawing = useRef(drawing);
+  currentDrawing.current = drawing;
+  const mounted = useRef(true);
+  const nextId = useRef(1);
+
+  async function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
+    if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
+    const lease = commandLock.current;
+    if (!lease || currentDrawing.current !== snapshot || !raster.current)
+      throw new Error('The current drawing paper is not ready to capture.');
+    const plan = raster.current.readyPlan(snapshot.strokes);
+    const request = captures.begin(snapshot);
+    captureLock.current = request;
+    setPacket({
+      id: nextId.current++,
+      request,
+      kind,
+      plan,
+      isCurrent: () =>
+        captureLock.current === request &&
+        commandLock.current === lease &&
+        currentDrawing.current === snapshot,
+    });
+    return request.promise.finally(() => {
+      if (captureLock.current !== request) return;
+      captureLock.current = null;
+      if (mounted.current) setPacket(null);
+    });
+  }
+
+  useEffect(() => {
+    const request = captureLock.current;
+    if (request && request.drawing !== drawing)
+      request.cancel('The picture changed before capture finished.');
+  }, [drawing]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      capturePng: (snapshot) => capture(snapshot, 'picture'),
+      captureInk: (snapshot) => capture(snapshot, 'ink'),
+      refreshGeometry,
+      lockInput() {
+        if (input.hasActive() || commandLock.current)
+          throw new Error('Finish drawing before using this control.');
+        const lease = {};
+        commandLock.current = lease;
+        return () => {
+          if (commandLock.current === lease) commandLock.current = null;
+        };
+      },
+    }),
+    []
+  );
+
+  useEffect(
+    () => () => {
+      mounted.current = false;
+      captureLock.current?.cancel('Picture capture was cancelled.');
+    },
+    [input]
+  );
+
+  return { captureLock, commandLock };
+}
 
 const styles = StyleSheet.create({
   container: { width: '100%', maxWidth: PAPER_WIDTH, alignSelf: 'center' },
@@ -234,12 +222,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DRAWING_THEME.borderWarm,
     backgroundColor: DRAWING_THEME.paper,
-  },
-  export: {
-    position: 'absolute',
-    left: -PAPER_WIDTH * 2,
-    top: 0,
-    width: PAPER_WIDTH,
-    height: PAPER_HEIGHT,
   },
 });

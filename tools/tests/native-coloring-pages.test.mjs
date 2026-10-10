@@ -31,7 +31,7 @@ describe('native coloring-page composition', () => {
   it('changes the page and paint together as one reversible picture operation', () => {
     const original = picture();
     const next = changePage(original, 'turtle');
-    expect(next.drawing).toEqual({ version: 2, pageId: 'turtle', strokes: [] });
+    expect(next.drawing).toEqual({ version: 3, rainbow: 0, pageId: 'turtle', strokes: [] });
     expect(next.undo.at(-1)).toBe(original.drawing);
     expect(undoDrawing(next).drawing).toBe(original.drawing);
     expect(original.drawing.strokes).toEqual([stroke()]);
@@ -39,11 +39,18 @@ describe('native coloring-page composition', () => {
 
   it('keeps the page through new ink and undoable clear', () => {
     const original = picture();
-    const cleared = clearDrawing(original);
+    const cleared = clearDrawing(original, false);
     expect(original.drawing.pageId).toBe('flower');
-    expect(cleared.drawing).toEqual({ version: 2, pageId: 'flower', strokes: [] });
+    expect(cleared.drawing).toEqual({ version: 3, rainbow: 1, pageId: 'flower', strokes: [] });
     expect(undoDrawing(cleared).drawing).toBe(original.drawing);
-    expect(clearDrawing(cleared)).toBe(cleared);
+    const visuallyEmpty = clearDrawing(cleared, true);
+    expect(visuallyEmpty.drawing).toEqual({
+      version: 3,
+      rainbow: 2,
+      pageId: 'flower',
+      strokes: [],
+    });
+    expect(visuallyEmpty.undo).toBe(cleared.undo);
   });
 
   it('leaves the painted picture and history intact when its page is selected again', () => {
@@ -54,7 +61,7 @@ describe('native coloring-page composition', () => {
   it('returns to blank paper without discarding the undoable painted page', () => {
     const original = picture();
     const blank = changePage(original, 'blank');
-    expect(blank.drawing).toEqual({ version: 2, pageId: 'blank', strokes: [] });
+    expect(blank.drawing).toEqual({ version: 3, rainbow: 0, pageId: 'blank', strokes: [] });
     expect(undoDrawing(blank).drawing).toBe(original.drawing);
   });
 
@@ -71,14 +78,24 @@ describe('native coloring-page composition', () => {
     'refuses an invalid page identity from storage %#',
     (pageId) => {
       expect(() => parseDrawing({ version: 2, pageId, strokes: [] })).toThrow(
-        'not a supported drawing'
+        'This saved picture contains an invalid coloring page.'
+      );
+    }
+  );
+
+  it.each([undefined, null, '', 'foreign', 'toString', {}, 1])(
+    'refuses invalid current-format page identity %#',
+    (pageId) => {
+      expect(() => parseDrawing({ version: 3, rainbow: 0, pageId, strokes: [] })).toThrow(
+        'This saved picture contains an invalid coloring page.'
       );
     }
   );
 
   it('opens the first native slice’s saved pictures as blank paper', () => {
     expect(parseDrawing({ version: 1, strokes: [stroke()] })).toEqual({
-      version: 2,
+      version: 3,
+      rainbow: 0,
       pageId: 'blank',
       strokes: [stroke()],
     });
@@ -89,7 +106,12 @@ describe('native coloring-page composition', () => {
     const captures = createPngCapture();
     const request = captures.begin(original.drawing);
     const next = changePage(original, 'sunshine');
-    expect(request.drawing).toEqual({ version: 2, pageId: 'flower', strokes: [stroke()] });
+    expect(request.drawing).toEqual({
+      version: 3,
+      rainbow: 0,
+      pageId: 'flower',
+      strokes: [stroke()],
+    });
     expect(next.drawing.pageId).toBe('sunshine');
     expect(request.complete('snapshot PNG')).toBe(true);
     await expect(request.promise).resolves.toBe('snapshot PNG');
@@ -106,7 +128,8 @@ describe('native coloring-page composition', () => {
       JSON.stringify({ version: 1, strokes: [stroke()] })
     );
     await expect(reopenPicture('picture-1-first')).resolves.toEqual({
-      version: 2,
+      version: 3,
+      rainbow: 0,
       pageId: 'blank',
       strokes: [stroke()],
     });
@@ -115,6 +138,10 @@ describe('native coloring-page composition', () => {
     const opened = await reopenPicture(saved.id);
     expect(opened).toEqual(original);
     values.set(`splotch-picture:${saved.id}`, JSON.stringify({ ...original, pageId: 'unknown' }));
-    await expect(reopenPicture(saved.id)).rejects.toThrow('not a supported drawing');
+    const refused = values.get(`splotch-picture:${saved.id}`);
+    await expect(reopenPicture(saved.id)).rejects.toThrow(
+      'This saved picture contains an invalid coloring page.'
+    );
+    expect(values.get(`splotch-picture:${saved.id}`)).toBe(refused);
   });
 });

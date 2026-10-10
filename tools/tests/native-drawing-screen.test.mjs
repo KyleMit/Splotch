@@ -1,20 +1,40 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { rgbaPng } from './native-png-fixtures.mjs';
+import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import {
   emptyDrawing,
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-const files = vi.hoisted(() => ({ list: vi.fn(), open: vi.fn() }));
+const files = vi.hoisted(() => ({
+  list: vi.fn(),
+  open: vi.fn(),
+  lock: vi.fn(),
+  capture: vi.fn(),
+  ink: vi.fn(),
+  export: vi.fn(),
+  cohort: null,
+}));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
   savePicture: vi.fn(),
-  exportPng: vi.fn(),
+  exportPng: files.export,
+}));
+
+vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
+  loadDrawingLoop: vi.fn(),
+}));
+vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
+  soundSettingsStorage: {
+    read: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
+    write: vi.fn(),
+  },
 }));
 
 vi.mock('react-native', () => {
@@ -22,6 +42,12 @@ vi.mock('react-native', () => {
     return createElement('div', null, children);
   }
   return {
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+    Dimensions: {
+      get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
+      addEventListener: () => ({ remove: vi.fn() }),
+    },
+    Platform: { OS: 'android' },
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
     Pressable: ({
@@ -37,8 +63,8 @@ vi.mock('react-native', () => {
         {
           onClick: onPress,
           disabled,
-          role: accessibilityRole,
           'aria-label': accessibilityLabel,
+          role: accessibilityRole,
           'aria-checked': accessibilityState?.checked,
         },
         children
@@ -76,18 +102,29 @@ const STROKE = {
 };
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(({ drawing, onStroke, disabled }, _ref) =>
-    createElement(
+  DrawingSurface: forwardRef(({ drawing, onCohort, disabled }, ref) => {
+    files.cohort = onCohort;
+    useImperativeHandle(
+      ref,
+      () => ({
+        refreshGeometry: vi.fn(),
+        lockInput: files.lock,
+        capturePng: files.capture,
+        captureInk: files.ink,
+      }),
+      []
+    );
+    return createElement(
       'button',
       {
         'data-testid': 'paper',
         disabled,
         'data-drawing': JSON.stringify(drawing),
-        onClick: () => onStroke(STROKE),
+        onClick: () => onCohort([STROKE]),
       },
       'Draw fixture stroke'
-    )
-  ),
+    );
+  }),
 }));
 
 function createScreen() {
@@ -108,10 +145,12 @@ function createScreen() {
       container.remove();
     },
     async click(label) {
-      const target = button(label);
-      expect(target, label).toBeDefined();
-      expect(target.disabled, label).toBe(false);
-      await act(async () => target.click());
+      const button = [...container.querySelectorAll('button')].find(
+        (element) => element.getAttribute('aria-label') === label || element.textContent === label
+      );
+      expect(button, label).toBeDefined();
+      expect(button.disabled, label).toBe(false);
+      await act(async () => button.click());
     },
     paper: () => container.querySelector('[data-testid="paper"]').getAttribute('data-drawing'),
     dialog: () => container.querySelector('[role="dialog"]'),
@@ -122,14 +161,19 @@ const pictures = [
   { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
   { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
 ];
+const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
 
-beforeEach(() => {
+beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.list.mockReturnValue(pictures);
   files.open.mockReset();
+  files.capture.mockReset();
+  files.ink.mockReset();
+  files.export.mockReset();
+  files.lock.mockReset().mockReturnValue(() => {});
   screen = createScreen();
-  screen.mount();
+  await screen.mount();
 });
 
 afterEach(() => {
@@ -138,6 +182,21 @@ afterEach(() => {
 });
 
 describe('saved-picture failure feedback', () => {
+  it('retains artwork and refuses file access when active input cannot be locked', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    await screen.click('Pictures');
+    files.lock.mockImplementationOnce(() => {
+      throw new Error('Finish drawing before using this control.');
+    });
+    await screen.click('Open picture from Good picture');
+    expect(files.open).not.toHaveBeenCalled();
+    expect(screen.paper()).toBe(original);
+    expect(screen.dialog().querySelector('[role="alert"]').textContent).toBe(
+      'Finish drawing before using this control.'
+    );
+  });
+
   it.each(['corrupt', 'missing'])(
     'shows %s refusal inside the open dialog and preserves history',
     async (failure) => {
@@ -215,6 +274,43 @@ describe('saved-picture failure feedback', () => {
   });
 });
 
+describe('controller output snapshot ownership', () => {
+  it('refuses a captured PNG if the canonical history ref changed before output', async () => {
+    await screen.click('Draw fixture stroke');
+    let finish;
+    files.capture.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    await screen.click('Export PNG');
+    expect(screen.button('Draw fixture stroke').disabled).toBe(true);
+    act(() => files.cohort([STROKE]));
+    await act(async () => finish('old-picture-png'));
+    expect(files.export).not.toHaveBeenCalled();
+    expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
+    expect(screen.container.textContent).toContain('The picture changed before export finished.');
+  });
+});
+
+describe('Clear observation refusal', () => {
+  it('retains canonical history and rainbow when the real native alpha owner refuses observation', async () => {
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    files.ink.mockResolvedValueOnce('ink-observation-input');
+    await screen.click('Clear');
+    expect(files.ink).toHaveBeenCalledOnce();
+    expect(screen.paper()).toBe(original);
+    expect(screen.container.textContent).toContain(
+      'Picture capture returned an invalid or unsupported PNG.'
+    );
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+    expect(JSON.parse(screen.paper()).rainbow).toBe(0);
+  });
+});
+
 describe('coloring-page controls through the real drawing screen', () => {
   it('disables the underlying toolbar and paper while the real picker is open', async () => {
     await screen.click('Draw fixture stroke');
@@ -255,7 +351,7 @@ describe('coloring-page controls through the real drawing screen', () => {
     await screen.click('Coloring pages');
     await screen.click('Garden flower');
     expect(screen.dialog()).toBeNull();
-    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'flower', strokes: [] });
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
     expect(screen.container.textContent).toContain(
       'Garden flower ready. Undo brings your picture back.'
     );
@@ -267,25 +363,44 @@ describe('coloring-page controls through the real drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     expect(screen.paper()).toBe(painted);
     await screen.click('Undo');
-    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'flower', strokes: [] });
+    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
     await screen.click('Undo');
     expect(screen.paper()).toBe(original);
   });
 
-  it('preserves the selected page through Clear and restores blank selection atomically with Undo', async () => {
-    await screen.click('Coloring pages');
-    await screen.click('Little turtle');
-    await screen.click('Draw fixture stroke');
-    const painted = screen.paper();
-    await screen.click('Clear');
-    expect(JSON.parse(screen.paper())).toEqual({ version: 2, pageId: 'turtle', strokes: [] });
-    expect(screen.button('Clear').disabled).toBe(true);
-    await screen.click('Undo');
-    expect(screen.paper()).toBe(painted);
-    await screen.click('Coloring pages');
-    await screen.click('Blank paper');
-    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
-    await screen.click('Undo');
-    expect(screen.paper()).toBe(painted);
-  });
+  it(
+    'preserves the selected page through Clear and restores blank selection atomically with Undo',
+    async () => {
+      await screen.click('Coloring pages');
+      await screen.click('Little turtle');
+      await screen.click('Draw fixture stroke');
+      const painted = screen.paper();
+      let finishInk;
+      files.ink.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishInk = resolve;
+          })
+      );
+      await screen.click('Clear');
+      expect(screen.button('Clear').disabled).toBe(true);
+      await act(async () => finishInk(rgbaPng(1024, 768, 255).toString('base64')));
+      await vi.waitFor(
+        async () => {
+          await act(async () => {});
+          expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(1, 'turtle'));
+        },
+        { timeout: PNG_TIMEOUT_MS }
+      );
+      expect(screen.button('Clear').disabled).toBe(false);
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+      await screen.click('Coloring pages');
+      await screen.click('Blank paper');
+      expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+      await screen.click('Undo');
+      expect(screen.paper()).toBe(painted);
+    },
+    PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS
+  );
 });
