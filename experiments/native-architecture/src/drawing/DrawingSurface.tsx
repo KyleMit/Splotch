@@ -150,19 +150,19 @@ function useContactDrawing(props: Props) {
       onPanResponderStart: (event) => input.start(event),
       onPanResponderMove: (event) => input.move(event),
       onPanResponderEnd: (event) => input.end(event),
-      onPanResponderRelease: (event) => input.end(event),
+      onPanResponderRelease: (event) => input.release(event),
       onPanResponderTerminate: () => input.interrupt(),
       onPanResponderTerminationRequest: () => false,
       onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
-  return { drafts, paper, refreshGeometry, responder };
+  return { drafts, paper, refreshGeometry, responder, input };
 }
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
-    const { drafts, paper, refreshGeometry, responder } = useContactDrawing(props);
+    const { drafts, paper, refreshGeometry, responder, input } = useContactDrawing(props);
     const { capturePng, exportRequest, exportSvg } = usePngExport();
     useImperativeHandle(ref, () => ({ capturePng, refreshGeometry }), [
       capturePng,
@@ -179,6 +179,8 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
           style={styles.paper}
           onLayout={refreshGeometry}
           {...responder.panHandlers}
+          onTouchEnd={(event) => input.endRaw(event)}
+          onTouchCancel={() => input.interrupt()}
         >
           <Artwork drawing={props.drawing} drafts={drafts} />
         </View>

@@ -35,6 +35,7 @@ class ContactResponder {
   private readonly input = createContactCohort();
   private readonly contacts = new Map<string, Contact>();
   private paperTarget: unknown = null;
+  private responderHeld = false;
   private lastStartEvent: GestureResponderEvent['nativeEvent'] | null = null;
   private startBatch: {
     fingerprint: string;
@@ -97,6 +98,7 @@ class ContactResponder {
   }
 
   grant(event: GestureResponderEvent) {
+    this.responderHeld = true;
     this.flushGrant(new Set(), true);
     this.reconcile(event);
     this.paperTarget ??= responderTarget(event);
@@ -299,7 +301,31 @@ class ContactResponder {
     this.move(event);
   }
 
+  release(event: GestureResponderEvent) {
+    this.end(event);
+    this.responderHeld = false;
+  }
+
+  endRaw(event: GestureResponderEvent) {
+    if (this.responderHeld) return;
+    if (event.nativeEvent.touches.length === 0) {
+      this.interrupt();
+      return;
+    }
+    // Generic touch events lack responder touchHistory; close known contacts without adopting samples.
+    this.flushGrant(new Set(), true);
+    this.startBatch = null;
+    this.lastStartEvent = null;
+    const present = new Set(event.nativeEvent.touches.map(({ identifier }) => identifier));
+    for (const { identifier } of event.nativeEvent.changedTouches) {
+      if (present.has(identifier) || !this.contacts.delete(identifier)) continue;
+      this.publish(this.input.finish(identifier));
+    }
+    if (this.contacts.size === 0) this.paperTarget = null;
+  }
+
   interrupt() {
+    this.responderHeld = false;
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;
@@ -309,6 +335,7 @@ class ContactResponder {
   }
 
   detach() {
+    this.responderHeld = false;
     this.flushGrant(new Set(), true);
     this.startBatch = null;
     this.lastStartEvent = null;
