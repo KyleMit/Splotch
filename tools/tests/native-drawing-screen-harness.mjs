@@ -120,7 +120,10 @@ export const STROKE = {
 
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: forwardRef(
-    ({ drawing, onCohort, color, brush, strokeWidth, eraserWidth, disabled }, ref) => {
+    (
+      { drawing, onCohort, onDrawingChange, color, brush, strokeWidth, eraserWidth, disabled },
+      ref
+    ) => {
       useImperativeHandle(
         ref,
         () => ({
@@ -132,26 +135,47 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
         []
       );
       files.cohort = onCohort;
+      const cohort = () => [
+        { ...strokeStyle(brush, color, drawing, strokeWidth), points: STROKE.points },
+        { ...strokeStyle('pencil', 'Blue', drawing, strokeWidth), points: STROKE.points },
+      ];
       return createElement(
-        'button',
-        {
-          'data-testid': 'paper',
-          disabled,
-          'data-drawing': JSON.stringify(drawing),
-          onClick: () =>
-            onCohort([
-              {
-                ...strokeStyle(
-                  brush,
-                  color,
-                  drawing,
-                  brush === 'eraser' ? eraserWidth : strokeWidth
-                ),
-                points: STROKE.points,
-              },
-            ]),
-        },
-        'Draw fixture stroke'
+        'div',
+        null,
+        createElement(
+          'button',
+          {
+            'data-testid': 'paper',
+            disabled,
+            'data-drawing': JSON.stringify(drawing),
+            onClick: () =>
+              onCohort([
+                {
+                  ...strokeStyle(
+                    brush,
+                    color,
+                    drawing,
+                    brush === 'eraser' ? eraserWidth : strokeWidth
+                  ),
+                  points: STROKE.points,
+                },
+              ]),
+          },
+          'Draw fixture stroke'
+        ),
+        createElement('button', { onClick: () => onCohort(cohort()) }, 'Draw two-contact cohort'),
+        createElement('button', { onClick: () => onDrawingChange(true) }, 'Begin cohort'),
+        createElement('button', { onClick: () => onDrawingChange(true) }, 'Lift one contact'),
+        createElement(
+          'button',
+          {
+            onClick: () => {
+              onCohort(cohort());
+              onDrawingChange(false);
+            },
+          },
+          'Finish cohort'
+        )
       );
     }
   ),

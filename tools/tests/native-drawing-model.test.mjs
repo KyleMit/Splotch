@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   addStroke,
+  addStrokes,
+  drawingCapacity,
+  MAX_POINTS,
+  emptyDrawing,
   appendPoint,
   clearDrawing,
   commitDrawing,
@@ -36,6 +40,35 @@ describe('native development drawing model', () => {
     const opened = commitDrawing(cleared, parseDrawing(JSON.parse(snapshot)));
     expect(undoDrawing(opened).drawing.strokes).toEqual([]);
     expect(JSON.stringify(original.drawing)).toBe(snapshot);
+  });
+
+  it('adds an entire contact cohort atomically and keeps clear as a separate Undo step', () => {
+    const history = createHistory();
+    const first = { ...firstStroke, width: 22 };
+    const secondStroke = { ...firstStroke, color: 'Blue', brush: 'pencil', width: 7 };
+    const committed = addStrokes(history, [first, secondStroke]);
+    expect(committed.drawing.strokes).toEqual([first, secondStroke]);
+    expect(committed.undo).toEqual([history.drawing]);
+    const cleared = clearDrawing(committed, false);
+    expect(cleared.undo).toHaveLength(2);
+    expect(undoDrawing(cleared).drawing).toEqual(committed.drawing);
+    expect(undoDrawing(undoDrawing(cleared)).drawing).toEqual(history.drawing);
+    expect(clearDrawing(history, true).undo).toEqual([]);
+    expect(clearDrawing(history, true).drawing.rainbow).toBe(1);
+    expect(addStrokes(history, [])).toBe(history);
+  });
+
+  it('refuses an oversized cohort without partially committing or mutating history', () => {
+    const existing = {
+      ...firstStroke,
+      width: 22,
+      points: Array.from({ length: MAX_POINTS - 1 }, () => ({ x: 10, y: 20 })),
+    };
+    const history = createHistory({ ...emptyDrawing(), strokes: [existing] });
+    expect(drawingCapacity(history.drawing).points).toBe(1);
+    expect(() => addStrokes(history, [{ ...firstStroke, width: 22 }])).toThrow('picture is full');
+    expect(history.drawing.strokes).toEqual([existing]);
+    expect(history.undo).toEqual([]);
   });
 
   it('maps resized paper to the same bounded logical coordinates', () => {
