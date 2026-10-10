@@ -1,0 +1,14 @@
+
+> splotch@1.6.0 lint
+> eslint .
+
+
+/private/tmp/native-custom-colors/repository/tools/tests/native-custom-colors.test.mjs
+  67:12  error  'isDiscreteColorActivation' is not defined  no-undef
+  68:12  error  'isDiscreteColorActivation' is not defined  no-undef
+  69:12  error  'isDiscreteColorActivation' is not defined  no-undef
+  70:12  error  'isDiscreteColorActivation' is not defined  no-undef
+  71:12  error  'isDiscreteColorActivation' is not defined  no-undef
+
+✖ 5 problems (5 errors, 0 warnings)
+

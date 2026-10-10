@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 import {
   BROWSERLESS_TEST_COMMANDS,
@@ -22,6 +23,13 @@ describe('the browserless test script mirrors the Browserless tests job', () => 
     const block = jobBlock(testWorkflow, 'browserless');
     expect(block).toContain('name: Browserless tests');
     expect(block).not.toContain('npm run test:e2e');
+  });
+
+  it('fetches reviewed topology history before repository source guards run', () => {
+    const job = parse(testWorkflow).jobs.browserless;
+    const checkouts = job.steps.filter((step) => step.uses?.startsWith('actions/checkout@'));
+    expect(checkouts).toHaveLength(1);
+    expect(checkouts[0].with?.['fetch-depth']).toBe(0);
   });
 });
 

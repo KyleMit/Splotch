@@ -36,7 +36,7 @@ describe('native drawing interaction ownership', () => {
 
   it('keeps another finger out of the original stroke and preserves the original endpoint', () => {
     const input = createStrokeInput();
-    input.start('finger A', { color: 'Purple', brush: 'marker' }, { x: 10, y: 20 });
+    input.start('finger A', { color: 'Purple', brush: 'marker', width: 22 }, { x: 10, y: 20 });
     expect(input.sample('finger B', { x: 900, y: 700 })).toBeNull();
     expect(input.finish('finger B', { x: 900, y: 700 })).toBeNull();
     const stroke = input.finish('finger A', { x: 10.25, y: 20.25 });
@@ -50,7 +50,7 @@ describe('native drawing interaction ownership', () => {
 
   it('finishes exactly once when an additional contact interrupts drawing', () => {
     const input = createStrokeInput();
-    input.start('finger A', { color: 'Blue', brush: 'pencil' }, { x: 10, y: 20 });
+    input.start('finger A', { color: 'Blue', brush: 'pencil', width: 7 }, { x: 10, y: 20 });
     expect(input.finish().points).toEqual([{ x: 10, y: 20 }]);
     expect(input.sample('finger A', { x: 80, y: 90 })).toBeNull();
     expect(input.sample('finger B', { x: 80, y: 90 })).toBeNull();
@@ -59,7 +59,11 @@ describe('native drawing interaction ownership', () => {
 
   it('releases capped input and preserves save, undo, and the next stroke after a refused sample', () => {
     const input = createStrokeInput();
-    const draft = input.start('finger A', { color: 'Blue', brush: 'pencil' }, { x: 10, y: 20 });
+    const draft = input.start(
+      'finger A',
+      { color: 'Blue', brush: 'pencil', width: 7 },
+      { x: 10, y: 20 }
+    );
     draft.points = Array.from({ length: MAX_POINTS }, () => ({ x: 10, y: 20 }));
     expect(() => input.sample('finger A', { x: 30, y: 40 })).toThrow('Lift your finger');
     const finished = input.finish('finger A', { x: 50, y: 60 });
@@ -68,7 +72,7 @@ describe('native drawing interaction ownership', () => {
     const committed = addStroke(createHistory(), finished);
     expect(parseDrawing(JSON.parse(JSON.stringify(committed.drawing)))).toEqual(committed.drawing);
     expect(undoDrawing(committed).drawing).toEqual(emptyDrawing());
-    input.start('finger B', { color: 'Purple', brush: 'marker' }, { x: 70, y: 80 });
+    input.start('finger B', { color: 'Purple', brush: 'marker', width: 22 }, { x: 70, y: 80 });
     expect(input.finish('finger B', { x: 90, y: 100 }).points).toHaveLength(2);
   });
 });

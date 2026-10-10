@@ -1,7 +1,9 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
-import { Circle, Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
-import { paletteHex } from './palette';
-import { BRUSHES, rainbow, rainbowLine } from './brushes';
+import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
+import { paintHex, paintId, paletteHex } from './palette';
+import { COLORING_FILLS } from './pages';
+import { useInkAppearance } from './InkAppearance';
+import { rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
   CRAYON_TILE_PX,
@@ -11,7 +13,8 @@ import {
   waxColor,
 } from './crayon';
 import { CrayonGlaze } from './CrayonGlaze';
-import { PAPER_HEIGHT, PAPER_WIDTH, strokePath, type Point, type Stroke } from './model';
+import { PAPER_HEIGHT, PAPER_WIDTH, type PaintStroke, type Stroke } from './model';
+import { StrokeShape } from './StrokeShape';
 
 const CRAYON_TEXTURES = CRAYON_BANDS.map((band) =>
   crayonTexture(band.coverage)
@@ -22,34 +25,9 @@ const CrayonDefinitionScope = createContext<string | null>(null);
 // Native painters clip translated content to a fixed tile; wrapping preserves the seeded phase.
 const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
-function Shape({
-  points,
-  width,
-  paint,
-}: {
-  points: readonly Point[];
-  width: number;
-  paint: string;
-}) {
-  const first = points[0];
-  if (!first) return null;
-  return points.length === 1 ? (
-    <Circle cx={first.x} cy={first.y} r={width / 2} fill={paint} />
-  ) : (
-    <Path
-      d={strokePath(points)}
-      stroke={paint}
-      strokeWidth={width}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      fill="none"
-    />
-  );
-}
-
 function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> }) {
-  const id = useId();
-  const width = BRUSHES.crayon.width;
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const width = stroke.width;
   const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
   const textureId = useContext(CrayonDefinitionScope);
   if (textureId === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
@@ -75,7 +53,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                         {CRAYON_TEXTURES[bandIndex].map(({ shade }) => (
                           <Use
                             key={shade}
-                            href={`#${textureId}-wax-${stroke.color}-${bandIndex}-${shade}`}
+                            href={`#${textureId}-wax-${paintId(stroke.color)}-${bandIndex}-${shade}`}
                           />
                         ))}
                       </G>
@@ -86,7 +64,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
             </Defs>
             <CrayonGlaze>
               {CRAYON_BANDS.map((band, bandIndex) => (
-                <Shape
+                <StrokeShape
                   key={bandIndex}
                   points={pass.points}
                   width={width * band.widthScale}
@@ -102,21 +80,49 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
 }
 
 function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
-  const id = useId();
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const { pageId, theme } = useInkAppearance();
+  const fill = pageId === 'blank' ? null : COLORING_FILLS[pageId];
   return (
     <G>
       <Defs>
-        <LinearGradient
-          id={id}
-          gradientUnits="userSpaceOnUse"
-          {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
-        >
-          {rainbow(stroke.rainbow).stops.map((stop) => (
-            <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
-          ))}
-        </LinearGradient>
+        {fill ? (
+          <Pattern
+            id={id}
+            x={0}
+            y={0}
+            width={PAPER_WIDTH}
+            height={PAPER_HEIGHT}
+            patternUnits="userSpaceOnUse"
+            patternContentUnits="userSpaceOnUse"
+          >
+            <Rect
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              fill={paletteHex(fill.background[theme])}
+            />
+            {fill.regions.map((region, index) => (
+              <Path
+                key={index}
+                d={region.path}
+                fill={paletteHex(region.colors[theme])}
+                stroke="none"
+              />
+            ))}
+          </Pattern>
+        ) : (
+          <LinearGradient
+            id={id}
+            gradientUnits="userSpaceOnUse"
+            {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
+          >
+            {rainbow(stroke.rainbow).stops.map((stop) => (
+              <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+            ))}
+          </LinearGradient>
+        )}
       </Defs>
-      <Shape points={stroke.points} width={BRUSHES.magic.width} paint={`url(#${id})`} />
+      <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${id})`} />
     </G>
   );
 }
@@ -128,21 +134,22 @@ export function InkArtwork({
   strokes: readonly Stroke[];
   children: ReactNode;
 }) {
-  const id = useId();
-  const colors = [
-    ...new Set(strokes.flatMap((stroke) => (stroke.brush === 'crayon' ? [stroke.color] : []))),
-  ];
+  const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const colors = new Map<string, string>();
+  for (const stroke of strokes) {
+    if (stroke.brush === 'crayon') colors.set(paintId(stroke.color), paintHex(stroke.color));
+  }
   return (
     <CrayonDefinitionScope.Provider value={id}>
       <Defs>
-        {colors.flatMap((color) =>
+        {Array.from(colors).flatMap(([colorId, hex]) =>
           CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
             paths.map(({ path, shade }) => (
               <Path
-                key={`${color}-${bandIndex}-${shade}`}
-                id={`${id}-wax-${color}-${bandIndex}-${shade}`}
+                key={`${colorId}-${bandIndex}-${shade}`}
+                id={`${id}-wax-${colorId}-${bandIndex}-${shade}`}
                 d={path}
-                fill={waxColor(paletteHex(color), shade)}
+                fill={waxColor(hex, shade)}
               />
             ))
           )
@@ -153,14 +160,8 @@ export function InkArtwork({
   );
 }
 
-export function Ink({ stroke }: { stroke: Stroke }) {
+export function Ink({ stroke }: { stroke: PaintStroke }) {
   if (stroke.brush === 'crayon') return <CrayonInk stroke={stroke} />;
   if (stroke.brush === 'magic') return <MagicInk stroke={stroke} />;
-  return (
-    <Shape
-      points={stroke.points}
-      width={BRUSHES[stroke.brush].width}
-      paint={paletteHex(stroke.color)}
-    />
-  );
+  return <StrokeShape points={stroke.points} width={stroke.width} paint={paintHex(stroke.color)} />;
 }

@@ -1,11 +1,19 @@
+import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
+import { PageOutline } from '../../experiments/native-architecture/src/drawing/PageOutline.tsx';
+import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
+import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { strokeWidthPx } from '../../experiments/native-architecture/src/drawing/strokeWidth.ts';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
   addStroke,
   clearDrawing,
+  changePage,
   createHistory,
+  emptyDrawing,
   parseDrawing,
   undoDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
@@ -21,20 +29,46 @@ const { Svg, Rect } = await import('react-native-svg');
 const { Ink, InkArtwork } =
   await import('../../experiments/native-architecture/src/drawing/Ink.tsx');
 
-async function pixels(strokes) {
+async function pixels(
+  strokes,
+  appearance = { pageId: 'blank', theme: 'light' },
+  includeOutline = false
+) {
   const svg = renderToStaticMarkup(
     createElement(
       Svg,
       { width: 1024, height: 768, viewBox: '0 0 1024 768' },
       createElement(Rect, { width: 1024, height: 768, fill: '#ffffff' }),
       createElement(
-        InkArtwork,
-        { strokes },
-        ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+        InkAppearanceScope.Provider,
+        { value: appearance },
+        createElement(
+          InkArtwork,
+          { strokes },
+          ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+        ),
+        includeOutline ? createElement(PageOutline, { pageId: appearance.pageId }) : null
       )
     )
   );
   return sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+}
+
+function outlineChannels(theme) {
+  const hex = PAPER_THEMES[theme].outline.slice(1);
+  const expanded = hex.length === 3 ? [...hex].map((channel) => channel.repeat(2)).join('') : hex;
+  return expanded.match(/../g).map((channel) => Number.parseInt(channel, 16));
+}
+
+function assertFillOnly(output, theme) {
+  const owner = outlineChannels(theme);
+  let outlines = 0;
+  for (let offset = 0; offset < output.data.length; offset += 4) {
+    outlines +=
+      owner.every((channel, index) => output.data[offset + index] === channel) &&
+      output.data[offset + 3] === 255;
+  }
+  assert.equal(outlines, 0, 'Magic fill source contains outline-colored pixels.');
 }
 
 function region(output, x, y, width, height) {
@@ -57,14 +91,108 @@ function region(output, x, y, width, height) {
 }
 
 function crayon(color, seed, points) {
-  return { brush: 'crayon', color, seed, points };
+  return { brush: 'crayon', width: 34, color, seed, points };
 }
 
 describe('native brush artwork output', () => {
+  it.each([
+    ['sunshine', 384, 'Yellow', 'Blue', 'Orange', 'Indigo'],
+    ['flower', 284, 'Yellow', 'Mint', 'Orange', 'Teal'],
+    ['turtle', 384, 'Green', 'Blue', 'Teal', 'Indigo'],
+  ])(
+    'reveals aligned fill-only %s colors in both appearances',
+    async (pageId, y, light, background, dark, darkBackground) => {
+      const stroke = {
+        brush: 'magic',
+        width: 100,
+        rainbow: 3,
+        points: [
+          { x: 100, y },
+          { x: 924, y },
+        ],
+      };
+      const channel = (label) => [
+        ...paletteHex(label)
+          .slice(1)
+          .match(/../g)
+          .map((value) => Number.parseInt(value, 16)),
+        255,
+      ];
+      const at = (output, x) => [
+        ...output.data.subarray(
+          (y * output.info.width + x) * 4,
+          (y * output.info.width + x) * 4 + 4
+        ),
+      ];
+      const day = await pixels([stroke], { pageId, theme: 'light' });
+      const night = await pixels([stroke], { pageId, theme: 'dark' });
+      expect(at(day, 512)).toEqual(channel(light));
+      expect(at(day, 120)).toEqual(channel(background));
+      expect(at(night, 512)).toEqual(channel(dark));
+      expect(at(night, 120)).toEqual(channel(darkBackground));
+      expect(() => assertFillOnly(day, 'light')).not.toThrow();
+      expect(() => assertFillOnly(night, 'dark')).not.toThrow();
+    }
+  );
+
+  it.each(['light', 'dark'])(
+    'rejects a real owner-colored duplicate outline in %s fill output',
+    async (theme) => {
+      const stroke = {
+        brush: 'magic',
+        width: 100,
+        rainbow: 3,
+        points: [
+          { x: 100, y: 384 },
+          { x: 924, y: 384 },
+        ],
+      };
+      const duplicated = await pixels([stroke], { pageId: 'sunshine', theme }, true);
+      const offset = (384 * duplicated.info.width + 342) * 4;
+      expect([...duplicated.data.subarray(offset, offset + 4)]).toEqual([
+        ...outlineChannels(theme),
+        255,
+      ]);
+      expect(() => assertFillOnly(duplicated, theme)).toThrow('outline-colored pixels');
+    }
+  );
+
+  it('recodes retained Magic on page removal and restores its exact pixels through Undo and save parsing', async () => {
+    const stroke = {
+      brush: 'magic',
+      width: strokeWidthPx('magic', 'thick'),
+      rainbow: 3,
+      points: [
+        { x: 100, y: 384 },
+        { x: 924, y: 384 },
+      ],
+    };
+    const original = createHistory({ ...emptyDrawing(3, 'sunshine'), strokes: [stroke] });
+    const render = (drawing) => pixels(drawing.strokes, { pageId: drawing.pageId, theme: 'light' });
+    const first = await render(original.drawing);
+    const changed = changePage(original, 'flower');
+    const blank = changePage(changed, 'blank');
+    expect((await render(changed.drawing)).data.equals(first.data)).toBe(false);
+    expect((await render(blank.drawing)).data.equals(first.data)).toBe(false);
+    expect((await render(undoDrawing(undoDrawing(blank)).drawing)).data.equals(first.data)).toBe(
+      true
+    );
+    const opened = parseDrawing(JSON.parse(JSON.stringify(changed.drawing)));
+    expect((await render(opened)).data.equals((await render(changed.drawing)).data)).toBe(true);
+  });
+
+  it('refuses Magic rendering without its actual appearance owner', () => {
+    const stroke = { brush: 'magic', width: 30, rainbow: 0, points: [{ x: 512, y: 384 }] };
+    expect(() => renderToStaticMarkup(createElement(Ink, { stroke }))).toThrow(
+      'current paper appearance'
+    );
+  });
+
   it('renders a spatial rainbow and preserves later solid ink in the same composition', async () => {
     const output = await pixels([
       {
         brush: 'magic',
+        width: 30,
         rainbow: 0,
         points: [
           { x: 100, y: 200 },
@@ -73,6 +201,7 @@ describe('native brush artwork output', () => {
       },
       {
         brush: 'marker',
+        width: 22,
         color: 'Black',
         points: [
           { x: 500, y: 150 },
@@ -143,6 +272,7 @@ describe('native brush artwork output', () => {
   it('reveals the same Magic color at a paper position across separate strokes and taps', async () => {
     const long = {
       brush: 'magic',
+      width: 30,
       rainbow: 3,
       points: [
         { x: 100, y: 200 },
@@ -152,7 +282,7 @@ describe('native brush artwork output', () => {
     const first = await pixels([long]);
     const second = await pixels([
       long,
-      { brush: 'magic', rainbow: 3, points: [{ x: 400, y: 200 }] },
+      { brush: 'magic', width: 30, rainbow: 3, points: [{ x: 400, y: 200 }] },
     ]);
     const offset = (200 * first.info.width + 400) * 4;
     expect(second.data.subarray(offset, offset + 4)).toEqual(
@@ -169,6 +299,7 @@ describe('native brush artwork output', () => {
     let history = addStroke(createHistory(), stroke);
     history = addStroke(history, {
       brush: 'magic',
+      width: 30,
       rainbow: 0,
       points: [
         { x: 100, y: 200 },

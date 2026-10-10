@@ -7,7 +7,188 @@ parent owns integration, acceptance, dependencies and resource leases. The
 capsule verification, actual source locations and original review budgets. Preservation is not
 implementation acceptance. The dated pause records below remain immutable history.
 
-## Current public status, 2026-10-09
+## Current development status, 2026-10-10 16:43 UTC
+
+The isolated development candidate normally merges the published Eraser fixture successor
+aa86ac4614844913eecb79bd567c82e83be880ee, tree 7420e761479dc594e43755b61d37a5ddcd8a263f, into local
+WIP composition 8182155da33e7a8c296e405d567ae1c0409cdd39, tree
+57a41a1472256cc9ca87ddca2a8711a5b2bb4803. That WIP commit retains exact parents
+74599a45168e6d3383baf94452dd7c803ea48438, a4930d54b7d97c0dac53af09dbbf0a964c81d233 and
+b922bf14833d09d22a032ce65b6bb1dc12228562. It was explicitly committed unqualified: native
+TypeScript, check, lint and formatting passed, while its one default tools run passed 401 files and
+8908 tests and failed two new mask-fixture tests. Those new records omitted the composed product's
+required stroke widths. The original Eraser owner repaired only their construction through
+`strokeStyle` and `emptyDrawing`; all exact DOM-console, mask and pixel assertions remain. The
+successor's qualification is recorded against its exact composition, not inherited from the owner's
+separate endpoint.
+
+The prior real composed journey remains a first fault on React's `maskType` DOM prop after Eraser.
+Purple keyboard selection completed; final Marker, save, Clear/ONE Undo, catalog reopen, PNG export
+and landscape were unreached. The source fix and fixture repair do not establish another browser
+result. Existing ignored `.expo` output and all failed attempts remain preserved. Another browser
+launch requires a separately admitted exact source, helper and finite host lease.
+
+Verified integration and shipping main remain the endpoints below. This local composition is
+unpublished and does not accept a framework, native execution, whole product, integration, cutover
+or release. All original unit review capacities and native focus/window ordering, insets, text
+scale, lifecycle, permissions, fidelity, archive restart and release gates remain unchanged.
+
+## Historical development status, 2026-10-10 16:34 UTC
+
+Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. This isolated development candidate normally merges Custom
+colors a4930d54b7d97c0dac53af09dbbf0a964c81d233 and Eraser mask repair
+b922bf14833d09d22a032ce65b6bb1dc12228562 into the local composition
+74599a45168e6d3383baf94452dd7c803ea48438. It preserves their owner histories; it does not accept a
+framework, whole product, native execution, cutover, or release, and it is not merged into verified
+integration. The installation checkout remains outside the product base.
+
+The prior composition's unchanged default tools run passed 402 files / 8908 tests after the two
+inherited current-width fixtures were repaired without changing their exact pixel, ordering, or
+history assertions. Its earlier thirteen failures remain preserved. Its first real composed browser
+journey stopped on React's unknown DOM `maskType` prop after a real Eraser stroke. Settings
+dismissal focus, custom-color persistence, Sunshine selection, five stroke actions, and the later
+Purple keyboard selection were reached. The final Marker stroke, save, Clear/ONE Undo, catalog
+reopen, PNG export, and landscape were unreached. The first-fault capsule is
+`/private/tmp/splotch-layout-composed-product-runtime-162142-sealed`; its initial cleanup faults and
+later strict two-stack closure remain separate facts. No aggregate product pass is claimed.
+
+The Custom successor names the Color explorer group while retaining all twenty-five paint buttons;
+its fifteen applicable hosted CI checks passed. Original conversation
+783f3bbb-0317-415e-9a98-1a1da43d39ce remains at one review used and two remaining. The Eraser owner
+repaired the mask through the installed SVG style contract and added real DOM-console and
+black/white/later-paint assertions. Those owner results do not qualify this composed successor's
+browser journey. Its applicable source checks and exact source are recorded separately; another
+browser launch requires its own finite grant. Existing ignored project `.expo` output is preserved
+and must be admitted explicitly by any later runtime protocol.
+
+All historical paragraphs and their source/review receipts below remain attached to their original
+endpoints. N1's exhausted review capacity and optimized both-OS compile/mount/draw requirement
+remain unchanged. Native asynchronous focus and modal ordering, real window blur, system insets,
+text scaling, lifecycle, permissions, fidelity, archive restart, whole-product services,
+web/API/admin/security, physical floors, signing and release remain open. The fresh-start completion
+contract remains authoritative; this development composition does not reset a unit or its budget.
+
+## Historical development status, 2026-10-10 15:29 UTC
+
+Verified integration remains 5bd34d3003b088c74944c96e6bfb63404f9a0364 and shipping main remains
+ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign is active and incomplete; no framework,
+complete product, cutover or release is accepted. The installation checkout is not a product base.
+The fresh-start scope in [the completion contract](CONTRACT.md#migration-completion) remains
+authoritative. Legacy-only L0 work stays held.
+
+* [PNG recovery PR 2747](https://github.com/KyleMit/Splotch/pull/2747) is published at
+  81805edf312587af31d8af526e955ee25c0a536c, tree 0c566da8a341d250d9c61ec12795643e8e034926, based on
+  public composition 650c00bb7c711e415db04a03675802f19df866f5. The same owner repaired all four
+  original findings. Original Claude conversation 1eb8d5ed-f69b-4d6d-b87d-3aebc03b849c
+  [round 2](https://github.com/KyleMit/Splotch/pull/2747#pullrequestreview-5479480271) independently
+  rechecked source and its original repros with no new findings: two rounds used, one remaining. The
+  endpoint passed native TypeScript, check, lint, formatting, 171 affected tests and one default
+  tools run of 393 files / 8759 tests. A real browser journey exported a genuine opaque PNG, kept
+  its exact bytes through later ink and Clear, retried without recapture, restored it after full
+  browser restart without automatic delivery, and removed it through Dismiss and reload. Root
+  independently decoded and compared both PNGs. The reviewer did not repeat that browser journey.
+  Earlier failed runtime attempts and all source/provenance limits remain preserved. Current CI
+  failed its dead-code check on four unused exports/types. The original owner prepared a five-path
+  cleanup that retires the obsolete direct PNG API and retains every save/reopen byte and both
+  active recovery adapters. Its separate qualification is pending; the source review and browser
+  result above apply to the published endpoint, not an unqualified derivative.
+* [Custom colors PR 2745](https://github.com/KyleMit/Splotch/pull/2745) is published at
+  b7dc57e6fc31f970be8faa39375f2e1b76a8a4f1, tree a8e463ea729154be6ad808754da43e85b088328e, based on
+  Widths c8b2a9aac4e9702e61ea0f8bb95951eeb71bb2c2. The same owner's focus repair passed native
+  TypeScript, check, lint, formatting, 81 affected tests and one default tools run of 388 files /
+  8704 tests. Original Claude conversation 783f3bbb-0317-415e-9a98-1a1da43d39ce completed
+  [round 1](https://github.com/KyleMit/Splotch/pull/2745#pullrequestreview-5479541717) without a
+  blocking source finding: one round used, two remaining. Explicit opener focus is qualified only on
+  web; native accessibility/keyboard focus and dismissal ordering remain open. The actual compact
+  browser trace refutes the proposed initial/wrap target, while naming the held explorer field and
+  an actual classic-scrollbar control remain under disposition. Its browser case passed held input,
+  lift, keyboard wrap and web opener focus checks, then failed to establish the required real
+  window-blur event. Actual Use color persistence/restart and the complete
+  drawing/save/reopen/export journey remain unreached.
+* This isolated development branch normally composes those public owners and adds responsive drawing
+  controls. Check, lint and formatting passed, but its first unchanged default tools run failed: 400
+  of 402 files and 8887 of 8900 tests passed. Thirteen failures in two inherited fixtures remain
+  preserved. They construct old drawing records without current stroke widths; the original owner
+  prepared current-record fixtures while retaining exact pixel, ordering and history assertions.
+  Those repairs are unqualified. The pending normal merge has not been committed. Historical private
+  layout observations do not accept this composition, and no dependent unit is merged into
+  integration by this development merge.
+* The RSD alternative made one ordinary Pod attempt. It failed before full dependency resolution
+  because its private OpenSSL installation has no default CA bundle. A separate source guard also
+  refused generated `.xcode.env`; its bytes match the released generator. Both failures are
+  preserved. A bounded proposal binds the existing OS trust bundle with certificate verification
+  retained and declares the exact generated output; no repaired attempt or native build is accepted.
+
+Host-local receipts bind actual source, failures, processes, original conversations and remaining
+validation. The genuine session-lifetime owner is still required after composition; a private
+prerequisite stack must not be merged wholesale to obtain its lifecycle change.
+
+N1 remains source-only and its original review capacity remains exhausted. Further dependent
+integration remains held until exact optimized both-OS compile/mount/draw and applicable composition
+gates are satisfied. PR 2697, F1 and the other exhausted original conversations are not reopened.
+The existing source dispositions and their historical observations remain attached to their units.
+Native PNG recovery, delayed Android recipient reads, lifecycle, permissions, system-bar layout,
+accessible selection, fidelity, whole-product services, web/API/admin/security, fair alternatives,
+performance and physical floors, signing/channel/release and final independent Codex/Claude review
+remain open. Missing physical hardware blocks only its dependent gates, not structural builds.
+
+## Historical public status, 2026-10-10 04:12 UTC
+
+Native GitHub branch and Git-object readback at 2026-10-10 04:12 UTC verifies integration
+c315db4771b99f4957cc283b6760a6f5f14d3f77, tree bc597d5b869d70c9700d79e00fca5b3301a23072, and
+unchanged shipping main ef3d1eb2070c1bd0dee620ed42a2b14201c2a9b4. The campaign remains active and
+incomplete. No framework, full product, target cutover or release is accepted. The canonical
+reviewer-installation checkout remains installation-only.
+
+The standing authority, recording and lease rules at the end of the
+[2026-10-09 section](#historical-public-status-2026-10-09) remain current; this documentation change
+grants no runtime, device or signing lease.
+
+| Unit                                | Exact public source / full tree                                                     | Source disposition and original review capacity                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| N1 drawing development              | 6411ac5b08429608462cbbc573643b0568a3eddf / 16863cfa3ed4fa34ce2ee6366475bad4dc1496a1 | [PR 2715](https://github.com/KyleMit/Splotch/pull/2715) normal-merged at 9f64c4cb5604361f223690f1143296e8cd747c7d; narrow development-source disposition only. [Original round 3](https://github.com/KyleMit/Splotch/pull/2715#pullrequestreview-5468234550) reviewed dab1227abbf428d25c8e692ea61709dde9b5398c; its two final suggestions were repaired before the final source. 3 used / 0 remaining. |
+| Coloring pages                      | 874380f5023c55a0dbf9634ec63230b3116f3d16 / bc597d5b869d70c9700d79e00fca5b3301a23072 | [PR 2741](https://github.com/KyleMit/Splotch/pull/2741) normal-merged at c315db4771b99f4957cc283b6760a6f5f14d3f77 for the isolated source unit. [Original round 2](https://github.com/KyleMit/Splotch/pull/2741#pullrequestreview-5476204292) found no remaining source defect at this head. 2 used / 1 remaining.                                                                                     |
+| Simultaneous contacts / shared Undo | 328dafd110efda65201698c81d0037afcd2475bd / 3a125d07a5d00c78e911beb0be67b6e83f64eecc | Dependent draft [PR 2739](https://github.com/KyleMit/Splotch/pull/2739). [Original round 3](https://github.com/KyleMit/Splotch/pull/2739#pullrequestreview-5477435900) approved within the exact unit's source scope, with no new defects. 3 used / 0 remaining.                                                                                                                                       |
+| Crayon / Magic brushes              | f8539fc673a1bcce27f58d99bf6db6c2c98500b6 / 0a97a4a571002b8349d080c85c694984f23c3f90 | Dependent draft [PR 2740](https://github.com/KyleMit/Splotch/pull/2740). [Original round 3](https://github.com/KyleMit/Splotch/pull/2740#pullrequestreview-5477503601) found no new source defects and kept all three earlier findings addressed. The unchanged process suites remain unverified after four sandbox `ps` assertion failures; no passing rerun is claimed. 3 used / 0 remaining.        |
+| Drawing / eraser widths             | c8b2a9aac4e9702e61ea0f8bb95951eeb71bb2c2 / 3e2c02a3b07078d130d4a59827c78a4b7597339f | Dependent draft [PR 2744](https://github.com/KyleMit/Splotch/pull/2744). [Original round 2](https://github.com/KyleMit/Splotch/pull/2744#pullrequestreview-5477396120) confirmed both original findings repaired, with no new concrete defects. 2 used / 1 remaining.                                                                                                                                  |
+| Custom colors / saved palette       | a63d0b6d9f343aa8cba38422ce7c5bdc44e1350d / 70cdc499a657a6f4000c2d632b33671b4a5dd353 | Dependent draft [PR 2745](https://github.com/KyleMit/Splotch/pull/2745), based on the widths source above. Original independent review is unopened: 0 used / 3 remaining. No native acceptance.                                                                                                                                                                                                        |
+
+The N1 merge tree equals its final source tree; the Coloring merge tree likewise equals its isolated
+source tree. These identities preserve source history, not structural or runtime acceptance. N1's
+[published disposition](https://github.com/KyleMit/Splotch/pull/2715) attributes optimized modal
+execution to dab1227abbf428d25c8e692ea61709dde9b5398c and earlier complete
+drawing/save/export/restart observations to a17b0f838a85cee7a44a1ebf2965283495e243fd; neither is an
+exact-current both-OS acceptance result. Its original final review explicitly did not verify private
+native execution. Retained web artifacts establish their structural build scope only.
+
+Coloring was integrated before N1's required optimized both-OS compile/mount/draw acceptance. This
+records the premature dependent source merge; it neither waives the
+[N1 structural gate](PHASE-1.md#bounded-units-and-dependencies) nor retrospectively accepts N1.
+Preserve both merges and hold further dependent integration until the required exact N1 structural
+acceptance and applicable composition gates are satisfied. Independent feature construction and
+review may continue under the existing development sequence. The exhausted N1 review budget remains
+attached to N1; this register correction grants no additional round or replacement reviewer.
+
+The separately observed Android workflow belongs to joined source
+c81312b3acc49f77890741d7042970dfa4b3f527. The public
+[Coloring disposition](https://github.com/KyleMit/Splotch/pull/2741) records its
+page/outline/color/Undo/save/reopen/PNG flow; the
+[Contacts disposition](https://github.com/KyleMit/Splotch/pull/2739) records its stationary-survivor
+case. Neither result is execution of the isolated feature heads in the table or the current
+integration tree. Widths, custom colors and brushes retain their own observed-source limits and
+unresolved native obligations.
+
+Both-OS product and lifecycle behavior, complete drawing fidelity, services, web/API/admin/security,
+fair alternatives, physical floors and performance, signing/channel/release and final independent
+Codex/Claude review remain open under the unchanged
+[completion contract](CONTRACT.md#migration-completion). Unavailable physical hardware blocks only
+the dependent physical gates. All original reviewer identities and consumed capacity persist; PR
+2697, F1, N1 and Records are not reopened. The dated records below preserve earlier observations and
+failures. Host-local CURRENT records pending work and leases; it does not establish public
+acceptance.
+
+## Historical public status, 2026-10-09
 
 Public branch observation: 2026-10-09 04:36 UTC. Native GitHub readback and fetched Git objects
 verify integration f61f0c842abd2c4d4ab0eb1f3058786d245c444a and shipping main

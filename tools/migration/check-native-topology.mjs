@@ -1,4 +1,4 @@
-import { qualifySvgBackdropPatch } from './lib/native-svg-backdrop-patch.mjs';
+import { qualifyJointNativeInputs } from './lib/native-joint-graph.mjs';
 import { verifyForgeMitigation } from './lib/forge-mitigation.mjs';
 import {
   projectDrawingForgeLock,
@@ -41,12 +41,13 @@ export async function checkNativeTopology(argv) {
   const evidence = join(root, 'docs/migration/evidence/native-topology-05');
   const alignment = readJson(join(candidate, 'alignment.json'));
   const manifest = readJson(join(candidate, 'package.json'));
-  const svg = qualifySvgBackdropPatch(root);
+  const joint = qualifyJointNativeInputs(root);
+  const audio = joint.audio;
   assertCandidateManifest(manifest, alignment);
   const candidateImports = assertDeclaredCandidateImports(candidate, manifest);
   const actualWorkspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
   assertWorkspacePolicy(actualWorkspace);
-  const workspace = svg.workspace;
+  const workspace = audio.inheritedWorkspace;
   assertJavaScriptLocks(
     execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
       .split('\0')
@@ -54,7 +55,7 @@ export async function checkNativeTopology(argv) {
   );
   assertAlignmentUpdateOwner(readPolicyYaml(join(root, '.github/dependabot.yml')), alignment);
   const actualLock = readLockFile(join(root, 'pnpm-lock.yaml'));
-  const lock = svg.lock;
+  const lock = audio.lock;
   const drawingForge = projectDrawingForgeLock(lock, manifest, readDrawingForgeInputs(root));
   const forgeMitigation = await verifyForgeMitigation(root, drawingForge.lock, workspace);
   const lockSha256 = createHash('sha256')
@@ -62,12 +63,13 @@ export async function checkNativeTopology(argv) {
     .digest('hex');
   const drawingArchives = readDrawingArchiveInventory(
     root,
-    lock,
-    svg.baselineLockSha256,
+    audio.lock,
+    audio.baselineLockSha256,
     readJson(join(evidence, 'script-inventory.json'))
   );
+  const combinedRows = [...drawingArchives.inventory.rows, ...audio.archiveRows];
   const inventory = assertCandidateArchiveInventory(
-    drawingArchives.inventory,
+    { ...drawingArchives.inventory, rows: combinedRows, inspectedArtifacts: combinedRows.length },
     actualLock,
     readJson(join(evidence, 'baseline-artifact-resolutions.json'))
   );
@@ -96,10 +98,16 @@ export async function checkNativeTopology(argv) {
     scope: 'Candidate topology only; no native compile, mount, performance or upgrade result',
     lockSha256,
     candidateImports,
-    svgBackdrop: svg.qualification,
+    jointInputs: joint.qualification,
     forgeMitigation: {
       ...forgeMitigation,
-      lockedPaths: drawingForge.provenance.actualLockedPaths,
+      lockedPaths: audio.actualPaths,
+      audioInputs: {
+        inputSha256: audio.inputSha256,
+        installed: audio.installed,
+        resetPatch: audio.patchQualification,
+        scope: audio.scope,
+      },
       n1DrawingInputs: drawingForge.provenance,
     },
     inventory: { ...inventory, drawingInputs: drawingArchives.qualification },

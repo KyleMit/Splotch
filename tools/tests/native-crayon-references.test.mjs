@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { InkAppearanceScope } from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
@@ -15,7 +16,7 @@ import {
   waxColor,
 } from '../../experiments/native-architecture/src/drawing/crayon.ts';
 import { BRUSHES } from '../../experiments/native-architecture/src/drawing/brushes.ts';
-import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
+import { paletteHex, paintId } from '../../experiments/native-architecture/src/drawing/palette.ts';
 
 vi.mock('react-native', () => import('react-native-web'));
 vi.mock('react-native-svg', async () => {
@@ -50,6 +51,7 @@ const TEXTURES = CRAYON_BANDS.map((band) =>
 function line(color = 'Red', seed = 20, y = 550) {
   return {
     brush: 'crayon',
+    width: 34,
     color,
     seed,
     points: [
@@ -65,9 +67,13 @@ function scene(strokes) {
     { width: PAPER_WIDTH, height: PAPER_HEIGHT, viewBox: `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}` },
     createElement(Rect, { width: PAPER_WIDTH, height: PAPER_HEIGHT, fill: '#ffffff' }),
     createElement(
-      InkArtwork,
-      { strokes },
-      ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      InkAppearanceScope.Provider,
+      { value: { pageId: 'blank', theme: 'light' } },
+      createElement(
+        InkArtwork,
+        { strokes },
+        ...strokes.map((stroke, index) => createElement(Ink, { key: index, stroke }))
+      )
     )
   );
 }
@@ -312,7 +318,7 @@ describe('per-Artwork explicit pigment definitions', () => {
     for (const color of ['Red', 'Blue']) {
       expect(
         definitions(svg)
-          .filter((path) => path.id.includes(`-wax-${color}-`))
+          .filter((path) => path.id.includes(`-wax-${paintId(color)}-`))
           .map(({ d, fill }) => ({ d, fill }))
       ).toEqual(
         TEXTURES.flatMap((band) =>
@@ -336,6 +342,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               line('Red', 22, 550),
               {
                 brush: 'pencil',
+                width: 7,
                 color: 'Black',
                 points: [
                   { x: 300, y: 500 },
@@ -344,6 +351,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               },
               {
                 brush: 'marker',
+                width: 22,
                 color: 'Mint',
                 points: [
                   { x: 500, y: 500 },
@@ -356,6 +364,7 @@ describe('per-Artwork explicit pigment definitions', () => {
               line('Blue', 21, 550),
               {
                 brush: 'magic',
+                width: 30,
                 rainbow: 3,
                 points: [
                   { x: 100, y: 350 },

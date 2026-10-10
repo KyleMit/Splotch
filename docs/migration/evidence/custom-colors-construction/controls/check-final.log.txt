@@ -1,0 +1,34 @@
+
+> splotch@1.6.0 precheck
+> node tools/mobile/check-app-ids.mjs && node tools/run-web-tool.mjs svelte-kit sync
+
+[check-app-ids] all native app IDs match "art.splotch.app" and names match "Splotch".
+$ svelte-kit sync
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./defines" without a file extension (vite.config.ts:6:30). Add the file extension
+  - import "./browserTargets" without a file extension (vite.config.ts:7:33). Add the file extension
+  - import "./buildVersion" without a file extension (vite.config.ts:8:45). Add the file extension
+  - import "./src/lib/pwa/coloringFallback" without a file extension (vite.config.ts:12:8). Add the file extension
+  - import "./src/lib/pwa/versionEndpoint" without a file extension (vite.config.ts:13:65). Add the file extension
+  - import "./src/lib/state/books" without a file extension (vite.config.ts:18:8). Add the file extension
+  - import "./nativeExcludedRoutes" without a file extension (vite.config.ts:19:37). Add the file extension
+  - import "./coloringPackManifest" without a file extension (vite.config.ts:20:43). Add the file extension
+  - import "./src/lib/pwa/coloringPackRoute" without a file extension (vite.config.ts:25:8). Add the file extension
+  - import "../platform" resolves to a directory index (src/lib/state/books.ts:6:34). Import the index file directly
+  - import "../state/books" without a file extension (src/lib/pwa/coloringFallback.ts:1:54). Add the file extension
+  - import "../theme" without a file extension (src/lib/state/books.ts:7:36). Add the file extension
+  - import "./books" without a file extension (src/lib/state/bookCatalog.ts:1:72). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+> splotch@1.6.0 check
+> node tools/run-web-tool.mjs svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && npm run check:netlify && tsc --project migration/probes/web-host/tsconfig.json --noEmit
+
+$ svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+Loading svelte-check in workspace: /private/tmp/native-custom-colors/repository/web
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+

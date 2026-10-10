@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { qualifySvgBackdropPatch } from '../lib/native-svg-backdrop-patch.mjs';
+import { qualifyJointNativeInputs } from '../lib/native-joint-graph.mjs';
 import { readDrawingArchiveInventory } from '../lib/native-drawing-inventory.mjs';
 import { assertCandidateArchiveInventory } from '../lib/topology-policy.mjs';
 
@@ -13,7 +13,9 @@ const original = JSON.parse(readFileSync(join(originalEvidence, 'script-inventor
 const baseline = JSON.parse(
   readFileSync(join(originalEvidence, 'baseline-artifact-resolutions.json'))
 );
-const { lock, baselineLockSha256: lockSha256 } = qualifySvgBackdropPatch(root);
+const { audio } = qualifyJointNativeInputs(root);
+const lock = audio.lock;
+const lockSha256 = audio.baselineLockSha256;
 const fixtures = [];
 
 function fixture(mutate) {

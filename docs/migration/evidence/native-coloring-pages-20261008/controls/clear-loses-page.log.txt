@@ -1,0 +1,42 @@
+
+> splotch@1.6.0 test:tools
+> vitest run --config tools/vitest.config.mjs tools/tests/native-coloring-pages.test.mjs --maxWorkers=1 -t keeps the page through new ink and undoable clear
+
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-coloring-pages/Splotch/tools
+
+ ❯ tests/native-coloring-pages.test.mjs (18 tests | 1 failed | 17 skipped) 4ms
+   ❯ native coloring-page composition (18)
+     × keeps the page through new ink and undoable clear 3ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 skipped (18)
+   Start at  23:55:54
+   Duration  82ms (transform 64%, import 18%, tests 13%, worker 5%)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-coloring-pages.test.mjs > native coloring-page composition > keeps the page through new ink and undoable clear
+AssertionError: expected { version: 2, pageId: 'blank', …(1) } to deeply equal { version: 2, pageId: 'flower', …(1) }
+
+- Expected
++ Received
+
+  {
+-   "pageId": "flower",
++   "pageId": "blank",
+    "strokes": [],
+    "version": 2,
+  }
+
+ ❯ tests/native-coloring-pages.test.mjs:44:29
+     42|     const cleared = clearDrawing(original);
+     43|     expect(original.drawing.pageId).toBe('flower');
+     44|     expect(cleared.drawing).toEqual({ version: 2, pageId: 'flower', st…
+       |                             ^
+     45|     expect(undoDrawing(cleared).drawing).toBe(original.drawing);
+     46|     expect(clearDrawing(cleared)).toBe(cleared);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

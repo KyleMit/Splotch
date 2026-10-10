@@ -3,7 +3,6 @@ import type { SavedPicture } from './drawingFiles';
 
 const STORAGE_PREFIX = 'splotch-picture:';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
-const PNG_SIGNATURE_BASE64 = 'iVBORw0KGgo';
 
 function storageKey(id: string): string {
   if (!/^picture-\d+-[a-z0-9]+$/.test(id)) throw new Error('Invalid saved picture identity.');
@@ -38,15 +37,4 @@ export async function reopenPicture(id: string): Promise<Drawing> {
   if (!snapshot || snapshot.length > MAX_SAVE_BYTES)
     throw new Error('This saved picture cannot be opened.');
   return parseDrawing(JSON.parse(snapshot));
-}
-
-export async function exportPng(base64: string): Promise<string> {
-  if (!base64.startsWith(PNG_SIGNATURE_BASE64))
-    throw new Error('The drawing could not be exported as a PNG.');
-  const uri = `data:image/png;base64,${base64}`;
-  const link = document.createElement('a');
-  link.href = uri;
-  link.download = `splotch-${Date.now()}.png`;
-  link.click();
-  return uri;
 }
