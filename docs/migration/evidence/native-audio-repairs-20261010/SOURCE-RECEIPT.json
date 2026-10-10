@@ -333,6 +333,36 @@
       "source": "/private/tmp/audio-q5-native-development/evidence/install/commands.json",
       "sha256": "3267f5ecf42ec8268c512a505aa4a8cdbcb64a22630fc5ac44eda0ecb91373e9",
       "bytes": 3565
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-repairs-20261010/controls/fulltools-first-refused/stdout.log.txt",
+      "source": "/private/tmp/audio-pr2743-final-fulltools-0200/01-current-fulltools.stdout.txt",
+      "sha256": "c6d2909f05483df1fd770923536918c8a4f252a25af708662beef3e3d0d85dd1",
+      "bytes": 3071
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-repairs-20261010/controls/fulltools-first-refused/stderr.log.txt",
+      "source": "/private/tmp/audio-pr2743-final-fulltools-0200/01-current-fulltools.stderr.txt",
+      "sha256": "287397599e14c78067da5c8b544652eb010c762b7a699f7abd46852c5a2c6e77",
+      "bytes": 10261
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-repairs-20261010/controls/fulltools-first-refused/commands.json.txt",
+      "source": "/private/tmp/audio-pr2743-final-fulltools-0200/commands.json",
+      "sha256": "bf028078c0dd3ec4ee83dc4bbc57c11b6d246a3daaad4ee35c38475eff225ecb",
+      "bytes": 602
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-repairs-20261010/controls/fulltools-first-refused/result.json.txt",
+      "source": "/private/tmp/audio-pr2743-final-fulltools-0200/result.json",
+      "sha256": "3f32837163fe1838b755a92d06da2099a08874064b910842fe8dd16e7de36f0b",
+      "bytes": 870
+    },
+    {
+      "path": "docs/migration/evidence/native-audio-repairs-20261010/controls/fulltools-first-refused/fresh-closure.json.txt",
+      "source": "/private/tmp/audio-pr2743-first-fulltools-closed-0206/FRESH-CLOSURE.json",
+      "sha256": "edf94d12911e31f61070cb87eb373997065f0c26a6ab945be036767360532887",
+      "bytes": 19732
     }
   ],
   "nativeProductionRootRestored": true,
@@ -354,5 +384,23 @@
       "pnpm-workspace.yaml": "1b806c1bad7f198d3ebb4612897e24b3993223444d10d80317ecf613f2681e03",
       "patches/expo-audio@57.0.5.patch": "7a725f229561518a5baf54845bd055c7dd340717c4b17637303e181aae526af2"
     }
+  },
+  "currentFullToolsFirstFailure": {
+    "head": "24e78dea1c8a54fb62da97e1dcbbd2046b800c5b",
+    "actualExit": 1,
+    "timeout": false,
+    "passedTests": 8264,
+    "failedTests": 7,
+    "totalTests": 8271,
+    "passedFiles": 357,
+    "failedFiles": 2,
+    "totalFiles": 359,
+    "packetManifestSha256": "9367589377a682378eecec021eacc5c9679119e59caef53e0cbd7ed40d00a494",
+    "closureManifestSha256": "139d541c78e3a86f1d813016a7bdcd633d1d2855a0e3bb32044c05c772daf22e",
+    "sourceAndGraphUnchanged": true,
+    "nominalCleanupExceeded": true,
+    "overallSeconds": 229.9345871671103,
+    "originalOverallCapSeconds": 360,
+    "repair": "Only two inherited test fixture workspace inputs consume the already-authenticated inheritedWorkspace; all assertions and production policy remain unchanged."
   }
 }

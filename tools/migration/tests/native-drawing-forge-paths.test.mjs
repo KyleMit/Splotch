@@ -10,13 +10,12 @@ import {
   projectDrawingForgeLock,
   readDrawingForgeInputs,
 } from '../lib/native-drawing-forge-paths.mjs';
-import { readPolicyYaml } from '../lib/topology-policy.mjs';
 
 const root = join(import.meta.dirname, '../../..');
 const audio = qualifyAudioInputs(root);
 const lock = audio.lock;
 const manifest = audio.inheritedManifest;
-const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
+const workspace = audio.inheritedWorkspace;
 const mitigation = JSON.parse(
   readFileSync(join(root, 'tools/migration/inputs/forge-mitigation.json'))
 );

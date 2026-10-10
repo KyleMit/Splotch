@@ -45,6 +45,15 @@ cause Xcode's diagnostic wait. The first hook-free install succeeded but source 
 refused generated package-local bin links; the finite four-link authentication repair and rejecting
 controls retain the 190-file/source/archive boundary. Both failures remain in the evidence.
 
+The first full tools run for this follow-up exited 1: 8,264 tests passed and seven failed in two
+inherited Forge fixtures. Both passed the raw workspace's new Audio patch registration to the
+unchanged single-patch Forge guard. Their inputs now consume the Audio owner's authenticated
+inherited workspace, matching the production call path; every positive and refusal assertion is
+unchanged. The failed terminal, stacks and fresh closure remain here. The wrapper's per-PID absence
+scans also exceeded the nominal 60-second cleanup allowance; its 229.93-second total remained within
+the original 360-second overall cap. The follow-up wrapper uses one absence snapshot and fresh
+identity checks for any survivor before signaling.
+
 Q5 stays open for real native playback/error recovery, bridge/reset arrival, physical speaker/gain
 and forced-late timing evidence. Native rendering, full drawing/audio fidelity, permissions/release
 and performance acceptance remain separate. Original Claude conversation
