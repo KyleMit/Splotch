@@ -245,8 +245,24 @@ describe('custom color controls through installed React Native Web', () => {
     );
     const modal = document.querySelector('[role="dialog"]');
     expect(modal.getAttribute('aria-label')).toBe('Color picker');
-    const tile = modal.querySelector('[aria-label^="Explore "]');
-    expect(tile.tagName).toBe('BUTTON');
+    const explorer = modal.querySelector('[role="group"][aria-label="Color explorer"]');
+    expect(explorer).not.toBeNull();
+    expect(explorer.tabIndex).toBe(-1);
+    expect(explorer.closest('[aria-hidden="true"]')).toBeNull();
+    const tiles = [...explorer.querySelectorAll('[aria-label^="Explore "]')];
+    expect(tiles).toHaveLength(25);
+    expect(new Set(tiles.map((button) => button.getAttribute('aria-label'))).size).toBe(25);
+    for (const button of tiles) {
+      expect(button.tagName).toBe('BUTTON');
+      expect(button.getAttribute('role')).toBe('button');
+      expect(button.disabled).toBe(false);
+      expect(button.closest('[aria-hidden="true"]')).toBeNull();
+      await act(async () => button.click());
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+      expect(explorer.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+      expect(chosen).not.toHaveBeenCalled();
+    }
+    const tile = tiles[0];
     await act(async () => tile.click());
     expect(tile.getAttribute('aria-pressed')).toBe('true');
     expect(chosen).not.toHaveBeenCalled();

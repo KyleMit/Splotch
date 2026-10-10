@@ -76,6 +76,8 @@ export function ColorPicker({
             <Text style={styles.help}>Slide to explore. Lift to keep a color here.</Text>
             <View
               ref={field}
+              role="group"
+              accessibilityLabel="Color explorer"
               tabIndex={-1}
               collapsable={false}
               onLayout={refresh}

@@ -39,6 +39,11 @@ does not synthesize their browser-default click from artificial key events, so t
 installed-renderer unit asserts their native element and click behavior; real browser keyboard
 validation remains pending.
 
+The programmatically focused field is a named “Color explorer” group with twenty-five separate
+button descendants. Explicit opener focus restoration is validated on web only. React Native's
+non-text View imperative focus is gated by a disabled default feature flag; native assistive
+technology focus, keyboard focus and focus ordering after native modal dismissal remain OPEN.
+
 The picker acquires the same synchronous drawing input lease as Settings. It cannot open during an
 admitted contact. Drawing waits for settings hydration. The custom palette reserves one fixed-height
 horizontal row, so adding or evicting a paint cannot move the paper beneath a contact. Each admitted
