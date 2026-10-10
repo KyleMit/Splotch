@@ -71,9 +71,7 @@ describe('production PNG recovery owner', () => {
     expect(held.delivery.mock.calls[1][0]).toBe(original);
     expect(JSON.parse(held.stored()).pictures).toEqual([original]);
     expect(held.state().pictures[0].attempt.status).toBe('sharing-closed');
-    expect(held.state().notice).toBe(
-      'PNG share sheet closed. The PNG is kept until you dismiss it.'
-    );
+    expect(held.state().notice).toBe('');
   });
 
   it('restores after owner disposal without automatically sharing and retries each remaining record independently', async () => {
@@ -309,10 +307,10 @@ describe('production PNG recovery owner', () => {
     });
     const older = held.owner.submit(FIRST_PNG);
     await entered.promise;
-    await held.owner.submit(SECOND_PNG);
+    const newer = held.owner.submit(SECOND_PNG);
     const newerNotice = held.state().notice;
     gate.resolve('sharing-closed');
-    await older;
+    await Promise.all([older, newer]);
     expect(held.state().notice).toBe(newerNotice);
     expect(JSON.parse(held.stored()).pictures.map(({ base64 }) => base64)).toEqual([
       FIRST_PNG,

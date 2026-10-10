@@ -51,6 +51,8 @@ class PngRecovery {
   private needsWrite = false;
   private entries: Entry[] = [];
   private readonly delivering = new Set<string>();
+  private submitting = 0;
+  private pendingDelivery: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly storage: HeldPngStorage,
@@ -68,7 +70,7 @@ class PngRecovery {
         durable,
         attempt,
       })),
-      busy: this.loading !== null || this.delivering.size > 0,
+      busy: this.loading !== null || this.submitting > 0 || this.delivering.size > 0,
       notice: this.storageFailure || this.notice,
     });
   }
@@ -77,15 +79,18 @@ class PngRecovery {
     return this.live && this.entries.includes(entry);
   }
 
-  private current(entry: Entry, expectedGeneration: number) {
-    return this.generation === expectedGeneration && this.owns(entry);
-  }
-
   private async persist() {
     if (!this.live || !this.readable) return;
     const revision = ++this.writeRevision;
     const included = this.entries.slice();
-    const snapshot = serializeHeldPngs(included.map(({ picture }) => picture));
+    let snapshot: string;
+    try {
+      snapshot = serializeHeldPngs(included.map(({ picture }) => picture));
+    } catch (error) {
+      this.storageFailure = message(error);
+      this.emit();
+      return;
+    }
     this.needsWrite = true;
     try {
       await this.storage.write(snapshot);
@@ -122,7 +127,6 @@ class PngRecovery {
           }
       );
       for (const entry of this.entries) if (!merged.includes(entry)) merged.push(entry);
-      assertHeldPngCapacity(merged.map(({ picture }) => picture));
       this.entries = merged;
       this.readable = true;
       this.status = 'ready';
@@ -151,26 +155,33 @@ class PngRecovery {
     }
   }
 
-  private async attempt(entry: Entry, noticeOwner: number) {
-    if (!this.live || this.delivering.has(entry.picture.id)) return;
+  private attempt(entry: Entry, noticeOwner: number): Promise<void> {
+    if (!this.live || this.delivering.has(entry.picture.id)) return Promise.resolve();
     this.delivering.add(entry.picture.id);
-    entry.attempt = { status: 'held' };
+    const job = this.pendingDelivery.then(() => this.deliverEntry(entry, noticeOwner));
+    this.pendingDelivery = job.then(
+      () => undefined,
+      () => undefined
+    );
     this.emit();
+    return job;
+  }
+
+  private async deliverEntry(entry: Entry, noticeOwner: number) {
     try {
+      if (!this.owns(entry)) return;
+      entry.attempt = { status: 'held' };
+      this.emit();
       await this.persist();
       if (!this.owns(entry)) return;
       const outcome = await this.deliver(entry.picture, () => this.owns(entry));
       if (!this.owns(entry)) return;
       entry.attempt = { status: outcome };
-      if (noticeOwner === this.latestNotice)
-        this.notice =
-          outcome === 'sharing-closed'
-            ? 'PNG share sheet closed. The PNG is kept until you dismiss it.'
-            : 'PNG download requested. The PNG is kept until you dismiss it.';
+      if (noticeOwner === this.latestNotice) this.notice = '';
     } catch (error) {
       if (!this.owns(entry)) return;
       entry.attempt = { status: 'failed', message: message(error) };
-      if (noticeOwner === this.latestNotice) this.notice = entry.attempt.message;
+      if (noticeOwner === this.latestNotice) this.notice = '';
     } finally {
       this.delivering.delete(entry.picture.id);
       this.emit();
@@ -178,11 +189,21 @@ class PngRecovery {
   }
 
   async submit(base64: string) {
-    const expectedGeneration = this.generation;
+    this.submitting++;
+    this.emit();
+    try {
+      await this.submitPicture(base64);
+    } finally {
+      this.submitting--;
+      this.emit();
+    }
+  }
+
+  private async submitPicture(base64: string) {
     const noticeOwner = ++this.latestNotice;
     if (!this.readable) await this.restore();
-    await validateHeldPng(base64, () => this.live && this.generation === expectedGeneration);
-    if (!this.live || this.generation !== expectedGeneration) return;
+    await validateHeldPng(base64, () => this.live);
+    if (!this.live) return;
     let entry = this.entries.find((candidate) => candidate.picture.base64 === base64);
     if (!entry) {
       const id = `png-${Date.now()}-${(++this.sequence).toString(36)}${Math.random().toString(36).slice(2) || '0'}`;
@@ -196,6 +217,7 @@ class PngRecovery {
   }
 
   async retry() {
+    if (this.submitting > 0 || this.delivering.size > 0) return;
     const expectedGeneration = this.generation;
     const noticeOwner = ++this.latestNotice;
     if (!this.readable) await this.restore();
@@ -203,7 +225,7 @@ class PngRecovery {
     if (this.needsWrite) await this.persist();
     const pending = this.entries.slice();
     for (const entry of pending) {
-      if (!this.current(entry, expectedGeneration)) continue;
+      if (!this.owns(entry)) continue;
       await this.attempt(entry, noticeOwner);
     }
   }

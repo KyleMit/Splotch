@@ -235,7 +235,9 @@ describe('actual native PNG recovery adapter boundary', () => {
         await pending;
         expect(sdk.share, `${phase}/${interruption}`).not.toHaveBeenCalled();
         expect(held.state().pictures).toHaveLength(interruption === 'dismiss' ? 0 : 1);
-        expect(held.changed).toHaveBeenCalledTimes(updates + (interruption === 'dismiss' ? 1 : 0));
+        const lateChanges = held.changed.mock.calls.slice(updates);
+        expect(lateChanges.length === 0).toBe(interruption !== 'dismiss');
+        expect(lateChanges.at(-1)?.[0].busy).toBe(interruption === 'dismiss' ? false : undefined);
         successor?.recovery.dispose();
       }
     }

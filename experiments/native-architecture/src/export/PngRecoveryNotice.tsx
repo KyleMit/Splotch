@@ -58,7 +58,7 @@ export function PngRecoveryNotice({
   if (!pending && !visible.notice) return null;
   return (
     <View style={styles.panel}>
-      <View accessibilityLiveRegion="polite">
+      <View>
         {visible.pictures.map((picture) => (
           <View key={picture.id}>
             <Text style={styles.message}>
@@ -68,15 +68,17 @@ export function PngRecoveryNotice({
             </Text>
             <Text style={styles.filename}>{picture.filename}</Text>
             {picture.attempt.status === 'failed' ? (
-              <Text style={styles.message}>{picture.attempt.message}</Text>
+              <Text accessibilityLiveRegion="polite" style={styles.message}>
+                {picture.attempt.message}
+              </Text>
             ) : null}
             {picture.attempt.status === 'sharing-closed' ? (
-              <Text style={styles.message}>
+              <Text accessibilityLiveRegion="polite" style={styles.message}>
                 Share sheet closed. This PNG is kept until you dismiss it.
               </Text>
             ) : null}
             {picture.attempt.status === 'download-requested' ? (
-              <Text style={styles.message}>
+              <Text accessibilityLiveRegion="polite" style={styles.message}>
                 Download requested. This PNG is kept until you dismiss it.
               </Text>
             ) : null}
@@ -88,7 +90,11 @@ export function PngRecoveryNotice({
             />
           </View>
         ))}
-        {visible.notice ? <Text style={styles.message}>{visible.notice}</Text> : null}
+        {visible.notice ? (
+          <Text accessibilityLiveRegion="polite" style={styles.message}>
+            {visible.notice}
+          </Text>
+        ) : null}
       </View>
       {pending || visible.status === 'unreadable' ? (
         <View style={styles.actions}>

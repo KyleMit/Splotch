@@ -65,7 +65,7 @@ describe('mounted failed PNG recovery', () => {
       expect(JSON.parse(stored).pictures[0].base64).toBe(CAPTURED_PNG);
       expect(screen.button('Try PNG export again')).toBeDefined();
       expect(screen.container.textContent).toContain(
-        'PNG share sheet closed. The PNG is kept until you dismiss it.'
+        'Share sheet closed. This PNG is kept until you dismiss it.'
       );
       await screen.click(`Dismiss held PNG ${exported[1]}`);
       expect(JSON.parse(stored).pictures).toEqual([]);

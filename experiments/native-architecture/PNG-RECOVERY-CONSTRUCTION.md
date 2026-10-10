@@ -22,15 +22,15 @@ session-history persistence, palette/width migration, credential or gallery expa
 this unit. DrawingStatus integrates held notices without changing active-contact paper layout; the
 dedicated mounted PNG harness uses public v3 strokes and evaluates actual Pressable styles.
 
-Validation on this public-base unit passed normal formatting/native
-TypeScript/check/lint/format/diff, scoped 13 files / 164 tests, and one clean default fulltools
-run392files8746tests in57.69seconds. Twelve in-memory negative controls produced their intended
-assertion failures with applied-transform witnesses and unchanged source after each: premature
-unconfirmed-record removal, malformed IDAT acceptance, late sharing after cancellation, premature
-cache deletion, active-successor pruning, undersized hit targets, changed retry bytes, stale
-offered-at retention, cache byte/count cap bypass, swallowed sharing rejection, and wrongly offering
-renderer Retry for an export failure. The clean default full tier also verifies restoration after
-these controls.
+Validation at the original public 00db60dc1b8bba987cc57078c8c2b17fbe7ba1f5 checkpoint passed normal
+formatting/native TypeScript/check/lint/format/diff, scoped 13 files / 164 tests, and one clean
+default fulltools run392files8746tests in57.69seconds. Twelve in-memory negative controls produced
+their intended assertion failures with applied-transform witnesses and unchanged source after each:
+premature unconfirmed-record removal, malformed IDAT acceptance, late sharing after cancellation,
+premature cache deletion, active-successor pruning, undersized hit targets, changed retry bytes,
+stale offered-at retention, cache byte/count cap bypass, swallowed sharing rejection, and wrongly
+offering renderer Retry for an export failure. The clean default full tier also verifies restoration
+after these controls.
 
 Earlier lint and consumer-fixture failures remain preserved. The lint repair moved existing
 showPictures into the existing picture-actions owner without raising its cap. The consumer now reads
@@ -46,6 +46,23 @@ remain immutable for their exact private endpoints; they do not validate this pu
 real UI. A fresh ordinary public-UI export/retry/restart/Dismiss journey, Android and iOS native
 saving/export/recovery/permissions/cache evidence, actual delayed Android recipient read after
 Dismiss/successor exports, and applicable physical/manual gates remain pending. No TTL or
-share-close result substitutes for recipient evidence. Original PNG review 0 of 3 remains unopened;
-inherited exhausted N1 scope is not reset. This source candidate does not select a framework or
-claim migration/release acceptance.
+share-close result substitutes for recipient evidence. The original PNG review completed its first
+round, with one of three rounds used and two remaining; inherited exhausted N1 scope is not reset.
+This source candidate does not select a framework or claim migration/release acceptance.
+
+The first review identified four verified recovery defects. Per-record dismissal now preserves
+unrelated submissions; validation is busy and deliveries serialize; a recovered durable archive plus
+volatile records remains visible with truthful capacity refusal; and each outcome has one narrow
+live announcement. Direct concurrent-submit and queued dismissal/disposal regressions use explicit
+delivery gates. Historical-owner and missing-ownership-guard transforms produce intended assertion
+failures without changing product source. The first affected QA batch preserved three failures in
+the live-dismiss notification-count assertion; its replacement checks released busy state while
+retaining strict zero callbacks after disposal, no late sharing, record ownership and successor
+restoration. Final R1 QA passed normal native TypeScript/check/lint/format/diff, the affected
+14-file / 171-test batch, and one clean default full tools run with 393 files / 8,759 tests in 57.01
+seconds. Four additional in-memory controls failed at their intended assertions: historical
+concurrent delivery, queued dismissal, queued disposal, and late callbacks after disposal. Source
+and protected public blobs remained exact through the clean full run; only this truthful Markdown
+result was updated afterward. The original baseline four-regression failures and intermediate
+QA/lint failures remain preserved. These results establish source QA, while the fresh ordinary
+public UI and native gates listed above remain pending.
