@@ -1,0 +1,102 @@
+[
+  {
+    "path": "CAPTURE.json",
+    "bytes": 17910,
+    "sha256": "0dc1c8a91631a784816e64efc5dd0c47140bf391280078f92eaf98f9450f6114"
+  },
+  {
+    "path": "README.md",
+    "bytes": 596,
+    "sha256": "9d79b1dc30fc28e693a80bb700c46990df00d5e61e287c38da89f5d85e3d4ac8"
+  },
+  {
+    "path": "centered-driver.mjs",
+    "bytes": 15991,
+    "sha256": "078d90630720e0ae3da4a005795fa6c2dc87c0a8fbc5c386d1fca7a5ca20492c"
+  },
+  {
+    "path": "compact-browser-centered/export-two-erasers.png",
+    "bytes": 56665,
+    "sha256": "0c50bab343a5a520e0407c18d1a34eb1acd578d17216bcaba71e0bee4e601052"
+  },
+  {
+    "path": "compact-browser-centered/failure.png",
+    "bytes": 41943,
+    "sha256": "fbbc70fc5f8594bc305537ee38cd8c2b048a5298045459d9d149aee426346def"
+  },
+  {
+    "path": "compact-browser-centered/paper-two-eraser-widths.png",
+    "bytes": 18367,
+    "sha256": "48dcc53ab46a75c6dbb47453cb63f5ad12a7865a956b8c62d0f785c33b0ce945"
+  },
+  {
+    "path": "compact-browser-centered/phone-crayon-thick-selection.png",
+    "bytes": 36171,
+    "sha256": "9fff2c3970e201d3df20e80ffa322c0f2f7564b17e45219fdbacc8be91a024e7"
+  },
+  {
+    "path": "compact-browser-centered/phone-crayon-thin-selection.png",
+    "bytes": 36369,
+    "sha256": "d6644432f0614dacd641202d86abe8eca96e72435f1a16aefde61146d59b9835"
+  },
+  {
+    "path": "compact-browser-centered/phone-default-medium.png",
+    "bytes": 36309,
+    "sha256": "188cc4c2c8d652bfe252ca1b7bfa39f322c238203e9ae976108c2238ec486862"
+  },
+  {
+    "path": "compact-browser-centered/phone-eraser-thick-selection.png",
+    "bytes": 34676,
+    "sha256": "2684c212530db95da6d96b733e330608b47263e2020e99bb64288e32594ef245"
+  },
+  {
+    "path": "compact-browser-centered/phone-eraser-thin-selection.png",
+    "bytes": 42825,
+    "sha256": "a8553b613b5073239d10975edc41e77891fc0a4df3497d5f844cc3837d63bed1"
+  },
+  {
+    "path": "compact-browser-centered/phone-marker-thick-selection.png",
+    "bytes": 36142,
+    "sha256": "569c8856c5c1dd835d4780f67aa990e5813fa4406b2051ad868206eaed441bd0"
+  },
+  {
+    "path": "compact-browser-centered/phone-marker-thin-selection.png",
+    "bytes": 36452,
+    "sha256": "603feeb4dae97639f50d8552b3453519abc1d687a71eac87d0cdd6110edd3fc6"
+  },
+  {
+    "path": "compact-browser-localhost/failure.png",
+    "bytes": 24375,
+    "sha256": "1255f36e560457af2fec41c5f9d182fdd41d20c7cfd96c9bf195eced2c335cd6"
+  },
+  {
+    "path": "compact-browser-localhost/phone-default-medium.png",
+    "bytes": 36309,
+    "sha256": "188cc4c2c8d652bfe252ca1b7bfa39f322c238203e9ae976108c2238ec486862"
+  },
+  {
+    "path": "compact-browser-localhost/phone-marker-thin-selection.png",
+    "bytes": 36452,
+    "sha256": "603feeb4dae97639f50d8552b3453519abc1d687a71eac87d0cdd6110edd3fc6"
+  },
+  {
+    "path": "positioning-driver.mjs",
+    "bytes": 15630,
+    "sha256": "63114146c6560d0c5ef5ebcbf720b4dd0538f4181000640a931ff85c6faa2229"
+  },
+  {
+    "path": "readiness-driver.mjs",
+    "bytes": 15610,
+    "sha256": "89a44c05b1dcb9af153d20dbfcaf9d68a8e6e9464adbdfe0b64d867d4fe10486"
+  },
+  {
+    "path": "saved-after-undo-captured.json",
+    "bytes": 4878,
+    "sha256": "972154105bd2ec9801d6f1e8371eed24f77aba7d4d7d4a1151a26dcbe07d2246"
+  },
+  {
+    "path": "saved-six.json",
+    "bytes": 5815,
+    "sha256": "7dbc4c2fa5d35248f1e874f9bf85897c6da4b3ab8d70966aefe4740c0ff6f791"
+  }
+]

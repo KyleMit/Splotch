@@ -336,7 +336,9 @@
     "node": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
     "nodeSha256": "1ee75375e33b94fc34b3b19aede049e11dae90efb63b374dc96d6bdace70c4b8",
     "browser": "/Users/kylemit/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-    "browserSha256": "8319963f6625accf51c0dd4f55091ceaf9f09ed39e7a52fed4fae12b2a6b668a"
+    "browserSha256": "8319963f6625accf51c0dd4f55091ceaf9f09ed39e7a52fed4fae12b2a6b668a",
+    "actualBrowserExecutable": "/Users/kylemit/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+    "actualBrowserSha256": "a0bfe7b4da4787b66058477d696cd1d09065d25f06a548947722b9af77ee8282"
   },
   "status": "failed",
   "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    pageId: 'blank',\n    rainbow: 0,\n    strokes: [\n      {\n...\n      },\n+     {\n+       brush: 'eraser',\n+       points: [\n+         {\n+           x: 664.98,\n+           y: 28.1\n+         },\n+         {\n+           x: 664.98,\n+           y: 81.17\n+         },\n+         {\n+           x: 664.98,\n+           y: 134.24\n+         },\n+         {\n+           x: 664.98,\n+           y: 187.32\n+         },\n+         {\n+           x: 664.98,\n+           y: 240.39\n+         },\n+         {\n+           x: 664.98,\n+           y: 290.34\n+         },\n+         {\n+           x: 664.98,\n+           y: 343.41\n+         },\n+         {\n+           x: 664.98,\n+           y: 396.49\n+         },\n+         {\n+           x: 664.98,\n+           y: 449.56\n+         },\n+         {\n+           x: 664.98,\n+           y: 502.63\n+         },\n+         {\n+           x: 664.98,\n+           y: 552.59\n+         },\n+         {\n+           x: 664.98,\n+           y: 605.66\n+         },\n+         {\n+           x: 664.98,\n+           y: 658.73\n+         }\n+       ],\n+       width: 88\n+     }\n    ],\n    version: 4\n  }\n\n    at file:///private/tmp/native-stroke-widths/compact-browser-centered.mjs:172:10",
@@ -463,6 +465,88 @@
       "path": "compact-browser-centered/phone-marker-thin-selection.png",
       "bytes": 36452,
       "sha256": "603feeb4dae97639f50d8552b3453519abc1d687a71eac87d0cdd6110edd3fc6"
+    }
+  ],
+  "attempts": [
+    {
+      "startedAt": "2026-10-10T02:50:15.999Z",
+      "terminalAt": "2026-10-10T02:52:34.566Z",
+      "elapsedMs": 138567,
+      "status": "failed",
+      "failure": "AssertionError [ERR_ASSERTION]: Metro readiness deadline exceeded\n    at file:///private/tmp/native-stroke-widths/compact-browser.mjs:77:12\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "expectedHead": "4b1882fb7dd41cf7b4387bdc323c6698f798d6e9",
+      "url": "http://127.0.0.1:49399/",
+      "pageErrors": [],
+      "consoleErrors": [],
+      "commandResult": {
+        "start": "2026-10-10T02:50:15.977241+00:00",
+        "terminal": "2026-10-10T02:52:34.963877+00:00",
+        "actualExit": 1,
+        "timedOut": false,
+        "supervisorFailure": null,
+        "survivors": [],
+        "primaryReaped": true
+      },
+      "knownBirthCount": 9,
+      "knownGroupCount": 2
+    },
+    {
+      "startedAt": "2026-10-10T02:53:15.732Z",
+      "terminalAt": "2026-10-10T02:53:37.866Z",
+      "elapsedMs": 22134,
+      "status": "failed",
+      "failure": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(before && before.x >= 0 && before.x + before.width <= viewport.width && before.height > 150 && before.y >= 0 && before.y + before.height <= viewport.height)\n\n    at draw (file:///private/tmp/native-stroke-widths/compact-browser-localhost.mjs:122:12)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:472:9)\n    at async file:///private/tmp/native-stroke-widths/compact-browser-localhost.mjs:134:3",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "expectedHead": "4b1882fb7dd41cf7b4387bdc323c6698f798d6e9",
+      "url": "http://localhost:49979/",
+      "pageErrors": [],
+      "consoleErrors": [],
+      "commandResult": {
+        "start": "2026-10-10T02:53:15.711272+00:00",
+        "terminal": "2026-10-10T02:53:38.358944+00:00",
+        "actualExit": 1,
+        "timedOut": false,
+        "supervisorFailure": null,
+        "survivors": [],
+        "primaryReaped": true
+      },
+      "knownBirthCount": 13,
+      "knownGroupCount": 3
+    },
+    {
+      "startedAt": "2026-10-10T02:58:08.738Z",
+      "terminalAt": "2026-10-10T02:58:33.173Z",
+      "elapsedMs": 24435,
+      "status": "failed",
+      "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    pageId: 'blank',\n    rainbow: 0,\n    strokes: [\n      {\n...\n      },\n+     {\n+       brush: 'eraser',\n+       points: [\n+         {\n+           x: 664.98,\n+           y: 28.1\n+         },\n+         {\n+           x: 664.98,\n+           y: 81.17\n+         },\n+         {\n+           x: 664.98,\n+           y: 134.24\n+         },\n+         {\n+           x: 664.98,\n+           y: 187.32\n+         },\n+         {\n+           x: 664.98,\n+           y: 240.39\n+         },\n+         {\n+           x: 664.98,\n+           y: 290.34\n+         },\n+         {\n+           x: 664.98,\n+           y: 343.41\n+         },\n+         {\n+           x: 664.98,\n+           y: 396.49\n+         },\n+         {\n+           x: 664.98,\n+           y: 449.56\n+         },\n+         {\n+           x: 664.98,\n+           y: 502.63\n+         },\n+         {\n+           x: 664.98,\n+           y: 552.59\n+         },\n+         {\n+           x: 664.98,\n+           y: 605.66\n+         },\n+         {\n+           x: 664.98,\n+           y: 658.73\n+         }\n+       ],\n+       width: 88\n+     }\n    ],\n    version: 4\n  }\n\n    at file:///private/tmp/native-stroke-widths/compact-browser-centered.mjs:172:10",
+      "viewport": {
+        "width": 360,
+        "height": 640
+      },
+      "expectedHead": "4b1882fb7dd41cf7b4387bdc323c6698f798d6e9",
+      "url": "http://localhost:50688/",
+      "pageErrors": [],
+      "consoleErrors": [
+        "React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element. maskType masktype"
+      ],
+      "commandResult": {
+        "start": "2026-10-10T02:58:08.714548+00:00",
+        "terminal": "2026-10-10T02:58:33.429598+00:00",
+        "actualExit": 1,
+        "timedOut": false,
+        "supervisorFailure": null,
+        "survivors": [],
+        "primaryReaped": true
+      },
+      "knownBirthCount": 13,
+      "knownGroupCount": 3
     }
   ]
 }
