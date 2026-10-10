@@ -44,8 +44,9 @@ export async function checkNativeTopology(argv) {
   const audio = qualifyAudioInputs(root);
   assertCandidateManifest(manifest, alignment);
   const candidateImports = assertDeclaredCandidateImports(candidate, manifest);
-  const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
-  assertWorkspacePolicy(workspace);
+  const actualWorkspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
+  assertWorkspacePolicy(actualWorkspace);
+  const workspace = audio.inheritedWorkspace;
   assertJavaScriptLocks(
     execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
       .split('\0')
@@ -102,6 +103,7 @@ export async function checkNativeTopology(argv) {
       audioInputs: {
         inputSha256: audio.inputSha256,
         installed: audio.installed,
+        resetPatch: audio.patchQualification,
         scope: audio.scope,
       },
       n1DrawingInputs: drawingForge.provenance,

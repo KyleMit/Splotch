@@ -1,0 +1,218 @@
+[
+  {
+    "label": "01-format-two-files",
+    "argv": [
+      "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--write",
+      "experiments/native-architecture/src/platform/drawingAudio.ts",
+      "tools/tests/native-audio-adapter.test.mjs"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:13.707506+00:00",
+    "pid": 87232,
+    "expectedPgid": 87232,
+    "capSeconds": 15,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:14.001954+00:00",
+    "observedDirectIdentity": {
+      "pid": 87232,
+      "ppid": 87222,
+      "pgid": 87232,
+      "start": "Fri Oct 9 21:46:13 2026",
+      "argv": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node node_modules/prettier/bin/prettier.cjs --write experiments/native-architecture/src/platform/drawingAudio.ts tools/tests/native-audio-adapter.test.mjs"
+    }
+  },
+  {
+    "label": "02-affected-native-audio",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "native-audio-adapter.test.mjs",
+      "native-drawing-audio.test.mjs",
+      "--maxWorkers=2",
+      "--reporter=default",
+      "--reporter=json",
+      "--outputFile",
+      "/private/tmp/audio-rn-abort-checks-0146/affected-tests.json"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:14.004451+00:00",
+    "pid": 87236,
+    "expectedPgid": 87236,
+    "capSeconds": 60,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:14.584290+00:00",
+    "observedDirectIdentity": {
+      "pid": 87236,
+      "ppid": 87222,
+      "pgid": 87236,
+      "start": "Fri Oct 9 21:46:14 2026",
+      "argv": "npm           "
+    }
+  },
+  {
+    "label": "03-old-call-negative",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "native-audio-adapter.test.mjs",
+      "--maxWorkers=2",
+      "--testNamePattern",
+      "loads with the actual React Native signal without DOM throwIfAborted",
+      "--reporter=default",
+      "--reporter=json",
+      "--outputFile",
+      "/private/tmp/audio-rn-abort-checks-0146/negative-tests.json"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:14.585936+00:00",
+    "pid": 87265,
+    "expectedPgid": 87265,
+    "capSeconds": 30,
+    "actualExit": 1,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:15.162976+00:00",
+    "observedDirectIdentity": {
+      "pid": 87265,
+      "ppid": 87222,
+      "pgid": 87265,
+      "start": "Fri Oct 9 21:46:14 2026",
+      "argv": "npm            "
+    }
+  },
+  {
+    "label": "04-restored-floor-case",
+    "argv": [
+      "npm",
+      "run",
+      "test:tools",
+      "--",
+      "native-audio-adapter.test.mjs",
+      "--maxWorkers=2",
+      "--testNamePattern",
+      "loads with the actual React Native signal without DOM throwIfAborted",
+      "--reporter=default",
+      "--reporter=json",
+      "--outputFile",
+      "/private/tmp/audio-rn-abort-checks-0146/restored-tests.json"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:15.164871+00:00",
+    "pid": 87291,
+    "expectedPgid": 87291,
+    "capSeconds": 30,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:15.609252+00:00",
+    "observedDirectIdentity": {
+      "pid": 87291,
+      "ppid": 87222,
+      "pgid": 87291,
+      "start": "Fri Oct 9 21:46:15 2026",
+      "argv": "npm            "
+    }
+  },
+  {
+    "label": "05-native-types",
+    "argv": [
+      "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "node_modules/typescript/bin/tsc",
+      "--project",
+      "experiments/native-architecture/tsconfig.json",
+      "--noEmit"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:15.610644+00:00",
+    "pid": 87316,
+    "expectedPgid": 87316,
+    "capSeconds": 30,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:16.191205+00:00",
+    "observedDirectIdentity": {
+      "pid": 87316,
+      "ppid": 87222,
+      "pgid": 87316,
+      "start": "Fri Oct 9 21:46:15 2026",
+      "argv": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node node_modules/typescript/bin/tsc --project experiments/native-architecture/tsconfig.json --noEmit"
+    }
+  },
+  {
+    "label": "06-check",
+    "argv": [
+      "npm",
+      "run",
+      "check"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:16.192784+00:00",
+    "pid": 87322,
+    "expectedPgid": 87322,
+    "capSeconds": 90,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:22.980419+00:00",
+    "observedDirectIdentity": {
+      "pid": 87322,
+      "ppid": 87222,
+      "pgid": 87322,
+      "start": "Fri Oct 9 21:46:16 2026",
+      "argv": "npm   "
+    }
+  },
+  {
+    "label": "07-lint",
+    "argv": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:22.981958+00:00",
+    "pid": 87485,
+    "expectedPgid": 87485,
+    "capSeconds": 60,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:42.416967+00:00",
+    "observedDirectIdentity": {
+      "pid": 87485,
+      "ppid": 87222,
+      "pgid": 87485,
+      "start": "Fri Oct 9 21:46:22 2026",
+      "argv": "npm   "
+    }
+  },
+  {
+    "label": "08-format-check",
+    "argv": [
+      "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node",
+      "node_modules/prettier/bin/prettier.cjs",
+      "--check",
+      "experiments/native-architecture/src/platform/drawingAudio.ts",
+      "tools/tests/native-audio-adapter.test.mjs"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T01:46:42.418536+00:00",
+    "pid": 87923,
+    "expectedPgid": 87923,
+    "capSeconds": 15,
+    "actualExit": 0,
+    "timeout": false,
+    "terminalUtc": "2026-10-10T01:46:42.719243+00:00",
+    "observedDirectIdentity": {
+      "pid": 87923,
+      "ppid": 87222,
+      "pgid": 87923,
+      "start": "Fri Oct 9 21:46:42 2026",
+      "argv": "/Users/kylemit/.nvm/versions/node/v24.16.0/bin/node node_modules/prettier/bin/prettier.cjs --check experiments/native-architecture/src/platform/drawingAudio.ts tools/tests/native-audio-adapter.test.mjs"
+    }
+  }
+]

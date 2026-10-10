@@ -3,6 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { readLockFile } from '../lib/lock-artifacts.mjs';
+import { readAudioResetPatchInputs } from '../lib/native-audio-reset-patch.mjs';
 import {
   projectDrawingForgeLock,
   readDrawingForgeInputs,
@@ -20,17 +21,25 @@ const input = JSON.parse(readFileSync(join(root, AUDIO_EVIDENCE, 'audio-lock-inp
 const manifest = JSON.parse(
   readFileSync(join(root, 'experiments/native-architecture/package.json'))
 );
-const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
+const resetInput = readAudioResetPatchInputs(root);
+const lock = readLockFile(join(root, resetInput.baselineLock.path));
 const fixtures = [];
 function actualQualificationFixture() {
   const path = mkdtempSync(join(tmpdir(), 'splotch-audio-qualification-'));
   fixtures.push(path);
   const copy = (name) => {
     mkdirSync(dirname(join(path, name)), { recursive: true });
-    cpSync(join(root, name), join(path, name));
+    cpSync(join(root, name), join(path, name), { recursive: true, verbatimSymlinks: true });
   };
   for (const name of [
     'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    'tools/migration/inputs/native-audio-reset-patch.json',
+    resetInput.patch.path,
+    resetInput.baselineLock.path,
+    resetInput.baselineWorkspace.path,
+    'node_modules/expo-audio',
+    ...resetInput.generatedBinLinks.map(({ target }) => target),
     'experiments/native-architecture/package.json',
     `${AUDIO_EVIDENCE}/audio-lock-inputs.json`,
     `${AUDIO_EVIDENCE}/script-inventory.json`,

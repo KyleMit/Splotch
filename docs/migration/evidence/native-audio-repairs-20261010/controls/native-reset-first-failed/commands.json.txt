@@ -1,0 +1,160 @@
+[
+  {
+    "label": "01-simulator-readonly",
+    "argv": [
+      "/usr/bin/xcrun",
+      "simctl",
+      "list",
+      "devices",
+      "available",
+      "--json"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository",
+    "startUtc": "2026-10-10T00:06:50.460596+00:00",
+    "pid": 24543,
+    "expectedPgid": 24543,
+    "capSeconds": 10,
+    "actualExit": 0,
+    "timeout": false,
+    "unexpectedNetwork": false,
+    "terminalUtc": "2026-10-10T00:06:50.632478+00:00",
+    "observedDirectIdentity": {
+      "pid": 24543,
+      "ppid": 24536,
+      "pgid": 24543,
+      "start": "Fri Oct 9 20:06:50 2026",
+      "argv": "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl list devices available --json"
+    }
+  },
+  {
+    "label": "02-three-native-reset-cases",
+    "argv": [
+      "/usr/bin/xcodebuild",
+      "test",
+      "-workspace",
+      "ios/HelloWorld.xcworkspace",
+      "-scheme",
+      "SplotchAudioReset",
+      "-configuration",
+      "Debug",
+      "-destination",
+      "id=B53CD359-403E-4E7C-8889-3CD5F360557E",
+      "-derivedDataPath",
+      "/private/tmp/audio-q5-ios-tests/cache/DerivedData-reset",
+      "-resultBundlePath",
+      "/private/tmp/audio-q5-ios-tests/reset-positive.xcresult",
+      "-jobs",
+      "2",
+      "-parallel-testing-enabled",
+      "NO",
+      "CODE_SIGNING_ALLOWED=NO"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository/experiments/native-architecture",
+    "startUtc": "2026-10-10T00:06:50.634224+00:00",
+    "pid": 24554,
+    "expectedPgid": 24554,
+    "capSeconds": 600,
+    "actualExit": 0,
+    "timeout": false,
+    "unexpectedNetwork": false,
+    "terminalUtc": "2026-10-10T00:07:21.834328+00:00",
+    "observedDirectIdentity": {
+      "pid": 24554,
+      "ppid": 24536,
+      "pgid": 24554,
+      "start": "Fri Oct 9 20:06:50 2026",
+      "argv": "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test -workspace ios/HelloWorld.xcworkspace -scheme SplotchAudioReset -configuration Debug -destination id=B53CD359-403E-4E7C-8889-3CD5F360557E -derivedDataPath /private/tmp/audio-q5-ios-tests/cache/DerivedData-reset -resultBundlePath /private/tmp/audio-q5-ios-tests/reset-positive.xcresult -jobs 2 -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO"
+    }
+  },
+  {
+    "label": "03-positive-summary",
+    "argv": [
+      "/usr/bin/xcrun",
+      "xcresulttool",
+      "get",
+      "test-results",
+      "summary",
+      "--path",
+      "/private/tmp/audio-q5-ios-tests/reset-positive.xcresult"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository/experiments/native-architecture",
+    "startUtc": "2026-10-10T00:07:21.835794+00:00",
+    "pid": 26010,
+    "expectedPgid": 26010,
+    "capSeconds": 10,
+    "actualExit": 0,
+    "timeout": false,
+    "unexpectedNetwork": false,
+    "terminalUtc": "2026-10-10T00:07:22.008056+00:00",
+    "observedDirectIdentity": {
+      "pid": 26010,
+      "ppid": 24536,
+      "pgid": 26010,
+      "start": "Fri Oct 9 20:07:21 2026",
+      "argv": "/Applications/Xcode.app/Contents/Developer/usr/bin/xcresulttool get test-results summary --path /private/tmp/audio-q5-ios-tests/reset-positive.xcresult"
+    }
+  },
+  {
+    "label": "03-positive-tests",
+    "argv": [
+      "/usr/bin/xcrun",
+      "xcresulttool",
+      "get",
+      "test-results",
+      "tests",
+      "--path",
+      "/private/tmp/audio-q5-ios-tests/reset-positive.xcresult"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository/experiments/native-architecture",
+    "startUtc": "2026-10-10T00:07:22.009663+00:00",
+    "pid": 26013,
+    "expectedPgid": 26013,
+    "capSeconds": 10,
+    "actualExit": 0,
+    "timeout": false,
+    "unexpectedNetwork": false,
+    "terminalUtc": "2026-10-10T00:07:22.189889+00:00",
+    "observedDirectIdentity": null
+  },
+  {
+    "label": "04-upstream-reset-negative",
+    "argv": [
+      "/usr/bin/xcodebuild",
+      "test",
+      "-workspace",
+      "ios/HelloWorld.xcworkspace",
+      "-scheme",
+      "SplotchAudioReset",
+      "-configuration",
+      "Debug",
+      "-destination",
+      "id=B53CD359-403E-4E7C-8889-3CD5F360557E",
+      "-derivedDataPath",
+      "/private/tmp/audio-q5-ios-tests/cache/DerivedData-reset",
+      "-resultBundlePath",
+      "/private/tmp/audio-q5-ios-tests/reset-upstream-negative.xcresult",
+      "-jobs",
+      "2",
+      "-parallel-testing-enabled",
+      "NO",
+      "CODE_SIGNING_ALLOWED=NO",
+      "-only-testing:ExpoAudio-Unit-Tests/AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness"
+    ],
+    "cwd": "/private/tmp/audio-q5-native-development/repository/experiments/native-architecture",
+    "startUtc": "2026-10-10T00:07:22.191758+00:00",
+    "pid": 26016,
+    "expectedPgid": 26016,
+    "capSeconds": 180,
+    "actualExit": 65,
+    "timeout": true,
+    "unexpectedNetwork": false,
+    "terminalUtc": "2026-10-10T00:10:27.576659+00:00",
+    "observedDirectIdentity": {
+      "pid": 26016,
+      "ppid": 24536,
+      "pgid": 26016,
+      "start": "Fri Oct 9 20:07:22 2026",
+      "argv": "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test -workspace ios/HelloWorld.xcworkspace -scheme SplotchAudioReset -configuration Debug -destination id=B53CD359-403E-4E7C-8889-3CD5F360557E -derivedDataPath /private/tmp/audio-q5-ios-tests/cache/DerivedData-reset -resultBundlePath /private/tmp/audio-q5-ios-tests/reset-upstream-negative.xcresult -jobs 2 -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO -only-testing:ExpoAudio-Unit-Tests/AudioPlayerResetTests/testResetWithNonNilSourceAndPendingReadiness"
+    }
+  }
+]

@@ -7,6 +7,7 @@ import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { readLockFile, getImporterDependencyPaths, artifactMap } from './lock-artifacts.mjs';
 import { verifyArtifactIntegrity } from './archive-inventory.mjs';
 import { assertArtifactInventory } from './topology-policy.mjs';
+import { qualifyAudioResetPatch, readAudioResetPatchInputs } from './native-audio-reset-patch.mjs';
 
 export const AUDIO_EVIDENCE = 'docs/migration/evidence/native-audio-settings-20261009';
 const BASELINE_SHA = '9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57';
@@ -50,8 +51,9 @@ export function qualifyAudioInputs(root) {
   const baselinePath = join(evidence, 'controls/source-window-0541/before-pnpm-lock.yaml.txt');
   assert.equal(sha256(readFileSync(baselinePath)), BASELINE_SHA);
   const baseline = readLockFile(baselinePath);
+  const patchInput = readAudioResetPatchInputs(root);
   const lockBytes = readFileSync(join(root, 'pnpm-lock.yaml'));
-  assert.equal(sha256(lockBytes), input.lockSha256, 'Unqualified audio lock');
+  assert.equal(sha256(lockBytes), patchInput.lockSha256, 'Unqualified audio lock');
   const manifest = JSON.parse(readFileSync(join(root, CANDIDATE_DIRECTORY, 'package.json')));
   const require = createRequire(join(root, CANDIDATE_DIRECTORY, 'package.json'));
   const installed = input.roots.map((record) => {
@@ -76,18 +78,14 @@ export function qualifyAudioInputs(root) {
       sha256: sha256(bytes),
     };
   });
+  const patch = qualifyAudioResetPatch(root, patchInput, input);
   const fresh = JSON.parse(readFileSync(join(evidence, 'script-inventory.json')));
-  assertArtifactInventory(
-    fresh,
-    artifactMap(readLockFile(join(root, 'pnpm-lock.yaml'))),
-    input.lockSha256,
-    {
-      schemaVersion: 1,
-      sourceRevision: input.sourceRevision,
-      lockSha256: BASELINE_SHA,
-      packages: baseline.packages,
-    }
-  );
+  assertArtifactInventory(fresh, artifactMap(patch.lock), input.lockSha256, {
+    schemaVersion: 1,
+    sourceRevision: input.sourceRevision,
+    lockSha256: BASELINE_SHA,
+    packages: baseline.packages,
+  });
   assert.equal(fresh.baselineLockSha256, BASELINE_SHA);
   assert.equal(fresh.candidateLockSha256, input.lockSha256);
   assert.deepEqual(
@@ -97,24 +95,21 @@ export function qualifyAudioInputs(root) {
   assert.ok(fresh.complete && fresh.rows[0].archiveIntegrityVerified);
   assert.deepEqual(fresh.rows[0].hooks, {});
   assert.equal(fresh.rows[0].disposition, 'no-install-hooks');
-  const projected = projectAudioLock(
-    readLockFile(join(root, 'pnpm-lock.yaml')),
-    baseline,
-    manifest,
-    input
-  );
+  const projected = projectAudioLock(patch.lock, baseline, manifest, input);
   const inheritedManifest = structuredClone(manifest);
   for (const record of input.roots) delete inheritedManifest.devDependencies[record.name];
   return {
     inheritedManifest,
+    inheritedWorkspace: patch.workspace,
+    patchQualification: patch.qualification,
     ...projected,
     baselineLockSha256: BASELINE_SHA,
     archiveRows: fresh.rows,
-    lockSha256: input.lockSha256,
+    lockSha256: patchInput.lockSha256,
     inputSha256: sha256(inputBytes),
     installed,
     scope:
-      'Exact new two-dev-root/one-artifact delta and eighteen finite Forge paths; inherited N1 lock bytes preserved. No native output or product acceptance.',
+      'Exact two-dev-root/one-artifact delta, authenticated iOS reset patch and eighteen finite Forge paths; inherited Audio/N1 inputs preserved. No native output or product acceptance.',
   };
 }
 const AUDIO_INPUT_SHA256 = 'f47a10918fafcfe5c0ebe471b96e291f1441c9b7dfc452ea7fadb9fff55cb980';

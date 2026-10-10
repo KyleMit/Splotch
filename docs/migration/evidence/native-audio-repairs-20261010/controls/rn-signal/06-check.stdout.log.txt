@@ -1,0 +1,19 @@
+
+> splotch@1.6.0 precheck
+> node tools/mobile/check-app-ids.mjs && node tools/run-web-tool.mjs svelte-kit sync
+
+[check-app-ids] all native app IDs match "art.splotch.app" and names match "Splotch".
+$ svelte-kit sync
+
+> splotch@1.6.0 check
+> node tools/run-web-tool.mjs svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && npm run check:netlify && tsc --project migration/probes/web-host/tsconfig.json --noEmit
+
+$ svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+Loading svelte-check in workspace: /private/tmp/audio-q5-native-development/repository/web
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+
+> splotch@1.6.0 check:netlify
+> tsc --project netlify/tsconfig.json
+
