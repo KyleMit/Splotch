@@ -5,7 +5,7 @@ import { expect, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 
-export const files = vi.hoisted(() => ({
+const files = vi.hoisted(() => ({
   list: vi.fn(),
   open: vi.fn(),
   lock: vi.fn(),
@@ -15,6 +15,7 @@ export const files = vi.hoisted(() => ({
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
   settingsWrite: vi.fn().mockResolvedValue(undefined),
   cohort: null,
+  cohortDrivers: false,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
@@ -163,25 +164,36 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
           },
           'Draw fixture stroke'
         ),
-        createElement('button', { onClick: () => onCohort(cohort()) }, 'Draw two-contact cohort'),
-        createElement('button', { onClick: () => onDrawingChange(true) }, 'Begin cohort'),
-        createElement('button', { onClick: () => onDrawingChange(true) }, 'Lift one contact'),
-        createElement(
-          'button',
-          {
-            onClick: () => {
-              onCohort(cohort());
-              onDrawingChange(false);
-            },
-          },
-          'Finish cohort'
-        )
+        files.cohortDrivers
+          ? createElement(
+              'div',
+              { 'data-fixture-cohort-drivers': true },
+              createElement(
+                'button',
+                { onClick: () => onCohort(cohort()) },
+                'Draw two-contact cohort'
+              ),
+              createElement('button', { onClick: () => onDrawingChange(true) }, 'Begin cohort'),
+              createElement('button', { onClick: () => onDrawingChange(true) }, 'Lift one contact'),
+              createElement(
+                'button',
+                {
+                  onClick: () => {
+                    onCohort(cohort());
+                    onDrawingChange(false);
+                  },
+                },
+                'Finish cohort'
+              )
+            )
+          : null
       );
     }
   ),
 }));
 
-export function createScreen() {
+export function createScreen({ cohortDrivers = false } = {}) {
+  files.cohortDrivers = cohortDrivers;
   const container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
   const root = createRoot(container);
@@ -215,3 +227,5 @@ export const pictures = [
   { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
   { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
 ];
+
+export { files };

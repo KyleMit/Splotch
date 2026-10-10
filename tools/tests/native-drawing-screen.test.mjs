@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
+import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   emptyDrawing,
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
 
 let screen;
 
-beforeEach(() => {
+beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.list.mockReturnValue(pictures);
   files.open.mockReset();
@@ -20,7 +20,7 @@ beforeEach(() => {
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
   screen = createScreen();
-  screen.mount();
+  await act(async () => screen.mount());
 });
 
 afterEach(() => {

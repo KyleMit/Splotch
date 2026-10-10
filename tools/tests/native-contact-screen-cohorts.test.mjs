@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
+import { createScreen, files, pictures } from './native-drawing-screen-harness.mjs';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createScreen, files, pictures } from './native-drawing-screen-harness.mjs';
+
 import { rgbaPng } from './native-png-fixtures.mjs';
+import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
 let screen;
 beforeEach(async () => {
@@ -15,7 +17,7 @@ beforeEach(async () => {
   files.lock.mockReset().mockReturnValue(() => {});
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
-  screen = createScreen();
+  screen = createScreen({ cohortDrivers: true });
   await act(async () => screen.mount());
 });
 afterEach(() => {
@@ -47,7 +49,13 @@ describe('contact cohort history through the current drawing screen', () => {
     expect(JSON.parse(first).strokes).toHaveLength(2);
     files.ink.mockResolvedValueOnce(rgbaPng(1024, 768, 255).toString('base64'));
     await screen.click('Clear');
-    await vi.waitFor(() => expect(JSON.parse(screen.paper()).strokes).toEqual([]));
+    await vi.waitFor(
+      async () => {
+        await act(async () => {});
+        expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+      },
+      { timeout: PNG_TIMEOUT_MS }
+    );
     await screen.click('Undo');
     expect(screen.paper()).toBe(first);
     await screen.click('Undo');

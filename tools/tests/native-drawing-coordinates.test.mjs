@@ -1,11 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { undoDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
-import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
 import {
-  DrawingScreen,
   native,
   root,
   container,
@@ -19,6 +13,12 @@ import {
   pageTouch,
   refresh,
 } from './native-drawing-coordinates-harness.mjs';
+import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { act, createElement } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { undoDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { createPaperScroll } from '../../experiments/native-architecture/src/drawing/paperGeometry.ts';
+import { measurePaper as measureWebPaper } from '../../experiments/native-architecture/src/drawing/measurePaper.web.ts';
 
 describe('measured paper coordinate regression', () => {
   it('retains the prescribed partial-lift endpoint and survivor corridor with stale Android target coordinates', () => {
@@ -82,12 +82,13 @@ describe('measured paper readiness and invalidation', () => {
   it.each([
     ['', 'Drawing sound is unavailable. You can keep drawing. Try another stroke.'],
     ['Drawing sound is unavailable. You can keep drawing. Try another stroke.', ''],
-  ])('keeps notice layout stable through an active cohort (%s → %s)', (initial, next) => {
+  ])('keeps notice layout stable through an active cohort (%s → %s)', async (initial, next) => {
     native.notice = initial;
     native.frame = [0, 0, 1024, 768, 40, 800];
     native.handlers = null;
-    act(() => root.render(createElement(DrawingScreen)));
+    await act(async () => root.render(createElement(DrawingScreen)));
     layout();
+    expect(native.handlers.onStartShouldSetPanResponder()).toBe(true);
     send('onPanResponderGrant', event([pageTouch(0, 50, 820, 100)]));
     send('onPanResponderMove', event([pageTouch(0, 70, 840, 200)], undefined, { 0: 100 }));
     act(() => native.setNotice(next));
@@ -246,11 +247,12 @@ describe('measured paper readiness and invalidation', () => {
     ]);
   });
 
-  it('invalidates the real screen paper through its actual ScrollView callback', () => {
+  it('invalidates the real screen paper through its actual ScrollView callback', async () => {
     native.frame = [0, 0, 1024, 768, 40, 800];
     native.handlers = null;
-    act(() => root.render(createElement(DrawingScreen)));
+    await act(async () => root.render(createElement(DrawingScreen)));
     layout();
+    expect(native.handlers.onStartShouldSetPanResponder()).toBe(true);
     send('onPanResponderGrant', event([pageTouch(0, 50, 820, 100)]));
     expect(props.onCohort).not.toHaveBeenCalled();
     native.frame = [0, 0, 1024, 768, 40, 700];

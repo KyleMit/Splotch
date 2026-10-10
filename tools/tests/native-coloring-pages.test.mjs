@@ -78,7 +78,7 @@ describe('native coloring-page composition', () => {
     'refuses an invalid page identity from storage %#',
     (pageId) => {
       expect(() => parseDrawing({ version: 2, pageId, strokes: [] })).toThrow(
-        'not a supported drawing'
+        'This saved picture contains an invalid coloring page.'
       );
     }
   );
@@ -120,6 +120,15 @@ describe('native coloring-page composition', () => {
     const opened = await reopenPicture(saved.id);
     expect(opened).toEqual(original);
     values.set(`splotch-picture:${saved.id}`, JSON.stringify({ ...original, pageId: 'unknown' }));
-    await expect(reopenPicture(saved.id)).rejects.toThrow('not a supported drawing');
+    const storageBeforeRefusal = new Map(values);
+    await expect(reopenPicture(saved.id)).rejects.toThrow(
+      'This saved picture contains an invalid coloring page.'
+    );
+    expect(values).toEqual(storageBeforeRefusal);
+    await expect(savePicture({ ...original, pageId: 'unknown' })).rejects.toThrow(
+      'This saved picture contains an invalid coloring page.'
+    );
+    expect(values).toEqual(storageBeforeRefusal);
+    expect(opened).toEqual(original);
   });
 });

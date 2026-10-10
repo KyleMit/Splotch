@@ -2,6 +2,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
+import {
+  assertPaperHitTesting,
+  assertPlainTextTopology,
+  topologyFixture,
+} from './native-contact-source-guards.mjs';
 import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -146,78 +151,6 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
 });
-
-function assertPlainTextTopology(program, sourcePath) {
-  const source = program.getSourceFile(sourcePath);
-  if (!source) throw new Error('Missing candidate source');
-  const checker = program.getTypeChecker();
-  const textNames = new Set(['Text']);
-  for (const statement of source.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !ts.isStringLiteral(statement.moduleSpecifier) ||
-      statement.moduleSpecifier.text !== 'react-native'
-    )
-      continue;
-    const bindings = statement.importClause?.namedBindings;
-    if (bindings && ts.isNamedImports(bindings))
-      for (const binding of bindings.elements) {
-        if ((binding.propertyName ?? binding.name).text === 'Text')
-          textNames.add(binding.name.text);
-      }
-  }
-  function raw(type) {
-    return type.isUnion()
-      ? type.types.every(raw)
-      : Boolean(type.flags & (ts.TypeFlags.StringLike | ts.TypeFlags.NumberLike));
-  }
-  function visit(node) {
-    const opening = ts.isJsxElement(node)
-      ? node.openingElement
-      : ts.isJsxSelfClosingElement(node)
-        ? node
-        : null;
-    if (opening && textNames.has(opening.tagName.getText(source))) {
-      for (const attribute of opening.attributes.properties) {
-        if (ts.isJsxSpreadAttribute(attribute))
-          throw new Error('Emitter partition requires raw Text children');
-        if (
-          attribute.name.getText(source) === 'children' &&
-          attribute.initializer &&
-          !(
-            ts.isStringLiteral(attribute.initializer) ||
-            (ts.isJsxExpression(attribute.initializer) &&
-              attribute.initializer.expression &&
-              raw(checker.getTypeAtLocation(attribute.initializer.expression)))
-          )
-        )
-          throw new Error('Emitter partition requires raw Text children');
-      }
-      for (const child of ts.isJsxElement(node) ? node.children : []) {
-        if (ts.isJsxText(child)) continue;
-        if (
-          ts.isJsxExpression(child) &&
-          (!child.expression || raw(checker.getTypeAtLocation(child.expression)))
-        )
-          continue;
-        throw new Error('Emitter partition requires raw Text children');
-      }
-    }
-    ts.forEachChild(node, visit);
-  }
-  visit(source);
-}
-
-function topologyFixture(text) {
-  const sourcePath = '/splotch-emitter-topology-fixture.tsx';
-  const options = { noLib: true, noResolve: true, jsx: ts.JsxEmit.Preserve };
-  const host = ts.createCompilerHost(options);
-  host.getSourceFile = (path) =>
-    path === sourcePath
-      ? ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
-      : undefined;
-  return () => assertPlainTextTopology(ts.createProgram([sourcePath], options, host), sourcePath);
-}
 
 function ios(touches, changed, owned, starts = {}) {
   const result = event(touches, changed, starts);
@@ -392,7 +325,13 @@ describe('mounted copied cleanup and native emitter batches', () => {
       assertPlainTextTopology(ts.createProgram(parsed.fileNames, parsed.options), screenPath)
     ).not.toThrow();
     const surface = readFileSync(join(candidate, 'src', 'drawing', 'DrawingSurface.tsx'), 'utf8');
-    expect(surface).toMatch(/testID="drawing-paper"\s+pointerEvents="box-only"/);
+    expect(() => assertPaperHitTesting(surface)).not.toThrow();
+    expect(() =>
+      assertPaperHitTesting(surface.replace('pointerEvents="box-only"', 'pointerEvents="auto"'))
+    ).toThrow('same element');
+    expect(() => assertPaperHitTesting(surface.replace('pointerEvents="box-only"', ''))).toThrow(
+      'same element'
+    );
     expect(topologyFixture("const label = 'raw'; const x = <Text>{label}</Text>;")).not.toThrow();
     expect(topologyFixture('const x = <Text><Text>nested</Text></Text>;')).toThrow(
       'raw Text children'

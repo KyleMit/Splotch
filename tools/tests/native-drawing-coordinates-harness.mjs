@@ -11,7 +11,6 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import {
   addStrokes,
@@ -276,7 +275,6 @@ function refresh() {
 }
 
 export {
-  DrawingScreen,
   native,
   root,
   container,
