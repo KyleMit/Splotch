@@ -1,6 +1,7 @@
 import {
   chmodSync,
   copyFileSync,
+  linkSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -205,37 +206,43 @@ describe('the complete effective SVG source fixture, without executing package c
     );
   });
 
-  it.each(['literal', 'foreign target', 'broken target', 'target bytes', 'target mode'])(
-    'rejects a generated peer bin with changed %s',
-    (change) => {
-      const { directory, packagePath } = packageFixture();
-      const record = input.generatedPeerBins[0];
-      const link = join(packagePath, record.path);
-      const target = join(directory, record.target.path);
-      if (change === 'literal') {
-        rmSync(link);
-        symlinkSync('/bin/sh', link);
-      } else if (change === 'foreign target') {
-        rmSync(target);
-        symlinkSync(join(root, record.target.path), target);
-      } else if (change === 'broken target') {
-        rmSync(target);
-      } else if (change === 'target bytes') {
-        writeFileSync(target, 'unreviewed target');
-      } else {
-        chmodSync(target, 0o644);
-      }
-      expect(() => verifySvgBackdropPackage(directory, packagePath, input)).toThrow();
+  it.each([
+    'literal',
+    'foreign target',
+    'broken target',
+    'target bytes',
+    'target mode',
+    'hardlinked target',
+  ])('rejects a generated peer bin with changed %s', (change) => {
+    const { directory, packagePath } = packageFixture();
+    const record = input.generatedPeerBins[0];
+    const link = join(packagePath, record.path);
+    const target = join(directory, record.target.path);
+    if (change === 'literal') {
       rmSync(link);
-      rmSync(target, { force: true });
-      put(target, readFileSync(join(root, record.target.path)));
-      chmodSync(target, record.target.mode);
-      symlinkSync(record.literal, link);
-      expect(verifySvgBackdropPackage(directory, packagePath, input).files).toBe(
-        input.installedFiles.length
-      );
+      symlinkSync('/bin/sh', link);
+    } else if (change === 'foreign target') {
+      rmSync(target);
+      symlinkSync(join(root, record.target.path), target);
+    } else if (change === 'broken target') {
+      rmSync(target);
+    } else if (change === 'target bytes') {
+      writeFileSync(target, 'unreviewed target');
+    } else if (change === 'hardlinked target') {
+      linkSync(target, join(directory, 'borrowed-cli.js'));
+    } else {
+      chmodSync(target, 0o644);
     }
-  );
+    expect(() => verifySvgBackdropPackage(directory, packagePath, input)).toThrow();
+    rmSync(link);
+    rmSync(target, { force: true });
+    put(target, readFileSync(join(root, record.target.path)));
+    chmodSync(target, record.target.mode);
+    symlinkSync(record.literal, link);
+    expect(verifySvgBackdropPackage(directory, packagePath, input).files).toBe(
+      input.installedFiles.length
+    );
+  });
 
   it('rejects a resolved package outside its owner', () => {
     const { packagePath } = packageFixture();

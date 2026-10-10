@@ -291,11 +291,24 @@ describe('workflow hygiene', () => {
       expect(runtimeMajor).toBe(floorMajor);
     });
 
-    it('copies package files at the actual pnpm setup step for independent installed ownership', () => {
-      const setup = setupPnpmAction.lines.join('\n');
-      const step = setup.slice(setup.indexOf('    - uses: pnpm/setup@'));
-      expect(step).toMatch(/\n {6}env:\n {8}PNPM_CONFIG_PACKAGE_IMPORT_METHOD: copy\n/);
-      expect(step).not.toContain('npm_config_package_import_method');
+    it('copies installed package files independently from the pnpm store', () => {
+      function assertCopyImports(lines) {
+        const index = lines.findIndex((line) => line.includes('- uses: pnpm/setup@'));
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(lines.slice(index + 1, index + 3)).toEqual([
+          '      env:',
+          '        PNPM_CONFIG_PACKAGE_IMPORT_METHOD: copy',
+        ]);
+      }
+      assertCopyImports(setupPnpmAction.lines);
+      expect(() =>
+        assertCopyImports(
+          setupPnpmAction.lines.filter((line) => !line.includes('PACKAGE_IMPORT_METHOD'))
+        )
+      ).toThrow();
+      expect(() =>
+        assertCopyImports(setupPnpmAction.lines.map((line) => line.replace(': copy', ': hardlink')))
+      ).toThrow();
     });
 
     it('keeps Node setup active when the hosted deploy smoke skips dependencies', () => {

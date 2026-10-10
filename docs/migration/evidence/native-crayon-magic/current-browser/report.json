@@ -1,0 +1,51 @@
+{
+  "startedAt": "2026-10-09T05:59:49.509Z",
+  "source": "eea3fd64898bc8bc08fc7f67fdfa7c031ca9597d",
+  "dirty": "",
+  "url": "http://localhost:5300/",
+  "viewport": {
+    "width": 1200,
+    "height": 1100
+  },
+  "checks": {
+    "crayon": {
+      "before": {
+        "paperFraction": 0.1961904761904762,
+        "green": 0
+      },
+      "after": {
+        "paperFraction": 0.07,
+        "green": 0
+      }
+    },
+    "mixing": {
+      "paperFraction": 0.08884297520661157,
+      "green": 92
+    },
+    "magic": {
+      "left": [238, 201, 67],
+      "right": [142, 68, 238]
+    },
+    "undoClear": true,
+    "reopen": true,
+    "export": {
+      "width": 1024,
+      "height": 768,
+      "mixing": {
+        "paperFraction": 0.2830578512396694,
+        "green": 92
+      },
+      "grain": {
+        "paperFraction": 0.37,
+        "green": 0
+      },
+      "magic": {
+        "left": [238, 201, 67],
+        "right": [142, 68, 238]
+      }
+    },
+    "corruptSeedRetainsPicture": true,
+    "pageErrors": []
+  },
+  "finishedAt": "2026-10-09T05:59:55.095Z"
+}

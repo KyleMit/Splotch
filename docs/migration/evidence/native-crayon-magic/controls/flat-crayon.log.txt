@@ -1,0 +1,53 @@
+
+ RUN  v5.0.2 /Users/kylemit/.codex/worktrees/native-crayon-magic/Splotch/tools
+
+ ❯ tests/native-brush-output.test.mjs (6 tests | 3 failed) 62ms
+   ❯ native brush artwork output (6)
+     × renders tooth inside the crayon and gradual same-color buildup without changing the hue 11ms
+     × mixes blue and yellow crossings subtractively in the artwork itself 3ms
+     × builds wax before the finger lifts when a gesture backtracks over itself 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > renders tooth inside the crayon and gradual same-color buildup without changing the hue
+AssertionError: expected 1 to be less than 0.85
+ ❯ tests/native-brush-output.test.mjs:100:29
+     98|     const after = region(twice, 150, 193, 200, 14);
+     99|     expect(before.coverage).toBeGreaterThan(0.3);
+    100|     expect(before.coverage).toBeLessThan(0.85);
+       |                             ^
+    101|     expect(after.coverage).toBeGreaterThan(before.coverage + 0.1);
+    102|     expect(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > mixes blue and yellow crossings subtractively in the artwork itself
+AssertionError: expected 0 to be greater than 30
+ ❯ tests/native-brush-output.test.mjs:120:52
+    118|       ]),
+    119|     ]);
+    120|     expect(region(output, 492, 192, 16, 16).green).toBeGreaterThan(30);
+       |                                                    ^
+    121|   });
+    122|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/native-brush-output.test.mjs > native brush artwork output > builds wax before the finger lifts when a gesture backtracks over itself
+AssertionError: expected 1 to be greater than 1.1
+ ❯ tests/native-brush-output.test.mjs:133:55
+    131|       crayon('Red', 1, [...forward, { x: 350, y: 400 }, { x: 100, y: 4…
+    132|     ]);
+    133|     expect(region(after, 150, 393, 200, 14).coverage).toBeGreaterThan(
+       |                                                       ^
+    134|       region(before, 150, 393, 200, 14).coverage + 0.1
+    135|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 3 passed (6)
+   Start at  00:32:39
+   Duration  519ms (import 60%, transform 25%, tests 14%, worker 1%)
+
