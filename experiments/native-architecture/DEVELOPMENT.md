@@ -8,6 +8,41 @@ and reopening pictures in app-private storage. Saved pictures survive an app res
 renderer is `react-native-svg`; PNG export uses its raster `toDataURL` callback and Expo file and
 sharing APIs.
 
+## Contact lifetimes
+
+Overlapping accepted paper contacts form one Undo entry. A responder Release with another accepted
+contact still present keeps that cohort alive, including a subsequent responder grant. The collector
+reconciles missing contacts and validated start records. A start timestamp is not a unique contact
+identifier. Delivered Android/web Start callbacks replace changed identifiers even when timestamps
+collide. Grant keeps unknown origins provisional until the following actual Start. Grant copies
+survivor points before PanResponder can suppress Move. Later callbacks consume those copies once;
+interruption, teardown and resize retain only points proven later than that contact's start, using
+the old paper geometry. Ambiguous starting copies cannot join old ink.
+
+The paper owner comes from responder currentTarget: native findNodeHandle resolves its host tag; web
+keeps its DOM identity without calling that unsupported web API. Admission checks that owner, the
+changed contact's own validated start record and finite local coordinates inside paper. Android
+shares the first target across pointers, so bounds are also required. Ignored origins remain ignored
+through movement. Missing or malformed history fails closed; a later page position cannot recover an
+unavailable original paper frame.
+
+The pinned iOS producer includes targetTouches filtered per emitter and repeats the complete changed
+set per unique emitter. The collector binds one bounded pending batch to validated current, changed,
+coordinate and lifetime content, tracking disjoint emitter coverage. For the pinned candidate
+topology, each box-only View and plain raw-text paragraph has one emitter per numeric target. A
+marker must contain that complete same-target current group, and cannot overlap any earlier emitter
+contact. The mounted source guard rejects nested or opaque React-element Text children; generic
+nested Text can use several emitters under one paragraph target and is excluded from this policy. It
+deduplicates those payloads without applying timestamp deduplication to Android/web, which omit
+targetTouches. A present malformed marker is rejected rather than interpreted as Android reuse.
+Missing, duplicate or reordered delivery outside the pinned producer's contiguous batch ordering is
+not proven. A missing emitter followed by a byte-identical new iOS batch is
+metadata-indistinguishable; this source proposal does not claim recovery for that case. Native
+qualification remains required.
+
+A paper size change commits accepted ink and rejects continuing lifetimes. Edge-return segmentation
+and resume-gap behavior remain open requirements.
+
 The maintained Android manifest removes Expo FileSystem's legacy READ_EXTERNAL_STORAGE and
 WRITE_EXTERNAL_STORAGE declarations. These private save/cache paths and PNG sharing do not request
 external storage grants. Validate the actual built APK's merged permissions when checking a new

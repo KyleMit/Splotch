@@ -1,3 +1,4 @@
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -9,11 +10,14 @@ import {
   View,
 } from 'react-native';
 import { paletteHex, type PaletteLabel } from './drawing/palette';
-import { DrawingSurface } from './drawing/DrawingSurface';
+import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import { createPaperScroll } from './drawing/paperGeometry';
 import { useDrawingScreen } from './useDrawingScreen';
 import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES, clearDrawing, undoDrawing, type Brush } from './drawing/model';
 import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_THEME, TOUCH_TARGET } from './drawing/theme';
+
+const SCROLL_GEOMETRY_THROTTLE_MS = 16;
 
 const COLORS: readonly PaletteLabel[] = [
   'Purple',
@@ -54,6 +58,39 @@ function Action({
   );
 }
 
+function DrawingScroll({
+  children,
+  drawing,
+  surface,
+}: {
+  children: ReactNode;
+  drawing: boolean;
+  surface: RefObject<DrawingSurfaceHandle | null>;
+}) {
+  const scrollGeometry = useRef(
+    createPaperScroll(() => surface.current?.refreshGeometry())
+  ).current;
+  return (
+    <ScrollView
+      contentContainerStyle={styles.content}
+      scrollEnabled={!drawing}
+      onLayout={() => surface.current?.refreshGeometry()}
+      onScroll={({ nativeEvent }) => scrollGeometry(nativeEvent.contentOffset)}
+      onContentSizeChange={() => surface.current?.refreshGeometry()}
+      scrollEventThrottle={SCROLL_GEOMETRY_THROTTLE_MS}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
+function useIdleMessage(message: string, drawing: boolean) {
+  const [settled, setSettled] = useState(message);
+  // Changing status layout invalidates the paper frame owned by the active contacts.
+  if (!drawing && settled !== message) setSettled(message);
+  return drawing ? settled : message;
+}
+
 export function DrawingScreen() {
   const {
     history,
@@ -71,15 +108,17 @@ export function DrawingScreen() {
     surface,
     disabled,
     report,
-    finishStroke,
+    currentDrawing,
+    finishCohort,
     save,
     exportPicture,
     showPictures,
     openPicture,
   } = useDrawingScreen();
+  const visibleNotice = useIdleMessage(notice, drawing);
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!drawing}>
+    <SafeAreaView style={styles.screen} onLayout={() => surface.current?.refreshGeometry()}>
+      <DrawingScroll drawing={drawing} surface={surface}>
         <View style={styles.heading}>
           <Text style={styles.title}>Splotch</Text>
           <Text style={styles.subtitle}>Make something colorful.</Text>
@@ -131,10 +170,11 @@ export function DrawingScreen() {
         <DrawingSurface
           ref={surface}
           drawing={history.drawing}
+          currentDrawing={currentDrawing}
           color={color}
           brush={brush}
           disabled={busy || pictures !== null}
-          onStroke={finishStroke}
+          onCohort={finishCohort}
           onDrawingChange={setDrawing}
           onError={report}
         />
@@ -159,10 +199,10 @@ export function DrawingScreen() {
         <View style={styles.status}>
           {busy ? <ActivityIndicator color={DRAWING_THEME.brandSolid} /> : null}
           <Text accessibilityLiveRegion="polite" style={styles.notice}>
-            {notice}
+            {visibleNotice}
           </Text>
         </View>
-      </ScrollView>
+      </DrawingScroll>
       <SavedPictures
         pictures={pictures}
         busy={busy}
