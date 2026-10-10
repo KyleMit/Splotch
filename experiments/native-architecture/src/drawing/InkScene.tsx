@@ -50,7 +50,7 @@ export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
           <Defs>
             <Mask
               id={id}
-              maskType="luminance"
+              style={{ maskType: 'luminance' }}
               maskUnits="userSpaceOnUse"
               x={0}
               y={0}

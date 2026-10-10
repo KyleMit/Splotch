@@ -1,7 +1,10 @@
-import { createElement } from 'react';
+// @vitest-environment happy-dom
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import {
   PAPER_WIDTH,
   PAPER_HEIGHT,
@@ -67,7 +70,75 @@ function tags(source, name) {
   return [...source.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map(([tag]) => tag);
 }
 
+function pixel(image, x, y) {
+  const offset = (y * image.info.width + x) * image.info.channels;
+  return [...image.data.subarray(offset, offset + image.info.channels)];
+}
+
 describe('joint artwork definitions and chronological mask composition', () => {
+  it('mounts the installed web mask with luminance CSS and no unknown DOM prop', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const mounted = createRoot(host);
+    const errors = vi.spyOn(console, 'error');
+    const erase = { brush: 'eraser', points: [{ x: 400, y: 100 }] };
+    try {
+      await act(() =>
+        mounted.render(
+          createElement(
+            Svg,
+            { width: PAPER_WIDTH, height: PAPER_HEIGHT },
+            createElement(InkScene, { strokes: [blue, erase], checkpoint: null, onImageLoad() {} })
+          )
+        )
+      );
+      const masks = host.querySelectorAll('mask');
+      expect(masks).toHaveLength(1);
+      expect(masks[0].style.getPropertyValue('mask-type')).toBe('luminance');
+      expect(masks[0].getAttributeNames()).not.toContain('maskType');
+      expect(masks[0].getAttributeNames()).not.toContain('masktype');
+      expect(errors.mock.calls).toEqual([]);
+    } finally {
+      await act(() => mounted.unmount());
+      errors.mockRestore();
+      host.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+  it('erases earlier ink with black luminance while preserving white-mask ink and later paint', async () => {
+    const earlier = {
+      brush: 'marker',
+      color: 'Blue',
+      points: [
+        { x: 100, y: 200 },
+        { x: 700, y: 200 },
+      ],
+    };
+    const erase = {
+      brush: 'eraser',
+      points: [
+        { x: 400, y: 150 },
+        { x: 400, y: 250 },
+      ],
+    };
+    const later = { brush: 'marker', color: 'Yellow', points: [{ x: 400, y: 200 }] };
+    const before = await raw(scene([earlier]));
+    const erased = await raw(scene([earlier, erase]));
+    const repainted = await raw(scene([earlier, erase, later]));
+    expect(pixel(before, 400, 200)[3]).toBe(255);
+    expect(pixel(erased, 400, 200)[3]).toBe(0);
+    expect(pixel(erased, 200, 200)).toEqual(pixel(before, 200, 200));
+    expect(pixel(erased, 200, 200)[3]).toBe(255);
+    expect(pixel(erased, 20, 20)[3]).toBe(0);
+    expect(pixel(repainted, 400, 200)).toEqual([
+      ...paletteHex('Yellow')
+        .slice(1)
+        .match(/../g)
+        .map((channel) => Number.parseInt(channel, 16)),
+      255,
+    ]);
+  });
   it('gives the production InkScene the same pixels as its actual direct InkArtwork consumer', async () => {
     const strokes = [blue, yellow, blue, magic];
     const direct = svg(
