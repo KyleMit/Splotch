@@ -1,0 +1,70 @@
+{
+  "sourceHead": "dc24e2787e719f9d2d756206bd69ed495fc13631",
+  "sourceParents": [
+    "81fe3610ff896df849ae19645585e7ffdbf5571d",
+    "20b51012a9bb3daa1314cab1d8c276cc9eb8a977"
+  ],
+  "sourceTree": "b46ecd2b23873d328194a834c223eb5550230dd7",
+  "nativeSourceTree": "e03d48e44c84b2cccde754d65e7f6f30f3114b41",
+  "lockSha256": "9fed398b8fda5f309d40f35e7d65296bfc70bef356229ec5c44f144ffb0efd57",
+  "recordedAtUtc": "2026-10-09 04:51:37 UTC",
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.22.0",
+  "dependencyAcceptance": "N1 remains unaccepted; this is source composition and lightweight development validation only.",
+  "dependencyProvisioning": "No install was run for the composed lock; the owned node_modules was provisioned from the original ae403 source.",
+  "checks": [
+    {
+      "command": "npm run test:tools -- tests/native-coloring-pages.test.mjs tests/native-drawing-model.test.mjs tests/native-drawing-interactions.test.mjs tests/native-drawing-tokens.test.mjs --maxWorkers=1",
+      "exitCode": 0,
+      "testsPassed": 39,
+      "filesPassed": 4,
+      "startedAtUtc": "2026-10-09 04:50:04 UTC",
+      "vitestDurationMs": 472
+    },
+    {
+      "command": "node_modules/.bin/tsc --noEmit -p experiments/native-architecture/tsconfig.json",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "svelteErrors": 0,
+      "svelteWarnings": 0
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:tools -- migration/tests/candidate-imports.test.mjs -t 'accepts the actual candidate' --maxWorkers=1",
+      "exitCode": 0,
+      "testsPassed": 1,
+      "testsSkipped": 63,
+      "startedAtUtc": "2026-10-09 04:50:25 UTC"
+    },
+    {
+      "command": "node_modules/.bin/prettier --write experiments/native-architecture/src/DrawingScreen.tsx experiments/native-architecture/src/drawing/model.ts experiments/native-architecture/src/drawing/theme.ts tools/migration/tests/candidate-imports.test.mjs tools/tests/native-drawing-tokens.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --cached --check",
+      "exitCode": 0
+    }
+  ],
+  "notRun": [
+    "composed-lock install",
+    "full tools suite",
+    "browser rerun",
+    "native build/capture",
+    "formal review"
+  ],
+  "preservation": "All original browser/export receipts and timeout/failure artifacts retain their original exact source attribution.",
+  "candidateTree": "3cf3a1e67d0eaea7a2838b87d6831c4153f86969",
+  "preparationChecks": [
+    {
+      "command": "node --check /private/tmp/splotch-coloring-composed-browser.mjs",
+      "exitCode": 0,
+      "meaning": "Syntax only; browser script not executed."
+    }
+  ]
+}

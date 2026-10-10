@@ -1,188 +1,12 @@
 // @vitest-environment happy-dom
-import { act, createElement, forwardRef, useImperativeHandle } from 'react';
-import { createRoot } from 'react-dom/client';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import {
   emptyDrawing,
   parseDrawing,
-  strokeStyle,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
+import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
 
-const files = vi.hoisted(() => ({
-  list: vi.fn(),
-  open: vi.fn(),
-  lock: vi.fn(),
-  capture: vi.fn(),
-  ink: vi.fn(),
-  export: vi.fn(),
-  settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
-  settingsWrite: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
-  listPictures: files.list,
-  reopenPicture: files.open,
-  savePicture: vi.fn(),
-  exportPng: files.export,
-}));
-
-vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
-  loadDrawingLoop: vi.fn(),
-}));
-vi.mock('../../experiments/native-architecture/src/platform/soundSettings.ts', () => ({
-  soundSettingsStorage: {
-    read: files.settingsRead,
-    write: files.settingsWrite,
-  },
-}));
-
-vi.mock('react-native', () => {
-  function container({ children }) {
-    return createElement('div', null, children);
-  }
-  return {
-    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
-    Dimensions: {
-      get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
-      addEventListener: () => ({ remove: vi.fn() }),
-    },
-    Platform: { OS: 'android' },
-    ActivityIndicator: () => null,
-    Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
-      createElement('button', {
-        role: 'switch',
-        'aria-label': accessibilityLabel,
-        'aria-checked': value,
-        disabled,
-        onClick: () => onValueChange(!value),
-      }),
-    Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
-    Pressable: ({
-      children,
-      onPress,
-      disabled,
-      accessibilityLabel,
-      accessibilityState,
-      'aria-pressed': pressed,
-      style,
-    }) =>
-      createElement(
-        'button',
-        {
-          onClick: onPress,
-          disabled,
-          'aria-label': accessibilityLabel,
-          'aria-pressed': pressed,
-          'data-native-selected': accessibilityState?.selected,
-          style:
-            typeof style === 'function'
-              ? undefined
-              : Object.assign({}, ...[style].flat().filter(Boolean)),
-        },
-        children
-      ),
-    SafeAreaView: container,
-    ScrollView: container,
-    View: container,
-    Text: ({ children, accessibilityRole, accessibilityLiveRegion, style }) =>
-      createElement(
-        'span',
-        {
-          role: accessibilityRole,
-          'aria-live': accessibilityLiveRegion,
-          style: Object.assign({}, ...[style].flat().filter(Boolean)),
-        },
-        children
-      ),
-    StyleSheet: { create: (styles) => styles },
-  };
-});
-
-vi.mock('react-native-svg', () => ({
-  default: ({ children }) => createElement('svg', null, children),
-  Defs: ({ children }) => createElement('defs', null, children),
-  LinearGradient: ({ children }) => createElement('linearGradient', null, children),
-  Stop: () => null,
-  Rect: () => null,
-  Path: () => null,
-}));
-
-const STROKE = {
-  color: 'Purple',
-  brush: 'marker',
-  width: 22,
-  points: [
-    { x: 10, y: 20 },
-    { x: 30, y: 40 },
-  ],
-};
-
-vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
-  DrawingSurface: forwardRef(
-    ({ drawing, onCohort, color, brush, strokeWidth, eraserWidth }, ref) => {
-      useImperativeHandle(
-        ref,
-        () => ({
-          refreshGeometry: vi.fn(),
-          lockInput: files.lock,
-          capturePng: files.capture,
-          captureInk: files.ink,
-        }),
-        []
-      );
-      return createElement(
-        'button',
-        {
-          'data-testid': 'paper',
-          'data-drawing': JSON.stringify(drawing),
-          onClick: () =>
-            onCohort([
-              {
-                ...strokeStyle(
-                  brush,
-                  color,
-                  drawing,
-                  brush === 'eraser' ? eraserWidth : strokeWidth
-                ),
-                points: STROKE.points,
-              },
-            ]),
-        },
-        'Draw fixture stroke'
-      );
-    }
-  ),
-}));
-
-function createScreen() {
-  const container = globalThis.document.createElement('div');
-  globalThis.document.body.append(container);
-  const root = createRoot(container);
-  return {
-    container,
-    mount: () => act(() => root.render(createElement(DrawingScreen))),
-    close: () => {
-      act(() => root.unmount());
-      container.remove();
-    },
-    async click(label) {
-      const button = [...container.querySelectorAll('button')].find(
-        (element) => element.getAttribute('aria-label') === label || element.textContent === label
-      );
-      expect(button, label).toBeDefined();
-      expect(button.disabled, label).toBe(false);
-      await act(async () => button.click());
-    },
-    paper: () => container.querySelector('[data-testid="paper"]').getAttribute('data-drawing'),
-    dialog: () => container.querySelector('[role="dialog"]'),
-  };
-}
-
-const pictures = [
-  { id: 'picture-1-bad', name: 'Broken picture', modifiedAt: 1 },
-  { id: 'picture-2-good', name: 'Good picture', modifiedAt: 2 },
-];
 let screen;
 
 beforeEach(() => {
@@ -483,7 +307,7 @@ describe('controller output snapshot ownership', () => {
         })
     );
     await screen.click('Export PNG');
-    await screen.click('Draw fixture stroke');
+    await act(async () => files.cohort([STROKE]));
     await act(async () => finish('old-picture-png'));
     expect(files.export).not.toHaveBeenCalled();
     expect(JSON.parse(screen.paper()).strokes).toHaveLength(2);
