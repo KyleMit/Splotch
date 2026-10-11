@@ -3,7 +3,20 @@ import { createSoundSettings } from '../../../experiments/native-architecture/sr
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 
-const caller = vi.hoisted(() => ({ screen: null, sound: null }));
+const caller = vi.hoisted(() => ({
+  screen: null,
+  sound: null,
+  menu: null,
+  feedbackRead: vi.fn().mockResolvedValue(null),
+  feedbackWrite: vi.fn().mockResolvedValue(undefined),
+  feedbackSend: vi.fn(),
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
+  feedbackTransport: caller.feedbackSend,
+  feedbackDevice: () => ({ platform: 'iOS' }),
+  feedbackOffline: () => false,
+  feedbackPolicyStorage: { read: caller.feedbackRead, write: caller.feedbackWrite },
+}));
 vi.mock('../../../experiments/native-architecture/src/useDrawingScreen.ts', () => ({
   useDrawingScreen: () => caller.screen,
 }));
@@ -11,7 +24,7 @@ vi.mock('../../../experiments/native-architecture/src/useDrawingSound.ts', () =>
   useDrawingSound: () => caller.sound,
 }));
 vi.mock('../../../experiments/native-architecture/src/useDrawingMenu.ts', () => ({
-  useDrawingMenu: () => ({ open: false }),
+  useDrawingMenu: () => caller.menu ?? { open: false },
 }));
 vi.mock('../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx', () => ({
   NativePaper: () => null,
@@ -55,13 +68,20 @@ vi.mock('react-native', async () => {
         {
           ref,
           role: props.role,
-          disabled: props.disabled,
           'aria-label': props.accessibilityLabel,
           'data-checked': props.accessibilityState?.checked,
           'data-native-background': props.style?.backgroundColor,
           'data-native-color': props.style?.color,
           'aria-live': props.accessibilityLiveRegion,
           'data-testid': props.testID,
+          value: props.value,
+          maxLength: props.maxLength,
+          disabled: props.disabled || props.editable === false,
+          onInput: props.onChange
+            ? (event) => props.onChange({ nativeEvent: { text: event.target.value } })
+            : props.onChangeText
+              ? (event) => props.onChangeText(event.target.value)
+              : undefined,
           onClick: props.disabled ? undefined : () => props.onPress?.({ nativeEvent: {} }),
         },
         props.children
@@ -136,6 +156,7 @@ afterEach(async () => {
   if (root) await act(async () => root.unmount());
   host?.remove();
   root = null;
+  caller.menu = null;
   records.scheme = 'light';
   records.props.length = 0;
   records.viewports.length = 0;

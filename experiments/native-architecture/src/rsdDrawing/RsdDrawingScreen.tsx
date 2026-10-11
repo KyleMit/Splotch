@@ -16,6 +16,8 @@ import { RsdAction, RsdPaintAction, styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
+import { useNativeFeedback } from '../feedback/useNativeFeedback';
+import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -43,6 +45,7 @@ export function RsdDrawingScreen() {
 }
 
 function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) {
+  const feedback = useNativeFeedback();
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen);
   const notice = useSettledMessage(screen.notice, screen.drawing);
@@ -112,7 +115,17 @@ function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) 
           ) : null}
         </NativeDrawingStatus>
         <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-        {menu.open ? <DrawingMenu screen={screen} sound={sound} menu={menu} /> : null}
+        {menu.open ? (
+          <DrawingMenu
+            screen={screen}
+            sound={sound}
+            menu={menu}
+            onFeedback={() => feedback.owner?.open()}
+          />
+        ) : null}
+        {feedback.owner && feedback.state?.open ? (
+          <RsdFeedbackSheet owner={feedback.owner} state={feedback.state} />
+        ) : null}
         {screen.pagePickerOpen ? (
           <RsdColoringBookPicker
             selected={screen.history.drawing.pageId}
@@ -185,10 +198,12 @@ function DrawingMenu({
   screen,
   sound,
   menu,
+  onFeedback,
 }: {
   screen: Screen;
   sound: Sound;
   menu: ReturnType<typeof useDrawingMenu>;
+  onFeedback: () => void;
 }) {
   return (
     <NativeDialog
@@ -254,6 +269,11 @@ function DrawingMenu({
           label="Settings"
           disabled={!menu.visible}
           onClick={() => menu.run(screen.openSettings)}
+        />
+        <RsdAction
+          label="Send Feedback"
+          disabled={!menu.visible}
+          onClick={() => menu.run(onFeedback)}
         />
       </html.div>
     </NativeDialog>

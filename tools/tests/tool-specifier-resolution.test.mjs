@@ -7,6 +7,7 @@ import {
   RSD_NATIVE_SELECTION_TEST,
   RSD_NATIVE_RECOVERY_TEST,
   RSD_NATIVE_APPEARANCE_TEST,
+  RSD_NATIVE_FEEDBACK_TEST,
 } from '../migration/lib/rsd-drawing-checks.mjs';
 
 // A relative specifier that points nowhere is not always an error, so moving a
@@ -199,6 +200,7 @@ describe('repo-root walks under tools/', () => {
       RSD_NATIVE_SELECTION_TEST,
       RSD_NATIVE_RECOVERY_TEST,
       RSD_NATIVE_APPEARANCE_TEST,
+      RSD_NATIVE_FEEDBACK_TEST,
     ]);
   });
 

@@ -25,6 +25,8 @@ import { Action, DrawingMenu } from './DrawingControls';
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { useColorPickerFocus } from './useColorPickerFocus';
+import { useNativeFeedback } from './feedback/useNativeFeedback';
+import { NativeFeedback } from './feedback/FeedbackSheet';
 
 function PaperWorkspace({
   children,
@@ -79,6 +81,7 @@ function DrawingScreenContent({
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
 }) {
+  const feedback = useNativeFeedback();
   const styles = useDrawingScreenStyles();
   const menu = useDrawingMenu(screen);
   const [settingsClosing, setSettingsClosing] = useState(false);
@@ -177,6 +180,7 @@ function DrawingScreenContent({
           onDismiss={menu.dismissed}
           run={menu.run}
           onClose={menuFocus.close}
+          onFeedback={() => feedback.owner?.open()}
         />
       ) : null}
       <DrawingSheets
@@ -190,6 +194,7 @@ function DrawingScreenContent({
           setSettingsClosing(false);
         }}
       />
+      <NativeFeedback owner={feedback.owner} state={feedback.state} />
     </SafeAreaView>
   );
 }

@@ -12,6 +12,9 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  feedbackRead: vi.fn().mockResolvedValue(null),
+  feedbackWrite: vi.fn().mockResolvedValue(undefined),
+  feedbackSend: vi.fn(),
   pngRead: vi.fn().mockResolvedValue(null),
   pngWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
@@ -22,6 +25,13 @@ const files = vi.hoisted(() => ({
   scheme: 'light',
   retainClosingModal: false,
   dismissModal: null,
+}));
+
+vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => ({
+  feedbackTransport: files.feedbackSend,
+  feedbackDevice: () => ({ platform: 'iOS', screen: '400 × 800' }),
+  feedbackOffline: () => false,
+  feedbackPolicyStorage: { read: files.feedbackRead, write: files.feedbackWrite },
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () => ({
@@ -135,6 +145,17 @@ vi.mock('react-native', () => {
         },
         children
       ),
+    TextInput: forwardRef(
+      ({ value, onChangeText, accessibilityLabel, maxLength, editable, multiline }, ref) =>
+        createElement(multiline ? 'textarea' : 'input', {
+          ref,
+          value,
+          'aria-label': accessibilityLabel,
+          maxLength,
+          disabled: editable === false,
+          onInput: (event) => onChangeText?.(event.target.value),
+        })
+    ),
     StyleSheet: { create: (styles) => styles },
   };
 });

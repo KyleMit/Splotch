@@ -71,12 +71,14 @@ function DrawingActions({
   showPictures,
   exportPicture,
   openSettings,
+  openFeedback,
 }: {
   disabled: boolean;
   save: () => void;
   showPictures: () => void;
   exportPicture: () => void;
   openSettings: () => void;
+  openFeedback: () => void;
 }) {
   const styles = useDrawingScreenStyles();
   return (
@@ -90,6 +92,7 @@ function DrawingActions({
         }}
       />
       <Action label="Settings" disabled={disabled} onPress={openSettings} />
+      <Action label="Send Feedback" disabled={disabled} onPress={openFeedback} />
       <Action label="Pictures" disabled={disabled} onPress={showPictures} />
       <Action
         label="Export PNG"
@@ -109,6 +112,7 @@ export function DrawingMenu({
   onClose,
   visible,
   onDismiss,
+  onFeedback,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -116,6 +120,7 @@ export function DrawingMenu({
   onClose: () => void;
   visible: boolean;
   onDismiss: () => void;
+  onFeedback: () => void;
 }) {
   const styles = useDrawingScreenStyles();
   const { brush } = screen;
@@ -192,6 +197,7 @@ export function DrawingMenu({
                 })
               }
               openSettings={() => run(screen.openSettings)}
+              openFeedback={() => run(onFeedback)}
             />
           </ScrollView>
           <Action label="Keep drawing" disabled={!visible} onPress={onClose} />

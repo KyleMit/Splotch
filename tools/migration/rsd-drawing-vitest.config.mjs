@@ -5,6 +5,7 @@ import {
   RSD_NATIVE_SELECTION_TEST,
   RSD_NATIVE_RECOVERY_TEST,
   RSD_NATIVE_APPEARANCE_TEST,
+  RSD_NATIVE_FEEDBACK_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -18,7 +19,12 @@ export default defineConfig({
   resolve: { alias: [{ find: /^react-strict-dom$/, replacement: native }] },
   test: {
     environment: 'happy-dom',
-    include: [RSD_NATIVE_SELECTION_TEST, RSD_NATIVE_RECOVERY_TEST, RSD_NATIVE_APPEARANCE_TEST],
+    include: [
+      RSD_NATIVE_SELECTION_TEST,
+      RSD_NATIVE_RECOVERY_TEST,
+      RSD_NATIVE_APPEARANCE_TEST,
+      RSD_NATIVE_FEEDBACK_TEST,
+    ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },
 });

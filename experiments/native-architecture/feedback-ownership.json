@@ -1,0 +1,42 @@
+{
+  "unit": "native-send-feedback",
+  "owner": "/root/native_feedback_2859",
+  "campaignOrchestrator": "/root",
+  "baseCommit": "8c1059891fc4270b20b9b5c9a7c0aaf39fd2bc48",
+  "branch": "codex/native-feedback",
+  "ownership": "Retained through feedback repairs; no reassignment to an original unit reviewer.",
+  "review": {
+    "opened": false,
+    "roundsUsed": 0,
+    "roundsRemaining": 3
+  },
+  "productionBoundary": [
+    "experiments/native-architecture/src/feedback",
+    "experiments/native-architecture/src/platform/feedback.ts",
+    "experiments/native-architecture/src/platform/feedback.web.ts",
+    "experiments/native-architecture/src/rsdDrawing/RsdFeedbackSheet.tsx",
+    "experiments/native-architecture/src/DrawingControls.tsx",
+    "experiments/native-architecture/src/DrawingScreen.tsx",
+    "experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx"
+  ],
+  "transport": "ordinary feedback only, explicit parent send, HTTPS splotch.art/api/report",
+  "acceptanceOpen": [
+    "framework selection",
+    "full product and release",
+    "independent review",
+    "full test tiers",
+    "native builds and on-device runtime",
+    "live API acceptance",
+    "gate failed-attempt lifetime across termination",
+    "broader Parent Center policy family"
+  ],
+  "forbidden": [
+    "live submission",
+    "provider writes",
+    "AI endpoints or keys",
+    "PR or push",
+    "original reviewer or ledger mutation",
+    "external dependency aliases"
+  ],
+  "integration": "Root integrates independently with Appearance and offline Library; do not overwrite their units."
+}
