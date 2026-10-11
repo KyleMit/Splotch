@@ -1,3 +1,4 @@
+import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
@@ -37,95 +38,99 @@ export function RsdDrawingScreen() {
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   const paints = [...PALETTE_COLORS.map((color) => color.label), ...sound.settings.customColors];
   return (
-    <NativeFrame>
-      <html.div data-layoutconformance="strict" style={styles.screen}>
-        <NativeDrawingLayout
-          drawing={screen.drawing}
-          controls={
-            <html.div style={styles.stack}>
-              <html.div style={styles.row}>
-                <html.span>Splotch</html.span>
-                <RsdAction
-                  label="Undo"
-                  disabled={disabled || screen.history.undo.length === 0}
-                  onClick={screen.undo}
-                />
-                <RsdAction
-                  label={`Drawing tools. ${BRUSHES[screen.brush].label} selected.`}
-                  text={BRUSHES[screen.brush].label}
-                  disabled={disabled}
-                  onClick={menu.show}
-                />
-              </html.div>
-              <html.div role="radiogroup" aria-label="Paint colors" style={styles.row}>
-                {paints.map((color) => (
-                  <RsdPaintAction
-                    key={color}
-                    color={color}
-                    selected={color === sound.settings.selectedColor}
-                    disabled={paintsDisabled}
-                    onClick={() => {
-                      void sound.owner?.settings.setColor(color);
-                    }}
+    <LibraryProvider {...screen.library}>
+      <NativeFrame>
+        <html.div data-layoutconformance="strict" style={styles.screen}>
+          <NativeDrawingLayout
+            drawing={screen.drawing}
+            controls={
+              <html.div style={styles.stack}>
+                <html.div style={styles.row}>
+                  <html.span>Splotch</html.span>
+                  <RsdAction
+                    label="Undo"
+                    disabled={disabled || screen.history.undo.length === 0}
+                    onClick={screen.undo}
                   />
-                ))}
+                  <RsdAction
+                    label={`Drawing tools. ${BRUSHES[screen.brush].label} selected.`}
+                    text={BRUSHES[screen.brush].label}
+                    disabled={disabled}
+                    onClick={menu.show}
+                  />
+                </html.div>
+                <html.div role="radiogroup" aria-label="Paint colors" style={styles.row}>
+                  {paints.map((color) => (
+                    <RsdPaintAction
+                      key={color}
+                      color={color}
+                      selected={color === sound.settings.selectedColor}
+                      disabled={paintsDisabled}
+                      onClick={() => {
+                        void sound.owner?.settings.setColor(color);
+                      }}
+                    />
+                  ))}
+                </html.div>
+                <RsdAction
+                  label="More colors"
+                  disabled={paintsDisabled}
+                  onClick={screen.openColorPicker}
+                />
               </html.div>
+            }
+          >
+            <NativePaper screen={screen} sound={sound} menuOpen={menu.open} />
+          </NativeDrawingLayout>
+          <NativeDrawingStatus drawing={screen.drawing}>
+            <html.span aria-live="polite">{notice}</html.span>
+            {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
+            {screen.recovery.failed ? (
               <RsdAction
-                label="More colors"
-                disabled={paintsDisabled}
-                onClick={screen.openColorPicker}
+                label="Retry drawing"
+                disabled={screen.recovery.retryDisabled}
+                onClick={screen.recovery.retry}
               />
-            </html.div>
-          }
-        >
-          <NativePaper screen={screen} sound={sound} menuOpen={menu.open} />
-        </NativeDrawingLayout>
-        <NativeDrawingStatus drawing={screen.drawing}>
-          <html.span aria-live="polite">{notice}</html.span>
-          {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
-          {screen.recovery.failed ? (
-            <RsdAction
-              label="Retry drawing"
-              disabled={screen.recovery.retryDisabled}
-              onClick={screen.recovery.retry}
+            ) : null}
+          </NativeDrawingStatus>
+          <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
+          {menu.open ? <DrawingMenu screen={screen} sound={sound} menu={menu} /> : null}
+          {screen.pagePickerOpen ? (
+            <RsdColoringBookPicker
+              selected={screen.history.drawing.pageId}
+              onChoose={screen.choosePage}
+              onClose={() => screen.setPagePickerOpen(false)}
             />
           ) : null}
-        </NativeDrawingStatus>
-        <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-        {menu.open ? <DrawingMenu screen={screen} sound={sound} menu={menu} /> : null}
-        {screen.pagePickerOpen ? (
-          <RsdColoringBookPicker
-            selected={screen.history.drawing.pageId}
-            onChoose={screen.choosePage}
-            onClose={() => screen.setPagePickerOpen(false)}
-          />
-        ) : null}
-        {screen.pictures !== null ? <Pictures screen={screen} pictures={screen.pictures} /> : null}
-        {screen.colorPickerOpen ? (
-          <ColorPicker
-            selected={sound.settings.selectedColor}
-            onClose={screen.closeColorPicker}
-            onChoose={(color) => {
-              void sound.owner?.settings.setColor(color);
-              screen.closeColorPicker();
-            }}
-          />
-        ) : null}
-        {screen.settingsOpen ? (
-          <NativeSoundSettingsDialog
-            settings={sound.settings}
-            notice={soundNotice}
-            onToggle={() => {
-              void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
-            }}
-            onRetry={() => {
-              void sound.owner?.settings.retrySave();
-            }}
-            onClose={screen.closeSettings}
-          />
-        ) : null}
-      </html.div>
-    </NativeFrame>
+          {screen.pictures !== null ? (
+            <Pictures screen={screen} pictures={screen.pictures} />
+          ) : null}
+          {screen.colorPickerOpen ? (
+            <ColorPicker
+              selected={sound.settings.selectedColor}
+              onClose={screen.closeColorPicker}
+              onChoose={(color) => {
+                void sound.owner?.settings.setColor(color);
+                screen.closeColorPicker();
+              }}
+            />
+          ) : null}
+          {screen.settingsOpen ? (
+            <NativeSoundSettingsDialog
+              settings={sound.settings}
+              notice={soundNotice}
+              onToggle={() => {
+                void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
+              }}
+              onRetry={() => {
+                void sound.owner?.settings.retrySave();
+              }}
+              onClose={screen.closeSettings}
+            />
+          ) : null}
+        </html.div>
+      </NativeFrame>
+    </LibraryProvider>
   );
 }
 

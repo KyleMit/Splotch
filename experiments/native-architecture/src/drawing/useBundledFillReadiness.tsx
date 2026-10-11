@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { isOfflinePageId } from '../offlineLibrary/identity';
+import { OfflineArtworkScope } from '../offlineLibrary/artworkContext';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
 import { BUNDLED_BOOK_ART } from './bundledBookAssets';
 import { isFarmPageId } from './bundledBooks';
@@ -7,10 +9,13 @@ import type { InkPlan } from './checkpoints';
 
 export function useBundledFillReadiness(plan: InkPlan, onError: (error: unknown) => void) {
   const { pageId, theme } = useInkAppearance();
-  const uri =
-    isFarmPageId(pageId) && plan.strokes.some((stroke) => stroke.brush === 'magic')
+  const offlineArtwork = useContext(OfflineArtworkScope);
+  const fill = isOfflinePageId(pageId)
+    ? offlineArtwork[pageId]?.[theme].fill
+    : isFarmPageId(pageId)
       ? BUNDLED_BOOK_ART[pageId][theme].fill
       : null;
+  const uri = plan.strokes.some((stroke) => stroke.brush === 'magic') ? (fill ?? null) : null;
   const [svgLoaded, setSvgLoaded] = useState<string | null>(null);
   const [nativeLoaded, setNativeLoaded] = useState<string | null>(null);
   const current = useRef({ plan, uri, onError });

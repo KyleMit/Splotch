@@ -1,3 +1,4 @@
+import { isOfflinePageId, pageReference, type OfflinePageId } from '../offlineLibrary/identity';
 import { BUNDLED_COLORING_PAGES, FARM_PAGE_IDS } from './bundledBooks';
 import type { PaletteLabel } from './palette';
 import type { PaperTheme } from './theme';
@@ -5,7 +6,8 @@ import type { PaperTheme } from './theme';
 export const SAMPLE_PAGE_IDS = ['blank', 'sunshine', 'flower', 'turtle'] as const;
 export type SamplePageId = (typeof SAMPLE_PAGE_IDS)[number];
 export const PAGE_IDS = [...SAMPLE_PAGE_IDS, ...FARM_PAGE_IDS] as const;
-export type PageId = (typeof PAGE_IDS)[number];
+export type BundledPageId = (typeof PAGE_IDS)[number];
+export type PageId = BundledPageId | OfflinePageId;
 
 export const COLORING_PAGES = {
   ...BUNDLED_COLORING_PAGES,
@@ -41,10 +43,10 @@ export const COLORING_PAGES = {
       'M 794 355 L 794 367 M 797 407 Q 779 418 764 404',
     ],
   },
-} as const satisfies Record<PageId, { label: string; paths: readonly string[] }>;
+} as const satisfies Record<BundledPageId, { label: string; paths: readonly string[] }>;
 
 export function isPageId(value: unknown): value is PageId {
-  return PAGE_IDS.some((id) => id === value);
+  return isOfflinePageId(value) || PAGE_IDS.some((id) => id === value);
 }
 
 type FillColors = Readonly<Record<PaperTheme, PaletteLabel>>;
@@ -80,3 +82,7 @@ export const COLORING_FILLS = {
     ],
   },
 } as const satisfies Record<Exclude<SamplePageId, 'blank'>, PageFill>;
+
+export function pageLabel(pageId: PageId): string {
+  return isOfflinePageId(pageId) ? pageReference(pageId).page.label : COLORING_PAGES[pageId].label;
+}

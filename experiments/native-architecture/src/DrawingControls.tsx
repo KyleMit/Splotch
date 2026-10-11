@@ -3,7 +3,7 @@ import { Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-na
 import type { useDrawingScreen } from './useDrawingScreen';
 import type { useDrawingSound } from './useDrawingSound';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
-import { COLORING_PAGES } from './drawing/pages';
+import { pageLabel } from './drawing/pages';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 import { drawingScreenStyles as styles } from './drawing/drawingScreenStyles';
 
@@ -156,9 +156,7 @@ export function DrawingMenu({
               ))}
             </View>
             <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
-            <Text style={styles.subtitle}>
-              {COLORING_PAGES[screen.history.drawing.pageId].label}
-            </Text>
+            <Text style={styles.subtitle}>{pageLabel(screen.history.drawing.pageId)}</Text>
             <View style={styles.toolbar}>
               <Action
                 label="Coloring pages"

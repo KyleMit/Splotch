@@ -1,3 +1,5 @@
+import { isOfflinePageId } from '../offlineLibrary/identity';
+import { OfflineMagicFill } from '../offlineLibrary/artwork';
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
 import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
 import { paintHex, paintId, paletteHex } from './palette';
@@ -86,7 +88,10 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { pageId, theme } = useInkAppearance();
   const bundledPattern = useContext(BundledMagicPatternScope);
-  const fill = pageId === 'blank' || isFarmPageId(pageId) ? null : COLORING_FILLS[pageId];
+  const fill =
+    pageId === 'blank' || isFarmPageId(pageId) || isOfflinePageId(pageId)
+      ? null
+      : COLORING_FILLS[pageId];
   if (bundledPattern) {
     return (
       <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${bundledPattern})`} />
@@ -145,7 +150,10 @@ export function InkArtwork({
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const appearance = useContext(InkAppearanceScope);
-  const bookPage = appearance && isFarmPageId(appearance.pageId) ? appearance.pageId : null;
+  const bookPage =
+    appearance && (isFarmPageId(appearance.pageId) || isOfflinePageId(appearance.pageId))
+      ? appearance.pageId
+      : null;
   const bookPattern =
     bookPage && strokes.some((stroke) => stroke.brush === 'magic') ? `${id}-book-fill` : null;
   const colors = new Map<string, string>();
@@ -166,7 +174,11 @@ export function InkArtwork({
               patternUnits="userSpaceOnUse"
               patternContentUnits="userSpaceOnUse"
             >
-              <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+              {isOfflinePageId(bookPage) ? (
+                <OfflineMagicFill pageId={bookPage} theme={appearance.theme} />
+              ) : (
+                <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+              )}
             </Pattern>
           ) : null}
           {Array.from(colors).flatMap(([colorId, hex]) =>

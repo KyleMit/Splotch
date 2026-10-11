@@ -1,3 +1,5 @@
+import { offlineLibrary } from './offlineLibrary/runtime';
+import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DrawingSurfaceHandle } from './drawing/DrawingSurface';
 import {
@@ -14,11 +16,12 @@ import {
   listPictures,
   reopenPicture,
   savePicture,
+  savedColoringPageIds,
   type SavedPicture,
 } from './platform/drawingFiles';
 import type { Brush } from './drawing/brushes';
 import { createInkObservation } from './drawing/inkCoverage';
-import { COLORING_PAGES, type PageId } from './drawing/pages';
+import { pageLabel, type PageId } from './drawing/pages';
 import { useRendererRecovery } from './useRendererRecovery';
 import { usePngRecovery } from './usePngRecovery';
 
@@ -31,6 +34,7 @@ export function useDrawingScreen() {
   const [notice, setNotice] = useState('Pick a color and draw.');
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
+  const library = useColoringLibrary(historyRef, drawing, pagePickerOpen);
   const settingsLease = useRef<(() => void) | null>(null);
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
@@ -88,12 +92,15 @@ export function useDrawingScreen() {
 
   function choosePage(pageId: PageId) {
     if (commandsBlocked()) return;
-    const next = changePage(historyRef.current, pageId);
-    if (next !== historyRef.current) {
-      setHistory(next);
-      setNotice(`${COLORING_PAGES[pageId].label} ready. Undo brings your picture back.`);
-    }
-    setPagePickerOpen(false);
+    void runCommand(async () => {
+      await offlineLibrary.openPage(pageId);
+      const next = changePage(historyRef.current, pageId);
+      if (next !== historyRef.current) {
+        setHistory(next);
+        setNotice(`${pageLabel(pageId)} ready. Undo brings your picture back.`);
+      }
+      setPagePickerOpen(false);
+    });
   }
 
   const pictureActions = usePictureActions({
@@ -121,6 +128,7 @@ export function useDrawingScreen() {
   });
 
   return {
+    library,
     recovery,
     pngRecovery,
     history,
@@ -145,6 +153,20 @@ export function useDrawingScreen() {
     currentDrawing,
     finishCohort,
     ...pictureActions,
+  };
+}
+
+function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pickerOpen: boolean) {
+  const state = useOfflineLibrary(drawing, pickerOpen);
+  return {
+    owner: offlineLibrary,
+    state,
+    remove: () =>
+      offlineLibrary.remove(async () => [
+        ...(await savedColoringPageIds()),
+        historyRef.current.drawing.pageId,
+        ...historyRef.current.undo.map((entry) => entry.pageId),
+      ]),
   };
 }
 

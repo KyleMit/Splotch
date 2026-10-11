@@ -1,3 +1,4 @@
+import { LibraryProvider } from './offlineLibrary/LibraryScope';
 import { useState, type ReactNode, type RefObject } from 'react';
 import {
   Modal,
@@ -95,86 +96,88 @@ export function DrawingScreen() {
     blocked: disabled || pictures !== null,
   });
   return (
-    <SafeAreaView
-      style={styles.screen}
-      onLayout={() => surface.current?.refreshGeometry()}
-      onFocus={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
-      onPointerDown={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
-      onTouchStart={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
-    >
-      <View
-        accessibilityElementsHidden={menu.open}
-        importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
-        style={[styles.content, landscape && styles.landscape]}
+    <LibraryProvider {...screen.library}>
+      <SafeAreaView
+        style={styles.screen}
+        onLayout={() => surface.current?.refreshGeometry()}
+        onFocus={() => {
+          paintFocus.cancel();
+          focusReturn.cancel();
+          menuFocus.cancel();
+        }}
+        onPointerDown={() => {
+          paintFocus.cancel();
+          focusReturn.cancel();
+          menuFocus.cancel();
+        }}
+        onTouchStart={() => {
+          paintFocus.cancel();
+          focusReturn.cancel();
+          menuFocus.cancel();
+        }}
       >
-        <ScrollView
-          style={landscape ? styles.sideControls : styles.topControls}
-          contentContainerStyle={styles.controls}
-          scrollEnabled={!drawing}
+        <View
+          accessibilityElementsHidden={menu.open}
+          importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
+          style={[styles.content, landscape && styles.landscape]}
         >
-          <View style={styles.heading}>
-            <Text style={styles.title}>Splotch</Text>
-            <Action
-              label="Undo"
-              disabled={disabled || menu.open || history.undo.length === 0}
-              onPress={undo}
+          <ScrollView
+            style={landscape ? styles.sideControls : styles.topControls}
+            contentContainerStyle={styles.controls}
+            scrollEnabled={!drawing}
+          >
+            <View style={styles.heading}>
+              <Text style={styles.title}>Splotch</Text>
+              <Action
+                label="Undo"
+                disabled={disabled || menu.open || history.undo.length === 0}
+                onPress={undo}
+              />
+              <Action
+                label={`${BRUSHES[brush].label} ▾`}
+                accessibilityLabel={`Drawing tools. ${BRUSHES[brush].label} selected.`}
+                openerRef={menuFocus.opener}
+                disabled={disabled || menu.open}
+                onPress={menu.show}
+              />
+            </View>
+            <PaintColors
+              color={color}
+              customColors={sound.settings.customColors}
+              disabled={paintsDisabled || menu.open}
+              openerRef={focusReturn.opener}
+              onExplore={openColorPicker}
+              onChange={(next, target) => {
+                void paintFocus.choose(next, target, () => sound.owner?.settings.setColor(next));
+              }}
             />
-            <Action
-              label={`${BRUSHES[brush].label} ▾`}
-              accessibilityLabel={`Drawing tools. ${BRUSHES[brush].label} selected.`}
-              openerRef={menuFocus.opener}
-              disabled={disabled || menu.open}
-              onPress={menu.show}
-            />
-          </View>
-          <PaintColors
-            color={color}
-            customColors={sound.settings.customColors}
-            disabled={paintsDisabled || menu.open}
-            openerRef={focusReturn.opener}
-            onExplore={openColorPicker}
-            onChange={(next, target) => {
-              void paintFocus.choose(next, target, () => sound.owner?.settings.setColor(next));
-            }}
+          </ScrollView>
+          <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open} />
+        </View>
+        <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
+        {menu.open ? (
+          <DrawingMenu
+            screen={screen}
+            sound={sound}
+            visible={menu.visible}
+            onDismiss={menu.dismissed}
+            run={menu.run}
+            onClose={menuFocus.close}
           />
-        </ScrollView>
-        <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open} />
-      </View>
-      <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
-      {menu.open ? (
-        <DrawingMenu
+        ) : null}
+        <DrawingSheets
           screen={screen}
           sound={sound}
-          visible={menu.visible}
-          onDismiss={menu.dismissed}
-          run={menu.run}
-          onClose={menuFocus.close}
+          onCloseColors={focusReturn.close}
+          settingsClosing={settingsClosing}
+          onCloseSettings={menuFocus.close}
+          onSettingsDismissed={() => {
+            screen.closeSettings();
+            setSettingsClosing(false);
+          }}
         />
-      ) : null}
-      <DrawingSheets
-        screen={screen}
-        sound={sound}
-        onCloseColors={focusReturn.close}
-        settingsClosing={settingsClosing}
-        onCloseSettings={menuFocus.close}
-        onSettingsDismissed={() => {
-          screen.closeSettings();
-          setSettingsClosing(false);
-        }}
-      />
-    </SafeAreaView>
+      </SafeAreaView>
+    </LibraryProvider>
   );
 }
 
