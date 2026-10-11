@@ -2,13 +2,15 @@ import { createHash } from 'node:crypto';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const INPUT = new URL('../inputs/native-ai-source-extension.json', import.meta.url);
-const INPUT_SHA256 = 'bc6274f0c4947ecacd3062f3b0c3781b086d9fa31b1d3123d28b4f9fb7b8e713';
+const INPUT_SHA256 = '8f3bc5569fc919fd2a875d41f7343c9bf2d28d175f1bf6829a4ac5712e42bdb4';
 const TARGETS = [
   'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
   'ios/HelloWorld.xcodeproj/project.pbxproj',
   'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
   'ios/HelloWorld/SplotchAIEnvironment.swift',
   'ios/HelloWorld/SplotchAIEnvironment.m',
+  'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+  'ios/HelloWorld/SplotchAIJournal.swift',
 ];
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');

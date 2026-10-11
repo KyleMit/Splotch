@@ -4,6 +4,7 @@ import { createNativeAi, type NativeAiOwner, type AiState } from './generation';
 import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from './prepare';
+import { parseDrawing } from '../drawing/model';
 import type { useDrawingScreen } from '../useDrawingScreen';
 const GATE_TICK_MS = 1000;
 export function useNativeAi(screen: ReturnType<typeof useDrawingScreen>) {
@@ -30,7 +31,11 @@ export function useNativeAi(screen: ReturnType<typeof useDrawingScreen>) {
             throw new Error('The drawing changed before preparation finished.');
           const bytes = prepareAiPng(base64);
           const original = await savePicture(drawing);
-          return { bytes, originalId: original.id };
+          return {
+            bytes,
+            originalId: original.id,
+            originalModel: JSON.stringify(parseDrawing(drawing)),
+          };
         } finally {
           release();
         }

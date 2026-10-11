@@ -13,6 +13,9 @@ function fixture() {
   let finish;
   const storage = {
     read: vi.fn(async () => journal),
+    prepare: vi.fn(async (next) => {
+      journal = next;
+    }),
     write: vi.fn(async (next) => {
       journal = next;
     }),
@@ -39,6 +42,7 @@ function fixture() {
   const prepare = vi.fn(async () => ({
     bytes: Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10),
     originalId: 'picture-1-fixture',
+    originalModel: JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] }),
   }));
   const admit = vi.fn(async () => {});
   const owner = createNativeAi({ storage, vault, transport, prepare, admit });
@@ -76,7 +80,7 @@ describe('native hosted AI operation ownership', () => {
     await vi.waitFor(() => expect(f.post).toHaveBeenCalledOnce());
     await f.owner.generate();
     expect(f.post).toHaveBeenCalledOnce();
-    expect(f.storage.write).toHaveBeenCalledBefore(f.post);
+    expect(f.storage.prepare).toHaveBeenCalledBefore(f.post);
     expect(f.post.mock.calls[0][0]).toMatchObject({
       path: '/api/generate-image',
       query: 'style=Magical',
@@ -92,6 +96,20 @@ describe('native hosted AI operation ownership', () => {
     expect(f.storage.retain).toHaveBeenCalledOnce();
     f.owner.dispose();
   });
+  it.each(['file sync', 'directory fsync', 'rename', 'quota', 'unknown native receipt'])(
+    'suppresses POST when preupload %s is unconfirmed',
+    async (failure) => {
+      const f = fixture();
+      await f.open();
+      f.storage.prepare.mockRejectedValue(new Error(failure));
+      f.post.mockResolvedValue(image());
+      await f.owner.generate();
+      expect(f.post).not.toHaveBeenCalled();
+      expect(f.owner.getState().message).toContain('Nothing was sent');
+      expect(f.storage.retain).not.toHaveBeenCalled();
+      f.owner.dispose();
+    }
+  );
   it('keeps a ticket across close, resumes polling and retains a late result separately from a new drawing', async () => {
     const f = fixture();
     await f.open();

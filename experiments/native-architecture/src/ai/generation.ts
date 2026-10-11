@@ -196,6 +196,7 @@ class NativeAiController extends AiSession {
       message: 'Saving your original drawing…',
       heldResult: null,
     });
+    let uploadStarted = false;
     try {
       const prepared = await this.deps.prepare();
       if (!this.state.authorized || proof !== this.authorization || this.disposed) return;
@@ -210,7 +211,7 @@ class NativeAiController extends AiSession {
         jobId: null,
         result: null,
       };
-      await this.persist(journal);
+      await this.persistPrepared(journal, prepared);
       if (!this.state.authorized || proof !== this.authorization || this.disposed) {
         await this.persist({
           ...journal,
@@ -221,6 +222,7 @@ class NativeAiController extends AiSession {
       this.update({
         message: 'Making your AI picture…',
       });
+      uploadStarted = true;
       const reply = await requestAi(
         this.deps.transport,
         {
@@ -239,8 +241,9 @@ class NativeAiController extends AiSession {
       await this.settle(id, reply, false);
     } catch {
       this.update({
-        message:
-          'That did not finish. Your original drawing is still here. A sent generation will not be retried automatically.',
+        message: uploadStarted
+          ? 'That did not finish. Your original drawing is still here. A sent generation will not be retried automatically.'
+          : 'AI storage did not confirm the save. Nothing was sent. Your drawing is still here.',
       });
     } finally {
       this.active = false;

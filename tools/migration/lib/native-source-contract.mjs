@@ -306,6 +306,84 @@ function assertAppleProject(files) {
   }
 }
 
+function assertAiJournalContract(files) {
+  const android = text(files, `${KOTLIN_DIRECTORY}/SplotchAIJournal.kt`);
+  const apple = text(files, 'ios/HelloWorld/SplotchAIJournal.swift');
+  for (const [source, tokens] of [
+    [
+      android,
+      [
+        'Executors.newSingleThreadExecutor()',
+        'stream.channel.lock()',
+        'stream.fd.sync()',
+        'Os.fsync(fd)',
+        'OsConstants.O_NOFOLLOW',
+        'OsConstants.O_EXCL',
+        'SecureRandom().nextBytes(it)',
+        'maxQuota = 128L * 1024 * 1024',
+        'maxAttempts = 32',
+        'maxLegacy = 256',
+      ],
+    ],
+    [
+      apple,
+      [
+        'DispatchQueue(label: "art.splotch.ai-journal")',
+        'flock(descriptor, LOCK_EX)',
+        'fsync(descriptor)',
+        'fcntl(descriptor, F_FULLFSYNC)',
+        'O_NOFOLLOW',
+        'O_EXCL',
+        'RENAME_EXCL',
+        'SecRandomCopyBytes',
+        'maxQuota = 128 * 1024 * 1024',
+        'maxAttempts = 32',
+        'maxLegacy = 256',
+      ],
+    ],
+  ]) {
+    for (const token of tokens)
+      if (!source.includes(token)) throw new Error(`Native journal contract mismatch: ${token}`);
+    if (
+      source.includes('AtomicFile') ||
+      source.includes('readCredential') ||
+      source.includes('writeCredential')
+    )
+      throw new Error('Native journal storage boundary changed');
+  }
+  if (
+    android.split('confirm(it, latest(it))').length !== 3 ||
+    apple.split('confirm($0, latest($0))').length !== 3 ||
+    android.split('receipt(confirm(dir, value))').length !== 3 ||
+    apple.split('receipt(confirm(dir, value))').length !== 3 ||
+    android.split('receipt(confirm(dir, latest(dir)))').length !== 2 ||
+    apple.split('receipt(confirm(dir, latest(dir)))').length !== 2
+  )
+    throw new Error(
+      'Native journal contract mismatch: confirmed publication, idempotent receipt, read and gallery admission'
+    );
+  requireMatch(
+    text(files, `${KOTLIN_DIRECTORY}/SplotchAIEnvironment.kt`),
+    /journal\.execute\(kind, payload/,
+    'Android native journal caller'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld/SplotchAIEnvironment.swift'),
+    /journal\.execute\(kind, payload/,
+    'Apple native journal caller'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld/SplotchAIEnvironment.m'),
+    /RCT_EXTERN_METHOD\(aiStorage:/,
+    'Apple native journal registration'
+  );
+  requireMatch(
+    text(files, 'ios/HelloWorld.xcodeproj/project.pbxproj'),
+    /SplotchAIJournal\.swift in Sources/,
+    'Apple journal build membership'
+  );
+}
+
 export function assertNativeSourceContract(files, packageManifest, indexSource) {
   if (packageManifest.main !== NATIVE_CONTRACT.entry)
     throw new Error('Candidate JavaScript entry changed');
@@ -330,6 +408,7 @@ export function assertNativeSourceContract(files, packageManifest, indexSource) 
       throw new Error(`Shipping identity in candidate source: ${path}`);
     }
   }
+  assertAiJournalContract(files);
   assertAndroidProperties(files);
   assertAndroidApplication(files);
   assertAndroidManifest(files);

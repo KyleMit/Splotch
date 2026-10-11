@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 const fixture = vi.hoisted(() => ({
   files: new Map(),
+  storage: vi.fn(),
   decode: vi.fn(),
   read: vi.fn(),
   write: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('react-native', () => ({
   NativeModules: {
     SplotchAIEnvironment: {
       installationId: fixture.id,
+      aiStorage: fixture.storage,
       decodeImage: fixture.decode,
       readCredential: fixture.read,
       writeCredential: fixture.write,
@@ -71,6 +73,9 @@ vi.mock('expo-file-system', () => {
     constructor(...parts) {
       this.uri = uri(parts) + '/';
     }
+    get exists() {
+      return [...fixture.files.keys()].some((path) => path.startsWith(this.uri));
+    }
     create() {}
     list() {
       return [...fixture.files.keys()]
@@ -102,6 +107,9 @@ beforeEach(() => {
   fixture.decode.mockImplementation(async (_, __, width, height) => ({ width, height }));
   fixture.id.mockResolvedValue('a'.repeat(64));
   fixture.read.mockResolvedValue(null);
+  fixture.storage.mockImplementation(async (kind) =>
+    JSON.stringify(kind === 'pictures' ? { pictures: [] } : { receipt: null })
+  );
 });
 it('uses strict native secure readback for writes and removals, with no fallback on an ambiguous outcome', async () => {
   fixture.write.mockResolvedValue(true);
@@ -119,18 +127,103 @@ it('uses strict native secure readback for writes and removals, with no fallback
   await expect(aiVault.installationId()).rejects.toThrow('unavailable');
   expect(fixture.files.size).toBe(0);
 });
-it('publishes checked recovery journals and result files and refuses missing retained results', async () => {
-  await aiStorage.write(journal);
-  expect(await aiStorage.read()).toEqual(journal);
+const originalModel = JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] });
+function committed(journal, revision = 1) {
+  return {
+    journal,
+    revision,
+    nonce: 'c'.repeat(64),
+    originalDigest: 'd'.repeat(64),
+    inputDigest: 'e'.repeat(64),
+  };
+}
+it('requires a native preparation receipt and preserves exact original and upload bytes before later revisions', async () => {
   const bytes = rgbaPng(2, 2, 255);
+  let current = null;
+  fixture.storage.mockImplementation(async (kind, raw) => {
+    const value = JSON.parse(raw);
+    if (kind === 'prepare') {
+      current = committed(value.journal);
+    } else if (kind === 'write') {
+      current = committed(value.journal, current.revision + 1);
+    } else if (kind === 'retain') {
+      const result = { uri: 'file:///owned/native/result.bin', mime: value.mime };
+      fixture.files.set(result.uri, bytes);
+      current = committed({ ...current.journal, phase: 'result', result }, current.revision + 1);
+    }
+    return JSON.stringify(
+      kind === 'pictures' ? { pictures: [current.journal.result] } : { receipt: current }
+    );
+  });
+  const exactModel = '  ' + originalModel + '\n';
+  await aiStorage.prepare(journal, exactModel, bytes);
+  const prepared = JSON.parse(fixture.storage.mock.calls.at(-1)[1]);
+  expect(prepared.originalModel).toBe(exactModel);
+  expect(Buffer.from(prepared.upload, 'base64')).toEqual(Buffer.from(bytes));
+  expect(await aiStorage.read()).toEqual(journal);
   const result = await aiStorage.retain(1, bytes, 'image/png');
+  expect(JSON.parse(fixture.storage.mock.calls.at(-1)[1])).toMatchObject({
+    id: 1,
+    nonce: 'c'.repeat(64),
+    revision: 1,
+  });
   await aiStorage.write({ ...journal, phase: 'result', result });
   expect((await aiStorage.read()).result).toEqual(result);
   expect(await aiStorage.pictures()).toEqual([result]);
   fixture.files.delete(result.uri);
   await expect(aiStorage.read()).rejects.toThrow('missing');
 });
-
+it('refuses unconfirmed native storage without publishing through Expo', async () => {
+  fixture.storage.mockRejectedValue(new Error('directory fsync failed'));
+  await expect(
+    aiStorage.prepare({ ...journal, id: 22 }, originalModel, rgbaPng(2, 2, 255))
+  ).rejects.toThrow('fsync');
+  expect(fixture.files.size).toBe(0);
+  fixture.storage.mockResolvedValue(
+    JSON.stringify({ receipt: { ...committed({ ...journal, id: 22 }), revision: 0 } })
+  );
+  await expect(
+    aiStorage.prepare({ ...journal, id: 22 }, originalModel, rgbaPng(2, 2, 255))
+  ).rejects.toThrow('not confirmed');
+  expect(fixture.files.size).toBe(0);
+});
+it('rejects an escaped legacy result before any image decode or retention', async () => {
+  const outside = 'file:///outside/synthetic-picture.png';
+  fixture.files.set(outside, rgbaPng(2, 2, 255));
+  const saved = {
+    ...journal,
+    id: 70,
+    phase: 'result',
+    result: { uri: outside, mime: 'image/png' },
+  };
+  fixture.files.set(
+    'file:///owned/splotch-ai-pictures-v1/journal-70.json',
+    new TextEncoder().encode(JSON.stringify(saved))
+  );
+  await expect(aiStorage.read()).rejects.toThrow('outside its owned gallery');
+  expect(fixture.decode).not.toHaveBeenCalled();
+  expect(fixture.files.has(outside)).toBe(true);
+});
+it('imports an existing unresolved ticket and original with absent upload metadata', async () => {
+  const saved = { ...journal, id: 77, phase: 'pending', jobId: 'b'.repeat(64) };
+  fixture.files.set(
+    'file:///owned/splotch-ai-pictures-v1/journal-77.json',
+    new TextEncoder().encode(JSON.stringify(saved))
+  );
+  fixture.files.set(
+    'file:///owned/splotch-pictures/picture-1-fixture.json',
+    new TextEncoder().encode(originalModel)
+  );
+  fixture.storage.mockImplementation(async (kind, raw) =>
+    JSON.stringify({
+      receipt:
+        kind === 'read' ? null : { ...committed(JSON.parse(raw).journal), inputDigest: null },
+    })
+  );
+  expect(await aiStorage.read()).toEqual(saved);
+  expect(fixture.storage.mock.calls.map(([kind]) => kind)).toEqual(['read', 'importLegacy']);
+  expect(JSON.parse(fixture.storage.mock.calls[1][1])).toEqual({ journal: saved, originalModel });
+});
 it('requires actual bounded native decode agreement before result publication and refuses older unsafe gallery bytes', async () => {
   const bytes = rgbaPng(2, 2, 255);
   fixture.decode.mockResolvedValue({ width: 2, height: 3 });

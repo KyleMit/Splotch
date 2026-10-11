@@ -29,6 +29,11 @@ const JOINT_TRANSFORM_MUTATIONS = [
     'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
     '// joint source drift\n',
   ],
+  [
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+    '// joint source drift\n',
+  ],
+  ['ios/HelloWorld/SplotchAIJournal.swift', '// joint source drift\n'],
   ['android/gradle.properties', '# joint source drift\n'],
   ['android/gradle/wrapper/gradle-wrapper.properties', '# joint source drift\n'],
   ['ios/HelloWorld.xcodeproj/project.pbxproj', '// joint source drift\n'],

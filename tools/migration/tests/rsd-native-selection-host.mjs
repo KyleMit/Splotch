@@ -8,6 +8,7 @@ const caller = vi.hoisted(() => ({
   sound: null,
   menu: null,
   aiAdmit: vi.fn().mockResolvedValue(undefined),
+  aiPrepare: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
   aiWrite: vi.fn().mockResolvedValue(undefined),
   aiSend: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
     remove: async () => {},
   },
   aiStorage: {
+    prepare: caller.aiPrepare,
     read: caller.aiRead,
     write: caller.aiWrite,
     retain: caller.aiRetain,

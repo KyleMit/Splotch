@@ -12,6 +12,7 @@ export type AiJournal = Readonly<{
 }>;
 export interface AiStorage {
   read(): Promise<AiJournal | null>;
+  prepare(value: AiJournal, originalModel: string, upload: Uint8Array): Promise<void>;
   pictures(): Promise<AiResult[]>;
   write(value: AiJournal): Promise<void>;
   retain(id: number, bytes: Uint8Array, mime: AiMime): Promise<AiResult>;

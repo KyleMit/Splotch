@@ -27,7 +27,14 @@ async function open() {
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   files.aiAdmit.mockResolvedValue(undefined);
-  files.aiRead.mockResolvedValue(null);
+  let journal = null;
+  files.aiRead.mockImplementation(async () => journal);
+  files.aiPrepare.mockImplementation(async (next) => {
+    journal = next;
+  });
+  files.aiWrite.mockImplementation(async (next) => {
+    journal = next;
+  });
   files.aiVaultRead.mockResolvedValue(null);
   files.aiSend.mockImplementation(async (request) =>
     request.path === '/api/free-generation-grant'
@@ -57,6 +64,14 @@ it('mounts the RN parent challenge, disclosure, finite style picker and retained
   await screen.click('Send drawing for AI');
   await flush();
   expect(files.aiSend.mock.calls.at(-1)[0].query).toBe('style=Clay');
+  expect(JSON.parse(files.aiPrepare.mock.calls[0][1])).toEqual(JSON.parse(original));
+  expect(files.aiPrepare.mock.calls[0][2].length).toBeGreaterThan(8);
+  const postIndex = files.aiSend.mock.calls.findIndex(
+    ([request]) => request.path === '/api/generate-image'
+  );
+  expect(files.aiPrepare.mock.invocationCallOrder[0]).toBeLessThan(
+    files.aiSend.mock.invocationCallOrder[postIndex]
+  );
   expect(screen.paper()).toBe(original);
   expect(screen.container.querySelector('img[alt="Your AI picture"]').getAttribute('src')).toBe(
     'file:///owned/ai.png'

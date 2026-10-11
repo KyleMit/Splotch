@@ -25,6 +25,7 @@ export const aiVault: AiVault = {
   remove: unavailable,
 };
 export const aiStorage: AiStorage = {
+  prepare: unavailable,
   read: unavailable,
   write: unavailable,
   retain: unavailable,

@@ -120,6 +120,7 @@ describe('candidate source import ownership', () => {
       'src/platform/drawingAudio.web.ts',
       'src/platform/drawingFiles.ts',
       'src/platform/drawingFiles.web.ts',
+      'src/platform/durableAiStorage.ts',
       'src/platform/feedback.ts',
       'src/platform/feedback.web.ts',
       'src/platform/pngRecovery.ts',

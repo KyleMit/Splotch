@@ -28,6 +28,10 @@ class SplotchAIEnvironmentPackage : ReactPackage {
 }
 
 class SplotchAIEnvironment(private val context: ReactApplicationContext) : ReactContextBaseJavaModule(context) {
+  private val journal = SplotchAIJournal(context)
+  @ReactMethod fun aiStorage(kind: String, payload: String, promise: Promise) {
+    journal.execute(kind, payload, { promise.resolve(it) }, { promise.reject("AI_DURABILITY_UNAVAILABLE", "AI storage was not confirmed. Nothing new was sent.") })
+  }
   private val alias = "splotch-ai-credentials-v1"
   private val maxBytes = 8192
   private val maxImageBytes = 16 * 1024 * 1024

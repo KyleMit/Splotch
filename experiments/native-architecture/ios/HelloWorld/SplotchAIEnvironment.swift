@@ -8,6 +8,16 @@ import UniformTypeIdentifiers
 
 @objc(SplotchAIEnvironment)
 final class SplotchAIEnvironment: NSObject {
+  private let journal = SplotchAIJournal()
+  @objc(aiStorage:payload:resolver:rejecter:)
+  func aiStorage(_ kind: String, payload: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    journal.execute(kind, payload) { result in
+      switch result {
+      case .success(let value): resolve(value)
+      case .failure: reject("AI_DURABILITY_UNAVAILABLE", "AI storage was not confirmed. Nothing new was sent.", nil)
+      }
+    }
+  }
   private let service = "art.splotch.ai-credentials-v1"
   private let maxBytes = 8192
   private let maxImageBytes = 16 * 1024 * 1024

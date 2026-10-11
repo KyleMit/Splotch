@@ -27,6 +27,7 @@ export type AiState = Readonly<{
 export type PreparedAiDrawing = {
   bytes: Uint8Array;
   originalId: string;
+  originalModel: string;
 };
 export class AiSession {
   protected deps: {
@@ -52,7 +53,6 @@ export class AiSession {
   protected ambiguous = new Set<number>();
   protected credential: AiCredential | null = null;
   protected active = false;
-  protected loaded = false;
   protected pollStarted = 0;
   protected authorization = 0;
   protected gate = createFeedbackGate((next) =>
@@ -91,6 +91,17 @@ export class AiSession {
       .then(async () => {
         if (this.journals.get(journal.id)?.phase === 'result' && journal.phase !== 'result') return;
         await this.deps.storage.write(journal);
+        this.journals.set(journal.id, journal);
+        this.update({ journal });
+      });
+    this.writing = work;
+    return work;
+  };
+  protected persistPrepared = (journal: AiJournal, prepared: PreparedAiDrawing) => {
+    const work = this.writing
+      .catch(() => {})
+      .then(async () => {
+        await this.deps.storage.prepare(journal, prepared.originalModel, prepared.bytes);
         this.journals.set(journal.id, journal);
         this.update({ journal });
       });
@@ -163,13 +174,12 @@ export class AiSession {
       message: '',
     });
     try {
-      if (!this.loaded) {
+      {
         const journal = await this.deps.storage.read();
         this.update({
           journal,
         });
         if (journal) this.journals.set(journal.id, journal);
-        this.loaded = true;
       }
       await this.refreshCredential();
       this.update({
