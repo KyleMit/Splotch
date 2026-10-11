@@ -12,6 +12,7 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  aiAdmit: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
   aiWrite: vi.fn().mockResolvedValue(undefined),
   aiPictures: vi.fn().mockResolvedValue([]),
@@ -36,6 +37,7 @@ const files = vi.hoisted(() => ({
 
 vi.mock('../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: files.aiSend,
+  admitAiImage: files.aiAdmit,
   aiVault: {
     installationId: async () => 'a'.repeat(64),
     read: files.aiVaultRead,

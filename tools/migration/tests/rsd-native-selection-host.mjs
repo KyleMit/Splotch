@@ -7,6 +7,7 @@ const caller = vi.hoisted(() => ({
   screen: null,
   sound: null,
   menu: null,
+  aiAdmit: vi.fn().mockResolvedValue(undefined),
   aiRead: vi.fn().mockResolvedValue(null),
   aiWrite: vi.fn().mockResolvedValue(undefined),
   aiSend: vi.fn(),
@@ -19,6 +20,7 @@ const caller = vi.hoisted(() => ({
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   aiTransport: caller.aiSend,
+  admitAiImage: caller.aiAdmit,
   aiVault: {
     installationId: async () => 'a'.repeat(64),
     read: caller.aiVaultRead,

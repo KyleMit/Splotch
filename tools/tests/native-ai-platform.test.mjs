@@ -1,6 +1,9 @@
-import { beforeEach, expect, it, vi } from 'vitest';
+import { rgbaPng } from './native-png-fixtures.mjs';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { AI_IMAGE_DECODE_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/imageBounds.ts';
 const fixture = vi.hoisted(() => ({
   files: new Map(),
+  decode: vi.fn(),
   read: vi.fn(),
   write: vi.fn(),
   remove: vi.fn(),
@@ -11,6 +14,7 @@ vi.mock('react-native', () => ({
   NativeModules: {
     SplotchAIEnvironment: {
       installationId: fixture.id,
+      decodeImage: fixture.decode,
       readCredential: fixture.read,
       writeCredential: fixture.write,
       removeCredential: fixture.remove,
@@ -76,7 +80,11 @@ vi.mock('expo-file-system', () => {
   }
   return { Directory, File, Paths: { document: 'file:///owned/' } };
 });
-import { aiVault, aiStorage } from '../../experiments/native-architecture/src/platform/ai.ts';
+import {
+  aiVault,
+  aiStorage,
+  admitAiImage,
+} from '../../experiments/native-architecture/src/platform/ai.ts';
 const journal = {
   version: 1,
   id: 1,
@@ -87,9 +95,11 @@ const journal = {
   jobId: null,
   result: null,
 };
+afterEach(() => vi.useRealTimers());
 beforeEach(() => {
   fixture.files.clear();
   vi.resetAllMocks();
+  fixture.decode.mockImplementation(async (_, __, width, height) => ({ width, height }));
   fixture.id.mockResolvedValue('a'.repeat(64));
   fixture.read.mockResolvedValue(null);
 });
@@ -112,11 +122,38 @@ it('uses strict native secure readback for writes and removals, with no fallback
 it('publishes checked recovery journals and result files and refuses missing retained results', async () => {
   await aiStorage.write(journal);
   expect(await aiStorage.read()).toEqual(journal);
-  const bytes = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
+  const bytes = rgbaPng(2, 2, 255);
   const result = await aiStorage.retain(1, bytes, 'image/png');
   await aiStorage.write({ ...journal, phase: 'result', result });
   expect((await aiStorage.read()).result).toEqual(result);
   expect(await aiStorage.pictures()).toEqual([result]);
   fixture.files.delete(result.uri);
   await expect(aiStorage.read()).rejects.toThrow('missing');
+});
+
+it('requires actual bounded native decode agreement before result publication and refuses older unsafe gallery bytes', async () => {
+  const bytes = rgbaPng(2, 2, 255);
+  fixture.decode.mockResolvedValue({ width: 2, height: 3 });
+  await expect(aiStorage.retain(2, bytes, 'image/png')).rejects.toThrow();
+  expect(fixture.files.size).toBe(0);
+  fixture.decode.mockRejectedValue(new Error('invalid native bitstream'));
+  await expect(admitAiImage(bytes, 'image/png')).rejects.toThrow('bitstream');
+  expect(fixture.files.size).toBe(0);
+  fixture.decode.mockResolvedValue({ width: 2, height: 2, unexpected: true });
+  await expect(admitAiImage(bytes, 'image/png')).rejects.toThrow();
+  const path = 'file:///owned/splotch-ai-pictures-v1/result-3.png';
+  fixture.files.set(path, Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10));
+  await expect(aiStorage.pictures()).rejects.toThrow();
+  expect(fixture.files.has(path)).toBe(true);
+});
+
+it('fails closed when the native decoder never answers and does not publish a file', async () => {
+  vi.useFakeTimers();
+  fixture.decode.mockImplementation(() => new Promise(() => {}));
+  const outcome = aiStorage.retain(4, rgbaPng(2, 2, 255), 'image/png');
+  await Promise.all([
+    expect(outcome).rejects.toThrow('did not finish'),
+    vi.advanceTimersByTimeAsync(AI_IMAGE_DECODE_TIMEOUT_MS),
+  ]);
+  expect(fixture.files.size).toBe(0);
 });

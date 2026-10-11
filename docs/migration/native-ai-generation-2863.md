@@ -93,9 +93,9 @@ demonstrably fails the assertion. The first Markdown formatting invocation used 
 entry point; the installed binary succeeded. All seven final deliberate controls fail by assertion
 and restore exact source bytes.
 
-Response image admission currently enforces byte caps, MIME type and PNG/JPEG/WebP signatures. It
-does not yet validate complete image structure or decoded dimensions before native rendering and
-retention. Structural validation and decoded resource bounds remain open for the same owner.
-Separate Feedback and AI parent gates and controller disposal lifetime also remain explicit shared
-Parent Center security and composition work. No claim of complete output validation or campaign
-permission composition is made.
+The original 643e candidate enforced byte caps, MIME type and PNG/JPEG/WebP signatures only. Its
+complete structure and decoded resource bounds were open. The same-owner
+[output admission repair](native-ai-output-admission-2865.md) adds bounded structural checks and
+mandatory native full-decode admission; actual OS runtime qualification remains open. Separate
+Feedback and AI parent gates and controller disposal lifetime remain explicit shared Parent Center
+security and composition work. No claim of campaign permission composition is made.

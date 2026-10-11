@@ -9,6 +9,7 @@ import {
 import { credentialHeaders, validCredential, type AiCredential, type AiVault } from './credentials';
 import { requestAi, type AiTransport } from './transport';
 import type { AiJournal, AiResult, AiStorage } from './journal';
+import type { AiImageAdmission } from './imageAdmission';
 export type AiState = Readonly<{
   open: boolean;
   authorized: boolean;
@@ -33,12 +34,14 @@ export class AiSession {
     storage: AiStorage;
     transport: AiTransport;
     prepare: () => Promise<PreparedAiDrawing>;
+    admit: AiImageAdmission;
   };
   constructor(deps: {
     vault: AiVault;
     storage: AiStorage;
     transport: AiTransport;
     prepare: () => Promise<PreparedAiDrawing>;
+    admit: AiImageAdmission;
   }) {
     this.deps = deps;
   }

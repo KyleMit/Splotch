@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 
 export function nativeAiBoundary() {
   return {
+    admitAiImage: vi.fn(async () => {}),
     aiVault: {
       installationId: vi.fn(async () => 'a'.repeat(64)),
       read: vi.fn(async () => null),

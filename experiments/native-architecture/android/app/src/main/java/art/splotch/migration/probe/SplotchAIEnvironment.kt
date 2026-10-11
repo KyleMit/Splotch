@@ -4,6 +4,13 @@ import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.AtomicFile
+import android.util.Base64
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.graphics.ColorSpace
+import android.os.Build
+import java.nio.ByteBuffer
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.*
 import com.facebook.react.uimanager.ViewManager
@@ -23,6 +30,10 @@ class SplotchAIEnvironmentPackage : ReactPackage {
 class SplotchAIEnvironment(private val context: ReactApplicationContext) : ReactContextBaseJavaModule(context) {
   private val alias = "splotch-ai-credentials-v1"
   private val maxBytes = 8192
+  private val maxImageBytes = 16 * 1024 * 1024
+  private val maxImageDimension = 4096
+  private val maxImagePixels = 4 * 1024 * 1024
+  private val maxDecodedBytes = maxImagePixels * 4
   override fun getName() = "SplotchAIEnvironment"
   private fun slot(name: String): AtomicFile {
     require(name == "gemini-api-key" || name == "managed-access-code")
@@ -63,6 +74,16 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
     try { synchronized(this) { promise.resolve(operation()) } }
     catch (_: Exception) { promise.reject("AI_SECURE_UNAVAILABLE", "Secure AI storage is unavailable.") }
   }
+  @android.annotation.TargetApi(28)
+  private fun completeBitmap(bytes: ByteArray, mime: String, width: Int, height: Int): Bitmap {
+    return ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, info, _ ->
+      check(info.size.width == width && info.size.height == height && info.mimeType == mime && !info.isAnimated)
+      decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE)
+      decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_DEFAULT)
+      decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
+      decoder.setOnPartialImageListener { false }
+    }
+  }
   @ReactMethod fun installationId(promise: Promise) = guarded(promise) {
     val raw = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
     check(!raw.isNullOrBlank())
@@ -87,5 +108,36 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
     slot(name).delete()
     check(read(name) == null)
     true
+  }
+  @ReactMethod fun decodeImage(base64: String, mime: String, width: Double, height: Double, promise: Promise) {
+    try {
+      synchronized(this) {
+        check(mime == "image/png" || mime == "image/jpeg" || mime == "image/webp")
+        check(width.isFinite() && height.isFinite() && width == width.toInt().toDouble() && height == height.toInt().toDouble())
+        check(width >= 1 && height >= 1 && width <= maxImageDimension && height <= maxImageDimension && width * height <= maxImagePixels)
+        check(base64.length <= ((maxImageBytes + 2) / 3) * 4)
+        val bytes = Base64.decode(base64, Base64.NO_WRAP)
+        check(bytes.isNotEmpty() && bytes.size <= maxImageBytes)
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        check(bounds.outWidth == width.toInt() && bounds.outHeight == height.toInt() && bounds.outMimeType == mime)
+        val options = BitmapFactory.Options().apply {
+          inPreferredConfig = Bitmap.Config.ARGB_8888
+          inSampleSize = 1
+          inScaled = false
+        }
+        check(Build.VERSION.SDK_INT >= 28 || mime != "image/webp")
+        val bitmap = if (Build.VERSION.SDK_INT >= 28) completeBitmap(bytes, mime, width.toInt(), height.toInt())
+          else BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        check(bitmap != null)
+        try {
+          check(bitmap.width == width.toInt() && bitmap.height == height.toInt() && bitmap.allocationByteCount <= maxDecodedBytes)
+          check(bitmap.config == Bitmap.Config.ARGB_8888)
+          bitmap.getPixel(bitmap.width - 1, bitmap.height - 1)
+          promise.resolve(Arguments.createMap().apply { putInt("width", bitmap.width); putInt("height", bitmap.height) })
+        } finally { bitmap.recycle() }
+      }
+    } catch (_: Exception) { promise.reject("AI_IMAGE_REJECTED", "AI picture decoding failed.") }
+    catch (_: OutOfMemoryError) { promise.reject("AI_IMAGE_REJECTED", "AI picture decoding failed.") }
   }
 }

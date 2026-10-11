@@ -26,12 +26,13 @@ async function open() {
 }
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  files.aiAdmit.mockResolvedValue(undefined);
   files.aiRead.mockResolvedValue(null);
   files.aiVaultRead.mockResolvedValue(null);
   files.aiSend.mockImplementation(async (request) =>
     request.path === '/api/free-generation-grant'
       ? new Response('{"ok":true,"remaining":10,"limit":10}')
-      : new Response(Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10), {
+      : new Response(rgbaPng(2, 2, 255), {
           headers: { 'Content-Type': 'image/png' },
         })
   );
@@ -87,7 +88,7 @@ it('keeps the next RN drawing separate when a waiting AI picture is collected af
         ? new Response(JSON.stringify({ ok: true, jobId: 'b'.repeat(64), pollAfterMs: 3000 }), {
             status: 202,
           })
-        : new Response(Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10), {
+        : new Response(rgbaPng(2, 2, 255), {
             headers: { 'Content-Type': 'image/png' },
           })
   );
@@ -104,4 +105,17 @@ it('keeps the next RN drawing separate when a waiting AI picture is collected af
     files.aiSend.mock.calls.filter(([request]) => request.path === '/api/generate-image')
   ).toHaveLength(1);
   expect(files.aiRetain).toHaveBeenCalledOnce();
+});
+
+it('withholds an RN picture rejected by native decoding and preserves the drawing', async () => {
+  await open();
+  files.aiAdmit.mockRejectedValue(new Error('controlled native decoder rejection'));
+  const original = screen.paper();
+  await screen.click('Send drawing for AI');
+  await flush();
+  expect(files.aiAdmit).toHaveBeenCalledOnce();
+  expect(files.aiRetain).not.toHaveBeenCalled();
+  expect(screen.container.querySelector('img[alt="Your AI picture"]')).toBeNull();
+  expect(screen.container.textContent).toContain('could not be safely opened');
+  expect(screen.paper()).toBe(original);
 });

@@ -3,11 +3,16 @@ import UIKit
 import Security
 import CryptoKit
 import React
+import ImageIO
+import UniformTypeIdentifiers
 
 @objc(SplotchAIEnvironment)
 final class SplotchAIEnvironment: NSObject {
   private let service = "art.splotch.ai-credentials-v1"
   private let maxBytes = 8192
+  private let maxImageBytes = 16 * 1024 * 1024
+  private let maxImageDimension = 4096
+  private let maxImagePixels = 4 * 1024 * 1024
   private let queue = DispatchQueue(label: "art.splotch.ai-credentials")
   @objc static func requiresMainQueueSetup() -> Bool { false }
   @objc var methodQueue: DispatchQueue { queue }
@@ -70,5 +75,39 @@ final class SplotchAIEnvironment: NSObject {
         try self.read(name) == nil else { throw self.failure() }
       return true
     }
+  }
+  @objc(decodeImage:mime:width:height:resolver:rejecter:)
+  func decodeImage(_ base64: String, mime: String, width: Double, height: Double,
+    resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    do {
+      let result = try autoreleasepool { () throws -> [String: Int] in
+        guard ["image/png", "image/jpeg", "image/webp"].contains(mime), width.isFinite, height.isFinite,
+          width.rounded() == width, height.rounded() == height, width >= 1, height >= 1,
+          width <= Double(self.maxImageDimension), height <= Double(self.maxImageDimension),
+          width * height <= Double(self.maxImagePixels), base64.count <= ((self.maxImageBytes + 2) / 3) * 4,
+          let data = Data(base64Encoded: base64), !data.isEmpty, data.count <= self.maxImageBytes,
+          let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+          CGImageSourceGetCount(source) == 1, CGImageSourceGetStatus(source) == .statusComplete,
+          let type = CGImageSourceGetType(source), let expected = UTType(mimeType: mime),
+          type as String == expected.identifier,
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let w = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+          let h = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+          w.doubleValue == width, h.doubleValue == height else { throw self.failure() }
+        let options = [kCGImageSourceShouldCache: true, kCGImageSourceShouldCacheImmediately: true] as CFDictionary
+        guard let image = CGImageSourceCreateImageAtIndex(source, 0, options), image.width == Int(width),
+          image.height == Int(height), image.bitsPerComponent == 8, image.bitsPerPixel <= 32,
+          image.bytesPerRow <= self.maxImageDimension * 4, image.bytesPerRow * image.height <= self.maxImagePixels * 4,
+          let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+            bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+          else { throw self.failure() }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: CGFloat(image.width), height: CGFloat(image.height)))
+        context.flush()
+        guard CGImageSourceGetStatusAtIndex(source, 0) == .statusComplete else { throw self.failure() }
+        return ["width": image.width, "height": image.height]
+      }
+      resolve(result)
+    } catch { reject("AI_IMAGE_REJECTED", "AI picture decoding failed.", nil) }
   }
 }

@@ -10,6 +10,7 @@ import {
   isInstallationId,
   type AiMime,
 } from './contract';
+import { resultImageGrid } from './imageAdmission';
 export type AiRequest = {
   path:
     | '/api/generate-image'
@@ -109,16 +110,6 @@ function remainingHeader(response: AiResponse) {
     ? Number(value)
     : null;
 }
-function validImageBytes(bytes: Uint8Array, mime: AiMime) {
-  if (mime === 'image/png')
-    return [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value);
-  if (mime === 'image/jpeg') return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  return (
-    bytes.length >= 12 &&
-    String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
-    String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP'
-  );
-}
 export async function parseAiResponse(
   response: AiResponse,
   request: AiRequest,
@@ -130,7 +121,7 @@ export async function parseAiResponse(
     const mime = response.headers.get('Content-Type')?.split(';')[0].trim();
     if (!isAiMime(mime)) throw new Error('Invalid image type');
     const bytes = await readAiBytes(response, MAX_RESULT_BYTES, signal);
-    if (!validImageBytes(bytes, mime)) throw new Error('Invalid image bytes');
+    await resultImageGrid(bytes, mime, () => !signal.aborted);
     return {
       kind: 'image',
       bytes,

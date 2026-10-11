@@ -2,9 +2,11 @@ import { fetch } from 'expo/fetch';
 import { Directory, File, Paths } from 'expo-file-system';
 import { NativeModules } from 'react-native';
 import { aiUrl, type AiTransport } from '../ai/transport';
-import { parseAiJournal, type AiStorage } from '../ai/journal';
-import { SECRET_SLOTS, MAX_RESULT_BYTES, isInstallationId } from '../ai/contract';
+import { parseAiJournal, type AiStorage, type AiResult } from '../ai/journal';
+import { SECRET_SLOTS, MAX_RESULT_BYTES, isInstallationId, type AiMime } from '../ai/contract';
 import { validCredential, type AiVault } from '../ai/credentials';
+import { admitAiImage } from './aiImage';
+export { admitAiImage };
 
 type Bridge = {
   installationId(): Promise<unknown>;
@@ -94,6 +96,11 @@ function archiveBytes(owner: Directory) {
     .list()
     .reduce((sum, item) => sum + (item instanceof File ? item.size : MAX_AI_ARCHIVE_BYTES), 0);
 }
+async function admitStoredPicture(file: File, mime: AiMime) {
+  if (!file.exists || file.size <= 0 || file.size > MAX_RESULT_BYTES)
+    throw new Error('Saved AI picture is missing or too large.');
+  await admitAiImage(await file.bytes(), mime);
+}
 function createAiStorage(): AiStorage {
   let revision = 0;
   return {
@@ -115,6 +122,8 @@ function createAiStorage(): AiStorage {
             ))
       )
         throw new Error('Saved AI picture is missing.');
+      if (journal.result)
+        await admitStoredPicture(new File(journal.result.uri), journal.result.mime);
       return journal;
     },
     async write(value) {
@@ -139,6 +148,7 @@ function createAiStorage(): AiStorage {
     async retain(id, bytes, mime) {
       if (!Number.isSafeInteger(id) || id < 1 || !bytes.length || bytes.length > MAX_RESULT_BYTES)
         throw new Error('Invalid AI picture.');
+      await admitAiImage(bytes, mime);
       const owner = directory();
       const total = archiveBytes(owner);
       const file = new File(
@@ -169,7 +179,7 @@ function createAiStorage(): AiStorage {
       return { uri: file.uri, mime };
     },
     async pictures() {
-      return directory()
+      const pictures: AiResult[] = directory()
         .list()
         .flatMap((file) => {
           if (!(file instanceof File) || !/^result-\d+\.(png|jpg|webp)$/.test(file.name)) return [];
@@ -180,6 +190,8 @@ function createAiStorage(): AiStorage {
               : 'image/webp';
           return [{ uri: file.uri, mime }];
         });
+      for (const picture of pictures) await admitStoredPicture(new File(picture.uri), picture.mime);
+      return pictures;
     },
   };
 }

@@ -30,3 +30,4 @@ export const aiStorage: AiStorage = {
   retain: unavailable,
   pictures: unavailable,
 };
+export const admitAiImage = unavailable;

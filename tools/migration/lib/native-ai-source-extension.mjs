@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const INPUT = new URL('../inputs/native-ai-source-extension.json', import.meta.url);
-const INPUT_SHA256 = '44c5c5b2a523d3d02016506a9fe371ba1465311f29d27bc7a7ffc24a4cd17e5a';
+const INPUT_SHA256 = 'bc6274f0c4947ecacd3062f3b0c3781b086d9fa31b1d3123d28b4f9fb7b8e713';
 const TARGETS = [
   'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
   'ios/HelloWorld.xcodeproj/project.pbxproj',

@@ -16,10 +16,6 @@ class NativeAiController extends AiSession {
     >
   ) => {
     const id = journal.id;
-    if (reply.remaining !== null)
-      this.update({
-        remaining: reply.remaining,
-      });
     let result: AiResult;
     try {
       result = await this.deps.storage.retain(id, reply.bytes, reply.mime);
@@ -77,6 +73,20 @@ class NativeAiController extends AiSession {
     const journal =
       this.journals.get(id) ?? (this.state.journal?.id === id ? this.state.journal : null);
     if (!journal || (journal.phase === 'result' && reply.kind !== 'image')) return;
+    if (reply.kind === 'image') {
+      if (reply.remaining !== null) this.update({ remaining: reply.remaining });
+      try {
+        await this.deps.admit(reply.bytes, reply.mime);
+      } catch {
+        if (this.state.journal?.id === id)
+          await this.persist({ ...journal, phase: 'failed', result: null });
+        this.update({
+          message:
+            'This AI picture could not be safely opened. Your original drawing is saved. A generation will not be retried automatically.',
+        });
+        return;
+      }
+    }
     if (this.state.journal?.id !== id) {
       if (reply.kind === 'image') {
         let result: AiResult;

@@ -56,6 +56,12 @@ import {
   requestAi,
   type AiRequest,
 } from '../../../../experiments/native-architecture/src/ai/transport';
+const PNG_FIXTURE = Uint8Array.from(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAADklEQVR4nGP4DwUMMAYAj4IP8TylVlEAAAAASUVORK5CYII=',
+    'base64'
+  )
+);
 const ID = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const wire: { input: string; init: RequestInit }[] = [];
@@ -63,7 +69,7 @@ beforeEach(() => {
   wire.length = 0;
   fixture.rate.mockReturnValue({ limited: false });
   fixture.job.mockResolvedValue({ status: 'pending', context: { free: null, style: null } });
-  fixture.jobImage.mockResolvedValue(Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10));
+  fixture.jobImage.mockResolvedValue(PNG_FIXTURE.slice());
   fixture.discard.mockResolvedValue(null);
   fixture.verify.mockResolvedValue({ ok: true });
   fixture.code.mockResolvedValue({ verdict: 'allowed', spendsGuess: false });
@@ -107,7 +113,7 @@ describe('native AI transport through real controlled hosted handlers', () => {
       headers: { 'X-Installation-Id': ID },
     };
     expect(await requestAi(aiTransport, grant, () => {})).toEqual({ kind: 'grant', remaining: 10 });
-    const body = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
+    const body = PNG_FIXTURE.slice();
     const start: AiRequest = {
       path: '/api/generate-image',
       method: 'POST',

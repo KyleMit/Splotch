@@ -1,10 +1,11 @@
+import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
 import { REQUEST_TIMEOUT_MS } from '../../experiments/native-architecture/src/ai/contract.ts';
 const INSTALLATION = 'a'.repeat(64),
   JOB = 'b'.repeat(64);
 const image = () =>
-  new Response(Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10), {
+  new Response(rgbaPng(2, 2, 255), {
     headers: { 'Content-Type': 'image/png', 'X-Free-Generations-Remaining': '9' },
   });
 function fixture() {
@@ -39,7 +40,8 @@ function fixture() {
     bytes: Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10),
     originalId: 'picture-1-fixture',
   }));
-  const owner = createNativeAi({ storage, vault, transport, prepare });
+  const admit = vi.fn(async () => {});
+  const owner = createNativeAi({ storage, vault, transport, prepare, admit });
   async function open() {
     owner.open();
     const { x, y } = owner.getState().gate;
@@ -49,6 +51,7 @@ function fixture() {
   }
   return {
     owner,
+    admit,
     open,
     storage,
     vault,
@@ -259,5 +262,24 @@ it('blocks a second explicit send while a funded ticket is pending', async () =>
   await f.owner.generate();
   await f.owner.generate();
   expect(f.post).toHaveBeenCalledOnce();
+  f.owner.dispose();
+});
+
+it('requires native decode admission before any retention or in-memory result display', async () => {
+  const f = fixture();
+  await f.open();
+  f.admit.mockRejectedValue(new Error('native corrupt decode'));
+  const work = f.owner.generate();
+  await vi.waitFor(() => expect(f.post).toHaveBeenCalledOnce());
+  f.finish(image());
+  await work;
+  expect(f.admit).toHaveBeenCalledOnce();
+  expect(f.storage.retain).not.toHaveBeenCalled();
+  expect(f.owner.getState().heldResult).toBeNull();
+  expect(f.owner.getState().pictures).toEqual([]);
+  expect(f.owner.getState().message).toContain('could not be safely opened');
+  expect(f.owner.getState().remaining).toBe(9);
+  expect(f.post).toHaveBeenCalledOnce();
+  expect(f.owner.getState().journal.phase).toBe('failed');
   f.owner.dispose();
 });

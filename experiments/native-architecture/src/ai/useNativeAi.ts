@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createNativeAi, type NativeAiOwner, type AiState } from './generation';
-import { aiStorage, aiTransport, aiVault } from '../platform/ai';
+import { aiStorage, aiTransport, aiVault, admitAiImage } from '../platform/ai';
 import { savePicture } from '../platform/drawingFiles';
 import { prepareAiPng } from './prepare';
 import type { useDrawingScreen } from '../useDrawingScreen';
@@ -16,6 +16,7 @@ export function useNativeAi(screen: ReturnType<typeof useDrawingScreen>) {
       vault: aiVault,
       storage: aiStorage,
       transport: aiTransport,
+      admit: admitAiImage,
       async prepare() {
         const current = screenRef.current;
         const surface = current.surface.current;
