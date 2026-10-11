@@ -109,7 +109,15 @@ describe('strict native hosted AI contract', () => {
   });
   it('replays a finite authenticated native extension and rejects a changed baseline', () => {
     const entries = readAiSourceExtension().entries;
-    expect(entries).toHaveLength(5);
+    expect(entries.map((entry) => entry.target)).toEqual([
+      'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',
+      'ios/HelloWorld.xcodeproj/project.pbxproj',
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt',
+      'ios/HelloWorld/SplotchAIEnvironment.swift',
+      'ios/HelloWorld/SplotchAIEnvironment.m',
+      'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt',
+      'ios/HelloWorld/SplotchAIJournal.swift',
+    ]);
     for (const entry of entries) {
       const actual = readFileSync(
         new URL(`../../experiments/native-architecture/${entry.target}`, import.meta.url)
