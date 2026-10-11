@@ -119,7 +119,7 @@ export function clearDrawing(history: History, visuallyEmpty: boolean): History 
 export function changePage(history: History, pageId: PageId): History {
   return pageId === history.drawing.pageId
     ? history
-    : commitDrawing(history, emptyDrawing(history.drawing.rainbow, pageId));
+    : commitDrawing(history, { ...history.drawing, pageId });
 }
 
 export function paperPoint(x: number, y: number, width: number, height: number): Point {

@@ -1,4 +1,8 @@
 import { defineConfig } from 'vitest/config';
+import {
+  RSD_NATIVE_SELECTION_TEST,
+  RSD_NATIVE_RECOVERY_TEST,
+} from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
 // suite (web/vitest.config.ts, happy-dom): these are plain Node helpers with no
@@ -8,11 +12,41 @@ import { defineConfig } from 'vitest/config';
 //
 // Opt-in capabilities keep separately named suites. centerline-tracing is also
 // excluded from npm test because its checks require uv and an isolated Python environment.
+const JOINT_SOURCE_TEST = 'migration/tests/web-host-joint-source.test.mjs';
+const JOINT_SOURCE_SEQUENCE_GROUP = 1;
+const CAPABILITY_EXCLUSIONS = [
+  'asset-gen/**',
+  'centerline-tracing/**',
+  'store-drawings/**',
+  RSD_NATIVE_SELECTION_TEST,
+  RSD_NATIVE_RECOVERY_TEST,
+];
+
 export default defineConfig({
   root: import.meta.dirname,
   test: {
-    environment: 'node',
-    include: ['**/tests/**/*.test.mjs'],
-    exclude: ['asset-gen/**', 'centerline-tracing/**', 'store-drawings/**'],
+    projects: [
+      {
+        extends: false,
+        root: import.meta.dirname,
+        test: {
+          name: 'repo-tools',
+          environment: 'node',
+          include: ['**/tests/**/*.test.mjs'],
+          exclude: [...CAPABILITY_EXCLUSIONS, JOINT_SOURCE_TEST],
+        },
+      },
+      {
+        extends: false,
+        root: import.meta.dirname,
+        test: {
+          name: 'joint-native-source',
+          environment: 'node',
+          include: [JOINT_SOURCE_TEST],
+          exclude: CAPABILITY_EXCLUSIONS,
+          sequence: { groupOrder: JOINT_SOURCE_SEQUENCE_GROUP },
+        },
+      },
+    ],
   },
 });

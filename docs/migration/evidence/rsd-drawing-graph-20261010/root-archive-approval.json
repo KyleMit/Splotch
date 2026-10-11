@@ -1,0 +1,71 @@
+{
+  "at": "2026-10-10T11:16:05.846684+00:00",
+  "manifestSha256": "a3778c949b5249c358c9185469c837c26e37a850212322130942e106b1a7839f",
+  "verifiedMembers": 1596,
+  "verifiedBytes": 439690650,
+  "newArchives": [
+    {
+      "key": "@dual-bundle/import-meta-resolve@4.2.1",
+      "archiveSha256": "49b42379de2656cbe21fa32c6c054686a7d48813be33b981b125731fa6dd9226",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "@stylexjs/babel-plugin@0.15.4",
+      "archiveSha256": "ed93e7bf271757a9e6bfc468d2ff05a3ebbacf78e6619c562ec40f5b742d5567",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "@stylexjs/stylex@0.15.4",
+      "archiveSha256": "21312d6d338ae5c8bafe9ce641805f3e1f3148d47ee4a32cc2bbb93c7866efce",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "@types/react-dom@19.2.2",
+      "archiveSha256": "21d172dfb91faeba9da82dc5a05d0895089a8ba0cc1a905b2de1ad029548c9f4",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "css-mediaquery@0.1.2",
+      "archiveSha256": "fd7115a6d620040de3aa7d238057c8a17b82f709ebb227369ea912de18ec53bd",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "postcss-react-strict-dom@0.0.54",
+      "archiveSha256": "ae08585cad4c568a8750c124784a5c77dfadd99b900ffa99b794683951c432b2",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "react-strict-dom@0.0.54",
+      "archiveSha256": "120246a61346c539119eecf02282f904227536ad0a7e84e56b9c760cc41e7ccd",
+      "hooks": {},
+      "disposition": "no-install-hooks"
+    },
+    {
+      "key": "styleq@0.2.1",
+      "archiveSha256": "392c530a735e3cd21a205db30dd02cb793417f259a4f9665ea3ce488ebe3a82f",
+      "hooks": {
+        "prepare": "npm run test && npm run build"
+      },
+      "disposition": "registry-prepare-only"
+    }
+  ],
+  "coverage": {
+    "auditedArchives": 298,
+    "inheritedOriginalPolicy": 1228,
+    "freshArchiveAuditComplete": false
+  },
+  "actualTerminals": {
+    "dispatcher": 1,
+    "correctedNormalResolution": 0,
+    "approvedInventory": 0
+  },
+  "shippingProductionGraph": "independent6060b9/0 exactly542artifacts+snapshotsunchanged",
+  "install": "UNRUN; separate normalownedfrozeninstall mayproceedafter thisproof",
+  "acceptance": false
+}

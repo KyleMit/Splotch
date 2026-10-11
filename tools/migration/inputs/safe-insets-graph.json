@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "actualFiles": [
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 534850,
+      "sha256": "27471e0676225c0c0687fa6c628a64ad323d5ab344285a2a8cae510e2aa00ebf"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 5238,
+      "sha256": "fff15b66c49e48573855adabc489975fc43363ac2698f7959d7b7bfe9bfa5a43"
+    },
+    {
+      "path": "package.json",
+      "bytes": 124164,
+      "sha256": "ac34983e462fa4dbdf9f35adf5b3159463ab7e5b9079b6bb077452287f5e24c2"
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 587,
+      "sha256": "cde7d8e4d15ec33f282f4ca2e0fdf386149c4ddc216cac1bc34efa473178913d"
+    },
+    {
+      "path": "experiments/native-architecture/alignment.json",
+      "bytes": 1189,
+      "sha256": "cb85f2e522f068fd7cec229e981be2cced4acf1dcf57871cae7ebeb0997fe6ec"
+    }
+  ],
+  "approvedLock": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/approved-pnpm-lock.yaml.txt",
+    "bytes": 534850,
+    "sha256": "27471e0676225c0c0687fa6c628a64ad323d5ab344285a2a8cae510e2aa00ebf"
+  },
+  "priorApprovedLock": {
+    "path": "docs/migration/evidence/rsd-drawing-graph-20261010/approved-pnpm-lock.yaml.txt",
+    "bytes": 534056,
+    "sha256": "c2f2fb7ed5011bd95132a9fe6241ad54b858e27730e2e2a7a07e1ff77bf26ab4"
+  },
+  "priorActualFiles": {
+    "package.json": {
+      "path": "package.json",
+      "bytes": 124164,
+      "sha256": "ac34983e462fa4dbdf9f35adf5b3159463ab7e5b9079b6bb077452287f5e24c2"
+    },
+    "pnpm-workspace.yaml": {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 5238,
+      "sha256": "fff15b66c49e48573855adabc489975fc43363ac2698f7959d7b7bfe9bfa5a43"
+    },
+    "experiments/native-architecture/package.json": {
+      "path": "docs/migration/evidence/rsd-safe-insets-20261011/prior/package.json",
+      "bytes": 540,
+      "sha256": "7722ac2e24aaa93c645b270831898fc0ac0cb26c5ed0f0c77c3c16ee620b406e"
+    },
+    "experiments/native-architecture/alignment.json": {
+      "path": "docs/migration/evidence/rsd-safe-insets-20261011/prior/alignment.json",
+      "bytes": 1142,
+      "sha256": "e131da6ca50e2d95df31fcea9d9ba41de40f3b21f8c39deafec388d41200fe7f"
+    },
+    "pnpm-lock.yaml": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/approved-pnpm-lock.yaml.txt",
+      "bytes": 534056,
+      "sha256": "c2f2fb7ed5011bd95132a9fe6241ad54b858e27730e2e2a7a07e1ff77bf26ab4"
+    }
+  },
+  "rootApproval": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/root-lock-approval.json",
+    "bytes": 1466,
+    "sha256": "b385e572668b9ae88f218f2c184e150999ecbaa2d0af52d82c51b8110afbedbc"
+  },
+  "wholeMetadata": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/whole-lock-metadata.json",
+    "bytes": 1650603,
+    "sha256": "e9a000f8290a901ef16809482574f524687ebbbea33a42edccd9f0d19da20651"
+  },
+  "archiveAdmission": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/root-source-archive-approval.json",
+    "bytes": 1927,
+    "sha256": "760345521256dac706d8516846d57d7ad5e5319c8998d4d0e75816f01af1d106"
+  },
+  "archiveInventory": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/archive-reconciliation.json",
+    "bytes": 2840,
+    "sha256": "05bb608f1fe5c88c1db454bdab38312847918a884a262841b6eb87f29bb74324"
+  },
+  "archiveMemberManifest": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/archive-members.json",
+    "bytes": 30666,
+    "sha256": "84a4f9eb967b39ff8c6cb3ab626c220f538c26a2a51f22ad794e7f6b73cc6013"
+  },
+  "publication": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/publication-result.json",
+    "bytes": 4074,
+    "sha256": "59d40e82dabda57bfc3d1284d168b97b783d8f903198d0d81fb3667ca6645808"
+  },
+  "packageManifest": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/package.json.txt",
+    "bytes": 4576,
+    "sha256": "752ca40cc831855a26fb9eda18ff6bad54986835d9aa42bba1129d53857f6131"
+  },
+  "delta": {
+    "name": "react-native-safe-area-context",
+    "version": "5.7.0",
+    "artifactKey": "react-native-safe-area-context@5.7.0",
+    "snapshotKey": "react-native-safe-area-context@5.7.0(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)",
+    "importerEntry": {
+      "specifier": "5.7.0",
+      "version": "5.7.0(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)"
+    },
+    "packageEntry": {
+      "resolution": {
+        "integrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ=="
+      },
+      "peerDependencies": {
+        "react": "*",
+        "react-native": "*"
+      }
+    },
+    "snapshotEntry": {
+      "dependencies": {
+        "react": "19.2.3",
+        "react-native": "0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.2)(react@19.2.3)(supports-color@10.2.2)"
+      }
+    }
+  },
+  "archive": {
+    "name": "react-native-safe-area-context",
+    "version": "5.7.0",
+    "key": "react-native-safe-area-context@5.7.0",
+    "integrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==",
+    "sha256": "35830be73b2864a1edb4b40165c846f447f635e498e299ce652e00244f14fa40",
+    "bytes": 49992,
+    "members": 176,
+    "expandedBytes": 230675,
+    "metadataSha256": "6ba630b399be32168972f3578688044e16fa351865693de15bfbc5a4a5cb913c",
+    "hooks": {
+      "prepare": "bob build"
+    },
+    "prepareDisposition": "recorded; exact registry publication only; pnpm 11.22.0 runPostinstallHooks omits prepare"
+  },
+  "scope": "One private dev root/native escape atop preserved authenticated c2f2 graph; no fresh baseline or payload audit/install/build/native acceptance."
+}

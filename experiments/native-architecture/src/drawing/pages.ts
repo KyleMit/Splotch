@@ -1,7 +1,14 @@
-export const PAGE_IDS = ['blank', 'sunshine', 'flower', 'turtle'] as const;
+import { BUNDLED_COLORING_PAGES, FARM_PAGE_IDS } from './bundledBooks';
+import type { PaletteLabel } from './palette';
+import type { PaperTheme } from './theme';
+
+export const SAMPLE_PAGE_IDS = ['blank', 'sunshine', 'flower', 'turtle'] as const;
+export type SamplePageId = (typeof SAMPLE_PAGE_IDS)[number];
+export const PAGE_IDS = [...SAMPLE_PAGE_IDS, ...FARM_PAGE_IDS] as const;
 export type PageId = (typeof PAGE_IDS)[number];
 
 export const COLORING_PAGES = {
+  ...BUNDLED_COLORING_PAGES,
   blank: { label: 'Blank paper', paths: [] },
   sunshine: {
     label: 'Sunshine',
@@ -39,3 +46,37 @@ export const COLORING_PAGES = {
 export function isPageId(value: unknown): value is PageId {
   return PAGE_IDS.some((id) => id === value);
 }
+
+type FillColors = Readonly<Record<PaperTheme, PaletteLabel>>;
+type PageFill = Readonly<{
+  background: FillColors;
+  regions: readonly Readonly<{ path: string; colors: FillColors }>[];
+}>;
+
+export const COLORING_FILLS = {
+  sunshine: {
+    background: { light: 'Blue', dark: 'Indigo' },
+    regions: [
+      { path: COLORING_PAGES.sunshine.paths[0], colors: { light: 'Yellow', dark: 'Orange' } },
+    ],
+  },
+  flower: {
+    background: { light: 'Mint', dark: 'Teal' },
+    regions: [
+      { path: COLORING_PAGES.flower.paths[0], colors: { light: 'Pink', dark: 'Magenta' } },
+      { path: COLORING_PAGES.flower.paths[1], colors: { light: 'Yellow', dark: 'Orange' } },
+      { path: COLORING_PAGES.flower.paths[2], colors: { light: 'Green', dark: 'Mint' } },
+      { path: COLORING_PAGES.flower.paths[3], colors: { light: 'Green', dark: 'Mint' } },
+    ],
+  },
+  turtle: {
+    background: { light: 'Blue', dark: 'Indigo' },
+    regions: [
+      ...COLORING_PAGES.turtle.paths.slice(0, 4).map((path) => ({
+        path,
+        colors: { light: 'Mint', dark: 'Green' } as const,
+      })),
+      { path: COLORING_PAGES.turtle.paths[4], colors: { light: 'Green', dark: 'Teal' } },
+    ],
+  },
+} as const satisfies Record<Exclude<SamplePageId, 'blank'>, PageFill>;

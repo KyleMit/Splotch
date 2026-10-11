@@ -1,6 +1,10 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
-import { Defs, G, LinearGradient, Path, Pattern, Stop, Use } from 'react-native-svg';
-import { paintHex, paintId } from './palette';
+import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
+import { paintHex, paintId, paletteHex } from './palette';
+import { BundledMagicFill } from './BundledBookArtwork';
+import { isFarmPageId } from './bundledBooks';
+import { COLORING_FILLS } from './pages';
+import { InkAppearanceScope, useInkAppearance } from './InkAppearance';
 import { rainbow, rainbowLine } from './brushes';
 import {
   CRAYON_BANDS,
@@ -20,6 +24,7 @@ const CRAYON_TEXTURES = CRAYON_BANDS.map((band) =>
     .filter(({ path }) => path.length > 0)
 );
 const CrayonDefinitionScope = createContext<string | null>(null);
+const BundledMagicPatternScope = createContext<string | null>(null);
 // Native painters clip translated content to a fixed tile; wrapping preserves the seeded phase.
 const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
@@ -79,18 +84,52 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
 
 function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const { pageId, theme } = useInkAppearance();
+  const bundledPattern = useContext(BundledMagicPatternScope);
+  const fill = pageId === 'blank' || isFarmPageId(pageId) ? null : COLORING_FILLS[pageId];
+  if (bundledPattern) {
+    return (
+      <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${bundledPattern})`} />
+    );
+  }
   return (
     <G>
       <Defs>
-        <LinearGradient
-          id={id}
-          gradientUnits="userSpaceOnUse"
-          {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
-        >
-          {rainbow(stroke.rainbow).stops.map((stop) => (
-            <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
-          ))}
-        </LinearGradient>
+        {fill ? (
+          <Pattern
+            id={id}
+            x={0}
+            y={0}
+            width={PAPER_WIDTH}
+            height={PAPER_HEIGHT}
+            patternUnits="userSpaceOnUse"
+            patternContentUnits="userSpaceOnUse"
+          >
+            <Rect
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              fill={paletteHex(fill.background[theme])}
+            />
+            {fill.regions.map((region, index) => (
+              <Path
+                key={index}
+                d={region.path}
+                fill={paletteHex(region.colors[theme])}
+                stroke="none"
+              />
+            ))}
+          </Pattern>
+        ) : (
+          <LinearGradient
+            id={id}
+            gradientUnits="userSpaceOnUse"
+            {...rainbowLine(stroke.rainbow, PAPER_WIDTH, PAPER_HEIGHT)}
+          >
+            {rainbow(stroke.rainbow).stops.map((stop) => (
+              <Stop key={stop.offset} offset={stop.offset} stopColor={stop.color} />
+            ))}
+          </LinearGradient>
+        )}
       </Defs>
       <StrokeShape points={stroke.points} width={stroke.width} paint={`url(#${id})`} />
     </G>
@@ -105,27 +144,46 @@ export function InkArtwork({
   children: ReactNode;
 }) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const appearance = useContext(InkAppearanceScope);
+  const bookPage = appearance && isFarmPageId(appearance.pageId) ? appearance.pageId : null;
+  const bookPattern =
+    bookPage && strokes.some((stroke) => stroke.brush === 'magic') ? `${id}-book-fill` : null;
   const colors = new Map<string, string>();
   for (const stroke of strokes) {
     if (stroke.brush === 'crayon') colors.set(paintId(stroke.color), paintHex(stroke.color));
   }
   return (
     <CrayonDefinitionScope.Provider value={id}>
-      <Defs>
-        {Array.from(colors).flatMap(([colorId, hex]) =>
-          CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
-            paths.map(({ path, shade }) => (
-              <Path
-                key={`${colorId}-${bandIndex}-${shade}`}
-                id={`${id}-wax-${colorId}-${bandIndex}-${shade}`}
-                d={path}
-                fill={waxColor(hex, shade)}
-              />
-            ))
-          )
-        )}
-      </Defs>
-      {children}
+      <BundledMagicPatternScope.Provider value={bookPattern}>
+        <Defs>
+          {bookPattern && bookPage && appearance ? (
+            <Pattern
+              id={bookPattern}
+              x={0}
+              y={0}
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              patternUnits="userSpaceOnUse"
+              patternContentUnits="userSpaceOnUse"
+            >
+              <BundledMagicFill pageId={bookPage} theme={appearance.theme} />
+            </Pattern>
+          ) : null}
+          {Array.from(colors).flatMap(([colorId, hex]) =>
+            CRAYON_TEXTURES.flatMap((paths, bandIndex) =>
+              paths.map(({ path, shade }) => (
+                <Path
+                  key={`${colorId}-${bandIndex}-${shade}`}
+                  id={`${id}-wax-${colorId}-${bandIndex}-${shade}`}
+                  d={path}
+                  fill={waxColor(hex, shade)}
+                />
+              ))
+            )
+          )}
+        </Defs>
+        {children}
+      </BundledMagicPatternScope.Provider>
     </CrayonDefinitionScope.Provider>
   );
 }

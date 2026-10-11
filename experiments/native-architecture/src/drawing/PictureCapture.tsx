@@ -8,7 +8,8 @@ import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { PageOutline } from './PageOutline';
 import { FixedInkCapture } from './FixedInkCapture';
 import { createSvgCapture, PNG_TIMEOUT_MS } from './svgCapture';
-import { DRAWING_THEME } from './theme';
+import { PAPER_THEMES } from './theme';
+import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { DecodedPng } from './DecodedPng';
 
 export type PictureRequest = Readonly<{
@@ -16,6 +17,7 @@ export type PictureRequest = Readonly<{
   request: PngCaptureRequest;
   kind: 'ink' | 'picture';
   plan: InkPlan;
+  appearance: InkAppearance;
   isCurrent: () => boolean;
 }>;
 
@@ -80,38 +82,44 @@ export function PictureCapture({ packet }: { packet: PictureRequest }) {
   }, [captures, request]);
 
   return (
-    <View style={styles.capture} pointerEvents="none">
-      {base64 ? <DecodedPng base64={base64} onLoad={loaded} onError={fail} /> : null}
-      {!base64 ? (
-        <FixedInkCapture
-          plan={packet.plan}
-          svgRef={ink}
-          onReady={() => setReady(true)}
-          onError={fail}
-        />
-      ) : (
-        <CaptureSvg
-          ref={output}
-          width={PAPER_WIDTH}
-          height={PAPER_HEIGHT}
-          viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-        >
-          <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={DRAWING_THEME.paper} />
-          <Image
-            href={`data:image/png;base64,${base64}`}
-            x={0}
-            y={0}
+    <InkAppearanceScope.Provider value={packet.appearance}>
+      <View style={styles.capture} pointerEvents="none">
+        {base64 ? <DecodedPng base64={base64} onLoad={loaded} onError={fail} /> : null}
+        {!base64 ? (
+          <FixedInkCapture
+            plan={packet.plan}
+            svgRef={ink}
+            onReady={() => setReady(true)}
+            onError={fail}
+          />
+        ) : (
+          <CaptureSvg
+            ref={output}
             width={PAPER_WIDTH}
             height={PAPER_HEIGHT}
-            preserveAspectRatio="none"
-            onLoad={() => {
-              if (Platform.OS !== 'android') loaded();
-            }}
-          />
-          <PageOutline pageId={request.drawing.pageId} />
-        </CaptureSvg>
-      )}
-    </View>
+            viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+          >
+            <Rect
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              fill={PAPER_THEMES[packet.appearance.theme].paper}
+            />
+            <Image
+              href={`data:image/png;base64,${base64}`}
+              x={0}
+              y={0}
+              width={PAPER_WIDTH}
+              height={PAPER_HEIGHT}
+              preserveAspectRatio="none"
+              onLoad={() => {
+                if (Platform.OS !== 'android') loaded();
+              }}
+            />
+            <PageOutline pageId={request.drawing.pageId} />
+          </CaptureSvg>
+        )}
+      </View>
+    </InkAppearanceScope.Provider>
   );
 }
 

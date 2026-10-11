@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-11T02:20:33.938171+00:00",
+  "sourceManifestSHA256": "cdbe4a95a90d086d5cea609e29a127cd679e08dfb69638e787903d546c9c9559",
+  "members": 24,
+  "source204CurrentExact": true,
+  "changed6": [
+    ".github/dependabot.yml",
+    "experiments/native-architecture/alignment.json",
+    "experiments/native-architecture/package.json",
+    "experiments/native-architecture/src/rsdDrawing/NativeFrame.tsx",
+    "tools/migration/tests/rsd-native-selection.test.mjs",
+    "experiments/native-architecture/RSD-VOCABULARY.md"
+  ],
+  "unchanged198": true,
+  "freshOrdinaryBdbDescendant": true,
+  "publicPublicationRootTool": "4079ed/0",
+  "publicMetadataSHA256": "6ba630b399be32168972f3578688044e16fa351865693de15bfbc5a4a5cb913c",
+  "releasedArchiveSHA256": "35830be73b2864a1edb4b40165c846f447f635e498e299ce652e00244f14fa40",
+  "releasedIntegrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==",
+  "license": "MIT",
+  "dependencies": null,
+  "nativeSourceRead": [
+    "SafeAreaProvider.kt full actualwindow/rootView/OnPreDraw updates",
+    "SafeAreaUtils.kt full API floor/status/navigation/cutout/caption insets and provider-relative clipping",
+    "SafeAreaView.kt full nearestprovider/nativepadding/Fabricstate and layout updates"
+  ],
+  "sourceRead": "Full6patch/truewindowlocalprovider/all4edges/realmountedsourcecontrols+two intended negatives. No activitymetrics transplant/paddingguess/observer weakening. Actual geometry remainsUNRUN.",
+  "scope": "Source qualified to PREPARE finite ordinary own lock-only resolution. Root must read exact controller+bindings+environment/registry policy before launch. No install/check/build/native/review or framework selection granted here. Original source clock02:23:40/02:25:40 unchanged. Registry qualification does not authorize previously held CocoaPods/Maven.",
+  "formalRoundsSpent": 0,
+  "campaign": "ACTIVE INCOMPLETE"
+}

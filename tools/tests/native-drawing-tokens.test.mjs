@@ -14,6 +14,7 @@ import {
   DRAWING_SCALE,
   DRAWING_SCRIM,
   DRAWING_THEME,
+  PAPER_THEMES,
 } from '../../experiments/native-architecture/src/drawing/theme.ts';
 
 const sourceDirectory = join(
@@ -74,6 +75,21 @@ describe('native drawing token projection', () => {
 
   it('pins exactly the light-theme values consumed by drawing controls', () => {
     expect(() => assertThemeProjection(DRAWING_THEME)).not.toThrow();
+  });
+
+  it('pins live paper and outline colors to both design themes and rejects drift', async () => {
+    const expected = Object.fromEntries(
+      ['light', 'dark'].map((theme) => [
+        theme,
+        {
+          paper: themes[theme].paper,
+          outline: themes[theme].textStrong,
+        },
+      ])
+    );
+    expect(PAPER_THEMES).toEqual(expected);
+    const changed = await fixtureModule('theme.ts', "paper: '#211f29'", "paper: '#000000'");
+    expect(changed.PAPER_THEMES).not.toEqual(expected);
   });
 
   it('pins the picker scale and compatible scrim to the design token owner', () => {
