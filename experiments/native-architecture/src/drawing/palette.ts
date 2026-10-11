@@ -99,10 +99,9 @@ export function paintHex(color: PaintColor): string {
 export function paintAppearance(color: PaintColor, theme: PaperTheme) {
   const reversed = color === 'Black' && theme === 'dark';
   const hex = reversed ? WHITE_PAINT : paintHex(color);
-  const semantic = isPaletteLabel(color) ? color.toLowerCase() : 'custom';
   return {
     hex,
-    definitionId: `${paintId(color)}-${semantic}-${hex.slice(1).toLowerCase()}`,
+    definitionId: `ink-${hex.slice(1).toLowerCase()}`,
     selectionMark: reversed ? paletteHex('Black') : WHITE_PAINT,
     glaze: reversed ? ('lighten' as const) : ('darken' as const),
   };

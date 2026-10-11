@@ -31,21 +31,21 @@ function stroke(brush, color, y = 200) {
     ],
   };
 }
-function artwork(strokes) {
+function artwork(strokes, theme = 'light') {
   return renderToStaticMarkup(
     createElement(
       Svg,
       { width: 1024, height: 768, viewBox: '0 0 1024 768' },
       createElement(
         InkAppearanceScope.Provider,
-        { value: { pageId: 'blank', theme: 'light' } },
+        { value: { pageId: 'blank', theme } },
         createElement(InkScene, { strokes, checkpoint: null, onImageLoad() {} })
       )
     )
   );
 }
-async function png(strokes) {
-  return sharp(Buffer.from(artwork(strokes)))
+async function png(strokes, theme = 'light') {
+  return sharp(Buffer.from(artwork(strokes, theme)))
     .png()
     .toBuffer();
 }
@@ -91,6 +91,61 @@ describe('production custom pigment artwork', () => {
       .length;
     expect(pigments).toHaveLength(one * 2);
   });
+  it.each(
+    ['light', 'dark'].flatMap((theme) => [false, true].map((reverse) => ({ theme, reverse })))
+  )(
+    'shares resolved Blue pigment and exact RGBA for either named/custom order on $theme, reversed=$reverse',
+    async ({ theme, reverse }) => {
+      const colors = reverse ? ['#62A2E9', 'Blue'] : ['Blue', '#62A2E9'];
+      const strokes = colors.map((color, index) => stroke('crayon', color, 200 + index * 360));
+      const equivalent = strokes.map((item) => ({ ...item, color: 'Blue' }));
+      const pigmentIds = (markup) =>
+        [...markup.matchAll(/\bid="([^"]+-wax-[^"]+)"/g)].map((match) => match[1]);
+      expect(pigmentIds(artwork(strokes, theme))).toHaveLength(
+        pigmentIds(artwork([strokes[0]], theme)).length
+      );
+      const mixed = await sharp(await png(strokes, theme))
+        .ensureAlpha()
+        .raw()
+        .toBuffer();
+      const named = await sharp(await png(equivalent, theme))
+        .ensureAlpha()
+        .raw()
+        .toBuffer();
+      expect(mixed.equals(named)).toBe(true);
+      expect(
+        parseDrawing(JSON.parse(JSON.stringify({ ...emptyDrawing(2), strokes }))).strokes.map(
+          (item) => item.color
+        )
+      ).toEqual(colors);
+    }
+  );
+  it.each([false, true])(
+    'shares resolved-white pigment with unchanged Black RGBA and semantic IDs, reversed=%s',
+    async (reverse) => {
+      const paints = [stroke('crayon', 'Black'), stroke('crayon', '#FFFFFF', 560)];
+      const strokes = reverse ? paints.toReversed() : paints;
+      const pigments = (markup) => [...markup.matchAll(/\bid="([^"]+-wax-[^"]+)"/g)].length;
+      expect(pigments(artwork(strokes, 'dark'))).toBe(pigments(artwork([strokes[0]], 'dark')));
+      expect(pigments(artwork(strokes, 'light'))).toBe(
+        pigments(artwork([strokes[0]], 'light')) * 2
+      );
+      const blackRegion = async (image) =>
+        sharp(image)
+          .extract({ left: 0, top: 0, width: 1024, height: 384 })
+          .ensureAlpha()
+          .raw()
+          .toBuffer();
+      const mixed = await blackRegion(await png(strokes, 'dark'));
+      const alone = await blackRegion(await png([paints[0]], 'dark'));
+      expect(mixed.equals(alone)).toBe(true);
+      expect(
+        parseDrawing(JSON.parse(JSON.stringify({ ...emptyDrawing(2), strokes }))).strokes.map(
+          (item) => item.color
+        )
+      ).toEqual(strokes.map((item) => item.color));
+    }
+  );
   it('keeps Magic pixels paper-fixed and allows custom crayon overlap to build different mixed pixels', async () => {
     expect(
       (await png([stroke('magic', '#123ABC')])).equals(await png([stroke('magic', '#FEDCBA')]))
