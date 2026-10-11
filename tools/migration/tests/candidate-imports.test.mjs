@@ -8,6 +8,19 @@ const { candidate, manifest, fixture, write, expectRejectedMutationAndRestore, c
   createCandidateFixtures();
 afterEach(cleanup);
 
+function fixtureWithOwnedLocalReferences() {
+  const target = fixture();
+  write(target, 'src/local/index.ts', "import 'expo';\n");
+  write(target, 'src/local/types.d.ts', 'export interface Thing {}\n');
+  write(target, 'src/local/asset.ttf', 'owned asset fixture');
+  write(
+    target,
+    'src/Local.ts',
+    `/// <reference path='./local/types.d.ts' />\n${candidateImport('./local')} require('./local/asset.ttf');\n`
+  );
+  return target;
+}
+
 describe('candidate source import ownership', () => {
   it('accepts the actual candidate and exposes finite generated subpath exclusions', () => {
     const result = assertDeclaredCandidateImports(candidate, manifest);
@@ -316,50 +329,52 @@ describe('candidate source import ownership', () => {
     expectRejectedMutationAndRestore(target, 'metro.config.cjs', source, reason);
   });
 
-  it('accepts owned local references and rejects lexical and canonical escapes', () => {
-    const target = fixture();
-    write(target, 'src/local/index.ts', "import 'expo';\n");
-    write(target, 'src/local/types.d.ts', 'export interface Thing {}\n');
-    write(target, 'src/local/asset.ttf', 'owned asset fixture');
-    write(
-      target,
-      'src/Local.ts',
-      `/// <reference path='./local/types.d.ts' />\n${candidateImport('./local')} require('./local/asset.ttf');\n`
-    );
+  it('accepts owned local type, directory and asset references', () => {
+    const target = fixtureWithOwnedLocalReferences();
     expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+  });
+
+  it('accepts an internal directory alias without changing ownership', () => {
+    const target = fixtureWithOwnedLocalReferences();
+    symlinkSync(join(target, 'src/local'), join(target, 'src/local-alias'));
+    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
+  });
+
+  it('rejects a lexical escape and restores owned local references', () => {
+    const target = fixtureWithOwnedLocalReferences();
     expectRejectedMutationAndRestore(
       target,
       'src/Local.ts',
       candidateImport('../../web/src/x'),
       'escapes candidate ownership'
     );
-    for (const path of [
-      'node_modules/expo',
-      'android/app/build/helper',
-      'ios/Pods/helper',
-      'dist/helper',
-    ])
+  });
+
+  it.each(['node_modules/expo', 'android/app/build/helper', 'ios/Pods/helper', 'dist/helper'])(
+    'rejects local reference into %s and restores owned references',
+    (path) => {
+      const target = fixtureWithOwnedLocalReferences();
       expectRejectedMutationAndRestore(
         target,
         'src/Local.ts',
         candidateImport(`../${path}`),
         'excluded candidate output'
       );
+    }
+  );
+
+  it.each([
+    ['directory', 'src/foreign'],
+    ['file', 'src/symlink.ts'],
+  ])('rejects canonical %s symlink escapes', (kind, path) => {
+    const target = fixtureWithOwnedLocalReferences();
     const external = join(target, '../foreign');
     mkdirSync(external);
     writeFileSync(join(external, 'helper.ts'), "import 'expo';\n");
-    symlinkSync(external, join(target, 'src/foreign'));
+    symlinkSync(kind === 'directory' ? external : join(external, 'helper.ts'), join(target, path));
     expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
       'escapes candidate ownership'
     );
-    rmSync(join(target, 'src/foreign'));
-    symlinkSync(join(external, 'helper.ts'), join(target, 'src/symlink.ts'));
-    expect(() => assertDeclaredCandidateImports(target, manifest)).toThrow(
-      'escapes candidate ownership'
-    );
-    rmSync(join(target, 'src/symlink.ts'));
-    symlinkSync(join(target, 'src/local'), join(target, 'src/local-alias'));
-    expect(() => assertDeclaredCandidateImports(target, manifest)).not.toThrow();
   });
 
   it('excludes only generated outputs and refuses local edges back into them', () => {
