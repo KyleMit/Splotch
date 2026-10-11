@@ -2,6 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import rsdDrawingConfig from '../migration/rsd-drawing-vitest.config.mjs';
+import {
+  RSD_NATIVE_SELECTION_TEST,
+  RSD_NATIVE_RECOVERY_TEST,
+  RSD_NATIVE_APPEARANCE_TEST,
+} from '../migration/lib/rsd-drawing-checks.mjs';
 
 // A relative specifier that points nowhere is not always an error, so moving a
 // file between directory depths breaks these two ways silently:
@@ -182,6 +188,18 @@ describe('repo-root walks under tools/', () => {
     // Named explicitly: this is the walk whose omission the guard was blind to,
     // and a sentinel counting only totals would not have noticed.
     expect(walkers.map(({ file }) => file)).toContain('tools/lib/proc.mjs');
+  });
+
+  it('anchors the RSD renderer suite at the real repo root before selecting tools', () => {
+    const file = 'tools/migration/rsd-drawing-vitest.config.mjs';
+    expect(walkers.filter((walk) => walk.file === file)).toEqual([{ file, ups: 2 }]);
+    expect(isRepoRoot(join(dirname(file), '..'))).toBe(false);
+    expect(rsdDrawingConfig.root).toBe(join(repoRoot, 'tools'));
+    expect(rsdDrawingConfig.test.include).toEqual([
+      RSD_NATIVE_SELECTION_TEST,
+      RSD_NATIVE_RECOVERY_TEST,
+      RSD_NATIVE_APPEARANCE_TEST,
+    ]);
   });
 
   it.each(walkers)('$file walks $ups levels to the repo root', ({ file, ups }) => {

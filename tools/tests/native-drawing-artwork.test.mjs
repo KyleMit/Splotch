@@ -14,6 +14,7 @@ import { PageOutline } from '../../experiments/native-architecture/src/drawing/P
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
+import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import {
   PAPER_HEIGHT,
   PAPER_WIDTH,
@@ -132,19 +133,23 @@ function mount(snapshot = drawing) {
   const ref = createRef();
   act(() =>
     root.render(
-      createElement(DrawingSurface, {
-        drawing: snapshot,
-        currentDrawing: () => snapshot,
-        onPreparingChange: vi.fn(),
-        onRendererFault: vi.fn(),
-        color: 'Green',
-        brush: 'marker',
-        disabled: false,
-        onCohort: vi.fn(),
-        onDrawingChange: vi.fn(),
-        onError: vi.fn(),
-        ref,
-      })
+      createElement(
+        DrawingAppearanceProvider,
+        { preference: 'system' },
+        createElement(DrawingSurface, {
+          drawing: snapshot,
+          currentDrawing: () => snapshot,
+          onPreparingChange: vi.fn(),
+          onRendererFault: vi.fn(),
+          color: 'Green',
+          brush: 'marker',
+          disabled: false,
+          onCohort: vi.fn(),
+          onDrawingChange: vi.fn(),
+          onError: vi.fn(),
+          ref,
+        })
+      )
     )
   );
   return ref;

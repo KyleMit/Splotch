@@ -7,12 +7,13 @@ import {
   RSD_NATIVE_APPEARANCE_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
+const repoRoot = join(import.meta.dirname, '..', '..');
 const native = join(
   dirname(require.resolve('react-strict-dom/package.json')),
   'dist/native/index.js'
 );
 export default defineConfig({
-  root: join(import.meta.dirname, '..'),
+  root: join(repoRoot, 'tools'),
   define: { __DEV__: 'false' },
   resolve: { alias: [{ find: /^react-strict-dom$/, replacement: native }] },
   test: {
