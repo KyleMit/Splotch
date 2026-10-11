@@ -1,3 +1,8 @@
+import {
+  offlineNativeAdditionRecords,
+  readOfflineSourceExtension,
+  replayOfflineSourceExtension,
+} from './offline-library-source-extension.mjs';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
@@ -232,6 +237,9 @@ function assertTemplateOriginalBytes(member, bytes) {
 }
 
 export function expectedNativeProvenance(manifest) {
+  const overlays = readOfflineSourceExtension().entries.filter(
+    (entry) => entry.baseline && !entry.target.startsWith('src/')
+  );
   const targets = new Set();
   const records = manifest.members.map((member) => {
     const target = candidateTemplateTarget(member.path);
@@ -244,6 +252,7 @@ export function expectedNativeProvenance(manifest) {
       change === 'unchanged'
         ? member.sha256
         : sha256(transformTemplateMember(member.path, verifiedTemplateOriginal(member)).bytes);
+    const overlay = overlays.find((entry) => entry.target === target);
     return {
       source: member.path,
       sourceSha256: member.sha256,
@@ -251,13 +260,16 @@ export function expectedNativeProvenance(manifest) {
       change,
       targetSha256,
       mode: member.mode,
+      ...(overlay
+        ? { extension: { identity: 'offline-library-v1', baselineSha256: overlay.baseline.sha256 } }
+        : {}),
     };
   });
   return {
     schemaVersion: 1,
     template: manifest.template,
     archive: manifest.archive,
-    records,
+    records: [...records, ...offlineNativeAdditionRecords(manifest)],
   };
 }
 
@@ -273,6 +285,12 @@ export function deriveNativeSources(manifest, members) {
     if (sha256(transformed.bytes) !== record.targetSha256)
       throw new Error(`Template transformation replay changed: ${member.path}`);
     files.set(record.target, { bytes: transformed.bytes, mode: Number(member.mode) });
+  }
+  for (const record of offlineNativeAdditionRecords(manifest)) {
+    files.set(record.target, {
+      bytes: replayOfflineSourceExtension(record.target),
+      mode: Number(record.mode),
+    });
   }
   return { files, provenance };
 }

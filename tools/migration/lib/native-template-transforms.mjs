@@ -1,3 +1,4 @@
+import { replayOfflineSourceExtension } from './offline-library-source-extension.mjs';
 import {
   ANDROID_STORAGE_PERMISSION_REMOVALS,
   APPLE_BUNDLE_OVERRIDES,
@@ -319,5 +320,11 @@ export function transformTemplateMember(path, bytes) {
     );
   else if (change === 'formatted-template-resource')
     source = JSON.stringify(JSON.parse(source), null, 2) + '\n';
-  return { bytes: change === 'unchanged' ? bytes : Buffer.from(source), change };
+  return {
+    bytes: replayOfflineSourceExtension(
+      candidateTemplateTarget(path),
+      change === 'unchanged' ? bytes : Buffer.from(source)
+    ),
+    change,
+  };
 }

@@ -14,6 +14,12 @@ const manifest = readTemplateManifest(root);
 const fixtureDirectories = [];
 const REPLAY_FAILURE = 'Native provenance replay mismatch';
 const JOINT_TRANSFORM_MUTATIONS = [
+  [
+    'android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt',
+    '// joint source drift\n',
+  ],
+  ['ios/HelloWorld/SplotchLibraryEnvironment.swift', '// joint source drift\n'],
+  ['ios/HelloWorld/SplotchLibraryEnvironment.m', '// joint source drift\n'],
   ['android/app/build.gradle', 'println("joint source drift")\n'],
   ['android/app/proguard-rules.pro', '# joint source drift\n'],
   ['android/app/src/main/AndroidManifest.xml', '<!-- joint source drift -->\n'],
@@ -105,6 +111,10 @@ async function invertedReceiptReader() {
   templateSource = templateSource.replace(guard, 'isDeepStrictEqual(provenance, provenance)');
   for (const [specifier, url] of [
     ['tar', import.meta.resolve('tar')],
+    [
+      './offline-library-source-extension.mjs',
+      pathToFileURL(join(root, 'tools/migration/lib/offline-library-source-extension.mjs')).href,
+    ],
     [
       '../../lib/native-candidate.mjs',
       pathToFileURL(join(root, 'tools/lib/native-candidate.mjs')).href,

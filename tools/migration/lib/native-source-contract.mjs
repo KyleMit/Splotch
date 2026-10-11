@@ -196,6 +196,12 @@ function assertAndroidManifest(files) {
     1,
     'network permission'
   );
+  requireCount(
+    manifest,
+    /<uses-permission\s+android:name="android.permission.ACCESS_NETWORK_STATE"\s*\/>/g,
+    1,
+    'network state permission'
+  );
   for (const permission of ANDROID_STORAGE_PERMISSION_REMOVALS) {
     requireCount(
       manifest,
@@ -209,7 +215,7 @@ function assertAndroidManifest(files) {
   }
   if (
     (manifest.match(/<uses-permission\b/g) ?? []).length !==
-      1 + ANDROID_STORAGE_PERMISSION_REMOVALS.length ||
+      2 + ANDROID_STORAGE_PERMISSION_REMOVALS.length ||
     /<queries\b|usesCleartextTraffic="true"/.test(manifest)
   ) {
     throw new Error('Unreviewed Android permission, query or cleartext policy');

@@ -36,6 +36,8 @@ const materializerToolPaths = [
   'tools/migration/materialize-native-candidate.mjs',
   'tools/migration/lib/archive-inventory.mjs',
   'tools/migration/lib/native-template.mjs',
+  'tools/migration/lib/offline-library-source-extension.mjs',
+  'tools/migration/inputs/offline-library-source-extension.json',
   'tools/migration/lib/native-template-transforms.mjs',
   'tools/migration/lib/native-source-contract.mjs',
   'tools/migration/lib/native-apple-scene.mjs',

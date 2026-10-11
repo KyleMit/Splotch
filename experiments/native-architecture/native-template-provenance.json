@@ -176,16 +176,24 @@
       "sourceSha256": "48d80b82ca5ff0072a94178634ebf7f8fe6ef7d5991d480fbe0f4140ff1df707",
       "target": "android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt",
       "change": "candidate-kotlin-identity",
-      "targetSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c",
-      "mode": "0o644"
+      "targetSha256": "5021a5e341de77bebba6ecad29b5c5fdc7c6f43faef36088e1171cacf6b9ec31",
+      "mode": "0o644",
+      "extension": {
+        "identity": "offline-library-v1",
+        "baselineSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c"
+      }
     },
     {
       "source": "package/ios/HelloWorld.xcodeproj/project.pbxproj",
       "sourceSha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
       "target": "ios/HelloWorld.xcodeproj/project.pbxproj",
       "change": "candidate-apple-identity-and-bundling",
-      "targetSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065",
-      "mode": "0o644"
+      "targetSha256": "242e1bfae8b612f7a69da557b8224837758df6c5b02106e5b34b8375f5c9b941",
+      "mode": "0o644",
+      "extension": {
+        "identity": "offline-library-v1",
+        "baselineSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065"
+      }
     },
     {
       "source": "package/ios/HelloWorld/Supporting/Expo.plist",
@@ -404,8 +412,12 @@
       "sourceSha256": "2bb28f4f3e9f37feeaff9e4d3fb63d1cbff962924a91c712b55c6c5fdd114c7c",
       "target": "android/app/src/main/AndroidManifest.xml",
       "change": "reviewed-network-and-private-storage-policy",
-      "targetSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90",
-      "mode": "0o644"
+      "targetSha256": "daca655948f2e12b34b9ab4158c13050a4da880d61c3e90f4e2f091cdd4e85b9",
+      "mode": "0o644",
+      "extension": {
+        "identity": "offline-library-v1",
+        "baselineSha256": "6058f5853e9315f090c0ceb6d9138b7349500137c0fabed5b1943f1fe2ff8b90"
+      }
     },
     {
       "source": "package/android/app/src/main/res/values/colors.xml",
@@ -453,6 +465,30 @@
       "target": "TEMPLATE-LICENSE",
       "change": "unchanged",
       "targetSha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
+      "sourceSha256": "56ccb8bb604211fafb2a1c09a38437d980ea9b1fbdc761b41965841c858c82ea",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "56ccb8bb604211fafb2a1c09a38437d980ea9b1fbdc761b41965841c858c82ea",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/ios/HelloWorld/SplotchLibraryEnvironment.m",
+      "sourceSha256": "30f99876f05d7f812e8bc863774808d5bc379a26672dd4a08fa7c02c85567d43",
+      "target": "ios/HelloWorld/SplotchLibraryEnvironment.m",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "30f99876f05d7f812e8bc863774808d5bc379a26672dd4a08fa7c02c85567d43",
+      "mode": "0o644"
+    },
+    {
+      "source": "offline-library-v1/ios/HelloWorld/SplotchLibraryEnvironment.swift",
+      "sourceSha256": "1305ec9f267909697ce60f697fe759620c3b542db53a6ce0627c00eb4c7b2de5",
+      "target": "ios/HelloWorld/SplotchLibraryEnvironment.swift",
+      "change": "owned-offline-library-v1",
+      "targetSha256": "1305ec9f267909697ce60f697fe759620c3b542db53a6ce0627c00eb4c7b2de5",
       "mode": "0o644"
     }
   ]
