@@ -197,8 +197,19 @@ describe('joint artwork definitions and chronological mask composition', () => {
     expect(rendered.indexOf('<defs>')).toBeLessThan(rendered.indexOf('<mask'));
     expect(rendered.indexOf('<image')).toBeLessThan(rendered.lastIndexOf('<pattern'));
   });
-  it('rejects an uncheckpointed second erase layer without silently changing paint order', () => {
-    const erase = { brush: 'eraser', width: 44, points: [{ x: 100, y: 100 }] };
-    expect(() => scene([blue, erase, yellow, erase])).toThrow('checkpointed');
+  it('applies both ordered erase layers without restoring the first hole or changing untouched pigment', async () => {
+    const firstErase = { brush: 'eraser', width: 44, points: [{ x: 100, y: 100 }] };
+    const secondErase = { brush: 'eraser', width: 44, points: [{ x: 300, y: 100 }] };
+    const before = await raw(scene([blue]));
+    const first = await raw(scene([blue, firstErase, yellow]));
+    const rendered = scene([blue, firstErase, yellow, secondErase]);
+    const second = await raw(rendered);
+    expect(pixel(first, 100, 100)[3]).toBe(0);
+    expect(pixel(first, 300, 100)[3]).toBeGreaterThan(0);
+    expect(pixel(second, 300, 100)[3]).toBe(0);
+    expect(pixel(second, 100, 100)[3]).toBe(0);
+    expect(pixel(first, 600, 100)).toEqual(pixel(before, 600, 100));
+    expect(pixel(second, 600, 100)).toEqual(pixel(before, 600, 100));
+    expect(tags(rendered, 'mask')).toHaveLength(2);
   });
 });

@@ -1,0 +1,91 @@
+{
+  "sourceManifestSHA256": "f48f11b6fe2be88f183e4bc7bd33109a224f3718babbca78c21207e93324075d",
+  "positiveReturnManifestSHA256": "e4ba7620b5b8b939a1d128562baf4ece105e914cf1e8b5832fab71faf046d527",
+  "sourcePositiveCommands": [
+    {
+      "label": "format-two-tests",
+      "actualExit": 0,
+      "timeout": false,
+      "startUTC": "2026-10-11T02:43:12.613247+00:00",
+      "terminalUTC": "2026-10-11T02:43:12.781698+00:00",
+      "capSeconds": 30
+    },
+    {
+      "label": "focused-two-tests",
+      "actualExit": 0,
+      "timeout": false,
+      "startUTC": "2026-10-11T02:43:13.392160+00:00",
+      "terminalUTC": "2026-10-11T02:43:14.524860+00:00",
+      "capSeconds": 60
+    },
+    {
+      "label": "lint",
+      "actualExit": 0,
+      "timeout": false,
+      "startUTC": "2026-10-11T02:43:15.138622+00:00",
+      "terminalUTC": "2026-10-11T02:43:32.109028+00:00",
+      "capSeconds": 120
+    },
+    {
+      "label": "format-code-check",
+      "actualExit": 0,
+      "timeout": false,
+      "startUTC": "2026-10-11T02:43:33.038997+00:00",
+      "terminalUTC": "2026-10-11T02:43:33.341515+00:00",
+      "capSeconds": 30
+    },
+    {
+      "label": "full-tools",
+      "actualExit": 0,
+      "timeout": false,
+      "startUTC": "2026-10-11T02:43:33.964553+00:00",
+      "terminalUTC": "2026-10-11T02:46:13.648706+00:00",
+      "capSeconds": 240
+    }
+  ],
+  "fullTools": {
+    "files": 406,
+    "tests": 8943,
+    "actualExit": 0
+  },
+  "focusedTwoFiles": {
+    "tests": 16,
+    "actualExit": 0
+  },
+  "sixMutationPairs": {
+    "actualExits": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    "restoration": "Exact source restored; all selected same-case positives passed."
+  },
+  "browser": {
+    "at": "2026-10-11T03:10:24.147737+00:00",
+    "success": true,
+    "exitCode": 0,
+    "reached": ["proposed", "canonical-boundary-disabled"],
+    "unreached": [],
+    "fixtureOnly": true,
+    "nativeInputUndoSaveRSSAcceptance": false,
+    "restorationVerified": true
+  },
+  "browserReturnManifestSHA256": "44763b86001f4a0b04f46ff4f8d08031774c5ae318936937b2a74ffe471af90e",
+  "closure": {
+    "recordedBirths": 28,
+    "groups": 8,
+    "absent": true,
+    "signals": 0,
+    "strictDualStackPortsClosed": true
+  },
+  "postClosureIndex": {
+    "status": "Only src/index.ts ctime/mtime fields changed; all 9099 staged entry bodies and index extensions unchanged. Root admitted metadata; cause unproved. Both genuine binaries and first sealer failure preserved.",
+    "beforeSHA256": "15ef51758449188e62d8e04f270bc39c8cf56fb7d286b6fd995aa8fff90a82b4",
+    "admittedSHA256": "aa1325571ac7f71b384635ca5047a6cef4f22aaaaff2401a640823d3173790fe",
+    "dispositionSHA256": "fc1cae076320bfd5884a28355fd94aa89d9915fa765117551a9a36e69a4d4ddf"
+  },
+  "open": [
+    "Genuine complete rich drawing UI successor with live input, Undo, Save and reopen",
+    "Current canonical native output on both OSes",
+    "Original immediate Pencil Undo 245-pixel mismatch",
+    "RSS 298.875 MiB above 256 MiB and mandatory observer errors",
+    "Physical performance/accessibility/release/whole candidate acceptance",
+    "Original review capacity exhausted; additional original round needs direct human authorization"
+  ]
+}

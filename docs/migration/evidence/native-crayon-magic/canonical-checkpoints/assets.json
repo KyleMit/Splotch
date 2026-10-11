@@ -1,0 +1,714 @@
+{
+  "status": "Unpublished actual-byte assets proposed for existing pr-assets branch; immutable commit URLs must be filled from actual publication readback.",
+  "originalRGBA": "All 54 full raw RGBA buffers remain in the immutable private runtime return; their hashes are in browser.json. Published PNGs remain original bytes and decode to the recorded buffers.",
+  "assets": [
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-1.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-1.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-2.png",
+      "bytes": 31349,
+      "sha256": "9d3fe98df2d16811f6d70f1a348fc2c03245e2c922b31eb8cbd85c7bf8e9cd57",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-capture-2.svg",
+      "bytes": 43530,
+      "sha256": "2ad40445f1df147bbe694f19a49944eaf38e2530677e8acef2fcd4ba34b214d4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-complete.png",
+      "bytes": 22434,
+      "sha256": "2d66c531c97dfeeca93cdd8a4109342222ed4e29ce0973cebc8a8b222e172e78",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-ink.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-ink.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-picture.png",
+      "bytes": 31349,
+      "sha256": "9d3fe98df2d16811f6d70f1a348fc2c03245e2c922b31eb8cbd85c7bf8e9cd57",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/curve-picture.svg",
+      "bytes": 43530,
+      "sha256": "2ad40445f1df147bbe694f19a49944eaf38e2530677e8acef2fcd4ba34b214d4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-1.png",
+      "bytes": 55009,
+      "sha256": "364c5262ea277fd52b6ab01ee3d1fdc3b4b192ece363bb63cb35da92938bdd30",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-1.svg",
+      "bytes": 324926,
+      "sha256": "7f84f8a59a14f5ab7061a2ab6465991856c2fdc96114c65036153a30c261a371",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-2.png",
+      "bytes": 55009,
+      "sha256": "364c5262ea277fd52b6ab01ee3d1fdc3b4b192ece363bb63cb35da92938bdd30",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-2.svg",
+      "bytes": 324926,
+      "sha256": "8a81bea6cd027b4f38defaa39cf6569e8d12682ea5049fc47a534806b36ced8c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-3.png",
+      "bytes": 53894,
+      "sha256": "97b175a3e83eee29de72e822b6c9444ea4881c368124887909c190577b2d7a3c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-capture-3.svg",
+      "bytes": 73654,
+      "sha256": "fefaf3d68d0578625d3ce18146c4a1698cc019bb554362099cf93c212c8f2efd",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-complete.png",
+      "bytes": 87304,
+      "sha256": "493b0527ce1b7e1ebf7b3251b420e2bd53e4c1d8a4e4de3c6dcc7109d4d4b633",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-ink.png",
+      "bytes": 55009,
+      "sha256": "364c5262ea277fd52b6ab01ee3d1fdc3b4b192ece363bb63cb35da92938bdd30",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-ink.svg",
+      "bytes": 324926,
+      "sha256": "7f84f8a59a14f5ab7061a2ab6465991856c2fdc96114c65036153a30c261a371",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-picture.png",
+      "bytes": 53894,
+      "sha256": "97b175a3e83eee29de72e822b6c9444ea4881c368124887909c190577b2d7a3c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-first-picture.svg",
+      "bytes": 73654,
+      "sha256": "fefaf3d68d0578625d3ce18146c4a1698cc019bb554362099cf93c212c8f2efd",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-1.png",
+      "bytes": 56153,
+      "sha256": "7c74aa3b4dfbb6816e1423b644815e9dce5deeb5573a538a3ac620d85461f0a2",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-1.svg",
+      "bytes": 327079,
+      "sha256": "43570d878e2f3f3237992b988aa535b809eeb9bb362a9d6450c864110f2322bb",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-2.png",
+      "bytes": 56153,
+      "sha256": "7c74aa3b4dfbb6816e1423b644815e9dce5deeb5573a538a3ac620d85461f0a2",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-2.svg",
+      "bytes": 327079,
+      "sha256": "cbb51cbb5e488447ff4059146b3584f1e7ed15319685f400d9a556a988d011e1",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-3.png",
+      "bytes": 55002,
+      "sha256": "a1a63bba7c5a5a144c4449dcf7edc1ecbf763305830f03fe720ecf715dd2a093",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-capture-3.svg",
+      "bytes": 75178,
+      "sha256": "5fa441dbebcdff6ed13e70173bc8cc1a55b0acde9d754dc6e0daf65e0596619b",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-complete.png",
+      "bytes": 92339,
+      "sha256": "9e760028140ea28651cfa150b8dc6f35576c149589841d6d0fe28abd0d3c042b",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-ink.png",
+      "bytes": 56153,
+      "sha256": "7c74aa3b4dfbb6816e1423b644815e9dce5deeb5573a538a3ac620d85461f0a2",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-ink.svg",
+      "bytes": 327079,
+      "sha256": "43570d878e2f3f3237992b988aa535b809eeb9bb362a9d6450c864110f2322bb",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-picture.png",
+      "bytes": 55002,
+      "sha256": "a1a63bba7c5a5a144c4449dcf7edc1ecbf763305830f03fe720ecf715dd2a093",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-repeat-picture.svg",
+      "bytes": 75178,
+      "sha256": "5fa441dbebcdff6ed13e70173bc8cc1a55b0acde9d754dc6e0daf65e0596619b",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-1.png",
+      "bytes": 58498,
+      "sha256": "d11007929363e6728393d7c3ebef71a9adddda75c39d73f3e3db3d133e4f1dce",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-1.svg",
+      "bytes": 333528,
+      "sha256": "2965ba3221cadf85d2048d74b19b987c13483b9b5929aa48a0ae154968d43a1f",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-2.png",
+      "bytes": 58498,
+      "sha256": "d11007929363e6728393d7c3ebef71a9adddda75c39d73f3e3db3d133e4f1dce",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-2.svg",
+      "bytes": 333528,
+      "sha256": "99bfc5c7d951cfb4a68c00edfb45f8e7016e1d9890767e54714543d5ea66789f",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-3.png",
+      "bytes": 57646,
+      "sha256": "91a13bdf53a564b682c4532c86afc72c235588b9da6ffe6de94c7a9c3665bfc4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-capture-3.svg",
+      "bytes": 78306,
+      "sha256": "ba4195124c026a3c5ccf9d83830e6539ff5093e697c65e2ea6a10346a1ebd7b7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-complete.png",
+      "bytes": 83014,
+      "sha256": "8af2f371df9d16ac5ff094738fa61f9ab00abb4923f06c6ba700583dd0e7c0ef",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-ink.png",
+      "bytes": 58498,
+      "sha256": "d11007929363e6728393d7c3ebef71a9adddda75c39d73f3e3db3d133e4f1dce",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-ink.svg",
+      "bytes": 333528,
+      "sha256": "2965ba3221cadf85d2048d74b19b987c13483b9b5929aa48a0ae154968d43a1f",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-picture.png",
+      "bytes": 57646,
+      "sha256": "91a13bdf53a564b682c4532c86afc72c235588b9da6ffe6de94c7a9c3665bfc4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-backtrack-picture.svg",
+      "bytes": 78306,
+      "sha256": "ba4195124c026a3c5ccf9d83830e6539ff5093e697c65e2ea6a10346a1ebd7b7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-1.png",
+      "bytes": 71846,
+      "sha256": "9e7dbc3b5f9c1f963d42d2b1dda2fdf5d91bee5394025f56a6c382e57192811e",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-1.svg",
+      "bytes": 614912,
+      "sha256": "8bd03ef47ad82a91a67d5ba1705bac053a9ada9f7f686004d5756f45237c95c7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-2.png",
+      "bytes": 71846,
+      "sha256": "9e7dbc3b5f9c1f963d42d2b1dda2fdf5d91bee5394025f56a6c382e57192811e",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-2.svg",
+      "bytes": 614912,
+      "sha256": "e22067266d7a7d0d5e3b00129912c7647dc45b1134d01c8aea556e332ac2364e",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-3.png",
+      "bytes": 70553,
+      "sha256": "b58b229630dc8a38ce1c15fba80eabf7c31c755417f342d55c8a692a1c3b0da2",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-capture-3.svg",
+      "bytes": 96102,
+      "sha256": "6dacc625a83eed24390a4eeeaf549176fc3abf83f16bcf7b61351ef416b32274",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-complete.png",
+      "bytes": 100150,
+      "sha256": "b2c8035f495dc7ce5b14eaffd89166be0a7d84ff6d72ed44572fd1f7da66ebe7",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-ink.png",
+      "bytes": 71846,
+      "sha256": "9e7dbc3b5f9c1f963d42d2b1dda2fdf5d91bee5394025f56a6c382e57192811e",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-ink.svg",
+      "bytes": 614912,
+      "sha256": "8bd03ef47ad82a91a67d5ba1705bac053a9ada9f7f686004d5756f45237c95c7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-picture.png",
+      "bytes": 70553,
+      "sha256": "b58b229630dc8a38ce1c15fba80eabf7c31c755417f342d55c8a692a1c3b0da2",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/proposed/crayon-mix-picture.svg",
+      "bytes": 96102,
+      "sha256": "6dacc625a83eed24390a4eeeaf549176fc3abf83f16bcf7b61351ef416b32274",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-0.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-0.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-1.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-1.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-2.png",
+      "bytes": 31349,
+      "sha256": "9d3fe98df2d16811f6d70f1a348fc2c03245e2c922b31eb8cbd85c7bf8e9cd57",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-capture-2.svg",
+      "bytes": 43530,
+      "sha256": "2ad40445f1df147bbe694f19a49944eaf38e2530677e8acef2fcd4ba34b214d4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-complete.png",
+      "bytes": 22434,
+      "sha256": "2d66c531c97dfeeca93cdd8a4109342222ed4e29ce0973cebc8a8b222e172e78",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-ink.png",
+      "bytes": 32416,
+      "sha256": "8bfdf95f76f38a5ce7be16e88f88eb9136d9f224567a16d5945b1ca36228ca62",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-ink.svg",
+      "bytes": 863,
+      "sha256": "9aa206eb15aa3bc6f39858cedfc5dd71e13c33ab2a0881cacc13771d73a84079",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-picture.png",
+      "bytes": 31349,
+      "sha256": "9d3fe98df2d16811f6d70f1a348fc2c03245e2c922b31eb8cbd85c7bf8e9cd57",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/curve-picture.svg",
+      "bytes": 43530,
+      "sha256": "2ad40445f1df147bbe694f19a49944eaf38e2530677e8acef2fcd4ba34b214d4",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-0.png",
+      "bytes": 54984,
+      "sha256": "39b79db975349ca4d9dc0ef6053d5ef0d33a43a3e04e7d23a9a4e7fdc6ee7812",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-0.svg",
+      "bytes": 282293,
+      "sha256": "d39d67774cc050e489b8ff2c3313683fa2d5b6689b3cdebeba10d7437b4cf014",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-1.png",
+      "bytes": 54984,
+      "sha256": "39b79db975349ca4d9dc0ef6053d5ef0d33a43a3e04e7d23a9a4e7fdc6ee7812",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-1.svg",
+      "bytes": 282293,
+      "sha256": "1f3f0918d2bd8e6156a58fd9e791cf858851f3a73222aabb74f220bc3b7f0160",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-2.png",
+      "bytes": 53879,
+      "sha256": "193b6b273638d51e615db6f3086280984dace0f7ff678058e61fb611770accbd",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-capture-2.svg",
+      "bytes": 73618,
+      "sha256": "a5feddc88de1f8336e5deb39325da2b59a2264bbd52b4557d89c885ec4f703f7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-complete.png",
+      "bytes": 84122,
+      "sha256": "96a0e1159ab1c9164cc1f8bb305661d429312c3d1eaa4f8974c81e025087f5fe",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-ink.png",
+      "bytes": 54984,
+      "sha256": "39b79db975349ca4d9dc0ef6053d5ef0d33a43a3e04e7d23a9a4e7fdc6ee7812",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-ink.svg",
+      "bytes": 282293,
+      "sha256": "d39d67774cc050e489b8ff2c3313683fa2d5b6689b3cdebeba10d7437b4cf014",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-picture.png",
+      "bytes": 53879,
+      "sha256": "193b6b273638d51e615db6f3086280984dace0f7ff678058e61fb611770accbd",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-first-picture.svg",
+      "bytes": 73618,
+      "sha256": "a5feddc88de1f8336e5deb39325da2b59a2264bbd52b4557d89c885ec4f703f7",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-0.png",
+      "bytes": 56023,
+      "sha256": "fd06bcbc8f1b788bddab5e7b3b059ff33922f76d8253a73f6b7359d8da2723ac",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-0.svg",
+      "bytes": 284446,
+      "sha256": "9b7070e609ff065e8a1e3d91812978d8bf68bcdff3d6cb57e77a1f93058b3ffa",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-1.png",
+      "bytes": 56023,
+      "sha256": "fd06bcbc8f1b788bddab5e7b3b059ff33922f76d8253a73f6b7359d8da2723ac",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-1.svg",
+      "bytes": 284446,
+      "sha256": "73036880e6af0f3c79e81694aef29a9121c18092997a999057cacc68c38d6236",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-2.png",
+      "bytes": 54968,
+      "sha256": "3e669584a93af261a1cca5b960e835a378d6dcdde57ec10ee51f08f85578075b",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-capture-2.svg",
+      "bytes": 75006,
+      "sha256": "79d8087b56fbb9c516e6e41875bb0ba1e92b11653151185d5059b7dfc74eb843",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-complete.png",
+      "bytes": 89275,
+      "sha256": "94f3c1ea9cf946388885b0d00b62b0da64b5d82b43249c8229887fc488726555",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-ink.png",
+      "bytes": 56023,
+      "sha256": "fd06bcbc8f1b788bddab5e7b3b059ff33922f76d8253a73f6b7359d8da2723ac",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-ink.svg",
+      "bytes": 284446,
+      "sha256": "9b7070e609ff065e8a1e3d91812978d8bf68bcdff3d6cb57e77a1f93058b3ffa",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-picture.png",
+      "bytes": 54968,
+      "sha256": "3e669584a93af261a1cca5b960e835a378d6dcdde57ec10ee51f08f85578075b",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-repeat-picture.svg",
+      "bytes": 75006,
+      "sha256": "79d8087b56fbb9c516e6e41875bb0ba1e92b11653151185d5059b7dfc74eb843",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-0.png",
+      "bytes": 58482,
+      "sha256": "9b188d130aee0343045a9955afa13e3af0c3df0b351cfda448bf0c73f13ac566",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-0.svg",
+      "bytes": 290895,
+      "sha256": "8ae1fb088521c4763e3bbc3eec72a684348e904c199d2e97c3ed81db1b6a3f13",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-1.png",
+      "bytes": 58482,
+      "sha256": "9b188d130aee0343045a9955afa13e3af0c3df0b351cfda448bf0c73f13ac566",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-1.svg",
+      "bytes": 290895,
+      "sha256": "e3fcb553756bab4e8ec6df268076c791137b065bc7f017270675e4aa0a0ea8ba",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-2.png",
+      "bytes": 57614,
+      "sha256": "66fd8db3919a5629002273d6d9dd64160247814756abd0999afd860525490b32",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-capture-2.svg",
+      "bytes": 78282,
+      "sha256": "599a28de196ab5bd61af3f1aaf58af49bcbd2df549264ae8fa4bb26bff4aac0d",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-complete.png",
+      "bytes": 80023,
+      "sha256": "b36e3fd98562ccd0f433c22a1b5997f925d8074c8247352303e2b8ce27c0cbad",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-ink.png",
+      "bytes": 58482,
+      "sha256": "9b188d130aee0343045a9955afa13e3af0c3df0b351cfda448bf0c73f13ac566",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-ink.svg",
+      "bytes": 290895,
+      "sha256": "8ae1fb088521c4763e3bbc3eec72a684348e904c199d2e97c3ed81db1b6a3f13",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-picture.png",
+      "bytes": 57614,
+      "sha256": "66fd8db3919a5629002273d6d9dd64160247814756abd0999afd860525490b32",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-backtrack-picture.svg",
+      "bytes": 78282,
+      "sha256": "599a28de196ab5bd61af3f1aaf58af49bcbd2df549264ae8fa4bb26bff4aac0d",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-0.png",
+      "bytes": 71637,
+      "sha256": "7417bdf5481717806c280347063e93c1d2bc69171902c86a48372236d1cade8c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-0.svg",
+      "bytes": 572279,
+      "sha256": "16f2ffece35d211e24e129f12210e0b57c69d32db49dc2ebdeb6628079673298",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-1.png",
+      "bytes": 71637,
+      "sha256": "7417bdf5481717806c280347063e93c1d2bc69171902c86a48372236d1cade8c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-1.svg",
+      "bytes": 572279,
+      "sha256": "62da37d22b57f8fa44f2e7b78b3e1d84b9b80a6e0a0bd4653b222a26f2e77fff",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-2.png",
+      "bytes": 70812,
+      "sha256": "267c0e23d0888b50c63849cc8ef1a6126da45809f8ece290c3f302f4d6e3514c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-capture-2.svg",
+      "bytes": 95822,
+      "sha256": "c87f0ecee7c1d0a4fd082c3d6854060c9c05f887dc5d795c1a2f6d0146b9ae2e",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-complete.png",
+      "bytes": 97463,
+      "sha256": "3fd89ffd5be2b7a8500ed4e3c6ac38d7ca7a36fabc9be7774cea1df27464d432",
+      "label": "controlled fixture UI"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-ink.png",
+      "bytes": 71637,
+      "sha256": "7417bdf5481717806c280347063e93c1d2bc69171902c86a48372236d1cade8c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-ink.svg",
+      "bytes": 572279,
+      "sha256": "16f2ffece35d211e24e129f12210e0b57c69d32db49dc2ebdeb6628079673298",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-picture.png",
+      "bytes": 70812,
+      "sha256": "267c0e23d0888b50c63849cc8ef1a6126da45809f8ece290c3f302f4d6e3514c",
+      "label": "production capture artifact"
+    },
+    {
+      "path": "native-crayon-magic-canonical-checkpoints/canonical-boundary-disabled/crayon-mix-picture.svg",
+      "bytes": 95822,
+      "sha256": "c87f0ecee7c1d0a4fd082c3d6854060c9c05f887dc5d795c1a2f6d0146b9ae2e",
+      "label": "production capture artifact"
+    }
+  ]
+}

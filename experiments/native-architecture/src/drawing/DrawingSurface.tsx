@@ -57,7 +57,11 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
             propsRef.current.disabled ||
             commandLock.current !== null ||
             captureLock.current !== null ||
-            raster.current?.isReady() !== true,
+            raster.current?.canStart(
+              propsRef.current.currentDrawing().strokes,
+              propsRef.current.brush,
+              inputRef.current?.hasActive() === true
+            ) !== true,
         }),
         geometry.current,
         setDrafts
@@ -122,7 +126,7 @@ export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
               ref={raster}
               strokes={props.drawing.strokes}
               drafts={drafts}
-              prepareEraser={props.brush === 'eraser'}
+              brush={props.brush}
               onBusy={props.onPreparingChange}
               onError={(error) => {
                 input.silence();

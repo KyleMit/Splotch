@@ -1,0 +1,111 @@
+import { useEffect, useRef, useState } from 'react';
+import { Text, View } from 'react-native';
+import { addStrokes, createHistory, parseDrawing, type Drawing, type Stroke } from './drawing/model';
+import { DrawingSurface, type DrawingSurfaceHandle } from './drawing/DrawingSurface';
+import { useRendererRecovery } from './useRendererRecovery';
+import fixtures from './capture-fixtures.json';
+
+type FixtureStatus =
+  | { phase: 'starting' }
+  | { phase: 'preparing' | 'capturing'; label: string; drawing: Drawing }
+  | { phase: 'complete'; label: string; drawing: Drawing; ink: string; picture: string; identityExact: boolean; cohorts: number }
+  | { phase: 'failed'; message: string };
+declare global {
+  interface Window {
+    __captureFixture: FixtureStatus;
+    __capturePhase: string;
+    __captureEvents: { at: number; event: string; busy?: boolean; identityExact: boolean }[];
+  }
+}
+
+export function FixtureApp() {
+  const [fixture] = useState(() => {
+    const label = new URLSearchParams(window.location.search).get('fixture');
+    const found = fixtures.find((item) => item.label === label);
+    if (!found) throw new Error('Unknown retained fixture.');
+    return { label: found.label, drawing: parseDrawing(JSON.parse(found.raw)) };
+  });
+  const [history, renderHistory] = useState(() => createHistory(fixture.drawing));
+  const historyRef = useRef(history);
+  const surface = useRef<DrawingSurfaceHandle>(null);
+  const command = useRef(false);
+  const rendererFault = useRef(false);
+  const started = useRef(false);
+  const mounted = useRef(true);
+  const cohorts = useRef(0);
+  const [preparing, setPreparing] = useState(true);
+  const [drawing, setDrawing] = useState(false);
+  const [notice, setNotice] = useState('');
+  function currentDrawing() { return historyRef.current.drawing; }
+  function report(error: unknown) {
+    window.__captureFixture = { phase: 'failed', message: String(error) };
+  }
+  function finishCohort(strokes: readonly Stroke[]) {
+    const next = addStrokes(historyRef.current, strokes);
+    historyRef.current = next;
+    renderHistory(next);
+    cohorts.current += 1;
+  }
+  const recovery = useRendererRecovery({
+    surface, command, rendererFault, blocked: false,
+    setPreparing(busy) {
+      window.__captureEvents ??= [];
+      window.__captureEvents.push({ at: performance.now(), event: 'production-onPreparingChange', busy, identityExact: currentDrawing() === fixture.drawing });
+      setPreparing(busy);
+    },
+    setDrawing, finishCohort, report, setNotice,
+  });
+  useEffect(() => {
+    window.__capturePhase = 'canonical-replay';
+    window.__captureEvents ??= [];
+    window.__captureFixture = { phase: 'preparing', label: fixture.label, drawing: fixture.drawing };
+    return () => { mounted.current = false; };
+  }, []);
+  useEffect(() => {
+    if (preparing || started.current || recovery.failed) return;
+    started.current = true;
+    const frame = requestAnimationFrame(() => {
+      void (async () => {
+        let release: (() => void) | undefined;
+        const snapshot = currentDrawing();
+        try {
+          if (!surface.current || snapshot !== fixture.drawing || drawing)
+            throw new Error('The actual fixture paper is not current and idle.');
+          command.current = true;
+          window.__captureEvents.push({ at: performance.now(), event: 'before-lock', identityExact: currentDrawing() === snapshot });
+          release = surface.current.lockInput();
+          if (currentDrawing() !== snapshot) throw new Error('The fixture changed while locking.');
+          window.__captureEvents.push({ at: performance.now(), event: 'after-lock', identityExact: true });
+          window.__captureFixture = { phase: 'capturing', label: fixture.label, drawing: snapshot };
+          window.__capturePhase = 'public-ink';
+          window.__captureEvents.push({ at: performance.now(), event: 'public-captureInk-start', identityExact: currentDrawing() === snapshot });
+          const ink = await surface.current.captureInk(snapshot);
+          if (!mounted.current || currentDrawing() !== snapshot)
+            throw new Error('The fixture model changed during public ink capture.');
+          window.__captureEvents.push({ at: performance.now(), event: 'after-captureInk', identityExact: currentDrawing() === snapshot });
+          window.__capturePhase = 'public-picture';
+          window.__captureEvents.push({ at: performance.now(), event: 'public-capturePng-start', identityExact: currentDrawing() === snapshot });
+          const picture = await surface.current.capturePng(snapshot);
+          const identityExact = mounted.current && currentDrawing() === snapshot;
+          if (!identityExact) throw new Error('The fixture model changed during public picture capture.');
+          window.__captureEvents.push({ at: performance.now(), event: 'after-capturePng', identityExact });
+          release(); release = undefined; command.current = false;
+          if (currentDrawing() !== snapshot || !mounted.current) throw new Error('The fixture changed during release.');
+          window.__captureEvents.push({ at: performance.now(), event: 'after-release', identityExact: true });
+          window.__capturePhase = 'complete';
+          window.__captureEvents.push({ at: performance.now(), event: 'public-captures-complete', identityExact: true });
+          window.__captureFixture = { phase: 'complete', label: fixture.label, drawing: snapshot, ink, picture, identityExact, cohorts: cohorts.current };
+        } catch (error) { report(error); }
+        finally { release?.(); command.current = false; }
+      })();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [preparing, recovery.failed]);
+  return <View style={{ width: 1024 }}>
+    <Text>Controlled retained-model production Surface/Raster fixture. No input or save acceptance.</Text>
+    <Text>{notice}</Text>
+    <DrawingSurface key={recovery.generation} ref={surface} drawing={history.drawing}
+      currentDrawing={currentDrawing} color="Purple" brush="marker" strokeWidth="thick" eraserWidth="thick"
+      disabled={preparing} {...recovery.callbacks} />
+  </View>;
+}

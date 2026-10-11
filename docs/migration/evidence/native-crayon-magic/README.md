@@ -109,18 +109,13 @@ owned process handles were stopped when the window ended. The probe observed:
 
 These observations are exploratory browser evidence, not exact-head qualification or native
 evidence. Actual control/composition screenshots and the downloaded PNG are retained in
-`exploratory-browser/`. The repeatable caller is `tools/migration/probe-native-brushes.mjs`; it adds
-actual corrupted-save rejection and records source/status, images, PNG and a report. Run it only in
-a coordinated window against the source-qualified candidate:
+`exploratory-browser/`. The retired
+[historical brush caller](https://github.com/KyleMit/Splotch/blob/f8539fc673a1bcce27f58d99bf6db6c2c98500b6/tools/migration/probe-native-brushes.mjs)
+added actual corrupted-save rejection and recorded source/status, images, PNG and a report. It is
+preserved at that commit and is not a runnable caller in the current candidate.
 
-```sh
-node tools/migration/probe-native-brushes.mjs \
-  --url=http://localhost:<selected-unused-port> \
-  --output=<owned-evidence-directory>
-```
-
-The caller starts no server. Its Chromium input proves browser mechanics only. Native output,
-new-product source acceptance and physical release gates remain pending.
+The historical caller started no server. Its Chromium input proved browser mechanics only. Native
+output, new-product source acceptance and physical release gates remain pending.
 
 ## Exact-source execution window
 

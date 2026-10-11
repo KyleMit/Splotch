@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { assertCurvePresence } from './curve-presence.mjs';
+
+const makeImage = (pixel) => ({ info: { width: 1024, height: 768, channels: 4 }, data: Buffer.from(Array.from({ length: 1024 * 768 }, () => pixel).flat()) });
+const positive = makeImage([0, 0, 0, 0]);
+for (const { x, y } of [{ x: 310, y: 170 }, { x: 400, y: 140 }, { x: 500, y: 210 }]) positive.data.set([171, 113, 225, 255], (y * 1024 + x) * 4);
+assert.equal(assertCurvePresence(positive).length, 3);
+assert.throws(() => assertCurvePresence(makeImage([0, 0, 0, 0])), /Retained marker interior missing/);
+assert.throws(() => assertCurvePresence(makeImage([252, 251, 248, 255])), /Retained marker interior missing/);
+const missing = { ...positive, data: Buffer.from(positive.data) };
+missing.data.fill(0, (140 * 1024 + 400) * 4, (140 * 1024 + 400) * 4 + 4);
+assert.throws(() => assertCurvePresence(missing), /400,140/);
+console.log(JSON.stringify({ positive: 1, transparentBlankRejected: true, plainPaperRejected: true, missingOneInteriorRejected: true }));

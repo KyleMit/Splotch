@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+
+const CORRIDOR_RADIUS_PX = 2;
+const INTERIOR_X_FRACTIONS = [0.35, 0.5, 0.65];
+const PIGMENT_TOLERANCE = 3;
+
+export function pigmentCorridor(image, yFraction, expected) {
+  const { width, height, channels } = image.info;
+  assert.ok(Number.isSafeInteger(width) && width > 0);
+  assert.ok(Number.isSafeInteger(height) && height > 0);
+  assert.equal(channels, 4, 'Corridor requires decoded RGBA');
+  assert.equal(image.data.length, width * height * channels, 'Incomplete decoded pixels');
+  assert.ok(Number.isFinite(yFraction) && yFraction >= 0 && yFraction < 1);
+  assert.ok(expected.length === 4 && expected.every((value) => Number.isInteger(value) && value >= 0 && value <= 255));
+  const nominalY = Math.floor(height * yFraction);
+  assert.ok(nominalY - CORRIDOR_RADIUS_PX >= 0 && nominalY + CORRIDOR_RADIUS_PX < height);
+  const rgba = (x, y) => [...image.data.subarray((y * width + x) * channels, (y * width + x) * channels + channels)];
+  const xCoordinates = INTERIOR_X_FRACTIONS.map((fraction) => Math.floor(width * fraction));
+  const rows = Array.from({ length: CORRIDOR_RADIUS_PX * 2 + 1 }, (_, offset) => {
+    const y = nominalY - CORRIDOR_RADIUS_PX + offset;
+    return { y, pixels: xCoordinates.map((x) => ({ x, rgba: rgba(x, y) })) };
+  });
+  const commonRows = rows.filter((row) => row.pixels.every((pixel) => pixel.rgba.every((channel, index) => Math.abs(channel - expected[index]) <= PIGMENT_TOLERANCE))).map((row) => row.y);
+  const nominalX = Math.floor(width * 0.5);
+  const observation = { width, height, expected, tolerance: PIGMENT_TOLERANCE, radius: CORRIDOR_RADIUS_PX, nominal: { x: nominalX, y: nominalY, rgba: rgba(nominalX, nominalY) }, rows, commonRows, commonRow: commonRows[0] ?? null };
+  assert.ok(observation.commonRow !== null, `No common pigment row in predeclared corridor: ${JSON.stringify(observation)}`);
+  return observation;
+}

@@ -1,0 +1,98 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { inflateSync } from 'node:zlib';
+import { pigmentCorridor } from './pixel-corridor.mjs';
+const SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const CRC_POLYNOMIAL = 0xedb88320;
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit++) crc = crc & 1 ? CRC_POLYNOMIAL ^ (crc >>> 1) : crc >>> 1;
+  return crc >>> 0;
+});
+export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+export function assertPngChunks(bytes, fixed = true) {
+  assert(bytes.subarray(0, 8).equals(SIGNATURE), 'PNG signature');
+  let offset = 8, header = false, end = false, data = false;
+  const chunks = [];
+  while (offset < bytes.length) {
+    assert(offset + 12 <= bytes.length, 'Truncated PNG chunk');
+    const length = bytes.readUInt32BE(offset), type = bytes.toString('ascii', offset + 4, offset + 8);
+    assert(offset + 12 + length <= bytes.length, 'PNG chunk extent');
+    let crc = 0xffffffff;
+    for (const byte of bytes.subarray(offset + 4, offset + 8 + length)) crc = CRC_TABLE[(crc ^ byte) & 255] ^ (crc >>> 8);
+    assert.equal((crc ^ 0xffffffff) >>> 0, bytes.readUInt32BE(offset + 8 + length), `PNG CRC ${type}`);
+    assert(!end, 'PNG bytes after IEND');
+    if (!header) {
+      assert.equal(type, 'IHDR'); assert.equal(length, 13); header = true;
+      if (fixed) { assert.equal(bytes.readUInt32BE(offset + 8), 1024); assert.equal(bytes.readUInt32BE(offset + 12), 768); }
+    } else assert.notEqual(type, 'IHDR', 'Duplicate IHDR');
+    if (type === 'IDAT') data = true;
+    if (type === 'IEND') { assert.equal(length, 0); end = true; }
+    chunks.push({ type, length, crc: bytes.readUInt32BE(offset + 8 + length) });
+    offset += 12 + length;
+  }
+  assert(header && data && end && offset === bytes.length, 'Complete PNG chunk stream');
+  return chunks;
+}
+function paeth(left, above, upperLeft) {
+  const p = left + above - upperLeft, a = Math.abs(p-left), b = Math.abs(p-above), c = Math.abs(p-upperLeft);
+  return a <= b && a <= c ? left : b <= c ? above : upperLeft;
+}
+export function unfilterRows(raw, width, height, channels) {
+  const rowBytes = width * channels;
+  assert.equal(raw.length, (rowBytes+1)*height, 'Exact complete filtered scanlines');
+  const pixels = Buffer.alloc(rowBytes*height), filters = [];
+  for (let y=0; y<height; y++) {
+    const filter = raw[y*(rowBytes+1)]; assert(filter <= 4, 'Invalid PNG scanline filter'); filters.push(filter);
+    for (let x=0; x<rowBytes; x++) {
+      const left=x>=channels?pixels[y*rowBytes+x-channels]:0, above=y?pixels[(y-1)*rowBytes+x]:0, upperLeft=y&&x>=channels?pixels[(y-1)*rowBytes+x-channels]:0;
+      const prediction=filter===0?0:filter===1?left:filter===2?above:filter===3?Math.floor((left+above)/2):paeth(left,above,upperLeft);
+      pixels[y*rowBytes+x]=(raw[y*(rowBytes+1)+x+1]+prediction)&255;
+    }
+  }
+  return { pixels, filters };
+}
+function wholeZlibPixels(bytes) {
+  const width=bytes.readUInt32BE(16), height=bytes.readUInt32BE(20), depth=bytes[24], colorType=bytes[25];
+  assert.equal(depth,8); assert([2,6].includes(colorType), 'Capture must be8-bit RGB/RGBA');
+  assert.deepEqual([...bytes.subarray(26,29)],[0,0,0], 'PNG compression/filter/interlace');
+  const idat=[]; for(let at=8;at<bytes.length;) { const length=bytes.readUInt32BE(at); if(bytes.toString('ascii',at+4,at+8)==='IDAT') idat.push(bytes.subarray(at+8,at+8+length)); at+=length+12; }
+  const packed=Buffer.concat(idat), channels=colorType===6?4:3, expected=(width*channels+1)*height;
+  assert(packed.length>=6 && (packed[0]&15)===8 && (packed[0]>>>4)<=7 && (((packed[0]<<8)|packed[1])%31)===0 && !(packed[1]&32), 'Complete ordinary zlib header');
+  const result=inflateSync(packed,{info:true,maxOutputLength:expected}); assert.equal(result.engine.bytesWritten,packed.length,'Zlib consumed entire IDAT stream');
+  assert.equal(result.buffer.length,expected,'Exact inflated scanline extent');
+  let a=1,b=0; for(const value of result.buffer) { a=(a+value)%65521; b=(b+a)%65521; }
+  assert.equal(((b<<16)|a)>>>0,packed.readUInt32BE(packed.length-4),'Exact zlib Adler checksum');
+  const {pixels,filters}=unfilterRows(result.buffer,width,height,channels), rgba=Buffer.alloc(width*height*4,255);
+  for(let i=0;i<width*height;i++) for(let c=0;c<channels;c++) rgba[i*4+c]=pixels[i*channels+c];
+  return {rgba,filters,channels,compressedBytes:packed.length,filteredBytes:result.buffer.length};
+}
+export async function decodePng(sharp, bytes, fixed = false) {
+  const chunks = assertPngChunks(bytes, fixed);
+  const image = sharp(bytes, { failOn: 'warning', limitInputPixels: 1024 * 768 });
+  const metadata = await image.metadata(); assert.equal(metadata.format, 'png');
+  if (fixed) { assert.equal(metadata.width, 1024); assert.equal(metadata.height, 768); }
+  const decoded = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert.equal(decoded.info.channels, 4);
+  assert.equal(decoded.data.length, decoded.info.width * decoded.info.height * 4);
+  if (fixed) for (let i = 3; i < decoded.data.length; i += 4) assert.equal(decoded.data[i], 255, 'Opaque export');
+  const manual=wholeZlibPixels(bytes); assert(decoded.data.equals(manual.rgba),'Independent full scanline decode equals sharp RGBA');
+  return { ...decoded, chunks, scanlines:{channels:manual.channels,filters:manual.filters,compressedBytes:manual.compressedBytes,filteredBytes:manual.filteredBytes,rgbaSha256:hash(manual.rgba)} };
+}
+export function exactPixel(image, x, y, expected) {
+  const at = (y * image.info.width + x) * 4;
+  const actual = [...image.data.subarray(at, at + 4)]; assert.deepEqual(actual, expected, `Exact pixel ${x},${y}`);
+  return { x, y, expected, actual };
+}
+export function proofControls(bytes, image, y, pigment) {
+  const corrupt = Buffer.from(bytes); corrupt[29] ^= 1;
+  assert.throws(() => assertPngChunks(corrupt), /PNG CRC/);
+  assert.throws(() => assertPngChunks(bytes.subarray(0, bytes.length - 1)), /Truncated|extent/);
+  const wrong = pigment.map((channel, index) => index === 3 ? channel : (channel + 128) % 256);
+  assert.throws(() => pigmentCorridor(image, y, wrong), /No common pigment row/);
+  const blank = { info: image.info, data: Buffer.alloc(image.data.length, 255) };
+  assert.throws(() => pigmentCorridor(blank, y, pigment), /No common pigment row/);
+  assert.throws(()=>unfilterRows(Buffer.from([5,0,0,0]),1,1,3),/Invalid PNG scanline filter/);
+  assert.throws(()=>unfilterRows(Buffer.from([0,0,0]),1,1,3),/Exact complete filtered scanlines/);
+  return { crcCorruptionRejected: true, truncatedPngRejected: true, wrongPigmentRejected: true, blankRejected: true, invalidFilterRejected:true, incompleteScanlineRejected:true };
+}

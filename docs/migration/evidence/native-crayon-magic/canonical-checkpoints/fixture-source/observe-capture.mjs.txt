@@ -1,0 +1,45 @@
+(() => {
+  const MAX_STAGES = 32;
+  const MAX_RETAINED_BYTES = 64 * 1024 * 1024;
+  const WIDTH_PX = 1024, HEIGHT_PX = 768;
+  const state = { serialized: [], captures: [], errors: [], retainedBytes: 0 };
+  window.__captureStages = state;
+  const canvases = new WeakMap();
+  function fail(message) { state.errors.push(message); throw new Error(message); }
+  function retain(text) {
+    state.retainedBytes += new TextEncoder().encode(text).length;
+    if (state.retainedBytes > MAX_RETAINED_BYTES) fail('Capture retention limit.');
+  }
+  const serialize = XMLSerializer.prototype.serializeToString;
+  XMLSerializer.prototype.serializeToString = function (node) {
+    const text = serialize.call(this, node);
+    if (node instanceof SVGSVGElement) {
+      if (state.serialized.length >= MAX_STAGES) fail('Unexpected production capture count.');
+      retain(text);
+      state.serialized.push({ text, uri: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`, phase: window.__capturePhase ?? 'canonical-replay', at: performance.now(), claimed: false });
+    }
+    return text;
+  };
+  const draw = CanvasRenderingContext2D.prototype.drawImage;
+  CanvasRenderingContext2D.prototype.drawImage = function (image, ...args) {
+    if (this.canvas.width === WIDTH_PX && this.canvas.height === HEIGHT_PX) {
+      const index = state.serialized.findLastIndex((item) => item.uri === image.src && !item.claimed);
+      if (index < 0) fail('Canvas source lacks unique exact production SVG custody.');
+      if (args.length !== 2 || args[0] !== 0 || args[1] !== 0) fail('Unexpected production capture draw geometry.');
+      state.serialized[index].claimed = true;
+      canvases.set(this.canvas, index);
+    }
+    return draw.call(this, image, ...args);
+  };
+  const png = HTMLCanvasElement.prototype.toDataURL;
+  HTMLCanvasElement.prototype.toDataURL = function (...args) {
+    const data = png.apply(this, args);
+    if (this.width === WIDTH_PX && this.height === HEIGHT_PX) {
+      const index = canvases.get(this);
+      if (index === undefined || state.captures.length >= MAX_STAGES || state.captures.some((c) => c.index === index)) fail('Unowned or duplicate production capture canvas.');
+      retain(data);
+      state.captures.push({ index, data, width: this.width, height: this.height, phase: state.serialized[index].phase, at: performance.now() });
+    }
+    return data;
+  };
+})();

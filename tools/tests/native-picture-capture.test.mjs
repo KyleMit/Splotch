@@ -118,7 +118,7 @@ async function render(strokes, prepareEraser = false, draft = null) {
           ref,
           strokes,
           drafts: draft ? [draft] : [],
-          prepareEraser,
+          brush: prepareEraser ? 'eraser' : 'marker',
           onError: error,
           onBusy: busy,
         })

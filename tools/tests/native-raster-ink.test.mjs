@@ -3,10 +3,7 @@ import { act, createElement, createRef, forwardRef, useImperativeHandle } from '
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
-import {
-  createSvgCapture,
-  PNG_TIMEOUT_MS,
-} from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({
   captures: [],
@@ -91,7 +88,8 @@ async function render(strokes, prepareEraser = false, draft = null) {
         ref,
         strokes,
         drafts: draft ? [draft] : [],
-        prepareEraser,
+        brush:
+          typeof prepareEraser === 'string' ? prepareEraser : prepareEraser ? 'eraser' : 'marker',
         onError: error,
         onBusy: busy,
       })
@@ -195,7 +193,8 @@ describe('chronological raster checkpoint lifecycle', () => {
     await load();
     await act(async () => oldLoad());
     expect(ref.current.isReady()).toBe(true);
-    expect(ref.current.readyPlan([marker, magic]).checkpoint.base64).toBe('replacement-image');
+    expect(ref.current.readyPlan([marker, magic]).checkpoint).toBeNull();
+    expect(ref.current.canStart([marker, magic], 'eraser', false)).toBe(true);
     await act(async () => vi.advanceTimersByTimeAsync(PNG_TIMEOUT_MS));
     expect(error).not.toHaveBeenCalled();
   });
@@ -214,7 +213,8 @@ describe('chronological raster checkpoint lifecycle', () => {
     await png(2, 'latest');
     await load();
     await png(0, 'duplicate-oldest');
-    expect(ref.current.readyPlan([marker]).checkpoint.base64).toBe('latest');
+    expect(ref.current.readyPlan([marker]).checkpoint).toBeNull();
+    expect(ref.current.canStart([marker], 'eraser', false)).toBe(true);
     expect(error).not.toHaveBeenCalled();
   });
 
@@ -266,131 +266,15 @@ describe('chronological raster checkpoint lifecycle', () => {
   });
 });
 
-describe('SVG job cancellation identity', () => {
-  it('cancels only the superseded job and refuses its old and duplicate callbacks', async () => {
-    const callbacks = [];
-    const capture = createSvgCapture();
-    const svg = { toDataURL: (callback) => callbacks.push(callback) };
-    const first = capture.capture(svg);
-    const refused = first.promise.catch((failure) => failure.message);
-    await frames();
-    first.cancel();
-    await expect(refused).resolves.toContain('superseded');
-    const second = capture.capture(svg);
-    await frames();
-    first.cancel();
-    callbacks[0]('old');
-    callbacks[1]('new');
-    callbacks[1]('duplicate');
-    await expect(second.promise).resolves.toBe('new');
-    capture.dispose();
-  });
-});
-
-describe('consumed SVG raster disposal', () => {
-  it.each(['success', 'empty', 'cancel', 'timeout', 'dispose'])(
-    'disposes the actual request once on %s and refuses duplicate settlement',
-    async (outcome) => {
-      const callbacks = [],
-        released = vi.fn(),
-        capture = createSvgCapture();
-      const job = capture.capture({
-        toDataURL(callback) {
-          callbacks.push(callback);
-          return released;
-        },
-      });
-      const result = job.promise.then(
-        (value) => ({ value }),
-        (failure) => ({ failure })
-      );
-      await frames();
-      if (outcome === 'success') callbacks[0]('current');
-      else if (outcome === 'empty') callbacks[0]('');
-      else if (outcome === 'cancel') job.cancel();
-      else if (outcome === 'dispose') capture.dispose();
-      else await act(async () => vi.advanceTimersByTimeAsync(PNG_TIMEOUT_MS));
-      const terminal = await result;
-      expect(outcome === 'success' ? terminal.value : terminal.failure).toBeTruthy();
-      expect(released).toHaveBeenCalledOnce();
-      callbacks[0]('late');
-      job.cancel();
-      capture.dispose();
-      expect(released).toHaveBeenCalledOnce();
-    }
-  );
-
-  it('registers synchronous cleanup before resolving and preserves the first callback', async () => {
-    const released = vi.fn(),
-      capture = createSvgCapture();
-    const job = capture.capture({
-      toDataURL(callback) {
-        callback('first');
-        callback('duplicate');
-        return released;
-      },
-    });
-    await frames();
-    await expect(job.promise).resolves.toBe('first');
-    expect(released).toHaveBeenCalledOnce();
-  });
-
-  it('disposes a cleanup returned after its request was cancelled during native dispatch', async () => {
-    const released = vi.fn(),
-      capture = createSvgCapture();
-    const job = capture.capture({
-      toDataURL(callback) {
-        capture.dispose();
-        callback('late-sync');
-        return released;
-      },
-    });
-    const refused = job.promise.catch((failure) => failure.message);
-    await frames();
-    await expect(refused).resolves.toContain('cancelled');
-    expect(released).toHaveBeenCalledOnce();
-  });
-
-  it('retains terminal cleanup failure without resolving a PNG or accepting another job', async () => {
-    const capture = createSvgCapture();
-    const job = capture.capture({
-      toDataURL(callback) {
-        callback('pixels');
-        return () => {
-          throw new Error('Resource disposal failed');
-        };
-      },
-    });
-    const refused = job.promise.catch((failure) => failure.message);
-    await frames();
-    await expect(refused).resolves.toContain('cleanup failed');
-    await expect(capture.capture({ toDataURL() {} }).promise).rejects.toThrow('unavailable');
-  });
-
-  it('accepts the unchanged native void-return contract without claiming native resource cancellation', async () => {
-    const callbacks = [],
-      capture = createSvgCapture();
-    const job = capture.capture({
-      toDataURL(callback) {
-        callbacks.push(callback);
-      },
-    });
-    await frames();
-    callbacks[0]('native-result');
-    await expect(job.promise).resolves.toBe('native-result');
-    capture.dispose();
-  });
-});
-
 describe('visible replay and Android cached image readiness', () => {
-  it('keeps incomplete capture prefixes off the visible paper across loaded history and Undo', async () => {
+  it('presents the complete chronological scene while rebuilding history and Undo prefixes', async () => {
     const history = [crayon, erase, marker, erase];
     await render(history);
-    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).not.toBeNull();
     await frames();
     expect(state.captures[0].children.props.strokes).toEqual([crayon]);
     await png(0, 'first');
-    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).not.toBeNull();
     await load();
     await load('1024');
     await frames();
@@ -398,7 +282,7 @@ describe('visible replay and Android cached image readiness', () => {
     await load();
     expect(ref.current.isReady()).toBe(true);
     await render(history.slice(0, 2));
-    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).toBeNull();
+    expect(host.querySelector('[data-svg-width="100%"] [data-opacity="1"]')).not.toBeNull();
     await frames();
     expect(state.captures[2].children.props.strokes).toEqual([crayon]);
     await png(2, 'undo-prefix');
@@ -463,4 +347,110 @@ it('keeps a wrong-grid decoded callback terminal after SVG loads first', async (
   expect(error).toHaveBeenCalledOnce();
   expect(error.mock.calls[0][0].message).toContain('unexpected image or sampling grid');
   expect(ref.current.isReady()).toBe(false);
+});
+
+describe('provisional selection versus canonical committed pixels', () => {
+  it('exports the canonical plan after selection alone and discards preparation on a mode excursion', async () => {
+    const prefix = [marker];
+    await render(prefix, 'crayon');
+    await frames();
+    await png(0, 'unused-selection');
+    await load();
+    expect(ref.current.canStart(prefix, 'crayon', false)).toBe(true);
+    expect(ref.current.canStart(prefix, 'eraser', false)).toBe(false);
+    expect(ref.current.readyPlan(prefix).checkpoint).toBeNull();
+    expect(ref.current.readyPlan(prefix).strokes).toEqual(prefix);
+    await render(prefix, 'marker');
+    const extended = [...prefix, { ...marker, color: 'Red' }];
+    await render(extended, 'marker');
+    expect(ref.current.readyPlan(extended).checkpoint).toBeNull();
+    expect(state.captures).toHaveLength(1);
+    await render(extended, 'crayon');
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    expect(state.captures[1].children.props.strokes).toEqual(extended);
+    expect(state.captures[1].children.props.checkpoint).toBeNull();
+  });
+
+  it('never promotes a decoded through-Crayon cache after an unconsumed eraser excursion', async () => {
+    await render([crayon], 'eraser');
+    await frames();
+    await png(0, 'unused-through-crayon');
+    await load();
+    await render([crayon], 'crayon');
+    const strokes = [crayon, { ...crayon, seed: 18 }];
+    await render(strokes, 'crayon');
+    expect(ref.current.readyPlan(strokes).checkpoint).toBeNull();
+    expect(ref.current.readyPlan(strokes).strokes).toEqual(strokes);
+    expect(state.captures).toHaveLength(1);
+  });
+
+  it('uses preparation for the actual cohort, promotes only on commit, and invalidates witness-removing Undo', async () => {
+    const prefix = [marker];
+    await render(prefix, 'crayon');
+    await frames();
+    await png(0, 'canonical-marker-prefix');
+    await load();
+    await render(prefix, 'crayon', crayon);
+    expect(host.querySelector('[data-opacity="1"] [data-strokes="crayon"]')).not.toBeNull();
+    expect(() => ref.current.readyPlan(prefix)).toThrow('still being prepared');
+    await frames();
+    expect(state.captures).toHaveLength(1);
+    const committed = [...prefix, crayon];
+    await render(committed, 'crayon');
+    expect(ref.current.readyPlan(committed).checkpoint.base64).toBe('canonical-marker-prefix');
+    expect(ref.current.readyPlan(committed).strokes).toEqual([crayon]);
+    await render(prefix, 'marker');
+    expect(ref.current.readyPlan(prefix).checkpoint).toBeNull();
+    expect(ref.current.readyPlan(prefix).strokes).toEqual(prefix);
+    await render(prefix, 'crayon');
+    expect(ref.current.canStart(prefix, 'crayon', false)).toBe(false);
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    expect(state.captures[1].children.props.checkpoint).toBeNull();
+    await png(1, 'rebuilt-marker-prefix');
+    await load();
+    const reentered = [...prefix, { ...crayon, seed: 19 }];
+    await render(reentered, 'crayon');
+    expect(ref.current.readyPlan(reentered).checkpoint.base64).toBe('rebuilt-marker-prefix');
+    expect(ref.current.readyPlan(reentered).strokes).toEqual([reentered[1]]);
+  });
+
+  it('refuses a late decoded selection image after a mode-only excursion', async () => {
+    await render([marker], 'crayon');
+    await frames();
+    await png(0, 'late-selection');
+    const late = state.imageLoads.at(-1).onImageLoad;
+    await render([marker], 'marker');
+    await act(async () => late());
+    expect(ref.current.readyPlan([marker]).checkpoint).toBeNull();
+    expect(ref.current.canStart([marker], 'marker', false)).toBe(true);
+    await render([marker], 'crayon');
+    expect(ref.current.canStart([marker], 'crayon', false)).toBe(false);
+    await frames();
+    expect(state.captures).toHaveLength(2);
+  });
+
+  it('keeps full mixed drafts visible and never captures them as a checkpoint', async () => {
+    const drafts = [marker, erase, { ...marker, color: 'Red' }, { ...erase, width: 80 }];
+    await act(async () =>
+      root.render(
+        createElement(RasterInk, {
+          ref,
+          strokes: [],
+          drafts,
+          brush: 'eraser',
+          onError: error,
+          onBusy: busy,
+        })
+      )
+    );
+    await frames();
+    expect(state.captures).toHaveLength(0);
+    expect(
+      host.querySelector('[data-opacity="1"] [data-strokes="marker,eraser,marker,eraser"]')
+    ).not.toBeNull();
+    expect(ref.current.canStart([], 'crayon', true)).toBe(true);
+    expect(() => ref.current.readyPlan(drafts)).toThrow('still being prepared');
+  });
 });

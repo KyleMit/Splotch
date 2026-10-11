@@ -1,0 +1,127 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+import { decodePng, hash } from './png-proof.mjs';
+import { assertCurvePresence } from './curve-presence.mjs';
+const HERE = dirname(fileURLToPath(import.meta.url));
+const [repo, url, output, arm] = process.argv.slice(2);
+assert.equal(process.argv.length, 6);
+assert(['proposed', 'canonical-boundary-disabled'].includes(arm));
+const require = createRequire(join(repo, 'package.json'));
+const { chromium } = require('@playwright/test');
+const sharp = require('sharp');
+const fixtures = JSON.parse(readFileSync(join(HERE, 'capture-fixtures.json'), 'utf8'));
+const binding = JSON.parse(readFileSync(join(HERE, 'BINDINGS.json'), 'utf8'));
+const ROI = { x: 200, y: 110, width: 630, height: 240 };
+const DRIVER_TIMEOUT_MS = 90000, PAGE_TIMEOUT_MS = 20000;
+const started = Date.now();
+const receipt = { arm, scope: 'controlled real Surface/Raster retained-model fixture only', fixtures: [], errors: [], unreached: fixtures.map((f) => f.label) };
+mkdirSync(output);
+const persist = () => writeFileSync(join(output, 'RESULT-PARTIAL.json'), JSON.stringify(receipt, null, 2) + '\n');
+function differences(before, after) {
+  assert.equal(before.length, 1024 * 768 * 4); assert.equal(after.length, before.length);
+  const samples = []; let count = 0;
+  for (let y = ROI.y; y < ROI.y + ROI.height; y++) for (let x = ROI.x; x < ROI.x + ROI.width; x++) {
+    const at = (y * 1024 + x) * 4;
+    if (!before.subarray(at, at + 4).equals(after.subarray(at, at + 4))) {
+      count++; if (samples.length < 64) samples.push({ x, y, before: [...before.subarray(at, at + 4)], after: [...after.subarray(at, at + 4)] });
+    }
+  }
+  return { count, samples, fullCoordinatesRecoverableFromRetainedRGBA: true };
+}
+let browser, context, fault;
+const baseline = {};
+try {
+  browser = await chromium.launch({ executablePath: binding.chrome.path, headless: true });
+  for (const fixture of fixtures) {
+    assert(Date.now() - started < DRIVER_TIMEOUT_MS, 'Driver90s cap');
+    context = await browser.newContext({ viewport: { width: 1024, height: 768 }, deviceScaleFactor: 1, colorScheme: 'light' });
+    const page = await context.newPage();
+    page.on('pageerror', (e) => receipt.errors.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error') receipt.errors.push(m.text()); });
+    await page.addInitScript({ path: join(HERE, 'observe-capture.mjs') });
+    let readinessFault = null;
+    try {
+      await page.goto(`${url}/?fixture=${encodeURIComponent(fixture.label)}`, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS });
+      await page.waitForFunction(() => ['complete', 'failed'].includes(window.__captureFixture?.phase), null, { timeout: PAGE_TIMEOUT_MS });
+    } catch (error) { readinessFault = String(error); }
+    const result = await page.evaluate(() => ({ fixture: window.__captureFixture ?? {phase:'failed',message:'No production fixture terminal'}, stages: window.__captureStages ?? {serialized:[],captures:[],errors:[]}, events: window.__captureEvents ?? [] }));
+    result.readinessFault = readinessFault;
+    writeFileSync(join(output, fixture.label + '-browser-result.json'), JSON.stringify(result, null, 2) + '\n');
+    writeFileSync(join(output, fixture.label + '-complete.html'), await page.content());
+    await page.screenshot({ path: join(output, fixture.label + '-complete.png'), fullPage: true });
+    const boundaryCount = arm === 'proposed' ? binding.captureBounds.find((r) => r.label === fixture.label).canonicalPrefixes : 0;
+    const expectedPhases = [...Array(boundaryCount).fill('canonical-replay'), 'public-ink', 'public-picture', 'public-picture'];
+    const record = { label: fixture.label, model: result.fixture.drawing, rawSHA256: hash(Buffer.from(fixture.raw)), events: result.events, serialized: [], actualCaptures: [], stages: [] };
+    receipt.fixtures.push(record); persist();
+    for (const [index, serialized] of result.stages.serialized.entries()) {
+      const filename = `${fixture.label}-serialized-${index}.svg`;
+      writeFileSync(join(output, filename), serialized.text);
+      record.serialized.push({ index, file: filename, sha256: hash(Buffer.from(serialized.text)), phase: serialized.phase, at: serialized.at, claimed: serialized.claimed });
+    }
+    const images = [];
+    for (const [index, capture] of result.stages.captures.entries()) {
+      assert(capture.data.startsWith('data:image/png;base64,'));
+      const base64 = capture.data.slice('data:image/png;base64,'.length);
+      const bytes = Buffer.from(base64, 'base64');
+      const name = `${fixture.label}-capture-${index}`;
+      writeFileSync(join(output, name + '.png'), bytes);
+      const image = await decodePng(sharp, bytes, false);
+      assert.equal(image.info.width, 1024); assert.equal(image.info.height, 768);
+      const serialized = result.stages.serialized[capture.index];
+      const hrefs = [...serialized.text.matchAll(/(?:xlink:href|href)="data:image\/png;base64,([^"]+)"/g)].map((m) => m[1]);
+      images.push(image);
+      writeFileSync(join(output, name + '.png'), bytes); writeFileSync(join(output, name + '.rgba'), image.data); writeFileSync(join(output, name + '.svg'), serialized.text);
+      record.actualCaptures.push({ index, serializedIndex: capture.index, imageBase64: base64, hrefBase64: hrefs, phase: capture.phase, serializedAt: serialized.at, pngAt: capture.at, imageReferences: hrefs.map((h) => hash(Buffer.from(h, 'base64'))), pngSHA256: hash(bytes), rgbaSHA256: hash(image.data), svgSHA256: hash(Buffer.from(serialized.text)), IHDR: { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20), bitDepth: bytes[24], colorType: bytes[25], compression: bytes[26], filter: bytes[27], interlace: bytes[28] } });
+    }
+    persist();
+    assert.equal(readinessFault, null, 'Actual fixture readiness failed after evidence retention');
+    assert.equal(result.fixture.phase, 'complete', JSON.stringify(result.fixture));
+    assert.deepEqual(result.fixture.drawing, JSON.parse(fixture.raw));
+    assert.equal(result.fixture.identityExact, true); assert.equal(result.fixture.cohorts, 0);
+    assert.deepEqual(receipt.errors, []); assert.deepEqual(result.stages.errors, []);
+    assert.equal(result.stages.serialized.length, expectedPhases.length);
+    assert.deepEqual(result.stages.captures.map((c) => c.index), expectedPhases.map((_, i) => i));
+    assert.deepEqual(result.stages.captures.map((c) => c.phase), expectedPhases);
+    assert(result.events.some((e) => e.event === 'production-onPreparingChange' && e.busy === false));
+    assert(result.events.every((e) => e.identityExact === true), 'Every lifecycle event owns the same model');
+    for (const [eventIndex, event] of record.events.entries()) {
+      const nextAt = record.events[eventIndex+1]?.at ?? Infinity;
+      const related = record.actualCaptures.filter((c) => c.pngAt <= event.at || (c.serializedAt >= event.at && c.serializedAt < nextAt));
+      event.artifactReferences = related.map((c) => ({ svg: `${fixture.label}-capture-${c.index}.svg`, png: `${fixture.label}-capture-${c.index}.png`, rgba: `${fixture.label}-capture-${c.index}.rgba` }));
+      event.captureState = related.length ? 'retained-artifacts' : 'no-capture-produced-in-this-lifecycle-interval';
+    }
+    const verifiedEarlier = new Set();
+    for (const c of record.actualCaptures) {
+      for (const href of c.hrefBase64) assert(verifiedEarlier.has(href), 'Capture image must bind exact earlier production PNG bytes');
+      if (boundaryCount && c.index >= boundaryCount && c.index < record.actualCaptures.length-1) assert(c.hrefBase64.length > 0, 'Canonical prefix must be consumed');
+      if (c.index === record.actualCaptures.length-1) assert.deepEqual(c.hrefBase64, [record.actualCaptures[c.index-1].imageBase64], 'Final picture consumes its own internal ink PNG');
+      verifiedEarlier.add(c.imageBase64);
+    }
+    for (const c of record.actualCaptures) { delete c.imageBase64; delete c.hrefBase64; }
+    assert.equal(result.fixture.ink, result.stages.captures[boundaryCount].data.slice('data:image/png;base64,'.length));
+    assert.equal(result.fixture.picture, result.stages.captures.at(-1).data.slice('data:image/png;base64,'.length));
+    for (const [stage, index] of [['ink', boundaryCount], ['picture', expectedPhases.length - 1]]) {
+      const capture = result.stages.captures[index], image = images[index];
+      if (stage === 'ink') assert.equal(image.data[3], 0, 'Public ink retains transparent paper corner');
+      else for (let alpha = 3; alpha < image.data.length; alpha += 4) assert.equal(image.data[alpha], 255, 'Opaque final export');
+      const retainedCurve = assertCurvePresence(image);
+      const name = `${fixture.label}-${stage}`;
+      writeFileSync(join(output, name + '.png'), Buffer.from(capture.data.slice('data:image/png;base64,'.length), 'base64'));
+      writeFileSync(join(output, name + '.rgba'), image.data); writeFileSync(join(output, name + '.svg'), result.stages.serialized[index].text);
+      const delta = baseline[stage] ? differences(baseline[stage], image.data) : { count: 0, samples: [] };
+      baseline[stage] ??= Buffer.from(image.data);
+      record.stages.push({ stage, actualCaptureIndex: index, retainedCurve, pngSHA256: record.actualCaptures[index].pngSHA256, rgbaSHA256: hash(image.data), curveROI: ROI, differences: delta });
+    }
+    writeFileSync(join(output, fixture.label + '-model.json'), fixture.raw);
+    receipt.unreached.shift(); persist();
+    await context.close(); context = null;
+  }
+  if (arm === 'proposed') assert(receipt.fixtures.flatMap((f) => f.stages).every((s) => s.differences.count === 0), 'Exact zero-pixel curve oracle failed');
+  else assert(receipt.fixtures.slice(1).every((f) => f.stages.every((s) => s.differences.count > 0)), 'Canonical-boundary-disabled control did not reproduce both-stage strict failures');
+  receipt.status = 'EXPECTED_ARM_RESULT';
+} catch (error) { fault = error; receipt.status = 'FAILED'; receipt.failure = String(error); }
+finally { if (context) await context.close(); if (browser) await browser.close(); receipt.elapsedMs = Date.now() - started; persist(); }
+if (fault) throw fault;

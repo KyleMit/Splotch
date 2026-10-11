@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Defs, G, Image, Mask, Rect } from 'react-native-svg';
 import type { InkCheckpoint } from './checkpoints';
 import { Ink, InkArtwork } from './Ink';
@@ -13,68 +13,67 @@ type Props = {
 
 export function InkScene({ checkpoint, strokes, onImageLoad }: Props) {
   const id = useId();
-  const firstErase = strokes.findIndex((stroke) => stroke.brush === 'eraser');
-  const endErase =
-    firstErase < 0
-      ? -1
-      : strokes.findIndex((stroke, index) => index > firstErase && stroke.brush !== 'eraser');
-  const before = firstErase < 0 ? strokes : strokes.slice(0, firstErase);
-  const erasers =
-    firstErase < 0 ? [] : strokes.slice(firstErase, endErase < 0 ? strokes.length : endErase);
-  const after = endErase < 0 ? [] : strokes.slice(endErase);
-  if (after.some((stroke) => stroke.brush === 'eraser'))
-    throw new Error('Ink must be checkpointed before another eraser layer.');
-  const base = (
-    <>
-      {checkpoint ? (
-        <Image
-          href={`data:image/png;base64,${checkpoint.base64}`}
+  const masks: ReactNode[] = [];
+  let scene: ReactNode = checkpoint ? (
+    <Image
+      href={`data:image/png;base64,${checkpoint.base64}`}
+      x={0}
+      y={0}
+      width={PAPER_WIDTH}
+      height={PAPER_HEIGHT}
+      preserveAspectRatio="none"
+      onLoad={onImageLoad}
+    />
+  ) : null;
+  for (let index = 0; index < strokes.length;) {
+    const start = index;
+    const erased = strokes[start].brush === 'eraser';
+    while (index < strokes.length && (strokes[index].brush === 'eraser') === erased) index += 1;
+    const run = strokes.slice(start, index);
+    if (erased) {
+      const maskId = `${id}-erase-${start}`;
+      masks.push(
+        <Mask
+          key={maskId}
+          id={maskId}
+          style={{ maskType: 'luminance' }}
+          maskUnits="userSpaceOnUse"
           x={0}
           y={0}
           width={PAPER_WIDTH}
           height={PAPER_HEIGHT}
-          preserveAspectRatio="none"
-          onLoad={onImageLoad}
-        />
-      ) : null}
-      {before.map((stroke, index) =>
-        stroke.brush === 'eraser' ? null : <Ink key={index} stroke={stroke} />
-      )}
-    </>
-  );
+        >
+          <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill="white" />
+          {run.map((stroke, offset) => (
+            <StrokeShape
+              key={start + offset}
+              points={stroke.points}
+              width={stroke.width}
+              paint="black"
+            />
+          ))}
+        </Mask>
+      );
+      scene = (
+        <G key={maskId} mask={`url(#${maskId})`}>
+          {scene}
+        </G>
+      );
+    } else {
+      scene = (
+        <>
+          {scene}
+          {run.map((stroke, offset) =>
+            stroke.brush === 'eraser' ? null : <Ink key={start + offset} stroke={stroke} />
+          )}
+        </>
+      );
+    }
+  }
   return (
     <InkArtwork strokes={strokes}>
-      {erasers.length ? (
-        <>
-          <Defs>
-            <Mask
-              id={id}
-              style={{ maskType: 'luminance' }}
-              maskUnits="userSpaceOnUse"
-              x={0}
-              y={0}
-              width={PAPER_WIDTH}
-              height={PAPER_HEIGHT}
-            >
-              <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill="white" />
-              {erasers.map((stroke, index) => (
-                <StrokeShape
-                  key={index}
-                  points={stroke.points}
-                  width={stroke.width}
-                  paint="black"
-                />
-              ))}
-            </Mask>
-          </Defs>
-          <G mask={`url(#${id})`}>{base}</G>
-        </>
-      ) : (
-        base
-      )}
-      {after.map((stroke, index) =>
-        stroke.brush === 'eraser' ? null : <Ink key={index} stroke={stroke} />
-      )}
+      <Defs>{masks}</Defs>
+      {scene}
     </InkArtwork>
   );
 }

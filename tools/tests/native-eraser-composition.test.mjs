@@ -16,6 +16,7 @@ import {
 import {
   planInk,
   checkpointMatches,
+  needsPreparation,
 } from '../../experiments/native-architecture/src/drawing/checkpoints.ts';
 
 import { checkpointFixtures } from '../migration/probes/native-eraser/checkpoint-fixtures.mjs';
@@ -114,7 +115,7 @@ describe('joint native drawing and eraser ownership', () => {
     let checkpoint = null;
     let captures = 0;
     for (;;) {
-      const plan = planInk(strokes, checkpoint, false);
+      const plan = planInk(strokes, checkpoint);
       const eraseRuns = plan.strokes.filter(
         (stroke, index) => stroke.brush === 'eraser' && plan.strokes[index - 1]?.brush !== 'eraser'
       );
@@ -132,27 +133,28 @@ describe('joint native drawing and eraser ownership', () => {
 
   it('captures the original painted prefix before a first eraser and selected eraser', () => {
     const prefix = [crayon, magic];
-    const loaded = planInk([...prefix, erase], null, false);
+    const loaded = planInk([...prefix, erase], null);
     expect(loaded.prefix).toEqual(prefix);
     expect(loaded.strokes).toEqual(prefix);
     expect(loaded.needsCheckpoint).toBe(true);
-    expect(planInk(prefix, null, true).needsCheckpoint).toBe(true);
+    expect(planInk(prefix, null).needsCheckpoint).toBe(false);
+    expect(needsPreparation(prefix, 'eraser')).toBe(true);
     const checkpoint = { id: 1, strokes: prefix, base64: 'planner fixture' };
-    const ready = planInk([...prefix, erase], checkpoint, false);
+    const ready = planInk([...prefix, erase], checkpoint);
     expect(ready.strokes).toEqual([erase]);
     expect(ready.needsCheckpoint).toBe(false);
-    expect(planInk([erase], null, false).needsCheckpoint).toBe(false);
+    expect(planInk([erase], null).needsCheckpoint).toBe(false);
   });
 
   it('prepares before a new eraser gesture and refuses a stale checkpoint after replacement', () => {
     const strokes = [marker, erase, { ...marker, color: 'Red' }];
-    expect(planInk(strokes, null, false).prefix).toEqual([marker]);
-    expect(planInk(strokes, null, false).needsCheckpoint).toBe(true);
-    expect(planInk(strokes, null, true).needsCheckpoint).toBe(true);
+    expect(planInk(strokes, null).prefix).toEqual([marker]);
+    expect(planInk(strokes, null).needsCheckpoint).toBe(true);
+    expect(planInk(strokes, null).needsCheckpoint).toBe(true);
     const checkpoint = { id: 1, strokes, base64: 'planner fixture; not raster evidence' };
     expect(checkpointMatches([...strokes, erase], checkpoint)).toBe(true);
     expect(checkpointMatches([marker], checkpoint)).toBe(false);
-    expect(planInk([{ ...marker }], checkpoint, false).checkpoint).toBeNull();
+    expect(planInk([{ ...marker }], checkpoint).checkpoint).toBeNull();
   });
 });
 

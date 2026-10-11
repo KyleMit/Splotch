@@ -1,0 +1,114 @@
+{
+  "scope": "Derived public assertion readback; full raw reporter stacks and all failed attempts are preserved privately. No failure result was replaced by its restored positive.",
+  "returnManifestSHA256": "f8aa3d53bbe4bcf70a510bd1a38d6c8feec8053c529374d7e94de27c3047db34",
+  "controls": [
+    {
+      "name": "canonical-boundary",
+      "literalOccurrences": 1,
+      "mutantSHA256": "2e0a6a46c638b8cdd205ff0d741114c9b0572124b097aa841068448120df2581",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "8a8d1ace0b628e88cbbb72f942051b9934f4fc25cb333e96fda58cef6a1eb1f7",
+        "test": "canonical boundaries and provisional selection ownership rejects an identity-matching cache inside a contiguous Crayon run and after witness-removing Undo",
+        "status": "failed",
+        "assertion": "AssertionError: expected true to be false // Object.is equality"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "3998e962c808b1a3ca741828fa8149f4d23c2c18ba9e9a0174d982b2b1c94072",
+        "test": "canonical boundaries and provisional selection ownership rejects an identity-matching cache inside a contiguous Crayon run and after witness-removing Undo",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "predecessor-route",
+      "literalOccurrences": 1,
+      "mutantSHA256": "76f4221cf78b385dae96d718c6512a22f962255f45d2e27f1c336ab545f1bce5",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "71f71b649374ad670f64ef713c0d1f7b164dc34e8994a2a212bf8a1224aa9999",
+        "test": "canonical boundaries and provisional selection ownership requires the exact canonical predecessor as well as actual next-boundary witness",
+        "status": "failed",
+        "assertion": "AssertionError: expected true to be false // Object.is equality"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "c650aa6953946b4702122766b4e175fc69ec0ac4c39324fe235daebb856e7358",
+        "test": "canonical boundaries and provisional selection ownership requires the exact canonical predecessor as well as actual next-boundary witness",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "authoritative-history",
+      "literalOccurrences": 1,
+      "mutantSHA256": "564fa4c7569ce26cfae7cd4b67e312148ed3f7cb33e12e624be47e5b2d23c9af",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "08fe036590460a2cbd6b0eda1dcb3f7c4a3ae2c76b10b1534e313e210c81b0f2",
+        "test": "canonical raster contact admission and mixed chronology rejects next contact against synchronously published history before parent rerender",
+        "status": "failed",
+        "assertion": "AssertionError: expected true to be false // Object.is equality"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "e436eeb9fe7385e5bcf82e98c81d11c2525d16b5a54a9fb1df9dd878afb8d1fe",
+        "test": "canonical raster contact admission and mixed chronology rejects next contact against synchronously published history before parent rerender",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "retire-removed-witness",
+      "literalOccurrences": 1,
+      "mutantSHA256": "8720548191ae363425d76f47f969f0600121e061bc4dee9e97b14f19761b73d7",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "bffc8bfa6d6be19b4d0725d3937a3661604fb555c91e97fb411a898031e8c696",
+        "test": "provisional selection versus canonical committed pixels uses preparation for the actual cohort, promotes only on commit, and invalidates witness-removing Undo",
+        "status": "failed",
+        "assertion": "AssertionError: expected 'canonical-marker-prefix' to be 'rebuilt-marker-prefix' // Object.is equality"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "a5959d7f3ff0778481373e232f7b28fcf4f1690957b9ce5de47373aef696faa3",
+        "test": "provisional selection versus canonical committed pixels uses preparation for the actual cohort, promotes only on commit, and invalidates witness-removing Undo",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "later-erase-chronology",
+      "literalOccurrences": 1,
+      "mutantSHA256": "db190ea7624cd6adf630dee6c142922ec8574061e6e9656f8bfb65596c5262cf",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "7b2d777b6eab05857646acd7e1839de3540d0d70b054f73db378076fd6a2505e",
+        "test": "complete chronological live mixed-contact scene keeps later pigment outside the first erase and subjects it to the second erase",
+        "status": "failed",
+        "assertion": "AssertionError: expected [ 236, 83, 78, 255 ] to deeply equal [ +0, +0, +0, +0 ]"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "776ae110a6c5e4010e95efc4b93c2aaca4c6e179f7b4cff9709569199031e931",
+        "test": "complete chronological live mixed-contact scene keeps later pigment outside the first erase and subjects it to the second erase",
+        "status": "passed"
+      }
+    },
+    {
+      "name": "no-active-draft-capture",
+      "literalOccurrences": 3,
+      "mutantSHA256": "65f13bc0cf6df4eb8c5a2a21db18c8b304ea871cd52e40e9f486bd27dee03abe",
+      "negativeExit": 1,
+      "restoredExit": 0,
+      "negative": {
+        "rawReporterSHA256": "230fb4ee0a5cf86df3bba5e9b50fe2619d54129f4828596845e14111d5fd4969",
+        "test": "canonical raster contact admission and mixed chronology does not prepare a nonempty prefix or silence accepted contacts when a later contact changes mode",
+        "status": "failed",
+        "assertion": "AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(1) ] to have a length of +0 but got 4"
+      },
+      "restoredPositive": {
+        "rawReporterSHA256": "8abf21eb51b428d5eed2a4557b8817e03e875e76d2737f73422789720c51666a",
+        "test": "canonical raster contact admission and mixed chronology does not prepare a nonempty prefix or silence accepted contacts when a later contact changes mode",
+        "status": "passed"
+      }
+    }
+  ]
+}

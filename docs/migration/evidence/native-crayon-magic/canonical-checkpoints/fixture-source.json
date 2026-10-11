@@ -1,0 +1,60 @@
+{
+  "scope": "Exact inert test-only source attachments from the executed browser fixture. These are review attachments, not shipped modules or npm-script registrations. Reproduction needs an explicitly bound owned checkout and BINDINGS.json supplied by a normal bounded runner.",
+  "browserSourceManifestSHA256": "cdf290feb56b16332b749a486de37fa3573b3ebca8ece09dcb20cfa47201fb76",
+  "attachments": [
+    {
+      "path": "fixture-source/FixtureApp.tsx.txt",
+      "originalName": "FixtureApp.tsx",
+      "bytes": 6130,
+      "sha256": "d1e929991fefeac2aad211a8e0d3d5f4f8d5de4c13a9f368cba1dda659fe1269"
+    },
+    {
+      "path": "fixture-source/fixture-index.ts.txt",
+      "originalName": "fixture-index.ts",
+      "bytes": 125,
+      "sha256": "0963c60e3970bbf6f48e2fc524d5884f0782d1ad5063be91aea5e36126cc281c"
+    },
+    {
+      "path": "fixture-source/localize.mjs.txt",
+      "originalName": "localize.mjs",
+      "bytes": 10337,
+      "sha256": "e26e3ed8f19791d3a26fa3de038d1e2047f117620b4dc7b37ea07303c733f34c"
+    },
+    {
+      "path": "fixture-source/observe-capture.mjs.txt",
+      "originalName": "observe-capture.mjs",
+      "bytes": 2388,
+      "sha256": "d5577b543d1fa796bf1ff904e49ec53aaa0a4161998e0006215536d811ec8ab3"
+    },
+    {
+      "path": "fixture-source/png-proof.mjs.txt",
+      "originalName": "png-proof.mjs",
+      "bytes": 6786,
+      "sha256": "4d6f2d6a2d5aa9fb35b7d34b9f1f42d6a6f48e209f1fce3d69fe4f67d5a1ce69"
+    },
+    {
+      "path": "fixture-source/curve-presence.mjs.txt",
+      "originalName": "curve-presence.mjs",
+      "bytes": 809,
+      "sha256": "602b153fbe879730656f7449ef722c64e4e2517f43ee31dc9619f6057fa223cc"
+    },
+    {
+      "path": "fixture-source/controls-curve-presence.mjs.txt",
+      "originalName": "controls-curve-presence.mjs",
+      "bytes": 1059,
+      "sha256": "423c870a57531124ca595a78d4e58c27a70508a9664901a90a59a3a8f9d1f0eb"
+    },
+    {
+      "path": "fixture-source/pixel-corridor.mjs.txt",
+      "originalName": "pixel-corridor.mjs",
+      "bytes": 1912,
+      "sha256": "e4ea8f675081e4ed0adea87ace7eb5ed79ca95ec3b424fda36671ab695a92c2c"
+    },
+    {
+      "path": "fixture-source/capture-fixtures.json.txt",
+      "originalName": "capture-fixtures.json",
+      "bytes": 10399,
+      "sha256": "777121be0c53ba8d9162f82e53236615f20b66c9439791f2d53c3294a171dd2a"
+    }
+  ]
+}

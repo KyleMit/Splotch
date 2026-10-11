@@ -1,0 +1,154 @@
+{
+  "scope": "Qualified canonical-checkpoint source before future publication commit; this evidence does not invent its commit SHA.",
+  "parent": "71ed474c12e77afc24b376ac3453fd9f2b28cbbb",
+  "parentTree": "49cfdd2f21ede3847dd112e5a8763a91bb8ce0c5",
+  "dependencyBase": "bdb826d022577d1775c8c285fa5587e259b5c7a6",
+  "sourceVectorSHA256": "7d4fd2a1cc16f62a9cf240c973d4a111cf720b88facd83fbb61b98ab35e84937",
+  "maintainedFilesBeforePublicEvidence": 9104,
+  "currentChangedPaths": [
+    {
+      "path": "docs/migration/evidence/native-crayon-magic/README.md",
+      "bytes": 14549,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "e584f0a72bd0cf7cee1d1c24a755237e3eef2ddfccccbd0198fa522e61341167"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/DrawingSurface.tsx",
+      "bytes": 8797,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "137c9927033b7c0a527f32e45cdb81debaf13727c9fd4ca2c738b0914ac81a0e"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/InkScene.tsx",
+      "bytes": 2195,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "b6e8ce199267722311620ec4f8fe2926822d93c9f9eb6739ec2c8506880d1b22"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/RasterInk.tsx",
+      "bytes": 11113,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "792ef952313b7cce97ff6a832986bfed8b5c28c591e739a0b284108e515b87a6"
+    },
+    {
+      "path": "experiments/native-architecture/src/drawing/checkpoints.ts",
+      "bytes": 2764,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "4d197d8df06c67de637e973b8c2eac7677788dc890dea29138100eb6744f0a9f"
+    },
+    {
+      "path": "tools/tests/native-canonical-checkpoints.test.mjs",
+      "bytes": 4183,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "312fdeb5589589ef8dfb858374b67db9e364b2bc466c98a9274a158b67acf883"
+    },
+    {
+      "path": "tools/tests/native-canonical-contacts-mounted.test.mjs",
+      "bytes": 5101,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "05d9a7a4fa40eb800758e73b7901060c00878838df781e9b1d63d661394dc68f"
+    },
+    {
+      "path": "tools/tests/native-contacts-mounted-harness.mjs",
+      "bytes": 7469,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "6fe221355751d7169c0351e0f114308256f3a92fff5453e3284ffbfd69268853"
+    },
+    {
+      "path": "tools/tests/native-eraser-composition.test.mjs",
+      "bytes": 9305,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "be5151b66527bb568a43018af4bdaa56555b07a6927646ac53943b86549abcb4"
+    },
+    {
+      "path": "tools/tests/native-eraser-contacts-mounted.test.mjs",
+      "bytes": 9840,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "e2aef9322bfb3c49cc40cfa9d212bd22e8567b606407a14891741feddf866d1f"
+    },
+    {
+      "path": "tools/tests/native-eraser-contacts.test.mjs",
+      "bytes": 4911,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "b3b49b19d2363f58cf6efb935f6b1e2f1be4ca2fba4ba4c236a92a4d749d8606"
+    },
+    {
+      "path": "tools/tests/native-ink-scene-order.test.mjs",
+      "bytes": 3944,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "fb61dcd58e59fda2084f4696f60a92df127b2538166992ad9cb6bf51e7db54d6"
+    },
+    {
+      "path": "tools/tests/native-joint-artwork.test.mjs",
+      "bytes": 7835,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "912747b8b853096323761ba42b2908768a560e83aae38b009afe3658494bdf9c"
+    },
+    {
+      "path": "tools/tests/native-mounted-alpha.test.mjs",
+      "bytes": 16318,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "ea1732e3b38132f5d78af2cc21052ea789fda83beae86bca63309e7b159f61bc"
+    },
+    {
+      "path": "tools/tests/native-picture-capture.test.mjs",
+      "bytes": 19338,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "7dfd273fa829e2f9bdcbb29befd424ae7f3d6733ebb0f6aca54559f9bdb396cd"
+    },
+    {
+      "path": "tools/tests/native-raster-ink.test.mjs",
+      "bytes": 18033,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "b8d85ef0ffdeac92030ce0c6a048eb9b2eea205b806a2dd093dc42f51a4dce28"
+    },
+    {
+      "path": "tools/tests/native-svg-capture-lifecycle.test.mjs",
+      "bytes": 4926,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "5c4db1bf974aecf233580dee06d4d55b6a1e05c510dffd00e0fe11b39b78b7fe"
+    }
+  ],
+  "locks": [
+    {
+      "path": "package.json",
+      "bytes": 123360,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "2f34502e3f9f63adcec04e04cb94387f1a282f6e4d797861351ba17b3db831fc"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 529961,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "45d731eb5385e67970e2ec59941de4a668aeb78a67eb68eda023dc6d652a16a2"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 4947,
+      "mode": 420,
+      "nlink": 1,
+      "sha256": "7d4490e0657569fc25752b4780d94e4b9b2ba51d47d89f2df4350ab2aee02734"
+    }
+  ],
+  "sourceManifestSHA256": "f48f11b6fe2be88f183e4bc7bd33109a224f3718babbca78c21207e93324075d",
+  "fullSourceInventorySHA256": "64b870dfa3cf213456ff48e476d05f2d5e81bbf4df3f2f1d36b02909b0ecf1a8"
+}

@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+
+const PAPER_WIDTH_PX = 1024;
+const PAPER_HEIGHT_PX = 768;
+const RETAINED_MARKER_INTERIORS = [{ x: 310, y: 170 }, { x: 400, y: 140 }, { x: 500, y: 210 }];
+const RETAINED_PURPLE_RGBA = [171, 113, 225, 255];
+
+export function assertCurvePresence(image) {
+  assert.equal(image.info.width, PAPER_WIDTH_PX);
+  assert.equal(image.info.height, PAPER_HEIGHT_PX);
+  assert.equal(image.info.channels, 4);
+  assert.equal(image.data.length, PAPER_WIDTH_PX * PAPER_HEIGHT_PX * 4);
+  return RETAINED_MARKER_INTERIORS.map(({ x, y }) => {
+    const offset = (y * PAPER_WIDTH_PX + x) * 4;
+    const rgba = [...image.data.subarray(offset, offset + 4)];
+    assert.deepEqual(rgba, RETAINED_PURPLE_RGBA, `Retained marker interior missing at ${x},${y}`);
+    return { x, y, rgba };
+  });
+}
