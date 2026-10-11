@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import {
   act,
   createElement,
@@ -54,6 +55,7 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   reopenPicture: vi.fn(),
 }));
 vi.mock('react-native', () => ({
+  AccessibilityInfo: createAccessibilityInfoFixture(),
   useColorScheme: () => 'light',
   ActivityIndicator: () => null,
   Modal: () => null,

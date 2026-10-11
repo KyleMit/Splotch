@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
@@ -64,6 +65,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    AccessibilityInfo: createAccessibilityInfoFixture(),
     useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),

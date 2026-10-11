@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { createAccessibilityInfoFixture } from '../lib/native-accessibility-fixture.mjs';
 import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,6 +45,7 @@ vi.mock('react-native', () => {
       children
     );
   return {
+    AccessibilityInfo: createAccessibilityInfoFixture(),
     AppState: {
       get currentState() {
         return sound.current;
