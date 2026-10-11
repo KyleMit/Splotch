@@ -38,5 +38,18 @@
     "original reviewer or ledger mutation",
     "external dependency aliases"
   ],
-  "integration": "Root integrates independently with Appearance and offline Library; do not overwrite their units."
+  "integration": "Root integrates independently with Appearance and offline Library; do not overwrite their units.",
+  "firstFullTools": {
+    "commit": "10422f03c948ccf22faea2a4021fdd0d061391fe",
+    "actualExitCode": 1,
+    "files": 422,
+    "filesPassed": 416,
+    "filesFailed": 6,
+    "cases": 9191,
+    "casesPassed": 9190,
+    "casesFailed": 1,
+    "acceptance": false,
+    "repair": "Explicit drawing fixture SDK boundary and exact sixteen-file inventory; production Expo streaming retained.",
+    "retryOwner": "/root"
+  }
 }

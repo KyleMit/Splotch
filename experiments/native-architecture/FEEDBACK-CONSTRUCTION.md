@@ -79,14 +79,14 @@ ignored device opt-in, stale completion, stale cancellation, dismissal resetting
 canonical message-cap drift. The private `NEGATIVE-CONTROLS.json` identifies each source hash,
 selected test and rejection exit. Final positive checks run after restoration.
 
-No full-tools suite, full E2E, native build, native runtime, device, performance, live API
-acceptance, release validation or independent review is claimed. Native streaming,
-keyboard/accessibility, background lifecycle and persistent policy storage require on-device
-acceptance. Composition with the separately repaired Appearance unit must apply its DrawingStatusBar
-and consistent translucent modal/window backing to the new feedback modal when that source is
-integrated. This baseline has no such future symbol to import. Both operating systems, including
-opposite-OS Light/Dark system bar and modal pixels, remain open. The gate's termination lifetime and
-the broader parent-policy family remain explicit acceptance items.
+Root’s initial full-tools run failed; full-tools acceptance remains open. No full E2E, native build,
+native runtime, device, performance, live API acceptance, release validation or independent review
+is claimed. Native streaming, keyboard/accessibility, background lifecycle and persistent policy
+storage require on-device acceptance. Composition with the separately repaired Appearance unit must
+apply its DrawingStatusBar and consistent translucent modal/window backing to the new feedback modal
+when that source is integrated. This baseline has no such future symbol to import. Both operating
+systems, including opposite-OS Light/Dark system bar and modal pixels, remain open. The gate's
+termination lifetime and the broader parent-policy family remain explicit acceptance items.
 
 ## Reproducing the owned install
 
@@ -112,3 +112,26 @@ actual commit, feature patch, whole-source manifest, preservation and check hash
 remains on this Mac and is not a pushed handoff. Integration must preserve the independent
 Appearance and offline-library units, repeat the appropriate root-owned acceptance tiers and open a
 fresh review for this new unit without spending or resetting any original review identity.
+
+## Fixture and inventory repair after first full tools
+
+Root's qualified default full-tools run against the first feature commit completed with actual exit
+1: 422 files, 416 passed and six failed; 9191 cases, 9190 passed and one failed. Five standalone
+mounted drawing suites reached the newly mounted feedback hook's native SDK adapter and attempted to
+load Expo's untransformed `expo/fetch` entry in their Node fixture. The remaining failure was the
+finite candidate source inventory omitting the sixteen new production files. The original command,
+complete stdout/stderr, process closure and sealed feature artifacts are retained separately.
+
+The drawing fixtures import `tools/tests/native-feedback-drawing-fixture.mjs`, which replaces only
+the feedback platform I/O boundary. The actual feedback hook, controller, gate and policy owner
+remain mounted. Its teardown asserts that unrelated drawing tests never submit feedback, collect
+device details or change protection. No general test alias or product transport fallback is added.
+The candidate import inventory names all sixteen production additions explicitly and retains its
+exact-file comparison and generated-output exclusions.
+
+The adapter test sends an actual chunked response through the native adapter and deadline reader,
+requires that response stream to be consumed, and forbids global fetch. Production continues to
+import released `expo/fetch`; native SDK/runtime acceptance remains open. Fault controls remove a
+mounted fixture boundary, substitute global fetch for Expo, omit a finite inventory path and allow
+unexpected fixture I/O, with actual rejected checks and exact restoration recorded in the repair
+packet. The same worker retains ownership; review remains unopened with zero rounds spent.

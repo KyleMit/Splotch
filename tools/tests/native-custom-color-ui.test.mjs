@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, StrictMode, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';

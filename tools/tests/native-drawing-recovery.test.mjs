@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
