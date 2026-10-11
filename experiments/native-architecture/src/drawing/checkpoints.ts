@@ -24,7 +24,7 @@ function prefixMatches(strokes: readonly Stroke[], prefix: readonly Stroke[]): b
   );
 }
 
-export function inkBoundary(strokes: readonly Stroke[], index: number): boolean {
+function inkBoundary(strokes: readonly Stroke[], index: number): boolean {
   const brush = strokes[index]?.brush;
   return (
     index > 0 && (brush === 'crayon' || brush === 'eraser') && strokes[index - 1].brush !== brush
