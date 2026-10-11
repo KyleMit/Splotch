@@ -176,16 +176,24 @@
       "sourceSha256": "48d80b82ca5ff0072a94178634ebf7f8fe6ef7d5991d480fbe0f4140ff1df707",
       "target": "android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt",
       "change": "candidate-kotlin-identity",
-      "targetSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c",
-      "mode": "0o644"
+      "targetSha256": "15bb4e3b6d72505d1872f23b9bfdc6bceb66fb6072f5570b56f70570a1fcb2f1",
+      "mode": "0o644",
+      "extension": {
+        "identity": "native-ai-environment-v1",
+        "baselineSha256": "c53370faf8b5926008ace7036f42e88ad73e8afc181bce8bb90030c8dcb26f6c"
+      }
     },
     {
       "source": "package/ios/HelloWorld.xcodeproj/project.pbxproj",
       "sourceSha256": "7b7cfc31b77069762f4ef9ed4c6f86dd57dd491cfbfdd710168c578ab2e25f8f",
       "target": "ios/HelloWorld.xcodeproj/project.pbxproj",
       "change": "candidate-apple-identity-and-bundling",
-      "targetSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065",
-      "mode": "0o644"
+      "targetSha256": "1fb8a66860e7abc0e1b9f51d71543cfb56a4ab72681ffa6daa16acd2b5440f28",
+      "mode": "0o644",
+      "extension": {
+        "identity": "native-ai-environment-v1",
+        "baselineSha256": "9df84e0178799414c7e2aa3c6ffa5eb041ff7988656392f731c0aaa6d73d5065"
+      }
     },
     {
       "source": "package/ios/HelloWorld/Supporting/Expo.plist",
@@ -453,6 +461,30 @@
       "target": "TEMPLATE-LICENSE",
       "change": "unchanged",
       "targetSha256": "fb3ca4a837f5779e83cef89b78253a8949cfb9429c340309f62d0465ec6610b4",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt",
+      "sourceSha256": "54facd243af732f1aad11438698d9097343e0f10938c6f0d10533274007b7605",
+      "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchAIEnvironment.kt",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "54facd243af732f1aad11438698d9097343e0f10938c6f0d10533274007b7605",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIEnvironment.swift",
+      "sourceSha256": "8d2d7be277ee1fef822b03b5cafb98503892ad8fa4087649dac101d1eb9f6198",
+      "target": "ios/HelloWorld/SplotchAIEnvironment.swift",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "8d2d7be277ee1fef822b03b5cafb98503892ad8fa4087649dac101d1eb9f6198",
+      "mode": "0o644"
+    },
+    {
+      "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIEnvironment.m",
+      "sourceSha256": "0c50492255eac00771d56dde7b977d8aada76cbb5a9ddcca7fb3833f03a3ddd4",
+      "target": "ios/HelloWorld/SplotchAIEnvironment.m",
+      "change": "owned-native-ai-environment-v1",
+      "targetSha256": "0c50492255eac00771d56dde7b977d8aada76cbb5a9ddcca7fb3833f03a3ddd4",
       "mode": "0o644"
     }
   ]

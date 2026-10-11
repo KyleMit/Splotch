@@ -12,6 +12,13 @@ const files = vi.hoisted(() => ({
   capture: vi.fn(),
   ink: vi.fn(),
   export: vi.fn(),
+  aiRead: vi.fn().mockResolvedValue(null),
+  aiWrite: vi.fn().mockResolvedValue(undefined),
+  aiPictures: vi.fn().mockResolvedValue([]),
+  aiRetain: vi.fn().mockResolvedValue({ uri: 'file:///owned/ai.png', mime: 'image/png' }),
+  aiSend: vi.fn(),
+  aiVaultRead: vi.fn().mockResolvedValue(null),
+  aiVaultWrite: vi.fn().mockResolvedValue(undefined),
   feedbackRead: vi.fn().mockResolvedValue(null),
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
@@ -27,6 +34,21 @@ const files = vi.hoisted(() => ({
   dismissModal: null,
 }));
 
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', () => ({
+  aiTransport: files.aiSend,
+  aiVault: {
+    installationId: async () => 'a'.repeat(64),
+    read: files.aiVaultRead,
+    write: files.aiVaultWrite,
+    remove: async () => {},
+  },
+  aiStorage: {
+    read: files.aiRead,
+    write: files.aiWrite,
+    retain: files.aiRetain,
+    pictures: files.aiPictures,
+  },
+}));
 vi.mock('../../experiments/native-architecture/src/platform/feedback.ts', () => ({
   feedbackTransport: files.feedbackSend,
   feedbackDevice: () => ({ platform: 'iOS', screen: '400 × 800' }),
@@ -47,7 +69,7 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
-  savePicture: vi.fn(),
+  savePicture: vi.fn().mockResolvedValue({ id: 'picture-1-fixture' }),
   exportPng: files.export,
 }));
 
@@ -78,6 +100,8 @@ vi.mock('react-native', () => {
         return files.platform;
       },
     },
+    Image: ({ source, accessibilityLabel }) =>
+      createElement('img', { src: source?.uri, alt: accessibilityLabel }),
     ActivityIndicator: () => null,
     Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
       createElement('button', {

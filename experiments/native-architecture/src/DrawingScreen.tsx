@@ -1,3 +1,5 @@
+import { useNativeAi } from './ai/useNativeAi';
+import { NativeAiSheet } from './ai/AiSheet';
 import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
 import { useState, type ReactNode, type RefObject } from 'react';
 import {
@@ -82,11 +84,11 @@ function DrawingScreenContent({
   sound: ReturnType<typeof useDrawingSound>;
 }) {
   const feedback = useNativeFeedback();
+  const ai = useNativeAi(screen);
   const styles = useDrawingScreenStyles();
   const menu = useDrawingMenu(screen);
   const [settingsClosing, setSettingsClosing] = useState(false);
   const window = useWindowDimensions();
-  const landscape = window.width > window.height;
   const {
     history,
     undo,
@@ -105,9 +107,8 @@ function DrawingScreenContent({
     disabled: paintsDisabled,
     blocked: disabled || pictures !== null,
   });
-  const color = sound.settings.selectedColor;
   const paintFocus = usePaintSelectionFocus({
-    color,
+    color: sound.settings.selectedColor,
     disabled: paintsDisabled || menu.open,
     blocked: disabled || menu.open || pictures !== null || colorPickerOpen,
   });
@@ -136,15 +137,16 @@ function DrawingScreenContent({
       <View
         accessibilityElementsHidden={menu.open}
         importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
-        style={[styles.content, landscape && styles.landscape]}
+        style={[styles.content, window.width > window.height && styles.landscape]}
       >
         <ScrollView
-          style={landscape ? styles.sideControls : styles.topControls}
+          style={window.width > window.height ? styles.sideControls : styles.topControls}
           contentContainerStyle={styles.controls}
           scrollEnabled={!drawing}
         >
           <View style={styles.heading}>
             <Text style={styles.title}>Splotch</Text>
+            <AiPictureAction ai={ai} disabled={disabled || menu.open} />
             <Action
               label="Undo"
               disabled={disabled || menu.open || history.undo.length === 0}
@@ -159,7 +161,7 @@ function DrawingScreenContent({
             />
           </View>
           <PaintColors
-            color={color}
+            color={sound.settings.selectedColor}
             customColors={sound.settings.customColors}
             disabled={paintsDisabled || menu.open}
             openerRef={focusReturn.opener}
@@ -195,6 +197,7 @@ function DrawingScreenContent({
         }}
       />
       <NativeFeedback owner={feedback.owner} state={feedback.state} />
+      {ai.owner && ai.state?.open ? <NativeAiSheet owner={ai.owner} state={ai.state} /> : null}
     </SafeAreaView>
   );
 }
@@ -417,4 +420,14 @@ function SavedPictures({
       </View>
     </Modal>
   );
+}
+
+function AiPictureAction({
+  ai,
+  disabled,
+}: {
+  ai: ReturnType<typeof useNativeAi>;
+  disabled: boolean;
+}) {
+  return <Action label="AI picture" disabled={disabled} onPress={() => ai.owner?.open()} />;
 }

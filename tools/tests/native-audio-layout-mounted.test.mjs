@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import {
   act,
   createElement,
@@ -209,3 +210,7 @@ it('continues to settle a cohort on a genuine paper-frame invalidation', async (
   ]);
   expect(owner.history.undo).toHaveLength(1);
 });
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
+);

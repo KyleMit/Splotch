@@ -414,13 +414,13 @@ describe('reviewed native template boundary', () => {
     const wrapper = join(checked, 'android/gradlew');
     expect(lstatSync(wrapper).mode & 0o777).toBe(0o750);
     expect(lstatSync(join(checked, 'TEMPLATE-LICENSE')).mode & 0o777).toBe(0o640);
-    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(45);
+    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(48);
     chmodSync(wrapper, 0o650);
     expect(() => readMaintainedNativeFiles(checked, manifest)).toThrow(
       'Maintained native source changed: android/gradlew'
     );
     chmodSync(wrapper, 0o750);
-    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(45);
+    expect(readMaintainedNativeFiles(checked, manifest).size).toBe(48);
   });
 
   it('rejects generated native paths instead of hiding a build writer', () => {
@@ -461,7 +461,7 @@ describe('reviewed native template boundary', () => {
         }
         parent = join(parent, '..');
       }
-      expect(readMaintainedNativeFiles(candidate, manifest).size).toBe(45);
+      expect(readMaintainedNativeFiles(candidate, manifest).size).toBe(48);
     }
   });
 });

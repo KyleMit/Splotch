@@ -120,6 +120,7 @@ const files = [
   'src/index.ts',
   'src/ProbeApp.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
+  'src/rsdDrawing/RsdAiSheet.tsx',
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/tokens.css.ts',

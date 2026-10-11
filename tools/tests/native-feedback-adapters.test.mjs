@@ -49,6 +49,7 @@ import {
   FEEDBACK_POLICY_KEY,
 } from '../../experiments/native-architecture/src/feedback/feedbackPolicy.ts';
 import { FEEDBACK_APP_VERSION } from '../../experiments/native-architecture/src/feedback/feedbackCopy.ts';
+import { sendFeedback } from '../../experiments/native-architecture/src/feedback/feedbackTransport.ts';
 const body = { kind: 'bug', message: 'Actual adapter fixture', hp: '' };
 beforeEach(() => {
   host.files.clear();
@@ -69,6 +70,26 @@ describe('actual native and web feedback adapters', () => {
       credentials: 'omit',
       redirect: 'error',
     });
+  });
+  it('reads the native Expo response stream through the real deadline reader without global fetch', async () => {
+    const globalSend = vi.fn().mockRejectedValue(new Error('Legacy fetch is outside this fixture'));
+    vi.stubGlobal('fetch', globalSend);
+    const encoder = new TextEncoder();
+    const nativeResponse = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('{"ok":'));
+          controller.enqueue(encoder.encode('true}'));
+          controller.close();
+        },
+      })
+    );
+    host.send.mockResolvedValueOnce(nativeResponse);
+    const result = await sendFeedback(feedbackTransport, body, new AbortController(), () => false);
+    expect(result.status).toBe('success');
+    expect(host.send).toHaveBeenCalledOnce();
+    expect(nativeResponse.bodyUsed).toBe(true);
+    expect(globalSend).not.toHaveBeenCalled();
   });
   it('uses the actual web adapter with the same bounded-reader response contract', async () => {
     const send = vi.fn().mockResolvedValue(new Response('{"ok":true}'));

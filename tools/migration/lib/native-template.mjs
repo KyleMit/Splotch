@@ -1,3 +1,8 @@
+import {
+  readAiSourceExtension,
+  aiNativeAdditionRecords,
+  replayAiSourceExtension,
+} from './native-ai-source-extension.mjs';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
@@ -232,6 +237,7 @@ function assertTemplateOriginalBytes(member, bytes) {
 }
 
 export function expectedNativeProvenance(manifest) {
+  const overlays = readAiSourceExtension().entries.filter((entry) => entry.baseline);
   const targets = new Set();
   const records = manifest.members.map((member) => {
     const target = candidateTemplateTarget(member.path);
@@ -251,13 +257,21 @@ export function expectedNativeProvenance(manifest) {
       change,
       targetSha256,
       mode: member.mode,
+      ...(overlays.some((entry) => entry.target === target)
+        ? {
+            extension: {
+              identity: 'native-ai-environment-v1',
+              baselineSha256: overlays.find((entry) => entry.target === target).baseline.sha256,
+            },
+          }
+        : {}),
     };
   });
   return {
     schemaVersion: 1,
     template: manifest.template,
     archive: manifest.archive,
-    records,
+    records: [...records, ...aiNativeAdditionRecords(manifest)],
   };
 }
 
@@ -274,6 +288,11 @@ export function deriveNativeSources(manifest, members) {
       throw new Error(`Template transformation replay changed: ${member.path}`);
     files.set(record.target, { bytes: transformed.bytes, mode: Number(member.mode) });
   }
+  for (const record of aiNativeAdditionRecords(manifest))
+    files.set(record.target, {
+      bytes: replayAiSourceExtension(record.target),
+      mode: Number(record.mode),
+    });
   return { files, provenance };
 }
 

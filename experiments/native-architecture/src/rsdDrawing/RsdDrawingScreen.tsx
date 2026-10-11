@@ -1,3 +1,5 @@
+import { useNativeAi } from '../ai/useNativeAi';
+import { RsdAiSheet } from './RsdAiSheet';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
 import { useState } from 'react';
@@ -46,6 +48,7 @@ export function RsdDrawingScreen() {
 
 function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) {
   const feedback = useNativeFeedback();
+  const ai = useNativeAi(screen);
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen);
   const notice = useSettledMessage(screen.notice, screen.drawing);
@@ -68,6 +71,7 @@ function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) 
             <html.div style={styles.stack}>
               <html.div style={styles.row}>
                 <html.span>Splotch</html.span>
+                <AiPictureAction ai={ai} disabled={disabled} />
                 <RsdAction
                   label="Undo"
                   disabled={disabled || screen.history.undo.length === 0}
@@ -126,6 +130,7 @@ function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) 
         {feedback.owner && feedback.state?.open ? (
           <RsdFeedbackSheet owner={feedback.owner} state={feedback.state} />
         ) : null}
+        {ai.owner && ai.state?.open ? <RsdAiSheet owner={ai.owner} state={ai.state} /> : null}
         {screen.pagePickerOpen ? (
           <RsdColoringBookPicker
             selected={screen.history.drawing.pageId}
@@ -314,4 +319,14 @@ function Pictures({
       </html.div>
     </NativeDialog>
   );
+}
+
+function AiPictureAction({
+  ai,
+  disabled,
+}: {
+  ai: ReturnType<typeof useNativeAi>;
+  disabled: boolean;
+}) {
+  return <RsdAction label="AI picture" disabled={disabled} onClick={() => ai.owner?.open()} />;
 }

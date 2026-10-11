@@ -1,0 +1,287 @@
+import { useState } from 'react';
+import {
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { Action } from '../DrawingControls';
+import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
+import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
+import {
+  AI_STYLES,
+  CREDENTIAL_KINDS,
+  AI_DISCLOSURE,
+  AI_WAIT_NOTICE,
+  MAX_CREDENTIAL_CHARACTERS,
+  type CredentialKind,
+} from './contract';
+import type { AiState, NativeAiOwner } from './generation';
+import { aiCanGenerate, AI_RESULT_HEIGHT_PX } from './uiState';
+export function NativeAiSheet({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  const styles = useDrawingStyles(themedStyles);
+  const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
+  return (
+    <Modal
+      visible={state.open}
+      animationType="none"
+      onRequestClose={owner.close}
+      accessibilityLabel="AI picture"
+    >
+      <SafeAreaView style={styles.screen}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <Text accessibilityRole="header" style={styles.title}>
+            {state.gate.open ? 'Grown-ups only' : 'AI picture'}
+          </Text>
+          {state.gate.open ? (
+            <>
+              <Text style={styles.text}>Solve this multiplication problem to continue.</Text>
+              <Text style={styles.title}>
+                {state.gate.x} × {state.gate.y}
+              </Text>
+              <TextInput
+                accessibilityLabel="AI answer"
+                value={state.gate.input}
+                onChangeText={owner.gateInput}
+                keyboardType="number-pad"
+                editable={!state.gate.locked}
+                style={styles.input}
+              />
+              <Text accessibilityLiveRegion="polite" style={styles.text}>
+                {state.gate.message}
+              </Text>
+              <Action
+                label="Continue to AI"
+                onPress={owner.gateAnswer}
+                disabled={state.gate.locked}
+              />
+            </>
+          ) : state.authorized ? (
+            <>
+              <Text style={styles.text}>{AI_DISCLOSURE}</Text>
+              <Text style={styles.text}>{AI_WAIT_NOTICE}</Text>
+              <Text style={styles.text}>
+                {state.credential === 'free'
+                  ? state.remaining === null
+                    ? 'Checking free allowance…'
+                    : `${state.remaining} free pictures remaining`
+                  : state.credential === 'unavailable'
+                    ? 'Secure AI setup unavailable'
+                    : state.credential === 'byok'
+                      ? 'Using your OpenAI key'
+                      : 'Using your access code'}
+              </Text>
+              <View
+                accessibilityRole="radiogroup"
+                accessibilityLabel="AI art style"
+                style={styles.row}
+              >
+                {AI_STYLES.map((style) => (
+                  <AiChoice
+                    key={style}
+                    label={`${style} AI style`}
+                    selected={state.style === style}
+                    disabled={state.busy || waiting}
+                    onPress={() => owner.chooseStyle(style)}
+                  />
+                ))}
+              </View>
+              <Action
+                label="Send drawing for AI"
+                disabled={!aiCanGenerate(state)}
+                onPress={() => {
+                  void owner.generate();
+                }}
+              />
+              {waiting ? (
+                <>
+                  <Text style={styles.text}>
+                    The original drawing is saved. This attempt stays separate from anything you
+                    draw next.
+                  </Text>
+                  <Action
+                    label="Check waiting picture"
+                    disabled={state.busy || !state.journal?.jobId}
+                    onPress={owner.resume}
+                  />
+                  <Action
+                    label="Release expired attempt"
+                    disabled={state.busy}
+                    onPress={owner.releaseExpired}
+                  />
+                </>
+              ) : null}
+              <Text accessibilityLiveRegion="polite" style={styles.text}>
+                {state.message}
+              </Text>
+              <AiPictures owner={owner} state={state} />
+              <AiCredentialSetup owner={owner} state={state} />
+            </>
+          ) : null}
+          <Action
+            label="Keep drawing"
+            onPress={() => {
+              owner.close();
+            }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <>
+      {state.heldResult || state.journal?.result ? (
+        <>
+          <Image
+            accessibilityLabel="Your AI picture"
+            source={{ uri: (state.heldResult ?? state.journal?.result)?.uri }}
+            resizeMode="contain"
+            style={styles.image}
+          />
+          {owner.hasHeldResult() ? (
+            <Action
+              label="Retry saving AI picture"
+              disabled={state.busy}
+              onPress={() => {
+                void owner.retryRetention();
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
+      {state.pictures.map((picture, index) => (
+        <Image
+          key={picture.uri}
+          accessibilityLabel={`Saved AI picture ${index + 1}`}
+          source={{ uri: picture.uri }}
+          resizeMode="contain"
+          style={styles.image}
+        />
+      ))}
+    </>
+  );
+}
+function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  const styles = useDrawingStyles(themedStyles);
+  const [kind, setKind] = useState<CredentialKind>('managed');
+  const [value, setValue] = useState('');
+  const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
+  return (
+    <>
+      <Text accessibilityRole="header" style={styles.title}>
+        AI service setup
+      </Text>
+      <Text style={styles.text}>
+        A credential check sends your code to Splotch, or your OpenAI key through Splotch to OpenAI.
+        A key check makes a small provider request. Saved credentials stay in this device’s secure
+        storage. OpenAI charges your account for generations using your key.
+      </Text>
+      <View style={styles.row}>
+        {CREDENTIAL_KINDS.map((next) => (
+          <AiChoice
+            key={next}
+            label={next === 'managed' ? 'Use access code' : 'Use my OpenAI key'}
+            selected={kind === next}
+            disabled={state.busy || waiting}
+            onPress={() => {
+              setValue('');
+              setKind(next);
+            }}
+          />
+        ))}
+      </View>
+      <TextInput
+        accessibilityLabel={kind === 'managed' ? 'AI access code' : 'OpenAI API key'}
+        value={value}
+        onChangeText={setValue}
+        secureTextEntry
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={MAX_CREDENTIAL_CHARACTERS}
+        editable={!state.busy && !waiting}
+        style={styles.input}
+      />
+      <Action
+        label="Verify and save credential"
+        disabled={state.busy || waiting || !value}
+        onPress={() => {
+          const pending = value;
+          setValue('');
+          void owner.setup(kind, pending);
+        }}
+      />
+      <Action
+        label="Remove access code"
+        disabled={state.busy || waiting}
+        onPress={() => {
+          void owner.removeCredential('managed');
+        }}
+      />
+      <Action
+        label="Remove OpenAI key"
+        disabled={state.busy || waiting}
+        onPress={() => {
+          void owner.removeCredential('byok');
+        }}
+      />
+      <Action
+        label="Refresh AI availability"
+        disabled={state.busy}
+        onPress={() => {
+          void owner.refresh();
+        }}
+      />
+    </>
+  );
+}
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: palette.surface },
+    content: { padding: DRAWING_SCALE.space4, gap: DRAWING_SCALE.space3 },
+    row: { flexDirection: 'row', flexWrap: 'wrap', gap: DRAWING_SCALE.space2 },
+    title: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeXl, fontWeight: '700' },
+    text: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeMd },
+    input: {
+      minHeight: TOUCH_TARGET,
+      padding: DRAWING_SCALE.space3,
+      color: palette.text,
+      backgroundColor: palette.paper,
+      borderRadius: DRAWING_SCALE.radiusMd,
+    },
+    image: { width: '100%', height: AI_RESULT_HEIGHT_PX },
+  })
+);
+
+function AiChoice({
+  label,
+  selected,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={styles.input}
+    >
+      <Text style={styles.text}>{label}</Text>
+    </Pressable>
+  );
+}

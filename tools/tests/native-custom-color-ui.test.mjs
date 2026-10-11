@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import { act, createElement, forwardRef, StrictMode, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -303,3 +304,7 @@ describe('custom color controls through installed React Native Web', () => {
     expect(document.activeElement).toBe(trigger);
   });
 });
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
+);

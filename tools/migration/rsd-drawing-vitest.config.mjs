@@ -6,6 +6,7 @@ import {
   RSD_NATIVE_RECOVERY_TEST,
   RSD_NATIVE_APPEARANCE_TEST,
   RSD_NATIVE_FEEDBACK_TEST,
+  RSD_NATIVE_AI_TEST,
 } from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const repoRoot = join(import.meta.dirname, '..', '..');
@@ -24,6 +25,7 @@ export default defineConfig({
       RSD_NATIVE_RECOVERY_TEST,
       RSD_NATIVE_APPEARANCE_TEST,
       RSD_NATIVE_FEEDBACK_TEST,
+      RSD_NATIVE_AI_TEST,
     ],
     server: { deps: { inline: [/react-strict-dom/] } },
   },

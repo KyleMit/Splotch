@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import './native-feedback-drawing-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { URL as NodeURL } from 'node:url';
 import { act, createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
@@ -411,3 +412,7 @@ describe('generation and real input/command admission', () => {
     );
   });
 });
+
+vi.mock('../../experiments/native-architecture/src/platform/ai.ts', async () =>
+  (await import('./native-ai-boundary.mjs')).nativeAiBoundary()
+);

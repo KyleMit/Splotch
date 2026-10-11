@@ -7,9 +7,33 @@ const caller = vi.hoisted(() => ({
   screen: null,
   sound: null,
   menu: null,
+  aiRead: vi.fn().mockResolvedValue(null),
+  aiWrite: vi.fn().mockResolvedValue(undefined),
+  aiSend: vi.fn(),
+  aiRetain: vi.fn().mockResolvedValue({ uri: 'file:///owned/rsd-ai.png', mime: 'image/png' }),
+  aiVaultRead: vi.fn().mockResolvedValue(null),
+  aiVaultWrite: vi.fn().mockResolvedValue(undefined),
   feedbackRead: vi.fn().mockResolvedValue(null),
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
+  aiTransport: caller.aiSend,
+  aiVault: {
+    installationId: async () => 'a'.repeat(64),
+    read: caller.aiVaultRead,
+    write: caller.aiVaultWrite,
+    remove: async () => {},
+  },
+  aiStorage: {
+    read: caller.aiRead,
+    write: caller.aiWrite,
+    retain: caller.aiRetain,
+    pictures: async () => [],
+  },
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
+  savePicture: async () => ({ id: 'picture-1-fixture' }),
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
   feedbackTransport: caller.feedbackSend,
