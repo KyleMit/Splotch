@@ -34,9 +34,15 @@ export const LIBRARY_STORAGE_RESERVE_BYTES = 8 * 1024 * 1024;
 export const encodeLibraryText = (text: string) => new TextEncoder().encode(text);
 export const decodeLibraryText = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
 
-export function requireDownloadNetwork(environment: LibraryEnvironment, allowMetered: boolean) {
+export function requireDownloadNetwork(
+  environment: Pick<LibraryEnvironment, 'online' | 'metered'>,
+  allowMetered: boolean
+) {
   if (!environment.online)
-    throw new LibraryFault('offline', 'Coloring downloads will retry when this device is online.');
+    throw new LibraryFault(
+      'offline',
+      'Coloring downloads are waiting for a connection. Try again when this device is online.'
+    );
   if (environment.metered && !allowMetered)
     throw new LibraryFault(
       'metered',

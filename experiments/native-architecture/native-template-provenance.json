@@ -469,10 +469,10 @@
     },
     {
       "source": "offline-library-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
-      "sourceSha256": "56ccb8bb604211fafb2a1c09a38437d980ea9b1fbdc761b41965841c858c82ea",
+      "sourceSha256": "c8197fcea8a16e631046d151bad06a0949e3f567ac765c74ec992e46f8e2bed1",
       "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchLibraryEnvironment.kt",
       "change": "owned-offline-library-v1",
-      "targetSha256": "56ccb8bb604211fafb2a1c09a38437d980ea9b1fbdc761b41965841c858c82ea",
+      "targetSha256": "c8197fcea8a16e631046d151bad06a0949e3f567ac765c74ec992e46f8e2bed1",
       "mode": "0o644"
     },
     {
@@ -485,10 +485,10 @@
     },
     {
       "source": "offline-library-v1/ios/HelloWorld/SplotchLibraryEnvironment.swift",
-      "sourceSha256": "1305ec9f267909697ce60f697fe759620c3b542db53a6ce0627c00eb4c7b2de5",
+      "sourceSha256": "6d1ddd7941d8ced34d192ddafd4d16b427ca0a82bb9a737ab930fed321e0b7d0",
       "target": "ios/HelloWorld/SplotchLibraryEnvironment.swift",
       "change": "owned-offline-library-v1",
-      "targetSha256": "1305ec9f267909697ce60f697fe759620c3b542db53a6ce0627c00eb4c7b2de5",
+      "targetSha256": "6d1ddd7941d8ced34d192ddafd4d16b427ca0a82bb9a737ab930fed321e0b7d0",
       "mode": "0o644"
     }
   ]

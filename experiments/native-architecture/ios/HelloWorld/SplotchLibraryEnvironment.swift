@@ -4,18 +4,50 @@ import Network
 import React
 
 @objc(SplotchLibraryEnvironment)
-class SplotchLibraryEnvironment: NSObject {
+class SplotchLibraryEnvironment: NSObject, RCTInvalidating {
   private let maxFileBytes = 2097152
   private let hashBufferBytes = 65536
   private let networkWaitSeconds = 3.0
   private let queue = DispatchQueue(label: "art.splotch.offline-library", qos: .utility)
+  private let monitor = NWPathMonitor()
+  private var currentPath: NWPath?
+  private var privateRoot: URL?
+  private var pendingEnvironment: [UUID: (NWPath?) -> Void] = [:]
+
+  override init() {
+    super.init()
+    monitor.pathUpdateHandler = { [weak self] path in
+      guard let self else { return }
+      self.currentPath = path
+      let waiting = Array(self.pendingEnvironment.values)
+      self.pendingEnvironment.removeAll()
+      waiting.forEach { $0(path) }
+    }
+    monitor.start(queue: queue)
+  }
+
+  deinit { monitor.cancel() }
+
+  @objc func invalidate() {
+    monitor.pathUpdateHandler = nil
+    monitor.cancel()
+    queue.async { [weak self] in
+      guard let self else { return }
+      let waiting = Array(self.pendingEnvironment.values)
+      self.pendingEnvironment.removeAll()
+      waiting.forEach { $0(nil) }
+    }
+  }
+
   private func root() throws -> URL {
+    if let directory = privateRoot { return directory }
     var directory = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
       .appendingPathComponent("splotch-offline-library-v1", isDirectory: true)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     var values = URLResourceValues()
     values.isExcludedFromBackup = true
     try directory.setResourceValues(values)
+    privateRoot = directory
     return directory
   }
 
@@ -26,19 +58,17 @@ class SplotchLibraryEnvironment: NSObject {
     queue.async {
       do {
         let directory = try self.root()
-        let monitor = NWPathMonitor()
-        var completed = false
         let finish: (NWPath?) -> Void = { path in
-          if completed { return }
-          completed = true
-          monitor.cancel()
           resolve(["rootUri": directory.absoluteString,
                    "online": path?.status == .satisfied,
                    "metered": path.map { $0.isExpensive || $0.isConstrained } ?? true])
         }
-        monitor.pathUpdateHandler = { path in finish(path) }
-        monitor.start(queue: self.queue)
-        self.queue.asyncAfter(deadline: .now() + self.networkWaitSeconds) { finish(nil) }
+        if let path = self.currentPath { finish(path); return }
+        let identity = UUID()
+        self.pendingEnvironment[identity] = finish
+        self.queue.asyncAfter(deadline: .now() + self.networkWaitSeconds) {
+          self.pendingEnvironment.removeValue(forKey: identity)?(nil)
+        }
       } catch { reject("library_unavailable", "Coloring storage is unavailable", error) }
     }
   }

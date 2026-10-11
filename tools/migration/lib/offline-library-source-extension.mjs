@@ -3,7 +3,7 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const INPUT = new URL('../inputs/offline-library-source-extension.json', import.meta.url);
-const INPUT_SHA256 = 'a1f5810e3c92edf22ebe4bec6c076caf6d4b5467d2ef8ac6dfb9377efa103d1a';
+const INPUT_SHA256 = '6adab8cbe6f71984dcd00f4c8a1e8779e60d3cdddca421d229fbea9f04164cfb';
 const NATIVE_BASELINE_MEMBERS = [
   [
     'package/android/app/src/main/AndroidManifest.xml',

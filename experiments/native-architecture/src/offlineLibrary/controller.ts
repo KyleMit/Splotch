@@ -102,14 +102,8 @@ class OfflineLibraryController {
     this.epoch++;
     this.transfer?.abort();
     this.transfer = null;
-    this.publish({
-      status: 'ready',
-      activeBook: null,
-      completedBytes: 0,
-      totalBytes: 0,
-      message,
-      fault: null,
-    });
+    if (this.state.status === 'downloading')
+      this.publish({ status: 'ready', activeBook: null, message, fault: null });
   }
   async initialize() {
     if (!this.initialization) this.initialization = this.load();
@@ -133,7 +127,9 @@ class OfflineLibraryController {
           throw new LibraryFault('corrupt', 'Coloring download settings could not be read.');
         this.publish({ enabled: parsed.enabled, allowMetered: parsed.allowMetered });
       }
-      const { installed, retainedBytes } = await this.store.inventory();
+      const { installed, retainedBytes } = await this.store.inventory(
+        OFFLINE_BOOKS.map((book) => this.currentPack(book.id))
+      );
       this.publish({ status: 'ready', installed, retainedBytes, fault: null });
     } catch (error) {
       this.fail(error);
@@ -162,7 +158,13 @@ class OfflineLibraryController {
     );
   }
   private schedule() {
-    if (this.operation || !this.allowed()) return;
+    if (
+      this.operation ||
+      !this.allowed() ||
+      this.state.status === 'failed' ||
+      this.state.status === 'waiting'
+    )
+      return;
     const next = this.run().finally(() => {
       if (this.operation !== next) return;
       this.operation = null;
@@ -172,7 +174,7 @@ class OfflineLibraryController {
   }
   private async run() {
     await this.initialize();
-    if (!this.allowed() || this.state.status === 'failed') return;
+    if (!this.allowed() || this.state.status !== 'ready') return;
     const owner = ++this.epoch;
     const controller = new AbortController();
     this.transfer = controller;
@@ -239,10 +241,7 @@ class OfflineLibraryController {
     this.initialization = null;
     this.schedule();
   }
-  async setPolicy(enabled: boolean, allowMetered: boolean) {
-    this.consumers++;
-    this.abort('');
-    this.paused = false;
+  private persistPolicy(enabled: boolean, allowMetered: boolean) {
     const write = this.policyWrites.then(async () => {
       await this.initialize();
       await this.platform.write(
@@ -250,11 +249,18 @@ class OfflineLibraryController {
         encodeLibraryText(JSON.stringify({ enabled, allowMetered }))
       );
       await this.platform.move('policy-pending.json', 'policy.json');
-      this.publish({ enabled, allowMetered, fault: null });
+      this.publish({ enabled, allowMetered });
     });
     this.policyWrites = write.catch(() => undefined);
+    return write;
+  }
+  async setPolicy(enabled: boolean, allowMetered: boolean) {
+    this.consumers++;
+    this.abort('');
+    this.paused = false;
     try {
-      await write;
+      await this.persistPolicy(enabled, allowMetered);
+      this.publish({ status: 'ready', fault: null, message: '' });
     } catch (error) {
       this.fail(error);
     } finally {
@@ -297,6 +303,8 @@ class OfflineLibraryController {
     this.publish({ status: 'removing' });
     try {
       await this.initialize();
+      await this.persistPolicy(false, this.state.allowMetered);
+      this.publish({ status: 'removing', fault: null });
       const retainedBytes = await this.store.remove(getProtectedPages);
       this.publish({
         installed: [],

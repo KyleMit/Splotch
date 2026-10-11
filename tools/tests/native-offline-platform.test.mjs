@@ -27,6 +27,8 @@ import {
 
 const fixture = vi.hoisted(() => ({
   root: '',
+  rootCreates: 0,
+  diskReads: 0,
   online: true,
   metered: false,
   chunks: [],
@@ -59,6 +61,7 @@ vi.mock('expo-file-system', () => {
       return existsSync(this.path);
     }
     create() {
+      if (this.path === fixture.root) fixture.rootCreates++;
       mkdirSync(this.path, { recursive: true });
     }
     delete() {
@@ -98,7 +101,17 @@ vi.mock('expo-file-system', () => {
       return { writeBytes: (bytes) => writeSync(fd, bytes), close: () => closeSync(fd) };
     }
   }
-  return { Directory, File, FileMode: { WriteOnly: 'w' }, Paths: { availableDiskSpace: 1e9 } };
+  return {
+    Directory,
+    File,
+    FileMode: { WriteOnly: 'w' },
+    Paths: {
+      get availableDiskSpace() {
+        fixture.diskReads++;
+        return 1e9;
+      },
+    },
+  };
 });
 const bytes = new Uint8Array([10, 20, 30, 40]);
 const expected = {
@@ -110,6 +123,8 @@ const expected = {
 let platform;
 beforeEach(async () => {
   fixture.root = await mkdtemp(join(tmpdir(), 'splotch-library-platform-'));
+  fixture.rootCreates = 0;
+  fixture.diskReads = 0;
   fixture.online = true;
   fixture.metered = false;
   fixture.chunks = [bytes];
@@ -157,6 +172,52 @@ afterEach(async () => {
 });
 
 describe('actual native library adapter with private disk and streamed transport boundaries', () => {
+  it('checks every streamed chunk against native network state without repeated root or disk setup', async () => {
+    fixture.chunks = Array.from({ length: 100 }, () => new Uint8Array([1]));
+    fixture.length = '100';
+    const environment = fixture.bridge.environment;
+    let networkChecks = 0;
+    fixture.bridge.environment = async () => {
+      networkChecks++;
+      return environment();
+    };
+    const file = {
+      ...expected,
+      bytes: 100,
+      sha256: createHash('sha256').update(Buffer.alloc(100, 1)).digest('hex'),
+    };
+    await platform.download(
+      'staging/files/chunks.svg',
+      file,
+      new AbortController().signal,
+      false,
+      () => {}
+    );
+    expect(networkChecks).toBe(101);
+    expect(fixture.rootCreates).toBe(1);
+    expect(fixture.diskReads).toBe(1);
+    expect(await platform.verify('staging/files/chunks.svg', file)).toBe(true);
+  });
+  it('rejects a native private root change before accepting streamed bytes', async () => {
+    fixture.afterChunk = () => {
+      fixture.bridge.environment = async () => ({
+        rootUri: 'file:///foreign',
+        online: true,
+        metered: false,
+      });
+    };
+    await expect(
+      platform.download(
+        'staging/files/root.svg',
+        expected,
+        new AbortController().signal,
+        false,
+        () => {}
+      )
+    ).rejects.toMatchObject({ code: 'unavailable' });
+    expect(await platform.read('staging/files/root.svg', 4)).toHaveLength(0);
+  });
+
   it('streams exactly bounded bytes, verifies them with the native bridge and awaits publication moves', async () => {
     const progress = [];
     await platform.download(
@@ -298,6 +359,12 @@ describe('native bridge registration and private storage contract', () => {
     expect(android).toContain('context.filesDir');
     expect(ios).toContain('.applicationSupportDirectory');
     expect(ios).toContain('isExcludedFromBackup = true');
+    expect(ios.match(/NWPathMonitor\(\)/g)).toHaveLength(1);
+    expect(ios).toContain('monitor.pathUpdateHandler = { [weak self] path in');
+    expect(ios).toContain('NSObject, RCTInvalidating');
+    expect(ios).toContain('monitor.pathUpdateHandler = nil');
+    expect(ios).toContain('if let directory = privateRoot { return directory }');
+    expect(android).toContain('if (rootReady) return');
     const manifest = await readFile(
       new URL('android/app/src/main/AndroidManifest.xml', candidate),
       'utf8'

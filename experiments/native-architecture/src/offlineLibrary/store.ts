@@ -19,8 +19,7 @@ import {
 } from './contract';
 
 const PACK_DIRECTORY = /^([a-z]+)-([a-f0-9]{64})$/;
-const stageName = (id: string) =>
-  `staging-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const stageName = (pack: Pack) => `staging-${packDirectory(pack)}`;
 export const packDirectory = (pack: Pick<Pack, 'id' | 'revision'>) => `${pack.id}-${pack.revision}`;
 const assetName = (file: PackFile) => `files/${file.path.split('/').at(-1)}`;
 function cancelled(signal: AbortSignal) {
@@ -28,6 +27,7 @@ function cancelled(signal: AbortSignal) {
 }
 class LibraryStore {
   private transaction: Promise<unknown> = Promise.resolve();
+  private launchCleaned = false;
   constructor(private readonly platform: LibraryPlatform) {}
   private serialize<T>(action: () => Promise<T>): Promise<T> {
     const next = this.transaction.then(action, action);
@@ -66,14 +66,30 @@ class LibraryStore {
       return null;
     }
   }
+  private async cleanInterruptedLaunch() {
+    if (this.launchCleaned) return;
+    for (const directory of await this.platform.list())
+      if (directory.startsWith('staging-')) await this.platform.remove(directory);
+    this.launchCleaned = true;
+  }
+  private async retainSuperseded(current: Pack) {
+    for (const directory of await this.platform.list()) {
+      if (!directory.startsWith(`${current.id}-`) || directory === packDirectory(current)) continue;
+      const old = await this.validPack(directory);
+      if (!old) continue;
+      await this.platform.write(
+        `${directory}/retained.json`,
+        encodeLibraryText(JSON.stringify(old))
+      );
+      await this.platform.move(`${directory}/installed.json`, `${directory}/withdrawn.json`);
+    }
+  }
   private async scanInstalled() {
+    await this.cleanInterruptedLaunch();
     const directories = await this.platform.list();
     const installed: Pack[] = [];
     for (const directory of directories) {
-      if (directory.startsWith('staging-')) {
-        await this.platform.remove(directory);
-        continue;
-      }
+      if (directory.startsWith('staging-')) continue;
       if (!PACK_DIRECTORY.test(directory)) continue;
       const pack = await this.validPack(directory);
       if (pack) installed.push(pack);
@@ -98,9 +114,12 @@ class LibraryStore {
   scan() {
     return this.serialize(() => this.scanInstalled());
   }
-  inventory() {
+  inventory(currentCatalog: readonly Pack[]) {
     return this.serialize(async () => {
-      const installed = await this.scanInstalled();
+      await this.cleanInterruptedLaunch();
+      for (const current of currentCatalog) await this.retainSuperseded(current);
+      const revisions = new Set(currentCatalog.map((pack) => pack.revision));
+      const installed = (await this.scanInstalled()).filter((pack) => revisions.has(pack.revision));
       const visible = new Set(installed.map(packDirectory));
       let retainedBytes = 0;
       for (const directory of await this.platform.list()) {
@@ -111,6 +130,92 @@ class LibraryStore {
       return { installed, retainedBytes };
     });
   }
+  private async downloadStaged(
+    pack: Pack,
+    staging: string,
+    signal: AbortSignal,
+    allowMetered: boolean,
+    progress: (bytes: number) => void
+  ) {
+    const directory = packDirectory(pack);
+    const verified = new Set<string>();
+    let completed = 0;
+    for (const file of pack.files) {
+      cancelled(signal);
+      const path = `${staging}/${assetName(file)}`;
+      let valid = await this.platform.verify(path, file);
+      if (!valid && (await this.platform.verify(`${directory}/${assetName(file)}`, file))) {
+        await this.platform.move(`${directory}/${assetName(file)}`, path);
+        valid = true;
+      }
+      if (valid) {
+        verified.add(file.path);
+        completed += file.bytes;
+      }
+    }
+    const environment = await this.platform.environment();
+    if (
+      !Number.isFinite(environment.freeBytes) ||
+      environment.freeBytes < pack.bytes - completed + LIBRARY_STORAGE_RESERVE_BYTES
+    )
+      throw new LibraryFault(
+        'storage-full',
+        'There is not enough free space for this coloring book.'
+      );
+    progress(completed);
+    for (const file of pack.files) {
+      cancelled(signal);
+      if (verified.has(file.path)) continue;
+      requireDownloadNetwork(await this.platform.environment(), allowMetered);
+      cancelled(signal);
+      const path = `${staging}/${assetName(file)}`;
+      await this.platform.download(path, file, signal, allowMetered, (bytes) => {
+        if (!signal.aborted) progress(completed + Math.min(bytes, file.bytes));
+      });
+      cancelled(signal);
+      if (!(await this.platform.verify(path, file)))
+        throw new LibraryFault(
+          'corrupt',
+          'The coloring download did not pass verification. Try again.'
+        );
+      completed += file.bytes;
+      progress(completed);
+    }
+    cancelled(signal);
+    const identity = encodeLibraryText(JSON.stringify(pack.files));
+    await this.platform.write(`${staging}/identity.json`, identity);
+    if (
+      !(await this.platform.verify(`${staging}/identity.json`, {
+        path: '',
+        downloadPath: '',
+        bytes: identity.length,
+        sha256: pack.revision,
+      }))
+    )
+      throw new LibraryFault('corrupt', 'The coloring catalog did not pass verification.');
+  }
+  private async publishStaged(pack: Pack, staging: string, signal: AbortSignal) {
+    const directory = packDirectory(pack);
+    // Publication moves verified files first; cancellation never leaves a trusted marker.
+    cancelled(signal);
+    await this.platform.remove(directory);
+    for (const file of pack.files) {
+      cancelled(signal);
+      await this.platform.move(`${staging}/${assetName(file)}`, `${directory}/${assetName(file)}`);
+    }
+    await this.platform.move(`${staging}/identity.json`, `${directory}/identity.json`);
+    cancelled(signal);
+    await this.retainSuperseded(pack);
+    cancelled(signal);
+    const marker = encodeLibraryText(JSON.stringify(pack));
+    await this.platform.write(`${directory}/pending.json`, marker);
+    cancelled(signal);
+    await this.platform.move(`${directory}/pending.json`, `${directory}/installed.json`);
+    if (signal.aborted) {
+      await this.platform.remove(directory);
+      cancelled(signal);
+    }
+  }
   install(
     pack: Pack,
     signal: AbortSignal,
@@ -119,18 +224,11 @@ class LibraryStore {
   ) {
     return this.serialize(async () => {
       cancelled(signal);
-      const environment = await this.platform.environment();
-      if (
-        !Number.isFinite(environment.freeBytes) ||
-        environment.freeBytes < pack.bytes + LIBRARY_STORAGE_RESERVE_BYTES
-      )
-        throw new LibraryFault(
-          'storage-full',
-          'There is not enough free space for this coloring book.'
-        );
+      await this.cleanInterruptedLaunch();
       const directory = packDirectory(pack);
       const already = (await this.validPack(directory)) ?? (await this.validPack(directory, true));
       if (already) {
+        await this.retainSuperseded(pack);
         cancelled(signal);
         await this.platform.write(
           `${directory}/pending.json`,
@@ -144,61 +242,13 @@ class LibraryStore {
         }
         return already;
       }
-      const staging = stageName(pack.id);
+      const staging = stageName(pack);
       try {
-        let completed = 0;
-        for (const file of pack.files) {
-          cancelled(signal);
-          requireDownloadNetwork(await this.platform.environment(), allowMetered);
-          cancelled(signal);
-          const path = `${staging}/${assetName(file)}`;
-          await this.platform.download(path, file, signal, allowMetered, (bytes) => {
-            if (!signal.aborted) progress(completed + Math.min(bytes, file.bytes));
-          });
-          cancelled(signal);
-          if (!(await this.platform.verify(path, file)))
-            throw new LibraryFault(
-              'corrupt',
-              'The coloring download did not pass verification. Try again.'
-            );
-          completed += file.bytes;
-          progress(completed);
-        }
-        cancelled(signal);
-        const identity = encodeLibraryText(JSON.stringify(pack.files));
-        await this.platform.write(`${staging}/identity.json`, identity);
-        if (
-          !(await this.platform.verify(`${staging}/identity.json`, {
-            path: '',
-            downloadPath: '',
-            bytes: identity.length,
-            sha256: pack.revision,
-          }))
-        )
-          throw new LibraryFault('corrupt', 'The coloring catalog did not pass verification.');
-        // Publication moves verified files first; cancellation never leaves a trusted marker.
-        cancelled(signal);
-        await this.platform.remove(directory);
-        for (const file of pack.files) {
-          cancelled(signal);
-          await this.platform.move(
-            `${staging}/${assetName(file)}`,
-            `${directory}/${assetName(file)}`
-          );
-        }
-        await this.platform.move(`${staging}/identity.json`, `${directory}/identity.json`);
-        cancelled(signal);
-        const marker = encodeLibraryText(JSON.stringify(pack));
-        await this.platform.write(`${directory}/pending.json`, marker);
-        cancelled(signal);
-        await this.platform.move(`${directory}/pending.json`, `${directory}/installed.json`);
-        if (signal.aborted) {
-          await this.platform.remove(directory);
-          cancelled(signal);
-        }
+        await this.downloadStaged(pack, staging, signal, allowMetered, progress);
+        await this.publishStaged(pack, staging, signal);
         return pack;
       } finally {
-        await this.platform.remove(staging).catch(() => undefined);
+        if (!signal.aborted) await this.platform.remove(staging).catch(() => undefined);
       }
     });
   }

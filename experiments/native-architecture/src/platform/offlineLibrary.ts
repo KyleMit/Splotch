@@ -36,6 +36,19 @@ function bridge() {
   return candidate;
 }
 
+async function nativeEnvironment() {
+  const result = await bridge().environment();
+  if (
+    !record(result) ||
+    typeof result.rootUri !== 'string' ||
+    !result.rootUri.startsWith('file:///') ||
+    typeof result.online !== 'boolean' ||
+    typeof result.metered !== 'boolean'
+  )
+    throw storageUnavailable();
+  return { rootUri: result.rootUri, online: result.online, metered: result.metered };
+}
+
 export const LIBRARY_FILE_TIMEOUT_MS = 60_000;
 function transferSignal(signal: AbortSignal) {
   const controller = new AbortController();
@@ -64,7 +77,7 @@ async function downloadFile(
   expected: PackFile,
   signal: AbortSignal,
   allowMetered: boolean,
-  environment: () => Promise<LibraryEnvironment>,
+  environment: () => Promise<Pick<LibraryEnvironment, 'online' | 'metered'>>,
   progress: (bytes: number) => void
 ) {
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
@@ -121,6 +134,7 @@ async function downloadFile(
 
 export function createLibraryPlatform(): LibraryPlatform {
   let root: Directory | null = null;
+  let rootUri: string | null = null;
   let filesystem: typeof import('expo-file-system') | null = null;
   function file(path: string): File {
     if (!root || !filesystem || !safePath(path)) throw storageUnavailable();
@@ -134,18 +148,14 @@ export function createLibraryPlatform(): LibraryPlatform {
   }
   return {
     async environment() {
-      const result = await bridge().environment();
-      if (
-        !record(result) ||
-        typeof result.rootUri !== 'string' ||
-        !result.rootUri.startsWith('file:///') ||
-        typeof result.online !== 'boolean' ||
-        typeof result.metered !== 'boolean'
-      )
-        throw storageUnavailable();
+      const result = await nativeEnvironment();
+      if (rootUri && result.rootUri !== rootUri) throw storageUnavailable();
       filesystem ??= await import('expo-file-system');
-      root = new filesystem.Directory(result.rootUri);
-      root.create({ intermediates: true, idempotent: true });
+      if (!root) {
+        root = new filesystem.Directory(result.rootUri);
+        root.create({ intermediates: true, idempotent: true });
+        rootUri = result.rootUri;
+      }
       return {
         online: result.online,
         metered: result.metered,
@@ -193,14 +203,18 @@ export function createLibraryPlatform(): LibraryPlatform {
     async download(path: string, expected: PackFile, signal, allowMetered, progress) {
       ensureParent(path);
       const destination = file(path);
-      destination.create();
+      destination.create({ overwrite: true });
       if (!filesystem) throw storageUnavailable();
       return downloadFile(
         destination.open(filesystem.FileMode.WriteOnly),
         expected,
         signal,
         allowMetered,
-        () => this.environment(),
+        async () => {
+          const result = await nativeEnvironment();
+          if (result.rootUri !== rootUri) throw storageUnavailable();
+          return result;
+        },
         progress
       );
     },

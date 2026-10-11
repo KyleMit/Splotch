@@ -21,14 +21,20 @@ class SplotchLibraryEnvironment(context: ReactApplicationContext) : ReactContext
   private val HASH_BUFFER_BYTES = 65536
   private val executor = Executors.newSingleThreadExecutor()
   private val root = File(context.filesDir, "splotch-offline-library-v1")
+  private var rootReady = false
+  private val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+  private fun ensureRoot() {
+    if (rootReady) return
+    if (!root.exists() && !root.mkdirs()) throw IllegalStateException("Coloring storage is unavailable")
+    rootReady = true
+  }
   override fun getName() = "SplotchLibraryEnvironment"
 
   @ReactMethod
   fun environment(promise: Promise) {
     executor.execute {
       try {
-        if (!root.exists() && !root.mkdirs()) throw IllegalStateException("Coloring storage is unavailable")
-        val manager = reactApplicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        ensureRoot()
         val network = manager.activeNetwork
         val capabilities = manager.getNetworkCapabilities(network)
         val online = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
@@ -46,6 +52,7 @@ class SplotchLibraryEnvironment(context: ReactApplicationContext) : ReactContext
   fun verify(uri: String, bytes: Double, sha256: String, promise: Promise) {
     executor.execute {
       try {
+        ensureRoot()
         val parsedUri = Uri.parse(uri)
         require(parsedUri.scheme == "file")
         val file = File(parsedUri.path ?: "").canonicalFile
