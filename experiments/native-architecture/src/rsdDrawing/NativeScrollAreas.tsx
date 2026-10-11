@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { drawingScreenStyles } from '../drawing/drawingScreenStyles';
+import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 
 export function NativeDrawingLayout({
   controls,
@@ -11,6 +11,7 @@ export function NativeDrawingLayout({
   drawing: boolean;
   children: ReactNode;
 }) {
+  const drawingScreenStyles = useDrawingScreenStyles();
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
   return (
@@ -38,6 +39,7 @@ export function NativeDrawingStatus({
   drawing: boolean;
   children: ReactNode;
 }) {
+  const drawingScreenStyles = useDrawingScreenStyles();
   return (
     <ScrollView
       testID="rsd-drawing-status-viewport"

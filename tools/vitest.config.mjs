@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 import {
   RSD_NATIVE_SELECTION_TEST,
   RSD_NATIVE_RECOVERY_TEST,
+  RSD_NATIVE_APPEARANCE_TEST,
 } from './migration/lib/rsd-drawing-checks.mjs';
 
 // Node-environment unit tests for the repo tooling. Separate from the web
@@ -20,6 +21,7 @@ const CAPABILITY_EXCLUSIONS = [
   'store-drawings/**',
   RSD_NATIVE_SELECTION_TEST,
   RSD_NATIVE_RECOVERY_TEST,
+  RSD_NATIVE_APPEARANCE_TEST,
 ];
 
 export default defineConfig({

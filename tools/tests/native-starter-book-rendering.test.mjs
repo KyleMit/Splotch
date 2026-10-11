@@ -2,6 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { RsdColoringBookPicker } from '../../experiments/native-architecture/src/rsdDrawing/RsdColoringBookPicker.tsx';
 import { FARM_PAGE_IDS } from '../../experiments/native-architecture/src/drawing/bundledBooks.ts';
 import {
@@ -55,7 +56,13 @@ async function mountPicker(selected = 'farm/dog') {
   const onChoose = vi.fn();
   const onClose = vi.fn();
   await act(async () =>
-    root.render(createElement(RsdColoringBookPicker, { selected, onChoose, onClose }))
+    root.render(
+      createElement(
+        DrawingAppearanceProvider,
+        { preference: 'system' },
+        createElement(RsdColoringBookPicker, { selected, onChoose, onClose })
+      )
+    )
   );
   return { host, onChoose, onClose };
 }

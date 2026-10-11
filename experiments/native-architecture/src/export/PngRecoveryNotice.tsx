@@ -1,12 +1,7 @@
+import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import {
-  CONTROL_GAP,
-  CONTROL_RADIUS,
-  DRAWING_SCALE,
-  DRAWING_THEME,
-  TOUCH_TARGET,
-} from '../drawing/theme';
+import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
 import type { PngRecoveryState } from './pngRecovery';
 
 function RecoveryAction({
@@ -20,6 +15,7 @@ function RecoveryAction({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -50,6 +46,7 @@ export function PngRecoveryNotice({
   retry: () => void;
   dismiss: (id: string) => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
   const [settled, setSettled] = useState(state);
   // Async recovery must not move the paper frame underneath active contacts.
   if (!drawing && settled !== state) setSettled(state);
@@ -110,30 +107,32 @@ export function PngRecoveryNotice({
   );
 }
 
-const styles = StyleSheet.create({
-  panel: {
-    gap: DRAWING_SCALE.space2,
-    padding: DRAWING_SCALE.space3,
-    borderRadius: CONTROL_RADIUS,
-    backgroundColor: DRAWING_THEME.brandWash,
-  },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: CONTROL_GAP },
-  action: {
-    minWidth: TOUCH_TARGET,
-    minHeight: TOUCH_TARGET,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: DRAWING_SCALE.space3,
-    borderRadius: CONTROL_RADIUS,
-    backgroundColor: DRAWING_THEME.surface,
-  },
-  actionText: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: DRAWING_SCALE.fontSizeMd,
-    fontWeight: DRAWING_SCALE.fontWeightSemibold,
-  },
-  message: { color: DRAWING_THEME.textStrong, fontSize: DRAWING_SCALE.fontSizeMd },
-  filename: { color: DRAWING_THEME.textSoft, fontSize: DRAWING_SCALE.fontSizeSm },
-  disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.75 },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    panel: {
+      gap: DRAWING_SCALE.space2,
+      padding: DRAWING_SCALE.space3,
+      borderRadius: CONTROL_RADIUS,
+      backgroundColor: palette.brandWash,
+    },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: CONTROL_GAP },
+    action: {
+      minWidth: TOUCH_TARGET,
+      minHeight: TOUCH_TARGET,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: DRAWING_SCALE.space3,
+      borderRadius: CONTROL_RADIUS,
+      backgroundColor: palette.surface,
+    },
+    actionText: {
+      color: palette.textStrong,
+      fontSize: DRAWING_SCALE.fontSizeMd,
+      fontWeight: DRAWING_SCALE.fontWeightSemibold,
+    },
+    message: { color: palette.textStrong, fontSize: DRAWING_SCALE.fontSizeMd },
+    filename: { color: palette.textSoft, fontSize: DRAWING_SCALE.fontSizeSm },
+    disabled: { opacity: 0.5 },
+    pressed: { opacity: 0.75 },
+  })
+);

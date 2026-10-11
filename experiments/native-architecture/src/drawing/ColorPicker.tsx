@@ -1,3 +1,4 @@
+import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   AppState,
@@ -26,7 +27,7 @@ import {
 } from './palette';
 import { measurePaper } from './measurePaper';
 import { createPaperGeometry, paperLocation } from './paperGeometry';
-import { DRAWING_SCALE, DRAWING_SCRIM, DRAWING_THEME, TOUCH_TARGET } from './theme';
+import { DRAWING_SCALE, DRAWING_SCRIM, TOUCH_TARGET } from './theme';
 
 const EXPLORER_SIZE_PX = EXPLORER_COLUMNS * TOUCH_TARGET;
 const PICKER_MAX_WIDTH_PX = EXPLORER_SIZE_PX + DRAWING_SCALE.space4 * 2;
@@ -41,6 +42,7 @@ export function ColorPicker({
   onChoose: (color: CustomColor) => void;
   onClose: () => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
   const {
     draft,
     setDraft,
@@ -238,63 +240,65 @@ function exploreInitial(hex: string): CustomColor {
   return hex;
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: DRAWING_SCRIM,
-    padding: DRAWING_SCALE.space2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    width: '100%',
-    maxWidth: PICKER_MAX_WIDTH_PX,
-    maxHeight: '95%',
-    backgroundColor: DRAWING_THEME.surface,
-    borderRadius: DRAWING_SCALE.radiusLg,
-    padding: DRAWING_SCALE.space4,
-    gap: DRAWING_SCALE.space2,
-  },
-  title: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: DRAWING_SCALE.fontSizeXl,
-    fontWeight: DRAWING_SCALE.fontWeightBold,
-  },
-  help: { color: DRAWING_THEME.text, fontSize: DRAWING_SCALE.fontSizeMd },
-  content: { gap: DRAWING_SCALE.space3, alignItems: 'center' },
-  field: {
-    width: EXPLORER_SIZE_PX,
-    height: EXPLORER_ROWS * TOUCH_TARGET,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tile: { width: TOUCH_TARGET, height: TOUCH_TARGET },
-  previewRow: { flexDirection: 'row', alignItems: 'center', gap: DRAWING_SCALE.space3 },
-  preview: {
-    width: TOUCH_TARGET,
-    height: TOUCH_TARGET,
-    borderRadius: DRAWING_SCALE.radiusMd,
-    borderWidth: 2,
-    borderColor: DRAWING_THEME.textStrong,
-  },
-  use: {
-    minHeight: TOUCH_TARGET,
-    borderRadius: DRAWING_SCALE.radiusMd,
-    backgroundColor: DRAWING_THEME.brandSolid,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  useText: {
-    color: DRAWING_THEME.surface,
-    fontSize: DRAWING_SCALE.fontSizeMd,
-    fontWeight: DRAWING_SCALE.fontWeightSemibold,
-  },
-  close: {
-    minHeight: TOUCH_TARGET,
-    borderRadius: DRAWING_SCALE.radiusMd,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: DRAWING_SCRIM,
+      padding: DRAWING_SCALE.space2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    card: {
+      width: '100%',
+      maxWidth: PICKER_MAX_WIDTH_PX,
+      maxHeight: '95%',
+      backgroundColor: palette.surface,
+      borderRadius: DRAWING_SCALE.radiusLg,
+      padding: DRAWING_SCALE.space4,
+      gap: DRAWING_SCALE.space2,
+    },
+    title: {
+      color: palette.textStrong,
+      fontSize: DRAWING_SCALE.fontSizeXl,
+      fontWeight: DRAWING_SCALE.fontWeightBold,
+    },
+    help: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeMd },
+    content: { gap: DRAWING_SCALE.space3, alignItems: 'center' },
+    field: {
+      width: EXPLORER_SIZE_PX,
+      height: EXPLORER_ROWS * TOUCH_TARGET,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    tile: { width: TOUCH_TARGET, height: TOUCH_TARGET },
+    previewRow: { flexDirection: 'row', alignItems: 'center', gap: DRAWING_SCALE.space3 },
+    preview: {
+      width: TOUCH_TARGET,
+      height: TOUCH_TARGET,
+      borderRadius: DRAWING_SCALE.radiusMd,
+      borderWidth: 2,
+      borderColor: palette.textStrong,
+    },
+    use: {
+      minHeight: TOUCH_TARGET,
+      borderRadius: DRAWING_SCALE.radiusMd,
+      backgroundColor: palette.brandSolid,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    useText: {
+      color: palette.surface,
+      fontSize: DRAWING_SCALE.fontSizeMd,
+      fontWeight: DRAWING_SCALE.fontWeightSemibold,
+    },
+    close: {
+      minHeight: TOUCH_TARGET,
+      borderRadius: DRAWING_SCALE.radiusMd,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  })
+);

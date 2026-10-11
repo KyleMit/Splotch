@@ -1,11 +1,19 @@
 import { css, html } from 'react-strict-dom';
-import { colors, dimensions } from './tokens.css';
+import { colors, dimensions, onBrand } from './tokens.css';
 import { paintHex, paintLabel, type PaintColor } from '../drawing/palette';
 import { TOUCH_TARGET } from '../drawing/theme';
 
 const SELECTION_BORDER_WIDTH_PX = 2;
 
 export const styles = css.create({
+  themeRoot: {
+    display: 'flex',
+    flexDirection: 'column',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minHeight: 0,
+  },
   screen: {
     display: 'flex',
     flexDirection: 'column',
@@ -57,7 +65,7 @@ export const styles = css.create({
   },
   selected: {
     backgroundColor: colors.brandSolid,
-    color: colors.surface,
+    color: onBrand,
     borderColor: colors.brandSolid,
   },
   disabled: { opacity: dimensions.disabledOpacity },

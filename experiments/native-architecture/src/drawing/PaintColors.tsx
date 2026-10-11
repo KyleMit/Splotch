@@ -1,3 +1,4 @@
+import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
@@ -7,7 +8,7 @@ import {
   type PaintColor,
   type CustomColor,
 } from './palette';
-import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, DRAWING_THEME, TOUCH_TARGET } from './theme';
+import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, TOUCH_TARGET } from './theme';
 import type { PaintSelectionTarget } from './usePaintSelectionFocus';
 const COLORS: readonly PaletteLabel[] = [
   'Purple',
@@ -34,6 +35,7 @@ export function PaintColors({
   onChange: (color: PaintColor, target: PaintSelectionTarget | null) => void;
   onExplore: () => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
   const rail = useRef<ScrollView>(null);
   const content = useRef<View>(null);
   const reveal = useCallback(
@@ -111,6 +113,7 @@ function PaintSwatch({
   contentRef: RefObject<View | null>;
   layoutVersion: readonly CustomColor[];
 }) {
+  const styles = useDrawingStyles(themedStyles);
   const chosen = selected === color;
   const target = useRef<View>(null);
   const layout = useRef<number | null>(null);
@@ -218,41 +221,43 @@ function PaintSwatch({
   );
 }
 
-const styles = StyleSheet.create({
-  colors: { width: '100%', flexDirection: 'row', gap: CONTROL_GAP, alignItems: 'center' },
-  rail: { flex: 1, height: TOUCH_TARGET },
-  palette: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: CONTROL_GAP,
-  },
-  swatch: {
-    width: TOUCH_TARGET,
-    height: TOUCH_TARGET,
-    borderRadius: TOUCH_TARGET / 2,
-    borderWidth: 3,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectedSwatch: { borderColor: DRAWING_THEME.textStrong },
-  swatchMark: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: DRAWING_THEME.surface,
-    textShadowColor: DRAWING_THEME.textStrong,
-    textShadowRadius: 2,
-  },
-  explore: {
-    minWidth: TOUCH_TARGET,
-    minHeight: TOUCH_TARGET,
-    paddingHorizontal: DRAWING_SCALE.space4,
-    borderRadius: CONTROL_RADIUS,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-    backgroundColor: DRAWING_THEME.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: { fontSize: DRAWING_SCALE.fontSizeXl, color: DRAWING_THEME.textStrong },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    colors: { width: '100%', flexDirection: 'row', gap: CONTROL_GAP, alignItems: 'center' },
+    rail: { flex: 1, height: TOUCH_TARGET },
+    palette: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: CONTROL_GAP,
+    },
+    swatch: {
+      width: TOUCH_TARGET,
+      height: TOUCH_TARGET,
+      borderRadius: TOUCH_TARGET / 2,
+      borderWidth: 3,
+      borderColor: 'transparent',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    selectedSwatch: { borderColor: palette.textStrong },
+    swatchMark: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: palette.surface,
+      textShadowColor: palette.textStrong,
+      textShadowRadius: 2,
+    },
+    explore: {
+      minWidth: TOUCH_TARGET,
+      minHeight: TOUCH_TARGET,
+      paddingHorizontal: DRAWING_SCALE.space4,
+      borderRadius: CONTROL_RADIUS,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+      backgroundColor: palette.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    label: { fontSize: DRAWING_SCALE.fontSizeXl, color: palette.textStrong },
+  })
+);

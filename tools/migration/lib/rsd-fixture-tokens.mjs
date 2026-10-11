@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
-import { themes, scale } from '../../../web/src/lib/design/tokens.ts';
+import { themes, scale, brand } from '../../../web/src/lib/design/tokens.ts';
 import { BLACK_INK } from '../../../web/src/lib/palette.ts';
 
 const COLOR_KEYS = ['surface', 'text', 'paper', 'brandSolid'];
@@ -19,6 +19,8 @@ function tokenSource() {
     `export const darkTheme = css.createTheme(colors, ${JSON.stringify(colors(themes.dark), null, 2)});`,
     '',
     `export const dimensions = css.defineVars(${JSON.stringify(dimensions, null, 2)});`,
+    '',
+    `export const onBrand = ${JSON.stringify(brand.onBrand)};`,
     '',
     `export const fixtureInk = ${JSON.stringify(BLACK_INK)};`,
     '',

@@ -1,5 +1,6 @@
+import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, DRAWING_THEME, TOUCH_TARGET } from './theme';
+import { CONTROL_GAP, CONTROL_RADIUS, DRAWING_SCALE, TOUCH_TARGET } from './theme';
 import { STROKE_WIDTHS, STROKE_WIDTH_LABELS, type StrokeWidth } from './strokeWidth';
 
 export function StrokeWidthSelector({
@@ -13,6 +14,7 @@ export function StrokeWidthSelector({
   disabled: boolean;
   onChange: (width: StrokeWidth) => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
   const label = tool === 'eraser' ? 'Eraser width' : 'Drawing width';
   return (
     <View style={styles.selector}>
@@ -42,35 +44,37 @@ export function StrokeWidthSelector({
   );
 }
 
-const styles = StyleSheet.create({
-  selector: { alignItems: 'center', gap: CONTROL_GAP },
-  choices: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: CONTROL_GAP },
-  label: {
-    fontSize: DRAWING_SCALE.fontSizeMd,
-    fontWeight: DRAWING_SCALE.fontWeightSemibold,
-    color: DRAWING_THEME.textStrong,
-  },
-  choice: {
-    minHeight: TOUCH_TARGET,
-    minWidth: TOUCH_TARGET,
-    paddingHorizontal: DRAWING_SCALE.space4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderRadius: CONTROL_RADIUS,
-    borderColor: DRAWING_THEME.borderWarm,
-    backgroundColor: DRAWING_THEME.surface,
-  },
-  selected: {
-    borderColor: DRAWING_THEME.brandSolid,
-    backgroundColor: DRAWING_THEME.brandWash,
-  },
-  mark: {
-    position: 'absolute',
-    top: CONTROL_GAP / 2,
-    right: CONTROL_GAP / 2,
-    fontSize: DRAWING_SCALE.fontSizeSm,
-    color: DRAWING_THEME.textStrong,
-  },
-  disabled: { opacity: 0.4 },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    selector: { alignItems: 'center', gap: CONTROL_GAP },
+    choices: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: CONTROL_GAP },
+    label: {
+      fontSize: DRAWING_SCALE.fontSizeMd,
+      fontWeight: DRAWING_SCALE.fontWeightSemibold,
+      color: palette.textStrong,
+    },
+    choice: {
+      minHeight: TOUCH_TARGET,
+      minWidth: TOUCH_TARGET,
+      paddingHorizontal: DRAWING_SCALE.space4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderRadius: CONTROL_RADIUS,
+      borderColor: palette.borderWarm,
+      backgroundColor: palette.surface,
+    },
+    selected: {
+      borderColor: palette.brandSolid,
+      backgroundColor: palette.brandWash,
+    },
+    mark: {
+      position: 'absolute',
+      top: CONTROL_GAP / 2,
+      right: CONTROL_GAP / 2,
+      fontSize: DRAWING_SCALE.fontSizeSm,
+      color: palette.textStrong,
+    },
+    disabled: { opacity: 0.4 },
+  })
+);

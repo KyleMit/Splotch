@@ -1,5 +1,6 @@
+import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { useState } from 'react';
-import { Image, StyleSheet, useColorScheme } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { html } from 'react-strict-dom';
 import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
@@ -22,7 +23,7 @@ export function RsdColoringBookPicker({
   onClose: () => void;
 }) {
   const [view, setView] = useState<PickerView>({ kind: 'books' });
-  const theme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const theme = useDrawingAppearance();
   const book = view.kind === 'pages' ? BUNDLED_BOOKS[view.bookId] : null;
   const label = book
     ? `${book.label} coloring pages`

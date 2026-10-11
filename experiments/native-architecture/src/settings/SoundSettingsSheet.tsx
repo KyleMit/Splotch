@@ -1,6 +1,12 @@
+import { APPEARANCE_PREFERENCES, APPEARANCE_LABELS, type AppearancePreference } from './appearance';
+import {
+  createDrawingStyles,
+  useDrawingStyles,
+  useDrawingTheme,
+} from '../drawing/DrawingAppearance';
 import { useEffect } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { DRAWING_THEME, SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
+import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
 
 const SETTINGS_MAX_WIDTH = 480;
@@ -9,6 +15,7 @@ export function SoundSettings({
   state,
   audioMessage,
   onChange,
+  onAppearanceChange,
   onRetrySave,
   onClose,
   visible,
@@ -17,11 +24,14 @@ export function SoundSettings({
   state: SoundSettingsState;
   audioMessage: string;
   onChange: (enabled: boolean) => void;
+  onAppearanceChange: (appearance: AppearancePreference) => void;
   onRetrySave: () => void;
   onClose: () => void;
   visible: boolean;
   onDismiss: () => void;
 }) {
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingTheme();
   const busy = state.status !== 'ready' || !visible;
   useEffect(() => {
     if (!visible && Platform.OS === 'android') onDismiss();
@@ -39,6 +49,31 @@ export function SoundSettings({
           <Text accessibilityRole="header" style={styles.title}>
             Settings
           </Text>
+          <Text style={styles.labelText}>Appearance</Text>
+          <View
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Appearance"
+            style={styles.appearanceRow}
+          >
+            {APPEARANCE_PREFERENCES.map((appearance) => (
+              <Pressable
+                key={appearance}
+                accessibilityRole="radio"
+                accessibilityLabel={`${APPEARANCE_LABELS[appearance]} appearance`}
+                accessibilityState={{ checked: state.appearance === appearance, disabled: busy }}
+                aria-checked={state.appearance === appearance}
+                disabled={busy}
+                onPress={() => onAppearanceChange(appearance)}
+                style={styles.button}
+              >
+                <Text style={styles.labelText}>
+                  {APPEARANCE_LABELS[appearance]}
+                  {state.appearance === appearance ? ' ✓' : ''}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.help}>System follows your device.</Text>
           <View style={styles.row}>
             <View style={styles.label}>
               <Text style={styles.labelText}>Sound</Text>
@@ -51,7 +86,7 @@ export function SoundSettings({
               disabled={busy}
               onValueChange={onChange}
               style={styles.switch}
-              trackColor={{ true: DRAWING_THEME.brandSolid, false: DRAWING_THEME.textSoft }}
+              trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
             />
           </View>
           {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
@@ -78,45 +113,48 @@ export function SoundSettings({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SETTINGS_METRICS.padding,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-  },
-  card: {
-    width: '100%',
-    maxWidth: SETTINGS_MAX_WIDTH,
-    padding: SETTINGS_METRICS.padding,
-    borderRadius: SETTINGS_METRICS.radius,
-    backgroundColor: DRAWING_THEME.paper,
-    gap: SETTINGS_METRICS.gap * 2,
-  },
-  title: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: SETTINGS_METRICS.titleSize,
-    fontWeight: '700',
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SETTINGS_METRICS.gap },
-  label: { flex: 1, gap: SETTINGS_METRICS.gap },
-  labelText: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: SETTINGS_METRICS.textSize,
-    fontWeight: '600',
-  },
-  help: { color: DRAWING_THEME.text, fontSize: SETTINGS_METRICS.textSize },
-  switch: { minWidth: TOUCH_TARGET, minHeight: TOUCH_TARGET },
-  button: {
-    minHeight: TOUCH_TARGET,
-    minWidth: TOUCH_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SETTINGS_METRICS.padding,
-    borderRadius: SETTINGS_METRICS.radius,
-    backgroundColor: DRAWING_THEME.surface,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-  },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SETTINGS_METRICS.padding,
+      backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    },
+    card: {
+      width: '100%',
+      maxWidth: SETTINGS_MAX_WIDTH,
+      padding: SETTINGS_METRICS.padding,
+      borderRadius: SETTINGS_METRICS.radius,
+      backgroundColor: palette.paper,
+      gap: SETTINGS_METRICS.gap * 2,
+    },
+    title: {
+      color: palette.textStrong,
+      fontSize: SETTINGS_METRICS.titleSize,
+      fontWeight: '700',
+    },
+    appearanceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SETTINGS_METRICS.gap },
+    row: { flexDirection: 'row', alignItems: 'center', gap: SETTINGS_METRICS.gap },
+    label: { flex: 1, gap: SETTINGS_METRICS.gap },
+    labelText: {
+      color: palette.textStrong,
+      fontSize: SETTINGS_METRICS.textSize,
+      fontWeight: '600',
+    },
+    help: { color: palette.text, fontSize: SETTINGS_METRICS.textSize },
+    switch: { minWidth: TOUCH_TARGET, minHeight: TOUCH_TARGET },
+    button: {
+      minHeight: TOUCH_TARGET,
+      minWidth: TOUCH_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: SETTINGS_METRICS.padding,
+      borderRadius: SETTINGS_METRICS.radius,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+    },
+  })
+);

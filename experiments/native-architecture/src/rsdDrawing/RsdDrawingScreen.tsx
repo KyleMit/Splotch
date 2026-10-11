@@ -1,3 +1,5 @@
+import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
+import { darkTheme } from './tokens.css';
 import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
@@ -27,6 +29,21 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen() {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
+  if (sound.settings.status === 'loading')
+    return (
+      <NativeFrame>
+        <html.span>Loading drawing settings…</html.span>
+      </NativeFrame>
+    );
+  return (
+    <DrawingAppearanceProvider preference={sound.settings.appearance}>
+      <RsdDrawingContent screen={screen} sound={sound} />
+    </DrawingAppearanceProvider>
+  );
+}
+
+function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) {
+  const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen);
   const notice = useSettledMessage(screen.notice, screen.drawing);
   const soundNotice = useSettledMessage(
@@ -38,7 +55,10 @@ export function RsdDrawingScreen() {
   const paints = [...PALETTE_COLORS.map((color) => color.label), ...sound.settings.customColors];
   return (
     <NativeFrame>
-      <html.div data-layoutconformance="strict" style={styles.screen}>
+      <html.div
+        data-layoutconformance="strict"
+        style={[styles.screen, theme === 'dark' && darkTheme]}
+      >
         <NativeDrawingLayout
           drawing={screen.drawing}
           controls={
@@ -117,6 +137,9 @@ export function RsdDrawingScreen() {
             notice={soundNotice}
             onToggle={() => {
               void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
+            }}
+            onAppearanceChange={(appearance) => {
+              void sound.owner?.settings.setAppearance(appearance);
             }}
             onRetry={() => {
               void sound.owner?.settings.retrySave();

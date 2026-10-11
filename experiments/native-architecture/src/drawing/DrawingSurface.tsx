@@ -1,3 +1,5 @@
+import { useDrawingAppearance } from './DrawingAppearance';
+import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
 import {
   forwardRef,
   useCallback,
@@ -10,7 +12,7 @@ import {
   type ForwardedRef,
   type RefObject,
 } from 'react';
-import { PanResponder, StyleSheet, View, useColorScheme } from 'react-native';
+import { PanResponder, StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
 import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
@@ -19,7 +21,7 @@ import { measurePaper } from './measurePaper';
 import { PageOutline } from './PageOutline';
 import { RasterInk, type RasterInkHandle } from './RasterInk';
 import { PictureCapture, type PictureRequest } from './PictureCapture';
-import { DRAWING_THEME, PAPER_THEMES } from './theme';
+import { PAPER_THEMES } from './theme';
 import { InkAppearanceScope, type InkAppearance } from './InkAppearance';
 import { createPngCapture, type PngCaptureRequest } from './interactions';
 
@@ -37,10 +39,11 @@ type Props = ContactDrawingProps & {
 
 export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
   function DrawingSurface(props, ref) {
-    const colorScheme = useColorScheme();
+    const styles = useDrawingStyles(themedStyles);
+    const theme = useDrawingAppearance();
     const appearance = useMemo<InkAppearance>(
-      () => ({ pageId: props.drawing.pageId, theme: colorScheme === 'dark' ? 'dark' : 'light' }),
-      [props.drawing.pageId, colorScheme]
+      () => ({ pageId: props.drawing.pageId, theme }),
+      [props.drawing.pageId, theme]
     );
     const propsRef = useRef(props);
     propsRef.current = props;
@@ -237,15 +240,17 @@ function useSurfaceCapture(
   return { captureLock, commandLock };
 }
 
-const styles = StyleSheet.create({
-  container: { width: '100%', maxWidth: PAPER_WIDTH, alignSelf: 'center' },
-  paper: {
-    width: '100%',
-    aspectRatio: PAPER_WIDTH / PAPER_HEIGHT,
-    overflow: 'hidden',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-    backgroundColor: DRAWING_THEME.paper,
-  },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    container: { width: '100%', maxWidth: PAPER_WIDTH, alignSelf: 'center' },
+    paper: {
+      width: '100%',
+      aspectRatio: PAPER_WIDTH / PAPER_HEIGHT,
+      overflow: 'hidden',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+      backgroundColor: palette.paper,
+    },
+  })
+);

@@ -23,4 +23,6 @@ export const dimensions = css.defineVars({
   disabledOpacity: '0.65',
 });
 
+export const onBrand = '#fff';
+
 export const fixtureInk = '#0a0b10';

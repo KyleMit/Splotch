@@ -1,4 +1,4 @@
-import { createElement, forwardRef, useImperativeHandle } from 'react';
+import { act, createElement, forwardRef, useImperativeHandle } from 'react';
 
 export function nativeCaptureSdk(state) {
   return {
@@ -39,4 +39,30 @@ export function svgCaptureSdk(state) {
     Image: ({ onLoad, href }) =>
       createElement('button', { 'data-output-image': href, onClick: onLoad }),
   };
+}
+
+const CAPTURE_READY_FRAMES = 2;
+export async function flushCaptureFrames(state) {
+  for (let count = 0; count < CAPTURE_READY_FRAMES; count += 1) {
+    await act(async () => {
+      const pending = [...state.frames.values()];
+      state.frames.clear();
+      for (const callback of pending) callback(0);
+    });
+  }
+}
+
+export async function loadCaptureImage(host, width = '100%') {
+  const image = [...host.querySelectorAll(`[data-svg-width="${width}"] button`)].at(-1);
+  if (!image) throw new Error('Capture image is not mounted.');
+  await act(async () => image.click());
+}
+
+export async function beginFixtureOutput(ref, drawing, kind = 'captureInk') {
+  const release = ref.current.lockInput();
+  let promise;
+  await act(async () => {
+    promise = ref.current[kind](drawing);
+  });
+  return { promise, release };
 }

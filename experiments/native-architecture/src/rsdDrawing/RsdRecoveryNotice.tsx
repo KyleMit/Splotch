@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { ScrollView } from 'react-native';
-import { drawingScreenStyles } from '../drawing/drawingScreenStyles';
+import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import { RsdAction, styles } from './controls';
 
@@ -12,6 +12,7 @@ export function RsdRecoveryNotice({
   screen: ReturnType<typeof useDrawingScreen>;
   blocked: boolean;
 }) {
+  const drawingScreenStyles = useDrawingScreenStyles();
   const state = screen.pngRecovery.state;
   const [settled, setSettled] = useState(state);
   if (!screen.drawing && settled !== state) setSettled(state);

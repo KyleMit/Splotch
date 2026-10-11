@@ -1,7 +1,11 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { RSD_NATIVE_SELECTION_TEST, RSD_NATIVE_RECOVERY_TEST } from './lib/rsd-drawing-checks.mjs';
+import {
+  RSD_NATIVE_SELECTION_TEST,
+  RSD_NATIVE_RECOVERY_TEST,
+  RSD_NATIVE_APPEARANCE_TEST,
+} from './lib/rsd-drawing-checks.mjs';
 const require = createRequire(import.meta.url);
 const native = join(
   dirname(require.resolve('react-strict-dom/package.json')),
@@ -13,7 +17,7 @@ export default defineConfig({
   resolve: { alias: [{ find: /^react-strict-dom$/, replacement: native }] },
   test: {
     environment: 'happy-dom',
-    include: [RSD_NATIVE_SELECTION_TEST, RSD_NATIVE_RECOVERY_TEST],
+    include: [RSD_NATIVE_SELECTION_TEST, RSD_NATIVE_RECOVERY_TEST, RSD_NATIVE_APPEARANCE_TEST],
     server: { deps: { inline: [/react-strict-dom/] } },
   },
 });

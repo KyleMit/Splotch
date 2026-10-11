@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { DrawingSurface } from '../drawing/DrawingSurface';
 import { PAPER_HEIGHT, PAPER_WIDTH } from '../drawing/model';
-import { drawingScreenStyles } from '../drawing/drawingScreenStyles';
+import { useDrawingScreenStyles } from '../drawing/drawingScreenStyles';
 import type { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
 
@@ -15,6 +15,7 @@ export function NativePaper({
   sound: ReturnType<typeof useDrawingSound>;
   menuOpen: boolean;
 }) {
+  const drawingScreenStyles = useDrawingScreenStyles();
   const [space, setSpace] = useState({ width: 0, height: 0 });
   const width = Math.min(space.width, (space.height * PAPER_WIDTH) / PAPER_HEIGHT, PAPER_WIDTH);
   return (

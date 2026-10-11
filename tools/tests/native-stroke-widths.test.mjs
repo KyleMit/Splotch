@@ -160,7 +160,8 @@ describe('candidate stroke widths', () => {
 describe('one persisted candidate settings owner', () => {
   it('defaults old candidate sound settings without changing either prior brush geometry', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 3,
+      version: 4,
+      appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
       soundEnabled: false,
@@ -203,7 +204,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[]}'
+      '{"version":4,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system"}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -215,7 +216,8 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 3,
+      version: 4,
+      appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
       soundEnabled: true,
@@ -252,6 +254,7 @@ describe('one persisted candidate settings owner', () => {
         eraserWidth: 'thick',
         selectedColor: 'Purple',
         customColors: [],
+        appearance: 'system',
         saved: false,
         message: warning,
       });
@@ -259,7 +262,8 @@ describe('one persisted candidate settings owner', () => {
       else await owner.setEnabled(true);
       expect(storage.write).toHaveBeenCalledOnce();
       expect(JSON.parse(saved)).toEqual({
-        version: 3,
+        version: 4,
+        appearance: 'system',
         soundEnabled: recovery === 'sound choice',
         strokeWidth: 'thin',
         eraserWidth: 'thick',
@@ -298,7 +302,8 @@ describe('one persisted candidate settings owner', () => {
     await owner.setWidth('eraser', 'thick');
     expect(storage.write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(saved)).toEqual({
-      version: 3,
+      version: 4,
+      appearance: 'system',
       soundEnabled: true,
       strokeWidth: 'thin',
       eraserWidth: 'thick',

@@ -19,7 +19,7 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
+      '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();

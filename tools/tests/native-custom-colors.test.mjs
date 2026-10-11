@@ -192,7 +192,8 @@ describe('custom palettes in the one serialized settings owner', () => {
       else await owner.setEnabled(true);
       expect(storage.write).toHaveBeenCalledOnce();
       expect(parseSoundSettings(stored)).toEqual({
-        version: 3,
+        version: 4,
+        appearance: 'system',
         soundEnabled: recovery === 'sound choice',
         strokeWidth: 'thin',
         eraserWidth: 'medium',
@@ -225,7 +226,8 @@ describe('custom palettes in the one serialized settings owner', () => {
     await f.owner.setColor('#ABCDEF');
     expect(f.storage.write).toHaveBeenCalledTimes(3);
     expect(parseSoundSettings(f.storage.write.mock.calls.at(-1)[0])).toEqual({
-      version: 3,
+      version: 4,
+      appearance: 'system',
       soundEnabled: true,
       strokeWidth: 'medium',
       eraserWidth: 'thick',
@@ -272,7 +274,11 @@ describe('custom palettes in the one serialized settings owner', () => {
       selectedColor: '#123ABC',
       customColors: ['#123ABC'],
     };
-    expect(parseSoundSettings(JSON.stringify(valid))).toEqual(valid);
+    expect(parseSoundSettings(JSON.stringify(valid))).toEqual({
+      ...valid,
+      version: 4,
+      appearance: 'system',
+    });
     for (const customColors of [
       [],
       ['#123abc'],

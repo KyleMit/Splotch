@@ -25,6 +25,7 @@ vi.mock('react-native-svg', async () => {
   return { default: Svg, Defs: Svg, LinearGradient: Svg, Rect: Svg, Stop: Svg };
 });
 const records = vi.hoisted(() => ({
+  scheme: 'light',
   props: [],
   viewports: [],
   dimensions: { width: 402, height: 874, scale: 1, fontScale: 1 },
@@ -92,7 +93,7 @@ vi.mock('react-native', async () => {
     Animated: { createAnimatedComponent: (component) => component, View, Text, Image: View },
     Easing: {},
     useWindowDimensions: () => records.dimensions,
-    useColorScheme: () => 'light',
+    useColorScheme: () => records.scheme,
     Text,
     Pressable,
     View,
@@ -135,6 +136,7 @@ afterEach(async () => {
   if (root) await act(async () => root.unmount());
   host?.remove();
   root = null;
+  records.scheme = 'light';
   records.props.length = 0;
   records.viewports.length = 0;
   records.dimensions = { width: 402, height: 874, scale: 1, fontScale: 1 };

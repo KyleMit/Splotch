@@ -71,7 +71,7 @@ describe('custom paints wired to the drawing screen', () => {
       screen = createScreen();
       await act(async () => screen.mount());
       const warning =
-        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
+        'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
       expect(screen.container.textContent).toContain(warning);
       await screen.click('More colors');
       await screen.click('Use color');
@@ -91,7 +91,8 @@ describe('custom paints wired to the drawing screen', () => {
       await screen.click(recovery);
       expect(files.settingsWrite).toHaveBeenCalledOnce();
       expect(JSON.parse(stored)).toEqual({
-        version: 3,
+        version: 4,
+        appearance: 'system',
         soundEnabled: recovery === 'Drawing sound',
         strokeWidth: 'medium',
         eraserWidth: 'medium',
@@ -113,7 +114,8 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 3,
+      version: 4,
+      appearance: 'system',
       selectedColor: chosen,
       customColors: [chosen],
     });
@@ -156,7 +158,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":3,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[]}'
+      '{"version":4,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system"}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();
@@ -197,7 +199,7 @@ describe('drawing width controls', () => {
       screen = createScreen();
       await act(async () => screen.mount());
       const warning =
-        'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.';
+        'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
       expect(screen.container.textContent).toContain(warning);
       await menuClick('Marker');
       await menuClick('Drawing width: Thin');
@@ -214,7 +216,8 @@ describe('drawing width controls', () => {
       await screen.click(recovery);
       expect(files.settingsWrite).toHaveBeenCalledOnce();
       expect(JSON.parse(saved)).toEqual({
-        version: 3,
+        version: 4,
+        appearance: 'system',
         soundEnabled: recovery === 'Drawing sound',
         strokeWidth: 'thin',
         eraserWidth: 'thick',

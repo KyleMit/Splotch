@@ -1,3 +1,4 @@
+import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
 import { useState, type ReactNode, type RefObject } from 'react';
 import {
   Modal,
@@ -19,7 +20,7 @@ import type { SavedPicture } from './platform/drawingFiles';
 import { BRUSHES } from './drawing/brushes';
 import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
 import { DrawingStatus } from './DrawingStatus';
-import { drawingScreenStyles as styles } from './drawing/drawingScreenStyles';
+import { useDrawingScreenStyles } from './drawing/drawingScreenStyles';
 import { Action, DrawingMenu } from './DrawingControls';
 import { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
@@ -32,6 +33,7 @@ function PaperWorkspace({
   children: ReactNode;
   surface: RefObject<DrawingSurfaceHandle | null>;
 }) {
+  const styles = useDrawingScreenStyles();
   const [space, setSpace] = useState({ width: 0, height: 0 });
   const paperWidth = Math.min(
     space.width,
@@ -56,6 +58,28 @@ function PaperWorkspace({
 
 export function DrawingScreen() {
   const screen = useDrawingScreen();
+  const sound = useDrawingSound();
+  if (sound.settings.status === 'loading')
+    return (
+      <View>
+        <Text>Loading drawing settings…</Text>
+      </View>
+    );
+  return (
+    <DrawingAppearanceProvider preference={sound.settings.appearance}>
+      <DrawingScreenContent screen={screen} sound={sound} />
+    </DrawingAppearanceProvider>
+  );
+}
+
+function DrawingScreenContent({
+  screen,
+  sound,
+}: {
+  screen: ReturnType<typeof useDrawingScreen>;
+  sound: ReturnType<typeof useDrawingSound>;
+}) {
+  const styles = useDrawingScreenStyles();
   const menu = useDrawingMenu(screen);
   const [settingsClosing, setSettingsClosing] = useState(false);
   const window = useWindowDimensions();
@@ -71,7 +95,6 @@ export function DrawingScreen() {
     openColorPicker,
     disabled,
   } = screen;
-  const sound = useDrawingSound();
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
   const focusReturn = useColorPickerFocus({
     pickerOpen: colorPickerOpen,
@@ -94,25 +117,18 @@ export function DrawingScreen() {
     disabled,
     blocked: disabled || pictures !== null,
   });
+  function cancelFocus() {
+    paintFocus.cancel();
+    focusReturn.cancel();
+    menuFocus.cancel();
+  }
   return (
     <SafeAreaView
       style={styles.screen}
       onLayout={() => surface.current?.refreshGeometry()}
-      onFocus={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
-      onPointerDown={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
-      onTouchStart={() => {
-        paintFocus.cancel();
-        focusReturn.cancel();
-        menuFocus.cancel();
-      }}
+      onFocus={cancelFocus}
+      onPointerDown={cancelFocus}
+      onTouchStart={cancelFocus}
     >
       <View
         accessibilityElementsHidden={menu.open}
@@ -236,6 +252,7 @@ function DrawingFeedback({
   sound: ReturnType<typeof useDrawingSound>;
   menuOpen: boolean;
 }) {
+  const styles = useDrawingScreenStyles();
   const { recovery } = screen;
   return (
     <ScrollView
@@ -313,6 +330,9 @@ function DrawingSheets({
           onChange={(enabled) => {
             void sound.owner?.settings.setEnabled(enabled);
           }}
+          onAppearanceChange={(appearance) => {
+            void sound.owner?.settings.setAppearance(appearance);
+          }}
           onRetrySave={() => {
             void sound.owner?.settings.retrySave();
           }}
@@ -343,6 +363,7 @@ function SavedPictures({
   onOpen: (picture: SavedPicture) => Promise<void>;
   onClose: () => void;
 }) {
+  const styles = useDrawingScreenStyles();
   if (pictures === null) return null;
   return (
     <Modal

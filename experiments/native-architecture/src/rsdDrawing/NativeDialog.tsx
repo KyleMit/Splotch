@@ -1,6 +1,14 @@
+import { useDrawingAppearance } from '../drawing/DrawingAppearance';
+import { darkTheme } from './tokens.css';
+import {
+  APPEARANCE_PREFERENCES,
+  APPEARANCE_LABELS,
+  type AppearancePreference,
+} from '../settings/appearance';
+import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import type { ReactNode } from 'react';
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
-import { DRAWING_SCALE, DRAWING_THEME } from '../drawing/theme';
+import { DRAWING_SCALE } from '../drawing/theme';
 import { NativeFrame } from './NativeFrame';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
@@ -10,12 +18,14 @@ export function NativeSoundSettingsDialog({
   settings,
   notice,
   onToggle,
+  onAppearanceChange,
   onRetry,
   onClose,
 }: {
   settings: SoundSettingsState;
   notice: string;
   onToggle: () => void;
+  onAppearanceChange: (appearance: AppearancePreference) => void;
   onRetry: () => void;
   onClose: () => void;
 }) {
@@ -27,6 +37,21 @@ export function NativeSoundSettingsDialog({
       footer={<RsdAction label="Keep drawing" onClick={onClose} />}
     >
       <html.div style={controlStyles.dialogContent}>
+        <html.span>Appearance</html.span>
+        <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
+          {APPEARANCE_PREFERENCES.map((appearance) => (
+            <RsdAction
+              key={appearance}
+              label={`${APPEARANCE_LABELS[appearance]} appearance`}
+              text={APPEARANCE_LABELS[appearance]}
+              selection="radio"
+              selected={settings.appearance === appearance}
+              disabled={settings.status !== 'ready'}
+              onClick={() => onAppearanceChange(appearance)}
+            />
+          ))}
+        </html.div>
+        <html.span>System follows your device.</html.span>
         <RsdAction
           label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
           selection="switch"
@@ -34,12 +59,11 @@ export function NativeSoundSettingsDialog({
           disabled={settings.status !== 'ready'}
           onClick={onToggle}
         />
+        {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
         {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-        <RsdAction
-          label="Try saving settings again"
-          disabled={settings.status === 'loading'}
-          onClick={onRetry}
-        />
+        {settings.status === 'ready' && !settings.saved ? (
+          <RsdAction label="Try saving settings again" onClick={onRetry} />
+        ) : null}
       </html.div>
     </NativeDialog>
   );
@@ -60,6 +84,8 @@ export function NativeDialog({
   footer: ReactNode;
   children: ReactNode;
 }) {
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingAppearance();
   return (
     <Modal
       visible={visible}
@@ -69,30 +95,34 @@ export function NativeDialog({
       onDismiss={onDismiss}
     >
       <NativeFrame>
-        <ScrollView
-          testID="rsd-dialog-viewport"
-          accessibilityLabel={`${label} options`}
-          accessible={false}
-          style={styles.viewport}
-          contentContainerStyle={styles.content}
-          removeClippedSubviews={false}
-        >
-          {children}
-        </ScrollView>
-        <View testID="rsd-dialog-footer" accessible={false} style={styles.footer}>
-          {footer}
-        </View>
+        <html.div style={[controlStyles.themeRoot, theme === 'dark' && darkTheme]}>
+          <ScrollView
+            testID="rsd-dialog-viewport"
+            accessibilityLabel={`${label} options`}
+            accessible={false}
+            style={styles.viewport}
+            contentContainerStyle={styles.content}
+            removeClippedSubviews={false}
+          >
+            {children}
+          </ScrollView>
+          <View testID="rsd-dialog-footer" accessible={false} style={styles.footer}>
+            {footer}
+          </View>
+        </html.div>
       </NativeFrame>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  viewport: { flex: 1, minHeight: 0 },
-  content: { flexGrow: 1 },
-  footer: {
-    flexShrink: 0,
-    padding: DRAWING_SCALE.space4,
-    backgroundColor: DRAWING_THEME.surface,
-  },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    viewport: { flex: 1, minHeight: 0 },
+    content: { flexGrow: 1 },
+    footer: {
+      flexShrink: 0,
+      padding: DRAWING_SCALE.space4,
+      backgroundColor: palette.surface,
+    },
+  })
+);

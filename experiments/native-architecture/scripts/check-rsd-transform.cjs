@@ -100,10 +100,10 @@ for (const component of [drawing, coloringPicker, settingsDialog])
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 4, 'RSD radio group count');
+assert.equal(groups.length, 5, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  ['Coloring page', 'Drawing brush', 'Paint colors'],
+  ['Appearance', 'Coloring page', 'Drawing brush', 'Paint colors'],
   'RSD radio group names'
 );
 const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
@@ -114,7 +114,7 @@ assert.deepEqual(
   'RSD width group label'
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 4, 'RSD selection callers');
+assert.equal(radios, 5, 'RSD selection callers');
 assert.equal(switches, 1, 'RSD sound switch caller');
 const files = [
   'src/index.ts',

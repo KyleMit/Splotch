@@ -1,8 +1,14 @@
 // @vitest-environment happy-dom
 import { act, createElement, createRef } from 'react';
+import {
+  flushCaptureFrames,
+  loadCaptureImage,
+  beginFixtureOutput,
+} from '../lib/native-picture-capture-sdk-fixture.mjs';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
+import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { DrawingSurface } from '../../experiments/native-architecture/src/drawing/DrawingSurface.tsx';
 import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
@@ -126,23 +132,11 @@ async function render(strokes, prepareEraser = false, draft = null) {
     )
   );
 }
-async function frames() {
-  for (let count = 0; count < 2; count += 1) {
-    await act(async () => {
-      const pending = [...state.frames.values()];
-      state.frames.clear();
-      for (const callback of pending) callback(0);
-    });
-  }
-}
+const frames = () => flushCaptureFrames(state);
 async function png(index, value = 'transparent-png') {
   await act(async () => state.captures[index].callback(value));
 }
-async function load(width = '100%') {
-  const image = [...host.querySelectorAll(`[data-svg-width="${width}"] button`)].at(-1);
-  expect(image).not.toBeNull();
-  await act(async () => image.click());
-}
+const load = (width) => loadCaptureImage(host, width);
 
 describe('ready-owner output handoff', () => {
   it('rejects draft and equal-length replacement identities without changing a pinned plan', async () => {
@@ -207,59 +201,61 @@ describe('ready-owner output handoff', () => {
   );
 });
 
-async function surface(drawing) {
+async function surface(drawing, preference = 'system') {
   await act(async () =>
     root.render(
-      createElement(DrawingSurface, {
-        ref,
-        drawing,
-        currentDrawing: () => drawing,
-        color: 'Blue',
-        brush: 'marker',
-        width: 22,
-        disabled: false,
-        onCohort: vi.fn(),
-        onDrawingChange: vi.fn(),
-        onPreparingChange: busy,
-        onRendererFault: error,
-        onError: error,
-      })
+      createElement(
+        DrawingAppearanceProvider,
+        { preference },
+        createElement(DrawingSurface, {
+          ref,
+          drawing,
+          currentDrawing: () => drawing,
+          color: 'Blue',
+          brush: 'marker',
+          width: 22,
+          disabled: false,
+          onCohort: vi.fn(),
+          onDrawingChange: vi.fn(),
+          onPreparingChange: busy,
+          onRendererFault: error,
+          onError: error,
+        })
+      )
     )
   );
 }
 
-async function beginOutput(drawing, kind = 'captureInk') {
-  const release = ref.current.lockInput();
-  let promise;
-  await act(async () => {
-    promise = ref.current[kind](drawing);
-  });
-  return { promise, release };
-}
+const beginOutput = (drawing, kind) => beginFixtureOutput(ref, drawing, kind);
 
 describe('mounted canonical output identity', () => {
-  it('cancels a real in-flight capture on a live system-theme change and rejects its late callback', async () => {
-    const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic] };
-    await surface(drawing);
-    const first = await beginOutput(drawing);
-    const refused = first.promise.catch((failure) => failure.message);
-    await frames();
-    const oldPacket = state.packets.at(-1);
-    expect(oldPacket.appearance).toEqual({ pageId: 'flower', theme: 'light' });
-    state.scheme = 'dark';
-    await surface(drawing);
-    await expect(refused).resolves.toContain('changed');
-    expect(oldPacket.isCurrent()).toBe(false);
-    await png(0, 'stale-light-output');
-    first.release();
-    const second = await beginOutput(drawing);
-    await frames();
-    expect(state.packets.at(-1).appearance).toEqual({ pageId: 'flower', theme: 'dark' });
-    await png(1, 'current-dark-output');
-    await expect(second.promise).resolves.toBe('current-dark-output');
-    expect(drawing.strokes).toEqual([magic]);
-    second.release();
-  });
+  it.each(['system', 'light'])(
+    'supersedes capture after resolved %s appearance changes and rejects late output',
+    async (preference) => {
+      const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic] };
+      await surface(drawing, preference);
+      const first = await beginOutput(drawing);
+      const refused = first.promise.catch((failure) => failure.message);
+      await frames();
+      const oldPacket = state.packets.at(-1);
+      expect(oldPacket.appearance).toEqual({ pageId: 'flower', theme: 'light' });
+      state.scheme = 'dark';
+      await surface(drawing, preference);
+      expect(oldPacket.isCurrent()).toBe(preference === 'light');
+      await surface(drawing, preference === 'system' ? 'system' : 'dark');
+      await expect(refused).resolves.toContain('changed');
+      expect(oldPacket.isCurrent()).toBe(false);
+      await png(0, 'stale-light-output');
+      first.release();
+      const second = await beginOutput(drawing);
+      await frames();
+      expect(state.packets.at(-1).appearance).toEqual({ pageId: 'flower', theme: 'dark' });
+      await png(1, 'current-dark-output');
+      await expect(second.promise).resolves.toBe('current-dark-output');
+      expect(drawing.strokes).toEqual([magic]);
+      second.release();
+    }
+  );
 
   it('discards a pending raster prefix when appearance changes before its late SDK callback', async () => {
     const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic, erase] };
@@ -426,23 +422,32 @@ describe('mounted canonical output identity', () => {
     await expect(refused).resolves.toContain('changed');
   });
 
-  it('keeps white paper and page outlines in picture output only', async () => {
-    const drawing = { ...emptyDrawing(0, 'flower'), strokes: [marker] };
-    await surface(drawing);
-    const { promise, release } = await beginOutput(drawing, 'capturePng');
-    await frames();
-    expect(host.querySelector('[data-paper-fill]')).toBeNull();
-    await png(0, 'transparent-ink');
-    expect(host.querySelector('[data-paper-fill]')).not.toBeNull();
-    expect(host.querySelectorAll('[data-page="flower"]')).toHaveLength(2);
-    expect(state.captures).toHaveLength(1);
-    await act(async () => host.querySelector('[data-output-image]').click());
-    await frames();
-    expect(state.captures[1]).toMatchObject({ width: 1024, height: 768, viewBox: '0 0 1024 768' });
-    await png(1, 'paper-ink-outline');
-    await expect(promise).resolves.toBe('paper-ink-outline');
-    release();
-  });
+  it.each(['light', 'dark'])(
+    'uses resolved %s paper and page outlines only in picture output',
+    async (preference) => {
+      const drawing = { ...emptyDrawing(0, 'flower'), strokes: [marker] };
+      await surface(drawing, preference);
+      const { promise, release } = await beginOutput(drawing, 'capturePng');
+      await frames();
+      expect(host.querySelector('[data-paper-fill]')).toBeNull();
+      await png(0, 'transparent-ink');
+      expect(host.querySelector('[data-paper-fill]').dataset.paperFill).toBe(
+        preference === 'dark' ? '#211f29' : '#fcfbf8'
+      );
+      expect(host.querySelectorAll('[data-page="flower"]')).toHaveLength(2);
+      expect(state.captures).toHaveLength(1);
+      await act(async () => host.querySelector('[data-output-image]').click());
+      await frames();
+      expect(state.captures[1]).toMatchObject({
+        width: 1024,
+        height: 768,
+        viewBox: '0 0 1024 768',
+      });
+      await png(1, 'paper-ink-outline');
+      await expect(promise).resolves.toBe('paper-ink-outline');
+      release();
+    }
+  );
 
   it('cancels an unmounted output owner and refuses its callback after a new screen mounts', async () => {
     const drawing = { ...emptyDrawing(), strokes: [marker] };

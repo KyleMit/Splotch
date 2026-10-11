@@ -1,3 +1,8 @@
+import {
+  DEFAULT_APPEARANCE,
+  isAppearancePreference,
+  type AppearancePreference,
+} from './appearance';
 import { DEFAULT_STROKE_WIDTH, isStrokeWidth, type StrokeWidth } from '../drawing/strokeWidth';
 import {
   DEFAULT_COLOR_SETTINGS,
@@ -11,10 +16,18 @@ import {
 
 export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
 type ColorSettings = Readonly<{ selectedColor: PaintColor; customColors: readonly CustomColor[] }>;
-type Choices = WidthSettings & ColorSettings & Readonly<{ soundEnabled: boolean }>;
-export type SoundSettings = Choices & Readonly<{ version: 3 }>;
+type Choices = WidthSettings &
+  ColorSettings &
+  Readonly<{ soundEnabled: boolean; appearance: AppearancePreference }>;
+export type SoundSettings = Choices & Readonly<{ version: 4 }>;
 export type SoundSettingsState =
-  | (WidthSettings & ColorSettings & { status: 'loading'; soundEnabled: false; message: string })
+  | (WidthSettings &
+      ColorSettings & {
+        status: 'loading';
+        soundEnabled: false;
+        appearance: AppearancePreference;
+        message: string;
+      })
   | (Choices & { status: 'saving'; message: string })
   | (Choices & { status: 'ready'; saved: boolean; message: string });
 export type SoundSettingsStorage = {
@@ -42,7 +55,7 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
     typeof value !== 'object' ||
     Array.isArray(value) ||
     !('version' in value) ||
-    (value.version !== 1 && value.version !== 2 && value.version !== 3) ||
+    (value.version !== 1 && value.version !== 2 && value.version !== 3 && value.version !== 4) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
@@ -50,10 +63,11 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   if (value.version === 1) {
     canonical({ version: 1, soundEnabled: value.soundEnabled }, snapshot);
     return {
-      version: 3,
+      version: 4,
       soundEnabled: value.soundEnabled,
       ...DEFAULT_WIDTH_SETTINGS,
       ...DEFAULT_COLOR_SETTINGS,
+      appearance: DEFAULT_APPEARANCE,
     };
   }
   if (
@@ -70,10 +84,10 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   };
   if (value.version === 2) {
     canonical({ version: 2, ...widths }, snapshot);
-    return { version: 3, ...widths, ...DEFAULT_COLOR_SETTINGS };
+    return { version: 4, ...widths, ...DEFAULT_COLOR_SETTINGS, appearance: DEFAULT_APPEARANCE };
   }
   if (
-    value.version !== 3 ||
+    (value.version !== 3 && value.version !== 4) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -84,20 +98,25 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
     (isCustomColor(value.selectedColor) && !value.customColors.includes(value.selectedColor))
   )
     throw new Error('Paint settings are invalid.');
-  return canonical(
-    { version: 3, ...widths, selectedColor: value.selectedColor, customColors: value.customColors },
-    snapshot
-  );
+  const colors = { selectedColor: value.selectedColor, customColors: value.customColors };
+  if (value.version === 3) {
+    canonical({ version: 3, ...widths, ...colors }, snapshot);
+    return { version: 4, ...widths, ...colors, appearance: DEFAULT_APPEARANCE };
+  }
+  if (!('appearance' in value) || !isAppearancePreference(value.appearance))
+    throw new Error('Appearance choice is invalid.');
+  return canonical({ version: 4, ...widths, ...colors, appearance: value.appearance }, snapshot);
 }
 
 function snapshot(state: Choices): SoundSettings {
   return {
-    version: 3,
+    version: 4,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
     selectedColor: state.selectedColor,
     customColors: state.customColors,
+    appearance: state.appearance,
   };
 }
 
@@ -110,6 +129,7 @@ export function createSoundSettings(
     soundEnabled: false,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
+    appearance: DEFAULT_APPEARANCE,
     message: '',
   };
   let disposed = false;
@@ -143,10 +163,11 @@ export function createSoundSettings(
         const settings =
           stored === null
             ? {
-                version: 3,
+                version: 4,
                 soundEnabled: DEFAULT_SOUND_ENABLED,
                 ...DEFAULT_WIDTH_SETTINGS,
                 ...DEFAULT_COLOR_SETTINGS,
+                appearance: DEFAULT_APPEARANCE,
               }
             : parseSoundSettings(stored);
         const { version: _version, ...choices } = settings;
@@ -158,9 +179,10 @@ export function createSoundSettings(
           soundEnabled: false,
           ...DEFAULT_WIDTH_SETTINGS,
           ...DEFAULT_COLOR_SETTINGS,
+          appearance: DEFAULT_APPEARANCE,
           saved: false,
           message:
-            'Drawing settings could not be read. Sound is off. Width and paint choices work for this session. Choose your settings and retry saving.',
+            'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.',
         });
       }
     },
@@ -197,6 +219,15 @@ export function createSoundSettings(
         return;
       }
       await persist({ ...snapshot(state), ...choices });
+    },
+    async setAppearance(appearance: AppearancePreference) {
+      if (disposed || state.status !== 'ready') return;
+      if (!isAppearancePreference(appearance)) throw new Error('Appearance choice is invalid.');
+      if (readFailed) {
+        publish({ ...state, appearance });
+        return;
+      }
+      await persist({ ...snapshot(state), appearance });
     },
     async retrySave() {
       if (disposed || state.status !== 'ready' || state.saved) return;

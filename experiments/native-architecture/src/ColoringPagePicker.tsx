@@ -1,16 +1,12 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useDrawingAppearance } from './drawing/DrawingAppearance';
+import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearance';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { PAPER_HEIGHT, PAPER_WIDTH } from './drawing/model';
 import { InkAppearanceScope } from './drawing/InkAppearance';
 import { PageOutline } from './drawing/PageOutline';
 import { COLORING_PAGES, PAGE_IDS, type PageId } from './drawing/pages';
-import {
-  DRAWING_SCALE,
-  DRAWING_SCRIM,
-  DRAWING_THEME,
-  PAPER_THEMES,
-  TOUCH_TARGET,
-} from './drawing/theme';
+import { DRAWING_SCALE, DRAWING_SCRIM, PAPER_THEMES, TOUCH_TARGET } from './drawing/theme';
 
 const PICKER_MAX_WIDTH_PX = 512;
 const TILE_MIN_WIDTH_PX = 132;
@@ -25,7 +21,8 @@ export function ColoringPagePicker({
   onChoose: (pageId: PageId) => void;
   onClose: () => void;
 }) {
-  const theme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingAppearance();
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -84,57 +81,59 @@ export function ColoringPagePicker({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: DRAWING_SCRIM,
-    padding: DRAWING_SCALE.space4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    width: '100%',
-    maxWidth: PICKER_MAX_WIDTH_PX,
-    maxHeight: '90%',
-    backgroundColor: DRAWING_THEME.surface,
-    padding: DRAWING_SCALE.space4,
-    borderRadius: DRAWING_SCALE.radiusLg,
-    gap: DRAWING_SCALE.space3,
-  },
-  title: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: DRAWING_SCALE.fontSizeXl,
-    fontWeight: DRAWING_SCALE.fontWeightBold,
-  },
-  help: { color: DRAWING_THEME.text, fontSize: DRAWING_SCALE.fontSizeSm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: DRAWING_SCALE.space3 },
-  tile: {
-    flexBasis: '46%',
-    flexGrow: 1,
-    minWidth: TILE_MIN_WIDTH_PX,
-    minHeight: TOUCH_TARGET,
-    padding: DRAWING_SCALE.space2,
-    borderRadius: DRAWING_SCALE.radiusMd,
-    borderWidth: TILE_SELECTED_BORDER_PX,
-    borderColor: DRAWING_THEME.borderWarm,
-    backgroundColor: DRAWING_THEME.paper,
-    gap: DRAWING_SCALE.space1,
-  },
-  selectedTile: { borderColor: DRAWING_THEME.brandSolid, backgroundColor: DRAWING_THEME.brandWash },
-  preview: { width: '100%', aspectRatio: PAPER_WIDTH / PAPER_HEIGHT },
-  label: {
-    color: DRAWING_THEME.textStrong,
-    fontSize: DRAWING_SCALE.fontSizeMd,
-    fontWeight: DRAWING_SCALE.fontWeightSemibold,
-  },
-  selection: { color: DRAWING_THEME.textSoft, fontSize: DRAWING_SCALE.fontSizeSm },
-  close: {
-    minHeight: TOUCH_TARGET,
-    borderRadius: DRAWING_SCALE.radiusMd,
-    borderWidth: 1,
-    borderColor: DRAWING_THEME.borderWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { backgroundColor: DRAWING_THEME.brandWash },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: DRAWING_SCRIM,
+      padding: DRAWING_SCALE.space4,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    card: {
+      width: '100%',
+      maxWidth: PICKER_MAX_WIDTH_PX,
+      maxHeight: '90%',
+      backgroundColor: palette.surface,
+      padding: DRAWING_SCALE.space4,
+      borderRadius: DRAWING_SCALE.radiusLg,
+      gap: DRAWING_SCALE.space3,
+    },
+    title: {
+      color: palette.textStrong,
+      fontSize: DRAWING_SCALE.fontSizeXl,
+      fontWeight: DRAWING_SCALE.fontWeightBold,
+    },
+    help: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeSm },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: DRAWING_SCALE.space3 },
+    tile: {
+      flexBasis: '46%',
+      flexGrow: 1,
+      minWidth: TILE_MIN_WIDTH_PX,
+      minHeight: TOUCH_TARGET,
+      padding: DRAWING_SCALE.space2,
+      borderRadius: DRAWING_SCALE.radiusMd,
+      borderWidth: TILE_SELECTED_BORDER_PX,
+      borderColor: palette.borderWarm,
+      backgroundColor: palette.paper,
+      gap: DRAWING_SCALE.space1,
+    },
+    selectedTile: { borderColor: palette.brandSolid, backgroundColor: palette.brandWash },
+    preview: { width: '100%', aspectRatio: PAPER_WIDTH / PAPER_HEIGHT },
+    label: {
+      color: palette.textStrong,
+      fontSize: DRAWING_SCALE.fontSizeMd,
+      fontWeight: DRAWING_SCALE.fontWeightSemibold,
+    },
+    selection: { color: palette.textSoft, fontSize: DRAWING_SCALE.fontSizeSm },
+    close: {
+      minHeight: TOUCH_TARGET,
+      borderRadius: DRAWING_SCALE.radiusMd,
+      borderWidth: 1,
+      borderColor: palette.borderWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pressed: { backgroundColor: palette.brandWash },
+  })
+);

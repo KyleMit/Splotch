@@ -1,7 +1,12 @@
+import {
+  createDrawingStyles,
+  useDrawingStyles,
+  useDrawingTheme,
+} from './drawing/DrawingAppearance';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { useDrawingScreen } from './useDrawingScreen';
-import { CONTROL_GAP, DRAWING_THEME } from './drawing/theme';
+import { CONTROL_GAP } from './drawing/theme';
 import { PngRecoveryNotice } from './export/PngRecoveryNotice';
 
 function useIdleMessage(message: string, drawing: boolean) {
@@ -20,13 +25,15 @@ export function DrawingStatus({
   soundMessage: string;
   blocked: boolean;
 }) {
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingTheme();
   const visibleNotice = useIdleMessage(screen.notice, screen.drawing);
   const visibleSoundMessage = useIdleMessage(soundMessage, screen.drawing);
   return (
     <>
       <View style={styles.status}>
         {screen.busy && !screen.recovery.failed ? (
-          <ActivityIndicator color={DRAWING_THEME.brandSolid} />
+          <ActivityIndicator color={theme.brandSolid} />
         ) : null}
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {visibleNotice}
@@ -54,13 +61,15 @@ export function DrawingStatus({
   );
 }
 
-const styles = StyleSheet.create({
-  status: {
-    minHeight: 32,
-    flexDirection: 'row',
-    gap: CONTROL_GAP,
-    alignItems: 'center',
-    maxWidth: 1024,
-  },
-  notice: { fontSize: 15, color: DRAWING_THEME.text, flexShrink: 1 },
-});
+const themedStyles = createDrawingStyles((palette) =>
+  StyleSheet.create({
+    status: {
+      minHeight: 32,
+      flexDirection: 'row',
+      gap: CONTROL_GAP,
+      alignItems: 'center',
+      maxWidth: 1024,
+    },
+    notice: { fontSize: 15, color: palette.text, flexShrink: 1 },
+  })
+);

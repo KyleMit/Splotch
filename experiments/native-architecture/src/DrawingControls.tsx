@@ -5,7 +5,7 @@ import type { useDrawingSound } from './useDrawingSound';
 import { BRUSHES, BRUSH_ORDER, type Brush } from './drawing/brushes';
 import { COLORING_PAGES } from './drawing/pages';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
-import { drawingScreenStyles as styles } from './drawing/drawingScreenStyles';
+import { useDrawingScreenStyles } from './drawing/drawingScreenStyles';
 
 export function Action({
   label,
@@ -22,6 +22,7 @@ export function Action({
   accessibilityLabel?: string;
   openerRef?: RefObject<View | null>;
 }) {
+  const styles = useDrawingScreenStyles();
   return (
     <Pressable
       ref={openerRef}
@@ -77,6 +78,7 @@ function DrawingActions({
   exportPicture: () => void;
   openSettings: () => void;
 }) {
+  const styles = useDrawingScreenStyles();
   return (
     <View style={styles.toolbar}>
       <Action
@@ -115,6 +117,7 @@ export function DrawingMenu({
   visible: boolean;
   onDismiss: () => void;
 }) {
+  const styles = useDrawingScreenStyles();
   const { brush } = screen;
   const disabled = screen.disabled || !visible;
   return (

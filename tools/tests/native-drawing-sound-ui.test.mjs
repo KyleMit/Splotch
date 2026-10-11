@@ -2,6 +2,7 @@
 import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDrawingAppearance } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { useDrawingSound } from '../../experiments/native-architecture/src/useDrawingSound.ts';
 const sound = vi.hoisted(() => ({
@@ -9,6 +10,7 @@ const sound = vi.hoisted(() => ({
   write: vi.fn(),
   load: vi.fn(),
   current: 'active',
+  scheme: 'light',
   listeners: new Set(),
   remove: vi.fn(),
   subscribe: vi.fn(),
@@ -35,7 +37,12 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   exportPng: vi.fn(),
 }));
 vi.mock('react-native', () => {
-  const container = ({ children }) => createElement('div', null, children);
+  const container = ({ children, style }) =>
+    createElement(
+      'div',
+      { 'data-background': Object.assign({}, ...[style].flat().filter(Boolean)).backgroundColor },
+      children
+    );
   return {
     AppState: {
       get currentState() {
@@ -49,7 +56,7 @@ vi.mock('react-native', () => {
       addEventListener: () => ({ remove() {} }),
     },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
-    useColorScheme: () => 'light',
+    useColorScheme: () => sound.scheme,
     Platform: { OS: 'android' },
     ActivityIndicator: () => null,
     Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
@@ -89,6 +96,7 @@ vi.mock('react-native-svg', () => ({
 vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', () => ({
   DrawingSurface: forwardRef(({ sound }, ref) => {
     const contact = useRef(null);
+    const appearance = useDrawingAppearance();
     useImperativeHandle(
       ref,
       () => ({
@@ -99,7 +107,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
     );
     return createElement(
       'div',
-      null,
+      { 'data-paper-theme': appearance },
       createElement(
         'button',
         {
@@ -156,6 +164,9 @@ async function mount(component = DrawingScreen) {
       await this.click('Settings');
       expect(this.switch()).not.toBeNull();
     },
+    async refresh() {
+      await act(async () => root.render(createElement(component)));
+    },
     close() {
       if (closed) return;
       closed = true;
@@ -173,6 +184,7 @@ async function appState(state) {
 beforeEach(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   sound.current = 'active';
+  sound.scheme = 'light';
   sound.listeners.clear();
   sound.remove.mockReset();
   sound.subscribe.mockReset().mockImplementation((_name, listener) => {
@@ -196,6 +208,40 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('live drawing sound owner and Settings screen', () => {
+  it('persists real appearance controls, themes chrome immediately after failure, retries and restores on remount', async () => {
+    let stored = '{"version":1,"soundEnabled":false}';
+    sound.read.mockImplementation(async () => stored);
+    sound.write.mockImplementation(async (snapshot) => {
+      stored = snapshot;
+    });
+    await mount();
+    await ui.settings();
+    sound.write.mockRejectedValueOnce(new Error('disk full'));
+    await ui.click('Dark appearance');
+    expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('dark');
+    expect(ui.container.querySelector('[data-background="#211f29"]')).not.toBeNull();
+    expect(ui.dialog().textContent).toContain('could not be saved');
+    expect(JSON.parse(sound.write.mock.calls.at(-1)[0])).toMatchObject({
+      appearance: 'dark',
+      soundEnabled: false,
+    });
+    await ui.click('Retry saving');
+    ui.close();
+    await mount();
+    expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('dark');
+    await ui.settings();
+    await ui.click('Light appearance');
+    sound.scheme = 'dark';
+    await ui.refresh();
+    expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('light');
+    await ui.click('System appearance');
+    expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('dark');
+    sound.scheme = 'light';
+    await ui.refresh();
+    expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('light');
+    expect(JSON.parse(stored).appearance).toBe('system');
+  });
+
   it('routes start, sample and end from the screen to the actual controller', async () => {
     sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
     await mount();
@@ -217,7 +263,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":3,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
+      '{"version":4,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -230,7 +276,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":3,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[]}'
+      '{"version":4,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system"}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });
@@ -249,16 +295,15 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(loop.setVolume).toHaveBeenLastCalledWith(0.2);
     expect(ui.container.textContent).not.toContain('Drawing sound is unavailable');
   });
-  it('disables the sheet while hydration or a write is pending', async () => {
+  it('waits for settings before the first usable drawing frame and blocks writes while saving', async () => {
     const read = pending();
     sound.read.mockReturnValueOnce(read.promise);
     await mount();
-    await ui.click('Start stroke');
+    expect(ui.container.textContent).toContain('Loading drawing settings');
+    expect(ui.container.querySelector('button')).toBeNull();
     expect(sound.load).not.toHaveBeenCalled();
-    await ui.settings();
-    expect(ui.switch().disabled).toBe(true);
-    expect(ui.dialog().textContent).toContain('Loading settings');
     await act(async () => read.resolve('{"version":1,"soundEnabled":false}'));
+    await ui.settings();
     const write = pending();
     sound.write.mockReturnValueOnce(write.promise);
     await ui.click('Drawing sound');
