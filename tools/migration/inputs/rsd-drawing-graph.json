@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "actualFiles": [
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 534056,
+      "sha256": "c2f2fb7ed5011bd95132a9fe6241ad54b858e27730e2e2a7a07e1ff77bf26ab4"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "bytes": 5238,
+      "sha256": "fff15b66c49e48573855adabc489975fc43363ac2698f7959d7b7bfe9bfa5a43"
+    },
+    {
+      "path": "package.json",
+      "bytes": 124164,
+      "sha256": "ac34983e462fa4dbdf9f35adf5b3159463ab7e5b9079b6bb077452287f5e24c2"
+    },
+    {
+      "path": "experiments/native-architecture/package.json",
+      "bytes": 540,
+      "sha256": "7722ac2e24aaa93c645b270831898fc0ac0cb26c5ed0f0c77c3c16ee620b406e"
+    },
+    {
+      "path": "experiments/native-architecture/alignment.json",
+      "bytes": 1142,
+      "sha256": "e131da6ca50e2d95df31fcea9d9ba41de40f3b21f8c39deafec388d41200fe7f"
+    },
+    {
+      "path": "patches/react-strict-dom@0.0.54.patch",
+      "bytes": 2096,
+      "sha256": "636e0cb6378e8facf0b0eab137476d83a33f550633e9623c44f962e70118c988"
+    },
+    {
+      "path": "patches/@stylexjs__stylex@0.15.4.patch",
+      "bytes": 357,
+      "sha256": "d96eec90bde11ca281efe27b04ab11688ccd2e9902f01497f499778b2a5078d5"
+    }
+  ],
+  "baselineFiles": {
+    "pnpm-lock.yaml": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/baseline/pnpm-lock.yaml.txt",
+      "bytes": 529961,
+      "sha256": "45d731eb5385e67970e2ec59941de4a668aeb78a67eb68eda023dc6d652a16a2"
+    },
+    "pnpm-workspace.yaml": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/baseline/pnpm-workspace.yaml.txt",
+      "bytes": 4947,
+      "sha256": "7d4490e0657569fc25752b4780d94e4b9b2ba51d47d89f2df4350ab2aee02734"
+    },
+    "package.json": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/baseline/package.json.txt",
+      "bytes": 123360,
+      "sha256": "2f34502e3f9f63adcec04e04cb94387f1a282f6e4d797861351ba17b3db831fc"
+    },
+    "experiments/native-architecture/package.json": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/baseline/experiments/native-architecture/package.json.txt",
+      "bytes": 506,
+      "sha256": "9309cd353cb1a1844ac1f729c3efb6c6078573ee5020d06a3f839b0934be5659"
+    },
+    "experiments/native-architecture/alignment.json": {
+      "path": "docs/migration/evidence/rsd-drawing-graph-20261010/baseline/experiments/native-architecture/alignment.json.txt",
+      "bytes": 1108,
+      "sha256": "f967b48113d287e953d7e122554806f2ad79ed8d3c3cd86531a970b7b7991e65"
+    }
+  },
+  "approvedLock": {
+    "path": "docs/migration/evidence/rsd-drawing-graph-20261010/approved-pnpm-lock.yaml.txt",
+    "bytes": 534056,
+    "sha256": "c2f2fb7ed5011bd95132a9fe6241ad54b858e27730e2e2a7a07e1ff77bf26ab4"
+  },
+  "archiveReuse": {
+    "path": "docs/migration/evidence/rsd-drawing-graph-20261010/archive-reuse.json",
+    "bytes": 27294,
+    "sha256": "31020b89af376e2676024822d16c43de957b21123e540131183336c3a5e438f8"
+  },
+  "rootApproval": {
+    "path": "docs/migration/evidence/rsd-drawing-graph-20261010/root-metadata-approval.json",
+    "bytes": 1849,
+    "sha256": "6bec047ea543b92946f1d6c7f01141f82422699d143a778cfa80b3afa9ae2421"
+  },
+  "wholeMetadataSHA256": "e3bce10ef72687437b83d936a8dfad03d472b0f9ed6a46021fa68a8e910285c0",
+  "addedArtifacts": [
+    "@dual-bundle/import-meta-resolve@4.2.1",
+    "@stylexjs/babel-plugin@0.15.4",
+    "@stylexjs/stylex@0.15.4",
+    "css-mediaquery@0.1.2",
+    "postcss-react-strict-dom@0.0.54",
+    "react-strict-dom@0.0.54",
+    "styleq@0.2.1"
+  ],
+  "overrides": {
+    "react-strict-dom>@stylexjs/stylex": "0.15.4",
+    "react-strict-dom>@stylexjs/babel-plugin": "0.15.4",
+    "postcss-react-strict-dom>@stylexjs/babel-plugin": "0.15.4"
+  },
+  "patches": {
+    "react-strict-dom@0.0.54": {
+      "path": "patches/react-strict-dom@0.0.54.patch",
+      "sha256": "636e0cb6378e8facf0b0eab137476d83a33f550633e9623c44f962e70118c988"
+    },
+    "@stylexjs/stylex@0.15.4": {
+      "path": "patches/@stylexjs__stylex@0.15.4.patch",
+      "sha256": "d96eec90bde11ca281efe27b04ab11688ccd2e9902f01497f499778b2a5078d5"
+    }
+  },
+  "scope": "Exact RSD JS/compiler/private importer/declaration-patch delta to original authenticated bdb graph; no installed/native/product acceptance",
+  "rootArchiveApproval": {
+    "path": "docs/migration/evidence/rsd-drawing-graph-20261010/root-archive-approval.json",
+    "bytes": 2351,
+    "sha256": "bcaee19761a61e2354c2f0c66de970330e29b4c64c68b0cc1264a048b8da38de"
+  }
+}

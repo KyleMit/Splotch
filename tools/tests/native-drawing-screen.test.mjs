@@ -3,6 +3,7 @@ import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
+import { PAPER_THEMES } from '../../experiments/native-architecture/src/drawing/theme.ts';
 import {
   emptyDrawing,
   parseDrawing,
@@ -38,6 +39,7 @@ beforeEach(async () => {
   files.lock.mockReset().mockReturnValue(() => {});
   files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
   files.settingsWrite.mockReset().mockResolvedValue(undefined);
+  files.scheme = 'light';
   screen = createScreen();
   await screen.mount();
 });
@@ -272,8 +274,11 @@ describe('saved-picture failure feedback', () => {
       await screen.click('Open picture from Good picture');
       expect(screen.dialog()).toBeNull();
       expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+      const openedNotice = 'Picture opened. Undo returns to your previous picture.';
+      expect(screen.container.textContent).toContain(openedNotice);
       await screen.click('Undo');
       expect(screen.paper()).toBe(original);
+      expect(screen.container.textContent).not.toContain(openedNotice);
       await menuClick('Pictures');
       expect(screen.dialog().querySelector('[role="alert"]')).toBeNull();
     }
@@ -360,14 +365,29 @@ describe('coloring-page controls through the real drawing screen', () => {
     const original = screen.paper();
     await menuClick('Coloring pages');
     const choices = [...screen.dialog().querySelectorAll('[role="radio"]')];
+    expect(screen.dialog().textContent).toContain(
+      'Your drawing stays. Undo brings the last page back.'
+    );
     expect(choices.map((choice) => choice.getAttribute('aria-label'))).toEqual([
       'Blank paper',
       'Sunshine',
       'Garden flower',
       'Little turtle',
+      'Cat',
+      'Cow',
+      'Dog',
+      'Duck',
+      'Horse',
+      'Pig',
     ]);
     expect(choices.map((choice) => choice.getAttribute('aria-checked'))).toEqual([
       'true',
+      'false',
+      'false',
+      'false',
+      'false',
+      'false',
+      'false',
       'false',
       'false',
       'false',
@@ -390,25 +410,34 @@ describe('coloring-page controls through the real drawing screen', () => {
     expect(screen.button('Undo').disabled).toBe(true);
   });
 
-  it('changes page and paint in one history entry and keeps same-page paint intact', async () => {
+  it('retains paint through one page-change history entry and keeps same-page paint intact', async () => {
     await drawStroke();
     const original = screen.paper();
     await menuClick('Coloring pages');
     await screen.click('Garden flower');
     expect(screen.dialog()).toBeNull();
-    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
+    const paged = { ...JSON.parse(original), pageId: 'flower' };
+    expect(JSON.parse(screen.paper())).toEqual(paged);
     expect(screen.container.textContent).toContain(
       'Garden flower ready. Undo brings your picture back.'
     );
+    await screen.click('Undo');
+    expect(screen.paper()).toBe(original);
+    expect(screen.container.textContent).not.toContain('Garden flower ready.');
+    expect(screen.button('Undo').disabled).toBe(false);
+    await menuClick('Coloring pages');
+    await screen.click('Garden flower');
+    expect(JSON.parse(screen.paper())).toEqual(paged);
     await drawStroke();
     const painted = screen.paper();
+    expect(JSON.parse(painted).strokes).toHaveLength(2);
     await menuClick('Coloring pages');
     expect(screen.button('Garden flower').getAttribute('aria-checked')).toBe('true');
     await screen.click('Garden flower');
     expect(screen.dialog()).toBeNull();
     expect(screen.paper()).toBe(painted);
     await screen.click('Undo');
-    expect(JSON.parse(screen.paper())).toEqual(emptyDrawing(0, 'flower'));
+    expect(JSON.parse(screen.paper())).toEqual(paged);
     await screen.click('Undo');
     expect(screen.paper()).toBe(original);
   });
@@ -446,10 +475,28 @@ describe('coloring-page controls through the real drawing screen', () => {
       expect(screen.paper()).toBe(painted);
       await menuClick('Coloring pages');
       await screen.click('Blank paper');
-      expect(JSON.parse(screen.paper())).toEqual(emptyDrawing());
+      expect(JSON.parse(screen.paper())).toEqual({ ...JSON.parse(painted), pageId: 'blank' });
       await screen.click('Undo');
       expect(screen.paper()).toBe(painted);
     },
     PNG_TIMEOUT_MS + SCREEN_SETUP_BUDGET_MS
   );
+
+  it('recodes the real open picker previews with the system theme and preserves ink', async () => {
+    await drawStroke();
+    const original = screen.paper();
+    await menuClick('Coloring pages');
+    for (const theme of ['light', 'dark']) {
+      files.scheme = theme;
+      await screen.mount();
+      const preview = screen.button('Sunshine').querySelector('svg');
+      expect(preview.querySelector('rect').getAttribute('fill')).toBe(PAPER_THEMES[theme].paper);
+      const outlines = [...preview.querySelectorAll('path')];
+      expect(outlines).toHaveLength(4);
+      expect(outlines.map((path) => path.getAttribute('stroke'))).toEqual(
+        Array(4).fill(PAPER_THEMES[theme].outline)
+      );
+      expect(screen.paper()).toBe(original);
+    }
+  });
 });

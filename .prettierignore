@@ -53,3 +53,9 @@ tools/asset-gen/ideas-exploration/ideas-review.html
 # dense form, and reformatting it would roughly quadruple every file for frame
 # tables no human reads. The README beside them is Markdown and dprint's to own.
 perf-profiles/evidence/**/*.json
+
+# Frozen migration archive and lock receipts retain their producing serializers; recorded byte digests bind their evidence.
+docs/migration/evidence/rsd-drawing-graph-20261010/archive-reuse.json
+docs/migration/evidence/rsd-safe-insets-20261011/archive-reconciliation.json
+docs/migration/evidence/rsd-safe-insets-20261011/root-lock-approval.json
+docs/migration/evidence/rsd-safe-insets-20261011/whole-lock-metadata.json

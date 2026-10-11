@@ -13,6 +13,7 @@ import {
 const native = vi.hoisted(() => ({ handlers: null, paper: null, layout: null }));
 
 vi.mock('react-native', () => ({
+  useColorScheme: () => 'light',
   findNodeHandle: (target) => target,
   PanResponder: {
     create(handlers) {

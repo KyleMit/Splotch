@@ -1,0 +1,58 @@
+{
+  "startedAt": "2026-10-11T02:18:58.399118+00:00",
+  "scope": "Fixed public npm package5.7.0 metadata/archive only; no credentials/project contents sent, installation, graph mutation, script execution, CocoaPods or Maven access.",
+  "status": "PASS_PUBLICATION_READ",
+  "metadata": {
+    "url": "https://registry.npmjs.org/react-native-safe-area-context/5.7.0",
+    "finalURL": "https://registry.npmjs.org/react-native-safe-area-context/5.7.0",
+    "status": 200,
+    "bytes": 4825,
+    "sha256": "6ba630b399be32168972f3578688044e16fa351865693de15bfbc5a4a5cb913c"
+  },
+  "archive": {
+    "url": "https://registry.npmjs.org/react-native-safe-area-context/-/react-native-safe-area-context-5.7.0.tgz",
+    "finalURL": "https://registry.npmjs.org/react-native-safe-area-context/-/react-native-safe-area-context-5.7.0.tgz",
+    "status": 200,
+    "bytes": 49992,
+    "sha256": "35830be73b2864a1edb4b40165c846f447f635e498e299ce652e00244f14fa40"
+  },
+  "integrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==",
+  "packageLicense": "MIT",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "dependencies": null,
+  "scripts": {
+    "start": "react-native start",
+    "test": "yarn format:check && yarn validate:eslint && yarn validate:typescript && yarn validate:jest",
+    "validate:eslint": "eslint \"src/**/*.{js,ts,tsx}\" \"example/**/*.{js,ts,tsx}\"",
+    "validate:typescript": "tsc --project ./ --noEmit",
+    "validate:jest": "jest",
+    "format:prettier:check": "prettier \"src/**/*.{js,ts,tsx}\" \"example/**/*.{js,ts,tsx}\" --check",
+    "format:prettier:write": "yarn format:prettier:check --write",
+    "format:clang:check": "clang-format --dry-run --Werror --glob='{ios,android/src,common}/**/*.{h,cpp,m,mm}'",
+    "format:clang:write": "clang-format -i --glob='{ios,android/src,common}/**/*.{h,hpp,cpp,m,mm}'",
+    "format:spotless:check": "cd android && ./gradlew spotlessCheck",
+    "format:spotless:write": "cd android && ./gradlew spotlessApply",
+    "format:check": "yarn format:prettier:check && yarn format:clang:check && yarn format:spotless:check",
+    "format:write": "yarn format:prettier:write && yarn format:clang:write && yarn format:spotless:write",
+    "release": "release-it",
+    "prepare": "bob build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AppAndFlow/react-native-safe-area-context.git"
+  },
+  "regularMembers": 176,
+  "expandedBytes": 230675,
+  "selectedNativeSourcePaths": [
+    "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProvider.kt",
+    "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProviderManager.kt",
+    "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaUtils.kt",
+    "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt"
+  ],
+  "licenseText": "MIT License\n\nCopyright (c) 2019 Th3rd Wave\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+  "terminalAt": "2026-10-11T02:18:58.721655+00:00",
+  "elapsedSeconds": 0.33408766705542803
+}

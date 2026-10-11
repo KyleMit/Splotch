@@ -1,36 +1,25 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  copyFileSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { stringify } from 'yaml';
 import { readLockFile } from '../lib/lock-artifacts.mjs';
 import { readPolicyYaml } from '../lib/topology-policy.mjs';
 import { readJointNativeProjection, qualifyJointNativeInputs } from '../lib/native-joint-graph.mjs';
 import { projectSvgBackdropPatch } from '../lib/native-svg-backdrop-patch.mjs';
+import { copyJointGraphFixture } from './joint-graph-fixtures.mjs';
 
 const root = join(import.meta.dirname, '../../..');
 const inputPath = 'tools/migration/inputs/native-joint-graph.json';
 const input = JSON.parse(readFileSync(join(root, inputPath)));
 const fixtures = [];
+const JOINT_GRAPH_RESTORATION_TIMEOUT_MS = 15_000;
 function fixture() {
   const path = mkdtempSync(join(tmpdir(), 'splotch-joint-graph-'));
   fixtures.push(path);
-  for (const name of [
-    inputPath,
-    'tools/migration/inputs/native-svg-backdrop-patch.json',
-    ...input.files.map(({ path }) => path),
-  ]) {
-    mkdirSync(dirname(join(path, name)), { recursive: true });
-    copyFileSync(join(root, name), join(path, name));
-  }
+  copyJointGraphFixture(root, path);
+  expect(() => readJointNativeProjection(path)).not.toThrow();
   return path;
 }
 afterEach(() => fixtures.splice(0).forEach((path) => rmSync(path, { recursive: true })));
@@ -43,8 +32,8 @@ describe('the consumed whole-joint graph boundary before the Audio projection', 
     expect(joint.view.lock).toEqual(readLockFile(join(root, input.audioLock)));
     expect(joint.view.workspace).toEqual(readPolicyYaml(join(root, input.audioWorkspace)));
     expect(joint.view.source).toEqual({
-      lockSha256: input.files.find(({ path }) => path === 'pnpm-lock.yaml').sha256,
-      workspaceSha256: input.files.find(({ path }) => path === 'pnpm-workspace.yaml').sha256,
+      lockSha256: createHash('sha256').update(lock).digest('hex'),
+      workspaceSha256: createHash('sha256').update(workspace).digest('hex'),
     });
     expect(readFileSync(join(root, 'pnpm-lock.yaml'))).toEqual(lock);
     expect(readFileSync(join(root, 'pnpm-workspace.yaml'))).toEqual(workspace);
@@ -84,41 +73,59 @@ describe('the consumed whole-joint graph boundary before the Audio projection', 
   ])
     it(`refuses ${name} before resolving any installed package or entering Audio`, () => {
       const path = fixture();
+      const original = readFileSync(join(path, 'pnpm-lock.yaml'));
       const lock = readLockFile(join(path, 'pnpm-lock.yaml'));
+      expect(() => readJointNativeProjection(path)).not.toThrow();
       mutate(lock);
       writeFileSync(join(path, 'pnpm-lock.yaml'), stringify(lock));
       expect(() => qualifyJointNativeInputs(path)).toThrow(
         'Unqualified joint input: pnpm-lock.yaml'
       );
+      writeFileSync(join(path, 'pnpm-lock.yaml'), original);
+      expect(() => readJointNativeProjection(path)).not.toThrow();
     });
   it('refuses an extra workspace even without an installed graph', () => {
     const path = fixture();
+    const original = readFileSync(join(path, 'pnpm-workspace.yaml'));
     const workspace = readPolicyYaml(join(path, 'pnpm-workspace.yaml'));
+    expect(() => readJointNativeProjection(path)).not.toThrow();
     workspace.packages.push('foreign');
     writeFileSync(join(path, 'pnpm-workspace.yaml'), stringify(workspace));
     expect(() => qualifyJointNativeInputs(path)).toThrow(
       'Unqualified joint input: pnpm-workspace.yaml'
     );
+    writeFileSync(join(path, 'pnpm-workspace.yaml'), original);
+    expect(() => readJointNativeProjection(path)).not.toThrow();
   });
-  it('refuses changed patch bytes, candidate roots and source aliases with exact restoration', () => {
-    const path = fixture();
-    for (const name of [
-      'patches/react-native-svg@15.15.4.patch',
-      'patches/expo-audio@57.0.5.patch',
-      'experiments/native-architecture/package.json',
-    ]) {
-      const target = join(path, name);
+  it(
+    'refuses changed patch bytes, candidate roots and source aliases with exact restoration',
+    () => {
+      const path = fixture();
+      for (const name of [
+        'patches/react-native-svg@15.15.4.patch',
+        'patches/expo-audio@57.0.5.patch',
+        'experiments/native-architecture/package.json',
+      ]) {
+        const target = join(path, name);
+        const bytes = readFileSync(target);
+        expect(() => readJointNativeProjection(path)).not.toThrow();
+        writeFileSync(target, Buffer.concat([bytes, Buffer.from('changed')]));
+        expect(() => readJointNativeProjection(path)).toThrow(`Unqualified joint input: ${name}`);
+        writeFileSync(target, bytes);
+        expect(() => readJointNativeProjection(path)).not.toThrow();
+      }
+      const target = join(path, 'pnpm-lock.yaml');
       const bytes = readFileSync(target);
-      writeFileSync(target, Buffer.concat([bytes, Buffer.from('changed')]));
-      expect(() => readJointNativeProjection(path)).toThrow(`Unqualified joint input: ${name}`);
+      expect(() => readJointNativeProjection(path)).not.toThrow();
+      rmSync(target);
+      symlinkSync(join(root, 'pnpm-lock.yaml'), target);
+      expect(() => readJointNativeProjection(path)).toThrow('independent regular file');
+      rmSync(target);
       writeFileSync(target, bytes);
       expect(() => readJointNativeProjection(path)).not.toThrow();
-    }
-    const target = join(path, 'pnpm-lock.yaml');
-    rmSync(target);
-    symlinkSync(join(root, 'pnpm-lock.yaml'), target);
-    expect(() => readJointNativeProjection(path)).toThrow('independent regular file');
-  });
+    },
+    JOINT_GRAPH_RESTORATION_TIMEOUT_MS
+  );
   it('independently refuses semantic extras even before using source identities', () => {
     const joint = readJointNativeProjection(root);
     const baseline = readLockFile(join(root, input.audioLock));
@@ -134,23 +141,27 @@ describe('the consumed whole-joint graph boundary before the Audio projection', 
         delete lock.patchedDependencies['react-native-svg@15.15.4'];
       },
     ]) {
-      const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
+      const lock = structuredClone(joint.rsd?.lock ?? readLockFile(join(root, 'pnpm-lock.yaml')));
       mutate(lock);
       expect(() =>
         projectSvgBackdropPatch(
           lock,
-          readPolicyYaml(join(root, 'pnpm-workspace.yaml')),
+          structuredClone(
+            joint.rsd?.workspace ?? readPolicyYaml(join(root, 'pnpm-workspace.yaml'))
+          ),
           baseline,
           workspace,
           joint.svg
         )
       ).toThrow();
     }
-    const changedWorkspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
+    const changedWorkspace = structuredClone(
+      joint.rsd?.workspace ?? readPolicyYaml(join(root, 'pnpm-workspace.yaml'))
+    );
     changedWorkspace.allowUnusedPatches = true;
     expect(() =>
       projectSvgBackdropPatch(
-        readLockFile(join(root, 'pnpm-lock.yaml')),
+        structuredClone(joint.rsd?.lock ?? readLockFile(join(root, 'pnpm-lock.yaml'))),
         changedWorkspace,
         baseline,
         workspace,

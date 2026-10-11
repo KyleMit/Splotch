@@ -96,13 +96,13 @@ describe('joint contact cohort canonical ownership', () => {
     input.start('b', 'Yellow', 'eraser', { x: 80, y: 90 }, drawing);
     const erasers = input.interrupt();
     const strokes = [...prefix, ...erasers];
-    const prepare = planInk(strokes, null, false);
+    const prepare = planInk(strokes, null);
     expect(prepare.prefix).toEqual(prefix);
     expect(prepare.needsCheckpoint).toBe(true);
     const checkpoint = { id: 1, strokes: prefix, base64: 'SDK fixture; no pixel claim' };
-    const plan = planInk(strokes, checkpoint, false);
+    const plan = planInk(strokes, checkpoint);
     expect(plan.strokes).toEqual(erasers);
     expect(plan.needsCheckpoint).toBe(false);
-    expect(planInk([...strokes, marker, ...erasers], checkpoint, false).needsCheckpoint).toBe(true);
+    expect(planInk([...strokes, marker, ...erasers], checkpoint).needsCheckpoint).toBe(true);
   });
 });

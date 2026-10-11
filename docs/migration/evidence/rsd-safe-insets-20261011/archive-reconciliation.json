@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "complete": true,
+  "inspectedArtifacts": 1,
+  "rows": [
+    {
+      "key": "react-native-safe-area-context@5.7.0",
+      "name": "react-native-safe-area-context",
+      "version": "5.7.0",
+      "integrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==",
+      "tarball": "https://registry.npmjs.org/react-native-safe-area-context/-/react-native-safe-area-context-5.7.0.tgz",
+      "os": null,
+      "cpu": null,
+      "libc": null,
+      "engines": null,
+      "unchangedBaselineArtifact": false,
+      "reachability": [
+        {
+          "importer": "experiments/native-architecture",
+          "group": "devDependencies",
+          "representativePath": [
+            "react-native-safe-area-context"
+          ],
+          "optionalPath": false
+        }
+      ],
+      "reachabilityScope": "one representative path per importer/group/optional-state; all lock artifacts retained, including unreachable",
+      "hooks": {
+        "prepare": "bob build"
+      },
+      "metadataHooks": {
+        "prepare": "bob build"
+      },
+      "registryIntegrity": "sha512-/9/MtQz8ODphjsLdZ+GZAIcC/RtoqW9EeShf7Uvnfgm/pzYrJ75y3PV/J1wuAV1T5Dye5ygq4EAW20RoBq0ABQ==",
+      "rootBindingGyp": false,
+      "rootHookFiles": [],
+      "archiveIdentityVerified": true,
+      "archiveIntegrityVerified": true,
+      "archiveSha256": "35830be73b2864a1edb4b40165c846f447f635e498e299ce652e00244f14fa40",
+      "archiveBytes": 49992,
+      "dependencies": {},
+      "optionalDependencies": {},
+      "bin": null,
+      "metadataSha256": "6ba630b399be32168972f3578688044e16fa351865693de15bfbc5a4a5cb913c",
+      "disposition": "registry-publication-only-no-execution-needed",
+      "prepareDisposition": "recorded; exact registry publication only; pnpm 11.22.0 runPostinstallHooks omits prepare",
+      "rootReviewed": true,
+      "freshArchiveAudit": false,
+      "memberCount": 176
+    }
+  ],
+  "memberManifest": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/archive-members.json",
+    "bytes": 30666,
+    "sha256": "84a4f9eb967b39ff8c6cb3ab626c220f538c26a2a51f22ad794e7f6b73cc6013"
+  },
+  "publication": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/publication-result.json",
+    "bytes": 4074,
+    "sha256": "59d40e82dabda57bfc3d1284d168b97b783d8f903198d0d81fb3667ca6645808"
+  },
+  "archivePath": "/private/tmp/splotch-safe-area-5-7-0-admission-2507/package.tgz",
+  "rootArchiveIdentity": {
+    "path": "docs/migration/evidence/rsd-safe-insets-20261011/root-source-archive-approval.json",
+    "bytes": 1927,
+    "sha256": "760345521256dac706d8516846d57d7ad5e5319c8998d4d0e75816f01af1d106"
+  },
+  "freshArchiveAudit": false,
+  "scope": "Exact closed Root2507/2508 member and archive provenance reconciliation only; no fresh payload audit."
+}

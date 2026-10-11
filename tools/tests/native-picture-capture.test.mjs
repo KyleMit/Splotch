@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, createRef, forwardRef, useImperativeHandle } from 'react';
+import { act, createElement, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RasterInk } from '../../experiments/native-architecture/src/drawing/RasterInk.tsx';
@@ -7,9 +7,14 @@ import { DrawingSurface } from '../../experiments/native-architecture/src/drawin
 import { PictureCapture } from '../../experiments/native-architecture/src/drawing/PictureCapture.tsx';
 import { createPngCapture } from '../../experiments/native-architecture/src/drawing/interactions.ts';
 import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
+import {
+  InkAppearanceScope,
+  useInkAppearance,
+} from '../../experiments/native-architecture/src/drawing/InkAppearance.tsx';
 import { PNG_TIMEOUT_MS } from '../../experiments/native-architecture/src/drawing/svgCapture.ts';
 
 const state = vi.hoisted(() => ({
+  scheme: 'light',
   captures: [],
   nativeImages: [],
   platform: { OS: 'web' },
@@ -20,46 +25,24 @@ const state = vi.hoisted(() => ({
   frames: new Map(),
   nextFrame: 0,
 }));
-vi.mock('react-native', () => ({
-  Platform: state.platform,
-  Image: (props) => {
-    state.nativeImages.push(props);
-    return null;
-  },
-  findNodeHandle: (target) => target,
-  View: forwardRef(({ children, style, onLayout }, ref) => {
-    useImperativeHandle(ref, () => ({ measure: (complete) => complete(0, 0, 1024, 768, 0, 0) }));
-    if (onLayout) state.layouts.push(onLayout);
-    return createElement('div', { style }, children);
-  }),
-  StyleSheet: { create: (styles) => styles, absoluteFill: { position: 'absolute' } },
-  PanResponder: {
-    create: (responder) => {
-      state.responders.push(responder);
-      return { panHandlers: {} };
-    },
-  },
-}));
-vi.mock('react-native-svg', () => ({
-  default: forwardRef(({ children, width, height, viewBox }, ref) => {
-    useImperativeHandle(ref, () => ({
-      toDataURL(callback, options) {
-        state.captures.push({ callback, options, width, height, viewBox, children });
-      },
-    }));
-    return createElement('div', { 'data-svg-width': width }, children);
-  }),
-  G: ({ children, opacity }) => createElement('div', { 'data-opacity': opacity }, children),
-  Rect: ({ fill }) => createElement('div', { 'data-paper-fill': fill }),
-  Image: ({ onLoad, href }) =>
-    createElement('button', { 'data-output-image': href, onClick: onLoad }),
-}));
+vi.mock('react-native', async () => {
+  const { nativeCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
+  return nativeCaptureSdk(state);
+});
+vi.mock('react-native-svg', async () => {
+  const { svgCaptureSdk } = await import('../lib/native-picture-capture-sdk-fixture.mjs');
+  return svgCaptureSdk(state);
+});
 vi.mock('../../experiments/native-architecture/src/drawing/InkScene.tsx', () => ({
   InkScene: ({ checkpoint, strokes, onImageLoad }) => {
+    const appearance = useInkAppearance();
     if (checkpoint) state.imageLoads.push({ checkpoint, onImageLoad });
     return createElement(
       'div',
-      { 'data-strokes': strokes.map((stroke) => stroke.brush).join(',') },
+      {
+        'data-strokes': strokes.map((stroke) => stroke.brush).join(','),
+        'data-appearance': `${appearance.pageId}:${appearance.theme}`,
+      },
       checkpoint &&
         createElement('button', {
           'data-checkpoint': checkpoint.id,
@@ -100,6 +83,7 @@ beforeEach(() => {
   state.captures.length = 0;
   state.nativeImages.length = 0;
   state.platform.OS = 'web';
+  state.scheme = 'light';
   state.packets.length = 0;
   state.imageLoads.length = 0;
   state.responders.length = 0;
@@ -127,14 +111,18 @@ afterEach(() => {
 async function render(strokes, prepareEraser = false, draft = null) {
   await act(async () =>
     root.render(
-      createElement(RasterInk, {
-        ref,
-        strokes,
-        draft,
-        prepareEraser,
-        onError: error,
-        onBusy: busy,
-      })
+      createElement(
+        InkAppearanceScope.Provider,
+        { value: { pageId: 'blank', theme: 'light' } },
+        createElement(RasterInk, {
+          ref,
+          strokes,
+          drafts: draft ? [draft] : [],
+          brush: prepareEraser ? 'eraser' : 'marker',
+          onError: error,
+          onBusy: busy,
+        })
+      )
     )
   );
 }
@@ -163,7 +151,11 @@ describe('ready-owner output handoff', () => {
     const plan = ref.current.readyPlan(strokes);
     expect(() => ref.current.readyPlan([{ ...marker }])).toThrow('still being prepared');
     await render(strokes, false, magic);
-    expect(() => ref.current.readyPlan([...strokes, magic])).toThrow('still being prepared');
+    expect(host.querySelector('[data-strokes="marker,magic"]')).not.toBeNull();
+    const renderedWithDraft = [...strokes, magic];
+    expect(() => ref.current.readyPlan(renderedWithDraft)).toThrow('still being prepared');
+    await render(strokes);
+    expect(ref.current.readyPlan(strokes).strokes).toEqual(strokes);
     await render([crayon]);
     expect(plan.strokes).toEqual(strokes);
     expect(() => ref.current.readyPlan(strokes)).toThrow('still being prepared');
@@ -190,7 +182,14 @@ describe('ready-owner output handoff', () => {
         (value) => ({ value }),
         (failure) => ({ failure })
       );
-      const packet = { id: 1, request, kind: 'ink', plan, isCurrent: () => true };
+      const packet = {
+        id: 1,
+        request,
+        kind: 'ink',
+        plan,
+        appearance: { pageId: 'blank', theme: 'light' },
+        isCurrent: () => true,
+      };
       await act(async () => root.render(createElement(PictureCapture, { packet })));
       expect(host.querySelector('[data-paper-fill]')).toBeNull();
       expect(host.querySelector('[data-page]')).toBeNull();
@@ -222,6 +221,7 @@ async function surface(drawing) {
         onCohort: vi.fn(),
         onDrawingChange: vi.fn(),
         onPreparingChange: busy,
+        onRendererFault: error,
         onError: error,
       })
     )
@@ -238,6 +238,75 @@ async function beginOutput(drawing, kind = 'captureInk') {
 }
 
 describe('mounted canonical output identity', () => {
+  it('cancels a real in-flight capture on a live system-theme change and rejects its late callback', async () => {
+    const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic] };
+    await surface(drawing);
+    const first = await beginOutput(drawing);
+    const refused = first.promise.catch((failure) => failure.message);
+    await frames();
+    const oldPacket = state.packets.at(-1);
+    expect(oldPacket.appearance).toEqual({ pageId: 'flower', theme: 'light' });
+    state.scheme = 'dark';
+    await surface(drawing);
+    await expect(refused).resolves.toContain('changed');
+    expect(oldPacket.isCurrent()).toBe(false);
+    await png(0, 'stale-light-output');
+    first.release();
+    const second = await beginOutput(drawing);
+    await frames();
+    expect(state.packets.at(-1).appearance).toEqual({ pageId: 'flower', theme: 'dark' });
+    await png(1, 'current-dark-output');
+    await expect(second.promise).resolves.toBe('current-dark-output');
+    expect(drawing.strokes).toEqual([magic]);
+    second.release();
+  });
+
+  it('discards a pending raster prefix when appearance changes before its late SDK callback', async () => {
+    const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic, erase] };
+    await surface(drawing);
+    await frames();
+    expect(state.captures).toHaveLength(1);
+    state.scheme = 'dark';
+    await surface(drawing);
+    await frames();
+    expect(state.captures).toHaveLength(2);
+    await png(0, 'late-old-light-prefix');
+    expect(host.querySelector('[data-checkpoint]')).toBeNull();
+    expect(error).not.toHaveBeenCalled();
+    await png(1, 'current-dark-prefix');
+    await load();
+    expect(
+      host.querySelector('[data-appearance="flower:dark"][data-strokes="eraser"]')
+    ).not.toBeNull();
+    expect(state.captures).toHaveLength(2);
+  });
+
+  it.each(['page', 'theme'])(
+    'replays semantic ink after a settled erased prefix changes %s',
+    async (change) => {
+      const drawing = { ...emptyDrawing(3, 'flower'), strokes: [magic, erase] };
+      await surface(drawing);
+      await frames();
+      await png(0, 'old-flattened-prefix');
+      await load();
+      expect(state.captures).toHaveLength(1);
+      const replacement = change === 'page' ? { ...drawing, pageId: 'turtle' } : drawing;
+      state.scheme = change === 'theme' ? 'dark' : 'light';
+      await surface(replacement);
+      await frames();
+      expect(state.captures).toHaveLength(2);
+      expect(state.captures[1].children.props.checkpoint).toBeNull();
+      expect(state.captures[1].children.props.strokes).toEqual([magic]);
+      expect(
+        host.querySelector(`[data-appearance="${replacement.pageId}:${state.scheme}"]`)
+      ).not.toBeNull();
+      await png(1, 'recoded-prefix');
+      await load();
+      expect(error).not.toHaveBeenCalled();
+      expect(replacement.strokes).toBe(drawing.strokes);
+    }
+  );
+
   it('requires a command lease and the exact rendered Drawing snapshot', async () => {
     const drawing = { ...emptyDrawing(), strokes: [marker] };
     await surface(drawing);

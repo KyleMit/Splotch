@@ -1,0 +1,882 @@
+[
+  {
+    "path": "package/LICENSE",
+    "bytes": 1067,
+    "sha256": "f5c7a4d527258e11fdfe3d84eb73cd14fe6d64224ef051e59f6ee21fe378800c"
+  },
+  {
+    "path": "package/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp",
+    "bytes": 4525,
+    "sha256": "0bd31bad405554d89c6a5cceac5cf224a76b667b7fdb0e8a0c782aab8bfcf66b"
+  },
+  {
+    "path": "package/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.cpp",
+    "bytes": 512,
+    "sha256": "41742222a92dccb6559e6000af0d98911b51caa640d6e4a3dc1c23ef2f3df459"
+  },
+  {
+    "path": "package/android/build.gradle",
+    "bytes": 3843,
+    "sha256": "46ddf952d5733a4f0e08f5dd3291eabc4a7c01632d71936ebfff25a38f42d244"
+  },
+  {
+    "path": "package/android/spotless.gradle",
+    "bytes": 372,
+    "sha256": "bb8e5527965c490bdf342a790b32f0800a4101982f8da4af1c53489a52732859"
+  },
+  {
+    "path": "package/ios/RNCOnInsetsChangeEvent.h",
+    "bytes": 442,
+    "sha256": "08f02d4e1a04d71f39b664bac6238126e709d850a9373229d64c813c46c4cafe"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaContext.h",
+    "bytes": 148,
+    "sha256": "b49950f57da525a267809def5a47d41eb592bec96f84b89fc957bd2fb713d92a"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaProvider.h",
+    "bytes": 662,
+    "sha256": "6bf9f1acb98a9e3fc0faa39134f4eba4de9b6735518cb5fa04c6cb51d0779890"
+  },
+  {
+    "path": "package/ios/Fabric/RNCSafeAreaProviderComponentView.h",
+    "bytes": 306,
+    "sha256": "74c30e61fe30e4fff8869373a129b7a69a37850429b9795e57a164ad4d59be30"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaProviderManager.h",
+    "bytes": 143,
+    "sha256": "8b40ccc165736ba6a77f11e65cc2100a96f8f367169f9d18d6d14a59cefb6625"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaShadowView.h",
+    "bytes": 136,
+    "sha256": "2dae6e289059bd263256aa3208e492df51e50bc1398699babdeb8cddb9c04555"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaUtils.h",
+    "bytes": 686,
+    "sha256": "25f9144428d80a300a31b33c2a2f2f0a76d8770f6a8ac82ceef73c3e5162dc01"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaView.h",
+    "bytes": 503,
+    "sha256": "e28fe4e2cc36945a2b7d32b92a9b75aefb9b9d8294dbbcef2ad456855a72c084"
+  },
+  {
+    "path": "package/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewComponentDescriptor.h",
+    "bytes": 735,
+    "sha256": "6bb066a26e48c2e96807cc62bd064dea56b867c5b5fa1a8a12681a745663b0bb"
+  },
+  {
+    "path": "package/ios/Fabric/RNCSafeAreaViewComponentView.h",
+    "bytes": 256,
+    "sha256": "4bd6969e87bbd17e5e8911356817892927e893b713b54aebc68e02678ed717af"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewEdgeMode.h",
+    "bytes": 343,
+    "sha256": "ac5e43e4a5e8e8044aca7953a72b9222098171d37a0c720ae4c7f2682cbe276e"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewEdges.h",
+    "bytes": 450,
+    "sha256": "47d6209b319cc454ad4e3dd86f3b82e059c8f5c4168e714e77a61fb89f78c9da"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewLocalData.h",
+    "bytes": 766,
+    "sha256": "acbd29bf66ce346df55760370cfb8642a924aba896a61576e6918314604e5ada"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewManager.h",
+    "bytes": 139,
+    "sha256": "1d164143dbac405e928f860d033b429323b1a882f91e26ee71a95a098f41ea76"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewMode.h",
+    "bytes": 176,
+    "sha256": "f17d5d115377685d4db555c1f5727b9ada15d6e9911776bb676050b53cbfc49a"
+  },
+  {
+    "path": "package/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.h",
+    "bytes": 834,
+    "sha256": "c28a776f313e652cb7154e291ae875732ec3ddc144037342c803e1ba5ec11e3f"
+  },
+  {
+    "path": "package/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.h",
+    "bytes": 1245,
+    "sha256": "4f18e086699d2be4aa58d67eb30cdb2ba09e44d53dae8459c012d5ac9399adb2"
+  },
+  {
+    "path": "package/android/src/main/jni/safeareacontext.h",
+    "bytes": 445,
+    "sha256": "7df9ee18a2a657febed59b7a1a3a9acb3c0c46bdff3b180b1ff4b0e4ad299193"
+  },
+  {
+    "path": "package/android/src/paper/java/com/th3rdwave/safeareacontext/NativeSafeAreaContextSpec.java",
+    "bytes": 2247,
+    "sha256": "50a4c8705b4ad75e88c5428ec5b5cad9228ffb1807148cc1ab2ebfa9c6f0610c"
+  },
+  {
+    "path": "package/android/src/paper/java/com/facebook/react/viewmanagers/RNCSafeAreaProviderManagerDelegate.java",
+    "bytes": 1045,
+    "sha256": "9d7b6510ee45c4a13307d6b1fae24ee3e71a2802808de9fa95cb7fd38f87f6dd"
+  },
+  {
+    "path": "package/android/src/paper/java/com/facebook/react/viewmanagers/RNCSafeAreaProviderManagerInterface.java",
+    "bytes": 461,
+    "sha256": "07ecc2bcd6243186d5b2a411655132bfb6a7626c4d903b2ccb80ecd834410297"
+  },
+  {
+    "path": "package/android/src/paper/java/com/facebook/react/viewmanagers/RNCSafeAreaViewManagerDelegate.java",
+    "bytes": 1307,
+    "sha256": "56ed6becf2ba4f5efd8a5f5828364b30bd061720673983abb4e46670eacbe2dc"
+  },
+  {
+    "path": "package/android/src/paper/java/com/facebook/react/viewmanagers/RNCSafeAreaViewManagerInterface.java",
+    "bytes": 629,
+    "sha256": "63f25e3f5f89783a2c1387c05737dbd7fe11604685ef76a8eb82be5c511b4006"
+  },
+  {
+    "path": "package/lib/commonjs/CompatNativeSafeAreaProvider.js",
+    "bytes": 1558,
+    "sha256": "3bb2980b3eb79665aa9d4b0034e39a0fc05c5f07d42936bd75c9b9ceaa9b6d22"
+  },
+  {
+    "path": "package/lib/module/CompatNativeSafeAreaProvider.js",
+    "bytes": 761,
+    "sha256": "6e672413870d58b6bf09b998bff4513ad8ec00509d488e1a8bc8d56ba97e7c7a"
+  },
+  {
+    "path": "package/lib/commonjs/index.js",
+    "bytes": 1569,
+    "sha256": "5f8e19dc6a927272408d4074fefaa44def9742061290c29827753e11cd0b129b"
+  },
+  {
+    "path": "package/lib/module/index.js",
+    "bytes": 182,
+    "sha256": "735992f05098672092cec10652866abd0a64961ef5528118cfce2468bce5e96b"
+  },
+  {
+    "path": "package/lib/commonjs/InitialWindow.js",
+    "bytes": 368,
+    "sha256": "913fd2fa9e867192624594eab8f16097c61ca685da22673955f6cd2d478bbb98"
+  },
+  {
+    "path": "package/lib/module/InitialWindow.js",
+    "bytes": 156,
+    "sha256": "44083fb9cf9f625688f46febd06f7ded077df1f54494816999041e62fe090496"
+  },
+  {
+    "path": "package/lib/commonjs/InitialWindow.native.js",
+    "bytes": 654,
+    "sha256": "85583a9c0c66b41426c9c7ac2bfb06616bbd4df4db28f58252d8153b20739f8a"
+  },
+  {
+    "path": "package/lib/module/InitialWindow.native.js",
+    "bytes": 319,
+    "sha256": "1811b239fc39775f523db83f88e0810f9c7f6f121f038cb4086a37ecd2eee1d0"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaContext.js",
+    "bytes": 292,
+    "sha256": "9bf4a3faad1c2cc209b65d3b6fcac7570d50022349cb329c1f55afe9e8cb7c0b"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaContext.js",
+    "bytes": 163,
+    "sha256": "1126edbfe0d871ed9163ed5ea00bc7a75326a53896094ef4aaf32a156fe7861c"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.js",
+    "bytes": 465,
+    "sha256": "07c608c87256ce6a59f5556757eec406547fdc674d7999227bf75bd68979c918"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaProvider.js",
+    "bytes": 458,
+    "sha256": "d9bd5f18974faf8e6ff560560e7e285b87ebccc5d935898536f48e0ff9d420aa"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.js",
+    "bytes": 154,
+    "sha256": "e4e6f6975bc0b45a2525805c44b4636448c374d19cc95b44757df74f8a76e3a4"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaProvider.js",
+    "bytes": 206,
+    "sha256": "dad3584c89f42d04b4eec00b6ee195861aead2f8f083730f052ac4f3a72b92f6"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.web.js",
+    "bytes": 4356,
+    "sha256": "1840c6584b580fc0e8e8694a0d8d169dfeaa65ea9a795d70fbe4fd655620ea09"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.web.js",
+    "bytes": 3568,
+    "sha256": "c53e3341b12d800cb6f5698f957343a62b6380c8311c4d573bf638378245abfa"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.windows.js",
+    "bytes": 396,
+    "sha256": "c527c3c6732cce364fc4401faa4f3fd8610f8a3d9a9a5596117145d0ffe9a051"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.windows.js",
+    "bytes": 163,
+    "sha256": "15ad50260c36f45565cc918c05f43571065df448b7517077684774f4d477e924"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaView.js",
+    "bytes": 477,
+    "sha256": "0cda6c8b823b93a3f20933d78550ecf4c0eea5d1a8b04109575af373b5be02b9"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaView.js",
+    "bytes": 225,
+    "sha256": "5270f8822d43a61ad687cb5668e2f141ed477857abb4af0d7f95f43689309f3d"
+  },
+  {
+    "path": "package/react-native.config.js",
+    "bytes": 371,
+    "sha256": "f49e5e15a68c5529cb5e670fdf41ca6e50450b928a903521364dfe281473cf59"
+  },
+  {
+    "path": "package/lib/commonjs/SafeArea.types.js",
+    "bytes": 122,
+    "sha256": "eff7da03ec6db82eccd4e710808a935d249d10a3988bc3f155979a298b82d4b1"
+  },
+  {
+    "path": "package/lib/module/SafeArea.types.js",
+    "bytes": 53,
+    "sha256": "9016a3aadc89920ec6a724e85236b5642be4ddcfd1d802ee1fd7a4cb82672b35"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaContext.js",
+    "bytes": 5485,
+    "sha256": "300fbeec5bce5b17cae0012bb010138e32a664c00d7a785bcffef9eae6eee140"
+  },
+  {
+    "path": "package/lib/module/SafeAreaContext.js",
+    "bytes": 4255,
+    "sha256": "6cb497be120490eb052f9098ed72d9c5c2cf0a7189f854224fbcaf232be47e35"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.js",
+    "bytes": 2251,
+    "sha256": "6dae23bb3b6d2c955248b10e8c63449b6884baac8599581ed235d38658172c22"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.js",
+    "bytes": 1363,
+    "sha256": "c52b134e2947d8d03aa11599883d7c946ce7302b86088192a7c0fb7e044402a3"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.web.js",
+    "bytes": 3820,
+    "sha256": "6748e41f7b14ba2819ac97dfe20a36799b2d5e040ea9027456ff296f05531f2d"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.web.js",
+    "bytes": 3014,
+    "sha256": "ec7e6a53ce43cc22370c265057176a172b45aba4bd29721b47df20a0ea44a53d"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.windows.js",
+    "bytes": 266,
+    "sha256": "91d30769ca812955b1c384de97e79bd797cc7064bf3dc55c634836606bd5a0db"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.windows.js",
+    "bytes": 119,
+    "sha256": "fc49df57f1e17aa6c51a4014b7a71cec1cc9c1f66c38fca04db5472ce69ad48b"
+  },
+  {
+    "path": "package/package.json",
+    "bytes": 4576,
+    "sha256": "752ca40cc831855a26fb9eda18ff6bad54986835d9aa42bba1129d53857f6131"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/EdgeInsets.kt",
+    "bytes": 131,
+    "sha256": "c89fad915df6ddd564918ff9dd1d92970d799e09d032bf39b90f9e31f95fb742"
+  },
+  {
+    "path": "package/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt",
+    "bytes": 690,
+    "sha256": "e198a4e4f94b80cace55af4969ed26f742f788a2863afe510494c9db8bbee842"
+  },
+  {
+    "path": "package/android/src/paper/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt",
+    "bytes": 923,
+    "sha256": "0f5b564b9708c9899c67471e2a3ef6c208894552696e9b01278b2054583799da"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/Rect.kt",
+    "bytes": 120,
+    "sha256": "48b93453a8da65416cca9b68e6bd4a04cc0655fc5f908dc97a5716e9c541a8ca"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaContextModule.kt",
+    "bytes": 1139,
+    "sha256": "150363fba8bb82ecfd8c57d575b25787423095091df65ad4efd0ff4e45d8de4a"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaContextPackage.kt",
+    "bytes": 1748,
+    "sha256": "000483d529e9a00ceb535bc05658aa67fdae9ac225940510d963dbb180a07066"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProvider.kt",
+    "bytes": 1436,
+    "sha256": "729f113f1c5800c75b21aace0bf61e455647cad231de88cceebd25fbf011d99f"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProviderManager.kt",
+    "bytes": 1681,
+    "sha256": "d839395233e802890c57f18b527bd6199c3fb95a416d907950bd573ec053b4d1"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaUtils.kt",
+    "bytes": 3838,
+    "sha256": "1443180a8aef1752c5b06ddabbbfbb8cd482860a703d152cd66682a804aa97dc"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt",
+    "bytes": 4784,
+    "sha256": "9171c6b9c1507d9a3d6445b6d6d365958806f5642f4656c70e6f42067b26f31e"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewEdges.kt",
+    "bytes": 299,
+    "sha256": "78428174939bb4990074981d08c40602f88c868f264430900b640d87a8365e78"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewLocalData.kt",
+    "bytes": 169,
+    "sha256": "73ca83a780036561cfd56ecb3682bd17da59a4c93694d66cfa977d9081b6a4d5"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewManager.kt",
+    "bytes": 2280,
+    "sha256": "89e42f4db956526d4ae8873091f048f79c0abd9d3c370479cc456d9b826ee082"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewMode.kt",
+    "bytes": 91,
+    "sha256": "a35a8c81b401a64329f5ad766b9e561b76d4146f1ae7c8c092185ea7503794a6"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt",
+    "bytes": 5840,
+    "sha256": "51009b85f6d0fdeb4d212de1ade3fb48704d8ddc7494927b15a215156355cf0d"
+  },
+  {
+    "path": "package/android/src/main/java/com/th3rdwave/safeareacontext/SerializationUtils.kt",
+    "bytes": 1601,
+    "sha256": "73b5cf3dec58ed441ec46821529e76712de2c2efde82681acc218a5dc31e1808"
+  },
+  {
+    "path": "package/android/src/fabric/java/com/th3rdwave/safeareacontext/UIManagerHelperCompat.kt",
+    "bytes": 383,
+    "sha256": "51e464dc611af631cb2c0353ee5ba7e2965bd947758216835e56b805d0329e3f"
+  },
+  {
+    "path": "package/android/src/paper/java/com/th3rdwave/safeareacontext/UIManagerHelperCompat.kt",
+    "bytes": 675,
+    "sha256": "2e7de4fe060b95be7469cc9a6880df6308f6232408531008dd25ed371efa8d22"
+  },
+  {
+    "path": "package/ios/RNCOnInsetsChangeEvent.m",
+    "bytes": 1585,
+    "sha256": "bdaa359916b98db6e416c1da2c7202a934d0d96e3ff0471128da780ab4e83dc6"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaProvider.m",
+    "bytes": 4106,
+    "sha256": "d47bd8dd230a49cec53ab97a3ead7ee39ee98dc53cf07d2c1ab6bfda9532156e"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaProviderManager.m",
+    "bytes": 404,
+    "sha256": "185876ab01ac96816e0512cb5ca697506b41be2c43081742493e1052bad2213e"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaShadowView.m",
+    "bytes": 6558,
+    "sha256": "bc6c9fe560723be684da4afe079774a4e6d57bc55bf0053df1caf93ba0e697d6"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaUtils.m",
+    "bytes": 1277,
+    "sha256": "5e404d7ea00781fa5615364450e3e5c091a0ea24a0371ac4f6e04e6280e14f01"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaView.m",
+    "bytes": 5629,
+    "sha256": "a021a8449ae139dee7ec6679cbbad3104a7100141b00caf000a8384292110416"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewEdgeMode.m",
+    "bytes": 398,
+    "sha256": "e34d3c9c1170ab690ce1218a63b1386464f8d5db4631a4c2124b507fa6eb46a2"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewEdges.m",
+    "bytes": 1057,
+    "sha256": "7841e199c977eb5b337cd2efd745ad2801f118f4824a9d2a72ce7de79652ed86"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewLocalData.m",
+    "bytes": 481,
+    "sha256": "921e34f84964b4fe9b1abec42d4afe4436911dba31fe0304d7ee0b513baa8e6a"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewManager.m",
+    "bytes": 583,
+    "sha256": "88efa45ef8cfb373ad6e10fba7e735592e6bf0db344b671e329c44e8d2e42790"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaViewMode.m",
+    "bytes": 330,
+    "sha256": "89abb35a5019d99862be3c074f3f08da877a5841f03be0fe23e599c8a06c8067"
+  },
+  {
+    "path": "package/lib/typescript/src/CompatNativeSafeAreaProvider.d.ts.map",
+    "bytes": 322,
+    "sha256": "e9eeb5cbcee745dd67ca227e51869413f6bfb689430460b56ee759aea9b6b06a"
+  },
+  {
+    "path": "package/lib/commonjs/CompatNativeSafeAreaProvider.js.map",
+    "bytes": 2083,
+    "sha256": "cf42dc1bbfedfd13afca4f9e544748a5e6dc22b66f9fa1f429da18bf68455966"
+  },
+  {
+    "path": "package/lib/module/CompatNativeSafeAreaProvider.js.map",
+    "bytes": 1060,
+    "sha256": "8a77a6c1ea6c045b1971bcf36ddede948c962ed5705ec32cf4c407e783bd4b8f"
+  },
+  {
+    "path": "package/lib/typescript/src/index.d.ts.map",
+    "bytes": 201,
+    "sha256": "337cec757402eec1b66e73495973129feb569028ba2e175f68c00ca24c581510"
+  },
+  {
+    "path": "package/lib/commonjs/index.js.map",
+    "bytes": 1527,
+    "sha256": "2e98d9774888076ecdf96ec5ac9093e1b5223f01ee42c2fec4384e2e9cdc3456"
+  },
+  {
+    "path": "package/lib/module/index.js.map",
+    "bytes": 185,
+    "sha256": "ced51d72417629cf14720564d2c6d5e4b0d0a0e5887a2bb975f34ca1b297bc21"
+  },
+  {
+    "path": "package/lib/typescript/src/InitialWindow.d.ts.map",
+    "bytes": 289,
+    "sha256": "d4b76955618bfd195ed9271e5318a144ad61a57d00a8a9e40d3e58236c81cf1c"
+  },
+  {
+    "path": "package/lib/commonjs/InitialWindow.js.map",
+    "bytes": 297,
+    "sha256": "9ca1a0bdfdc24f332eeb47dc9780f1d534258399d41b70101487fb7a2578e11c"
+  },
+  {
+    "path": "package/lib/module/InitialWindow.js.map",
+    "bytes": 245,
+    "sha256": "db3b2f30c7922f0168c940b0f16474b8cd9af007d1e0182ec59397dc29f70b48"
+  },
+  {
+    "path": "package/lib/typescript/src/InitialWindow.native.d.ts.map",
+    "bytes": 280,
+    "sha256": "4b9e722a7ca99461d1e64f84895dd3d4ea691b45b0f536b966ae5cd493703d9e"
+  },
+  {
+    "path": "package/lib/commonjs/InitialWindow.native.js.map",
+    "bytes": 633,
+    "sha256": "e914173fb4cc794ebb7699258707233b44be4245c4990045da1bea26913f7c0f"
+  },
+  {
+    "path": "package/lib/module/InitialWindow.native.js.map",
+    "bytes": 394,
+    "sha256": "4c965e38f37eda8ef3154c5a5152fb32319d35dcafa0193fc9f961dfde4bc57e"
+  },
+  {
+    "path": "package/lib/typescript/jest/mock.d.ts.map",
+    "bytes": 337,
+    "sha256": "94283c935a3a3adc39e47653249740cf62104656a7d2683176fb3d808ace44ff"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaContext.d.ts.map",
+    "bytes": 612,
+    "sha256": "b6ecd670c64453a67f979ddad3a006adec311415059446ab49ec85240e773990"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaContext.js.map",
+    "bytes": 325,
+    "sha256": "28a9ca6e7b68302bb8cbeea20d1313758d07228ece8a415ea80fea8ab0efd132"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaContext.js.map",
+    "bytes": 231,
+    "sha256": "3eacbf0cc354e1d24ff17e9fad59322dfaec71ce7f3f77e21d3d5921bba3bb2c"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.d.ts.map",
+    "bytes": 211,
+    "sha256": "a558156d5c41bbd32d846ca6d4ca53edf4dd24e530be0b08fdfbe510f760fafb"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaProvider.d.ts.map",
+    "bytes": 724,
+    "sha256": "08e9fbe2639307082453cc9453dd8c3fd9c4958c2cdce866ca21418193d6ed0d"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.js.map",
+    "bytes": 348,
+    "sha256": "de43b0174267867ff370d9aafb6ef1143a4594c377e12d77f04606a1a1da5773"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaProvider.js.map",
+    "bytes": 472,
+    "sha256": "c4903c1de2d9e23287ab41568ac81de185bf75359cc2ad41bd32b9fed84da722"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.js.map",
+    "bytes": 193,
+    "sha256": "1e7e16b8eeca70846404918d888718dc4baabd88930b729b7431c5285c8d97d1"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaProvider.js.map",
+    "bytes": 219,
+    "sha256": "78474ca9919a67b378ad1acdbffc3dd91cf0c394d64dd9fa8eff5fbbb15942c4"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.web.d.ts.map",
+    "bytes": 319,
+    "sha256": "6a00be8b47ab63203717929c627ee300f2295975f4bb9c73c9839bb049cfe021"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.web.js.map",
+    "bytes": 5044,
+    "sha256": "7dbe192a92c4749cbc0c440ec6f72971024cc9d14d0d3377eb7aede4ca8b529d"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.web.js.map",
+    "bytes": 4012,
+    "sha256": "aec00649528595ec88dcf343d29f50dc9ad6711b7e57a23ed8b7d1a3f5e7091d"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.windows.d.ts.map",
+    "bytes": 216,
+    "sha256": "1e70ca6aa2ba2eea0585b8e43f29b791224257125a8315d6221c06413ad850e5"
+  },
+  {
+    "path": "package/lib/commonjs/NativeSafeAreaProvider.windows.js.map",
+    "bytes": 208,
+    "sha256": "dc617b4977728843fb2c1989e4165ce3b5d192b7c51ac0e686e85e8e62df743b"
+  },
+  {
+    "path": "package/lib/module/NativeSafeAreaProvider.windows.js.map",
+    "bytes": 226,
+    "sha256": "d7cb045906df52d5ea71a352d99d8d41ce9929ac7bdad855a67ae71e18a66460"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaView.d.ts.map",
+    "bytes": 534,
+    "sha256": "8e468bb6c23f262936e4cf4ff9d0b6e548106756cbbb591f83382f158f2b2146"
+  },
+  {
+    "path": "package/lib/commonjs/specs/NativeSafeAreaView.js.map",
+    "bytes": 516,
+    "sha256": "77f144ac73d1bb50c7b5a597c52a388bb34e3447bdc03156955ef1f74013773d"
+  },
+  {
+    "path": "package/lib/module/specs/NativeSafeAreaView.js.map",
+    "bytes": 263,
+    "sha256": "490509ebe544efff42d8cc4322a34a9290f771d6df1cc6ea1ef92b00cb7a58f0"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeArea.types.d.ts.map",
+    "bytes": 1298,
+    "sha256": "3440e33d35310aefcf6d1743803a25105cb46f49f9e87278d0a743e52b7fbd14"
+  },
+  {
+    "path": "package/lib/commonjs/SafeArea.types.js.map",
+    "bytes": 112,
+    "sha256": "3ab3e595d626d45eddfb4934db88bdc41367985a8be4bea1534906f3da1853d5"
+  },
+  {
+    "path": "package/lib/module/SafeArea.types.js.map",
+    "bytes": 112,
+    "sha256": "3ab3e595d626d45eddfb4934db88bdc41367985a8be4bea1534906f3da1853d5"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaContext.d.ts.map",
+    "bytes": 1373,
+    "sha256": "374795b09f6524e7b08ba4f2950c4ab48492d8442534a7d08ae9773e055d7b6e"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaContext.js.map",
+    "bytes": 6226,
+    "sha256": "7c8d2a62d4f12378d0f5726381b70d49707e8d8c13a0ed6dc27150f0482a58e0"
+  },
+  {
+    "path": "package/lib/module/SafeAreaContext.js.map",
+    "bytes": 4727,
+    "sha256": "f7454630c7ed0e5bf1483d2b623c9b53135af604be55523b7a7ddfe8ebab95c2"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.d.ts.map",
+    "bytes": 284,
+    "sha256": "df6aaa9eb9244f45f98dfcf5a5a7d9bc7c85bd6bf8bbd6badc1ea50146d57716"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.js.map",
+    "bytes": 2935,
+    "sha256": "23c583e52c0f27c101d4046c3604abfeeba3920ebc5f532d7cb1835ed5d8df7a"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.js.map",
+    "bytes": 1364,
+    "sha256": "bf3dc7bca18ab7c48c00a658db7b87005e5db099e687baf79dcf593cbbf45fc8"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.web.d.ts.map",
+    "bytes": 248,
+    "sha256": "07ea9db7e3d12fb34d315f650508b53e8de6b9f8fcb8487cec6687db78362221"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.web.js.map",
+    "bytes": 4867,
+    "sha256": "8f82de852a534606c68a5a6697530016bb2307a4ba5dd9e5e59bddb1ede3e75e"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.web.js.map",
+    "bytes": 3401,
+    "sha256": "7f8ba91e7fec32d38feb479b4384a189d22a772bfd8a526955bb448e8a8c5aa6"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.windows.d.ts.map",
+    "bytes": 228,
+    "sha256": "d20540df03df7aefc85813f3e3db475cb34852f99cc278f62391290d872978c9"
+  },
+  {
+    "path": "package/lib/commonjs/SafeAreaView.windows.js.map",
+    "bytes": 258,
+    "sha256": "1294fdc05f55176479f44d02ffd22e8d68817f5e8c544b6b2b00fca9006389d9"
+  },
+  {
+    "path": "package/lib/module/SafeAreaView.windows.js.map",
+    "bytes": 199,
+    "sha256": "ddeb6acc0e2bd450f776a68ec3545c7382e896eb46f20a8024fc6fc891920163"
+  },
+  {
+    "path": "package/README.md",
+    "bytes": 1622,
+    "sha256": "9098aa3211a1b3ff6d6328c8cd8e76f0dce6e8153e1c0349f73673ae06708548"
+  },
+  {
+    "path": "package/ios/RNCSafeAreaContext.mm",
+    "bytes": 1784,
+    "sha256": "c621c562562c3d9434daef03e0d57de6bc541d3240f3f1f3236b9eec9ce849ba"
+  },
+  {
+    "path": "package/ios/Fabric/RNCSafeAreaProviderComponentView.mm",
+    "bytes": 4603,
+    "sha256": "5c34cbeb86d7bd0f831b0df18ef286dd16a1f30adc9a2216f5ab061daf2bf6fc"
+  },
+  {
+    "path": "package/ios/Fabric/RNCSafeAreaViewComponentView.mm",
+    "bytes": 5927,
+    "sha256": "7c5b270ef7a2454c68e0ab9a95c6ecb6b4c069b2c38189e6301e5d4828af0b8c"
+  },
+  {
+    "path": "package/ios/RNSafeAreaContext.xcodeproj/project.pbxproj",
+    "bytes": 18390,
+    "sha256": "1fe233304cc3045cceaba491c7c60d4d0d333e090578f8378d25a391dbcbefda"
+  },
+  {
+    "path": "package/react-native-safe-area-context.podspec",
+    "bytes": 1380,
+    "sha256": "0fb3d1f4f44273c9b2ac59f05e5e18220e60cee7152fc0da5bb71be0b29afffa"
+  },
+  {
+    "path": "package/android/gradle.properties",
+    "bytes": 27,
+    "sha256": "1ad1287b38f8cdc04806dc0efbe8da9a32f5d32b3091265b31fa4f9b10eb4114"
+  },
+  {
+    "path": "package/lib/typescript/src/CompatNativeSafeAreaProvider.d.ts",
+    "bytes": 299,
+    "sha256": "ebf362e8509b385d5dbce3ec1a5194eabfa017444f709420822c8ff05476dc9e"
+  },
+  {
+    "path": "package/lib/typescript/src/index.d.ts",
+    "bytes": 169,
+    "sha256": "1bd19c96067af1105e6105122f03f9f7cff25882b9cb5ee0224888e326654811"
+  },
+  {
+    "path": "package/lib/typescript/src/InitialWindow.d.ts",
+    "bytes": 255,
+    "sha256": "84d38f26ff98c82593fc66b94789785150e0d3b5a6742d8895ca4d08c6f31385"
+  },
+  {
+    "path": "package/lib/typescript/src/InitialWindow.native.d.ts",
+    "bytes": 282,
+    "sha256": "587c4f43855488f3d61371a1127c241f66fbba2a30d70e90d8f8c44250f94845"
+  },
+  {
+    "path": "package/src/InitialWindow.native.ts",
+    "bytes": 344,
+    "sha256": "1ba68c78fe1210f48aa5fe94557bba29c889e5d864b2edeb16ec9ca30b90b37b"
+  },
+  {
+    "path": "package/src/InitialWindow.ts",
+    "bytes": 212,
+    "sha256": "daec00b83853332b83a399c3c6e6f87ed33848236913fb59b425977c39ce624c"
+  },
+  {
+    "path": "package/lib/typescript/jest/mock.d.ts",
+    "bytes": 719,
+    "sha256": "81ec10a84c0c44ca5b1955515b79b2fb3d3e9d205ec9e9d774ed679f09cbb737"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaContext.d.ts",
+    "bytes": 665,
+    "sha256": "99a45bf288c8722dd5c0f2b63f422396847d901b5ff0b5056cb52c433cfe34c6"
+  },
+  {
+    "path": "package/src/specs/NativeSafeAreaContext.ts",
+    "bytes": 543,
+    "sha256": "26fa8d9043e1f9f65f64c59f2adc64a656818d5eef5bd5f39a23723b1825ca7f"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.d.ts",
+    "bytes": 156,
+    "sha256": "d717bf0f73895dc0c43b532ad8808da4004a9b3f01abdd00747858f843bdec82"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaProvider.d.ts",
+    "bytes": 654,
+    "sha256": "d462f4bd523e42059c27fd9f1ea1b974ffa5bd5d1393e72b395be0b88acb1cc1"
+  },
+  {
+    "path": "package/src/specs/NativeSafeAreaProvider.ts",
+    "bytes": 695,
+    "sha256": "c02395bb74abc4a81b4cb8f990765750b6e62d6bd588f3ada8c652f67047b3c9"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.web.d.ts",
+    "bytes": 291,
+    "sha256": "c7be6cfb0ec795c53552eabb5a8fc8a8767d586677017618addae93c663fd89b"
+  },
+  {
+    "path": "package/lib/typescript/src/NativeSafeAreaProvider.windows.d.ts",
+    "bytes": 165,
+    "sha256": "860c23d07ec5cd61cd3e51a709998ab0ba8d6351b0365f2b29611cb3f0097ffd"
+  },
+  {
+    "path": "package/lib/typescript/src/specs/NativeSafeAreaView.d.ts",
+    "bytes": 494,
+    "sha256": "3b89dddad8aa6eb7ea4ed91d0687ca9f7211ee5119d9ff78c7d861cbd112d9c3"
+  },
+  {
+    "path": "package/src/specs/NativeSafeAreaView.ts",
+    "bytes": 572,
+    "sha256": "a4d79323e615dd8b7df17600e92c24d11186624617777007baa1b30bd61f2ee0"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeArea.types.d.ts",
+    "bytes": 1225,
+    "sha256": "51b23cdad8199b613143c05c15d7378309f578b043db6d0b020704dd90c3ba94"
+  },
+  {
+    "path": "package/src/SafeArea.types.ts",
+    "bytes": 1165,
+    "sha256": "739582caaafe0e8b4d728dad0a42b5614097edba26582a76c53b62624599da13"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaContext.d.ts",
+    "bytes": 1656,
+    "sha256": "8669f4b53a4ad2b15b91fa59acc15d84788dcb5ecaa394572e64a08aeab27f59"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.d.ts",
+    "bytes": 426,
+    "sha256": "ae814b20a3122db043d689c35fb5305af0c6b9c30140b56694c3f8b703d92d9b"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.web.d.ts",
+    "bytes": 368,
+    "sha256": "3300ecbe6bcf2d43562ac49d514681bf3d7d1a38923354c966d8d06c7416fe79"
+  },
+  {
+    "path": "package/lib/typescript/src/SafeAreaView.windows.d.ts",
+    "bytes": 181,
+    "sha256": "3137e98f87e32050a9b322abf2e077427ef9887aa776247f0ba400c8c533db97"
+  },
+  {
+    "path": "package/src/CompatNativeSafeAreaProvider.tsx",
+    "bytes": 740,
+    "sha256": "d982e9e062490e58c4344412487820771e2498f1366a8d71b6be97246c8860a5"
+  },
+  {
+    "path": "package/src/index.tsx",
+    "bytes": 149,
+    "sha256": "ca7bdde18e3a69929690810197bdc87d22a83fb2d9181814bc7967a1e0a4d0ec"
+  },
+  {
+    "path": "package/jest/mock.tsx",
+    "bytes": 1610,
+    "sha256": "751be104948c82c49f6c2a87fa829a1c822ceeec7b9dcdb4f227f4e202cdad4f"
+  },
+  {
+    "path": "package/src/NativeSafeAreaProvider.tsx",
+    "bytes": 105,
+    "sha256": "86ac0711367c54f49a1c0ccf266f7b581d87e78d96b9e637fcfd3a19ef050016"
+  },
+  {
+    "path": "package/src/NativeSafeAreaProvider.web.tsx",
+    "bytes": 3708,
+    "sha256": "1fa636bf4c5b0c5e461e0087cddcfcac3bebca09eb4477032e24fea8aae685a7"
+  },
+  {
+    "path": "package/src/NativeSafeAreaProvider.windows.tsx",
+    "bytes": 105,
+    "sha256": "33db8fd96dc9d4c38707c28ba093dae2a0ac30f6298c20527f8c2c401ec565bb"
+  },
+  {
+    "path": "package/src/SafeAreaContext.tsx",
+    "bytes": 4960,
+    "sha256": "ea19c5063c6de27dac7dfffa1e5e02c83e7188c9473964ae4a3310bef1b7bf40"
+  },
+  {
+    "path": "package/src/SafeAreaView.tsx",
+    "bytes": 1331,
+    "sha256": "05c5342544ce99ab67d3f4deb601b83733fad94686bb7ec0600ce7c757e8de00"
+  },
+  {
+    "path": "package/src/SafeAreaView.web.tsx",
+    "bytes": 3142,
+    "sha256": "5ab59fe13fdb5e725e9b9f395ba9622bea74d9e9320bc5aebf8fd140571164bf"
+  },
+  {
+    "path": "package/src/SafeAreaView.windows.tsx",
+    "bytes": 181,
+    "sha256": "8ea7f1b3cbd2fdc8e8b356764975f8a664b6dbac0b4295cde19fe936f1fc2422"
+  },
+  {
+    "path": "package/android/src/main/jni/CMakeLists.txt",
+    "bytes": 2247,
+    "sha256": "22d5f8740eb215e70d09182402c639a0d16b2510f9e4ad72d8fc7153b9d789bc"
+  },
+  {
+    "path": "package/android/src/main/AndroidManifest.xml",
+    "bytes": 126,
+    "sha256": "55e04fbff94a52fed290a905684e82744cd83819edd1391e3d97caed0f01dca6"
+  }
+]

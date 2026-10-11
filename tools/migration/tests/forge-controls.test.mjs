@@ -1,7 +1,8 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, sep } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runForgeConsumerControls, runForgeRsaControls } from '../lib/forge-controls.mjs';
 import { collectForgeInstallPackages } from '../lib/forge-installed.mjs';
@@ -13,24 +14,47 @@ const mitigation = JSON.parse(
 );
 const fixtures = [];
 
+function sourceHash(path) {
+  return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+function ownedMutationPath(directory, path) {
+  const resolvedPath = realpathSync(path);
+  const withinFixture = relative(realpathSync(directory), resolvedPath);
+  if (
+    !withinFixture ||
+    withinFixture === '..' ||
+    withinFixture.startsWith(`..${sep}`) ||
+    isAbsolute(withinFixture)
+  )
+    throw new Error('Forge mutation path escapes owned fixture');
+  return resolvedPath;
+}
+
 function mutatedForge(removeCount) {
+  const originalPath = join(root, 'node_modules/node-forge/lib/rsa.js');
+  const originalHash = sourceHash(originalPath);
   const directory = mkdtempSync(join(tmpdir(), 'splotch-forge-crypto-'));
   fixtures.push(directory);
   const target = join(directory, 'forge');
-  cpSync(join(root, 'node_modules/node-forge'), target, { recursive: true });
-  const path = join(target, 'lib/rsa.js');
-  let source = readFileSync(path, 'utf8');
-  const nullClause = " ||\n            ('parameters' in capture && capture.parameters !== '')";
-  expect(source).toContain(nullClause);
-  source = source.replace(nullClause, '');
-  if (removeCount) {
-    const countClause =
-      " ||\n            obj.value[0].value.length !==\n              (('parameters' in capture) ? 2 : 1)";
-    expect(source).toContain(countClause);
-    source = source.replace(countClause, '');
+  try {
+    cpSync(join(root, 'node_modules/node-forge'), target, { recursive: true, dereference: true });
+    const path = ownedMutationPath(directory, join(target, 'lib/rsa.js'));
+    let source = readFileSync(path, 'utf8');
+    const nullClause = " ||\n            ('parameters' in capture && capture.parameters !== '')";
+    expect(source).toContain(nullClause);
+    source = source.replace(nullClause, '');
+    if (removeCount) {
+      const countClause =
+        " ||\n            obj.value[0].value.length !==\n              (('parameters' in capture) ? 2 : 1)";
+      expect(source).toContain(countClause);
+      source = source.replace(countClause, '');
+    }
+    writeFileSync(path, source);
+    return createRequire(join(target, 'package.json'))(target);
+  } finally {
+    expect(sourceHash(originalPath)).toBe(originalHash);
   }
-  writeFileSync(path, source);
-  return createRequire(join(target, 'package.json'))(target);
 }
 
 afterEach(() => {

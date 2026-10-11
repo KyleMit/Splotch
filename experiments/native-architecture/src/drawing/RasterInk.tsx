@@ -7,10 +7,21 @@ import {
   useRef,
   useState,
   type RefObject,
+  type ForwardedRef,
 } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Svg, { G } from 'react-native-svg';
-import { checkpointMatches, planInk, type InkCheckpoint, type InkPlan } from './checkpoints';
+import {
+  planInk,
+  sameStrokes,
+  needsPreparation,
+  preparationMatches,
+  preparationWitnessed,
+  type InkCheckpoint,
+  type InkPlan,
+  type InkPreparation,
+} from './checkpoints';
+import type { Brush } from './brushes';
 import { InkScene } from './InkScene';
 import { FixedInkCapture } from './FixedInkCapture';
 import { DecodedPng } from './DecodedPng';
@@ -20,130 +31,234 @@ import { createSvgCapture, PNG_TIMEOUT_MS, type SvgCaptureJob } from './svgCaptu
 export type RasterInkHandle = {
   readyPlan: (strokes: readonly Stroke[]) => InkPlan;
   isReady: () => boolean;
+  canStart: (strokes: readonly Stroke[], brush: Brush, active: boolean) => boolean;
 };
 type Props = {
   strokes: readonly Stroke[];
   drafts?: readonly Stroke[];
-  prepareEraser: boolean;
+  brush: Brush;
   onBusy: (busy: boolean) => void;
   onError: (error: unknown) => void;
 };
+type Incoming = Readonly<{
+  frame: InkCheckpoint;
+  plan: InkPlan;
+  brush: Brush;
+  provisional: boolean;
+}>;
 
 export const RasterInk = forwardRef<RasterInkHandle, Props>(function RasterInk(props, ref) {
-  const strokes = useMemo(
-    () => (props.drafts?.length ? [...props.strokes, ...props.drafts] : props.strokes),
-    [props.strokes, props.drafts]
+  const state = useRasterCheckpoint(props, ref);
+  return (
+    <View style={styles.scene} pointerEvents="none">
+      {state.capturePlan ? (
+        <FixedInkCapture
+          plan={state.capturePlan}
+          svgRef={state.fixedSvg}
+          onReady={state.captureReady}
+          onError={state.captureError}
+        />
+      ) : null}
+      <RasterFrames
+        frames={state.frames}
+        onImageLoad={state.imageLoaded}
+        onImageError={state.failImage}
+      />
+    </View>
   );
-  const currentStrokes = useRef(strokes);
-  currentStrokes.current = strokes;
-  const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
-  const [pending, setIncoming] = useState<InkCheckpoint | null>(null);
-  const incoming = pending && checkpointMatches(strokes, pending) ? pending : null;
-  const incomingRef = useRef(incoming);
-  incomingRef.current = incoming;
-  const [fault, setFault] = useState<unknown>(null);
-  const loadedId = useRef<number | null>(null);
-  const nextId = useRef(1);
-  const plan = useMemo(
-    () => planInk(strokes, checkpoint, props.prepareEraser),
-    [strokes, checkpoint, props.prepareEraser]
-  );
-  const fixedSvg = useRef<Svg>(null);
-  const [fixedReady, setFixedReady] = useState<InkPlan | null>(null);
-  const imageReady = !plan.checkpoint || loadedId.current === plan.checkpoint.id;
-  const ready = !fault && !incoming && !plan.needsCheckpoint && imageReady;
+});
+
+function useRasterCheckpoint(props: Props, ref: ForwardedRef<RasterInkHandle>) {
   const propsRef = useRef(props);
   propsRef.current = props;
+  const drafts = props.drafts ?? [];
+  const { plan, available, capturePlan, commitFrame } = useInkPlan(props);
+  const [pending, setPending] = useState<Incoming | null>(null);
+  const [fault, setFault] = useState<unknown>(null);
+  const nextId = useRef(1);
+  const incoming = pending && pending.plan === capturePlan ? pending : null;
+  const incomingRef = useRef(incoming);
+  incomingRef.current = incoming;
+  const fixedSvg = useRef<Svg>(null);
+  const [fixedReady, setFixedReady] = useState<InkPlan | null>(null);
+  const canonicalReady = !fault && !plan.needsCheckpoint;
+  const inputReady =
+    canonicalReady &&
+    !incoming &&
+    (drafts.length > 0 || !needsPreparation(props.strokes, props.brush) || !!available);
   const working = useCheckpointJob({
-    plan,
-    ready: !fault && !incoming && imageReady && plan.needsCheckpoint && fixedReady === plan,
+    plan: capturePlan ?? plan,
+    ready:
+      !drafts.length && !fault && !incoming && capturePlan !== null && fixedReady === capturePlan,
     svg: fixedSvg,
     onCheckpoint(base64, capturedPlan) {
-      const next = { id: nextId.current++, strokes: capturedPlan.prefix, base64 };
-      if (checkpointMatches(currentStrokes.current, next)) setIncoming(next);
+      setPending({
+        frame: { id: nextId.current++, strokes: capturedPlan.prefix, base64 },
+        plan: capturedPlan,
+        brush: propsRef.current.brush,
+        provisional: !plan.needsCheckpoint,
+      });
     },
     onError(error) {
       setFault(error);
       propsRef.current.onError(error);
     },
   });
-
   useImperativeHandle(ref, () => ({
-    isReady: () => ready && !working.current,
+    isReady: () => inputReady && !working.current,
+    canStart(requested, brush, active) {
+      return (
+        sameStrokes(requested, props.strokes) &&
+        canonicalReady &&
+        !working.current &&
+        !incoming &&
+        (active || (brush === props.brush && inputReady))
+      );
+    },
     readyPlan(requested) {
       if (
-        !ready ||
+        !canonicalReady ||
         working.current ||
+        incoming ||
         propsRef.current.drafts?.length ||
-        requested.length !== strokes.length ||
-        requested.some((stroke, index) => stroke !== strokes[index])
+        !sameStrokes(requested, props.strokes)
       )
         throw new Error('This picture is still being prepared.');
       return plan;
     },
   }));
-  useEffect(() => propsRef.current.onBusy(!ready), [ready]);
-
+  useEffect(() => propsRef.current.onBusy(!inputReady), [inputReady]);
   useEffect(() => {
-    if (pending && !incoming) setIncoming(null);
+    if (pending && !incoming) setPending(null);
   }, [pending, incoming]);
-
   useEffect(() => {
     if (!incoming) return;
     const timeout = setTimeout(() => {
       if (incomingRef.current !== incoming) return;
-      const error = new Error(
-        'The prepared picture did not load. Your saved drawing is unchanged.'
+      failImage(
+        incoming.frame,
+        new Error('The prepared picture did not load. Your saved drawing is unchanged.')
       );
-      setFault(error);
-      incomingRef.current = null;
-      setIncoming(null);
-      propsRef.current.onError(error);
     }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
   }, [incoming]);
-
   function imageLoaded(frame: InkCheckpoint) {
-    if (incomingRef.current !== frame || !checkpointMatches(currentStrokes.current, frame)) return;
-    loadedId.current = frame.id;
+    const current = incomingRef.current;
+    if (!current || current.frame !== frame) return;
     incomingRef.current = null;
-    setCheckpoint(frame);
-    setIncoming(null);
+    commitFrame(current);
+    setPending(null);
   }
-
-  function imageFailed(frame: InkCheckpoint, error: Error) {
-    if (incomingRef.current !== frame || !checkpointMatches(currentStrokes.current, frame)) return;
+  function failImage(frame: InkCheckpoint, error: Error) {
+    if (incomingRef.current?.frame !== frame) return;
     incomingRef.current = null;
-    setIncoming(null);
+    setPending(null);
     setFault(error);
     propsRef.current.onError(error);
   }
+  const displayCheckpoint = (drafts.length ? available?.checkpoint : null) ?? plan.checkpoint;
+  const displayStrokes = useMemo(
+    () => [...props.strokes.slice(displayCheckpoint?.strokes.length ?? 0), ...drafts],
+    [props.strokes, displayCheckpoint, props.drafts]
+  );
+  return {
+    capturePlan: capturePlan && !drafts.length && !incoming && !fault ? capturePlan : null,
+    captureReady: () => setFixedReady(capturePlan),
+    captureError(error: unknown) {
+      setFault(error);
+      propsRef.current.onError(error);
+    },
+    fixedSvg,
+    frames: createRasterFrames(displayCheckpoint, displayStrokes, props.strokes, incoming),
+    imageLoaded,
+    failImage,
+  };
+}
 
+function createRasterFrames(
+  checkpoint: InkCheckpoint | null,
+  strokes: readonly Stroke[],
+  prefix: readonly Stroke[],
+  incoming: Incoming | null
+) {
+  const displayPlan: InkPlan = {
+    checkpoint,
+    strokes,
+    prefix,
+    needsCheckpoint: false,
+  };
   const frames = [
-    ...(plan.prefix.length === strokes.length
-      ? [{ id: plan.checkpoint?.id ?? 0, plan, hidden: false }]
-      : []),
+    { id: checkpoint?.id ?? 0, plan: displayPlan, hidden: false },
     ...(incoming
-      ? [{ id: incoming.id, plan: planInk(strokes, incoming, props.prepareEraser), hidden: true }]
+      ? [
+          {
+            id: incoming.frame.id,
+            plan: {
+              checkpoint: incoming.frame,
+              strokes: [],
+              prefix: incoming.frame.strokes,
+              needsCheckpoint: false,
+            },
+            hidden: true,
+          },
+        ]
       : []),
   ];
-  return (
-    <View style={styles.scene} pointerEvents="none">
-      {plan.needsCheckpoint && !incoming && !fault ? (
-        <FixedInkCapture
-          plan={plan}
-          svgRef={fixedSvg}
-          onReady={() => setFixedReady(plan)}
-          onError={(error) => {
-            setFault(error);
-            propsRef.current.onError(error);
-          }}
-        />
-      ) : null}
-      <RasterFrames frames={frames} onImageLoad={imageLoaded} onImageError={imageFailed} />
-    </View>
+  return frames;
+}
+
+function useInkPlan(props: Pick<Props, 'strokes' | 'drafts' | 'brush'>) {
+  const drafts = props.drafts ?? [];
+  const [checkpoint, setCheckpoint] = useState<InkCheckpoint | null>(null);
+  const [prepared, setPrepared] = useState<InkPreparation | null>(null);
+  const predecessor = useMemo(
+    () => planInk(props.strokes, checkpoint),
+    [props.strokes, checkpoint]
   );
-});
+  const promoted =
+    prepared && preparationWitnessed(props.strokes, prepared, predecessor.checkpoint)
+      ? prepared
+      : null;
+  const plan = useMemo(
+    () => planInk(props.strokes, promoted?.checkpoint ?? checkpoint),
+    [props.strokes, promoted, checkpoint]
+  );
+  const available =
+    prepared &&
+    sameStrokes(props.strokes, prepared.checkpoint.strokes) &&
+    preparationMatches(props.strokes, prepared, plan.checkpoint) &&
+    (drafts.length ? drafts[0].brush === prepared.brush : props.brush === prepared.brush)
+      ? prepared
+      : null;
+  const prepare =
+    !drafts.length &&
+    !plan.needsCheckpoint &&
+    needsPreparation(props.strokes, props.brush) &&
+    !available;
+  const capturePlan = useMemo(
+    () => (plan.needsCheckpoint ? plan : prepare ? { ...plan, needsCheckpoint: true } : null),
+    [plan, prepare, props.brush]
+  );
+  useEffect(() => {
+    if (promoted) {
+      setCheckpoint(promoted.checkpoint);
+      setPrepared(null);
+    } else {
+      if (checkpoint && predecessor.checkpoint !== checkpoint) setCheckpoint(null);
+      if (prepared && !available) setPrepared(null);
+    }
+  }, [promoted, prepared, available, checkpoint, predecessor.checkpoint]);
+  function commitFrame(current: Incoming) {
+    if (current.provisional)
+      setPrepared({
+        checkpoint: current.frame,
+        predecessor: current.plan.checkpoint,
+        brush: current.brush,
+      });
+    else setCheckpoint(current.frame);
+  }
+  return { plan, available, capturePlan, commitFrame };
+}
 
 function useCheckpointJob(options: {
   plan: InkPlan;

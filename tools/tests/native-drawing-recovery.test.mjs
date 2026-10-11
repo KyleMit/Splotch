@@ -64,6 +64,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     useWindowDimensions: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
     Platform: { OS: 'web' },

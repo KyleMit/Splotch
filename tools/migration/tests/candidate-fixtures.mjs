@@ -9,10 +9,11 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { expect } from 'vitest';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { assertDeclaredCandidateImports, readJson } from '../lib/native-identity.mjs';
+import { isExcludedCandidatePath } from '../lib/candidate-imports.mjs';
 const root = join(import.meta.dirname, '../../..');
 const candidate = join(root, CANDIDATE_DIRECTORY);
 const manifest = readJson(join(candidate, 'package.json'));
@@ -21,16 +22,20 @@ export function candidateImport(specifier) {
   return `import ${JSON.stringify(specifier)};`;
 }
 
+export function copyCandidateFixture(candidate, target) {
+  cpSync(candidate, target, {
+    recursive: true,
+    filter: (path) => !isExcludedCandidatePath(relative(candidate, path)),
+  });
+}
+
 export function createCandidateFixtures() {
   const fixtures = [];
   function fixture() {
     const directory = realpathSync(mkdtempSync(join(tmpdir(), 'splotch-candidate-imports-')));
     fixtures.push(directory);
     const target = join(directory, 'candidate');
-    cpSync(candidate, target, {
-      recursive: true,
-      filter: (path) => !path.includes('/node_modules'),
-    });
+    copyCandidateFixture(candidate, target);
     symlinkSync(join(root, 'node_modules'), join(target, 'node_modules'));
     return target;
   }

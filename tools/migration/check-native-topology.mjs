@@ -4,7 +4,7 @@ import {
   projectDrawingForgeLock,
   readDrawingForgeInputs,
 } from './lib/native-drawing-forge-paths.mjs';
-import { readDrawingArchiveInventory } from './lib/native-drawing-inventory.mjs';
+import { readNativeCandidateArchiveInventory } from './lib/native-candidate-archive-inventory.mjs';
 import { CANDIDATE_DIRECTORY } from '../lib/native-candidate.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -26,7 +26,6 @@ import {
 } from './lib/native-config.mjs';
 import {
   assertAlignmentUpdateOwner,
-  assertCandidateArchiveInventory,
   assertJavaScriptLocks,
   assertProductionClosure,
   assertShippingImports,
@@ -61,18 +60,7 @@ export async function checkNativeTopology(argv) {
   const lockSha256 = createHash('sha256')
     .update(readFileSync(join(root, 'pnpm-lock.yaml')))
     .digest('hex');
-  const drawingArchives = readDrawingArchiveInventory(
-    root,
-    audio.lock,
-    audio.baselineLockSha256,
-    readJson(join(evidence, 'script-inventory.json'))
-  );
-  const combinedRows = [...drawingArchives.inventory.rows, ...audio.archiveRows];
-  const inventory = assertCandidateArchiveInventory(
-    { ...drawingArchives.inventory, rows: combinedRows, inspectedArtifacts: combinedRows.length },
-    actualLock,
-    readJson(join(evidence, 'baseline-artifact-resolutions.json'))
-  );
+  const inventory = readNativeCandidateArchiveInventory(root, actualLock, joint);
   const production = assertProductionClosure(
     actualLock,
     readJson(join(evidence, 'baseline-production-artifacts.json')).artifacts
@@ -110,7 +98,7 @@ export async function checkNativeTopology(argv) {
       },
       n1DrawingInputs: drawingForge.provenance,
     },
-    inventory: { ...inventory, drawingInputs: drawingArchives.qualification },
+    inventory,
     production,
     shippingImports,
     identities,

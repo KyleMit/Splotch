@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-11T02:28:52.117286+00:00",
+  "owner": "/root",
+  "approvedWholeMetadataSHA256": "e9a000f8290a901ef16809482574f524687ebbbea33a42edccd9f0d19da20651",
+  "approvedActualLockSHA256": "27471e0676225c0c0687fa6c628a64ad323d5ab344285a2a8cae510e2aa00ebf",
+  "workspaceSHA256": "fff15b66c49e48573855adabc489975fc43363ac2698f7959d7b7bfe9bfa5a43",
+  "completeMetadataRows": 1527,
+  "allExisting1526FullPackageObjectsUnchanged": true,
+  "everyExistingSnapshotUnchanged": true,
+  "shippingRootImporterDeepEqual": true,
+  "shippingTransitiveClosureUnchanged": true,
+  "independentCompleteLockProof": "Remove exactly the three fully checked new importer/package/peer-snapshot blocks, one occurrence each; resulting bytes equal entire prior c2f2 lock.",
+  "newArtifactIdentities": [
+    "react-native-safe-area-context@5.7.0"
+  ],
+  "actualPublicArchiveSHA512Exact": true,
+  "freshKnownBirths": 3,
+  "freshRecordedGroupsAbsent": 3,
+  "actualExits": [
+    0,
+    0
+  ],
+  "actualOuter": "FIRST9f0e43/session70160->a10381/0",
+  "authorizedNext": "Same-owner source-only truthful newgraph projection and bounded exact archive inventory/normal own frozen-install plan. No adapter/network/install execution by this proof.",
+  "artifactConsumerOrNetworkExecutionGranted": false,
+  "installGranted": false,
+  "buildOrRuntimeGranted": false,
+  "PodDownloadGranted": false,
+  "reviewLedgerMutationGranted": false,
+  "frameworkSelected": false,
+  "campaignComplete": false
+}

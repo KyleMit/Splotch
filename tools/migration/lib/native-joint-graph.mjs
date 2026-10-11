@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { CANDIDATE_DIRECTORY } from '../../lib/native-candidate.mjs';
 import { readLockFile } from './lock-artifacts.mjs';
 import { readPolicyYaml } from './topology-policy.mjs';
+import { readRsdDrawingProjection } from './rsd-drawing-graph.mjs';
 import { qualifyAudioProjectedInputs } from './native-audio-qualification.mjs';
 import {
   projectSvgBackdropPatch,
@@ -41,9 +42,11 @@ function authenticatedFile(root, record) {
 export function readJointNativeProjection(root) {
   const input = JSON.parse(authenticatedFile(root, { path: INPUT_PATH, sha256: INPUT_SHA256 }));
   assert.equal(input.schemaVersion, 1);
-  for (const record of input.files) authenticatedFile(root, record);
-  const lock = readLockFile(join(root, 'pnpm-lock.yaml'));
-  const workspace = readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
+  const rsd = readRsdDrawingProjection(root, input, authenticatedFile);
+  for (const record of input.files)
+    authenticatedFile(root, rsd?.input.baselineFiles[record.path] ?? record);
+  const lock = rsd?.lock ?? readLockFile(join(root, 'pnpm-lock.yaml'));
+  const workspace = rsd?.workspace ?? readPolicyYaml(join(root, 'pnpm-workspace.yaml'));
   const svg = readSvgBackdropPatchInputs(root);
   const baseline = readLockFile(join(root, input.audioLock));
   assert.equal(
@@ -58,9 +61,11 @@ export function readJointNativeProjection(root) {
     readPolicyYaml(join(root, input.audioWorkspace)),
     svg
   );
-  const identity = (path) => input.files.find((record) => record.path === path).sha256;
+  const identity = (path) =>
+    (rsd?.currentActualFiles ?? input.files).find((record) => record.path === path).sha256;
   return {
     svg,
+    rsd,
     view: {
       source: {
         lockSha256: identity('pnpm-lock.yaml'),
@@ -84,10 +89,37 @@ export function qualifyJointNativeInputs(root) {
   const source = dirname(realpathSync(require.resolve('react-native-svg/package.json')));
   const installed = verifySvgBackdropPackage(root, source, joint.svg);
   const audio = qualifyAudioProjectedInputs(root, joint.view);
+  if (joint.rsd) {
+    assert.equal(audio.inheritedManifest.devDependencies['react-strict-dom'], '0.0.54');
+    delete audio.inheritedManifest.devDependencies['react-strict-dom'];
+    if (joint.rsd.safeInsets) {
+      assert.equal(
+        audio.inheritedManifest.devDependencies['react-native-safe-area-context'],
+        '5.7.0'
+      );
+      delete audio.inheritedManifest.devDependencies['react-native-safe-area-context'];
+    }
+  }
   return {
     audio,
+    rsdArchiveRows: joint.rsd?.archiveRows ?? [],
     qualification: {
       ...joint.qualification,
+      ...(joint.rsd
+        ? {
+            rsd: {
+              inputPath: joint.rsd.inputPath,
+              inputSha256: joint.rsd.inputSHA256,
+              scope: joint.rsd.input.scope,
+              safeInsets: joint.rsd.safeInsets
+                ? {
+                    inputPath: joint.rsd.safeInsets.inputPath,
+                    inputSHA256: joint.rsd.safeInsets.inputSHA256,
+                  }
+                : null,
+            },
+          }
+        : {}),
       svg: { installed, patchSha256: joint.svg.patch.sha256 },
     },
   };

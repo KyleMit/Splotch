@@ -7,6 +7,8 @@ import { PNG_TIMEOUT_MS } from './svgCapture';
 import { InkScene } from './InkScene';
 import { PAPER_WIDTH, PAPER_HEIGHT } from './model';
 import { DecodedPng } from './DecodedPng';
+import { BundledFillLoadScope } from './BundledBookArtwork';
+import { useBundledFillReadiness } from './useBundledFillReadiness';
 
 export function FixedInkCapture({
   plan,
@@ -19,27 +21,33 @@ export function FixedInkCapture({
   onReady: () => void;
   onError: (error: unknown) => void;
 }) {
+  const fill = useBundledFillReadiness(plan, onError);
   const [loaded, setLoaded] = useState<InkCheckpoint | null>(null);
   const current = useRef({ plan, onReady, onError });
   current.current = { plan, onReady, onError };
   useEffect(() => {
-    if (!plan.checkpoint || loaded === plan.checkpoint) {
+    if ((!plan.checkpoint || loaded === plan.checkpoint) && fill.ready) {
       current.current.onReady();
       return;
     }
     const timeout = setTimeout(() => {
       if (current.current.plan !== plan) return;
       current.current.onError(
-        new Error('The checkpoint did not load for capture. Your saved drawing is unchanged.')
+        new Error(
+          fill.uri
+            ? 'The coloring fill did not load for capture. Your saved drawing is unchanged.'
+            : 'The checkpoint did not load for capture. Your saved drawing is unchanged.'
+        )
       );
     }, PNG_TIMEOUT_MS);
     return () => clearTimeout(timeout);
-  }, [plan, loaded]);
+  }, [plan, loaded, fill.uri, fill.ready]);
   function imageLoaded() {
     if (current.current.plan.checkpoint === plan.checkpoint) setLoaded(plan.checkpoint);
   }
   return (
     <View style={styles.capture} pointerEvents="none">
+      {fill.decode}
       {plan.checkpoint ? (
         <DecodedPng
           key={plan.checkpoint.id}
@@ -50,20 +58,22 @@ export function FixedInkCapture({
           }}
         />
       ) : null}
-      <CaptureSvg
-        ref={svgRef}
-        width={PAPER_WIDTH}
-        height={PAPER_HEIGHT}
-        viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
-      >
-        <InkScene
-          checkpoint={plan.checkpoint}
-          strokes={plan.strokes}
-          onImageLoad={() => {
-            if (Platform.OS !== 'android') imageLoaded();
-          }}
-        />
-      </CaptureSvg>
+      <BundledFillLoadScope.Provider value={fill.loaded}>
+        <CaptureSvg
+          ref={svgRef}
+          width={PAPER_WIDTH}
+          height={PAPER_HEIGHT}
+          viewBox={`0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`}
+        >
+          <InkScene
+            checkpoint={plan.checkpoint}
+            strokes={plan.strokes}
+            onImageLoad={() => {
+              if (Platform.OS !== 'android') imageLoaded();
+            }}
+          />
+        </CaptureSvg>
+      </BundledFillLoadScope.Provider>
     </View>
   );
 }

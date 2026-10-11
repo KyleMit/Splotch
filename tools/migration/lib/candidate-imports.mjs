@@ -30,7 +30,7 @@ function inside(path) {
   return path !== '..' && !path.startsWith(`..${sep}`) && !isAbsolute(path);
 }
 
-function excluded(path) {
+export function isExcludedCandidatePath(path) {
   return (
     path.split(sep).includes('node_modules') ||
     GENERATED_SUBPATHS.some((subpath) => path === subpath || path.startsWith(`${subpath}/`))
@@ -40,7 +40,7 @@ function excluded(path) {
 function assertOwnedPath(candidate, path, owner) {
   const local = relative(candidate, path);
   assert.ok(inside(local), `${owner} escapes candidate ownership: ${path}`);
-  assert.ok(!excluded(local), `${owner} enters excluded candidate output: ${local}`);
+  assert.ok(!isExcludedCandidatePath(local), `${owner} enters excluded candidate output: ${local}`);
 }
 
 function discoverCandidateFiles(candidate) {
@@ -57,7 +57,7 @@ function discoverCandidateFiles(candidate) {
     visited.add(physical);
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
-      if (excluded(relative(candidate, path))) continue;
+      if (isExcludedCandidatePath(relative(candidate, path))) continue;
       if (entry.isDirectory() || (entry.isSymbolicLink() && statSync(path).isDirectory())) {
         visit(path);
       } else if (

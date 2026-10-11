@@ -64,6 +64,7 @@ vi.mock('react-native', () => {
     );
   });
   return {
+    useColorScheme: () => 'light',
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     findNodeHandle: (target) => target,
     Dimensions: {
@@ -235,6 +236,7 @@ function HookSurface() {
     key: state.recovery.generation,
     ref: state.surface,
     drawing: state.history.drawing,
+    currentDrawing: state.currentDrawing,
     color: state.color,
     brush: state.brush,
     disabled: state.busy,
@@ -259,6 +261,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
     expect(button('Retry drawing')).toBeUndefined();
     await click('Undo');
+    expect(toolsButton().disabled).toBe(true);
+    await frames();
     expect(await saved()).toBe(fixture);
     expect(sdk.dimensions.size).toBe(0);
   });
@@ -418,6 +422,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
     await decodeSettles();
     expect(await saved()).toEqual(emptyDrawing(6, 'flower'));
     await click('Undo');
+    expect(toolsButton().disabled).toBe(true);
+    await frames();
     expect(await saved()).toBe(fixture);
   });
   it('rejects a superseded current-drawing capture and allows the same stable owner to capture its replacement', async () => {
