@@ -1,5 +1,6 @@
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
+import { DEFAULT_APPEARANCE } from '../settings/appearance';
 import { useState } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
@@ -29,16 +30,24 @@ function useSettledMessage(message: string, drawing: boolean) {
 export function RsdDrawingScreen() {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
-  if (sound.settings.status === 'loading')
-    return (
-      <NativeFrame>
-        <html.span>Loading drawing settings…</html.span>
-      </NativeFrame>
-    );
+  const loading = sound.settings.status === 'loading';
   return (
-    <DrawingAppearanceProvider preference={sound.settings.appearance}>
-      <RsdDrawingContent screen={screen} sound={sound} />
+    <DrawingAppearanceProvider
+      preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
+    >
+      {loading ? <RsdDrawingLoading /> : <RsdDrawingContent screen={screen} sound={sound} />}
     </DrawingAppearanceProvider>
+  );
+}
+
+function RsdDrawingLoading() {
+  const theme = useDrawingAppearance();
+  return (
+    <NativeFrame>
+      <html.div style={[styles.screen, theme === 'dark' && darkTheme]}>
+        <html.span>Loading drawing settings…</html.span>
+      </html.div>
+    </NativeFrame>
   );
 }
 

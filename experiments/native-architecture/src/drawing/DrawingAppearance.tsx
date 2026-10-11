@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import { StatusBar, useColorScheme } from 'react-native';
 import { resolveAppearance, type AppearancePreference } from '../settings/appearance';
 import { DRAWING_THEMES, type DrawingTheme, type PaperTheme } from './theme';
 
@@ -22,6 +22,11 @@ export function DrawingAppearanceProvider({
 
 export function useDrawingAppearance(): PaperTheme {
   return useContext(DrawingAppearance);
+}
+
+export function DrawingStatusBar() {
+  const theme = useDrawingAppearance();
+  return <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />;
 }
 
 export function useDrawingTheme(): DrawingTheme {

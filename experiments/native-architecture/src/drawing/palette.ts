@@ -96,6 +96,15 @@ export function paintHex(color: PaintColor): string {
   throw new Error('Paint color is invalid.');
 }
 
+export function paintAppearance(color: PaintColor, theme: PaperTheme) {
+  const reversed = color === 'Black' && theme === 'dark';
+  return {
+    hex: reversed ? WHITE_PAINT : paintHex(color),
+    selectionMark: reversed ? paletteHex('Black') : WHITE_PAINT,
+    glaze: reversed ? ('lighten' as const) : ('darken' as const),
+  };
+}
+
 export function paintId(color: PaintColor): string {
   return `ink-${paintHex(color).slice(1).toLowerCase()}`;
 }
@@ -111,3 +120,6 @@ export function rememberColor(
   if (!isCustomColor(color)) throw new Error('Custom paint color is invalid.');
   return [color, ...colors.filter((entry) => entry !== color)].slice(0, MAX_CUSTOM_COLORS);
 }
+import type { PaperTheme } from './theme';
+
+const WHITE_PAINT = '#ffffff';

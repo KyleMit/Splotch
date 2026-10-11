@@ -96,6 +96,7 @@ vi.mock('react-native', () => {
         children
       ),
     ActivityIndicator: () => null,
+    StatusBar: () => null,
     StyleSheet: { create: (styles) => styles, absoluteFill: {} },
     PanResponder: {
       create: (handlers) => {
@@ -474,3 +475,8 @@ describe('mounted actual native Clear and decoder ownership', () => {
     expect(props.onRendererFault).not.toHaveBeenCalled();
   });
 });
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);

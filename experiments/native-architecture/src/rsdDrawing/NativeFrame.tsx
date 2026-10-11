@@ -1,4 +1,8 @@
-import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
+import {
+  createDrawingStyles,
+  DrawingStatusBar,
+  useDrawingStyles,
+} from '../drawing/DrawingAppearance';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +17,7 @@ export function NativeFrame({ children }: { children: ReactNode }) {
   const nativeFrameStyles = useDrawingStyles(themedStyles);
   return (
     <SafeAreaProvider testID="rsd-window-insets" style={nativeFrameStyles.frame}>
+      <DrawingStatusBar />
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"

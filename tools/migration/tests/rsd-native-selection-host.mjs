@@ -72,6 +72,10 @@ vi.mock('react-native', async () => {
     View = host('div');
   return {
     StyleSheet: { create: (value) => value },
+    StatusBar: (props) => {
+      records.props.push(props);
+      return React.createElement('span', { 'data-status-bar': props.barStyle });
+    },
     AppState: { addEventListener: () => ({ remove() {} }) },
     ScrollView: React.forwardRef((props, ref) => {
       records.viewports.push(props);

@@ -1,6 +1,6 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
 import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
-import { paintHex, paintId, paletteHex } from './palette';
+import { paintAppearance, paintId, paletteHex } from './palette';
 import { BundledMagicFill } from './BundledBookArtwork';
 import { isFarmPageId } from './bundledBooks';
 import { COLORING_FILLS } from './pages';
@@ -29,6 +29,7 @@ const BundledMagicPatternScope = createContext<string | null>(null);
 const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
 function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> }) {
+  const theme = useContext(InkAppearanceScope)?.theme ?? 'light';
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const width = stroke.width;
   const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
@@ -65,7 +66,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                 </Pattern>
               ))}
             </Defs>
-            <CrayonGlaze>
+            <CrayonGlaze mode={paintAppearance(stroke.color, theme).glaze}>
               {CRAYON_BANDS.map((band, bandIndex) => (
                 <StrokeShape
                   key={bandIndex}
@@ -150,7 +151,11 @@ export function InkArtwork({
     bookPage && strokes.some((stroke) => stroke.brush === 'magic') ? `${id}-book-fill` : null;
   const colors = new Map<string, string>();
   for (const stroke of strokes) {
-    if (stroke.brush === 'crayon') colors.set(paintId(stroke.color), paintHex(stroke.color));
+    if (stroke.brush === 'crayon')
+      colors.set(
+        paintId(stroke.color),
+        paintAppearance(stroke.color, appearance?.theme ?? 'light').hex
+      );
   }
   return (
     <CrayonDefinitionScope.Provider value={id}>
@@ -189,7 +194,14 @@ export function InkArtwork({
 }
 
 export function Ink({ stroke }: { stroke: PaintStroke }) {
+  const theme = useContext(InkAppearanceScope)?.theme ?? 'light';
   if (stroke.brush === 'crayon') return <CrayonInk stroke={stroke} />;
   if (stroke.brush === 'magic') return <MagicInk stroke={stroke} />;
-  return <StrokeShape points={stroke.points} width={stroke.width} paint={paintHex(stroke.color)} />;
+  return (
+    <StrokeShape
+      points={stroke.points}
+      width={stroke.width}
+      paint={paintAppearance(stroke.color, theme).hex}
+    />
+  );
 }

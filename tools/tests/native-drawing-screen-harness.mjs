@@ -135,6 +135,7 @@ vi.mock('react-native', () => {
         },
         children
       ),
+    StatusBar: () => null,
     StyleSheet: { create: (styles) => styles },
   };
 });
@@ -278,3 +279,8 @@ export const pictures = [
 ];
 
 export { files };
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);

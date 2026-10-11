@@ -216,6 +216,13 @@ describe('coloring outlines over live and exported paint', () => {
             { x: 924, y: 384 },
           ],
         },
+        {
+          ...strokeStyle('marker', 'Black', emptyDrawing(), 'thick'),
+          points: [
+            { x: 200, y: 100 },
+            { x: 200, y: 650 },
+          ],
+        },
       ],
     };
     mount(snapshot);
@@ -224,6 +231,7 @@ describe('coloring outlines over live and exported paint', () => {
       .raw()
       .toBuffer({ resolveWithObject: true });
     expectPixel(day, { x: 512, y: 384 }, paletteHex('Yellow'));
+    expectPixel(day, { x: 200, y: 150 }, paletteHex('Black'));
     responder.scheme = 'dark';
     const ref = mount(snapshot);
     const nightSvg = liveArtwork();
@@ -232,6 +240,7 @@ describe('coloring outlines over live and exported paint', () => {
       .raw()
       .toBuffer({ resolveWithObject: true });
     expectPixel(night, { x: 512, y: 384 }, paletteHex('Orange'));
+    expectPixel(night, { x: 200, y: 150 }, '#ffffff');
     const outlines = [...nightSvg.querySelectorAll('path[fill="none"]')].filter(
       (path) => path.getAttribute('stroke') === '#eceaf2'
     );
@@ -255,6 +264,8 @@ describe('coloring outlines over live and exported paint', () => {
       .raw()
       .toBuffer({ resolveWithObject: true });
     expectPixel(exported, { x: 512, y: 384 }, paletteHex('Orange'));
+    expectPixel(exported, { x: 200, y: 150 }, '#ffffff');
+    expect(snapshot.strokes[1].color).toBe('Black');
     expectPixel(exported, { x: 20, y: 20 }, '#211f29');
     expect(snapshot.strokes[0].rainbow).toBe(3);
   });

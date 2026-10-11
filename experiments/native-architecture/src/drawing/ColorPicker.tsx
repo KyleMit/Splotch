@@ -1,4 +1,5 @@
-import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
+import { createDrawingStyles, useDrawingAppearance, useDrawingStyles } from './DrawingAppearance';
+import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   AppState,
@@ -19,7 +20,7 @@ import {
   isDiscreteColorActivation,
 } from './colorExplorer';
 import {
-  paintHex,
+  paintAppearance,
   isCustomColor,
   MAX_CUSTOM_COLORS,
   type CustomColor,
@@ -27,7 +28,7 @@ import {
 } from './palette';
 import { measurePaper } from './measurePaper';
 import { createPaperGeometry, paperLocation } from './paperGeometry';
-import { DRAWING_SCALE, DRAWING_SCRIM, TOUCH_TARGET } from './theme';
+import { DRAWING_ON_BRAND, DRAWING_SCALE, DRAWING_SCRIM, TOUCH_TARGET } from './theme';
 
 const EXPLORER_SIZE_PX = EXPLORER_COLUMNS * TOUCH_TARGET;
 const PICKER_MAX_WIDTH_PX = EXPLORER_SIZE_PX + DRAWING_SCALE.space4 * 2;
@@ -57,100 +58,105 @@ export function ColorPicker({
   } = useColorExploration(selected);
   return (
     <Modal
+      statusBarTranslucent
+      navigationBarTranslucent
       visible
       transparent
       animationType="fade"
       accessibilityLabel="Color picker"
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop} onLayout={refresh}>
-        <View accessibilityViewIsModal style={styles.card}>
-          <Text accessibilityRole="header" style={styles.title}>
-            Find your color
-          </Text>
-          <ScrollView
-            scrollEnabled={!exploring}
-            onScroll={refresh}
-            onLayout={refresh}
-            onContentSizeChange={refresh}
-            contentContainerStyle={styles.content}
-          >
-            <Text style={styles.help}>Slide to explore. Lift to keep a color here.</Text>
-            <View
-              ref={field}
-              role="group"
-              accessibilityLabel="Color explorer"
-              tabIndex={-1}
-              collapsable={false}
-              onLayout={refresh}
-              style={styles.field}
-              onStartShouldSetResponderCapture={() => geometry.current() !== null}
-              onResponderGrant={(event) => {
-                event.preventDefault();
-                const touch = event.nativeEvent.touches[0];
-                if (!touch || event.nativeEvent.touches.length !== 1) return;
-                field.current?.focus();
-                gesture.current = { identifier: String(touch.identifier), previous: draft };
-                setExploring(true);
-                sample(event);
-              }}
-              onResponderStart={(event) => {
-                if (event.nativeEvent.touches.length !== 1) cancel();
-              }}
-              onResponderMove={(event) => {
-                event.preventDefault();
-                sample(event);
-              }}
-              onResponderRelease={(event) => sample(event, true)}
-              onResponderTerminate={cancel}
-              onResponderTerminationRequest={() => true}
-            >
-              <ColorGradient />
-              {EXPLORER_TILES.map((tile) => (
-                <Pressable
-                  key={tile.color}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Explore ${tile.color}`}
-                  aria-pressed={draft === tile.color}
-                  accessibilityState={{ selected: draft === tile.color }}
-                  onPress={(event) => {
-                    if (isDiscreteColorActivation(event.nativeEvent)) setDraft(tile.color);
-                  }}
-                  style={styles.tile}
-                />
-              ))}
-            </View>
-            <View style={styles.previewRow}>
-              <View style={[styles.preview, { backgroundColor: draft }]} />
-              <Text accessibilityLiveRegion="polite" style={styles.help}>
-                {draft}
-              </Text>
-            </View>
-            <Text style={styles.help}>
-              Use a color to keep it with your {MAX_CUSTOM_COLORS} most recent custom paints.
+      <NativeFrame>
+        <View style={styles.backdrop} onLayout={refresh}>
+          <View accessibilityViewIsModal style={styles.card}>
+            <Text accessibilityRole="header" style={styles.title}>
+              Find your color
             </Text>
-          </ScrollView>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Use color"
-            disabled={exploring}
-            onPress={() => onChoose(draft)}
-            style={styles.use}
-          >
-            <Text style={styles.useText}>Use color</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" onPress={onClose} style={styles.close}>
-            <Text style={styles.help}>Keep drawing</Text>
-          </Pressable>
+            <ScrollView
+              scrollEnabled={!exploring}
+              onScroll={refresh}
+              onLayout={refresh}
+              onContentSizeChange={refresh}
+              contentContainerStyle={styles.content}
+            >
+              <Text style={styles.help}>Slide to explore. Lift to keep a color here.</Text>
+              <View
+                ref={field}
+                role="group"
+                accessibilityLabel="Color explorer"
+                tabIndex={-1}
+                collapsable={false}
+                onLayout={refresh}
+                style={styles.field}
+                onStartShouldSetResponderCapture={() => geometry.current() !== null}
+                onResponderGrant={(event) => {
+                  event.preventDefault();
+                  const touch = event.nativeEvent.touches[0];
+                  if (!touch || event.nativeEvent.touches.length !== 1) return;
+                  field.current?.focus();
+                  gesture.current = { identifier: String(touch.identifier), previous: draft };
+                  setExploring(true);
+                  sample(event);
+                }}
+                onResponderStart={(event) => {
+                  if (event.nativeEvent.touches.length !== 1) cancel();
+                }}
+                onResponderMove={(event) => {
+                  event.preventDefault();
+                  sample(event);
+                }}
+                onResponderRelease={(event) => sample(event, true)}
+                onResponderTerminate={cancel}
+                onResponderTerminationRequest={() => true}
+              >
+                <ColorGradient />
+                {EXPLORER_TILES.map((tile) => (
+                  <Pressable
+                    key={tile.color}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Explore ${tile.color}`}
+                    aria-pressed={draft === tile.color}
+                    accessibilityState={{ selected: draft === tile.color }}
+                    onPress={(event) => {
+                      if (isDiscreteColorActivation(event.nativeEvent)) setDraft(tile.color);
+                    }}
+                    style={styles.tile}
+                  />
+                ))}
+              </View>
+              <View style={styles.previewRow}>
+                <View style={[styles.preview, { backgroundColor: draft }]} />
+                <Text accessibilityLiveRegion="polite" style={styles.help}>
+                  {draft}
+                </Text>
+              </View>
+              <Text style={styles.help}>
+                Use a color to keep it with your {MAX_CUSTOM_COLORS} most recent custom paints.
+              </Text>
+            </ScrollView>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Use color"
+              disabled={exploring}
+              onPress={() => onChoose(draft)}
+              style={styles.use}
+            >
+              <Text style={styles.useText}>Use color</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={onClose} style={styles.close}>
+              <Text style={styles.help}>Keep drawing</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </NativeFrame>
     </Modal>
   );
 }
 
 function useColorExploration(selected: PaintColor) {
+  const theme = useDrawingAppearance();
   const [draft, setDraft] = useState<CustomColor>(() => {
-    const hex = paintHex(selected).toUpperCase();
+    const hex = paintAppearance(selected, theme).hex.toUpperCase();
     return exploreInitial(hex);
   });
   const [exploring, setExploring] = useState(false);
@@ -288,7 +294,7 @@ const themedStyles = createDrawingStyles((palette) =>
       justifyContent: 'center',
     },
     useText: {
-      color: palette.surface,
+      color: DRAWING_ON_BRAND,
       fontSize: DRAWING_SCALE.fontSizeMd,
       fontWeight: DRAWING_SCALE.fontWeightSemibold,
     },

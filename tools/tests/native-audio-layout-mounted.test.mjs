@@ -98,6 +98,7 @@ vi.mock('react-native', () => ({
       return { panHandlers: {} };
     },
   },
+  StatusBar: () => null,
   StyleSheet: { create: (styles) => styles, absoluteFill: {} },
 }));
 vi.mock('react-native-svg', () => {
@@ -209,3 +210,8 @@ it('continues to settle a cohort on a genuine paper-frame invalidation', async (
   ]);
   expect(owner.history.undo).toHaveLength(1);
 });
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);

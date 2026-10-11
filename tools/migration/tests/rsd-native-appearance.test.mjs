@@ -56,6 +56,7 @@ it('hydrates before usable controls and persists appearance through the real RSD
     settingsOpen: true,
     colorPickerOpen: false,
   };
+  records.scheme = 'dark';
   caller.sound = { settings: { status: 'loading' }, owner: null, audioMessage: '' };
   const owner = createSoundSettings(storage, (settings) => {
     caller.sound.settings = settings;
@@ -64,6 +65,9 @@ it('hydrates before usable controls and persists appearance through the real RSD
   caller.sound.owner = { settings: owner };
   await mount(createElement(RsdDrawingScreen));
   expect(host.textContent).toContain('Loading drawing settings');
+  expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(host.querySelector('[data-status-bar]').dataset.statusBar).toBe('light-content');
+  records.scheme = 'light';
   expect(host.querySelector('button')).toBeNull();
   const loading = owner.load();
   await act(async () => {
@@ -76,6 +80,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
   await click('Dark appearance');
   checkedRadio(host.querySelector('[aria-label="Dark appearance"]'));
   expect(lastFrame().style.backgroundColor).toBe('#1a1922');
+  expect(
+    [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
+  ).toEqual(['light-content', 'light-content']);
+  expect(
+    records.props.filter((props) => props.accessibilityLabel === 'Drawing settings').at(-1)
+  ).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
   expect(
     records.props.filter((props) => props.style?.backgroundColor === '#23232b').length
   ).toBeGreaterThanOrEqual(2);
@@ -99,6 +109,9 @@ it('hydrates before usable controls and persists appearance through the real RSD
   await refresh();
   checkedRadio(host.querySelector('[aria-label="Light appearance"]'));
   expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
+  expect(
+    [...host.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
+  ).toEqual(['dark-content', 'dark-content']);
   await click('System appearance');
   checkedRadio(host.querySelector('[aria-label="System appearance"]'));
   expect(lastFrame().style.backgroundColor).toBe('#1a1922');

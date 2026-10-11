@@ -59,7 +59,17 @@ vi.mock('react-native', () => {
     useColorScheme: () => sound.scheme,
     Platform: { OS: 'android' },
     ActivityIndicator: () => null,
-    Modal: ({ visible, children }) => visible && createElement('div', { role: 'dialog' }, children),
+    Modal: ({ visible, children, statusBarTranslucent, navigationBarTranslucent }) =>
+      visible &&
+      createElement(
+        'div',
+        {
+          role: 'dialog',
+          'data-status-translucent': statusBarTranslucent,
+          'data-navigation-translucent': navigationBarTranslucent,
+        },
+        children
+      ),
     Pressable: forwardRef(({ children, onPress, disabled, accessibilityLabel }, ref) =>
       createElement(
         'button',
@@ -85,6 +95,7 @@ vi.mock('react-native', () => {
         { role: accessibilityRole, 'aria-live': accessibilityLiveRegion },
         children
       ),
+    StatusBar: ({ barStyle }) => createElement('span', { 'data-status-bar': barStyle }),
     StyleSheet: { create: (styles) => styles },
   };
 });
@@ -219,8 +230,16 @@ describe('live drawing sound owner and Settings screen', () => {
     sound.write.mockRejectedValueOnce(new Error('disk full'));
     await ui.click('Dark appearance');
     expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('dark');
+    expect(
+      [...ui.container.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
+    ).toEqual(
+      Array(ui.container.querySelectorAll('[data-status-bar]').length).fill('light-content')
+    );
     expect(ui.container.querySelector('[data-background="#211f29"]')).not.toBeNull();
     expect(ui.dialog().textContent).toContain('could not be saved');
+    expect(ui.dialog().dataset.statusTranslucent).toBe('true');
+    expect(ui.dialog().dataset.navigationTranslucent).toBe('true');
+    expect(ui.dialog().querySelector('[data-background="#1a1922"]')).not.toBeNull();
     expect(JSON.parse(sound.write.mock.calls.at(-1)[0])).toMatchObject({
       appearance: 'dark',
       soundEnabled: false,
@@ -234,6 +253,9 @@ describe('live drawing sound owner and Settings screen', () => {
     sound.scheme = 'dark';
     await ui.refresh();
     expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('light');
+    expect(
+      [...ui.container.querySelectorAll('[data-status-bar]')].map((node) => node.dataset.statusBar)
+    ).toEqual(['dark-content', 'dark-content']);
     await ui.click('System appearance');
     expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('dark');
     sound.scheme = 'light';
@@ -297,9 +319,12 @@ describe('live drawing sound owner and Settings screen', () => {
   });
   it('waits for settings before the first usable drawing frame and blocks writes while saving', async () => {
     const read = pending();
+    sound.scheme = 'dark';
     sound.read.mockReturnValueOnce(read.promise);
     await mount();
     expect(ui.container.textContent).toContain('Loading drawing settings');
+    expect(ui.container.querySelector('[data-background="#1a1922"]')).not.toBeNull();
+    expect(ui.container.querySelector('[data-status-bar]').dataset.statusBar).toBe('light-content');
     expect(ui.container.querySelector('button')).toBeNull();
     expect(sound.load).not.toHaveBeenCalled();
     await act(async () => read.resolve('{"version":1,"soundEnabled":false}'));
@@ -358,3 +383,8 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(sound.remove).toHaveBeenCalledOnce();
   });
 });
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);

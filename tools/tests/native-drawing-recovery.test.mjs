@@ -89,6 +89,7 @@ vi.mock('react-native', () => {
         children
       ),
     ActivityIndicator: () => null,
+    StatusBar: () => null,
     StyleSheet: { create: (styles) => styles, absoluteFill: {} },
     PanResponder: {
       create: (handlers) => {
@@ -411,3 +412,8 @@ describe('generation and real input/command admission', () => {
     );
   });
 });
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);

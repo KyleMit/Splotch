@@ -264,6 +264,8 @@ const legacySource = readFileSync(
   ),
   'utf8'
 );
+const { CrayonGlaze: CurrentCrayonGlaze } =
+  await import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx');
 const legacyModules = {
   react: await import('react'),
   'react/jsx-runtime': await import('react/jsx-runtime'),
@@ -271,8 +273,9 @@ const legacyModules = {
   './palette': await import('../../experiments/native-architecture/src/drawing/palette.ts'),
   './brushes': await import('../../experiments/native-architecture/src/drawing/brushes.ts'),
   './crayon': await import('../../experiments/native-architecture/src/drawing/crayon.ts'),
-  './CrayonGlaze':
-    await import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx'),
+  './CrayonGlaze': {
+    CrayonGlaze: ({ children }) => createElement(CurrentCrayonGlaze, { mode: 'darken' }, children),
+  },
   './model': await import('../../experiments/native-architecture/src/drawing/model.ts'),
 };
 const legacyExports = {};

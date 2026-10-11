@@ -5,6 +5,7 @@ import {
   useDrawingTheme,
 } from '../drawing/DrawingAppearance';
 import { useEffect } from 'react';
+import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
@@ -38,78 +39,82 @@ export function SoundSettings({
   }, [visible, onDismiss]);
   return (
     <Modal
+      statusBarTranslucent
+      navigationBarTranslucent
       visible={visible}
       onDismiss={onDismiss}
       transparent
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
-        <View accessibilityViewIsModal style={styles.card}>
-          <Text accessibilityRole="header" style={styles.title}>
-            Settings
-          </Text>
-          <Text style={styles.labelText}>Appearance</Text>
-          <View
-            accessibilityRole="radiogroup"
-            accessibilityLabel="Appearance"
-            style={styles.appearanceRow}
-          >
-            {APPEARANCE_PREFERENCES.map((appearance) => (
-              <Pressable
-                key={appearance}
-                accessibilityRole="radio"
-                accessibilityLabel={`${APPEARANCE_LABELS[appearance]} appearance`}
-                accessibilityState={{ checked: state.appearance === appearance, disabled: busy }}
-                aria-checked={state.appearance === appearance}
-                disabled={busy}
-                onPress={() => onAppearanceChange(appearance)}
-                style={styles.button}
-              >
-                <Text style={styles.labelText}>
-                  {APPEARANCE_LABELS[appearance]}
-                  {state.appearance === appearance ? ' ✓' : ''}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text style={styles.help}>System follows your device.</Text>
-          <View style={styles.row}>
-            <View style={styles.label}>
-              <Text style={styles.labelText}>Sound</Text>
-              <Text style={styles.help}>Play a soft scratch while drawing.</Text>
+      <NativeFrame>
+        <View style={styles.backdrop}>
+          <View accessibilityViewIsModal style={styles.card}>
+            <Text accessibilityRole="header" style={styles.title}>
+              Settings
+            </Text>
+            <Text style={styles.labelText}>Appearance</Text>
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Appearance"
+              style={styles.appearanceRow}
+            >
+              {APPEARANCE_PREFERENCES.map((appearance) => (
+                <Pressable
+                  key={appearance}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`${APPEARANCE_LABELS[appearance]} appearance`}
+                  accessibilityState={{ checked: state.appearance === appearance, disabled: busy }}
+                  aria-checked={state.appearance === appearance}
+                  disabled={busy}
+                  onPress={() => onAppearanceChange(appearance)}
+                  style={styles.button}
+                >
+                  <Text style={styles.labelText}>
+                    {APPEARANCE_LABELS[appearance]}
+                    {state.appearance === appearance ? ' ✓' : ''}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <Switch
-              accessibilityLabel="Drawing sound"
-              accessibilityHint="Play a soft scratch while drawing"
-              value={state.soundEnabled}
-              disabled={busy}
-              onValueChange={onChange}
-              style={styles.switch}
-              trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
-            />
-          </View>
-          {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
-          {state.status === 'saving' ? <Text style={styles.help}>Saving settings…</Text> : null}
-          <Text accessibilityLiveRegion="polite" style={styles.help}>
-            {state.message || audioMessage}
-          </Text>
-          {state.status === 'ready' && !state.saved ? (
-            <Pressable accessibilityRole="button" onPress={onRetrySave} style={styles.button}>
-              <Text style={styles.labelText}>Retry saving</Text>
+            <Text style={styles.help}>System follows your device.</Text>
+            <View style={styles.row}>
+              <View style={styles.label}>
+                <Text style={styles.labelText}>Sound</Text>
+                <Text style={styles.help}>Play a soft scratch while drawing.</Text>
+              </View>
+              <Switch
+                accessibilityLabel="Drawing sound"
+                accessibilityHint="Play a soft scratch while drawing"
+                value={state.soundEnabled}
+                disabled={busy}
+                onValueChange={onChange}
+                style={styles.switch}
+                trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
+              />
+            </View>
+            {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
+            {state.status === 'saving' ? <Text style={styles.help}>Saving settings…</Text> : null}
+            <Text accessibilityLiveRegion="polite" style={styles.help}>
+              {state.message || audioMessage}
+            </Text>
+            {state.status === 'ready' && !state.saved ? (
+              <Pressable accessibilityRole="button" onPress={onRetrySave} style={styles.button}>
+                <Text style={styles.labelText}>Retry saving</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close Settings"
+              disabled={!visible}
+              onPress={onClose}
+              style={styles.button}
+            >
+              <Text style={styles.labelText}>Done</Text>
             </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close Settings"
-            disabled={!visible}
-            onPress={onClose}
-            style={styles.button}
-          >
-            <Text style={styles.labelText}>Done</Text>
-          </Pressable>
+          </View>
         </View>
-      </View>
+      </NativeFrame>
     </Modal>
   );
 }

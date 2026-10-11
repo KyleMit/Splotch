@@ -88,6 +88,8 @@ export function NativeDialog({
   const theme = useDrawingAppearance();
   return (
     <Modal
+      statusBarTranslucent
+      navigationBarTranslucent
       visible={visible}
       animationType="none"
       accessibilityLabel={label}

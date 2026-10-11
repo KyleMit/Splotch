@@ -7,6 +7,7 @@ import { PaintColors } from '../../experiments/native-architecture/src/drawing/P
 import { ColorPicker } from '../../experiments/native-architecture/src/drawing/ColorPicker.tsx';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
 import { AppState } from 'react-native';
+import { DrawingAppearanceProvider } from '../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
 
 const platform = vi.hoisted(() => ({
   read: vi.fn(),
@@ -303,3 +304,81 @@ describe('custom color controls through installed React Native Web', () => {
     expect(document.activeElement).toBe(trigger);
   });
 });
+
+vi.mock(
+  'react-native-safe-area-context',
+  () => import('../lib/native-appearance-frame-fixture.mjs')
+);
+
+function luminance(color) {
+  const channels = color
+    .match(/[\d.]+/g)
+    .slice(0, 3)
+    .map(Number)
+    .map((value) => {
+      const channel = value / 255;
+      return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+function contrast(a, b) {
+  const values = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+it.each(['light', 'dark'])(
+  'renders the actual Use color label above AA contrast in %s',
+  async (preference) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    await act(async () =>
+      root.render(
+        createElement(
+          DrawingAppearanceProvider,
+          { preference },
+          createElement(ColorPicker, { selected: 'Black', onChoose() {}, onClose() {} })
+        )
+      )
+    );
+    const action = document.querySelector('[aria-label="Use color"]');
+    expect(action).not.toBeNull();
+    const text = [...action.querySelectorAll('*')].find((node) => node.textContent === 'Use color');
+    expect(
+      contrast(getComputedStyle(text).color, getComputedStyle(action).backgroundColor)
+    ).toBeGreaterThanOrEqual(4.5);
+  }
+);
+it.each(['light', 'dark'])(
+  'renders readable RN Black and dark custom swatch selection marks in %s',
+  async (preference) => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    for (const color of ['Black', '#B5835A', '#7A74E7']) {
+      await act(async () =>
+        root.render(
+          createElement(
+            DrawingAppearanceProvider,
+            { preference },
+            createElement(PaintColors, {
+              color,
+              customColors: ['#B5835A', '#7A74E7'],
+              disabled: false,
+              openerRef: { current: null },
+              onChange() {},
+              onExplore() {},
+            })
+          )
+        )
+      );
+      const swatch = host.querySelector('[aria-pressed="true"]');
+      expect(swatch.textContent).toBe('✓');
+      expect(
+        contrast(
+          getComputedStyle(swatch.firstElementChild).color,
+          getComputedStyle(swatch).backgroundColor
+        )
+      ).toBeGreaterThanOrEqual(3);
+    }
+  }
+);

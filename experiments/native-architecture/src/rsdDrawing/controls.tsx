@@ -1,6 +1,7 @@
 import { css, html } from 'react-strict-dom';
 import { colors, dimensions, onBrand } from './tokens.css';
-import { paintHex, paintLabel, type PaintColor } from '../drawing/palette';
+import { paintAppearance, paintLabel, type PaintColor } from '../drawing/palette';
+import { useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { TOUCH_TARGET } from '../drawing/theme';
 
 const SELECTION_BORDER_WIDTH_PX = 2;
@@ -119,6 +120,7 @@ export function RsdPaintAction({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const appearance = paintAppearance(color, useDrawingAppearance());
   return (
     <html.button
       role="radio"
@@ -135,7 +137,7 @@ export function RsdPaintAction({
       ]}
       onClick={onClick}
     >
-      <html.div aria-hidden style={styles.paintDot(paintHex(color))} />
+      <html.div aria-hidden style={styles.paintDot(appearance.hex)} />
       <html.span>{color}</html.span>
     </html.button>
   );

@@ -1,14 +1,8 @@
 import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
+import { DEFAULT_APPEARANCE } from './settings/appearance';
+import { NativeFrame } from './rsdDrawing/NativeFrame';
 import { useState, type ReactNode, type RefObject } from 'react';
-import {
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { PaintColors } from './drawing/PaintColors';
 import { usePaintSelectionFocus } from './drawing/usePaintSelectionFocus';
 import { ColorPicker } from './drawing/ColorPicker';
@@ -59,16 +53,22 @@ function PaperWorkspace({
 export function DrawingScreen() {
   const screen = useDrawingScreen();
   const sound = useDrawingSound();
-  if (sound.settings.status === 'loading')
-    return (
-      <View>
-        <Text>Loading drawing settings…</Text>
-      </View>
-    );
+  const loading = sound.settings.status === 'loading';
   return (
-    <DrawingAppearanceProvider preference={sound.settings.appearance}>
-      <DrawingScreenContent screen={screen} sound={sound} />
+    <DrawingAppearanceProvider
+      preference={loading ? DEFAULT_APPEARANCE : sound.settings.appearance}
+    >
+      {loading ? <DrawingLoading /> : <DrawingScreenContent screen={screen} sound={sound} />}
     </DrawingAppearanceProvider>
+  );
+}
+
+function DrawingLoading() {
+  const styles = useDrawingScreenStyles();
+  return (
+    <NativeFrame>
+      <Text style={styles.notice}>Loading drawing settings…</Text>
+    </NativeFrame>
   );
 }
 
@@ -123,74 +123,76 @@ function DrawingScreenContent({
     menuFocus.cancel();
   }
   return (
-    <SafeAreaView
-      style={styles.screen}
-      onLayout={() => surface.current?.refreshGeometry()}
-      onFocus={cancelFocus}
-      onPointerDown={cancelFocus}
-      onTouchStart={cancelFocus}
-    >
+    <NativeFrame>
       <View
-        accessibilityElementsHidden={menu.open}
-        importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
-        style={[styles.content, landscape && styles.landscape]}
+        style={styles.screen}
+        onLayout={() => surface.current?.refreshGeometry()}
+        onFocus={cancelFocus}
+        onPointerDown={cancelFocus}
+        onTouchStart={cancelFocus}
       >
-        <ScrollView
-          style={landscape ? styles.sideControls : styles.topControls}
-          contentContainerStyle={styles.controls}
-          scrollEnabled={!drawing}
+        <View
+          accessibilityElementsHidden={menu.open}
+          importantForAccessibility={menu.open ? 'no-hide-descendants' : 'auto'}
+          style={[styles.content, landscape && styles.landscape]}
         >
-          <View style={styles.heading}>
-            <Text style={styles.title}>Splotch</Text>
-            <Action
-              label="Undo"
-              disabled={disabled || menu.open || history.undo.length === 0}
-              onPress={undo}
+          <ScrollView
+            style={landscape ? styles.sideControls : styles.topControls}
+            contentContainerStyle={styles.controls}
+            scrollEnabled={!drawing}
+          >
+            <View style={styles.heading}>
+              <Text style={styles.title}>Splotch</Text>
+              <Action
+                label="Undo"
+                disabled={disabled || menu.open || history.undo.length === 0}
+                onPress={undo}
+              />
+              <Action
+                label={`${BRUSHES[brush].label} ▾`}
+                accessibilityLabel={`Drawing tools. ${BRUSHES[brush].label} selected.`}
+                openerRef={menuFocus.opener}
+                disabled={disabled || menu.open}
+                onPress={menu.show}
+              />
+            </View>
+            <PaintColors
+              color={color}
+              customColors={sound.settings.customColors}
+              disabled={paintsDisabled || menu.open}
+              openerRef={focusReturn.opener}
+              onExplore={openColorPicker}
+              onChange={(next, target) => {
+                void paintFocus.choose(next, target, () => sound.owner?.settings.setColor(next));
+              }}
             />
-            <Action
-              label={`${BRUSHES[brush].label} ▾`}
-              accessibilityLabel={`Drawing tools. ${BRUSHES[brush].label} selected.`}
-              openerRef={menuFocus.opener}
-              disabled={disabled || menu.open}
-              onPress={menu.show}
-            />
-          </View>
-          <PaintColors
-            color={color}
-            customColors={sound.settings.customColors}
-            disabled={paintsDisabled || menu.open}
-            openerRef={focusReturn.opener}
-            onExplore={openColorPicker}
-            onChange={(next, target) => {
-              void paintFocus.choose(next, target, () => sound.owner?.settings.setColor(next));
-            }}
+          </ScrollView>
+          <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open} />
+        </View>
+        <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
+        {menu.open ? (
+          <DrawingMenu
+            screen={screen}
+            sound={sound}
+            visible={menu.visible}
+            onDismiss={menu.dismissed}
+            run={menu.run}
+            onClose={menuFocus.close}
           />
-        </ScrollView>
-        <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open} />
-      </View>
-      <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
-      {menu.open ? (
-        <DrawingMenu
+        ) : null}
+        <DrawingSheets
           screen={screen}
           sound={sound}
-          visible={menu.visible}
-          onDismiss={menu.dismissed}
-          run={menu.run}
-          onClose={menuFocus.close}
+          onCloseColors={focusReturn.close}
+          settingsClosing={settingsClosing}
+          onCloseSettings={menuFocus.close}
+          onSettingsDismissed={() => {
+            screen.closeSettings();
+            setSettingsClosing(false);
+          }}
         />
-      ) : null}
-      <DrawingSheets
-        screen={screen}
-        sound={sound}
-        onCloseColors={focusReturn.close}
-        settingsClosing={settingsClosing}
-        onCloseSettings={menuFocus.close}
-        onSettingsDismissed={() => {
-          screen.closeSettings();
-          setSettingsClosing(false);
-        }}
-      />
-    </SafeAreaView>
+      </View>
+    </NativeFrame>
   );
 }
 
@@ -367,6 +369,8 @@ function SavedPictures({
   if (pictures === null) return null;
   return (
     <Modal
+      statusBarTranslucent
+      navigationBarTranslucent
       visible
       transparent
       animationType="fade"
@@ -374,42 +378,44 @@ function SavedPictures({
         if (!busy) onClose();
       }}
     >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Your pictures</Text>
-          {notice ? (
-            <Text
-              accessibilityRole="alert"
-              accessibilityLiveRegion="polite"
-              style={[styles.notice, styles.modalNotice]}
-            >
-              {notice}
-            </Text>
-          ) : null}
-          <ScrollView style={styles.pictureList}>
-            {pictures?.length ? (
-              pictures.map((picture) => (
-                <Pressable
-                  key={picture.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open picture from ${picture.name}`}
-                  disabled={busy}
-                  onPress={() => {
-                    void onOpen(picture);
-                  }}
-                  style={styles.savedPicture}
-                >
-                  <Text style={styles.actionText}>{picture.name}</Text>
-                  <Text style={styles.subtitle}>Tap to open</Text>
-                </Pressable>
-              ))
-            ) : (
-              <Text style={styles.notice}>Save a picture to find it here.</Text>
-            )}
-          </ScrollView>
-          <Action label="Close" disabled={busy} onPress={onClose} />
+      <NativeFrame>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Your pictures</Text>
+            {notice ? (
+              <Text
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+                style={[styles.notice, styles.modalNotice]}
+              >
+                {notice}
+              </Text>
+            ) : null}
+            <ScrollView style={styles.pictureList}>
+              {pictures?.length ? (
+                pictures.map((picture) => (
+                  <Pressable
+                    key={picture.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open picture from ${picture.name}`}
+                    disabled={busy}
+                    onPress={() => {
+                      void onOpen(picture);
+                    }}
+                    style={styles.savedPicture}
+                  >
+                    <Text style={styles.actionText}>{picture.name}</Text>
+                    <Text style={styles.subtitle}>Tap to open</Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text style={styles.notice}>Save a picture to find it here.</Text>
+              )}
+            </ScrollView>
+            <Action label="Close" disabled={busy} onPress={onClose} />
+          </View>
         </View>
-      </View>
+      </NativeFrame>
     </Modal>
   );
 }

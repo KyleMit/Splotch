@@ -1,8 +1,9 @@
-import { createDrawingStyles, useDrawingStyles } from './DrawingAppearance';
+import { createDrawingStyles, useDrawingAppearance, useDrawingStyles } from './DrawingAppearance';
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  paintHex,
+  paintAppearance,
+  paletteHex,
   paintLabel,
   type PaletteLabel,
   type PaintColor,
@@ -115,6 +116,7 @@ function PaintSwatch({
 }) {
   const styles = useDrawingStyles(themedStyles);
   const chosen = selected === color;
+  const appearance = paintAppearance(color, useDrawingAppearance());
   const target = useRef<View>(null);
   const layout = useRef<number | null>(null);
   const focused = useRef(false);
@@ -210,14 +212,19 @@ function PaintSwatch({
             : null
         );
       }}
-      style={[styles.swatch, { backgroundColor: paintHex(color) }, chosen && styles.selectedSwatch]}
+      style={[styles.swatch, { backgroundColor: appearance.hex }, chosen && styles.selectedSwatch]}
     >
-      {chosen ? (
-        <Text accessible={false} allowFontScaling={false} style={styles.swatchMark}>
-          ✓
-        </Text>
-      ) : null}
+      {chosen ? <PaintSelectionMark color={appearance.selectionMark} /> : null}
     </Pressable>
+  );
+}
+
+function PaintSelectionMark({ color }: { color: string }) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <Text accessible={false} allowFontScaling={false} style={[styles.swatchMark, { color }]}>
+      ✓
+    </Text>
   );
 }
 
@@ -243,8 +250,7 @@ const themedStyles = createDrawingStyles((palette) =>
     swatchMark: {
       fontSize: 28,
       fontWeight: '800',
-      color: palette.surface,
-      textShadowColor: palette.textStrong,
+      textShadowColor: paletteHex('Black'),
       textShadowRadius: 2,
     },
     explore: {
