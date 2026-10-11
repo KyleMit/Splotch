@@ -1,3 +1,4 @@
+import { useModalAnimation } from './drawing/useModalAnimation';
 import { DrawingAppearanceProvider } from './drawing/DrawingAppearance';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
 import { NativeFrame } from './rsdDrawing/NativeFrame';
@@ -365,6 +366,7 @@ function SavedPictures({
   onOpen: (picture: SavedPicture) => Promise<void>;
   onClose: () => void;
 }) {
+  const animationType = useModalAnimation();
   const styles = useDrawingScreenStyles();
   if (pictures === null) return null;
   return (
@@ -373,7 +375,7 @@ function SavedPictures({
       navigationBarTranslucent
       visible
       transparent
-      animationType="fade"
+      animationType={animationType}
       onRequestClose={() => {
         if (!busy) onClose();
       }}

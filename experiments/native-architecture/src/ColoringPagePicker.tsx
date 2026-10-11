@@ -1,3 +1,4 @@
+import { useModalAnimation } from './drawing/useModalAnimation';
 import { useDrawingAppearance } from './drawing/DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearance';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -21,10 +22,11 @@ export function ColoringPagePicker({
   onChoose: (pageId: PageId) => void;
   onClose: () => void;
 }) {
+  const animationType = useModalAnimation();
   const styles = useDrawingStyles(themedStyles);
   const theme = useDrawingAppearance();
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible transparent animationType={animationType} onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View
           role="dialog"

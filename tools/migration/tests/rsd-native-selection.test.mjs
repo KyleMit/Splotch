@@ -305,6 +305,7 @@ it('keeps the caller close action outside the bounded options viewport with ordi
   const modal = records.props.find((entry) => entry.onRequestClose === onClose);
   expect(modal.onDismiss).toBe(onDismiss);
   expect(modal.visible).toBe(true);
+  expect(modal.animationType).toBe('none');
   const options = host.querySelector('[data-testid="rsd-dialog-viewport"]');
   const footer = host.querySelector('[data-testid="rsd-dialog-footer"]');
   const close = footer.querySelector('[aria-label="Keep drawing"]');

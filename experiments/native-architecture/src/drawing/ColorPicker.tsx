@@ -1,3 +1,4 @@
+import { useModalAnimation } from './useModalAnimation';
 import { createDrawingStyles, useDrawingAppearance, useDrawingStyles } from './DrawingAppearance';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -43,6 +44,7 @@ export function ColorPicker({
   onChoose: (color: PaintColor) => void;
   onClose: () => void;
 }) {
+  const animationType = useModalAnimation();
   const styles = useDrawingStyles(themedStyles);
   const {
     choice,
@@ -63,7 +65,7 @@ export function ColorPicker({
       navigationBarTranslucent
       visible
       transparent
-      animationType="fade"
+      animationType={animationType}
       accessibilityLabel="Color picker"
       onRequestClose={onClose}
     >

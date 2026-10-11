@@ -6,6 +6,11 @@ import { DrawingScreen } from '../../experiments/native-architecture/src/Drawing
 import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const files = vi.hoisted(() => ({
+  motionRead: vi.fn().mockResolvedValue(false),
+  motionListeners: new Set(),
+  motionRemoves: [],
+  motionListenError: null,
+  save: vi.fn().mockResolvedValue(undefined),
   list: vi.fn(),
   open: vi.fn(),
   lock: vi.fn(),
@@ -37,7 +42,7 @@ vi.mock('../../experiments/native-architecture/src/platform/pngRecovery.ts', () 
 vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', () => ({
   listPictures: files.list,
   reopenPicture: files.open,
-  savePicture: vi.fn(),
+  savePicture: files.save,
   exportPng: files.export,
 }));
 
@@ -56,6 +61,17 @@ vi.mock('react-native', () => {
     return createElement('div', null, children);
   }
   return {
+    AccessibilityInfo: {
+      isReduceMotionEnabled: files.motionRead,
+      addEventListener(event, listener) {
+        if (files.motionListenError) throw files.motionListenError;
+        if (event !== 'reduceMotionChanged') throw new Error('Unexpected accessibility event');
+        files.motionListeners.add(listener);
+        const remove = vi.fn(() => files.motionListeners.delete(listener));
+        files.motionRemoves.push(remove);
+        return { remove };
+      },
+    },
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     Dimensions: {
       get: () => ({ width: 1024, height: 768, scale: 1, fontScale: 1 }),
@@ -77,14 +93,32 @@ vi.mock('react-native', () => {
         disabled,
         onClick: () => onValueChange(!value),
       }),
-    Modal: ({ visible, children, onDismiss, accessibilityLabel }) => {
+    Modal: ({
+      visible,
+      children,
+      onDismiss,
+      accessibilityLabel,
+      animationType,
+      onRequestClose,
+    }) => {
       const shown = useRef(false);
       if (visible) shown.current = true;
       const retained = files.retainClosingModal && onDismiss && shown.current;
       if (!visible && retained) files.dismissModal = onDismiss;
       return (
         (visible || retained) &&
-        createElement('div', { role: 'dialog', 'aria-label': accessibilityLabel }, children)
+        createElement(
+          'div',
+          {
+            role: 'dialog',
+            'aria-label': accessibilityLabel,
+            'data-animation-type': animationType,
+            onKeyDown: (event) => {
+              if (event.key === 'Escape') onRequestClose?.();
+            },
+          },
+          children
+        )
       );
     },
     Pressable: forwardRef(
