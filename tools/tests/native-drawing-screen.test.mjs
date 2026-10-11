@@ -74,13 +74,16 @@ describe('custom paints wired to the drawing screen', () => {
         'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
       expect(screen.container.textContent).toContain(warning);
       await screen.click('More colors');
+      const choice = screen.dialog().querySelector('[aria-label^="Explore "]');
+      const chosen = choice.getAttribute('aria-label').slice('Explore '.length);
+      await screen.click(`Explore ${chosen}`);
       await screen.click('Use color');
       await menuClick('Marker');
       await drawStroke();
-      expect(JSON.parse(screen.paper()).strokes[0].color).toBe('#AB71E1');
+      expect(JSON.parse(screen.paper()).strokes[0].color).toBe(chosen);
       expect(
         screen.container
-          .querySelector('[aria-label="Custom paint #AB71E1"]')
+          .querySelector(`[aria-label="Custom paint ${chosen}"]`)
           .getAttribute('aria-pressed')
       ).toBe('true');
       expect(files.settingsWrite).not.toHaveBeenCalled();
@@ -96,8 +99,8 @@ describe('custom paints wired to the drawing screen', () => {
         soundEnabled: recovery === 'Drawing sound',
         strokeWidth: 'medium',
         eraserWidth: 'medium',
-        selectedColor: '#AB71E1',
-        customColors: ['#AB71E1'],
+        selectedColor: chosen,
+        customColors: [chosen],
       });
       expect(screen.dialog().textContent).not.toContain(warning);
     }

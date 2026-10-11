@@ -382,3 +382,59 @@ it.each(['light', 'dark'])(
     }
   }
 );
+
+it.each(['light', 'dark'])(
+  'preserves unchanged semantic Black through the real More colors caller in %s',
+  async (appearance) => {
+    let stored = JSON.stringify({
+      version: 4,
+      soundEnabled: false,
+      strokeWidth: 'medium',
+      eraserWidth: 'medium',
+      selectedColor: 'Black',
+      customColors: [],
+      appearance,
+    });
+    platform.read.mockImplementation(async () => stored);
+    platform.write.mockImplementation(async (snapshot) => {
+      stored = snapshot;
+    });
+    const host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    await act(async () => root.render(createElement(DrawingScreen)));
+    const open = async () => {
+      await act(async () => host.querySelector('[aria-label="More colors"]').click());
+      const opening = document.querySelector('[aria-label="Color picker"]');
+      await act(async () =>
+        opening.parentElement.parentElement.dispatchEvent(
+          new Event('animationend', { bubbles: true })
+        )
+      );
+      return document.querySelector('[role="dialog"]');
+    };
+    let modal = await open();
+    expect(modal.textContent).toContain(appearance === 'dark' ? '#FFFFFF' : '#0A0B10');
+    for (const id of ['rsd-window-insets', 'rsd-safe-area-frame']) {
+      const color = getComputedStyle(modal.querySelector(`[data-testid="${id}"]`)).backgroundColor;
+      expect(color).toMatch(/^(transparent|rgba\(0, 0, 0, 0(?:\.0+)?\))$/);
+    }
+    await act(async () => modal.querySelector('[aria-label="Use color"]').click());
+    expect(JSON.parse(stored)).toMatchObject({ selectedColor: 'Black', customColors: [] });
+    expect(host.querySelector('[aria-label="Black paint"]').getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+    modal = await open();
+    const tile = modal.querySelector('[aria-label^="Explore "]');
+    const literal = tile.getAttribute('aria-label').slice('Explore '.length);
+    await act(async () => tile.click());
+    await act(async () => modal.querySelector('[aria-label="Use color"]').click());
+    expect(JSON.parse(stored)).toMatchObject({ selectedColor: literal, customColors: [literal] });
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await act(async () => root.render(createElement(DrawingScreen)));
+    expect(
+      host.querySelector(`[aria-label="Custom paint ${literal}"]`).getAttribute('aria-pressed')
+    ).toBe('true');
+  }
+);

@@ -1,6 +1,6 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react';
 import { Defs, G, LinearGradient, Path, Pattern, Rect, Stop, Use } from 'react-native-svg';
-import { paintAppearance, paintId, paletteHex } from './palette';
+import { paintAppearance, paletteHex } from './palette';
 import { BundledMagicFill } from './BundledBookArtwork';
 import { isFarmPageId } from './bundledBooks';
 import { COLORING_FILLS } from './pages';
@@ -30,6 +30,7 @@ const CRAYON_TILE_OFFSETS = [0, -CRAYON_TILE_PX];
 
 function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> }) {
   const theme = useContext(InkAppearanceScope)?.theme ?? 'light';
+  const paint = paintAppearance(stroke.color, theme);
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const width = stroke.width;
   const passes = useMemo(() => crayonPasses(stroke, width), [stroke, width]);
@@ -57,7 +58,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                         {CRAYON_TEXTURES[bandIndex].map(({ shade }) => (
                           <Use
                             key={shade}
-                            href={`#${textureId}-wax-${paintId(stroke.color)}-${bandIndex}-${shade}`}
+                            href={`#${textureId}-wax-${paint.definitionId}-${bandIndex}-${shade}`}
                           />
                         ))}
                       </G>
@@ -66,7 +67,7 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
                 </Pattern>
               ))}
             </Defs>
-            <CrayonGlaze mode={paintAppearance(stroke.color, theme).glaze}>
+            <CrayonGlaze mode={paint.glaze}>
               {CRAYON_BANDS.map((band, bandIndex) => (
                 <StrokeShape
                   key={bandIndex}
@@ -151,11 +152,9 @@ export function InkArtwork({
     bookPage && strokes.some((stroke) => stroke.brush === 'magic') ? `${id}-book-fill` : null;
   const colors = new Map<string, string>();
   for (const stroke of strokes) {
-    if (stroke.brush === 'crayon')
-      colors.set(
-        paintId(stroke.color),
-        paintAppearance(stroke.color, appearance?.theme ?? 'light').hex
-      );
+    if (stroke.brush !== 'crayon') continue;
+    const paint = paintAppearance(stroke.color, appearance?.theme ?? 'light');
+    colors.set(paint.definitionId, paint.hex);
   }
   return (
     <CrayonDefinitionScope.Provider value={id}>

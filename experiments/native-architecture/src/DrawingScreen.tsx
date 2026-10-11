@@ -378,7 +378,7 @@ function SavedPictures({
         if (!busy) onClose();
       }}
     >
-      <NativeFrame>
+      <NativeFrame variant="overlay">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Your pictures</Text>

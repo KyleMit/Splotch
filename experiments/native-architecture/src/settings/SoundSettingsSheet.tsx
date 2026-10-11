@@ -47,7 +47,7 @@ export function SoundSettings({
       animationType="none"
       onRequestClose={onClose}
     >
-      <NativeFrame>
+      <NativeFrame variant="overlay">
         <View style={styles.backdrop}>
           <View accessibilityViewIsModal style={styles.card}>
             <Text accessibilityRole="header" style={styles.title}>

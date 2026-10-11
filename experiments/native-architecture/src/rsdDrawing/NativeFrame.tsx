@@ -10,19 +10,27 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     frame: { flex: 1, backgroundColor: palette.paperMargin },
+    overlay: { flex: 1, backgroundColor: 'transparent' },
   })
 );
 
-export function NativeFrame({ children }: { children: ReactNode }) {
-  const nativeFrameStyles = useDrawingStyles(themedStyles);
+export function NativeFrame({
+  children,
+  variant = 'screen',
+}: {
+  children: ReactNode;
+  variant?: 'screen' | 'overlay';
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  const frame = variant === 'overlay' ? styles.overlay : styles.frame;
   return (
-    <SafeAreaProvider testID="rsd-window-insets" style={nativeFrameStyles.frame}>
+    <SafeAreaProvider testID="rsd-window-insets" style={frame}>
       <DrawingStatusBar />
       <SafeAreaView
         testID="rsd-safe-area-frame"
         mode="padding"
         edges={['top', 'right', 'bottom', 'left']}
-        style={nativeFrameStyles.frame}
+        style={frame}
       >
         {children}
       </SafeAreaView>

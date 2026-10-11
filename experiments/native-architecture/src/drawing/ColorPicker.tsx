@@ -40,11 +40,12 @@ export function ColorPicker({
   onClose,
 }: {
   selected: PaintColor;
-  onChoose: (color: CustomColor) => void;
+  onChoose: (color: PaintColor) => void;
   onClose: () => void;
 }) {
   const styles = useDrawingStyles(themedStyles);
   const {
+    choice,
     draft,
     setDraft,
     exploring,
@@ -66,7 +67,7 @@ export function ColorPicker({
       accessibilityLabel="Color picker"
       onRequestClose={onClose}
     >
-      <NativeFrame>
+      <NativeFrame variant="overlay">
         <View style={styles.backdrop} onLayout={refresh}>
           <View accessibilityViewIsModal style={styles.card}>
             <Text accessibilityRole="header" style={styles.title}>
@@ -94,7 +95,7 @@ export function ColorPicker({
                   const touch = event.nativeEvent.touches[0];
                   if (!touch || event.nativeEvent.touches.length !== 1) return;
                   field.current?.focus();
-                  gesture.current = { identifier: String(touch.identifier), previous: draft };
+                  gesture.current = { identifier: String(touch.identifier), previous: choice };
                   setExploring(true);
                   sample(event);
                 }}
@@ -138,7 +139,7 @@ export function ColorPicker({
               accessibilityRole="button"
               accessibilityLabel="Use color"
               disabled={exploring}
-              onPress={() => onChoose(draft)}
+              onPress={() => onChoose(choice)}
               style={styles.use}
             >
               <Text style={styles.useText}>Use color</Text>
@@ -155,15 +156,16 @@ export function ColorPicker({
 
 function useColorExploration(selected: PaintColor) {
   const theme = useDrawingAppearance();
-  const [draft, setDraft] = useState<CustomColor>(() => {
-    const hex = paintAppearance(selected, theme).hex.toUpperCase();
-    return exploreInitial(hex);
-  });
+  const [choice, setChoice] = useState<PaintColor>(selected);
+  const draft = exploreInitial(paintAppearance(choice, theme).hex.toUpperCase());
+  function setDraft(color: CustomColor) {
+    setChoice(color);
+  }
   const [exploring, setExploring] = useState(false);
   const field = useRef<View>(null);
-  const gesture = useRef<{ identifier: string; previous: CustomColor } | null>(null);
+  const gesture = useRef<{ identifier: string; previous: PaintColor } | null>(null);
   function cancel() {
-    if (gesture.current) setDraft(gesture.current.previous);
+    if (gesture.current) setChoice(gesture.current.previous);
     gesture.current = null;
     setExploring(false);
   }
@@ -204,6 +206,7 @@ function useColorExploration(selected: PaintColor) {
     }
   }
   return {
+    choice,
     draft,
     setDraft,
     exploring,

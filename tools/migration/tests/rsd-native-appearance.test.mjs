@@ -1,5 +1,13 @@
-import { caller, records, root, host, mount, checkedRadio } from './rsd-native-selection-host.mjs';
-import { act, createElement } from 'react';
+import {
+  caller,
+  records,
+  root,
+  host,
+  mount,
+  checkedRadio,
+  createPickerCaller,
+} from './rsd-native-selection-host.mjs';
+import { act, createElement, useState } from 'react';
 import { expect, it, vi } from 'vitest';
 import { RsdDrawingScreen } from '../../../experiments/native-architecture/src/rsdDrawing/RsdDrawingScreen.tsx';
 import { DrawingAppearanceProvider } from '../../../experiments/native-architecture/src/drawing/DrawingAppearance.tsx';
@@ -153,3 +161,53 @@ it('selects Book cover and page artwork from the same explicit preference as the
   ).toBeDefined();
   expect(lastFrame().style.backgroundColor).toBe('#f1efeb');
 });
+
+it.each(['light', 'dark'])(
+  'keeps semantic Black and transparent ColorPicker backing through the RSD caller in %s',
+  async (appearance) => {
+    let update = () => {};
+    const { owner } = createPickerCaller(() => update());
+    await owner.load();
+    await owner.setColor('Black');
+    await owner.setAppearance(appearance);
+    caller.screen.disabled = false;
+    const setColor = vi.spyOn(owner, 'setColor');
+    function Screen() {
+      const [, rerender] = useState(0);
+      update = () => rerender((value) => value + 1);
+      return createElement(RsdDrawingScreen);
+    }
+    try {
+      await mount(createElement(Screen));
+      await click('More colors');
+      let picker = host.querySelector('[aria-label="Color picker"]');
+      expect(picker.textContent).toContain(appearance === 'dark' ? '#FFFFFF' : '#0A0B10');
+      const frame = records.props.findLast((props) => props.testID === 'rsd-safe-area-frame');
+      expect(frame.style.backgroundColor).toBe('transparent');
+      expect(frame.edges).toEqual(['top', 'right', 'bottom', 'left']);
+      expect(
+        records.props.findLast((props) => props.accessibilityLabel === 'Color picker')
+      ).toMatchObject({
+        statusBarTranslucent: true,
+        navigationBarTranslucent: true,
+        transparent: true,
+      });
+      await click('Use color');
+      expect(setColor).toHaveBeenCalledExactlyOnceWith('Black');
+      expect(caller.sound.settings.selectedColor).toBe('Black');
+      expect(caller.sound.settings.customColors).toEqual([]);
+      await click('More colors');
+      await act(async () => owner.setAppearance(appearance === 'dark' ? 'light' : 'dark'));
+      picker = host.querySelector('[aria-label="Color picker"]');
+      expect(picker.textContent).toContain(appearance === 'dark' ? '#0A0B10' : '#FFFFFF');
+      const tile = picker.querySelector('[aria-label^="Explore "]');
+      const literal = tile.getAttribute('aria-label').slice('Explore '.length);
+      await act(async () => tile.click());
+      await click('Use color');
+      expect(caller.sound.settings.selectedColor).toBe(literal);
+      expect(caller.sound.settings.customColors).toEqual([literal]);
+    } finally {
+      owner.dispose();
+    }
+  }
+);

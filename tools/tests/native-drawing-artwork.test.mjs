@@ -25,7 +25,7 @@ import { COLORING_PAGES } from '../../experiments/native-architecture/src/drawin
 import { paletteHex } from '../../experiments/native-architecture/src/drawing/palette.ts';
 import { DRAWING_THEME } from '../../experiments/native-architecture/src/drawing/theme.ts';
 
-const responder = vi.hoisted(() => ({ current: null, scheme: 'light' }));
+const responder = vi.hoisted(() => ({ current: null, scheme: 'light', busy: true, errors: [] }));
 
 vi.mock('react-native', () => ({
   useColorScheme: () => responder.scheme,
@@ -47,6 +47,10 @@ vi.mock('react-native', () => ({
   }),
 }));
 
+vi.mock(
+  '../../experiments/native-architecture/src/drawing/CrayonGlaze.tsx',
+  () => import('../../experiments/native-architecture/src/drawing/CrayonGlaze.web.tsx')
+);
 vi.mock('react-native-svg', () => ({
   default: forwardRef(({ children, viewBox }, ref) => {
     const svg = useRef(null);
@@ -56,7 +60,10 @@ vi.mock('react-native-svg', () => ({
         void sharp(Buffer.from(svg.current.outerHTML))
           .png()
           .toBuffer()
-          .then((png) => callback(png.toString('base64')));
+          .then((png) => {
+            capturedBuffers.push({ svg: svg.current.cloneNode(true), png });
+            callback(png.toString('base64'));
+          });
       },
     }));
     return createElement(
@@ -66,6 +73,7 @@ vi.mock('react-native-svg', () => ({
     );
   }),
   Defs: ({ children }) => createElement('defs', null, children),
+  Mask: ({ children, ...props }) => createElement('mask', props, children),
   G: ({ children, ...props }) => createElement('g', props, children),
   Image: ({ href, onLoad, ...props }) => {
     useEffect(() => onLoad?.(), [href]);
@@ -74,7 +82,9 @@ vi.mock('react-native-svg', () => ({
   Rect: (props) => createElement('rect', props),
   Path: (props) => createElement('path', props),
   Circle: (props) => createElement('circle', props),
-  Pattern: ({ children, ...props }) => createElement('pattern', props, children),
+  Pattern: ({ children, ...props }) =>
+    createElement('pattern', { ...props, overflow: 'hidden' }, children),
+  Use: (props) => createElement('use', props),
   LinearGradient: ({ children, ...props }) => createElement('linearGradient', props, children),
   Stop: (props) => createElement('stop', props),
 }));
@@ -98,6 +108,7 @@ const CROSSINGS = [
 let container;
 let root;
 let capturedOutputs;
+let capturedBuffers;
 
 function colorChannels(color) {
   const expanded =
@@ -139,8 +150,12 @@ function mount(snapshot = drawing) {
         createElement(DrawingSurface, {
           drawing: snapshot,
           currentDrawing: () => snapshot,
-          onPreparingChange: vi.fn(),
-          onRendererFault: vi.fn(),
+          onPreparingChange: (busy) => {
+            responder.busy = busy;
+          },
+          onRendererFault: (error) => {
+            responder.errors.push(error);
+          },
           color: 'Green',
           brush: 'marker',
           disabled: false,
@@ -193,7 +208,10 @@ beforeEach(() => {
   document.body.append(container);
   root = createRoot(container);
   capturedOutputs = [];
+  capturedBuffers = [];
   responder.scheme = 'light';
+  responder.busy = true;
+  responder.errors = [];
 });
 
 afterEach(() => {
@@ -349,3 +367,86 @@ describe('coloring outlines over live and exported paint', () => {
     }
   );
 });
+
+function mixedCrayonDrawing(reverse) {
+  const base = emptyDrawing();
+  const colors = ['Black', '#0A0B10'].map((color, index) => ({
+    ...strokeStyle('crayon', color, base, 'thick'),
+    points: [
+      { x: 100, y: index === 0 ? 200 : 560 },
+      { x: 924, y: index === 0 ? 200 : 560 },
+    ],
+  }));
+  return {
+    ...base,
+    strokes: [
+      ...(reverse ? colors.toReversed() : colors),
+      {
+        ...strokeStyle('eraser', 'Black', base, 'thin'),
+        points: [
+          { x: 100, y: 730 },
+          { x: 924, y: 730 },
+        ],
+      },
+    ],
+  };
+}
+function mixedCoverage(image, y, bright) {
+  let count = 0;
+  for (let row = y - 6; row < y + 6; row++)
+    for (let x = 480; x < 544; x++) {
+      const offset = (row * image.info.width + x) * image.info.channels;
+      const channels = [...image.data.subarray(offset, offset + 3)];
+      if (
+        image.data[offset + 3] > 200 &&
+        channels.every((value) => (bright ? value > 230 : value < 30))
+      )
+        count++;
+    }
+  return count;
+}
+async function expectMixedPixels(png, theme) {
+  const image = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  expect(mixedCoverage(image, 200, theme === 'dark')).toBeGreaterThan((64 * 12) / 4);
+  expect(mixedCoverage(image, 560, false)).toBeGreaterThan((64 * 12) / 4);
+}
+it.each([false, true])(
+  'retains both crayon paints through live, actual raster prefix and export across theme transitions, reversed=%s',
+  async (reverse) => {
+    const snapshot = mixedCrayonDrawing(reverse);
+    const serialized = JSON.stringify(snapshot);
+    for (const theme of ['light', 'dark', 'light']) {
+      responder.scheme = theme;
+      responder.busy = true;
+      const start = capturedBuffers.length;
+      const ref = mount(snapshot);
+      await vi.waitFor(async () => {
+        await act(async () => {});
+        expect(responder.errors).toEqual([]);
+        expect(responder.busy).toBe(false);
+        expect(container.querySelector('[data-testid="drawing-paper"] image')).not.toBeNull();
+      });
+      const prefix = capturedBuffers.slice(start).find(({ svg }) => !svg.querySelector('image'));
+      expect(prefix).toBeDefined();
+      await expectMixedPixels(prefix.png, theme);
+      const live = await sharp(Buffer.from(liveArtwork().outerHTML)).png().toBuffer();
+      await expectMixedPixels(live, theme);
+      const release = ref.current.lockInput();
+      let output;
+      await act(async () => {
+        output = ref.current.capturePng(snapshot);
+      });
+      let base64;
+      output.then((value) => {
+        base64 = value;
+      });
+      await vi.waitFor(async () => {
+        await act(async () => {});
+        expect(base64).toBeDefined();
+      });
+      release();
+      await expectMixedPixels(Buffer.from(base64, 'base64'), theme);
+      expect(JSON.stringify(snapshot)).toBe(serialized);
+    }
+  }
+);

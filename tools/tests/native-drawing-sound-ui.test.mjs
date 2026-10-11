@@ -239,7 +239,8 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(ui.dialog().dataset.statusTranslucent).toBe('true');
     expect(ui.dialog().dataset.navigationTranslucent).toBe('true');
-    expect(ui.dialog().querySelector('[data-background="#1a1922"]')).not.toBeNull();
+    expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(2);
+    expect(ui.dialog().querySelector('[data-background="#1a1922"]')).toBeNull();
     expect(JSON.parse(sound.write.mock.calls.at(-1)[0])).toMatchObject({
       appearance: 'dark',
       soundEnabled: false,
@@ -263,6 +264,32 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe('light');
     expect(JSON.parse(stored).appearance).toBe('system');
   });
+
+  it.each(['Light', 'Dark'])(
+    'keeps the actual Settings and Pictures overlays transparent over the %s drawing',
+    async (appearance) => {
+      await mount();
+      await ui.settings();
+      await ui.click(`${appearance} appearance`);
+      const theme = appearance.toLowerCase();
+      for (const kind of ['Settings', 'Pictures']) {
+        if (kind === 'Pictures') {
+          await ui.click('Close Settings');
+          await ui.click('Drawing tools. Marker selected.');
+          await ui.click('Pictures');
+        }
+        expect(ui.container.querySelector('[data-paper-theme]').dataset.paperTheme).toBe(theme);
+        expect(ui.dialog().querySelectorAll('[data-background="transparent"]')).toHaveLength(2);
+        expect(ui.dialog().querySelector('[data-background="#1a1922"]')).toBeNull();
+        expect(ui.dialog().querySelector('[data-background="#f1efeb"]')).toBeNull();
+        expect(ui.dialog().dataset.statusTranslucent).toBe('true');
+        expect(ui.dialog().dataset.navigationTranslucent).toBe('true');
+        expect(ui.dialog().querySelector('[data-status-bar]').dataset.statusBar).toBe(
+          theme === 'dark' ? 'light-content' : 'dark-content'
+        );
+      }
+    }
+  );
 
   it('routes start, sample and end from the screen to the actual controller', async () => {
     sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
