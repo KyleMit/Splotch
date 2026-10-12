@@ -231,6 +231,8 @@ const files = [
   'src/rsdDrawing/RsdAiSheet.tsx',
   'src/ai/useAiPictureViewer.ts',
   'src/ai/AiPictureViewport.tsx',
+  'src/ai/CurrentDrawingPreview.tsx',
+  'src/ai/AiRecoveryActions.tsx',
   'src/ai/AiStylePreview.tsx',
   'src/ai/stylePreviewAssets.ts',
   'src/ai/NativeAiPictureView.tsx',

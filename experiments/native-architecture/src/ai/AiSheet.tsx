@@ -25,14 +25,22 @@ import { aiCanGenerate, AI_RESULT_HEIGHT_PX } from './uiState';
 import { useAiPictureViewer } from './useAiPictureViewer';
 import { NativeAiPictureView } from './NativeAiPictureView';
 import { NativeAiStyleChoices } from './NativeAiStyleChoices';
+import { AiRecoveryActions } from './AiRecoveryActions';
+import { CurrentDrawingPreview } from './CurrentDrawingPreview';
+import type { Drawing } from '../drawing/model';
+import type { ArtworkMap } from '../offlineLibrary/artworkContext';
 export function NativeAiSheet({
   owner,
   state,
+  drawing,
+  artwork,
   visible = state.open,
   onDismiss,
 }: {
   owner: NativeAiOwner;
   state: AiState;
+  drawing: Drawing;
+  artwork: ArtworkMap;
   visible?: boolean;
   onDismiss?: () => void;
 }) {
@@ -60,28 +68,7 @@ export function NativeAiSheet({
                   : 'AI picture'}
             </Text>
             {state.gate.open ? (
-              <>
-                <Text style={styles.text}>Solve this multiplication problem to continue.</Text>
-                <Text style={styles.title}>
-                  {state.gate.x} × {state.gate.y}
-                </Text>
-                <TextInput
-                  accessibilityLabel="AI answer"
-                  value={state.gate.input}
-                  onChangeText={owner.gateInput}
-                  keyboardType="number-pad"
-                  editable={!state.gate.locked}
-                  style={styles.input}
-                />
-                <Text accessibilityLiveRegion="polite" style={styles.text}>
-                  {state.gate.message}
-                </Text>
-                <Action
-                  label="Continue to AI"
-                  onPress={owner.gateAnswer}
-                  disabled={state.gate.locked}
-                />
-              </>
+              <AiParentalGate owner={owner} state={state} />
             ) : viewer.picture ? (
               <NativeAiPictureView owner={owner} state={state} picture={viewer.picture} />
             ) : state.authorized ? (
@@ -109,6 +96,12 @@ export function NativeAiSheet({
                   disabled={state.busy || waiting || !!state.recovery}
                   onChoose={owner.chooseStyle}
                 />
+                {visible && state.open ? (
+                  <>
+                    <Text style={styles.text}>Current drawing</Text>
+                    <CurrentDrawingPreview drawing={drawing} artwork={artwork} />
+                  </>
+                ) : null}
                 <Action
                   label="Send drawing for AI"
                   disabled={!aiCanGenerate(state)}
@@ -147,6 +140,29 @@ export function NativeAiSheet({
         </View>
       </NativeFrame>
     </Modal>
+  );
+}
+function AiParentalGate({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <>
+      <Text style={styles.text}>Solve this multiplication problem to continue.</Text>
+      <Text style={styles.title}>
+        {state.gate.x} × {state.gate.y}
+      </Text>
+      <TextInput
+        accessibilityLabel="AI answer"
+        value={state.gate.input}
+        onChangeText={owner.gateInput}
+        keyboardType="number-pad"
+        editable={!state.gate.locked}
+        style={styles.input}
+      />
+      <Text accessibilityLiveRegion="polite" style={styles.text}>
+        {state.gate.message}
+      </Text>
+      <Action label="Continue to AI" onPress={owner.gateAnswer} disabled={state.gate.locked} />
+    </>
   );
 }
 function AiFooter({ onClose, onBack }: { onClose: () => void; onBack: (() => void) | null }) {
@@ -328,41 +344,5 @@ function AiChoice({
     >
       <Text style={styles.text}>{label}</Text>
     </Pressable>
-  );
-}
-
-function AiRecoveryActions({
-  owner,
-  state,
-  waiting,
-}: {
-  owner: NativeAiOwner;
-  state: AiState;
-  waiting: boolean;
-}) {
-  const styles = useDrawingStyles(themedStyles);
-  return (
-    <>
-      <Text style={styles.text}>
-        Recovery preview saves a held request on this device. Sending is unavailable and no drawing
-        is uploaded.
-      </Text>
-      <Action
-        label="Save held recovery request"
-        disabled={state.busy || waiting || !!state.recovery || state.credential === 'unavailable'}
-        onPress={() => {
-          void owner.prepareRecovery();
-        }}
-      />
-      {state.recovery ? (
-        <Action
-          label="Check held recovery request"
-          disabled={state.busy}
-          onPress={() => {
-            void owner.collectRecovery();
-          }}
-        />
-      ) : null}
-    </>
   );
 }

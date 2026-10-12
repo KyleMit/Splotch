@@ -98,6 +98,8 @@ export function RsdDrawingScreen() {
         <RsdAiSheet
           owner={product.ai.owner}
           state={product.ai.state}
+          drawing={screen.history.drawing}
+          artwork={screen.library.state.artwork}
           visible={route.visible}
           onDismiss={dismissed}
         />
