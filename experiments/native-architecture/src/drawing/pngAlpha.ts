@@ -39,19 +39,19 @@ export function createPngAlphaDecoder() {
               column = 0;
               return;
             }
-            const left = column >= CHANNELS ? row[column - CHANNELS] : 0;
-            const up = previous[column],
-              upperLeft = column >= CHANNELS ? previous[column - CHANNELS] : 0;
-            const predictor =
-              filter === 0
-                ? 0
-                : filter === 1
-                  ? left
-                  : filter === 2
-                    ? up
-                    : filter === 3
-                      ? Math.floor((left + up) / 2)
-                      : paeth(left, up, upperLeft);
+            let predictor = 0;
+            if (filter === 2) predictor = previous[column];
+            else if (filter !== 0) {
+              const left = column >= CHANNELS ? row[column - CHANNELS] : 0;
+              if (filter === 1) predictor = left;
+              else {
+                const up = previous[column];
+                predictor =
+                  filter === 3
+                    ? Math.floor((left + up) / 2)
+                    : paeth(left, up, column >= CHANNELS ? previous[column - CHANNELS] : 0);
+              }
+            }
             row[column] = (value + predictor) & 255;
             if (column % CHANNELS === CHANNELS - 1 && row[column] >= EMPTY_ALPHA_THRESHOLD)
               empty = false;

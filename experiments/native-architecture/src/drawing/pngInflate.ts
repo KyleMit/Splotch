@@ -2,6 +2,7 @@ import type { PngWork } from './pngWork';
 import { inPngReadStage } from '../export/pngReadDiagnostic';
 
 const WINDOW_BYTES = 32768;
+const WINDOW_MASK = WINDOW_BYTES - 1;
 const ADLER_MODULUS = 65521;
 const MAX_CODE_BITS = 15;
 const LENGTH_BASE = [
@@ -157,10 +158,12 @@ export async function inflatePng(
   }
   function output(value: number) {
     if (produced >= expectedBytes) invalid();
-    window[produced % WINDOW_BYTES] = value;
+    window[produced & WINDOW_MASK] = value;
     produced++;
-    adlerA = (adlerA + value) % ADLER_MODULUS;
-    adlerB = (adlerB + adlerA) % ADLER_MODULUS;
+    adlerA += value;
+    if (adlerA >= ADLER_MODULUS) adlerA -= ADLER_MODULUS;
+    adlerB += adlerA;
+    if (adlerB >= ADLER_MODULUS) adlerB -= ADLER_MODULUS;
     work.charge();
     emit(value);
   }
@@ -194,7 +197,7 @@ export async function inflatePng(
           const offset = DISTANCE_BASE[distanceIndex] + bits(DISTANCE_EXTRA[distanceIndex]);
           if (offset > produced || offset > windowLimit) invalid();
           for (let index = 0; index < length; index++) {
-            output(window[(produced - offset) % WINDOW_BYTES]);
+            output(window[(produced - offset) & WINDOW_MASK]);
             if (work.due()) await work.pause();
           }
         }
