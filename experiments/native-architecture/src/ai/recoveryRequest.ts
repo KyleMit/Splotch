@@ -1,6 +1,9 @@
 import type { AiCredentialReference } from './credentials';
 import { recoveryDigest } from './recoveryDigest';
-import { parseRecoveryAckReply } from '../../../../web/src/lib/ai/generationAttempt';
+import {
+  parseRecoveryAckReply,
+  parseRecoveryTerminalReply,
+} from '../../../../web/src/lib/ai/generationAttempt';
 import {
   RECOVERY_PROTOCOL,
   RECOVERY_EXPIRES_HEADER,
@@ -10,6 +13,7 @@ import {
 } from './recoveryContract';
 import type {
   AiRecoveryAckConfirmation,
+  AiRecoveryTerminalConfirmation,
   AiRecoveryDelivery,
   AiRecoveryRequestReceipt,
   AiRecoveryKnownExpiry,
@@ -146,4 +150,25 @@ export function checkedRecoveryAck(
     receipt: delivery.receipt,
   });
   return Object.freeze({ status: 200, body });
+}
+
+export function checkedRecoveryTerminal(
+  receipt: AiRecoveryRequestReceipt,
+  confirmation: AiRecoveryTerminalConfirmation
+): AiRecoveryTerminalConfirmation {
+  if (
+    !confirmation ||
+    typeof confirmation !== 'object' ||
+    Object.keys(confirmation).sort().join(',') !== 'body,status' ||
+    !['submission-uncertain', 'admitted', 'terminal'].includes(receipt.recovery.state)
+  )
+    invalidRecovery();
+  const checked = parseRecoveryTerminalReply(confirmation.status, confirmation.body, {
+    id: receipt.recovery.id,
+    createdAt: receipt.journal.createdAt,
+    expiry: receipt.recovery.expiry,
+  });
+  if (receipt.recovery.state === 'terminal' && receipt.recovery.outcome !== checked.body.outcome)
+    invalidRecovery();
+  return checked;
 }

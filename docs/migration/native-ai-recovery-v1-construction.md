@@ -51,9 +51,14 @@ The controller checks parent proof, consent, current receipt and a credential ge
 asynchronous boundaries. Actual platform vault writers revoke leases synchronously; pinning returns
 only its own still-current lease. Browser referenced reads use existing key/seed state without
 initialization. External vault changes across tabs or native clients still require qualification.
-The local API cannot yet durably record checked expiry or an immediate reconcile refusal/error
-without a checked admission tuple, and recovery refusal-report provenance remains unfinished. These
-cases retain the hold and original instead of granting retry authority.
+The schema 3 local API records checked expiry and immediate reconcile refusal/error only from the
+strict shared terminal proof and original immutable tuple. The authoritative original-metadata
+lookup never changes expiry or mutates GET. A dedicated terminal operation confirms persistence
+before publishing and refuses to downgrade delivery-pinned, retained or acknowledged receipts.
+Generic errors, missing metadata and uncertain callbacks preserve the hold. See the
+[checked terminal construction](native-ai-recovery-terminal-v1-construction.md) for the bounded
+source delta, falsification coverage and remaining qualification. Recovery refusal-report provenance
+remains unfinished; no terminal state grants retry permission.
 
 Both client network guards and explicit send/reconcile/ACK controls remain closed. Source guards,
 transaction fixtures, failure controls, type checking and syntax parsing do not establish OS crash,

@@ -56,6 +56,8 @@ it('pins every production fence owner and its independent omission coverage coun
     ['apple', 'publishRequest', 5, 0],
     ['android', 'recoveryAdmission', 8, 0],
     ['apple', 'recoveryAdmission', 8, 0],
+    ['android', 'recoveryTerminal', 19, 4],
+    ['apple', 'recoveryTerminal', 20, 4],
     ['android', 'recoveryResultFile', 9, 0],
     ['apple', 'recoveryResultFile', 14, 0],
     ['android', 'retainRecovery', 18, 6],
@@ -89,8 +91,8 @@ it('pins every production fence owner and its independent omission coverage coun
     ['apple', 'integer', 3, 0],
     ['android', 'atomic', 7, 0],
     ['apple', 'atomic', 7, 0],
-    ['android', 'limits', 4, 0],
-    ['apple', 'limits', 4, 0],
+    ['android', 'limits', 5, 0],
+    ['apple', 'limits', 5, 0],
     ['android', 'unresolved', 1, 0],
     ['apple', 'unresolved', 1, 0],
     ['android', 'decode', 2, 0],
@@ -138,6 +140,18 @@ it.each(orders)(
 );
 
 const dispatchMutations = [
+  ['android', '      "recordRecoveryTerminal" -> recoveryTerminal(input)', ''],
+  ['apple', '    case "recordRecoveryTerminal": return try recoveryTerminal(root, input)', ''],
+  [
+    'android',
+    '      "recordRecoveryTerminal" -> recoveryTerminal(input)',
+    '      "recordAck" -> recoveryTerminal(input)',
+  ],
+  [
+    'apple',
+    '    case "recordRecoveryTerminal": return try recoveryTerminal(root, input)',
+    '    case "recordAck": return try recoveryTerminal(root, input)',
+  ],
   [
     'android',
     '      "prepare", "importLegacy", "prepareRecovery" ->',

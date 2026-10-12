@@ -124,6 +124,7 @@ it('exposes every recovery operation through the production native storage facad
     'markRecoverySubmission',
     'readRecoveryUpload',
     'recordRecoveryAdmission',
+    'recordRecoveryTerminal',
     'retainRecoveryResult',
     'recordAck',
     'readRecoveryAttempt',
@@ -386,6 +387,22 @@ async function nativeRecoveryFixture() {
         },
       };
     }
+    if (kind === 'recordRecoveryTerminal')
+      current = {
+        ...current,
+        revision: current.revision + 1,
+        journal: { ...current.journal, phase: 'failed' },
+        recovery: {
+          ...current.recovery,
+          state: 'terminal',
+          outcome: payload.confirmation.body.outcome,
+          expiry: {
+            kind: 'known',
+            expiresAt: payload.confirmation.body.expiresAt,
+            provenance: 'validated-recovery-response',
+          },
+        },
+      };
     if (kind === 'recordAck')
       current = {
         ...current,

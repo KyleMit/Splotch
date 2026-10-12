@@ -3,6 +3,8 @@ import {
   RECOVERY_NONCE_HEADER,
   RECOVERY_CREATED_HEADER,
   RECOVERY_INPUT_DIGEST_HEADER,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_TERMINAL_VALUE,
 } from './recoveryContract';
 import type { AiJournal } from './journal';
 import { recoveryDigest } from './recoveryDigest';
@@ -97,10 +99,12 @@ export class AiRecoverySession extends AiRecoveryBoundary {
       const reply = await this.requestRecovery(action, {
         path: RECOVERY_PATH,
         method: 'POST',
+        terminalProof: true,
         query: `style=${encodeURIComponent(receipt.journal.style)}`,
         headers: {
           ...headers,
           'Content-Type': 'image/png',
+          [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE,
           [RECOVERY_NONCE_HEADER]: receipt.nonce,
           [RECOVERY_CREATED_HEADER]: String(receipt.journal.createdAt),
           [RECOVERY_INPUT_DIGEST_HEADER]: receipt.inputDigest,
@@ -136,22 +140,33 @@ export class AiRecoverySession extends AiRecoveryBoundary {
       } else if (receipt.recovery.intent !== 'committed') return;
       const headers = await this.referencedHeaders(action, receipt);
       this.assertCurrent(action);
-      const reply = await this.requestRecovery(action, {
+      const read = {
+        kind: 'collect' as const,
+        id: receipt.recovery.id,
+        createdAt: receipt.journal.createdAt,
+        expiry: receipt.recovery.expiry,
+      };
+      const common = {
         path: RECOVERY_PATH,
-        method: 'GET',
+        method: 'GET' as const,
         headers: {
           ...headers,
           [RECOVERY_NONCE_HEADER]: receipt.nonce,
           [RECOVERY_CREATED_HEADER]: String(receipt.journal.createdAt),
         },
-        recovery: {
-          kind: 'collect',
-          id: receipt.recovery.id,
-          createdAt: receipt.journal.createdAt,
-          expiry: receipt.recovery.expiry,
-        },
-        ...(receipt.kind === 'recovery-request' ? { deliveryProof: true as const } : {}),
-      });
+        recovery: read,
+      } satisfies import('./transport').RecoveryReadRequest;
+      const reply = await this.requestRecovery(
+        action,
+        receipt.kind === 'recovery-request'
+          ? {
+              ...common,
+              headers: { ...common.headers, [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE },
+              deliveryProof: true,
+              terminalProof: true,
+            }
+          : common
+      );
       this.assertCurrent(action);
       await this.acceptReply(action, reply);
     });
@@ -165,7 +180,12 @@ export class AiRecoverySession extends AiRecoveryBoundary {
       const reply = await this.requestRecovery(action, {
         path: RECOVERY_PATH,
         method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        terminalProof: true,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+          [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE,
+        },
         body: JSON.stringify({
           operation: 'reconcile',
           id: receipt.recovery.id,

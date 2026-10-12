@@ -23,6 +23,12 @@ import {
   recoveryCapability,
   recoveryStatus,
   isRecoveryMime,
+  recoveryTerminalRequested,
+  parseRecoveryTerminalReply,
+  RECOVERY_TERMINAL_STATUS,
+  RECOVERY_TERMINAL_CODE,
+  isRecoveryHex,
+  type RecoveryTerminalOutcome,
 } from '../ai/generationAttempt';
 import {
   attemptDigest,
@@ -109,6 +115,32 @@ function pendingResponse(record: AttemptRecord): Response {
     }
   );
 }
+function terminalResponse(
+  identity: Readonly<{ id: string; createdAt: number }>,
+  expiresAt: number,
+  outcome: RecoveryTerminalOutcome,
+  error: string,
+  extraHeaders: HeadersInit = {}
+): Response {
+  const confirmed = parseRecoveryTerminalReply(
+    RECOVERY_TERMINAL_STATUS[outcome],
+    {
+      ok: false,
+      error,
+      code: RECOVERY_TERMINAL_CODE,
+      protocol: RECOVERY_PROTOCOL,
+      id: identity.id,
+      createdAt: identity.createdAt,
+      expiresAt,
+      outcome,
+    },
+    { ...identity, expiry: { kind: 'known', expiresAt } }
+  );
+  const headers = new Headers(extraHeaders);
+  headers.set(RECOVERY_VERSION_HEADER, RECOVERY_PROTOCOL);
+  headers.set(RECOVERY_EXPIRES_HEADER, String(expiresAt));
+  return Response.json(confirmed.body, { status: confirmed.status, headers });
+}
 class RecoveryService {
   constructor(private readonly deps: RecoveryServiceDependencies) {}
   private async boundary(
@@ -132,7 +164,9 @@ class RecoveryService {
     return this.boundary(event, async (secret) => {
       requireRecoveryNoQuery(event.url);
       const headers = parseRecoveryLookupHeaders(event.request.headers);
+      const checkedTerminal = recoveryTerminalRequested(event.request.headers);
       if (headers.kind === 'capability') {
+        if (checkedTerminal) throw new RecoveryFault('RECOVERY_INVALID');
         if (
           [ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER].some((name) =>
             event.request.headers.has(name)
@@ -148,7 +182,15 @@ class RecoveryService {
         credentialBinding: bindAttemptCredential(secret, credential.kind, credential.identity),
       };
       const attempts = this.deps.attempts();
-      const record = await attempts.read(lookup);
+      const status = checkedTerminal ? await attempts.lookupStatus(lookup) : null;
+      if (status?.kind === 'expired')
+        return terminalResponse(
+          status.identity,
+          status.expiresAt,
+          'expired',
+          'That creation has expired'
+        );
+      const record = status?.kind === 'live' ? status.record : await attempts.read(lookup);
       return record.phase === 'delivery'
         ? this.delivery(attempts, lookup)
         : pendingResponse(record);
@@ -158,16 +200,18 @@ class RecoveryService {
     return this.boundary(event, async (secret) => {
       if (event.request.headers.get(RECOVERY_VERSION_HEADER) !== RECOVERY_PROTOCOL)
         throw new RecoveryFault('RECOVERY_INVALID');
+      const checkedTerminal = recoveryTerminalRequested(event.request.headers);
       const credential = recoveryCredential(event.request.headers);
       if (contentTypeOf(event.request) === 'application/json')
-        return this.mutate(event, credential, secret);
-      return this.admit(event, credential, secret);
+        return this.mutate(event, credential, secret, checkedTerminal);
+      return this.admit(event, credential, secret, checkedTerminal);
     });
   }
   private async admit(
     event: RecoveryEvent,
     credential: RecoveryCredential,
-    secret: string
+    secret: string,
+    checkedTerminal: boolean
   ): Promise<Response> {
     const headers = parseRecoveryAdmissionHeaders(
       event.request.headers,
@@ -231,12 +275,13 @@ class RecoveryService {
       },
       input.bytes
     );
-    return this.resume(event.url.origin, attempts, record, credential, secret);
+    return this.resume(event.url.origin, attempts, record, credential, secret, checkedTerminal);
   }
   private async mutate(
     event: RecoveryEvent,
     credential: RecoveryCredential,
-    secret: string
+    secret: string,
+    checkedTerminal: boolean
   ): Promise<Response> {
     requireRecoveryNoQuery(event.url);
     if (
@@ -254,19 +299,30 @@ class RecoveryService {
       credentialBinding: bindAttemptCredential(secret, credential.kind, credential.identity),
     };
     const attempts = this.deps.attempts();
-    if (mutation.operation === 'ack')
+    if (mutation.operation === 'ack') {
+      if (checkedTerminal) throw new RecoveryFault('RECOVERY_INVALID');
       return Response.json(await attempts.acknowledge(lookup, mutation.digest, mutation.receipt));
-    const record = await attempts.read(lookup);
+    }
+    const status = checkedTerminal ? await attempts.lookupStatus(lookup) : null;
+    if (status?.kind === 'expired')
+      return terminalResponse(
+        status.identity,
+        status.expiresAt,
+        'expired',
+        'That creation has expired'
+      );
+    const record = status?.kind === 'live' ? status.record : await attempts.read(lookup);
     if (record.phase === 'image' || record.phase === 'refusal' || record.phase === 'error')
-      return this.reconcile(attempts, record, credential);
-    return this.resume(event.url.origin, attempts, record, credential, secret);
+      return this.reconcile(attempts, record, credential, checkedTerminal);
+    return this.resume(event.url.origin, attempts, record, credential, secret, checkedTerminal);
   }
   private async resume(
     origin: string,
     attempts: GenerationAttempts,
     original: AttemptRecord,
     credential: RecoveryCredential,
-    secret: string
+    secret: string,
+    checkedTerminal: boolean
   ): Promise<Response> {
     const lookup = recordLookup(original);
     let record = original;
@@ -281,6 +337,8 @@ class RecoveryService {
       if (!(cause instanceof RecoveryFault) || cause.code !== 'RECOVERY_CONFLICT') throw cause;
       record = await attempts.read(lookup);
     }
+    if (record.phase === 'image' || record.phase === 'refusal' || record.phase === 'error')
+      return this.reconcile(attempts, record, credential, checkedTerminal);
     if (record.phase === 'pending') await this.deps.dispatch(origin, record, credential, secret);
     return record.phase === 'delivery' ? this.delivery(attempts, lookup) : pendingResponse(record);
   }
@@ -302,15 +360,44 @@ class RecoveryService {
   private async reconcile(
     attempts: GenerationAttempts,
     record: RecoveryRawRecord,
-    credential: RecoveryCredential
+    credential: RecoveryCredential,
+    checkedTerminal: boolean
   ): Promise<Response> {
     if (record.phase !== 'image') {
-      await this.deps.accounting().settle(record, credential);
-      if (record.phase === 'error') return fail(502, record.reason);
+      const settlement = await this.deps.accounting().settle(record, credential);
+      if (checkedTerminal) {
+        const failureKind = record.phase === 'refusal' ? 'safety' : 'upstream';
+        if (
+          settlement.outcome.kind !== 'failure' ||
+          settlement.outcome.failureKind !== failureKind ||
+          !isRecoveryHex(settlement.receiptDigest)
+        )
+          throw new RecoveryFault('RECOVERY_UNAVAILABLE');
+        const current = await attempts.read(recordLookup(record));
+        if (attemptDigest(JSON.stringify(current)) !== attemptDigest(JSON.stringify(record)))
+          throw new RecoveryFault('RECOVERY_CONFLICT');
+      }
+      if (record.phase === 'error')
+        return checkedTerminal
+          ? terminalResponse(
+              record.admission.identity,
+              record.admission.expiresAt,
+              'error',
+              record.reason
+            )
+          : fail(502, record.reason);
       const token = this.deps.reportToken(
         { kind: credential.kind, credential: credential.identity },
         { kind: 'false-positive-refusal', refusalReason: record.reason }
       );
+      if (checkedTerminal)
+        return terminalResponse(
+          record.admission.identity,
+          record.admission.expiresAt,
+          'refusal',
+          `Drawing was blocked for safety: ${record.reason}`,
+          token ? { [REPORT_TOKEN_HEADER]: token } : {}
+        );
       return fail(
         422,
         `Drawing was blocked for safety: ${record.reason}`,

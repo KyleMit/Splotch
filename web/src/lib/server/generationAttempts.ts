@@ -92,7 +92,11 @@ export type CollectedDelivery = Readonly<{
   bytes: Uint8Array;
 }>;
 const ATTEMPT_SECRET_BYTES = 32;
+export type AttemptStatusLookup =
+  | Readonly<{ kind: 'live'; record: AttemptRecord }>
+  | Readonly<{ kind: 'expired'; identity: RecoveryAttemptIdentity; expiresAt: number }>;
 export interface GenerationAttempts {
+  lookupStatus(lookup: AttemptLookup): Promise<AttemptStatusLookup>;
   admit(request: AttemptAdmissionRequest, bytes: Uint8Array): Promise<AttemptRecord>;
   read(lookup: AttemptLookup): Promise<AttemptRecord>;
   markFunded(lookup: AttemptLookup, funding: AttemptFunding): Promise<AttemptRecord>;
@@ -464,6 +468,18 @@ class GenerationAttemptService implements GenerationAttempts {
     if (actual.phase !== 'acknowledged') throw new RecoveryFault('RECOVERY_UNAVAILABLE');
     await cleanAttemptBytes(this.storage, lookup.id);
     return ackReply(actual);
+  }
+  async lookupStatus(lookup: AttemptLookup): Promise<AttemptStatusLookup> {
+    const { record } = await requireAttemptVersion(this.storage, lookup);
+    const now = this.clock();
+    requireAttemptTime(now);
+    return now >= record.admission.expiresAt
+      ? Object.freeze({
+          kind: 'expired',
+          identity: record.admission.identity,
+          expiresAt: record.admission.expiresAt,
+        })
+      : Object.freeze({ kind: 'live', record });
   }
   async read(lookup: AttemptLookup): Promise<AttemptRecord> {
     return (await this.live(lookup)).record;

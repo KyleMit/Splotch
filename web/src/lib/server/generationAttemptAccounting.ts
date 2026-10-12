@@ -18,7 +18,13 @@ export interface RecoveryLedger {
   settle: typeof settleRecoveryFreeGeneration;
 }
 export type RecoveryRawRecord = Extract<AttemptRecord, { phase: 'image' | 'refusal' | 'error' }>;
-export type RecoverySettlement = Readonly<{ receiptDigest: string; remaining: number | null }>;
+export type RecoverySettlementOutcome =
+  Readonly<{ kind: 'success' }> | Readonly<{ kind: 'failure'; failureKind: 'safety' | 'upstream' }>;
+export type RecoverySettlement = Readonly<{
+  receiptDigest: string;
+  remaining: number | null;
+  outcome: RecoverySettlementOutcome;
+}>;
 function operation(record: AttemptRecord) {
   return {
     operationId: record.admission.identity.id,
@@ -80,9 +86,18 @@ export class RecoveryAccounting {
   ): Promise<RecoverySettlement> {
     if (record.funding.kind !== credential.kind) throw new RecoveryFault('RECOVERY_CONFLICT');
     const rawOutcome = outcomeOf(record);
+    const wanted =
+      record.phase === 'image' && imageUsable
+        ? { kind: 'success' as const }
+        : {
+            kind: 'failure' as const,
+            failureKind: record.phase === 'refusal' ? ('safety' as const) : ('upstream' as const),
+          };
+
     if (credential.kind !== 'free')
       return {
         remaining: null,
+        outcome: wanted,
         // This durable delivery fact is independent of the best-effort usage tally.
         receiptDigest: attemptDigest(
           JSON.stringify([
@@ -96,13 +111,6 @@ export class RecoveryAccounting {
           ])
         ),
       };
-    const wanted =
-      record.phase === 'image' && imageUsable
-        ? { kind: 'success' as const }
-        : {
-            kind: 'failure' as const,
-            failureKind: record.phase === 'refusal' ? ('safety' as const) : ('upstream' as const),
-          };
     const receipt = await recoveryLedgerCall(() =>
       this.ledger.settle(credential.identity, operation(record), wanted)
     );
@@ -113,6 +121,7 @@ export class RecoveryAccounting {
         JSON.stringify([RECOVERY_PROTOCOL, 'free-settlement-v1', receipt])
       ),
       remaining: receipt.remaining,
+      outcome: wanted,
     };
   }
 }

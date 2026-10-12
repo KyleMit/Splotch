@@ -84,6 +84,7 @@ describe('recovery CORS headers', () => {
     expect(allowed).toContain('X-AI-Attempt-Nonce');
     expect(allowed).toContain('X-AI-Attempt-Created-At');
     expect(allowed).toContain('X-AI-Input-Digest');
+    expect(allowed).toContain('X-AI-Checked-Terminal');
     expect(exposed).toContain('X-AI-Attempt-Expires-At');
     expect(exposed).toContain('X-AI-Delivery-Digest');
     expect(exposed).toContain('X-AI-Delivery-Receipt');

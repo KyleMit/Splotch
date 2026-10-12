@@ -125,6 +125,19 @@ export class AiRecoveryBoundary extends AiSession {
     const receipt = action.receipt;
     if (!receipt) return;
     this.assertCurrent(action);
+    if (reply.kind === 'recovery-terminal' && receipt.kind === 'recovery-request') {
+      await this.referencedHeaders(action, receipt);
+      this.assertCurrent(action);
+      this.recoveryUncertain = true;
+      const next = await this.deps.storage.recordRecoveryTerminal(receipt, reply.confirmation);
+      this.publishReceipt(action, next);
+      this.recoveryUncertain = false;
+      this.assertCurrent(action);
+      this.update({
+        message: 'This request has finished without a picture. Your original drawing is saved.',
+      });
+      return;
+    }
     if (reply.kind === 'recovery' && reply.reply.kind === 'status') {
       await this.referencedHeaders(action, receipt);
       this.assertCurrent(action);

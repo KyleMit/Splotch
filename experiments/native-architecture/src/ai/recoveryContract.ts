@@ -9,6 +9,9 @@ import {
   RECOVERY_DIGEST_HEADER,
   RECOVERY_RECEIPT_HEADER,
   RECOVERY_INPUT_DIGEST_HEADER,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_TERMINAL_VALUE,
+  RECOVERY_TERMINAL_CODE,
   RECOVERY_ADMISSION_AGE_MS as ADMISSION_AGE_MS,
   RECOVERY_FUTURE_SKEW_MS as FUTURE_SKEW_MS,
   RECOVERY_POLL_AFTER_MS as POLL_AFTER_MS,
@@ -25,6 +28,9 @@ export {
   RECOVERY_DIGEST_HEADER,
   RECOVERY_RECEIPT_HEADER,
   RECOVERY_INPUT_DIGEST_HEADER,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_TERMINAL_VALUE,
+  RECOVERY_TERMINAL_CODE,
   type RecoveryPhase,
 };
 export type RecoveryExpiry =
@@ -190,4 +196,9 @@ export {
   type RecoveryAckReply,
   type RecoveryReconcileBody,
   type RecoveryAckBody,
+} from '../../../../web/src/lib/ai/generationAttempt';
+
+export {
+  parseRecoveryTerminalReply,
+  type RecoveryTerminalConfirmation,
 } from '../../../../web/src/lib/ai/generationAttempt';
