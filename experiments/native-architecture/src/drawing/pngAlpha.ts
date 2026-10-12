@@ -28,6 +28,7 @@ export function createPngAlphaDecoder() {
         let column = -1,
           filter = 0,
           empty = true;
+        work.phase('inflating');
         await inflatePng(
           png.read,
           png.height * (rowBytes + 1),
@@ -64,6 +65,7 @@ export function createPngAlphaDecoder() {
           },
           work
         );
+        work.phase('completing');
         await png.complete();
         work.check();
         return empty;

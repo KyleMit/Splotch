@@ -35,8 +35,9 @@ function fixture(snapshot) {
     log,
     state: () => state,
     diagnostic: () => {
-      expect(log).toHaveBeenCalledOnce();
-      const [message] = log.mock.calls[0];
+      const records = log.mock.calls.filter(([message]) => message.startsWith(PREFIX));
+      expect(records).toHaveLength(1);
+      const [message] = records[0];
       expect(message.startsWith(PREFIX)).toBe(true);
       return JSON.parse(message.slice(PREFIX.length));
     },

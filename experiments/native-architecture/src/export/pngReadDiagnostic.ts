@@ -16,6 +16,33 @@ export type PngReadStage =
   | 'png-adler'
   | 'owner-merge';
 
+export type PngResumeSource =
+  'idle' | 'timer-with-idle' | 'timer-without-idle' | 'message' | 'watchdog';
+
+export type PngDeadlineDetail = Readonly<{
+  phase: 'opening' | 'inflating' | 'completing';
+  at: 'check' | 'charge' | 'before-pause' | 'resume' | 'after-pause';
+  totalUnits: number;
+  sliceUnits: number;
+  pauseRequests: number;
+  idleResumes: number;
+  timerWithIdleResumes: number;
+  timerWithoutIdleResumes: number;
+  messageResumes: number;
+  watchdogResumes: number;
+  elapsedMs: number;
+  callbackWaitMs: number;
+  longestCallbackWaitMs: number;
+  continuationWaitMs: number;
+  longestContinuationWaitMs: number;
+}>;
+
+export class PngDecodeDeadlineError extends Error {
+  constructor(readonly detail: PngDeadlineDetail) {
+    super('Picture observation did not finish. Your drawing is still here.');
+  }
+}
+
 type FailureReason =
   | 'held-record-or-header'
   | 'held-capacity'
@@ -62,12 +89,14 @@ const KNOWN_MESSAGES = new Map<string, FailureReason>([
 
 class PngReadDiagnosticError extends Error {
   readonly reason: FailureReason;
+  readonly deadline: PngDeadlineDetail | undefined;
 
   constructor(
     readonly stage: PngReadStage,
     error: unknown
   ) {
     super(error instanceof Error ? error.message : 'PNG recovery read failed.');
+    this.deadline = error instanceof PngDecodeDeadlineError ? error.detail : undefined;
     this.reason =
       stage === 'png-crc' &&
       error instanceof Error &&
@@ -113,12 +142,38 @@ export function pngReadFailureDiagnostic(error: unknown, fallback: PngReadStage)
   return { stage: fault.stage, reason: fault.reason } as const;
 }
 
+function deadlineDiagnostic(detail: PngDeadlineDetail) {
+  return {
+    schema: 'ROOT_NATIVE_PNG_DEADLINE_DETAIL_3641_V1',
+    phase: detail.phase,
+    at: detail.at,
+    totalUnits: detail.totalUnits,
+    sliceUnits: detail.sliceUnits,
+    pauseRequests: detail.pauseRequests,
+    idleResumes: detail.idleResumes,
+    timerWithIdleResumes: detail.timerWithIdleResumes,
+    timerWithoutIdleResumes: detail.timerWithoutIdleResumes,
+    messageResumes: detail.messageResumes,
+    watchdogResumes: detail.watchdogResumes,
+    elapsedMs: detail.elapsedMs,
+    callbackWaitMs: detail.callbackWaitMs,
+    longestCallbackWaitMs: detail.longestCallbackWaitMs,
+    continuationWaitMs: detail.continuationWaitMs,
+    longestContinuationWaitMs: detail.longestContinuationWaitMs,
+  };
+}
+
 export function reportPngReadFailure(error: unknown, fallback: PngReadStage) {
   try {
+    const fault = tagged(fallback, error);
     console.info(
       'SPLOTCH_PNG_READ_DIAGNOSTIC_3629 ' +
-        JSON.stringify(pngReadFailureDiagnostic(error, fallback))
+        JSON.stringify(pngReadFailureDiagnostic(fault, fallback))
     );
+    if (fault.deadline)
+      console.info(
+        'SPLOTCH_PNG_DEADLINE_DIAGNOSTIC_3641 ' + JSON.stringify(deadlineDiagnostic(fault.deadline))
+      );
   } catch {
     // Diagnostic transport cannot alter the recovery owner's failure behavior.
   }
