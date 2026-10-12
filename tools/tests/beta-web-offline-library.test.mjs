@@ -12,10 +12,7 @@ import {
 } from '../../experiments/native-architecture/src/offlineLibrary/store.ts';
 import { catalogPack } from '../../experiments/native-architecture/src/offlineLibrary/catalog.ts';
 import { offlinePageId } from '../../experiments/native-architecture/src/offlineLibrary/identity.ts';
-import {
-  approvedAssetUrl,
-  MAX_PACK_FILE_BYTES,
-} from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
+import { MAX_PACK_FILE_BYTES } from '../../experiments/native-architecture/src/offlineLibrary/manifest.ts';
 
 const idb = vi.hoisted(() => ({
   rows: new Map(),
@@ -97,7 +94,7 @@ function platform() {
 function response(value = bytes, overrides = {}) {
   return {
     ok: true,
-    url: approvedAssetUrl(assetPath),
+    url: new URL(assetPath, location.origin).href,
     redirected: false,
     headers: new Headers({ 'content-length': String(value.length) }),
     body: new ReadableStream({
@@ -143,6 +140,7 @@ beforeEach(() => {
   revoke = vi.fn();
   createUrl = vi.fn(() => `blob:https://beta.invalid/${createUrl.mock.calls.length}`);
   vi.stubGlobal('fetch', fetchMock);
+  vi.stubGlobal('location', new URL('http://localhost:5301'));
   vi.stubGlobal('navigator', {
     onLine: true,
     connection: { type: 'wifi', saveData: false },
@@ -294,7 +292,7 @@ describe('beta browser coloring library', () => {
     const progress = vi.fn();
     await owner.download(staged, file, new AbortController().signal, false, progress);
     expect(fetchMock).toHaveBeenCalledWith(
-      approvedAssetUrl(assetPath),
+      new URL(assetPath, location.origin).href,
       expect.objectContaining({
         redirect: 'error',
         credentials: 'omit',
@@ -303,6 +301,25 @@ describe('beta browser coloring library', () => {
     );
     expect(await owner.verify(staged, file)).toBe(true);
     expect(progress).toHaveBeenLastCalledWith(bytes.length);
+  });
+  it.each(['http://localhost:5301', 'https://beta.splotch.art'])(
+    'keeps public coloring downloads on the app origin %s',
+    async (origin) => {
+      vi.stubGlobal('location', new URL(origin));
+      fetchMock.mockResolvedValue(response());
+      await platform().download(staged, file, new AbortController().signal, false, vi.fn());
+      expect(fetchMock.mock.calls[0][0]).toBe(`${origin}${assetPath}`);
+    }
+  );
+  it('reports a failed asset transfer without claiming local storage failed', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Network request failed'));
+    await expect(
+      platform().download(staged, file, new AbortController().signal, false, vi.fn())
+    ).rejects.toMatchObject({
+      code: 'unavailable',
+      message: 'This coloring book could not be downloaded. Try again later.',
+    });
+    expect(idb.rows.has(staged)).toBe(false);
   });
   it.each(['offline', 'metered'])('blocks %s before opening a network request', async (fault) => {
     vi.stubGlobal('navigator', {

@@ -26,7 +26,7 @@ export async function matchesLibraryFile(bytes: Uint8Array, file: PackFile): Pro
 }
 function approvedDownloadUrl(file: PackFile): string {
   try {
-    const url = approvedAssetUrl(file.downloadPath);
+    approvedAssetUrl(file.downloadPath);
     approvedAssetUrl(file.path);
     if (
       file.downloadPath !== file.path &&
@@ -34,10 +34,13 @@ function approvedDownloadUrl(file: PackFile): string {
         file.downloadPath !== file.path.replace('/coloring/', '/coloring/max-1152px/'))
     )
       throw new Error('Invalid asset variant.');
-    return url;
   } catch {
     throw new LibraryFault('corrupt', 'The coloring catalog contains an unapproved asset.');
   }
+  const url = new URL(file.downloadPath, location.origin);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:')
+    throw new LibraryFault('unavailable', 'Coloring downloads need a hosted app.');
+  return url.href;
 }
 async function readLibraryResponse(
   response: Response,
@@ -141,7 +144,11 @@ export async function downloadLibraryFile(
     );
   } catch (error) {
     if (controller.signal.aborted) throw controller.signal.reason;
-    throw error;
+    if (error instanceof LibraryFault) throw error;
+    throw new LibraryFault(
+      'unavailable',
+      'This coloring book could not be downloaded. Try again later.'
+    );
   } finally {
     clearTimeout(timer);
     signal.removeEventListener('abort', cancel);
