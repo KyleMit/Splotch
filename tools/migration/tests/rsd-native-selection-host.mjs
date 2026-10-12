@@ -64,6 +64,11 @@ vi.mock('../../../experiments/native-architecture/src/platform/ai.ts', () => ({
   admitAiImage: caller.aiAdmit,
   aiVault: {
     installationId: async () => 'a'.repeat(64),
+    pin: async (kind) => ({ kind, reference: 'b'.repeat(64) }),
+    readReferenced: async (reference) => {
+      if (reference.kind !== 'free') throw new Error('Only fixture free reporting is available.');
+      return { kind: 'free', installationId: 'a'.repeat(64) };
+    },
     read: caller.aiVaultRead,
     write: caller.aiVaultWrite,
     remove: async () => {},
@@ -363,7 +368,7 @@ async function mount(element) {
   caller.initialSettings =
     settings?.status === 'ready'
       ? JSON.stringify({
-          version: 6,
+          version: 7,
           soundEnabled: settings.soundEnabled,
           strokeWidth: settings.strokeWidth,
           eraserWidth: settings.eraserWidth,
@@ -373,6 +378,7 @@ async function mount(element) {
           aiEnabled: settings.aiEnabled ?? false,
           parentPolicies: settings.parentPolicies ?? {
             ai: 'always',
+            imageReport: 'always',
             feedback: 'always',
             parentCenter: 'always',
           },

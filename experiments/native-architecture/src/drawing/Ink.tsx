@@ -77,7 +77,13 @@ function CrayonInk({ stroke }: { stroke: Extract<Stroke, { brush: 'crayon' }> })
   );
 }
 
-function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
+export function MagicPaint({
+  stroke,
+  shape,
+}: {
+  stroke: Extract<Stroke, { brush: 'magic' }>;
+  shape: (width: number, paint: string) => ReactNode;
+}) {
   const id = `art-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { pageId, theme } = useInkAppearance();
   const width = semanticWidth(stroke.width, useInkPaper());
@@ -87,7 +93,7 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
       ? null
       : COLORING_FILLS[pageId];
   if (bundledPattern) {
-    return <StrokeShape points={stroke.points} width={width} paint={`url(#${bundledPattern})`} />;
+    return <>{shape(width, `url(#${bundledPattern})`)}</>;
   }
   return (
     <G>
@@ -128,9 +134,24 @@ function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
           </LinearGradient>
         )}
       </Defs>
-      <StrokeShape points={stroke.points} width={width} paint={`url(#${id})`} />
+      {shape(width, `url(#${id})`)}
     </G>
   );
+}
+
+function MagicInk({ stroke }: { stroke: Extract<Stroke, { brush: 'magic' }> }) {
+  return (
+    <MagicPaint
+      stroke={stroke}
+      shape={(width, paint) => <StrokeShape points={stroke.points} width={width} paint={paint} />}
+    />
+  );
+}
+
+export function useCrayonDefinition() {
+  const value = useContext(CrayonDefinitionScope);
+  if (value === null) throw new Error('Crayon Ink requires an InkArtwork definition scope');
+  return value;
 }
 
 export function InkArtwork({

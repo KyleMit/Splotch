@@ -18,6 +18,7 @@ import { DRAWING_SCALE } from '../drawing/theme';
 import { NativeFrame } from './NativeFrame';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
+import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from '../settings/soundLevel';
 import { RsdAction, styles as controlStyles } from './controls';
 import { useState } from 'react';
 import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
@@ -30,6 +31,7 @@ export function NativeSoundSettingsDialog({
   onRetryBrushSave,
   notice,
   onToggle,
+  onSoundLevelChange,
   onAppearanceChange,
   onColoringBookChange,
   onRetry,
@@ -44,6 +46,7 @@ export function NativeSoundSettingsDialog({
   onRetryBrushSave: () => void;
   notice: string;
   onToggle: () => void;
+  onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onColoringBookChange: (enabled: boolean) => void;
   onRetry: () => void;
@@ -119,6 +122,20 @@ export function NativeSoundSettingsDialog({
             disabled={settings.status !== 'ready'}
             onClick={onToggle}
           />
+          <html.span>Drawing sound level</html.span>
+          <html.div role="radiogroup" aria-label="Drawing sound level" style={controlStyles.row}>
+            {SOUND_LEVELS.map((level) => (
+              <RsdAction
+                key={level}
+                label={`${SOUND_LEVEL_LABELS[level]} drawing sound`}
+                text={SOUND_LEVEL_LABELS[level]}
+                selection="radio"
+                selected={settings.soundLevel === level}
+                disabled={settings.status !== 'ready' || !visible}
+                onClick={() => onSoundLevelChange(level)}
+              />
+            ))}
+          </html.div>
           {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
           {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
           {settings.status === 'ready' && !settings.saved ? (

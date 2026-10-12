@@ -1,4 +1,5 @@
 import { DEFAULT_COLORING_BOOK_ENABLED } from '../settings/coloringBook';
+import { DEFAULT_SOUND_LEVEL } from '../settings/soundLevel';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDrawingProduct, type DrawingProductOwner } from './createDrawingProduct';
@@ -197,6 +198,7 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
   const initial: SoundSettingsState = {
     status: 'loading',
     soundEnabled: false,
+    soundLevel: DEFAULT_SOUND_LEVEL,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
@@ -213,10 +215,11 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     }
   }, [services, parentCenterOpen]);
   useEffect(() => {
+    services?.audio.setLevel(settings.soundLevel);
     services?.audio.setEnabled(settings.soundEnabled);
     if (!settings.soundEnabled) services?.contacts.interrupt();
     if (!settings.aiEnabled) services?.ai.close();
-  }, [services, settings.soundEnabled, settings.aiEnabled]);
+  }, [services, settings.soundEnabled, settings.soundLevel, settings.aiEnabled]);
   useEffect(() => {
     if (settings.status !== 'loading')
       screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);

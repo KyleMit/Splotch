@@ -1,3 +1,5 @@
+import { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
+export { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
 import { assertAiVaultContract } from './native-ai-vault-contract.mjs';
 import { createHash } from 'node:crypto';
 import { assertAppleSceneContract } from './native-apple-scene.mjs';
@@ -464,6 +466,7 @@ export function assertNativeSourceContract(files, packageManifest, indexSource) 
       throw new Error(`Shipping identity in candidate source: ${path}`);
     }
   }
+  assertAiOriginalModelContract(files);
   assertAiJournalContract(files);
   assertAiVaultContract(files, KOTLIN_DIRECTORY);
   assertAndroidProperties(files);

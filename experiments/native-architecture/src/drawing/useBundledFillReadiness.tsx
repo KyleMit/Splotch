@@ -7,7 +7,10 @@ import { isFarmPageId } from './bundledBooks';
 import { useInkAppearance } from './InkAppearance';
 import type { InkPlan } from './checkpoints';
 
-export function useBundledFillReadiness(plan: InkPlan, onError: (error: unknown) => void) {
+export function useBundledFillReadiness(
+  plan: Pick<InkPlan, 'strokes'>,
+  onError: (error: unknown) => void
+) {
   const { pageId, theme } = useInkAppearance();
   const offlineArtwork = useContext(OfflineArtworkScope);
   const fill = isOfflinePageId(pageId)

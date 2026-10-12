@@ -25,6 +25,7 @@ class NativeAiController extends AiRecoverySession {
         uri: `data:${reply.mime};base64,${bytesBase64(reply.bytes)}`,
         mime: reply.mime,
       };
+      this.reports.complete(id, reply.bytes, reply.mime, reply.reportToken, result.uri);
       this.update({
         heldResult: result,
         message: 'Your AI picture is held in memory. Keep this app open and retry saving it.',
@@ -36,6 +37,7 @@ class NativeAiController extends AiRecoverySession {
       };
       return;
     }
+    this.reports.complete(id, reply.bytes, reply.mime, reply.reportToken, result.uri);
     this.update({
       heldResult: result,
       pictures: [...this.state.pictures.filter((picture) => picture.uri !== result.uri), result],
@@ -107,9 +109,18 @@ class NativeAiController extends AiRecoverySession {
             message:
               'An earlier AI picture arrived but could not be saved. Keep this app open and retry saving it.',
           });
+          if (this.state.heldResult)
+            this.reports.complete(
+              id,
+              reply.bytes,
+              reply.mime,
+              reply.reportToken,
+              this.state.heldResult.uri
+            );
           return;
         }
         this.heldBytes = null;
+        this.reports.complete(id, reply.bytes, reply.mime, reply.reportToken, result.uri);
         this.update({
           pictures: [
             ...this.state.pictures.filter((picture) => picture.uri !== result.uri),
@@ -194,6 +205,7 @@ class NativeAiController extends AiRecoverySession {
     )
       return;
     const proof = this.authorization;
+    const credential = this.credential;
     this.active = true;
     this.update({
       busy: true,
@@ -235,6 +247,8 @@ class NativeAiController extends AiRecoverySession {
         await this.persist({ ...receipt.journal, phase: 'failed' });
         return;
       }
+      await this.reports.prepare(id, upload, receipt.journal.style, credential);
+      if (!this.currentGenerationPermission(proof)) return;
       uploadStarted = true;
       const reply = await requestAi(
         this.deps.transport,
@@ -243,7 +257,7 @@ class NativeAiController extends AiRecoverySession {
           query: `style=${encodeURIComponent(receipt.journal.style)}`,
           method: 'POST',
           headers: {
-            ...credentialHeaders(this.credential),
+            ...credentialHeaders(credential),
             'Content-Type': 'image/png',
             'X-Async-Generation': '1',
           },
@@ -404,6 +418,7 @@ class NativeAiController extends AiRecoverySession {
           kind: 'image',
           ...held,
           remaining: null,
+          reportToken: null,
         },
         false
       );

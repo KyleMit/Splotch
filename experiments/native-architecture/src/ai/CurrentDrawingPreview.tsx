@@ -9,6 +9,7 @@ import {
 import { InkAppearanceScope } from '../drawing/InkAppearance';
 import { InkPaperScope } from '../drawing/InkPaper';
 import { InkScene } from '../drawing/InkScene';
+import { RecordedScene7 } from '../drawing/RecordedScene7';
 import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing } from '../drawing/model';
 import { drawingPaper } from '../drawing/paperSpace';
 import { PageOutline } from '../drawing/PageOutline';
@@ -48,7 +49,11 @@ export const CurrentDrawingPreview = memo(function CurrentDrawingPreview({
               accessibilityLabel="Current drawing preview"
             >
               <Rect width={PAPER_WIDTH} height={PAPER_HEIGHT} fill={PAPER_THEMES[theme].paper} />
-              <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={imageLoaded} />
+              {drawing.version === 7 ? (
+                <RecordedScene7 drawing={drawing} preview={null} />
+              ) : (
+                <InkScene checkpoint={null} strokes={drawing.strokes} onImageLoad={imageLoaded} />
+              )}
               <PageOutline pageId={drawing.pageId} />
             </Svg>
           </View>

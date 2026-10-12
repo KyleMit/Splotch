@@ -13,10 +13,9 @@ import {
   type AiRecoveryHeldReceipt,
 } from '../ai/journal';
 import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, isAiMime, type AiMime } from '../ai/contract';
-import { parseDrawing } from '../drawing/model';
+import { MAX_AI_MODEL_BYTES, validateAiOriginalModel } from './aiOriginalModel';
 import { admitAiImage } from './aiImage';
 const LEGACY_DIRECTORY = 'splotch-ai-pictures-v1';
-const MAX_MODEL_BYTES = 8 * 1024 * 1024;
 const MAX_JOURNAL_BYTES = 32 * 1024;
 const MAX_LEGACY_FILES = 256;
 const NATIVE_STORAGE_TIMEOUT_MS = 30_000;
@@ -217,12 +216,12 @@ export const aiStorage: AiStorage = {
         journal.phase !== 'unknown' ||
         journal.jobId !== null ||
         journal.result !== null ||
-        new TextEncoder().encode(originalModel).length > MAX_MODEL_BYTES ||
+        new TextEncoder().encode(originalModel).length > MAX_AI_MODEL_BYTES ||
         !upload.length ||
         upload.length > MAX_UPLOAD_BYTES
       )
         throw new Error('Recovery original or upload is invalid. Nothing was sent.');
-      parseDrawing(JSON.parse(originalModel));
+      validateAiOriginalModel(originalModel, 'current');
       const value = await operation('prepareRecovery', {
         journal,
         originalModel,
@@ -280,9 +279,9 @@ export const aiStorage: AiStorage = {
   async prepare(journal, originalModel, upload) {
     return queue.run('prepare', async () => {
       parseAiJournal(journal);
-      if (new TextEncoder().encode(originalModel).length > MAX_MODEL_BYTES)
+      if (new TextEncoder().encode(originalModel).length > MAX_AI_MODEL_BYTES)
         throw new Error('AI original drawing is too large.');
-      parseDrawing(JSON.parse(originalModel));
+      validateAiOriginalModel(originalModel, 'current');
       if (!upload.length || upload.length > MAX_UPLOAD_BYTES)
         throw new Error('AI recovery payload is too large.');
       const value = await owner.commit('prepare', {
@@ -359,10 +358,10 @@ export const aiStorage: AiStorage = {
         return Object.freeze({ kind: 'legacy' as const, journal: Object.freeze(journal) });
       }
       const original = new File(Paths.document, 'splotch-pictures', journal.originalId + '.json');
-      if (!original.exists || original.size > MAX_MODEL_BYTES)
+      if (!original.exists || original.size > MAX_AI_MODEL_BYTES)
         throw new Error('The original drawing for the older attempt is missing. Nothing was sent.');
       const originalModel = await original.text();
-      parseDrawing(JSON.parse(originalModel));
+      validateAiOriginalModel(originalModel, 'imported');
       const imported = await owner.commit('importLegacy', { journal, originalModel });
       if (imported.kind !== 'imported' || !sameJournal(imported.journal, journal))
         throw new Error('Older native import was not confirmed.');

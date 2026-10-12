@@ -1,6 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import type { useDrawingProduct } from './useDrawingProduct';
 export type ProductModal = 'none' | 'settings' | 'ai' | 'feedback' | 'gate' | 'parentCenter';
+export function isProductModalBlocked(
+  shown: ProductModal,
+  product: ReturnType<typeof useDrawingProduct>
+) {
+  return (
+    shown !== 'none' ||
+    !!(
+      product.state?.gate.open ||
+      product.state?.parentCenterOpen ||
+      product.feedback.state?.open ||
+      product.ai.state?.open
+    )
+  );
+}
 export function useProductModalRoute(
   target: ProductModal,
   onDismissed: (outgoing: ProductModal) => void

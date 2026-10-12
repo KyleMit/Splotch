@@ -1,4 +1,5 @@
 export { FEEDBACK_APP_VERSION as APP_VERSION } from '../feedback/feedbackCopy';
+import { AI_REPORT_REVIEW_HOURS, AI_REPORT_RETENTION_DAYS } from '../ai/reportContract';
 
 export type InformationPage = 'help' | 'privacy' | 'whatsNew';
 
@@ -28,7 +29,7 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
       {
         title: 'For grown-ups',
         paragraphs: [
-          'Settings controls sound, appearance, coloring books and available brushes. Parent Center controls AI picture creation and grown-up checks.',
+          'Settings controls drawing sound and its level, appearance, coloring books and available brushes. Parent Center controls AI picture creation and grown-up checks.',
           'AI starts off. Sending feedback or an AI drawing follows the checks chosen in Parent Center. You can keep drawing without using either feature.',
         ],
       },
@@ -50,6 +51,13 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
           'AI picture creation starts off. When you choose Send drawing for AI, a copy of the drawing and the chosen style go to Splotch’s hosted image service, which uses OpenAI. No drawing is sent just by opening the AI screen.',
           'Checking the free-picture allowance sends an installation code, without a drawing. The server uses it to count requests. An access code or your own OpenAI key is sent with requests that use it; credentials are stored separately from saved drawings.',
           'OpenAI processes submitted images under its data policies and may retain them for safety and legal obligations. Using your own key applies your account’s settings. Turning AI off stops new requests and keeps pictures and credentials already saved on your device.',
+        ],
+      },
+      {
+        title: 'Report an AI picture',
+        paragraphs: [
+          'Reporting is a separate choice after an AI picture is created. You review the original drawing, AI picture and style before choosing Send report. The report also includes the exact instruction used for that style and follows the image-report check chosen in Parent Center.',
+          `Reports go privately to a grown-up at Splotch. We review them within ${AI_REPORT_REVIEW_HOURS} hours and delete them after ${AI_REPORT_RETENTION_DAYS} days. Keep the report reference if you want to request earlier deletion. Opening a report or cancelling it sends nothing.`,
         ],
       },
       {
@@ -77,7 +85,7 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
           'Draw with Pen, Crayon, Magic and Eraser, with separate drawing and eraser widths.',
           'Save editable pictures, reopen them from Pictures, save before clearing, and export PNG images.',
           'Browse coloring books and use installed pages offline.',
-          'Choose light, dark or system appearance, drawing sound and the brushes shown to your child.',
+          'Choose light, dark or system appearance, Quiet, Medium or Loud drawing sound, and the brushes shown to your child.',
           'Manage grown-up checks and optional AI picture creation in Parent Center. Send private feedback from Drawing tools.',
         ],
       },

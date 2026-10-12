@@ -28,6 +28,10 @@ it('keeps the drawing and history while reading bundled information from Setting
   expect(screen.dialog().textContent).toContain('Make a picture');
   await screen.click('Privacy');
   expect(screen.dialog().textContent).toContain('Drawing stays on your device');
+  expect(screen.dialog().textContent).toContain(
+    'We review them within 24 hours and delete them after 30 days.'
+  );
+  expect(screen.dialog().textContent).toContain('Opening a report or cancelling it sends nothing.');
   await screen.click('Back to help and about');
   await screen.click('What’s new');
   expect(screen.dialog().textContent).toContain('In this beta');

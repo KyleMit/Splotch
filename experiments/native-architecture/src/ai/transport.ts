@@ -18,13 +18,15 @@ import {
   type AiMime,
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
+import { imageReportToken } from './reportContract';
 type LegacyAiRequest = {
   path:
     | '/api/generate-image'
     | '/api/generation-result'
     | '/api/free-generation-grant'
     | '/api/verify-access-code'
-    | '/api/verify-key';
+    | '/api/verify-key'
+    | '/api/report-image';
   query?: string;
   method: 'GET' | 'POST';
   headers: Record<string, string>;
@@ -52,6 +54,7 @@ export type AiReply =
       bytes: Uint8Array;
       mime: AiMime;
       remaining: number | null;
+      reportToken: string | null;
     }
   | { kind: 'ticket'; jobId: string; pollAfterMs: number }
   | { kind: 'pending'; delayMs: number }
@@ -165,6 +168,7 @@ export async function parseAiResponse(
       bytes,
       mime,
       remaining: remainingHeader(response),
+      reportToken: imageReportToken(response.headers.get('X-Report-Token')),
     };
   }
   const bytes = await readAiBytes(response, MAX_JSON_BYTES, signal);

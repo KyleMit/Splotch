@@ -33,10 +33,15 @@ async function enableAi() {
   await solve();
   await screen.click('Enable AI picture creation');
   expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0])).toMatchObject({
-    version: 6,
+    version: 7,
     coloringBookEnabled: true,
     aiEnabled: true,
-    parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+    parentPolicies: {
+      ai: 'always',
+      imageReport: 'always',
+      feedback: 'always',
+      parentCenter: 'always',
+    },
   });
   await screen.click('Keep drawing');
 }
@@ -139,7 +144,7 @@ it('mounts the RN parent challenge, disclosure, finite style picker and retained
   await protectedAction('Send drawing for AI');
   expect(files.aiSend.mock.calls.at(-1)[0].query).toBe('style=Clay');
   expect(files.aiPrepare).toHaveBeenCalledOnce();
-  expect(files.aiAdmit).toHaveBeenCalledOnce();
+  expect(files.aiAdmit).toHaveBeenCalledTimes(2);
   expect(
     files.aiSend.mock.calls.filter(([request]) => request.path === '/api/generate-image')
   ).toHaveLength(1);
@@ -247,7 +252,7 @@ it('withholds an RN picture rejected by native decoding and preserves the drawin
   files.aiAdmit.mockRejectedValue(new Error('controlled native decoder rejection'));
   const original = screen.paper();
   await protectedAction('Send drawing for AI');
-  expect(files.aiAdmit).toHaveBeenCalledOnce();
+  expect(files.aiAdmit).toHaveBeenCalledTimes(2);
   expect(files.aiRetain).not.toHaveBeenCalled();
   expect(screen.container.querySelector('img[alt="Your AI picture"]')).toBeNull();
   expect(screen.container.textContent).toContain('could not be safely opened');

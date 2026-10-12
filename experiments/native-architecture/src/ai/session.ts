@@ -17,6 +17,8 @@ import { requestAi, type AiTransport } from './transport';
 import type { AiJournal, AiResult, AiStorage, AiRecoveryHeldReceipt } from './journal';
 import type { AiImageAdmission } from './imageAdmission';
 import type { ParentOperationPort, ParentProof } from '../parentCenter/parentPolicy';
+import { createAiReportOwner } from './reportOwner';
+import type { AiReportState } from './reportContract';
 export type AiState = Readonly<{
   open: boolean;
   authorized: boolean;
@@ -31,6 +33,7 @@ export type AiState = Readonly<{
   pictures: readonly AiResult[];
   message: string;
   retryAt: number;
+  report: AiReportState;
 }>;
 export type PreparedAiDrawing = {
   bytes: Uint8Array;
@@ -55,7 +58,23 @@ export class AiSession {
     parent?: ParentOperationPort;
   }) {
     this.deps = deps;
+    this.reports = createAiReportOwner({
+      vault: deps.vault,
+      parent: deps.parent,
+      transport: deps.transport,
+      admit: deps.admit,
+      publish: (report) => this.update({ report }),
+      current: (uri) =>
+        !this.disposed &&
+        this.state.open &&
+        this.state.authorized &&
+        !this.state.gate.open &&
+        [this.state.heldResult, this.state.journal?.result, ...this.state.pictures].some(
+          (result) => result?.uri === uri
+        ),
+    });
   }
+  protected reports: ReturnType<typeof createAiReportOwner>;
   protected listeners = new Set<() => void>();
   protected disposed = false;
   protected recoveryUncertain = false;
@@ -111,6 +130,7 @@ export class AiSession {
     pictures: [],
     message: '',
     retryAt: 0,
+    report: { phase: 'idle' },
   };
   protected update = (next: Partial<AiState>) => {
     this.state = {
@@ -420,6 +440,7 @@ export class AiSession {
     };
   };
   close = () => {
+    this.reports.cancel();
     this.authorization += 1;
     this.parentProof = null;
     this.deps.parent?.cancel('ai');
@@ -448,6 +469,7 @@ export class AiSession {
       });
   };
   dispose = () => {
+    this.reports.dispose();
     this.authorization += 1;
     this.parentProof = null;
     this.deps.parent?.cancel('ai');
@@ -456,4 +478,7 @@ export class AiSession {
     this.listeners.clear();
     if (this.timer) clearTimeout(this.timer);
   };
+  reportPicture = (uri: string) => this.reports.request(uri);
+  sendPictureReport = () => this.reports.send();
+  cancelPictureReport = () => this.reports.cancel();
 }

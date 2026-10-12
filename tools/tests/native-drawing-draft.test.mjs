@@ -7,14 +7,18 @@ import {
 } from '../../experiments/native-architecture/src/product/drawingDraft.ts';
 import {
   drawingDraftStorage,
+  drawingDraftStorageFor,
   protectedDraftPageIds,
 } from '../../experiments/native-architecture/src/platform/drawingDraft.ts';
 import {
   addStroke,
+  addRecordedCohort,
   createHistory,
   emptyDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
 import { canonicalPaper } from './native-paper-fixtures.mjs';
+import { createRecordedContactCohort7 } from '../../experiments/native-architecture/src/drawing/recordedContactCohort7.ts';
+import { readDrawingBackend } from '../../experiments/native-architecture/src/product/drawingBackend.ts';
 
 const filesystem = vi.hoisted(() => ({
   contents: new Map(),
@@ -114,6 +118,41 @@ afterEach(() => {
 });
 
 describe('current draft recovery', () => {
+  it('requires an explicit recorded mode and preserves the no-argument schema 6 session', () => {
+    expect(createDrawingSession().currentDrawing().version).toBe(6);
+    expect(createDrawingSession('recorded').currentDrawing().version).toBe(7);
+    expect(readDrawingBackend(undefined)).toBe('legacy');
+    expect(readDrawingBackend('legacy')).toBe('legacy');
+    expect(readDrawingBackend('recorded')).toBe('recorded');
+    expect(() => readDrawingBackend('')).toThrow('legacy or recorded');
+    expect(() => readDrawingBackend('auto')).toThrow('legacy or recorded');
+  });
+
+  it('recovers recorded input and allocation exactly without replacing the legacy draft', async () => {
+    const legacy = encodeDrawingDraft(emptyDrawing(0, 'flower'));
+    await drawingDraftStorage.write(legacy);
+    const storage = drawingDraftStorageFor('recorded');
+    const first = createDrawingSession('recorded');
+    const draft = coordinator(first, storage);
+    await draft.start();
+    const cohort = createRecordedContactCohort7(canonicalPaper(), 'per-frame', 1);
+    cohort.start('one', { brush: 'crayon', color: 'Purple', width: 14 }, { x: 10, y: 20 });
+    cohort.move('one', [{ x: 30, y: 40 }]);
+    cohort.drain();
+    const base = first.currentDrawing();
+    const completed = cohort.end('one');
+    first.setHistory((history) => addRecordedCohort(history, base, completed));
+    await draft.retry();
+    const second = createDrawingSession('recorded');
+    await coordinator(second, storage).start();
+    expect(second.currentDrawing()).toEqual(first.currentDrawing());
+    expect(second.currentDrawing().commands).toHaveLength(1);
+    expect(second.getSnapshot().allocationCursor7).toBe(first.getSnapshot().allocationCursor7);
+    expect(second.getSnapshot().undo).toEqual([]);
+    expect(await drawingDraftStorage.read()).toBe(legacy);
+    expect((await protectedDraftPageIds()).sort()).toEqual(['blank', 'flower']);
+  });
+
   it('recovers the validated current drawing into a fresh app without restoring Undo', async () => {
     const first = createDrawingSession();
     const saving = coordinator(first);

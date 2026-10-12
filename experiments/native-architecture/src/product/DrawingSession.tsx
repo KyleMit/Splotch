@@ -9,7 +9,8 @@ import {
 } from 'react';
 import { createDrawingSession, type DrawingSession } from './createDrawingSession';
 import { createDrawingDraft, type DrawingDraftState } from './createDrawingDraft';
-import { drawingDraftStorage } from '../platform/drawingDraft';
+import { drawingDraftStorage, drawingDraftStorageFor } from '../platform/drawingDraft';
+import type { DrawingBackend } from './drawingBackend';
 import { offlineLibrary } from '../offlineLibrary/runtime';
 
 type SessionContext = { session: DrawingSession; draft: ReturnType<typeof createDrawingDraft> };
@@ -18,14 +19,24 @@ const SESSION_ONLY_STATE: DrawingDraftState = { status: 'session', message: '' }
 const subscribeSessionOnly = () => () => {};
 const sessionOnlyState = () => SESSION_ONLY_STATE;
 
-export function DrawingSessionProvider({ children }: { children: ReactNode }) {
+export function DrawingSessionProvider({
+  children,
+  backend = 'legacy',
+}: {
+  children: ReactNode;
+  backend?: DrawingBackend;
+}) {
   const [owner] = useState(() => {
-    const session = createDrawingSession();
+    const session = createDrawingSession(backend);
     return {
       session,
-      draft: createDrawingDraft(session, drawingDraftStorage, async (drawing) => {
-        await offlineLibrary.openPage(drawing.pageId);
-      }),
+      draft: createDrawingDraft(
+        session,
+        backend === 'legacy' ? drawingDraftStorage : drawingDraftStorageFor(backend),
+        async (drawing) => {
+          await offlineLibrary.openPage(drawing.pageId);
+        }
+      ),
     };
   });
   useEffect(() => {

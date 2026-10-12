@@ -4,7 +4,10 @@ import {
   PARENT_GATE_SHAKE_MS,
 } from '../../experiments/native-architecture/src/parentCenter/parentGate.ts';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
-import { parseSoundSettings } from '../../experiments/native-architecture/src/settings/soundSettings.ts';
+import {
+  createSoundSettings,
+  parseSoundSettings,
+} from '../../experiments/native-architecture/src/settings/soundSettings.ts';
 import { createNativeFeedback } from '../../experiments/native-architecture/src/feedback/feedback.ts';
 import {
   GATE_LOCKOUT_BASE_MS,
@@ -12,7 +15,7 @@ import {
   GATE_ESCALATION_QUIET_MS,
 } from '../../experiments/native-architecture/src/feedback/gateLockout.ts';
 
-const ALWAYS = { ai: 'always', feedback: 'always', parentCenter: 'always' };
+const ALWAYS = { ai: 'always', imageReport: 'always', feedback: 'always', parentCenter: 'always' };
 function fixture(policies = ALWAYS) {
   let clock = 1000;
   const changes = [];
@@ -66,8 +69,9 @@ describe('root Parent Center policy and lifetime', () => {
     const current = parseSoundSettings(JSON.stringify(old));
     expect(current).toEqual({
       ...old,
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
+      soundLevel: 'medium',
       aiEnabled: false,
       parentPolicies: ALWAYS,
     });
@@ -79,6 +83,119 @@ describe('root Parent Center policy and lifetime', () => {
     expect(() => parseSoundSettings(JSON.stringify({ ...current, aiEnabled: 'true' }))).toThrow(
       'Parent Center'
     );
+  });
+  it.each([5, 6])(
+    'preserves version %s policies while protecting image reports',
+    async (version) => {
+      const old = {
+        version,
+        soundEnabled: false,
+        strokeWidth: 'thin',
+        eraserWidth: 'thick',
+        selectedColor: 'Black',
+        customColors: [],
+        appearance: 'dark',
+        aiEnabled: true,
+        parentPolicies: { ai: 'never', feedback: 'session', parentCenter: 'always' },
+        ...(version === 6 ? { coloringBookEnabled: false } : {}),
+      };
+      const migrated = parseSoundSettings(JSON.stringify(old));
+      expect(migrated).toMatchObject({
+        version: 7,
+        aiEnabled: true,
+        parentPolicies: {
+          ai: 'never',
+          imageReport: 'always',
+          feedback: 'session',
+          parentCenter: 'always',
+        },
+        coloringBookEnabled: version === 5,
+      });
+      expect(() =>
+        parseSoundSettings(
+          JSON.stringify({
+            ...old,
+            parentPolicies: { ...old.parentPolicies, imageReport: 'never' },
+          })
+        )
+      ).toThrow('Parent Center');
+      const storage = { read: async () => JSON.stringify(old), write: vi.fn(async () => {}) };
+      const owner = createSoundSettings(storage, () => {});
+      await owner.load();
+      await owner.setEnabled(true);
+      expect(parseSoundSettings(storage.write.mock.calls[0][0])).toEqual({
+        ...migrated,
+        soundEnabled: true,
+      });
+      owner.dispose();
+    }
+  );
+  it('persists and strictly restores the dedicated version 7 image-report policy', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    f.owner.openParentCenter();
+    solve(f.owner.gate);
+    await f.owner.setPolicy('imageReport', 'session');
+    const stored = f.storage.write.mock.calls[0][0];
+    expect(parseSoundSettings(stored)).toMatchObject({
+      version: 7,
+      parentPolicies: { ...ALWAYS, imageReport: 'session' },
+    });
+    const current = JSON.parse(stored);
+    const { imageReport, ...missing } = current.parentPolicies;
+    expect(imageReport).toBe('session');
+    expect(() =>
+      parseSoundSettings(
+        JSON.stringify({
+          ...current,
+          parentPolicies: missing,
+        })
+      )
+    ).toThrow('Parent Center');
+    expect(() =>
+      parseSoundSettings(
+        JSON.stringify({
+          ...current,
+          parentPolicies: { ...current.parentPolicies, imageReport: 'sometimes' },
+        })
+      )
+    ).toThrow('Parent Center');
+    f.owner.dispose();
+  });
+  it('requires AI consent and a separate image-report solve, then revokes proof when its policy changes', async () => {
+    const f = productFixture();
+    await f.owner.settings.load();
+    const report = vi.fn();
+    expect(f.owner.port.request('imageReport', report)).toBe(false);
+    expect(report).not.toHaveBeenCalled();
+    f.owner.openParentCenter();
+    solve(f.owner.gate);
+    await f.owner.setAiEnabled(true);
+    await f.owner.setPolicy('ai', 'session');
+    f.owner.closeParentCenter();
+    const ai = vi.fn();
+    f.owner.port.request('ai', ai);
+    solve(f.owner.gate);
+    expect(ai).toHaveBeenCalledOnce();
+    f.owner.port.request('imageReport', report);
+    expect(f.owner.gate.getState()).toMatchObject({ open: true, feature: 'imageReport' });
+    expect(report).not.toHaveBeenCalled();
+    solve(f.owner.gate);
+    const proof = report.mock.calls[0][0];
+    expect(proof.valid()).toBe(true);
+    const epoch = f.owner.port.consent().epoch;
+    await f.owner.settings.setParentPreferences({
+      aiEnabled: true,
+      parentPolicies: { ...f.owner.getState().settings.parentPolicies, imageReport: 'session' },
+    });
+    expect(proof.valid()).toBe(false);
+    expect(f.owner.port.consent().epoch).toBeGreaterThan(epoch);
+    f.owner.openParentCenter();
+    solve(f.owner.gate);
+    await f.owner.setAiEnabled(false);
+    expect(f.owner.port.request('imageReport', report)).toBe(false);
+    expect(report).toHaveBeenCalledOnce();
+    f.owner.dispose();
   });
   it('requires Parent Center authorization and confirmed persistence before enabling AI or relaxing a policy', async () => {
     const f = productFixture();

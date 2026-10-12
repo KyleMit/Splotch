@@ -487,7 +487,7 @@ it('persists Coloring Book through the released native switch without a parent c
     await act(async () => on.click());
     expect(host.querySelector('[aria-label="Coloring book off"]').dataset.checked).toBe('false');
     expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 6,
+      version: 7,
       coloringBookEnabled: false,
       aiEnabled: false,
     });

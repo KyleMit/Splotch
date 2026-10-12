@@ -179,10 +179,16 @@ describe('canonical shared stroke widths', () => {
 describe('one persisted candidate settings owner', () => {
   it('defaults drawing levels while preserving historic geometry only in saved pictures', () => {
     expect(parseSoundSettings('{"version":1,"soundEnabled":false}')).toEqual({
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
+      soundLevel: 'medium',
       aiEnabled: false,
-      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+      parentPolicies: {
+        ai: 'always',
+        imageReport: 'always',
+        feedback: 'always',
+        parentCenter: 'always',
+      },
       appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
@@ -226,7 +232,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":6,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
+      '{"version":7,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -238,10 +244,16 @@ describe('one persisted candidate settings owner', () => {
     });
     await reopened.setEnabled(true);
     expect(JSON.parse(saved)).toEqual({
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
+      soundLevel: 'medium',
       aiEnabled: false,
-      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+      parentPolicies: {
+        ai: 'always',
+        imageReport: 'always',
+        feedback: 'always',
+        parentCenter: 'always',
+      },
       appearance: 'system',
       selectedColor: 'Purple',
       customColors: [],
@@ -275,6 +287,7 @@ describe('one persisted candidate settings owner', () => {
       expect(states.at(-1)).toEqual({
         status: 'ready',
         coloringBookEnabled: false,
+        soundLevel: 'medium',
         soundEnabled: false,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
@@ -282,7 +295,12 @@ describe('one persisted candidate settings owner', () => {
         customColors: [],
         appearance: 'system',
         aiEnabled: false,
-        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+        parentPolicies: {
+          ai: 'always',
+          imageReport: 'always',
+          feedback: 'always',
+          parentCenter: 'always',
+        },
         saved: false,
         message: warning,
       });
@@ -305,10 +323,16 @@ describe('one persisted candidate settings owner', () => {
       const writes = recovery === 'sound choice' ? 3 : 2;
       expect(storage.write).toHaveBeenCalledTimes(writes);
       expect(JSON.parse(saved)).toEqual({
-        version: 6,
+        version: 7,
         coloringBookEnabled: true,
+        soundLevel: 'medium',
         aiEnabled: false,
-        parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+        parentPolicies: {
+          ai: 'always',
+          imageReport: 'always',
+          feedback: 'always',
+          parentCenter: 'always',
+        },
         appearance: 'system',
         soundEnabled: recovery === 'retry',
         strokeWidth: 'thin',
@@ -348,10 +372,16 @@ describe('one persisted candidate settings owner', () => {
     await owner.setWidth('eraser', 'thick');
     expect(storage.write).toHaveBeenCalledTimes(2);
     expect(JSON.parse(saved)).toEqual({
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
+      soundLevel: 'medium',
       aiEnabled: false,
-      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+      parentPolicies: {
+        ai: 'always',
+        imageReport: 'always',
+        feedback: 'always',
+        parentCenter: 'always',
+      },
       appearance: 'system',
       soundEnabled: true,
       strokeWidth: 'thin',

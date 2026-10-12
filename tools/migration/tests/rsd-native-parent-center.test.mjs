@@ -64,6 +64,15 @@ it('mounts actual RSD shared gate, policy radio state, confirmation and persiste
   checkedSwitch(host.querySelector('[aria-label="AI picture creation"]'), true);
   expect(owner.port.consent().enabled).toBe(true);
   expect(JSON.parse(storage.write.mock.calls[0][0]).aiEnabled).toBe(true);
+  expect(
+    host.querySelector('[aria-label="Every time: Reporting an AI picture"]').dataset.checked
+  ).toBe('true');
+  await click('Per session: Reporting an AI picture');
+  expect(owner.getState().settings.parentPolicies.imageReport).toBe('session');
+  expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
+    version: 7,
+    parentPolicies: { imageReport: 'session' },
+  });
   await click('Never: Opening Parent Center');
   expect(owner.getState().settings.parentPolicies.parentCenter).toBe('always');
   expect(host.textContent).toContain('without a check on this device');

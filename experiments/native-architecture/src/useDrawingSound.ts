@@ -1,4 +1,5 @@
 import { DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
+import { DEFAULT_SOUND_LEVEL } from './settings/soundLevel';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
 import { DEFAULT_PARENT_PREFERENCES } from './platform/parentDefaults';
 import { DEFAULT_COLOR_SETTINGS } from './drawing/palette';
@@ -18,6 +19,7 @@ export function useDrawingSound() {
   const [settings, setSettings] = useState<SoundSettingsState>({
     status: 'loading',
     soundEnabled: false,
+    soundLevel: DEFAULT_SOUND_LEVEL,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
@@ -43,6 +45,7 @@ export function useDrawingSound() {
     const preferences = createSoundSettings(soundSettingsStorage, (next) => {
       setSettings(next);
       if (!next.soundEnabled) contacts.interrupt();
+      audio.setLevel(next.soundLevel);
       audio.setEnabled(next.soundEnabled);
       if (!next.soundEnabled) setAudioMessage('');
     });

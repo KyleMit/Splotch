@@ -97,8 +97,9 @@ it('hydrates before usable controls and persists appearance through the real RSD
   expect(host.textContent).toContain('could not be saved');
   await click('Try saving settings again');
   expect(JSON.parse(stored)).toEqual({
-    version: 6,
+    version: 7,
     coloringBookEnabled: true,
+    soundLevel: 'medium',
     soundEnabled: false,
     strokeWidth: 'thin',
     eraserWidth: 'thick',
@@ -106,7 +107,12 @@ it('hydrates before usable controls and persists appearance through the real RSD
     customColors: [],
     appearance: 'dark',
     aiEnabled: false,
-    parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+    parentPolicies: {
+      ai: 'always',
+      imageReport: 'always',
+      feedback: 'always',
+      parentCenter: 'always',
+    },
   });
   expect(host.textContent).not.toContain('could not be saved');
   await click('Light appearance');
@@ -223,6 +229,36 @@ function rootColoringSettings() {
   };
   return caller.settingsStorage;
 }
+it('uses real RSD sound-level radios independently of the sound switch, retries, and retains ink', async () => {
+  const storage = rootColoringSettings();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Draw RSD fixture stroke');
+  const drawing = coloringPaper();
+  await coloringMenu('Settings');
+  checkedRadio(host.querySelector('[aria-label="Medium drawing sound"]'));
+  storage.write.mockRejectedValueOnce(new Error('disk full'));
+  await click('Quiet drawing sound');
+  checkedRadio(host.querySelector('[aria-label="Quiet drawing sound"]'));
+  expect(host.textContent).toContain('could not be saved');
+  expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
+    soundEnabled: false,
+    soundLevel: 'quiet',
+  });
+  await click('Try saving settings again');
+  expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
+  expect(host.textContent).not.toContain('could not be saved');
+  await click('Drawing sound off');
+  await click('Loud drawing sound');
+  checkedRadio(host.querySelector('[aria-label="Loud drawing sound"]'));
+  expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
+    soundEnabled: true,
+    soundLevel: 'loud',
+  });
+  await click('Keep drawing');
+  expect(coloringPaper()).toEqual(drawing);
+  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(caller.feedbackSend).not.toHaveBeenCalled();
+});
 it('reads bundled help, privacy and beta notes through Settings without changing ink or sending requests', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
@@ -236,6 +272,9 @@ it('reads bundled help, privacy and beta notes through Settings without changing
   await click('Privacy');
   expect(host.textContent).toContain('Drawing stays on your device');
   expect(host.textContent).toContain('AI pictures are optional');
+  expect(host.textContent).toContain(
+    'We review them within 24 hours and delete them after 30 days.'
+  );
   await click('Back to help and about');
   await click('What’s new');
   expect(host.textContent).toContain('In this beta');
@@ -281,7 +320,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Coloring book on');
   expect(host.textContent).not.toContain('Grown-ups only');
   expect(JSON.parse(storage.write.mock.calls.at(-1)[0])).toMatchObject({
-    version: 6,
+    version: 7,
     coloringBookEnabled: false,
     aiEnabled: false,
   });
