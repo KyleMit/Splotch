@@ -182,6 +182,8 @@ describe('one persisted candidate settings owner', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
@@ -232,7 +234,7 @@ describe('one persisted candidate settings owner', () => {
     await owner.retrySave();
     expect(storage.write.mock.calls.at(-1)).toEqual(storage.write.mock.calls.at(-2));
     expect(saved).toBe(
-      '{"version":7,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}'
+      '{"version":7,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}'
     );
     const reopened = createSoundSettings(storage, (state) => states.push(state));
     await reopened.load();
@@ -247,6 +249,8 @@ describe('one persisted candidate settings owner', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
@@ -288,6 +292,8 @@ describe('one persisted candidate settings owner', () => {
         status: 'ready',
         coloringBookEnabled: false,
         soundLevel: 'medium',
+        undoButtonEnabled: true,
+        strokeWidthControlEnabled: true,
         soundEnabled: false,
         strokeWidth: 'thin',
         eraserWidth: 'thick',
@@ -326,6 +332,8 @@ describe('one persisted candidate settings owner', () => {
         version: 7,
         coloringBookEnabled: true,
         soundLevel: 'medium',
+        undoButtonEnabled: true,
+        strokeWidthControlEnabled: true,
         aiEnabled: false,
         parentPolicies: {
           ai: 'always',
@@ -375,6 +383,8 @@ describe('one persisted candidate settings owner', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',

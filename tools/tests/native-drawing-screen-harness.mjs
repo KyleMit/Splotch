@@ -442,3 +442,20 @@ vi.mock(
   'react-native-safe-area-context',
   () => import('../lib/native-appearance-frame-fixture.mjs')
 );
+
+export async function expectSavedSettingsReread(screen) {
+  const reads = files.settingsRead.mock.calls.length;
+  await screen.click('Manage Parent Center');
+  const factors = screen.container.textContent.match(/(\d) × (\d)/);
+  expect(factors).not.toBeNull();
+  const field = screen.container.querySelector('[aria-label="Grown-up answer"]');
+  await act(async () => {
+    field.value = String(Number(factors[1]) * Number(factors[2]));
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await screen.click('Check answer');
+  await screen.click('Read saved settings again');
+  expect(files.settingsRead).toHaveBeenCalledTimes(reads + 1);
+  expect(files.settingsWrite).not.toHaveBeenCalled();
+  await screen.click('Keep drawing');
+}

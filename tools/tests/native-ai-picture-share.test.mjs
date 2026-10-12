@@ -5,9 +5,13 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { files } from './native-drawing-screen-harness.mjs';
 import { NativeAiPictureView } from '../../experiments/native-architecture/src/ai/NativeAiPictureView.tsx';
 
-const platform = vi.hoisted(() => ({ share: vi.fn() }));
+const platform = vi.hoisted(() => ({
+  share: vi.fn(),
+  presentation: { label: 'Share AI picture', complete: 'Share sheet closed.' },
+}));
 vi.mock('../../experiments/native-architecture/src/platform/aiShare.ts', () => ({
   shareAiPicture: platform.share,
+  aiPictureSharePresentation: platform.presentation,
 }));
 const SAVED = { uri: 'file:///owned/saved-ai.png', mime: 'image/png' };
 const OTHER = { uri: 'file:///owned/other-ai.jpg', mime: 'image/jpeg' };
@@ -38,6 +42,8 @@ function deferred() {
 beforeEach(async () => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   platform.share.mockReset().mockResolvedValue(undefined);
+  platform.presentation.label = 'Share AI picture';
+  platform.presentation.complete = 'Share sheet closed.';
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -83,6 +89,20 @@ it('gives save-first guidance for a memory result and keeps retention retry', as
   expect(platform.share).not.toHaveBeenCalled();
   expect(container.textContent).toContain('Save this AI picture before sharing it.');
   expect(container.querySelector('button[aria-label="Retry saving AI picture"]')).not.toBeNull();
+});
+
+it('offers the browser download action for a retained data URI and preserves requested-outcome copy', async () => {
+  platform.presentation.label = 'Download AI picture';
+  platform.presentation.complete = 'Download requested. Your AI picture stays saved here.';
+  const retained = { uri: 'data:image/png;base64,retained', mime: 'image/png' };
+  await render(retained, { ...state, heldResult: null, pictures: [retained] });
+  await act(async () =>
+    container.querySelector('button[aria-label="Download AI picture"]').click()
+  );
+  expect(platform.share).toHaveBeenCalledOnce();
+  expect(platform.share.mock.calls[0][0]).toBe(retained);
+  expect(container.textContent).toContain('Download requested.');
+  expect(container.textContent).not.toContain('Share sheet closed.');
 });
 
 it.each(['switch', 'switch-back', 'closed', 'authorization', 'gate', 'removed', 'unmount'])(

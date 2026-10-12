@@ -72,6 +72,8 @@ describe('root Parent Center policy and lifetime', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: ALWAYS,
     });

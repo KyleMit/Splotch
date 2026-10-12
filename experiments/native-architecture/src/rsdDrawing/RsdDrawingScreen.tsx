@@ -198,17 +198,7 @@ function RsdDrawingContent({
           {screen.pictures !== null ? (
             <Pictures screen={screen} pictures={screen.pictures} />
           ) : null}
-          {screen.colorPickerOpen ? (
-            <ColorPicker
-              selected={sound.settings.selectedColor}
-              onClose={screen.closeColorPicker}
-              onChoose={(color) => {
-                screen.selectInkBrush();
-                void sound.owner?.settings.setColor(color);
-                screen.closeColorPicker();
-              }}
-            />
-          ) : null}
+          {screen.colorPickerOpen ? <DrawingColorPicker screen={screen} sound={sound} /> : null}
           {route.shown === 'settings' ? (
             <NativeSoundSettingsDialog
               settings={sound.settings}
@@ -218,6 +208,12 @@ function RsdDrawingContent({
               notice={soundNotice}
               onToggle={() => {
                 void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
+              }}
+              onUndoButtonChange={(enabled) => {
+                void sound.owner?.settings.setUndoButtonEnabled(enabled);
+              }}
+              onStrokeWidthControlChange={(enabled) => {
+                void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
               }}
               onSoundLevelChange={(level) => {
                 void sound.owner?.settings.setSoundLevel(level);
@@ -240,6 +236,20 @@ function RsdDrawingContent({
         </html.div>
       </NativeFrame>
     </LibraryProvider>
+  );
+}
+
+function DrawingColorPicker({ screen, sound }: { screen: Screen; sound: Sound }) {
+  return (
+    <ColorPicker
+      selected={sound.settings.selectedColor}
+      onClose={screen.closeColorPicker}
+      onChoose={(color) => {
+        screen.selectInkBrush();
+        void sound.owner?.settings.setColor(color);
+        screen.closeColorPicker();
+      }}
+    />
   );
 }
 
@@ -270,11 +280,13 @@ function RsdPaintControls({
           disabled={disabled}
           onClick={() => product.owner?.openParentCenter()}
         />
-        <RsdAction
-          label="Undo"
-          disabled={disabled || screen.history.undo.length === 0}
-          onClick={screen.undo}
-        />
+        {sound.settings.undoButtonEnabled ? (
+          <RsdAction
+            label="Undo"
+            disabled={disabled || screen.history.undo.length === 0}
+            onClick={screen.undo}
+          />
+        ) : null}
         {screen.brushControl.kind === 'toggle' ? (
           <RsdAction
             label={BRUSHES[screen.brushControl.brush].label}
@@ -375,7 +387,13 @@ function DrawingMenu({
             ))}
           </html.div>
         ) : null}
-        <DrawingWidths screen={screen} sound={sound} disabled={screen.disabled || !menu.visible} />
+        {sound.settings.strokeWidthControlEnabled ? (
+          <DrawingWidths
+            screen={screen}
+            sound={sound}
+            disabled={screen.disabled || !menu.visible}
+          />
+        ) : null}
         {sound.settings.coloringBookEnabled ? (
           <RsdAction
             label="Coloring pages"

@@ -73,11 +73,14 @@ function validateBrushSources({
     );
     const disabled = expressionValue(node, 'disabled');
     assert.ok(
-      disabled?.type === 'BinaryExpression' &&
-        disabled.operator === '!==' &&
-        namedMember(disabled.left, 'brushState', 'status') &&
-        disabled.right.type === 'StringLiteral' &&
-        disabled.right.value === 'ready',
+      disabled?.type === 'LogicalExpression' &&
+        disabled.operator === '||' &&
+        identifier(disabled.left, 'busy') &&
+        disabled.right.type === 'BinaryExpression' &&
+        disabled.right.operator === '!==' &&
+        namedMember(disabled.right.left, 'brushState', 'status') &&
+        disabled.right.right.type === 'StringLiteral' &&
+        disabled.right.right.value === 'ready',
       prefix + ' disabled owner'
     );
     const callback = expressionValue(node, 'onClick');
@@ -304,7 +307,7 @@ function validateBrushSources({
         },
       });
       if (file === 'src/rsdDrawing/NativeDialog.tsx') {
-        assert.equal(transformedSwitches.length, 3, 'RSD transformed settings switch templates');
+        assert.equal(transformedSwitches.length, 5, 'RSD transformed settings switch templates');
         const optional = transformedSwitches.filter((node) =>
           availabilityValue(expressionValue(node, 'selected'))
         );
@@ -315,14 +318,15 @@ function validateBrushSources({
             .filter((node) => node !== optional[0])
             .map((node) => expressionValue(node, 'selected'))
             .map((node) =>
-              settingsValue(node, 'soundEnabled')
-                ? 'soundEnabled'
-                : settingsValue(node, 'coloringBookEnabled')
-                  ? 'coloringBookEnabled'
-                  : null
+              [
+                'soundEnabled',
+                'coloringBookEnabled',
+                'undoButtonEnabled',
+                'strokeWidthControlEnabled',
+              ].find((property) => settingsValue(node, property))
             )
             .sort(),
-          ['coloringBookEnabled', 'soundEnabled'],
+          ['coloringBookEnabled', 'soundEnabled', 'strokeWidthControlEnabled', 'undoButtonEnabled'],
           'RSD transformed settings switch state callers'
         );
       } else {

@@ -154,15 +154,15 @@ const settingsValue = (expression, property) =>
 const selectedValue = (node) => attribute(node, 'selected')?.value?.expression;
 assert.ok(
   switches.every((node) =>
-    ['soundEnabled', 'coloringBookEnabled'].some((property) =>
-      settingsValue(selectedValue(node), property)
+    ['soundEnabled', 'coloringBookEnabled', 'undoButtonEnabled', 'strokeWidthControlEnabled'].some(
+      (property) => settingsValue(selectedValue(node), property)
     )
   ),
   'RSD switch state owner'
 );
 assert.deepEqual(
   switches.map((node) => selectedValue(node).property.name).sort(),
-  ['coloringBookEnabled', 'soundEnabled'],
+  ['coloringBookEnabled', 'soundEnabled', 'strokeWidthControlEnabled', 'undoButtonEnabled'],
   'RSD switch state callers'
 );
 function switchCallback(property, enabledLabel, disabledLabel) {
@@ -214,6 +214,32 @@ const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = vali
   attribute,
   settingsValue,
 });
+for (const [property, label, callback] of [
+  ['undoButtonEnabled', 'Show Undo button', 'onUndoButtonChange'],
+  ['strokeWidthControlEnabled', 'Show drawing width controls', 'onStrokeWidthControlChange'],
+]) {
+  const node = switches.find((item) => settingsValue(selectedValue(item), property));
+  assert.equal(literal(attribute(node, 'label')), label, 'RSD control switch label');
+  assert.equal(
+    attribute(node, 'disabled')?.value?.expression.name,
+    'busy',
+    'RSD control switch guard'
+  );
+  const handler = attribute(node, 'onClick')?.value?.expression;
+  assert.ok(
+    handler?.type === 'ArrowFunctionExpression' &&
+      !handler.async &&
+      handler.params.length === 0 &&
+      handler.body.type === 'CallExpression' &&
+      handler.body.callee.type === 'Identifier' &&
+      handler.body.callee.name === callback &&
+      handler.body.arguments.length === 1 &&
+      handler.body.arguments[0].type === 'UnaryExpression' &&
+      handler.body.arguments[0].operator === '!' &&
+      settingsValue(handler.body.arguments[0].argument, property),
+    'RSD control switch owner'
+  );
+}
 const files = [
   'src/platform/useUndoShortcut.ts',
   'src/platform/useUndoShortcut.web.ts',
@@ -222,6 +248,16 @@ const files = [
   'src/parentCenter/parentPolicy.ts',
   'src/settings/soundLevel.ts',
   'src/settings/soundSettings.ts',
+  'src/settings/soundSettingsCodec.ts',
+  'src/settings/drawingControlPreferences.ts',
+  'src/settings/DrawingControlChoices.tsx',
+  'src/platform/aiImage.web.ts',
+  'src/platform/ai.web.ts',
+  'src/platform/aiVault.web.ts',
+  'src/platform/aiVaultRecords.web.ts',
+  'src/platform/aiStorage.web.ts',
+  'src/platform/aiStorageOwner.web.ts',
+  'src/platform/aiStorageRecords.web.ts',
   'src/audio/drawingAudio.ts',
   'src/product/useDrawingProduct.ts',
   'src/useDrawingSound.ts',

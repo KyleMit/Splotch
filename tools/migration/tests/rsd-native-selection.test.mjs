@@ -465,34 +465,41 @@ it('mounts the shared color picker outside Paint colors and writes through the e
   }
 });
 
-it('persists Coloring Book through the released native switch without a parent challenge', async () => {
-  let current;
-  let refresh = () => {};
-  const write = vi.fn(async () => {});
-  const owner = createSoundSettings({ read: async () => null, write }, (state) => {
-    current = state;
-    refresh();
-  });
-  await owner.load();
-  function Settings() {
-    const [, update] = useState(0);
-    refresh = () => update((value) => value + 1);
-    return createElement(NativeSoundSettingsDialog, nativeSettingsProps(owner, current));
-  }
-  try {
-    await mount(createElement(Settings));
-    const on = host.querySelector('[aria-label="Coloring book on"]');
-    expect(on.getAttribute('role')).toBe('switch');
-    expect(on.dataset.checked).toBe('true');
-    await act(async () => on.click());
-    expect(host.querySelector('[aria-label="Coloring book off"]').dataset.checked).toBe('false');
-    expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
-      version: 7,
-      coloringBookEnabled: false,
-      aiEnabled: false,
+it.each([
+  ['coloringBookEnabled', 'Coloring book on', 'Coloring book off'],
+  ['undoButtonEnabled', 'Show Undo button', 'Show Undo button'],
+  ['strokeWidthControlEnabled', 'Show drawing width controls', 'Show drawing width controls'],
+])(
+  'persists %s through the released native switch without a parent challenge',
+  async (property, enabledLabel, disabledLabel) => {
+    let current;
+    let refresh = () => {};
+    const write = vi.fn(async () => {});
+    const owner = createSoundSettings({ read: async () => null, write }, (state) => {
+      current = state;
+      refresh();
     });
-    expect(host.textContent).not.toContain('Grown-ups only');
-  } finally {
-    owner.dispose();
+    await owner.load();
+    function Settings() {
+      const [, update] = useState(0);
+      refresh = () => update((value) => value + 1);
+      return createElement(NativeSoundSettingsDialog, nativeSettingsProps(owner, current));
+    }
+    try {
+      await mount(createElement(Settings));
+      const on = host.querySelector(`[aria-label="${enabledLabel}"]`);
+      expect(on.getAttribute('role')).toBe('switch');
+      expect(on.dataset.checked).toBe('true');
+      await act(async () => on.click());
+      expect(host.querySelector(`[aria-label="${disabledLabel}"]`).dataset.checked).toBe('false');
+      expect(JSON.parse(write.mock.calls[0][0])).toMatchObject({
+        version: 7,
+        [property]: false,
+        aiEnabled: false,
+      });
+      expect(host.textContent).not.toContain('Grown-ups only');
+    } finally {
+      owner.dispose();
+    }
   }
-});
+);

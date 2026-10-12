@@ -1,3 +1,4 @@
+import { DrawingControlChoices } from './DrawingControlChoices';
 import { BRUSHES } from '../drawing/brushes';
 import {
   OPTIONAL_BRUSHES,
@@ -38,6 +39,8 @@ type SoundSettingsProps = {
   onRetryBrushSave: () => void;
   audioMessage: string;
   onChange: (enabled: boolean) => void;
+  onUndoButtonChange: (enabled: boolean) => void;
+  onStrokeWidthControlChange: (enabled: boolean) => void;
   onSoundLevelChange: (level: SoundLevel) => void;
   onAppearanceChange: (appearance: AppearancePreference) => void;
   onColoringBookChange: (enabled: boolean) => void;
@@ -55,6 +58,8 @@ export function SoundSettings({
   onRetryBrushSave,
   audioMessage,
   onChange,
+  onUndoButtonChange,
+  onStrokeWidthControlChange,
   onSoundLevelChange,
   onAppearanceChange,
   onColoringBookChange,
@@ -115,27 +120,20 @@ export function SoundSettings({
                   >
                     <Text style={styles.labelText}>Parent Center</Text>
                   </Pressable>
-                  <BrushChoices
-                    state={brushState}
-                    busy={busy}
-                    onChange={onBrushAvailabilityChange}
-                    onRetry={onRetryBrushSave}
-                  />
-                  <ColoringBookSetting
-                    enabled={state.coloringBookEnabled}
-                    disabled={busy}
-                    onChange={onColoringBookChange}
-                  />
-                  <AppearanceChoices
-                    selected={state.appearance}
-                    busy={busy}
-                    onChange={onAppearanceChange}
-                  />
-                  <SoundChoice enabled={state.soundEnabled} busy={busy} onChange={onChange} />
-                  <SoundLevelChoices
-                    selected={state.soundLevel}
-                    busy={busy}
-                    onChange={onSoundLevelChange}
+                  <SettingsChoices
+                    {...{
+                      state,
+                      brushState,
+                      busy,
+                      onBrushAvailabilityChange,
+                      onRetryBrushSave,
+                      onColoringBookChange,
+                      onUndoButtonChange,
+                      onStrokeWidthControlChange,
+                      onAppearanceChange,
+                      onChange,
+                      onSoundLevelChange,
+                    }}
                   />
                   {state.status === 'loading' ? (
                     <Text style={styles.help}>Loading settings…</Text>
@@ -173,6 +171,57 @@ export function SoundSettings({
     </Modal>
   );
 }
+function SettingsChoices({
+  state,
+  brushState,
+  busy,
+  onBrushAvailabilityChange,
+  onRetryBrushSave,
+  onColoringBookChange,
+  onUndoButtonChange,
+  onStrokeWidthControlChange,
+  onAppearanceChange,
+  onChange,
+  onSoundLevelChange,
+}: Pick<
+  SoundSettingsProps,
+  | 'state'
+  | 'brushState'
+  | 'onBrushAvailabilityChange'
+  | 'onRetryBrushSave'
+  | 'onColoringBookChange'
+  | 'onUndoButtonChange'
+  | 'onStrokeWidthControlChange'
+  | 'onAppearanceChange'
+  | 'onChange'
+  | 'onSoundLevelChange'
+> & { busy: boolean }) {
+  return (
+    <>
+      <BrushChoices
+        state={brushState}
+        busy={busy}
+        onChange={onBrushAvailabilityChange}
+        onRetry={onRetryBrushSave}
+      />
+      <ColoringBookSetting
+        enabled={state.coloringBookEnabled}
+        disabled={busy}
+        onChange={onColoringBookChange}
+      />
+      <DrawingControlChoices
+        state={state}
+        busy={busy}
+        onUndoButtonChange={onUndoButtonChange}
+        onStrokeWidthControlChange={onStrokeWidthControlChange}
+      />
+      <AppearanceChoices selected={state.appearance} busy={busy} onChange={onAppearanceChange} />
+      <SoundChoice enabled={state.soundEnabled} busy={busy} onChange={onChange} />
+      <SoundLevelChoices selected={state.soundLevel} busy={busy} onChange={onSoundLevelChange} />
+    </>
+  );
+}
+
 function SettingsInformation({
   page,
   onNavigate,

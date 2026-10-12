@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { shareAiPicture } from '../platform/aiShare';
+import { aiPictureSharePresentation, shareAiPicture } from '../platform/aiShare';
 import type { AiState } from './generation';
 import type { AiResult } from './journal';
 
@@ -32,6 +32,7 @@ export function useAiPictureShare(state: AiState, picture: AiResult) {
     };
   }, []);
   return {
+    label: aiPictureSharePresentation.label,
     busy,
     message: active && notice?.epoch === current.current.epoch ? notice.text : '',
     async share() {
@@ -44,7 +45,9 @@ export function useAiPictureShare(state: AiState, picture: AiResult) {
       )
         return;
       const epoch = current.current.epoch;
-      if (!picture.uri.startsWith('file:')) {
+      if (
+        !state.pictures.some((value) => value.uri === picture.uri && value.mime === picture.mime)
+      ) {
         setNotice({ epoch, text: 'Save this AI picture before sharing it.' });
         return;
       }
@@ -65,7 +68,7 @@ export function useAiPictureShare(state: AiState, picture: AiResult) {
       };
       try {
         await shareAiPicture(picture, isCurrent);
-        if (isCurrent()) setNotice({ epoch, text: 'Share sheet closed.' });
+        if (isCurrent()) setNotice({ epoch, text: aiPictureSharePresentation.complete });
       } catch (error) {
         if (isCurrent())
           setNotice({

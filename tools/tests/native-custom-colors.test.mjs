@@ -233,6 +233,8 @@ describe('custom palettes in the one serialized settings owner', () => {
         version: 7,
         coloringBookEnabled: true,
         soundLevel: 'medium',
+        undoButtonEnabled: true,
+        strokeWidthControlEnabled: true,
         aiEnabled: false,
         parentPolicies: {
           ai: 'always',
@@ -276,6 +278,8 @@ describe('custom palettes in the one serialized settings owner', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',
@@ -335,6 +339,8 @@ describe('custom palettes in the one serialized settings owner', () => {
       version: 7,
       coloringBookEnabled: true,
       soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
       aiEnabled: false,
       parentPolicies: {
         ai: 'always',

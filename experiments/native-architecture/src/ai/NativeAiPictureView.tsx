@@ -33,7 +33,7 @@ export function NativeAiPictureView({
         />
       ) : null}
       <Action
-        label="Share AI picture"
+        label={share.label}
         disabled={state.busy || share.busy}
         onPress={() => {
           void share.share();

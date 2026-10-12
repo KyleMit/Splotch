@@ -248,6 +248,10 @@ describe('native hosted AI operation ownership', () => {
     f.finish(image());
     await work;
     expect(f.owner.getState().heldResult.uri).toMatch(/^data:image\/png/);
+    f.storage.read.mockRejectedValueOnce(new Error('unconfirmed storage'));
+    await f.owner.retryRetention();
+    expect(f.owner.getState().message).toContain('Saving could not be confirmed');
+    expect(f.storage.retain).toHaveBeenCalledOnce();
     await f.owner.retryRetention();
     expect(f.owner.getState().journal.phase).toBe('result');
     expect(f.post).toHaveBeenCalledOnce();
@@ -353,9 +357,10 @@ it('blocks a second explicit send while a funded ticket is pending', async () =>
 it('requires native decode admission before any retention or in-memory result display', async () => {
   const f = fixture();
   await f.open();
-  f.admit.mockRejectedValue(new Error('native corrupt decode'));
   const work = f.owner.generate();
   await vi.waitFor(() => expect(f.post).toHaveBeenCalledOnce());
+  expect(f.admit).toHaveBeenCalledOnce();
+  f.admit.mockClear().mockRejectedValue(new Error('native corrupt decode'));
   f.finish(image());
   await work;
   expect(f.admit).toHaveBeenCalledOnce();
