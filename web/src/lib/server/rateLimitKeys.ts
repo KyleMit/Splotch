@@ -55,3 +55,7 @@ export function reportImageFreeBucket(address: string): string {
 export function cspReportBucket(address: string): string {
   return `csp-report:${address}`;
 }
+
+export function generationAttemptBucket(address: string): string {
+  return `generation-attempt:${address}`;
+}

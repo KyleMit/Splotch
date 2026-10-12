@@ -74,3 +74,18 @@ describe('handleError', () => {
     logged.mockRestore();
   });
 });
+
+describe('recovery CORS headers', () => {
+  it('allows admission metadata and exposes immutable delivery metadata to native clients', async () => {
+    const response = await serve('/api/generation-attempt/v1', 'OPTIONS');
+    const allowed = response.headers.get('access-control-allow-headers') ?? '';
+    const exposed = response.headers.get('access-control-expose-headers') ?? '';
+    expect(allowed).toContain('X-AI-Recovery-Version');
+    expect(allowed).toContain('X-AI-Attempt-Nonce');
+    expect(allowed).toContain('X-AI-Attempt-Created-At');
+    expect(allowed).toContain('X-AI-Input-Digest');
+    expect(exposed).toContain('X-AI-Attempt-Expires-At');
+    expect(exposed).toContain('X-AI-Delivery-Digest');
+    expect(exposed).toContain('X-AI-Delivery-Receipt');
+  });
+});

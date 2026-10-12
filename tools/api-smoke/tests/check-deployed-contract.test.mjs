@@ -22,8 +22,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers':
-    'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token',
-  'Access-Control-Expose-Headers': 'X-Free-Generations-Remaining, X-Report-Token',
+    'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Nonce, X-AI-Attempt-Created-At, X-AI-Input-Digest',
+  'Access-Control-Expose-Headers':
+    'X-Free-Generations-Remaining, X-Report-Token, X-AI-Recovery-Version, X-AI-Attempt-Expires-At, X-AI-Delivery-Digest, X-AI-Delivery-Receipt',
   'Access-Control-Max-Age': '86400',
 };
 const netlifyEdgeSecurityHeaders = {
