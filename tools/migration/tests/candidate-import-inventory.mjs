@@ -22,6 +22,7 @@ export const EXPECTED_CANDIDATE_IMPORT_FILES = [
   'src/ai/pngResult.ts',
   'src/ai/prepare.ts',
   'src/ai/recoveryContract.ts',
+  'src/ai/recoveryReport.ts',
   'src/ai/recoverySession.ts',
   'src/ai/session.ts',
   'src/ai/transport.ts',

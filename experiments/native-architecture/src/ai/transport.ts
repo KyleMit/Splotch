@@ -25,7 +25,8 @@ import {
   type AiMime,
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
-import { imageReportToken } from './reportContract';
+import { imageReportToken, REPORT_TOKEN_HEADER } from './reportContract';
+import type { RecoveryReportProof } from './recoveryReport';
 import type { AiRecoveryAckConfirmation, AiRecoveryTerminalConfirmation } from './journal';
 type LegacyAiRequest = {
   path:
@@ -54,9 +55,14 @@ export type AiReply =
       kind: 'recovery-delivery';
       reply: Extract<RecoveryReply, { kind: 'unadmitted-image' }>;
       receipt: string;
+      report?: RecoveryReportProof;
     }>
   | Readonly<{ kind: 'recovery-ack'; confirmation: AiRecoveryAckConfirmation }>
-  | Readonly<{ kind: 'recovery-terminal'; confirmation: AiRecoveryTerminalConfirmation }>
+  | Readonly<{
+      kind: 'recovery-terminal';
+      confirmation: AiRecoveryTerminalConfirmation;
+      report?: RecoveryReportProof;
+    }>
   | {
       kind: 'image';
       bytes: Uint8Array;
@@ -123,7 +129,7 @@ export async function parseAiResponse(
       bytes,
       mime,
       remaining: remainingHeader(response),
-      reportToken: imageReportToken(response.headers.get('X-Report-Token')),
+      reportToken: imageReportToken(response.headers.get(REPORT_TOKEN_HEADER)),
     };
   }
   const bytes = await readAiBytes(response, MAX_JSON_BYTES, signal);
@@ -224,7 +230,7 @@ function parseAiFailure(
     return {
       kind: 'failure',
       reason: 'safety',
-      reportToken: imageReportToken(response.headers.get('X-Report-Token')),
+      reportToken: imageReportToken(response.headers.get(REPORT_TOKEN_HEADER)),
       message: "Let's try drawing something else! Your original is still here.",
     };
   if (response.status === 403 && raw.code === 'FREE_GRANT_EXHAUSTED' && raw.remaining === 0)

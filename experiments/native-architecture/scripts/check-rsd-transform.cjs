@@ -290,6 +290,7 @@ const files = [
   'src/ai/credentialLease.ts',
   'src/ai/recoveryBoundary.ts',
   'src/ai/recoveryTransport.ts',
+  'src/ai/recoveryReport.ts',
   'src/ai/responseBytes.ts',
   'src/ai/sessionContract.ts',
   'src/platform/ai.ts',
