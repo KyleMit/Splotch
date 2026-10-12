@@ -1,7 +1,8 @@
+import { DrawingModal as Modal } from './platform/DrawingModal';
 import { useModalAnimation } from './drawing/useModalAnimation';
 import { useDrawingAppearance } from './drawing/DrawingAppearance';
 import { createDrawingStyles, useDrawingStyles } from './drawing/DrawingAppearance';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { Image } from 'react-native';
 import { NativeLibraryControls } from './offlineLibrary/NativeLibraryControls';

@@ -1,3 +1,4 @@
+import { DrawingModal as Modal } from '../platform/DrawingModal';
 import { BRUSHES } from '../drawing/brushes';
 import {
   OPTIONAL_BRUSHES,
@@ -13,7 +14,7 @@ import {
 } from '../settings/appearance';
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import type { ReactNode } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { DRAWING_SCALE } from '../drawing/theme';
 import { NativeFrame } from './NativeFrame';
 import { html } from 'react-strict-dom';

@@ -1,3 +1,4 @@
+import { BrowserBackProvider } from '../platform/BrowserBack';
 import {
   createContext,
   useContext,
@@ -43,7 +44,11 @@ export function DrawingSessionProvider({
     void owner.draft.start();
     return () => owner.draft.dispose();
   }, [owner]);
-  return <DrawingSessionScope.Provider value={owner}>{children}</DrawingSessionScope.Provider>;
+  return (
+    <DrawingSessionScope.Provider value={owner}>
+      <BrowserBackProvider session={owner.session}>{children}</BrowserBackProvider>
+    </DrawingSessionScope.Provider>
+  );
 }
 
 export function useDrawingHistory() {

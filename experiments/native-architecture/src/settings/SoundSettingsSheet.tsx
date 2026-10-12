@@ -1,3 +1,4 @@
+import { DrawingModal as Modal } from '../platform/DrawingModal';
 import { DrawingControlChoices } from './DrawingControlChoices';
 import { BRUSHES } from '../drawing/brushes';
 import {
@@ -16,16 +17,7 @@ import { useEffect, useState } from 'react';
 import { InformationSection } from '../information/InformationSection';
 import { type InformationPage } from '../information/content';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
 import { SOUND_LEVELS, SOUND_LEVEL_LABELS, type SoundLevel } from './soundLevel';
