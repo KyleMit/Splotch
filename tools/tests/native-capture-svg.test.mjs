@@ -193,6 +193,27 @@ describe('owned web fixed-grid SVG snapshot lifecycle', () => {
     expect(images).toHaveLength(0);
   });
 
+  it('captures the exact intrinsic grid despite fractional browser layout measurements', () => {
+    vi.mocked(SVGSVGElement.prototype.getBoundingClientRect).mockReturnValue({
+      width: 1023.997,
+      height: 767.995,
+    });
+    const serialized = vi.spyOn(XMLSerializer.prototype, 'serializeToString');
+    const { callback, loaded } = capture();
+    expect(serialized.mock.results[0].value).toContain('viewBox="0 0 1024 768"');
+    loaded();
+    expect(callback).toHaveBeenCalledExactlyOnceWith('aW5r');
+  });
+
+  it.each(['width', 'height', 'viewBox'])(
+    'refuses a changed intrinsic %s even when layout dimensions match',
+    (attribute) => {
+      host.querySelector('svg').setAttribute(attribute, '1');
+      expect(() => ref.current.toDataURL(vi.fn(), DIMENSIONS)).toThrow('not ready');
+      expect(images).toHaveLength(0);
+    }
+  );
+
   it('refuses missing or mismatched target/options instead of capturing another surface', () => {
     expect(() => ref.current.toDataURL(vi.fn(), { width: 1, height: 1 })).toThrow('dimensions');
     ref.current.elementRef = { current: document.createElement('div') };

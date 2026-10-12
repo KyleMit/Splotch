@@ -14,7 +14,6 @@ import { Action } from '../DrawingControls';
 import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppearance';
 import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
 import {
-  AI_STYLES,
   CREDENTIAL_KINDS,
   AI_DISCLOSURE,
   AI_WAIT_NOTICE,
@@ -23,6 +22,9 @@ import {
 } from './contract';
 import type { AiState, NativeAiOwner } from './generation';
 import { aiCanGenerate, AI_RESULT_HEIGHT_PX } from './uiState';
+import { useAiPictureViewer } from './useAiPictureViewer';
+import { NativeAiPictureView } from './NativeAiPictureView';
+import { NativeAiStyleChoices } from './NativeAiStyleChoices';
 export function NativeAiSheet({
   owner,
   state,
@@ -36,6 +38,7 @@ export function NativeAiSheet({
 }) {
   const styles = useDrawingStyles(themedStyles);
   const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
+  const viewer = useAiPictureViewer(state, visible);
   return (
     <Modal
       statusBarTranslucent
@@ -43,14 +46,18 @@ export function NativeAiSheet({
       visible={visible}
       onDismiss={onDismiss}
       animationType="none"
-      onRequestClose={owner.close}
+      onRequestClose={viewer.picture ? viewer.back : owner.close}
       accessibilityLabel="AI picture"
     >
       <NativeFrame>
         <View style={styles.screen}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             <Text accessibilityRole="header" style={styles.title}>
-              {state.gate.open ? 'Grown-ups only' : 'AI picture'}
+              {state.gate.open
+                ? 'Grown-ups only'
+                : viewer.picture
+                  ? 'AI picture view'
+                  : 'AI picture'}
             </Text>
             {state.gate.open ? (
               <>
@@ -75,6 +82,8 @@ export function NativeAiSheet({
                   disabled={state.gate.locked}
                 />
               </>
+            ) : viewer.picture ? (
+              <NativeAiPictureView owner={owner} state={state} picture={viewer.picture} />
             ) : state.authorized ? (
               <>
                 <Text style={styles.text}>{AI_DISCLOSURE}</Text>
@@ -95,7 +104,11 @@ export function NativeAiSheet({
                         ? 'Using your OpenAI key'
                         : 'Using your access code'}
                 </Text>
-                <AiStyleChoices owner={owner} state={state} waiting={waiting} />
+                <NativeAiStyleChoices
+                  selected={state.style}
+                  disabled={state.busy || waiting || !!state.recovery}
+                  onChoose={owner.chooseStyle}
+                />
                 <Action
                   label="Send drawing for AI"
                   disabled={!aiCanGenerate(state)}
@@ -125,48 +138,35 @@ export function NativeAiSheet({
                 <Text accessibilityLiveRegion="polite" style={styles.text}>
                   {state.message}
                 </Text>
-                <AiPictures owner={owner} state={state} />
+                <AiPictures owner={owner} state={state} onOpen={viewer.open} />
                 <AiCredentialSetup owner={owner} state={state} />
               </>
             ) : null}
-            <Action
-              label="Keep drawing"
-              onPress={() => {
-                owner.close();
-              }}
-            />
           </ScrollView>
+          <AiFooter onClose={owner.close} onBack={viewer.picture ? viewer.back : null} />
         </View>
       </NativeFrame>
     </Modal>
   );
 }
-function AiStyleChoices({
-  owner,
-  state,
-  waiting,
-}: {
-  owner: NativeAiOwner;
-  state: AiState;
-  waiting: boolean;
-}) {
+function AiFooter({ onClose, onBack }: { onClose: () => void; onBack: (() => void) | null }) {
   const styles = useDrawingStyles(themedStyles);
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel="AI art style" style={styles.row}>
-      {AI_STYLES.map((style) => (
-        <AiChoice
-          key={style}
-          label={`${style} AI style`}
-          selected={state.style === style}
-          disabled={state.busy || waiting || !!state.recovery}
-          onPress={() => owner.chooseStyle(style)}
-        />
-      ))}
+    <View style={styles.footer}>
+      {onBack ? <Action label="Back to AI pictures" onPress={onBack} /> : null}
+      <Action label="Keep drawing" onPress={onClose} />
     </View>
   );
 }
-
-function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+function AiPictures({
+  owner,
+  state,
+  onOpen,
+}: {
+  owner: NativeAiOwner;
+  state: AiState;
+  onOpen: (uri: string) => void;
+}) {
   const styles = useDrawingStyles(themedStyles);
   return (
     <>
@@ -177,6 +177,13 @@ function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) 
             source={{ uri: (state.heldResult ?? state.journal?.result)?.uri }}
             resizeMode="contain"
             style={styles.image}
+          />
+          <Action
+            label="Open AI picture"
+            onPress={() => {
+              const picture = state.heldResult ?? state.journal?.result;
+              if (picture) onOpen(picture.uri);
+            }}
           />
           {owner.hasHeldResult() ? (
             <Action
@@ -190,13 +197,18 @@ function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) 
         </>
       ) : null}
       {state.pictures.map((picture, index) => (
-        <Image
-          key={picture.uri}
-          accessibilityLabel={`Saved AI picture ${index + 1}`}
-          source={{ uri: picture.uri }}
-          resizeMode="contain"
-          style={styles.image}
-        />
+        <View key={picture.uri}>
+          <Image
+            accessibilityLabel={`Saved AI picture ${index + 1}`}
+            source={{ uri: picture.uri }}
+            resizeMode="contain"
+            style={styles.image}
+          />
+          <Action
+            label={`Open saved AI picture ${index + 1}`}
+            onPress={() => onOpen(picture.uri)}
+          />
+        </View>
       ))}
     </>
   );
@@ -278,6 +290,7 @@ const themedStyles = createDrawingStyles((palette) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: palette.surface },
     content: { padding: DRAWING_SCALE.space4, gap: DRAWING_SCALE.space3 },
+    footer: { padding: DRAWING_SCALE.space4, gap: DRAWING_SCALE.space3, flexShrink: 0 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: DRAWING_SCALE.space2 },
     title: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeXl, fontWeight: '700' },
     text: { color: palette.text, fontSize: DRAWING_SCALE.fontSizeMd },

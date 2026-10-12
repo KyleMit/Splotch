@@ -23,6 +23,7 @@ import { NativeDialog, NativeSoundSettingsDialog } from './NativeDialog';
 import { RsdAction, RsdPaintAction, styles } from './controls';
 import { NativeFrame } from './NativeFrame';
 import { RsdRecoveryNotice } from './RsdRecoveryNotice';
+import { RsdDraftNotice } from './RsdDraftNotice';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 
@@ -172,6 +173,7 @@ function RsdDrawingContent({
           <NativeDrawingStatus drawing={screen.drawing}>
             <html.span aria-live="polite">{notice}</html.span>
             {soundNotice ? <html.span aria-live="polite">{soundNotice}</html.span> : null}
+            <RsdDraftNotice screen={screen} blocked={disabled || screen.pictures !== null} />
             {screen.recovery.failed ? (
               <RsdAction
                 label="Retry drawing"
@@ -400,6 +402,15 @@ function DrawingMenu({
           }
         />
         <RsdAction
+          label="Save and clear"
+          disabled={screen.disabled || !menu.visible}
+          onClick={() =>
+            menu.run(() => {
+              void screen.saveAndClear();
+            })
+          }
+        />
+        <RsdAction
           label="Pictures"
           disabled={!menu.visible}
           onClick={() => menu.run(screen.showPictures)}
@@ -448,6 +459,7 @@ function Pictures({
     >
       <html.div style={styles.dialogContent}>
         <html.span>Your pictures</html.span>
+        {pictures.length === 0 ? <html.span>Save a picture to find it here.</html.span> : null}
         {pictures.map((picture) => (
           <RsdAction
             key={picture.id}

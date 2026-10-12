@@ -8,6 +8,8 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { useDrawingScreen } from './useDrawingScreen';
 import { CONTROL_GAP } from './drawing/theme';
 import { PngRecoveryNotice } from './export/PngRecoveryNotice';
+import { Action } from './DrawingControls';
+import { useDraftNotice } from './product/useDraftNotice';
 
 function useIdleMessage(message: string, drawing: boolean) {
   const [settled, setSettled] = useState(message);
@@ -29,6 +31,7 @@ export function DrawingStatus({
   const theme = useDrawingTheme();
   const visibleNotice = useIdleMessage(screen.notice, screen.drawing);
   const visibleSoundMessage = useIdleMessage(soundMessage, screen.drawing);
+  const draft = useDraftNotice(screen, blocked);
   return (
     <>
       <View style={styles.status}>
@@ -43,6 +46,14 @@ export function DrawingStatus({
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {visibleSoundMessage}
         </Text>
+      ) : null}
+      {draft.state.message ? (
+        <Text accessibilityLiveRegion="polite" style={styles.notice}>
+          {draft.state.message}
+        </Text>
+      ) : null}
+      {draft.state.status === 'failed' ? (
+        <Action label="Retry draft recovery" disabled={draft.disabled} onPress={draft.retry} />
       ) : null}
       <PngRecoveryNotice
         state={screen.pngRecovery.state}

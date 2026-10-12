@@ -49,6 +49,10 @@ assert.ok(
   imported(probe, './rsdDrawing/RsdDrawingScreen', 'RsdDrawingScreen'),
   'RSD screen import'
 );
+assert.ok(
+  imported(probe, './product/DrawingSession', 'DrawingSessionProvider'),
+  'Drawing session provider import'
+);
 const owner = probe.program.body.find(
   (node) =>
     node.type === 'ExportNamedDeclaration' &&
@@ -58,12 +62,15 @@ const owner = probe.program.body.find(
 assert.ok(owner, 'Exported ProbeApp');
 const returns = owner.body.body.filter((node) => node.type === 'ReturnStatement');
 assert.equal(returns.length, 1, 'ProbeApp has one return');
-assert.equal(returns[0].argument?.type, 'JSXElement', 'Mounted RSD screen');
+assert.equal(returns[0].argument?.type, 'JSXElement', 'Mounted drawing session');
 assert.equal(
   returns[0].argument.openingElement.name.name,
-  'RsdDrawingScreen',
-  'Mounted RSD screen'
+  'DrawingSessionProvider',
+  'Mounted drawing session'
 );
+const mountedScreens = returns[0].argument.children.filter((node) => node.type === 'JSXElement');
+assert.equal(mountedScreens.length, 1, 'Drawing session has one screen');
+assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
@@ -210,8 +217,26 @@ const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = vali
 const files = [
   'src/index.ts',
   'src/ProbeApp.tsx',
+  'src/product/createDrawingSession.ts',
+  'src/product/DrawingSession.tsx',
+  'src/product/createDrawingDraft.ts',
+  'src/product/drawingDraft.ts',
+  'src/product/useDraftNotice.ts',
+  'src/platform/drawingDraft.ts',
+  'src/platform/drawingDraft.web.ts',
+  'src/information/content.ts',
+  'src/information/InformationSection.tsx',
+  'src/rsdDrawing/RsdInformationSection.tsx',
   'src/rsdDrawing/RsdDrawingScreen.tsx',
   'src/rsdDrawing/RsdAiSheet.tsx',
+  'src/ai/useAiPictureViewer.ts',
+  'src/ai/AiStylePreview.tsx',
+  'src/ai/stylePreviewAssets.ts',
+  'src/ai/NativeAiPictureView.tsx',
+  'src/ai/NativeAiStyleChoices.tsx',
+  'src/rsdDrawing/RsdAiPictureView.tsx',
+  'src/rsdDrawing/RsdAiStyleChoices.tsx',
+  'src/rsdDrawing/RsdDraftNotice.tsx',
   'src/rsdDrawing/RsdColoringBookPicker.tsx',
   'src/rsdDrawing/controls.tsx',
   'src/rsdDrawing/tokens.css.ts',

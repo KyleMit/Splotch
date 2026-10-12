@@ -4,7 +4,6 @@ import { NativeDialog } from './NativeDialog';
 import { RsdAction, styles } from './controls';
 import { colors, dimensions } from './tokens.css';
 import {
-  AI_STYLES,
   CREDENTIAL_KINDS,
   AI_DISCLOSURE,
   AI_WAIT_NOTICE,
@@ -13,6 +12,9 @@ import {
 } from '../ai/contract';
 import { aiCanGenerate } from '../ai/uiState';
 import type { AiState, NativeAiOwner } from '../ai/generation';
+import { useAiPictureViewer } from '../ai/useAiPictureViewer';
+import { RsdAiPictureView } from './RsdAiPictureView';
+import { RsdAiStyleChoices } from './RsdAiStyleChoices';
 function inputValue(event: unknown) {
   if (
     !event ||
@@ -38,23 +40,24 @@ export function RsdAiSheet({
   onDismiss?: () => void;
 }) {
   const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
+  const viewer = useAiPictureViewer(state, visible);
   return (
     <NativeDialog
       visible={visible}
       onDismiss={onDismiss}
       label="AI picture"
-      onClose={owner.close}
+      onClose={viewer.picture ? viewer.back : owner.close}
       footer={
-        <RsdAction
-          label="Keep drawing"
-          onClick={() => {
-            owner.close();
-          }}
-        />
+        <html.div style={styles.row}>
+          {viewer.picture ? <RsdAction label="Back to AI pictures" onClick={viewer.back} /> : null}
+          <RsdAction label="Keep drawing" onClick={owner.close} />
+        </html.div>
       }
     >
       <html.div style={styles.dialogContent}>
-        <html.h1>{state.gate.open ? 'Grown-ups only' : 'AI picture'}</html.h1>
+        <html.h1>
+          {state.gate.open ? 'Grown-ups only' : viewer.picture ? 'AI picture view' : 'AI picture'}
+        </html.h1>
         {state.gate.open ? (
           <>
             <html.span>Solve this multiplication problem to continue.</html.span>
@@ -79,6 +82,8 @@ export function RsdAiSheet({
               onClick={owner.gateAnswer}
             />
           </>
+        ) : viewer.picture ? (
+          <RsdAiPictureView owner={owner} state={state} picture={viewer.picture} />
         ) : state.authorized ? (
           <>
             <html.span>{AI_DISCLOSURE}</html.span>
@@ -99,19 +104,11 @@ export function RsdAiSheet({
                     ? 'Using your OpenAI key'
                     : 'Using your access code'}
             </html.span>
-            <html.div role="radiogroup" aria-label="AI art style" style={styles.row}>
-              {AI_STYLES.map((style) => (
-                <RsdAction
-                  key={style}
-                  label={`${style} AI style`}
-                  text={style}
-                  selection="radio"
-                  selected={state.style === style}
-                  disabled={state.busy || waiting}
-                  onClick={() => owner.chooseStyle(style)}
-                />
-              ))}
-            </html.div>
+            <RsdAiStyleChoices
+              selected={state.style}
+              disabled={state.busy || waiting || !!state.recovery}
+              onChoose={owner.chooseStyle}
+            />
             <RsdAction
               label="Send drawing for AI"
               disabled={!aiCanGenerate(state)}
@@ -138,7 +135,7 @@ export function RsdAiSheet({
               </>
             ) : null}
             <html.span aria-live="polite">{state.message}</html.span>
-            <AiPictures owner={owner} state={state} />
+            <AiPictures owner={owner} state={state} onOpen={viewer.open} />
             <AiCredentialSetup owner={owner} state={state} />
           </>
         ) : null}
@@ -146,7 +143,15 @@ export function RsdAiSheet({
     </NativeDialog>
   );
 }
-function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+function AiPictures({
+  owner,
+  state,
+  onOpen,
+}: {
+  owner: NativeAiOwner;
+  state: AiState;
+  onOpen: (uri: string) => void;
+}) {
   return (
     <>
       {state.heldResult || state.journal?.result ? (
@@ -155,6 +160,13 @@ function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) 
             alt="Your AI picture"
             src={(state.heldResult ?? state.journal?.result)?.uri}
             style={aiStyles.image}
+          />
+          <RsdAction
+            label="Open AI picture"
+            onClick={() => {
+              const picture = state.heldResult ?? state.journal?.result;
+              if (picture) onOpen(picture.uri);
+            }}
           />
           {owner.hasHeldResult() ? (
             <RsdAction
@@ -168,12 +180,17 @@ function AiPictures({ owner, state }: { owner: NativeAiOwner; state: AiState }) 
         </>
       ) : null}
       {state.pictures.map((picture, index) => (
-        <html.img
-          key={picture.uri}
-          alt={`Saved AI picture ${index + 1}`}
-          src={picture.uri}
-          style={aiStyles.image}
-        />
+        <html.div key={picture.uri}>
+          <html.img
+            alt={`Saved AI picture ${index + 1}`}
+            src={picture.uri}
+            style={aiStyles.image}
+          />
+          <RsdAction
+            label={`Open saved AI picture ${index + 1}`}
+            onClick={() => onOpen(picture.uri)}
+          />
+        </html.div>
       ))}
     </>
   );

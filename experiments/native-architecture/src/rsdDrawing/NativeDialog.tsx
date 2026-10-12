@@ -19,6 +19,9 @@ import { NativeFrame } from './NativeFrame';
 import { html } from 'react-strict-dom';
 import type { SoundSettingsState } from '../settings/soundSettings';
 import { RsdAction, styles as controlStyles } from './controls';
+import { useState } from 'react';
+import { INFORMATION_CONTENT, type InformationPage } from '../information/content';
+import { RsdInformationSection } from './RsdInformationSection';
 
 export function NativeSoundSettingsDialog({
   settings,
@@ -49,65 +52,80 @@ export function NativeSoundSettingsDialog({
   visible?: boolean;
   onDismiss?: () => void;
 }) {
+  const [informationPage, setInformationPage] = useState<InformationPage | null>(null);
   return (
     <NativeDialog
       visible={visible}
       onDismiss={onDismiss}
-      label="Drawing settings"
-      onClose={onClose}
-      footer={<RsdAction label="Keep drawing" onClick={onClose} />}
+      label={informationPage ? INFORMATION_CONTENT[informationPage].title : 'Drawing settings'}
+      onClose={informationPage ? () => setInformationPage(null) : onClose}
+      footer={
+        <html.div style={controlStyles.row}>
+          {informationPage ? (
+            <RsdAction label="Back to Settings" onClick={() => setInformationPage(null)} />
+          ) : null}
+          <RsdAction label="Keep drawing" onClick={onClose} />
+        </html.div>
+      }
     >
-      <html.div style={controlStyles.dialogContent}>
-        <RsdAction label="Manage Parent Center" onClick={onParentCenter} />
-        {OPTIONAL_BRUSHES.map((brush) => (
-          <RsdAction
-            key={brush}
-            label={`Show ${BRUSHES[brush].label}`}
-            selection="switch"
-            selected={brushState.availability[brush]}
-            disabled={brushState.status !== 'ready'}
-            onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
-          />
-        ))}
-        {brushState.message ? <html.span aria-live="polite">{brushState.message}</html.span> : null}
-        {!brushState.saved ? (
-          <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
-        ) : null}
-        <RsdAction
-          label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
-          selection="switch"
-          selected={settings.coloringBookEnabled}
-          disabled={settings.status !== 'ready'}
-          onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
-        />
-        <html.span>Appearance</html.span>
-        <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
-          {APPEARANCE_PREFERENCES.map((appearance) => (
+      {informationPage ? (
+        <RsdInformationSection page={informationPage} onNavigate={setInformationPage} />
+      ) : (
+        <html.div style={controlStyles.dialogContent}>
+          <RsdAction label="Manage Parent Center" onClick={onParentCenter} />
+          <RsdAction label="Help and about" onClick={() => setInformationPage('help')} />
+          {OPTIONAL_BRUSHES.map((brush) => (
             <RsdAction
-              key={appearance}
-              label={`${APPEARANCE_LABELS[appearance]} appearance`}
-              text={APPEARANCE_LABELS[appearance]}
-              selection="radio"
-              selected={settings.appearance === appearance}
-              disabled={settings.status !== 'ready'}
-              onClick={() => onAppearanceChange(appearance)}
+              key={brush}
+              label={`Show ${BRUSHES[brush].label}`}
+              selection="switch"
+              selected={brushState.availability[brush]}
+              disabled={brushState.status !== 'ready'}
+              onClick={() => onBrushAvailabilityChange(brush, !brushState.availability[brush])}
             />
           ))}
+          {brushState.message ? (
+            <html.span aria-live="polite">{brushState.message}</html.span>
+          ) : null}
+          {!brushState.saved ? (
+            <RsdAction label="Retry saving brush choices" onClick={onRetryBrushSave} />
+          ) : null}
+          <RsdAction
+            label={settings.coloringBookEnabled ? 'Coloring book on' : 'Coloring book off'}
+            selection="switch"
+            selected={settings.coloringBookEnabled}
+            disabled={settings.status !== 'ready'}
+            onClick={() => onColoringBookChange(!settings.coloringBookEnabled)}
+          />
+          <html.span>Appearance</html.span>
+          <html.div role="radiogroup" aria-label="Appearance" style={controlStyles.row}>
+            {APPEARANCE_PREFERENCES.map((appearance) => (
+              <RsdAction
+                key={appearance}
+                label={`${APPEARANCE_LABELS[appearance]} appearance`}
+                text={APPEARANCE_LABELS[appearance]}
+                selection="radio"
+                selected={settings.appearance === appearance}
+                disabled={settings.status !== 'ready'}
+                onClick={() => onAppearanceChange(appearance)}
+              />
+            ))}
+          </html.div>
+          <html.span>System follows your device.</html.span>
+          <RsdAction
+            label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
+            selection="switch"
+            selected={settings.soundEnabled}
+            disabled={settings.status !== 'ready'}
+            onClick={onToggle}
+          />
+          {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
+          {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
+          {settings.status === 'ready' && !settings.saved ? (
+            <RsdAction label="Try saving settings again" onClick={onRetry} />
+          ) : null}
         </html.div>
-        <html.span>System follows your device.</html.span>
-        <RsdAction
-          label={settings.soundEnabled ? 'Drawing sound on' : 'Drawing sound off'}
-          selection="switch"
-          selected={settings.soundEnabled}
-          disabled={settings.status !== 'ready'}
-          onClick={onToggle}
-        />
-        {settings.status === 'saving' ? <html.span>Saving settings…</html.span> : null}
-        {notice ? <html.span aria-live="polite">{notice}</html.span> : null}
-        {settings.status === 'ready' && !settings.saved ? (
-          <RsdAction label="Try saving settings again" onClick={onRetry} />
-        ) : null}
-      </html.div>
+      )}
     </NativeDialog>
   );
 }

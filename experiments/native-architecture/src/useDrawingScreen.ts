@@ -1,5 +1,6 @@
 import type { PaperReference } from './drawing/paperSpace';
-import { coloringBookHistory, DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
+import { useDrawingHistory } from './product/DrawingSession';
+import { protectedDraftPageIds } from './platform/drawingDraft';
 import { offlineLibrary } from './offlineLibrary/runtime';
 import { useOfflineLibrary } from './offlineLibrary/useOfflineLibrary';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -8,7 +9,6 @@ import {
   changePage,
   addStrokes,
   commitDrawing,
-  createHistory,
   clearDrawing,
   undoDrawing,
   type History,
@@ -31,13 +31,15 @@ import { usePngRecovery } from './usePngRecovery';
 
 export function useDrawingScreen() {
   const historyOwner = useDrawingHistory();
+  const replacementGuard = useHistoryReplacementGuard();
   const { history, historyRef, setHistory, currentDrawing } = historyOwner;
   const brushes = useBrushPreferences();
   const brush = brushes.state.brush;
   const brushActions = brushPreferenceActions(brushes);
   const [preparing, setPreparing] = useState(false);
   const [drawing, setDrawing] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [commandBusy, setBusy] = useState(false);
+  const busy = commandBusy || historyOwner.draftState.status === 'loading';
   const [notice, setNotice] = useState('Pick a color and draw.');
   const [pictures, setPictures] = useState<SavedPicture[] | null>(null);
   const [pagePickerOpen, setPagePickerOpen] = useState(false);
@@ -46,8 +48,9 @@ export function useDrawingScreen() {
   const surface = useRef<DrawingSurfaceHandle>(null);
   const rendererFault = useRef(false);
   const pngRecovery = usePngRecovery();
+  const report = (error: unknown) => setNotice(drawingErrorMessage(error));
 
-  const { command, runCommand, undo, clear } = useSurfaceCommands({
+  const { command, runCommand, ...surfaceActions } = useSurfaceCommands({
     historyRef,
     setHistory,
     surface,
@@ -55,22 +58,11 @@ export function useDrawingScreen() {
     setNotice,
     report,
     afterClear: () => brushes.owner.current?.resetAfterClear(),
-    blocked: () => rendererFault.current || preparing || drawing || settingsLease.current !== null,
+    blocked: () =>
+      busy || rendererFault.current || preparing || drawing || settingsLease.current !== null,
   });
 
-  function report(error: unknown) {
-    setNotice(drawingErrorMessage(error));
-  }
-
-  function finishCohort(strokes: readonly Stroke[], paper: PaperReference) {
-    try {
-      const next = addStrokes(historyRef.current, strokes, paper);
-      setHistory(next);
-      setNotice('');
-    } catch (error) {
-      report(error);
-    }
-  }
+  const finishCohort = createCohortCommit(historyRef, setHistory, setNotice, report);
 
   const settings = useDrawingSettings({
     surface,
@@ -109,7 +101,8 @@ export function useDrawingScreen() {
     setPagePickerOpen,
     commandsBlocked,
     runCommand,
-    setNotice
+    setNotice,
+    replacementGuard
   );
 
   const pictureActions = usePictureActions({
@@ -122,6 +115,7 @@ export function useDrawingScreen() {
     pngRecovery,
     commandsBlocked,
     report,
+    replacementGuard,
   });
 
   const recovery = useRendererRecovery({
@@ -140,6 +134,8 @@ export function useDrawingScreen() {
     library,
     recovery,
     pngRecovery,
+    draftState: historyOwner.draftState,
+    retryDraft: historyOwner.retryDraft,
     history,
     brush,
     ...brushActions,
@@ -147,8 +143,7 @@ export function useDrawingScreen() {
     setDrawing,
     busy: busy || preparing || brushes.state.status !== 'ready',
     setPreparing,
-    clear,
-    undo,
+    ...surfaceActions,
     notice: brushes.state.message || notice,
     pictures,
     setPictures,
@@ -161,6 +156,22 @@ export function useDrawingScreen() {
     currentDrawing,
     finishCohort,
     ...pictureActions,
+  };
+}
+
+function createCohortCommit(
+  historyRef: RefObject<History>,
+  setHistory: ReturnType<typeof useDrawingHistory>['setHistory'],
+  setNotice: (notice: string) => void,
+  report: (error: unknown) => void
+) {
+  return (strokes: readonly Stroke[], paper: PaperReference) => {
+    try {
+      setHistory(addStrokes(historyRef.current, strokes, paper));
+      setNotice('');
+    } catch (error) {
+      report(error);
+    }
   };
 }
 
@@ -185,7 +196,8 @@ function createColoringPageActions(
   setPickerOpen: (open: boolean) => void,
   blocked: () => boolean,
   runCommand: (action: () => Promise<void>) => Promise<void>,
-  setNotice: (message: string) => void
+  setNotice: (message: string) => void,
+  replacementGuard: () => () => boolean
 ) {
   return {
     setPagePickerOpen: (open: boolean) =>
@@ -198,8 +210,9 @@ function createColoringPageActions(
     choosePage(pageId: PageId) {
       if (blocked() || !history.coloringBookEnabled.current) return;
       void runCommand(async () => {
+        const isCurrent = replacementGuard();
         await offlineLibrary.openPage(pageId);
-        if (!history.coloringBookEnabled.current) return;
+        if (!isCurrent() || !history.coloringBookEnabled.current) return;
         const next = changePage(history.historyRef.current, pageId);
         if (next !== history.historyRef.current) {
           history.setHistory(next);
@@ -219,6 +232,7 @@ function useColoringLibrary(historyRef: RefObject<History>, drawing: boolean, pi
     remove: () =>
       offlineLibrary.remove(async () => [
         ...(await savedColoringPageIds()),
+        ...(await protectedDraftPageIds()),
         historyRef.current.drawing.pageId,
         ...historyRef.current.undo.map((entry) => entry.pageId),
       ]),
@@ -231,30 +245,18 @@ function drawingErrorMessage(error: unknown) {
     : 'That did not finish. Your picture is still here.';
 }
 
-function useDrawingHistory() {
-  const [history, renderHistory] = useState(createHistory);
-  const historyRef = useRef(history);
-  const coloringBookEnabled = useRef(DEFAULT_COLORING_BOOK_ENABLED);
-  function setHistory(next: History | ((current: History) => History)) {
-    const proposed = typeof next === 'function' ? next(historyRef.current) : next;
-    const value = coloringBookHistory(proposed, coloringBookEnabled.current);
-    historyRef.current = value;
-    renderHistory(value);
-  }
-  function currentDrawing() {
-    return historyRef.current.drawing;
-  }
-  function applyColoringBookEnabled(enabled: boolean) {
-    coloringBookEnabled.current = enabled;
-    setHistory(historyRef.current);
-  }
-  return {
-    history,
-    historyRef,
-    setHistory,
-    currentDrawing,
-    coloringBookEnabled,
-    applyColoringBookEnabled,
+function useHistoryReplacementGuard() {
+  const lifetime = useRef({ active: true, revision: 0 });
+  useEffect(() => {
+    lifetime.current.active = true;
+    return () => {
+      lifetime.current.active = false;
+      lifetime.current.revision += 1;
+    };
+  }, []);
+  return () => {
+    const revision = lifetime.current.revision;
+    return () => lifetime.current.active && lifetime.current.revision === revision;
   };
 }
 
@@ -307,6 +309,7 @@ function usePictureActions({
   pngRecovery,
   commandsBlocked,
   report,
+  replacementGuard,
 }: {
   historyRef: RefObject<History>;
   setHistory: (next: History | ((current: History) => History)) => void;
@@ -317,6 +320,7 @@ function usePictureActions({
   pngRecovery: ReturnType<typeof usePngRecovery>;
   commandsBlocked: () => boolean;
   report: (error: unknown) => void;
+  replacementGuard: () => () => boolean;
 }) {
   function showPictures() {
     if (commandsBlocked()) return;
@@ -350,8 +354,10 @@ function usePictureActions({
 
   async function openPicture(picture: SavedPicture) {
     await runCommand(async () => {
+      const isCurrent = replacementGuard();
       setNotice('');
       const saved = await reopenPicture(picture.id);
+      if (!isCurrent()) return;
       setHistory((current) => commitDrawing(current, saved));
       setPictures(null);
       setNotice('Picture opened. Undo returns to your previous picture.');
@@ -428,7 +434,7 @@ function useSurfaceCommands({
     }
   }
 
-  async function clear() {
+  async function clearCurrentPicture(saveFirst: boolean) {
     await runCommand(async () => {
       const snapshot = historyRef.current;
       const owner = surface.current;
@@ -450,14 +456,29 @@ function useSurfaceCommands({
         const empty = pixels && observation ? await observation.observe(pixels) : true;
         if (!isCurrent())
           throw new Error('The picture changed before Clear finished. Please try again.');
+        if (saveFirst) {
+          await savePicture(snapshot.drawing);
+          if (!isCurrent())
+            throw new Error('Picture saved. The drawing changed, so it was kept on the paper.');
+        }
         setHistory(clearDrawing(snapshot, empty));
         afterClear();
-        setNotice('Pick a color and draw.');
+        setNotice(
+          saveFirst
+            ? 'Picture saved on this device. Pick a color and draw.'
+            : 'Pick a color and draw.'
+        );
       } finally {
         observation?.cancel();
       }
     });
   }
 
-  return { command, runCommand, undo, clear };
+  return {
+    command,
+    runCommand,
+    undo,
+    clear: () => clearCurrentPicture(false),
+    saveAndClear: () => clearCurrentPicture(true),
+  };
 }

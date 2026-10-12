@@ -11,9 +11,20 @@ import {
   useDrawingStyles,
   useDrawingTheme,
 } from '../drawing/DrawingAppearance';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { InformationSection } from '../information/InformationSection';
+import { type InformationPage } from '../information/content';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
-import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SETTINGS_METRICS, TOUCH_TARGET } from '../drawing/theme';
 import type { SoundSettingsState } from './soundSettings';
 
@@ -51,8 +62,8 @@ export function SoundSettings({
   onDismiss,
 }: SoundSettingsProps) {
   const styles = useDrawingStyles(themedStyles);
-  const theme = useDrawingTheme();
   const busy = state.status !== 'ready' || !visible;
+  const [informationPage, setInformationPage] = useState<InformationPage | null>(null);
   useEffect(() => {
     if (!visible && Platform.OS === 'android') onDismiss();
   }, [visible, onDismiss]);
@@ -64,98 +75,204 @@ export function SoundSettings({
       onDismiss={onDismiss}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={informationPage ? () => setInformationPage(null) : onClose}
     >
       <NativeFrame variant="overlay">
         <View style={styles.backdrop}>
           <View accessibilityViewIsModal style={styles.card}>
-            <Text accessibilityRole="header" style={styles.title}>
-              Settings
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Manage Parent Center"
-              onPress={onParentCenter}
-              style={styles.button}
-            >
-              <Text style={styles.labelText}>Parent Center</Text>
-            </Pressable>
-            <BrushChoices
-              state={brushState}
-              busy={busy}
-              onChange={onBrushAvailabilityChange}
-              onRetry={onRetryBrushSave}
-            />
-            <ColoringBookSetting
-              enabled={state.coloringBookEnabled}
-              disabled={busy}
-              onChange={onColoringBookChange}
-            />
-            <Text style={styles.labelText}>Appearance</Text>
-            <View
-              accessibilityRole="radiogroup"
-              accessibilityLabel="Appearance"
-              style={styles.appearanceRow}
-            >
-              {APPEARANCE_PREFERENCES.map((appearance) => (
+            {informationPage ? (
+              <SettingsInformation
+                page={informationPage}
+                onNavigate={setInformationPage}
+                onBack={() => setInformationPage(null)}
+                onClose={onClose}
+              />
+            ) : (
+              <>
+                <ScrollView
+                  style={styles.scrollArea}
+                  contentContainerStyle={styles.settingsContent}
+                >
+                  <Text accessibilityRole="header" style={styles.title}>
+                    Settings
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Help and about"
+                    onPress={() => setInformationPage('help')}
+                    style={styles.button}
+                  >
+                    <Text style={styles.labelText}>Help and about</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Manage Parent Center"
+                    onPress={onParentCenter}
+                    style={styles.button}
+                  >
+                    <Text style={styles.labelText}>Parent Center</Text>
+                  </Pressable>
+                  <BrushChoices
+                    state={brushState}
+                    busy={busy}
+                    onChange={onBrushAvailabilityChange}
+                    onRetry={onRetryBrushSave}
+                  />
+                  <ColoringBookSetting
+                    enabled={state.coloringBookEnabled}
+                    disabled={busy}
+                    onChange={onColoringBookChange}
+                  />
+                  <AppearanceChoices
+                    selected={state.appearance}
+                    busy={busy}
+                    onChange={onAppearanceChange}
+                  />
+                  <SoundChoice enabled={state.soundEnabled} busy={busy} onChange={onChange} />
+                  {state.status === 'loading' ? (
+                    <Text style={styles.help}>Loading settings…</Text>
+                  ) : null}
+                  {state.status === 'saving' ? (
+                    <Text style={styles.help}>Saving settings…</Text>
+                  ) : null}
+                  <Text accessibilityLiveRegion="polite" style={styles.help}>
+                    {state.message || audioMessage}
+                  </Text>
+                  {state.status === 'ready' && !state.saved ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={onRetrySave}
+                      style={styles.button}
+                    >
+                      <Text style={styles.labelText}>Retry saving</Text>
+                    </Pressable>
+                  ) : null}
+                </ScrollView>
                 <Pressable
-                  key={appearance}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`${APPEARANCE_LABELS[appearance]} appearance`}
-                  accessibilityState={{ checked: state.appearance === appearance, disabled: busy }}
-                  aria-checked={state.appearance === appearance}
-                  disabled={busy}
-                  onPress={() => onAppearanceChange(appearance)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close Settings"
+                  disabled={!visible}
+                  onPress={onClose}
                   style={styles.button}
                 >
-                  <Text style={styles.labelText}>
-                    {APPEARANCE_LABELS[appearance]}
-                    {state.appearance === appearance ? ' ✓' : ''}
-                  </Text>
+                  <Text style={styles.labelText}>Done</Text>
                 </Pressable>
-              ))}
-            </View>
-            <Text style={styles.help}>System follows your device.</Text>
-            <View style={styles.row}>
-              <View style={styles.label}>
-                <Text style={styles.labelText}>Sound</Text>
-                <Text style={styles.help}>Play a soft scratch while drawing.</Text>
-              </View>
-              <Switch
-                accessibilityLabel="Drawing sound"
-                accessibilityHint="Play a soft scratch while drawing"
-                value={state.soundEnabled}
-                disabled={busy}
-                onValueChange={onChange}
-                style={styles.switch}
-                trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
-              />
-            </View>
-            {state.status === 'loading' ? <Text style={styles.help}>Loading settings…</Text> : null}
-            {state.status === 'saving' ? <Text style={styles.help}>Saving settings…</Text> : null}
-            <Text accessibilityLiveRegion="polite" style={styles.help}>
-              {state.message || audioMessage}
-            </Text>
-            {state.status === 'ready' && !state.saved ? (
-              <Pressable accessibilityRole="button" onPress={onRetrySave} style={styles.button}>
-                <Text style={styles.labelText}>Retry saving</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close Settings"
-              disabled={!visible}
-              onPress={onClose}
-              style={styles.button}
-            >
-              <Text style={styles.labelText}>Done</Text>
-            </Pressable>
+              </>
+            )}
           </View>
         </View>
       </NativeFrame>
     </Modal>
   );
 }
+function SettingsInformation({
+  page,
+  onNavigate,
+  onBack,
+  onClose,
+}: {
+  page: InformationPage;
+  onNavigate: (page: InformationPage) => void;
+  onBack: () => void;
+  onClose: SoundSettingsProps['onClose'];
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <>
+      <ScrollView style={styles.scrollArea}>
+        <InformationSection page={page} onNavigate={onNavigate} />
+      </ScrollView>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back to Settings"
+        onPress={onBack}
+        style={styles.button}
+      >
+        <Text style={styles.labelText}>Back to Settings</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Keep drawing"
+        onPress={onClose}
+        style={styles.button}
+      >
+        <Text style={styles.labelText}>Keep drawing</Text>
+      </Pressable>
+    </>
+  );
+}
+
+function AppearanceChoices({
+  selected,
+  busy,
+  onChange,
+}: {
+  selected: AppearancePreference;
+  busy: boolean;
+  onChange: SoundSettingsProps['onAppearanceChange'];
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  return (
+    <>
+      <Text style={styles.labelText}>Appearance</Text>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Appearance"
+        style={styles.appearanceRow}
+      >
+        {APPEARANCE_PREFERENCES.map((appearance) => (
+          <Pressable
+            key={appearance}
+            accessibilityRole="radio"
+            accessibilityLabel={`${APPEARANCE_LABELS[appearance]} appearance`}
+            accessibilityState={{ checked: selected === appearance, disabled: busy }}
+            aria-checked={selected === appearance}
+            disabled={busy}
+            onPress={() => onChange(appearance)}
+            style={styles.button}
+          >
+            <Text style={styles.labelText}>
+              {APPEARANCE_LABELS[appearance]}
+              {selected === appearance ? ' ✓' : ''}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.help}>System follows your device.</Text>
+    </>
+  );
+}
+
+function SoundChoice({
+  enabled,
+  busy,
+  onChange,
+}: {
+  enabled: boolean;
+  busy: boolean;
+  onChange: SoundSettingsProps['onChange'];
+}) {
+  const styles = useDrawingStyles(themedStyles);
+  const theme = useDrawingTheme();
+  return (
+    <View style={styles.row}>
+      <View style={styles.label}>
+        <Text style={styles.labelText}>Sound</Text>
+        <Text style={styles.help}>Play a soft scratch while drawing.</Text>
+      </View>
+      <Switch
+        accessibilityLabel="Drawing sound"
+        accessibilityHint="Play a soft scratch while drawing"
+        value={enabled}
+        disabled={busy}
+        onValueChange={onChange}
+        style={styles.switch}
+        trackColor={{ true: theme.brandSolid, false: theme.textSoft }}
+      />
+    </View>
+  );
+}
+
 function BrushChoices({
   state,
   busy,
@@ -210,12 +327,15 @@ const themedStyles = createDrawingStyles((palette) =>
     },
     card: {
       width: '100%',
+      maxHeight: '100%',
       maxWidth: SETTINGS_MAX_WIDTH,
       padding: SETTINGS_METRICS.padding,
       borderRadius: SETTINGS_METRICS.radius,
       backgroundColor: palette.paper,
       gap: SETTINGS_METRICS.gap * 2,
     },
+    scrollArea: { flexShrink: 1, minHeight: 0 },
+    settingsContent: { gap: SETTINGS_METRICS.gap * 2 },
     title: {
       color: palette.textStrong,
       fontSize: SETTINGS_METRICS.titleSize,

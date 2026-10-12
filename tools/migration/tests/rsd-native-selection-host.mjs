@@ -119,6 +119,13 @@ vi.mock('../../../experiments/native-architecture/src/platform/soundSettings.ts'
     write: async (snapshot) => caller.settingsStorage?.write(snapshot),
   },
 }));
+vi.mock('../../../experiments/native-architecture/src/platform/brushPreferences.ts', () => ({
+  brushPreferencesStorage: { read: async () => null, write: async () => {} },
+}));
+vi.mock('../../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
+  drawingDraftStorage: { read: async () => null, write: async () => {} },
+  protectedDraftPageIds: async () => [],
+}));
 vi.mock(
   '../../../experiments/native-architecture/src/product/useDrawingProduct.ts',
   async (importOriginal) => {
