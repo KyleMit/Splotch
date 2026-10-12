@@ -42,7 +42,7 @@ function evaluate(source, modules, extra = {}) {
 }
 function mutant(before, after) {
   expect(grainSource).toContain(before);
-  return evaluate(grainSource.replace(before, after), { './crayon': { CRAYON_TILE_PX } });
+  return evaluate(grainSource.replace(before, after), {});
 }
 const colors = [...PALETTE_COLORS.map((color) => color.hex), '#FFFFFF', '#123456', '#000000'];
 describe('canonical Crayon grain bytes', () => {

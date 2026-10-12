@@ -72,6 +72,7 @@ const mountedScreens = returns[0].argument.children.filter((node) => node.type =
 assert.equal(mountedScreens.length, 1, 'Drawing session has one screen');
 assert.equal(mountedScreens[0].openingElement.name.name, 'RsdDrawingScreen', 'Mounted RSD screen');
 const drawing = parse('src/rsdDrawing/RsdDrawingScreen.tsx');
+const drawingTools = parse('src/rsdDrawing/RsdDrawingTools.tsx');
 const coloringPicker = parse('src/rsdDrawing/RsdColoringBookPicker.tsx');
 const groups = [];
 const switches = [];
@@ -83,7 +84,7 @@ const attribute = (node, name) =>
   node.attributes.find((item) => item.type === 'JSXAttribute' && item.name.name === name);
 const literal = (item) => (item?.value?.type === 'StringLiteral' ? item.value.value : undefined);
 const settingsDialog = parse('src/rsdDrawing/NativeDialog.tsx');
-for (const component of [drawing, coloringPicker, settingsDialog])
+for (const component of [drawing, drawingTools, coloringPicker, settingsDialog])
   babel.traverse(component, {
     JSXOpeningElement(path) {
       const node = path.node;
@@ -241,6 +242,18 @@ for (const [property, label, callback] of [
   );
 }
 const files = [
+  'src/platform/useFullscreen.ts',
+  'src/platform/useFullscreen.web.ts',
+  'src/rsdDrawing/RsdDrawingTools.tsx',
+  'src/DrawingControls.tsx',
+  'src/DrawingScreen.tsx',
+  'src/platform/offlineLibrary.web.ts',
+  'src/platform/offlineLibraryStorage.web.ts',
+  'src/platform/offlineLibraryTransfer.web.ts',
+  'src/platform/drawingFiles.web.ts',
+  'src/platform/pngRecovery.web.ts',
+  'src/drawing/crayon.ts',
+  'src/drawing/crayonGrain.ts',
   'src/platform/useUndoShortcut.ts',
   'src/platform/useUndoShortcut.web.ts',
   'src/product/useDrawingUndoShortcut.ts',

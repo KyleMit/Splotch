@@ -12,13 +12,17 @@ const PNG = rgbaPng(2, 2).toString('base64');
 const RECORD = { id: 'png-1-a', filename: heldPngFilename('png-1-a'), base64: PNG };
 
 beforeEach(() => localStorage.clear());
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  expect(document.querySelector('a')).toBeNull();
+});
 
 describe('actual browser PNG recovery adapter', () => {
   it('preserves bytes and stable download name and keeps the unconfirmed request through a restart', async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
       expect(this.download).toBe(RECORD.filename);
       expect(this.href).toBe(`data:image/png;base64,${PNG}`);
+      expect(this.isConnected).toBe(true);
     });
     await pngRecoveryPlatform.storage.write(serializeHeldPngs([RECORD]));
     let state;
@@ -54,5 +58,14 @@ describe('actual browser PNG recovery adapter', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     await expect(pngRecoveryPlatform.deliver(RECORD, () => false)).rejects.toThrow('cancelled');
     expect(click).not.toHaveBeenCalled();
+  });
+
+  it('removes its owned anchor when browser download activation throws', async () => {
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      throw new Error('download blocked');
+    });
+    await expect(pngRecoveryPlatform.deliver(RECORD, () => true)).rejects.toThrow(
+      'download blocked'
+    );
   });
 });

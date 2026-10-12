@@ -1,5 +1,7 @@
 import { parseDrawing, type Drawing } from '../drawing/model';
 import type { SavedPicture } from './drawingFiles';
+import { isOfflinePageId } from '../offlineLibrary/identity';
+import { LibraryFault } from '../offlineLibrary/contract';
 
 const STORAGE_PREFIX = 'splotch-picture:';
 const MAX_SAVE_BYTES = 8 * 1024 * 1024;
@@ -26,9 +28,15 @@ export async function savePicture(drawing: Drawing): Promise<SavedPicture> {
   if (snapshot.length > MAX_SAVE_BYTES) throw new Error('This picture is too large to save.');
   const modifiedAt = Date.now();
   const id = `picture-${modifiedAt}-${Math.random().toString(36).slice(2, 10)}`;
-  localStorage.setItem(storageKey(id), snapshot);
-  if (localStorage.getItem(storageKey(id)) !== snapshot)
-    throw new Error('The picture could not be saved completely.');
+  const write = async () => {
+    localStorage.setItem(storageKey(id), snapshot);
+    if (localStorage.getItem(storageKey(id)) !== snapshot)
+      throw new Error('The picture could not be saved completely.');
+  };
+  if (isOfflinePageId(drawing.pageId)) {
+    const { offlineLibrary } = await import('../offlineLibrary/runtime');
+    await offlineLibrary.withSavedArtwork(drawing.pageId, write);
+  } else await write();
   return { id, modifiedAt, name: new Date(modifiedAt).toLocaleString() };
 }
 
@@ -36,9 +44,28 @@ export async function reopenPicture(id: string): Promise<Drawing> {
   const snapshot = localStorage.getItem(storageKey(id));
   if (!snapshot || snapshot.length > MAX_SAVE_BYTES)
     throw new Error('This saved picture cannot be opened.');
-  return parseDrawing(JSON.parse(snapshot));
+  const drawing = parseDrawing(JSON.parse(snapshot));
+  if (isOfflinePageId(drawing.pageId)) {
+    const { offlineLibrary } = await import('../offlineLibrary/runtime');
+    await offlineLibrary.openPage(drawing.pageId);
+  }
+  return drawing;
 }
 
 export async function savedColoringPageIds(): Promise<readonly string[]> {
-  return Promise.all(listPictures().map(async ({ id }) => (await reopenPicture(id)).pageId));
+  try {
+    return await Promise.all(
+      listPictures().map(async ({ id }) => {
+        const snapshot = localStorage.getItem(storageKey(id));
+        if (!snapshot || snapshot.length > MAX_SAVE_BYTES)
+          throw new Error('Invalid saved picture.');
+        return parseDrawing(JSON.parse(snapshot)).pageId;
+      })
+    );
+  } catch {
+    throw new LibraryFault(
+      'corrupt',
+      'A saved picture could not be checked. Your coloring books were kept.'
+    );
+  }
 }

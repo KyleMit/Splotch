@@ -8,7 +8,7 @@ import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
 import { darkTheme } from './tokens.css';
 import { DEFAULT_APPEARANCE } from '../settings/appearance';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { html } from 'react-strict-dom';
 import { useDrawingScreen } from '../useDrawingScreen';
 import type { useDrawingSound } from '../useDrawingSound';
@@ -16,7 +16,6 @@ import { useDrawingMenu } from '../useDrawingMenu';
 import { BRUSHES } from '../drawing/brushes';
 import { PALETTE_COLORS } from '../drawing/palette';
 import { ColorPicker } from '../drawing/ColorPicker';
-import { STROKE_WIDTHS, STROKE_WIDTH_LABELS } from '../drawing/strokeWidth';
 import { RsdColoringBookPicker } from './RsdColoringBookPicker';
 import { NativePaper } from './NativePaper';
 import { NativeDialog, NativeSoundSettingsDialog } from './NativeDialog';
@@ -27,6 +26,7 @@ import { RsdDraftNotice } from './RsdDraftNotice';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
 import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
+import { RsdDrawingTools, RsdDrawingWidths } from './RsdDrawingTools';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -180,14 +180,21 @@ function RsdDrawingContent({
             ) : null}
           </NativeDrawingStatus>
           <RsdRecoveryNotice screen={screen} blocked={disabled || screen.pictures !== null} />
-          {menu.open ? (
-            <DrawingMenu
-              screen={screen}
-              sound={sound}
-              menu={menu}
-              onFeedback={() => feedback.owner?.open()}
-            />
-          ) : null}
+          <RsdDrawingTools
+            menu={menu}
+            blocked={
+              screen.disabled || modalBlocked || screen.pictures !== null || screen.colorPickerOpen
+            }
+            renderMenu={(browserAction) => (
+              <DrawingMenu
+                screen={screen}
+                sound={sound}
+                menu={menu}
+                onFeedback={() => feedback.owner?.open()}
+                browserAction={browserAction}
+              />
+            )}
+          />
           {screen.pagePickerOpen ? (
             <RsdColoringBookPicker
               selected={screen.history.drawing.pageId}
@@ -323,45 +330,18 @@ function RsdPaintControls({
   );
 }
 
-function DrawingWidths({
-  screen,
-  sound,
-  disabled,
-}: {
-  screen: Screen;
-  sound: Sound;
-  disabled: boolean;
-}) {
-  const tool = screen.brush === 'eraser' ? 'eraser' : 'drawing';
-  const selected = tool === 'eraser' ? sound.settings.eraserWidth : sound.settings.strokeWidth;
-  return (
-    <html.div role="radiogroup" aria-label={`${tool} width`} style={styles.row}>
-      {STROKE_WIDTHS.map((width) => (
-        <RsdAction
-          key={width}
-          label={`${STROKE_WIDTH_LABELS[width]} ${tool} width`}
-          selection="radio"
-          selected={selected === width}
-          disabled={disabled || sound.settings.status !== 'ready'}
-          onClick={() => {
-            void sound.owner?.settings.setWidth(tool, width);
-          }}
-        />
-      ))}
-    </html.div>
-  );
-}
-
 function DrawingMenu({
   screen,
   sound,
   menu,
   onFeedback,
+  browserAction,
 }: {
   screen: Screen;
   sound: Sound;
   menu: ReturnType<typeof useDrawingMenu>;
   onFeedback: () => void;
+  browserAction: ReactNode;
 }) {
   return (
     <NativeDialog
@@ -373,6 +353,7 @@ function DrawingMenu({
     >
       <html.div style={styles.dialogContent}>
         <html.span>Drawing tools</html.span>
+        {browserAction}
         {screen.brushControl.kind === 'menu' ? (
           <html.div role="radiogroup" aria-label="Drawing brush" style={styles.row}>
             {screen.availableBrushes.map((brush) => (
@@ -388,7 +369,7 @@ function DrawingMenu({
           </html.div>
         ) : null}
         {sound.settings.strokeWidthControlEnabled ? (
-          <DrawingWidths
+          <RsdDrawingWidths
             screen={screen}
             sound={sound}
             disabled={screen.disabled || !menu.visible}

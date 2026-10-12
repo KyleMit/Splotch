@@ -22,7 +22,7 @@ import { useDrawingMenu } from './useDrawingMenu';
 import { BRUSHES } from './drawing/brushes';
 import { DrawingStatus } from './DrawingStatus';
 import { useDrawingScreenStyles } from './drawing/drawingScreenStyles';
-import { Action, DrawingMenu } from './DrawingControls';
+import { Action, DrawingTools } from './DrawingControls';
 import type { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { useColorPickerFocus } from './useColorPickerFocus';
@@ -195,17 +195,14 @@ function DrawingScreenContent({
             <DrawingPaper screen={screen} sound={sound} menuOpen={menu.open || modalBlocked} />
           </View>
           <DrawingFeedback screen={screen} sound={sound} menuOpen={menu.open} />
-          {menu.open ? (
-            <DrawingMenu
-              screen={screen}
-              sound={sound}
-              visible={menu.visible}
-              onDismiss={menu.dismissed}
-              run={menu.run}
-              onClose={menuFocus.close}
-              onFeedback={() => feedback.owner?.open()}
-            />
-          ) : null}
+          <DrawingTools
+            screen={screen}
+            sound={sound}
+            menu={menu}
+            blocked={disabled || pictures !== null || colorPickerOpen || settingsClosing}
+            onClose={menuFocus.close}
+            onFeedback={() => feedback.owner?.open()}
+          />
           <DrawingSheets
             screen={screen}
             sound={sound}
