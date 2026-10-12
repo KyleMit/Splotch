@@ -1,4 +1,4 @@
-import { createFeedbackGate, type FeedbackGateState } from '../feedback/feedbackGate';
+import { createFeedbackGate } from '../feedback/feedbackGate';
 import {
   AI_STYLES,
   isInstallationId,
@@ -6,58 +6,17 @@ import {
   type AiMime,
   type CredentialKind,
 } from './contract';
-import {
-  credentialHeaders,
-  validCredential,
-  type AiCredential,
-  type AiVault,
-  type AiReferencedVault,
-} from './credentials';
-import { requestAi, type AiTransport } from './transport';
-import type { AiJournal, AiResult, AiStorage, AiRecoveryHeldReceipt } from './journal';
-import type { AiImageAdmission } from './imageAdmission';
-import type { ParentOperationPort, ParentProof } from '../parentCenter/parentPolicy';
+import { credentialHeaders, validCredential, type AiCredential } from './credentials';
+import { requestAi } from './transport';
+import type { AiJournal, AiRecoveryHeldReceipt, AiRecoveryRequestReceipt } from './journal';
+import type { ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
-import type { AiReportState, AiReportTarget } from './reportContract';
-export type AiState = Readonly<{
-  open: boolean;
-  authorized: boolean;
-  gate: FeedbackGateState;
-  style: AiStyle;
-  busy: boolean;
-  remaining: number | null;
-  credential: 'free' | CredentialKind | 'unavailable';
-  journal: AiJournal | null;
-  recovery: AiRecoveryHeldReceipt | null;
-  heldResult: AiResult | null;
-  pictures: readonly AiResult[];
-  message: string;
-  retryAt: number;
-  report: AiReportState;
-  refusal: { id: number } | null;
-}>;
-export type PreparedAiDrawing = {
-  bytes: Uint8Array;
-  originalId: string;
-  originalModel: string;
-};
+import type { AiReportTarget } from './reportContract';
+import type { AiState, PreparedAiDrawing, AiSessionDependencies } from './sessionContract';
+export type { AiState, PreparedAiDrawing } from './sessionContract';
 export class AiSession {
-  protected deps: {
-    vault: AiVault & AiReferencedVault;
-    storage: AiStorage;
-    transport: AiTransport;
-    prepare: () => Promise<PreparedAiDrawing>;
-    admit: AiImageAdmission;
-    parent?: ParentOperationPort;
-  };
-  constructor(deps: {
-    vault: AiVault & AiReferencedVault;
-    storage: AiStorage;
-    transport: AiTransport;
-    prepare: () => Promise<PreparedAiDrawing>;
-    admit: AiImageAdmission;
-    parent?: ParentOperationPort;
-  }) {
+  protected deps: AiSessionDependencies;
+  constructor(deps: AiSessionDependencies) {
     this.deps = deps;
     this.reports = createAiReportOwner({
       vault: deps.vault,
@@ -247,6 +206,19 @@ export class AiSession {
         });
     }
   };
+  private holdRecovery = (receipt: AiRecoveryHeldReceipt | AiRecoveryRequestReceipt) => {
+    this.recoveryUncertain = receipt.kind === 'recovery-request';
+    this.credential = null;
+    this.update({
+      recovery: receipt,
+      heldResult: receipt.journal.result,
+      journal: null,
+      credential: 'unavailable',
+      remaining: null,
+      message:
+        'A saved recovery request is held. Recovery sending is unavailable. Your original stays saved.',
+    });
+  };
   protected load = async () => {
     if (!this.consented() || this.active || this.state.retryAt > Date.now()) return;
     const proof = this.authorization;
@@ -262,16 +234,8 @@ export class AiSession {
         const stored = await this.deps.storage.read();
         if (!permitted()) return;
         this.recoveryUncertain = false;
-        if (stored?.kind === 'recovery-held') {
-          this.credential = null;
-          this.update({
-            recovery: stored.receipt,
-            journal: null,
-            credential: 'unavailable',
-            remaining: null,
-            message:
-              'A recovery attempt is saved. Collection is unavailable until recovery is qualified. Your original stays held.',
-          });
+        if (stored?.kind === 'recovery-held' || stored?.kind === 'recovery-request') {
+          this.holdRecovery(stored.receipt);
           return;
         }
         const journal =

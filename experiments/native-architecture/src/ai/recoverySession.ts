@@ -1,44 +1,30 @@
 import {
   RECOVERY_PATH,
-  RECOVERY_PROTOCOL,
-  RECOVERY_VERSION_HEADER,
   RECOVERY_NONCE_HEADER,
   RECOVERY_CREATED_HEADER,
+  RECOVERY_INPUT_DIGEST_HEADER,
 } from './recoveryContract';
-import { credentialHeaders } from './credentials';
-import { requestAi } from './transport';
 import type { AiJournal } from './journal';
-import { AiSession } from './session';
-export class AiRecoverySession extends AiSession {
-  private prepareRecoveryAuthorized = async () => {
-    if (
-      !this.consented() ||
-      !this.state.authorized ||
-      this.active ||
-      this.unresolved() ||
-      !this.credential
-    )
-      return;
-    const proof = this.authorization;
-    const permitted = () =>
-      this.state.authorized && proof === this.authorization && !this.disposed && this.consented();
-    const kind = this.credential.kind;
-    this.active = true;
-    this.update({ busy: true, message: 'Saving a held recovery request on this device…' });
-    try {
-      const reference = await this.deps.vault.pin(kind);
-      if (!permitted()) return;
-      const credential = await this.deps.vault.readReferenced(reference);
-      if (!permitted()) return;
-      if (credential.kind !== kind) throw new Error('Recovery credential generation changed.');
-      const prepared = await this.deps.prepare();
-      if (!permitted()) return;
+import { recoveryDigest } from './recoveryDigest';
+import { AiRecoveryBoundary } from './recoveryBoundary';
+export class AiRecoverySession extends AiRecoveryBoundary {
+  private prepareRecoveryAuthorized = () =>
+    this.runRecovery(async (action) => {
+      if (this.unresolved() || !this.credential) return;
+      const kind = this.credential.kind;
+      const reference = await this.pinForAction(action, kind);
+      this.assertCurrent(action);
       await this.deps.vault.readReferenced(reference);
-      if (!permitted()) return;
+      this.assertCurrent(action);
+      const prepared = await this.deps.prepare();
+      this.assertCurrent(action);
+      await this.deps.vault.readReferenced(reference);
+      this.assertCurrent(action);
+      const createdAt = Date.now();
       const journal: AiJournal = {
         version: 1,
-        id: Math.max(Date.now(), (this.state.journal?.id ?? 0) + 1),
-        createdAt: Date.now(),
+        id: Math.max(createdAt, (this.state.journal?.id ?? 0) + 1),
+        createdAt,
         style: this.state.style,
         originalId: prepared.originalId,
         phase: 'unknown',
@@ -46,124 +32,186 @@ export class AiRecoverySession extends AiSession {
         result: null,
       };
       this.recoveryUncertain = true;
-      let receipt = await this.deps.storage.prepareRecovery(
+      const held = await this.deps.storage.prepareRecovery(
         journal,
         prepared.originalModel,
         prepared.bytes,
         reference
       );
+      this.publishReceipt(action, held);
       this.recoveryUncertain = false;
-      this.update({ recovery: receipt, journal: null });
-      if (!permitted()) return;
+      this.assertCurrent(action);
       await this.deps.vault.readReferenced(reference);
-      if (!permitted()) return;
-      receipt = await this.deps.storage.commitRecoveryIntent(receipt);
-      this.update({ recovery: receipt, journal: null });
-      if (!permitted()) return;
+      this.assertCurrent(action);
+      this.recoveryUncertain = true;
+      const committed = await this.deps.storage.commitRecoveryIntent(held);
+      this.publishReceipt(action, committed);
+      this.recoveryUncertain = false;
+      this.assertCurrent(action);
       this.update({
         message:
-          'Your recovery request and original are saved here. Recovery sending is unavailable. Nothing was uploaded.',
+          'Your request and original are saved on this device. Nothing was uploaded. Recovery sending is unavailable.',
       });
-    } catch {
-      this.credential = null;
-      this.update({
-        credential: 'unavailable',
-        message:
-          'Recovery storage or credential confirmation failed. Reopen recovery before trying anything else. Nothing was uploaded.',
-      });
-    } finally {
-      this.active = false;
-      this.update({ busy: false });
-    }
-  };
-  private collectRecoveryAuthorized = async () => {
-    const receipt = this.state.recovery;
-    if (!this.consented() || !receipt || !this.state.authorized || this.active) return;
-    if (receipt.recovery.intent !== 'committed') {
-      this.update({
-        message:
-          'This saved recovery draft has no confirmed request intent. It stays held; nothing will be sent automatically.',
-      });
-      return;
-    }
-    const proof = this.authorization;
-    const permitted = () =>
-      this.state.authorized &&
-      proof === this.authorization &&
-      !this.disposed &&
-      this.consented() &&
-      this.state.recovery === receipt;
-    this.active = true;
-    this.update({ busy: true });
-    try {
-      const credential = await this.deps.vault.readReferenced(receipt.recovery.credential);
-      if (!permitted()) return;
-      const reply = await requestAi(
-        this.deps.transport,
-        {
-          path: RECOVERY_PATH,
-          method: 'GET',
-          headers: {
-            ...credentialHeaders(credential),
-            [RECOVERY_VERSION_HEADER]: RECOVERY_PROTOCOL,
-            [RECOVERY_NONCE_HEADER]: receipt.nonce,
-            [RECOVERY_CREATED_HEADER]: String(receipt.journal.createdAt),
-          },
-          recovery: {
-            kind: 'collect',
-            id: receipt.recovery.id,
-            createdAt: receipt.journal.createdAt,
-            expiry: receipt.recovery.expiry,
-          },
-        },
-        () => {
-          if (permitted())
-            this.update({
-              message:
-                'A recovery reply arrived late. Reopen collection to confirm it; the request stays held.',
-            });
-        }
+    });
+  private sendRecoveryAuthorized = () =>
+    this.runRecovery(async (action) => {
+      const source = action.receipt;
+      if (!source || source.kind !== 'recovery-held' || this.recoveryUncertain) return;
+      const restored = await this.deps.storage.readRecoveryAttempt(source.journal.id);
+      this.assertCurrent(action);
+      if (
+        !restored ||
+        restored.kind !== 'recovery-held' ||
+        restored.nonce !== source.nonce ||
+        restored.revision !== source.revision
+      )
+        throw new Error('Saved source changed.');
+      this.publishReceipt(action, restored);
+      const reference = await this.pinForAction(action, source.recovery.credential.kind);
+      this.assertCurrent(action);
+      await this.deps.vault.readReferenced(reference);
+      this.assertCurrent(action);
+      const id = Math.max(Date.now(), source.journal.id + 1);
+      const createdAt = Math.max(Date.now(), source.journal.createdAt + 1);
+      this.recoveryUncertain = true;
+      let receipt = await this.deps.storage.prepareRecoverySendFromHeld(
+        restored,
+        id,
+        createdAt,
+        reference
       );
-      if (!permitted()) return;
-      if (reply.kind === 'recovery' && reply.reply.kind === 'status') {
-        await this.deps.vault.readReferenced(receipt.recovery.credential);
-        if (!permitted()) return;
-        const next = await this.deps.storage.recordRecoveryStatus(receipt, reply.reply);
-        this.update({ recovery: next });
-        if (
-          !this.state.authorized ||
-          proof !== this.authorization ||
-          this.disposed ||
-          !this.consented()
-        )
+      this.publishReceipt(action, receipt);
+      this.recoveryUncertain = false;
+      this.assertCurrent(action);
+      this.recoveryUncertain = true;
+      receipt = await this.deps.storage.markRecoverySubmission(receipt);
+      this.publishReceipt(action, receipt);
+      this.recoveryUncertain = false;
+      this.assertCurrent(action);
+      const upload = await this.deps.storage.readRecoveryUpload(receipt);
+      this.assertCurrent(action);
+      if (upload.length !== receipt.inputLength || recoveryDigest(upload) !== receipt.inputDigest)
+        throw new Error('Saved upload changed.');
+      const headers = await this.referencedHeaders(action, receipt);
+      this.assertCurrent(action);
+      const reply = await this.requestRecovery(action, {
+        path: RECOVERY_PATH,
+        method: 'POST',
+        query: `style=${encodeURIComponent(receipt.journal.style)}`,
+        headers: {
+          ...headers,
+          'Content-Type': 'image/png',
+          [RECOVERY_NONCE_HEADER]: receipt.nonce,
+          [RECOVERY_CREATED_HEADER]: String(receipt.journal.createdAt),
+          [RECOVERY_INPUT_DIGEST_HEADER]: receipt.inputDigest,
+        },
+        body: upload,
+        recovery: {
+          kind: 'admit',
+          id: receipt.recovery.id,
+          createdAt: receipt.journal.createdAt,
+          expiry: receipt.recovery.expiry,
+        },
+      });
+      this.assertCurrent(action);
+      await this.acceptReply(action, reply);
+    });
+  private collectRecoveryAuthorized = () =>
+    this.runRecovery(async (action) => {
+      let receipt = action.receipt;
+      if (!receipt) return;
+      if (receipt.kind === 'recovery-request') {
+        receipt = await this.rereadRequest(action);
+        this.assertCurrent(action);
+        if (receipt.recovery.state === 'retained') return this.acknowledgeAuthorized(action);
+        if (receipt.recovery.state === 'acknowledged' || receipt.recovery.state === 'terminal')
           return;
-        this.update({
-          message:
-            'The server admission expiry is saved. This request stays held; automatic sending and ACK are unavailable.',
-        });
-      } else
-        this.update({
-          message: 'Recovery collection is unavailable. Your saved request and original stay held.',
-        });
-    } catch {
-      this.update({ message: 'Recovery could not be confirmed. The saved request stays held.' });
-    } finally {
-      this.active = false;
-      this.update({ busy: false });
-    }
+        if (receipt.recovery.state === 'prepared') {
+          this.update({
+            message:
+              'This request was saved before sending. It stays held; it will not be sent again automatically.',
+          });
+          return;
+        }
+      } else if (receipt.recovery.intent !== 'committed') return;
+      const headers = await this.referencedHeaders(action, receipt);
+      this.assertCurrent(action);
+      const reply = await this.requestRecovery(action, {
+        path: RECOVERY_PATH,
+        method: 'GET',
+        headers: {
+          ...headers,
+          [RECOVERY_NONCE_HEADER]: receipt.nonce,
+          [RECOVERY_CREATED_HEADER]: String(receipt.journal.createdAt),
+        },
+        recovery: {
+          kind: 'collect',
+          id: receipt.recovery.id,
+          createdAt: receipt.journal.createdAt,
+          expiry: receipt.recovery.expiry,
+        },
+        ...(receipt.kind === 'recovery-request' ? { deliveryProof: true as const } : {}),
+      });
+      this.assertCurrent(action);
+      await this.acceptReply(action, reply);
+    });
+  private reconcileRecoveryAuthorized = () =>
+    this.runRecovery(async (action) => {
+      const receipt = await this.rereadRequest(action);
+      this.assertCurrent(action);
+      if (!['submission-uncertain', 'admitted'].includes(receipt.recovery.state)) return;
+      const headers = await this.referencedHeaders(action, receipt);
+      this.assertCurrent(action);
+      const reply = await this.requestRecovery(action, {
+        path: RECOVERY_PATH,
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'reconcile',
+          id: receipt.recovery.id,
+          createdAt: receipt.journal.createdAt,
+        }),
+        recovery: {
+          kind: 'reconcile',
+          id: receipt.recovery.id,
+          createdAt: receipt.journal.createdAt,
+          expiry: receipt.recovery.expiry,
+        },
+      });
+      this.assertCurrent(action);
+      await this.acceptReply(action, reply);
+    });
+  private requestParentAction = (work: () => Promise<void>) => {
+    if (!this.deps.parent || this.active || !this.state.open) return;
+    this.protect(() => {
+      void work();
+    });
   };
   prepareRecovery = async () => {
     if (!this.deps.parent) return this.prepareRecoveryAuthorized();
-    if (this.active || this.unresolved()) return;
-    this.protect(() => {
-      void this.prepareRecoveryAuthorized();
-    });
+    this.requestParentAction(this.prepareRecoveryAuthorized);
   };
-  collectRecovery = async () => {
-    if (!this.deps.parent) return this.collectRecoveryAuthorized();
-    if (this.active) return;
-    this.protect(() => {
-      void this.collectRecoveryAuthorized();
-    });
+  sendRecovery = async () => this.requestParentAction(this.sendRecoveryAuthorized);
+  collectRecovery = async () => this.requestParentAction(this.collectRecoveryAuthorized);
+  reconcileRecovery = async () => this.requestParentAction(this.reconcileRecoveryAuthorized);
+  acknowledgeRecovery = async () =>
+    this.requestParentAction(() => this.runRecovery(this.acknowledgeAuthorized));
+  readRecoverySource = async () => {
+    const receipt = this.state.recovery;
+    if (!receipt || receipt.kind !== 'recovery-request') return null;
+    const source = await this.deps.storage.readRecoveryAttempt(receipt.recovery.sourceHeld.id);
+    if (
+      !source ||
+      source.kind !== 'recovery-held' ||
+      source.nonce !== receipt.recovery.sourceHeld.nonce ||
+      source.revision !== receipt.recovery.sourceHeld.revision
+    )
+      throw new Error('Saved source could not be confirmed.');
+    if (this.state.recovery === receipt && !this.disposed)
+      this.update({
+        message:
+          'Your original request is still saved on this device, separate from the later request.',
+      });
+    return source;
   };
 }

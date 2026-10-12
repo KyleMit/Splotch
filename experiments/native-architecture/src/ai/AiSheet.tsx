@@ -295,7 +295,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
       />
       <Action
         label="Refresh AI availability"
-        disabled={state.busy}
+        disabled={state.busy || waiting || !!state.recovery}
         onPress={() => {
           void owner.refresh();
         }}

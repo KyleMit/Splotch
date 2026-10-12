@@ -1,4 +1,11 @@
 import { record, exact, parseNativeReceipt, parseRecoveryHeldReceipt } from './nativeAiReceipt';
+import { RecoveryReceiptOwner } from './recoveryReceiptOwner';
+import {
+  createNativeRecoveryStorage,
+  verifyNativeRecoveryResult,
+  type RecoveryStorageOperation,
+} from './aiRecoveryStorage.native';
+import { verifyRecoveryRequestIdentity } from '../ai/recoveryRequest';
 import { RECOVERY_PROTOCOL } from '../ai/recoveryContract';
 import { Directory, File, Paths } from 'expo-file-system';
 import { NativeModules } from 'react-native';
@@ -10,7 +17,6 @@ import {
   type AiResult,
   type AiReceipt,
   type AiPreparedReceipt,
-  type AiRecoveryHeldReceipt,
 } from '../ai/journal';
 import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, isAiMime, type AiMime } from '../ai/contract';
 import { MAX_AI_MODEL_BYTES, validateAiOriginalModel } from './aiOriginalModel';
@@ -20,6 +26,7 @@ const MAX_JOURNAL_BYTES = 32 * 1024;
 const MAX_LEGACY_FILES = 256;
 const NATIVE_STORAGE_TIMEOUT_MS = 30_000;
 type Operation =
+  | RecoveryStorageOperation
   | 'read'
   | 'prepare'
   | 'importLegacy'
@@ -58,53 +65,16 @@ async function operation(kind: Operation, payload: object): Promise<Record<strin
   if (
     typeof raw !== 'string' ||
     new TextEncoder().encode(raw).length >
-      (kind === 'readPreparedUpload' ? MAX_UPLOAD_REPLY_BYTES : MAX_JOURNAL_BYTES)
+      (kind === 'readPreparedUpload' || kind === 'readRecoveryUpload'
+        ? MAX_UPLOAD_REPLY_BYTES
+        : MAX_JOURNAL_BYTES)
   )
     throw new Error('Native AI durability response is invalid.');
   const value: unknown = JSON.parse(raw);
   if (!record(value)) throw new Error('Native AI durability response is invalid.');
   return value;
 }
-function createRecoveryRestartOwner() {
-  let held: AiRecoveryHeldReceipt | null = null;
-  return {
-    admit(raw: unknown) {
-      const next = parseRecoveryHeldReceipt(raw);
-      if (
-        held &&
-        (held.nonce !== next.nonce ||
-          held.journal.id !== next.journal.id ||
-          held.journal.createdAt !== next.journal.createdAt ||
-          held.journal.style !== next.journal.style ||
-          held.journal.originalId !== next.journal.originalId ||
-          held.originalDigest !== next.originalDigest ||
-          held.inputDigest !== next.inputDigest ||
-          held.inputLength !== next.inputLength ||
-          held.recovery.id !== next.recovery.id ||
-          held.recovery.credential.kind !== next.recovery.credential.kind ||
-          held.recovery.credential.reference !== next.recovery.credential.reference ||
-          next.revision < held.revision ||
-          (held.recovery.intent === 'committed' && next.recovery.intent !== 'committed') ||
-          (held.recovery.expiry.kind === 'known' &&
-            (next.recovery.expiry.kind !== 'known' ||
-              held.recovery.expiry.expiresAt !== next.recovery.expiry.expiresAt)) ||
-          (next.revision === held.revision && JSON.stringify(next) !== JSON.stringify(held)))
-      )
-        throw new Error('Recovery metadata changed. The original attempt stays held.');
-      held = next;
-      return next;
-    },
-    current(receipt: AiRecoveryHeldReceipt) {
-      if (held !== receipt)
-        throw new Error('Recovery receipt is stale. Reopen recovery before changing it.');
-      return { id: receipt.journal.id, nonce: receipt.nonce, revision: receipt.revision };
-    },
-    legacy() {
-      if (held) throw new Error('Recovery metadata disappeared. The original attempt stays held.');
-    },
-  };
-}
-const recoveryRestart = createRecoveryRestartOwner();
+const recoveryRestart = new RecoveryReceiptOwner();
 function createReceiptOwner() {
   const receipts = new Map<number, AiReceipt>();
   function receipt(value: unknown): AiReceipt {
@@ -163,11 +133,11 @@ function createStorageQueue() {
       const next = pending
         .catch(() => {})
         .then(async () => {
-          if (uncertain && kind !== 'read' && kind !== 'pictures')
+          if (uncertain && kind !== 'read' && kind !== 'readRecoveryAttempt' && kind !== 'pictures')
             throw new Error('Read native recovery after an unconfirmed storage operation.');
           try {
             const value = await work();
-            if (kind === 'read') uncertain = false;
+            if (kind === 'read' || kind === 'readRecoveryAttempt') uncertain = false;
             return value;
           } catch (error) {
             uncertain = true;
@@ -208,6 +178,7 @@ async function validateResult(result: AiResult) {
   await admitAiImage(await file.bytes(), result.mime);
 }
 export const aiStorage: AiStorage = {
+  ...createNativeRecoveryStorage(operation, (kind, work) => queue.run(kind, work), recoveryRestart),
   async prepareRecovery(journal, originalModel, upload, credential) {
     return queue.run('prepareRecovery', async () => {
       recoveryRestart.legacy();
@@ -241,14 +212,14 @@ export const aiStorage: AiStorage = {
         throw new Error(
           'Recovery creation was not confirmed. Reopen recovery; nothing was uploaded.'
         );
-      return recoveryRestart.admit(value.receipt);
+      return recoveryRestart.held(value.receipt);
     });
   },
   async commitRecoveryIntent(receipt) {
     return queue.run('commitRecoveryIntent', async () => {
       const value = await operation('commitRecoveryIntent', recoveryRestart.current(receipt));
       exact(value, ['receipt']);
-      const next = recoveryRestart.admit(value.receipt);
+      const next = recoveryRestart.held(value.receipt);
       if (next.recovery.intent !== 'committed')
         throw new Error('Recovery intent was not confirmed. Nothing was sent.');
       return next;
@@ -267,7 +238,7 @@ export const aiStorage: AiStorage = {
         },
       });
       exact(value, ['receipt']);
-      const next = recoveryRestart.admit(value.receipt);
+      const next = recoveryRestart.held(value.receipt);
       if (
         next.recovery.expiry.kind !== 'known' ||
         next.recovery.expiry.expiresAt !== status.expiresAt
@@ -328,10 +299,16 @@ export const aiStorage: AiStorage = {
     return queue.run('read', async () => {
       const value = await operation('read', {});
       exact(value, ['receipt']);
+      if (record(value.receipt) && value.receipt.kind === 'recovery-request') {
+        const receipt = recoveryRestart.request(value.receipt);
+        await verifyRecoveryRequestIdentity(receipt);
+        await verifyNativeRecoveryResult(receipt);
+        return Object.freeze({ kind: 'recovery-request' as const, receipt });
+      }
       if (record(value.receipt) && value.receipt.kind === 'recovery-held')
         return Object.freeze({
           kind: 'recovery-held' as const,
-          receipt: recoveryRestart.admit(value.receipt),
+          receipt: recoveryRestart.held(value.receipt),
         });
       recoveryRestart.legacy();
       if (value.receipt !== null) {

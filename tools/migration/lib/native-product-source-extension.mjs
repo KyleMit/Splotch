@@ -8,7 +8,7 @@ import {
 } from './offline-library-source-extension.mjs';
 
 const INPUT = new URL('../inputs/native-product-source-extension.json', import.meta.url);
-const INPUT_SHA256 = '28f7c29df6df777fa49e7069af97cb8de9117cb387f7f2f0f13d6c4e951aaa27';
+const INPUT_SHA256 = 'bf8fe490c10d8747f5ba12ed911f20342e94e4ffe08acb1f711595a66b1de03a';
 const TARGETS = [
   'android/app/src/main/AndroidManifest.xml',
   'android/app/src/main/java/art/splotch/migration/probe/MainApplication.kt',

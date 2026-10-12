@@ -23,6 +23,7 @@ const JOINT_TRANSFORM_MUTATIONS = [
   ['android/app/build.gradle', 'println("joint source drift")\n'],
   ['android/app/proguard-rules.pro', '# joint source drift\n'],
   ['android/app/src/main/AndroidManifest.xml', '<!-- joint source drift -->\n'],
+  ['android/app/src/main/res/values/strings.xml', '<!-- joint source drift -->\n'],
   [
     'android/app/src/main/java/art/splotch/migration/probe/MainActivity.kt',
     '// joint source drift\n',

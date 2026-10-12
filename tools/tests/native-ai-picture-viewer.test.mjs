@@ -45,6 +45,10 @@ beforeEach(async () => {
     releaseExpired: vi.fn(),
     prepareRecovery: vi.fn(),
     collectRecovery: vi.fn(),
+    sendRecovery: vi.fn(),
+    reconcileRecovery: vi.fn(),
+    acknowledgeRecovery: vi.fn(),
+    readRecoverySource: vi.fn(async () => null),
     setup: vi.fn(),
     removeCredential: vi.fn(),
     gateInput: vi.fn(),
@@ -160,7 +164,10 @@ it('zooms within limits, resets, and starts each opened picture at its fitted si
 it('keeps held recovery actions available and disables service changes while recovery is held', async () => {
   await click('Save held recovery request');
   expect(owner.prepareRecovery).toHaveBeenCalledOnce();
-  await render({ ...state, recovery: { recovery: { intent: 'committed' } } });
+  await render({
+    ...state,
+    recovery: { kind: 'recovery-held', recovery: { intent: 'committed' } },
+  });
   for (const label of [
     'Save held recovery request',
     'Send drawing for AI',
@@ -171,4 +178,33 @@ it('keeps held recovery actions available and disables service changes while rec
   await click('Check held recovery request');
   expect(owner.collectRecovery).toHaveBeenCalledOnce();
   expect(files.aiSend).not.toHaveBeenCalled();
+});
+
+it('discloses separate fresh permission while recovery sending stays unavailable', async () => {
+  await render({
+    ...state,
+    recovery: { kind: 'recovery-held', recovery: { intent: 'committed' } },
+  });
+  expect(container.textContent).toContain('Saving it here did not give permission to upload it.');
+  const send = container.querySelector('button[aria-label="Send saved drawing for AI"]');
+  expect(send.disabled).toBe(true);
+  await act(async () => send.click());
+  expect(owner.sendRecovery).not.toHaveBeenCalled();
+});
+it('keeps request continuations closed and exposes the preserved original check', async () => {
+  await render({
+    ...state,
+    recovery: { kind: 'recovery-request', recovery: { state: 'retained' } },
+  });
+  expect(container.querySelector('button[aria-label="Continue saved request"]').disabled).toBe(
+    true
+  );
+  expect(container.querySelector('button[aria-label="Finish saving picture"]').disabled).toBe(true);
+  expect(container.querySelector('button[aria-label="Refresh AI availability"]').disabled).toBe(
+    true
+  );
+  await click('Check saved original request');
+  expect(owner.readRecoverySource).toHaveBeenCalledOnce();
+  expect(owner.reconcileRecovery).not.toHaveBeenCalled();
+  expect(owner.acknowledgeRecovery).not.toHaveBeenCalled();
 });

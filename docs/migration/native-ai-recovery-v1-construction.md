@@ -39,3 +39,23 @@ approved send requires a fresh schema 3 attempt and copies verified pinned input
 retention, exact ACK confirmation, process-death and credential/permission lifecycle qualification
 must be reviewed together before enabling the protocol. Neither a capability response nor a
 successful fixture test permits activation.
+
+The local schema 3 request owns a separate held predecessor, fresh identity, original expiry and
+immutable delivery tuple. Submission is recorded before one raw POST. Browser transactions and
+native journal owners pin delivery metadata before retaining exact bytes, confirm stored bytes and
+full image admission before ACK, and accept only the shared HTTP 200 acknowledgement. Unknown
+callbacks require an authoritative reread. A retained restart can retry that exact ACK under fresh
+parent permission; it cannot generate again.
+
+The controller checks parent proof, consent, current receipt and a credential generation lease at
+asynchronous boundaries. Actual platform vault writers revoke leases synchronously; pinning returns
+only its own still-current lease. Browser referenced reads use existing key/seed state without
+initialization. External vault changes across tabs or native clients still require qualification.
+The local API cannot yet durably record checked expiry or an immediate reconcile refusal/error
+without a checked admission tuple, and recovery refusal-report provenance remains unfinished. These
+cases retain the hold and original instead of granting retry authority.
+
+Both client network guards and explicit send/reconcile/ACK controls remain closed. Source guards,
+transaction fixtures, failure controls, type checking and syntax parsing do not establish OS crash,
+protected-storage, decoder or lifecycle acceptance. The native source recipes include the same
+journal sources and beta launcher labels so replay and fresh builds use the reviewed source.

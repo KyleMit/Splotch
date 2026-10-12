@@ -1,5 +1,10 @@
 import { openDatabase, type DBSchema, type IdbDatabase } from '../../../../web/src/lib/idbDatabase';
-import type { AiJournal, AiPreparedReceipt, AiRecoveryHeldReceipt } from '../ai/journal';
+import type {
+  AiJournal,
+  AiPreparedReceipt,
+  AiRecoveryHeldReceipt,
+  AiRecoveryRequestReceipt,
+} from '../ai/journal';
 import {
   AI_STORAGE_DATABASE,
   AI_STORAGE_KEY,
@@ -11,6 +16,8 @@ import {
   type WebAiReceipt,
   type WebAiState,
 } from './aiStorageRecords.web';
+
+import { assertRecoveryRequestProgress } from './nativeAiReceipt';
 
 interface AiDatabase extends DBSchema {
   state: { key: string; value: unknown };
@@ -45,6 +52,8 @@ function assertReceiptProgress(previous: WebAiAttempt, next: WebAiAttempt): void
       (a.resultDigest !== b.resultDigest || a.resultLength !== b.resultLength))
   )
     invalidAiStorage();
+  if (a.kind === 'recovery-request' && b.kind === 'recovery-request')
+    assertRecoveryRequestProgress(a, b);
   if (
     a.kind === 'recovery-held' &&
     b.kind === 'recovery-held' &&
@@ -147,13 +156,19 @@ export class WebAiStorageOwner {
     return receipt;
   }
   held(receipt: AiRecoveryHeldReceipt): void {
-    if (this.current !== receipt || receipt.kind !== 'recovery-held') invalidAiStorage();
+    if (this.owned(receipt.journal.id) !== receipt || receipt.kind !== 'recovery-held')
+      invalidAiStorage();
+  }
+  request(receipt: AiRecoveryRequestReceipt): void {
+    if (this.owned(receipt.journal.id) !== receipt || receipt.kind !== 'recovery-request')
+      invalidAiStorage();
   }
   async commit(attempts: readonly WebAiAttempt[]): Promise<WebAiReceipt> {
     const before = this.snapshot;
     const revision = (before?.revision ?? 0) + 1;
     if (!Number.isSafeInteger(revision)) invalidAiStorage();
     const next = parseWebAiState({ version: 1, revision, attempts });
+    this.assertProgress(next);
     const expected = JSON.stringify(before);
     const db = await this.database();
     const transaction = db.transaction(AI_STORAGE_STORE, 'readwrite');

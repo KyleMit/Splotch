@@ -1,3 +1,4 @@
+import { withCredentialLeases } from '../ai/credentialLease';
 import { openDatabase, type DBSchema, type IdbDatabase } from '../../../../web/src/lib/idbDatabase';
 import { sha256Hex } from '../../../../web/src/lib/digestHex';
 import { SECRET_SLOTS, isInstallationId, type CredentialKind } from '../ai/contract';
@@ -136,6 +137,12 @@ function assertReference(state: Snapshot, reference: string): void {
   }
 }
 
+async function existingInstallationId(db: VaultDatabase): Promise<string> {
+  const tx = db.transaction(VAULT_STORE, 'readonly');
+  const [seed] = await Promise.all([tx.store.get(INSTALLATION_SEED_ROW), tx.done]);
+  if (!isVaultReference(seed)) throw new Error('The browser installation seed is missing.');
+  return sha256Hex(new TextEncoder().encode(`splotch-free-generation-v1:${seed}`));
+}
 export function createWebAiVault(): AiVault & AiReferencedVault {
   let connection: Promise<VaultDatabase> | null = null;
   const database = (): Promise<VaultDatabase> => {
@@ -208,7 +215,7 @@ export function createWebAiVault(): AiVault & AiReferencedVault {
       throw new Error('The browser AI credential change could not be confirmed.');
     }
   };
-  return {
+  return withCredentialLeases({
     installationId,
     read: async (kind) => decrypt(kind, (await readState(kind)).state),
     write: (kind, value) => mutate(kind, value),
@@ -232,16 +239,17 @@ export function createWebAiVault(): AiVault & AiReferencedVault {
       )
         throw new Error('The saved AI credential reference is invalid.');
       if (reference.kind === 'free') {
-        const id = await installationId();
+        const id = await existingInstallationId(await database());
         if (reference.reference !== id) throw new Error('The browser installation changed.');
         return { kind: 'free', installationId: id };
       }
-      const { db, state } = await readState(reference.kind);
+      const db = await database();
+      const state = await snapshot(db, reference.kind);
       assertReference(state, reference.reference);
       const value = await decrypt(reference.kind, state);
       assertReference(await snapshot(db, reference.kind), reference.reference);
       if (value === null) throw new Error('There is no saved AI credential.');
       return { kind: reference.kind, value };
     },
-  };
+  });
 }

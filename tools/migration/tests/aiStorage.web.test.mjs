@@ -1,74 +1,8 @@
 // @vitest-environment node
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it } from 'vitest';
 import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 
-const disk = vi.hoisted(() => ({
-  raw: undefined,
-  abort: false,
-  uncertain: false,
-  tail: Promise.resolve(),
-  opened: [],
-}));
-vi.mock('../../../web/src/lib/idbDatabase', () => ({
-  openDatabase: async (name, store) => {
-    disk.opened.push([name, store]);
-    return {
-      closed: new Promise(() => {}),
-      transaction: (_, mode) => {
-        const turn = disk.tail;
-        let release;
-        disk.tail = new Promise((resolve) => {
-          release = resolve;
-        });
-        let resolveDone, rejectDone, staged, timer;
-        const done = new Promise((resolve, reject) => {
-          resolveDone = resolve;
-          rejectDone = reject;
-        });
-        function finish() {
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            if (mode === 'readwrite' && disk.abort) {
-              disk.abort = false;
-              rejectDone(new Error('controlled transaction abort'));
-            } else {
-              if (staged !== undefined) disk.raw = structuredClone(staged);
-              if (mode === 'readwrite' && disk.uncertain) {
-                disk.uncertain = false;
-                rejectDone(new Error('controlled unconfirmed commit'));
-              } else resolveDone();
-            }
-            release();
-          }, 0);
-        }
-        return {
-          done,
-          store: {
-            get: async () => {
-              await turn;
-              const raw = structuredClone(disk.raw);
-              finish();
-              return raw;
-            },
-            put: async (value) => {
-              staged = structuredClone(value);
-              finish();
-            },
-          },
-        };
-      },
-    };
-  },
-}));
-vi.mock('../../../experiments/native-architecture/src/platform/aiImage.web', async () => {
-  const { resultImageGrid } =
-    await import('../../../experiments/native-architecture/src/ai/imageAdmission');
-  return {
-    admitAiImage: async (bytes, mime) => {
-      await resultImageGrid(bytes, mime, () => true);
-    },
-  };
-});
+import { disk, model, png, journal, resetAiDisk } from './aiStorageHarness.mjs';
 
 import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web';
 import {
@@ -80,25 +14,7 @@ import {
 import { emptyDrawing } from '../../../experiments/native-architecture/src/drawing/model';
 import { JOB_TTL_MS } from '../../../experiments/native-architecture/src/ai/contract';
 
-const model = JSON.stringify(emptyDrawing(), null, 2);
-const png = new Uint8Array(rgbaPng(2, 2, 255));
-const journal = (id = 1, phase = 'sent') => ({
-  version: 1,
-  id,
-  createdAt: 1000,
-  style: 'Magical',
-  originalId: `picture-${id}-fixture`,
-  phase,
-  jobId: null,
-  result: null,
-});
-beforeEach(() => {
-  disk.raw = undefined;
-  disk.abort = false;
-  disk.uncertain = false;
-  disk.tail = Promise.resolve();
-  disk.opened = [];
-});
+beforeEach(resetAiDisk);
 
 it('restarts with exact original UTF8 model and pinned upload in the isolated database', async () => {
   const first = createAiStorage();

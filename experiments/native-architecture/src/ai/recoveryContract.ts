@@ -1,26 +1,32 @@
 import { JOB_TTL_MS, isAiMime, isInstallationId, type AiMime } from './contract';
-export const RECOVERY_PROTOCOL = 'splotch-ai-recovery-v1';
-export const RECOVERY_PATH = '/api/generation-attempt/v1';
-export const RECOVERY_VERSION_HEADER = 'X-AI-Recovery-Version';
-export const RECOVERY_NONCE_HEADER = 'X-AI-Attempt-Nonce';
-export const RECOVERY_CREATED_HEADER = 'X-AI-Attempt-Created-At';
-export const RECOVERY_EXPIRES_HEADER = 'X-AI-Attempt-Expires-At';
-export const RECOVERY_DIGEST_HEADER = 'X-AI-Delivery-Digest';
-const ADMISSION_AGE_MS = 60_000;
-const FUTURE_SKEW_MS = 30_000;
-const POLL_AFTER_MS = 4_000;
-const PHASES = [
-  'preparing',
-  'funded',
-  'pending',
-  'working',
-  'image',
-  'delivery',
-  'refusal',
-  'error',
-  'acknowledged',
-] as const;
-export type RecoveryPhase = (typeof PHASES)[number];
+import {
+  RECOVERY_PROTOCOL,
+  RECOVERY_PATH,
+  RECOVERY_VERSION_HEADER,
+  RECOVERY_NONCE_HEADER,
+  RECOVERY_CREATED_HEADER,
+  RECOVERY_EXPIRES_HEADER,
+  RECOVERY_DIGEST_HEADER,
+  RECOVERY_RECEIPT_HEADER,
+  RECOVERY_INPUT_DIGEST_HEADER,
+  RECOVERY_ADMISSION_AGE_MS as ADMISSION_AGE_MS,
+  RECOVERY_FUTURE_SKEW_MS as FUTURE_SKEW_MS,
+  RECOVERY_POLL_AFTER_MS as POLL_AFTER_MS,
+  RECOVERY_PHASES as PHASES,
+  type RecoveryPhase,
+} from '../../../../web/src/lib/ai/generationAttempt';
+export {
+  RECOVERY_PROTOCOL,
+  RECOVERY_PATH,
+  RECOVERY_VERSION_HEADER,
+  RECOVERY_NONCE_HEADER,
+  RECOVERY_CREATED_HEADER,
+  RECOVERY_EXPIRES_HEADER,
+  RECOVERY_DIGEST_HEADER,
+  RECOVERY_RECEIPT_HEADER,
+  RECOVERY_INPUT_DIGEST_HEADER,
+  type RecoveryPhase,
+};
 export type RecoveryExpiry =
   Readonly<{ kind: 'unknown' }> | Readonly<{ kind: 'known'; expiresAt: number }>;
 export type RecoveryRead =
@@ -158,3 +164,30 @@ export function recoveryImageMetadata(
     expiresAt: originalRecoveryExpiry(headers.get(RECOVERY_EXPIRES_HEADER), read),
   });
 }
+
+export type RecoveryAdmission = Readonly<{
+  kind: 'admit';
+  id: string;
+  createdAt: number;
+  expiry: RecoveryExpiry;
+}>;
+export type RecoveryMutation =
+  | Readonly<{ kind: 'reconcile'; id: string; createdAt: number; expiry: RecoveryExpiry }>
+  | Readonly<{
+      kind: 'ack';
+      id: string;
+      createdAt: number;
+      expiry: Readonly<{ kind: 'known'; expiresAt: number }>;
+      digest: string;
+      receipt: string;
+    }>;
+export type RecoveryOperation = RecoveryAdmission | RecoveryMutation;
+export {
+  RECOVERY_MAX_JSON_BYTES,
+  RECOVERY_MAX_IMAGE_BYTES,
+  parseRecoveryAckReply,
+  parseRecoveryMutation,
+  type RecoveryAckReply,
+  type RecoveryReconcileBody,
+  type RecoveryAckBody,
+} from '../../../../web/src/lib/ai/generationAttempt';

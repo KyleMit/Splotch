@@ -1,3 +1,4 @@
+import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
@@ -106,7 +107,13 @@ function fixture() {
     originalModel: JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] }),
   }));
   const admit = vi.fn(async () => {});
-  const owner = createNativeAi({ storage, vault, transport, prepare, admit });
+  const owner = createNativeAi({
+    storage,
+    vault: withCredentialLeases(vault),
+    transport,
+    prepare,
+    admit,
+  });
   async function open() {
     owner.open();
     const { x, y } = owner.getState().gate;

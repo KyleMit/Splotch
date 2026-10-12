@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   RECOVERY_PROTOCOL,
-  RECOVERY_PATH,
   RECOVERY_VERSION_HEADER,
   RECOVERY_NONCE_HEADER,
   RECOVERY_CREATED_HEADER,
@@ -27,10 +26,11 @@ import {
   parseRecoveryJson,
   recoveryImageMetadata,
 } from '../../../../experiments/native-architecture/src/ai/recoveryContract';
+import * as nativeRecovery from '../../../../experiments/native-architecture/src/ai/recoveryContract';
 import { attemptFixture } from '../server/generationAttemptsTestHarness';
 
 describe('recovery wire compatibility', () => {
-  it('pins every established native constant and phase with an independent source drift guard', () => {
+  it('pins the shared wire vocabulary and native reexports independently', () => {
     const source = readFileSync(
       new URL(
         '../../../../experiments/native-architecture/src/ai/recoveryContract.ts',
@@ -39,22 +39,30 @@ describe('recovery wire compatibility', () => {
       'utf8'
     );
     const constants = {
-      RECOVERY_PROTOCOL,
-      RECOVERY_PATH,
-      RECOVERY_VERSION_HEADER,
-      RECOVERY_NONCE_HEADER,
-      RECOVERY_CREATED_HEADER,
-      RECOVERY_EXPIRES_HEADER,
-      RECOVERY_DIGEST_HEADER,
+      RECOVERY_PROTOCOL: 'splotch-ai-recovery-v1',
+      RECOVERY_PATH: '/api/generation-attempt/v1',
+      RECOVERY_VERSION_HEADER: 'X-AI-Recovery-Version',
+      RECOVERY_NONCE_HEADER: 'X-AI-Attempt-Nonce',
+      RECOVERY_CREATED_HEADER: 'X-AI-Attempt-Created-At',
+      RECOVERY_EXPIRES_HEADER: 'X-AI-Attempt-Expires-At',
+      RECOVERY_DIGEST_HEADER: 'X-AI-Delivery-Digest',
+      RECOVERY_INPUT_DIGEST_HEADER: 'X-AI-Input-Digest',
+      RECOVERY_RECEIPT_HEADER: 'X-AI-Delivery-Receipt',
     };
-    for (const [name, value] of Object.entries(constants))
-      expect(source).toContain(`export const ${name} = '${value}';`);
-    const phases = source
-      .match(/const PHASES = \[([\s\S]*?)\] as const;/)?.[1]
-      .match(/'[a-z]+'/g)
-      ?.map((item) => item.slice(1, -1));
-    expect(phases).toEqual(RECOVERY_PHASES);
-    expect(source).toContain('const POLL_AFTER_MS = 4_000;');
+    expect(nativeRecovery).toMatchObject(constants);
+    expect(source).toContain("from '../../../../web/src/lib/ai/generationAttempt'");
+    expect(RECOVERY_PHASES).toEqual([
+      'preparing',
+      'funded',
+      'pending',
+      'working',
+      'image',
+      'delivery',
+      'refusal',
+      'error',
+      'acknowledged',
+    ]);
+    expect(RECOVERY_POLL_AFTER_MS).toBe(4_000);
     expect(recoveryCapability()).toEqual({
       ok: true,
       protocol: 'splotch-ai-recovery-v1',

@@ -1,10 +1,17 @@
+import { RECOVERY_PATH, type RecoveryReply } from './recoveryContract';
 import {
-  RECOVERY_PATH,
-  parseRecoveryJson,
-  recoveryImageMetadata,
-  type RecoveryRead,
-  type RecoveryReply,
-} from './recoveryContract';
+  parseRecoveryResponse,
+  type RecoveryReadRequest,
+  type RecoveryAdmissionRequest,
+  type RecoveryMutationRequest,
+} from './recoveryTransport';
+export type {
+  RecoveryReadRequest,
+  RecoveryAdmissionRequest,
+  RecoveryMutationRequest,
+} from './recoveryTransport';
+import { readAiBytes } from './responseBytes';
+export { readAiBytes } from './responseBytes';
 import {
   AI_ORIGIN,
   MAX_JSON_BYTES,
@@ -19,6 +26,7 @@ import {
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
 import { imageReportToken } from './reportContract';
+import type { AiRecoveryAckConfirmation } from './journal';
 type LegacyAiRequest = {
   path:
     | '/api/generate-image'
@@ -32,15 +40,8 @@ type LegacyAiRequest = {
   headers: Record<string, string>;
   body?: Uint8Array | string;
 };
-export type RecoveryReadRequest = {
-  path: typeof RECOVERY_PATH;
-  method: 'GET';
-  headers: Record<string, string>;
-  recovery: RecoveryRead;
-  body?: never;
-  query?: never;
-};
-export type AiRequest = LegacyAiRequest | RecoveryReadRequest;
+export type AiRequest =
+  LegacyAiRequest | RecoveryReadRequest | RecoveryAdmissionRequest | RecoveryMutationRequest;
 export type AiResponse = {
   status: number;
   headers: Pick<Headers, 'get'>;
@@ -49,6 +50,12 @@ export type AiResponse = {
 export type AiTransport = (request: AiRequest, signal: AbortSignal) => Promise<AiResponse>;
 export type AiReply =
   | { kind: 'recovery'; reply: RecoveryReply }
+  | Readonly<{
+      kind: 'recovery-delivery';
+      reply: Extract<RecoveryReply, { kind: 'unadmitted-image' }>;
+      receipt: string;
+    }>
+  | Readonly<{ kind: 'recovery-ack'; confirmation: AiRecoveryAckConfirmation }>
   | {
       kind: 'image';
       bytes: Uint8Array;
@@ -84,49 +91,6 @@ export function aiUrl(request: AiRequest) {
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
-export async function readAiBytes(
-  response: AiResponse,
-  cap: number,
-  signal: AbortSignal
-): Promise<Uint8Array> {
-  const hint = response.headers.get('Content-Length');
-  if (hint && /^\d+$/.test(hint) && Number(hint) > cap) {
-    void response.body?.cancel().catch(() => {});
-    throw new Error('Response exceeds limit');
-  }
-  if (!response.body) return new Uint8Array();
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let length = 0;
-  const cancel = () => {
-    void reader.cancel().catch(() => {});
-  };
-  signal.addEventListener('abort', cancel, { once: true });
-  try {
-    while (true) {
-      if (signal.aborted) throw new Error('Request cancelled');
-      const next = await reader.read();
-      if (signal.aborted) throw new Error('Request cancelled');
-      if (next.done) break;
-      length += next.value.byteLength;
-      if (length > cap) {
-        cancel();
-        throw new Error('Response exceeds limit');
-      }
-      chunks.push(next.value);
-    }
-    const bytes = new Uint8Array(length);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return bytes;
-  } finally {
-    signal.removeEventListener('abort', cancel);
-    reader.releaseLock();
-  }
-}
 function retryDelay(response: AiResponse, now: number) {
   const raw = response.headers.get('Retry-After');
   const delay = raw && /^\d+$/.test(raw) ? Number(raw) * 1000 : raw ? Date.parse(raw) - now : NaN;
@@ -146,23 +110,7 @@ export async function parseAiResponse(
   signal: AbortSignal,
   now: number
 ): Promise<AiReply> {
-  if (request.path === RECOVERY_PATH) {
-    if (response.status === 200 && request.recovery.kind === 'collect') {
-      const metadata = recoveryImageMetadata(response.headers, request.recovery);
-      const bytes = await readAiBytes(response, MAX_RESULT_BYTES, signal);
-      await resultImageGrid(bytes, metadata.mime, () => !signal.aborted);
-      return {
-        kind: 'recovery',
-        reply: Object.freeze({ kind: 'unadmitted-image', ...metadata, bytes }),
-      };
-    }
-    const bytes = await readAiBytes(response, MAX_JSON_BYTES, signal);
-    const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-    return {
-      kind: 'recovery',
-      reply: parseRecoveryJson(response.status, value, response.headers, request.recovery),
-    };
-  }
+  if (request.path === RECOVERY_PATH) return parseRecoveryResponse(response, request, signal, now);
   const poll = request.path === '/api/generation-result';
   if (response.status === 200 && (poll || request.path === '/api/generate-image')) {
     const mime = response.headers.get('Content-Type')?.split(';')[0].trim();

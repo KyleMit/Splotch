@@ -27,7 +27,12 @@ export function credentialHeaders(credential: AiCredential): Record<string, stri
 }
 
 export type AiCredentialReference = Readonly<{ kind: 'free' | CredentialKind; reference: string }>;
+export type AiCredentialLease = Readonly<{ valid: () => boolean }>;
 export interface AiReferencedVault {
+  lease(): AiCredentialLease;
+  pinLeased(
+    kind: 'free' | CredentialKind
+  ): Promise<Readonly<{ reference: AiCredentialReference; lease: AiCredentialLease }>>;
   pin(kind: 'free' | CredentialKind): Promise<AiCredentialReference>;
   readReferenced(reference: AiCredentialReference): Promise<AiCredential>;
 }

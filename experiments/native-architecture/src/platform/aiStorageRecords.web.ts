@@ -1,10 +1,21 @@
 import { bytesBase64 } from '../ai/base64';
 import { MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, type AiMime } from '../ai/contract';
-import { type AiReceipt, type AiRecoveryHeldReceipt } from '../ai/journal';
+import {
+  type AiReceipt,
+  type AiRecoveryHeldReceipt,
+  type AiRecoveryRequestReceipt,
+} from '../ai/journal';
 import { MAX_AI_MODEL_BYTES, validateAiOriginalModel } from './aiOriginalModel';
-import { exact, record, parseNativeReceipt, parseRecoveryHeldReceipt } from './nativeAiReceipt';
+import {
+  exact,
+  record,
+  parseNativeReceipt,
+  parseRecoveryHeldReceipt,
+  parseRecoveryRequestReceipt,
+} from './nativeAiReceipt';
 import { sha256Hex } from '../../../../web/src/lib/digestHex';
 import { admitAiImage } from './aiImage.web';
+import { verifyRecoveryRequestIdentity } from '../ai/recoveryRequest';
 
 export const AI_STORAGE_DATABASE = 'splotch-beta-ai-jobs-v1';
 export const AI_STORAGE_STORE = 'state';
@@ -15,7 +26,7 @@ const MAX_STATE_METADATA_BYTES = 64 * 1024;
 const MAX_AI_ORIGINAL_ID_CHARACTERS = 128;
 const MAX_DATA_URI_HEADER_CHARACTERS = 64;
 
-export type WebAiReceipt = AiReceipt | AiRecoveryHeldReceipt;
+export type WebAiReceipt = AiReceipt | AiRecoveryHeldReceipt | AiRecoveryRequestReceipt;
 export type WebAiAttempt = Readonly<{
   receipt: WebAiReceipt;
   originalModel: string;
@@ -86,7 +97,9 @@ export function parseWebAiState(raw: unknown): WebAiState {
     const receipt =
       record(entry.receipt) && entry.receipt.kind === 'recovery-held'
         ? parseRecoveryHeldReceipt(entry.receipt)
-        : parseNativeReceipt(entry.receipt);
+        : record(entry.receipt) && entry.receipt.kind === 'recovery-request'
+          ? parseRecoveryRequestReceipt(entry.receipt)
+          : parseNativeReceipt(entry.receipt);
     if (
       receipt.kind === 'imported' ||
       receipt.journal.id <= priorId ||
@@ -117,10 +130,43 @@ export function parseWebAiState(raw: unknown): WebAiState {
       upload: entry.upload,
     });
   });
+  for (const attempt of attempts) {
+    const receipt = attempt.receipt;
+    if (receipt.kind !== 'recovery-request') continue;
+    const source = attempts.find(
+      ({ receipt: candidate }) => candidate.journal.id === receipt.recovery.sourceHeld.id
+    );
+    if (
+      !source ||
+      source.receipt.kind !== 'recovery-held' ||
+      source.receipt.nonce !== receipt.recovery.sourceHeld.nonce ||
+      source.receipt.revision !== receipt.recovery.sourceHeld.revision ||
+      source.receipt.journal.createdAt >= receipt.journal.createdAt ||
+      source.receipt.journal.originalId !== receipt.journal.originalId ||
+      source.receipt.journal.style !== receipt.journal.style ||
+      source.receipt.originalDigest !== receipt.originalDigest ||
+      source.receipt.inputDigest !== receipt.inputDigest ||
+      source.receipt.inputLength !== receipt.inputLength ||
+      source.originalModel !== attempt.originalModel ||
+      source.upload !== attempt.upload
+    )
+      invalidAiStorage();
+  }
   if (
     attempts
       .slice(0, -1)
-      .some(({ receipt }) => !['result', 'failed'].includes(receipt.journal.phase))
+      .some(
+        ({ receipt }) =>
+          !['result', 'failed'].includes(receipt.journal.phase) &&
+          !(
+            receipt.kind === 'recovery-held' &&
+            attempts.some(
+              ({ receipt: candidate }) =>
+                candidate.kind === 'recovery-request' &&
+                candidate.recovery.sourceHeld.id === receipt.journal.id
+            )
+          )
+      )
   )
     invalidAiStorage();
   const state = Object.freeze({
@@ -135,6 +181,7 @@ export function parseWebAiState(raw: unknown): WebAiState {
 export async function verifyWebAiState(state: WebAiState): Promise<void> {
   for (const attempt of state.attempts) {
     const receipt = attempt.receipt;
+    if (receipt.kind === 'recovery-request') await verifyRecoveryRequestIdentity(receipt);
     validateAiOriginalModel(attempt.originalModel, 'current');
     const model = new TextEncoder().encode(attempt.originalModel);
     const upload = decodeAiBytes(attempt.upload, MAX_UPLOAD_BYTES);

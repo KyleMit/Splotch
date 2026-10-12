@@ -23,9 +23,6 @@ final class SplotchAIEnvironment: NSObject {
   private let maxCredentialBytes = 2048
   private let referenceBytes = 32
   private let protectedPrefix = "SPLOTCH-AI-VAULT-2\n"
-  private let maxImageBytes = 16 * 1024 * 1024
-  private let maxImageDimension = 4096
-  private let maxImagePixels = 4 * 1024 * 1024
   private let queue = DispatchQueue(label: "art.splotch.ai-credentials")
   @objc static func requiresMainQueueSetup() -> Bool { false }
   @objc var methodQueue: DispatchQueue { queue }
@@ -156,34 +153,123 @@ final class SplotchAIEnvironment: NSObject {
   func decodeImage(_ base64: String, mime: String, width: Double, height: Double,
     resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
     do {
-      let result = try autoreleasepool { () throws -> [String: Int] in
-        guard ["image/png", "image/jpeg", "image/webp"].contains(mime), width.isFinite, height.isFinite,
-          width.rounded() == width, height.rounded() == height, width >= 1, height >= 1,
-          width <= Double(self.maxImageDimension), height <= Double(self.maxImageDimension),
-          width * height <= Double(self.maxImagePixels), base64.count <= ((self.maxImageBytes + 2) / 3) * 4,
-          let data = Data(base64Encoded: base64), !data.isEmpty, data.count <= self.maxImageBytes,
-          let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
-          CGImageSourceGetCount(source) == 1, CGImageSourceGetStatus(source) == .statusComplete,
-          let type = CGImageSourceGetType(source), let expected = UTType(mimeType: mime),
-          type as String == expected.identifier,
-          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-          let w = properties[kCGImagePropertyPixelWidth] as? NSNumber,
-          let h = properties[kCGImagePropertyPixelHeight] as? NSNumber,
-          w.doubleValue == width, h.doubleValue == height else { throw self.failure() }
-        let options = [kCGImageSourceShouldCache: true, kCGImageSourceShouldCacheImmediately: true] as CFDictionary
-        guard let image = CGImageSourceCreateImageAtIndex(source, 0, options), image.width == Int(width),
-          image.height == Int(height), image.bitsPerComponent == 8, image.bitsPerPixel <= 32,
-          image.bytesPerRow <= self.maxImageDimension * 4, image.bytesPerRow * image.height <= self.maxImagePixels * 4,
-          let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
-            bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
-          else { throw self.failure() }
-        context.draw(image, in: CGRect(x: 0, y: 0, width: CGFloat(image.width), height: CGFloat(image.height)))
-        context.flush()
-        guard CGImageSourceGetStatusAtIndex(source, 0) == .statusComplete else { throw self.failure() }
-        return ["width": image.width, "height": image.height]
-      }
+      guard width.isFinite, height.isFinite, width.rounded() == width, height.rounded() == height,
+        width >= 1, height >= 1, width <= Double(SplotchAIImageDecoder.maxImageDimension), height <= Double(SplotchAIImageDecoder.maxImageDimension),
+        width * height <= Double(SplotchAIImageDecoder.maxImagePixels), base64.count <= ((SplotchAIImageDecoder.maxImageBytes + 2) / 3) * 4,
+        let bytes = Data(base64Encoded: base64), bytes.base64EncodedString() == base64 else { throw failure() }
+      let result = try SplotchAIImageDecoder.decode(bytes, mime)
+      guard result["width"] == Int(width), result["height"] == Int(height) else { throw failure() }
       resolve(result)
     } catch { reject("AI_IMAGE_REJECTED", "AI picture decoding failed.", nil) }
+  }
+}
+
+enum SplotchAIImageDecoder {
+  static let maxImageBytes = 16 * 1024 * 1024
+  static let maxImageDimension = 4096
+  static let maxImagePixels = 4 * 1024 * 1024
+  private static let maxPngChunks = 4096
+  private static let maxJpegSegments = 1024
+  private static let maxWebpChunks = 8
+  private static let crcTable: [UInt32] = (0..<256).map { value in
+    var crc = UInt32(value)
+    for _ in 0..<8 { crc = crc & 1 == 1 ? 0xedb88320 ^ (crc >> 1) : crc >> 1 }
+    return crc
+  }
+  private static func require(_ condition: Bool) throws {
+    if !condition { throw NSError(domain: "AI_IMAGE_REJECTED", code: 1) }
+  }
+  private static func structure(_ bytes: Data, _ mime: String) throws {
+    let b = [UInt8](bytes)
+    func text(_ start: Int, _ count: Int) -> String { String(bytes: b[start..<(start + count)], encoding: .ascii) ?? "" }
+    func be(_ start: Int) -> UInt32 { b[start..<(start + 4)].reduce(UInt32(0)) { ($0 << 8) | UInt32($1) } }
+    func le(_ start: Int) -> UInt32 { UInt32(b[start]) | UInt32(b[start + 1]) << 8 | UInt32(b[start + 2]) << 16 | UInt32(b[start + 3]) << 24 }
+    if mime == "image/png" {
+      try require(b.count >= 33 && Array(b.prefix(8)) == [137, 80, 78, 71, 13, 10, 26, 10])
+      var offset = 8, chunks = 0, dataSeen = false, ended = false
+      while offset < b.count {
+        chunks += 1
+        try require(chunks <= maxPngChunks && offset <= b.count - 12 && !ended)
+        let length = Int(be(offset)), type = text(offset + 4, 4)
+        try require(length <= b.count - offset - 12)
+        let end = offset + length + 12
+        var crc: UInt32 = 0xffffffff
+        for index in (offset + 4)..<(end - 4) {
+          crc = crcTable[Int((crc ^ UInt32(b[index])) & 255)] ^ (crc >> 8)
+        }
+        try require(crc ^ 0xffffffff == be(end - 4))
+        if chunks == 1 {
+          try require(type == "IHDR" && length == 13 && b[offset + 16] == 8 && [2, 6].contains(b[offset + 17]) && b[offset + 18] == 0 && b[offset + 19] == 0 && b[offset + 20] == 0)
+        } else if type == "IDAT" { dataSeen = true }
+        else if type == "IEND" { try require(length == 0 && dataSeen && end == b.count); ended = true }
+        else { try require(!dataSeen && ["cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE"].contains(type)) }
+        offset = end
+      }
+      try require(ended)
+    } else if mime == "image/jpeg" {
+      try require(b.count >= 4 && b[0] == 255 && b[1] == 0xd8)
+      var offset = 2, segments = 0, scan = false, ended = false
+      while offset < b.count {
+        try require(offset + 1 < b.count && b[offset] == 255)
+        let marker = b[offset + 1]; offset += 2
+        if scan {
+          if marker == 0 || (0xd0...0xd7).contains(marker) {
+            while offset < b.count && b[offset] != 255 { offset += 1 }
+            continue
+          }
+          try require(marker == 0xd9 && offset == b.count); ended = true; break
+        }
+        segments += 1
+        try require(segments <= maxJpegSegments && offset + 1 < b.count)
+        let length = Int(b[offset]) * 256 + Int(b[offset + 1])
+        try require(length >= 2 && length <= b.count - offset)
+        try require([0xc0, 0xc4, 0xdb, 0xdd, 0xda, 0xfe].contains(marker) || (0xe0...0xef).contains(marker))
+        offset += length
+        if marker == 0xda { scan = true }
+        while scan && offset < b.count && b[offset] != 255 { offset += 1 }
+      }
+      try require(scan && ended)
+    } else {
+      try require(mime == "image/webp" && b.count >= 20 && text(0, 4) == "RIFF" && text(8, 4) == "WEBP" && Int(le(4)) == b.count - 8)
+      var offset = 12, seen = Set<String>(), picture = false
+      while offset < b.count {
+        try require(offset <= b.count - 8 && seen.count < maxWebpChunks)
+        let type = text(offset, 4), length = Int(le(offset + 4))
+        try require(!seen.contains(type) && length <= b.count - offset - 8)
+        let end = offset + length + 8
+        try require(end + (length & 1) <= b.count && (length & 1 == 0 || b[end] == 0))
+        if type == "VP8X" { try require(offset == 12 && length == 10 && b[offset + 8] & 0xc3 == 0) }
+        else if type == "VP8 " || type == "VP8L" { try require(!picture && length > 0); picture = true }
+        else { try require(["ALPH", "ICCP", "EXIF", "XMP "].contains(type)) }
+        seen.insert(type); offset = end + (length & 1)
+      }
+      try require(picture)
+    }
+  }
+  static func decode(_ data: Data, _ mime: String) throws -> [String: Int] {
+    try autoreleasepool {
+      try require(!data.isEmpty && data.count <= maxImageBytes && ["image/png", "image/jpeg", "image/webp"].contains(mime))
+      try structure(data, mime)
+      guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+        CGImageSourceGetCount(source) == 1, CGImageSourceGetStatus(source) == .statusComplete,
+        let type = CGImageSourceGetType(source), let expected = UTType(mimeType: mime), type as String == expected.identifier,
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+        let w = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+        let h = properties[kCGImagePropertyPixelHeight] as? NSNumber else { throw NSError(domain: "AI_IMAGE_REJECTED", code: 1) }
+      let width = w.doubleValue, height = h.doubleValue
+      try require(width.isFinite && height.isFinite && width.rounded() == width && height.rounded() == height && width >= 1 && height >= 1 && width <= Double(maxImageDimension) && height <= Double(maxImageDimension) && width * height <= Double(maxImagePixels))
+      let options = [kCGImageSourceShouldCache: true, kCGImageSourceShouldCacheImmediately: true] as CFDictionary
+      guard let image = CGImageSourceCreateImageAtIndex(source, 0, options), image.width == Int(width), image.height == Int(height),
+        image.bitsPerComponent == 8, image.bitsPerPixel <= 32, image.bytesPerRow <= maxImageDimension * 4,
+        image.bytesPerRow * image.height <= maxImagePixels * 4,
+        let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+          bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
+        else { throw NSError(domain: "AI_IMAGE_REJECTED", code: 1) }
+      context.draw(image, in: CGRect(x: 0, y: 0, width: CGFloat(image.width), height: CGFloat(image.height)))
+      context.flush()
+      try require(CGImageSourceGetStatusAtIndex(source, 0) == .statusComplete)
+      return ["width": image.width, "height": image.height]
+    }
   }
 }

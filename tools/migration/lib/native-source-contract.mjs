@@ -1,3 +1,4 @@
+import { assertAiRecoverySourceContract } from './native-ai-recovery-contract.mjs';
 import { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
 export { assertAiOriginalModelContract } from './native-ai-original-contract.mjs';
 import { assertAiVaultContract } from './native-ai-vault-contract.mjs';
@@ -343,7 +344,7 @@ function assertAiJournalContract(files) {
         'meta.getString("sha256") == digest(bytes)',
         'integer(meta, "bytes") == bytes.size.toLong()',
         'maxUploadReply = ((maxUpload + 2) / 3) * 4 + maxJournal',
-        'if (kind == "readPreparedUpload") maxUploadReply else maxJournal',
+        'if (kind in setOf("readPreparedUpload", "readRecoveryUpload")) maxUploadReply else maxJournal',
         'recoveryProgress(value, first)',
         'r.getString("id") == digest(envelope)',
         'integer(older, "schema") == integer(newer, "schema")',
@@ -381,7 +382,7 @@ function assertAiJournalContract(files) {
         'string(meta, "sha256") == hash(bytes)',
         'integer(meta, "bytes") == bytes.count',
         'maxUploadReply: Int { ((maxUpload + 2) / 3) * 4 + maxJournal }',
-        'kind == "readPreparedUpload" ? self.maxUploadReply : self.maxJournal',
+        '["readPreparedUpload", "readRecoveryUpload"].contains(kind) ? self.maxUploadReply : self.maxJournal',
         'try recoveryProgress(value, first)',
         'string(r, "id") == hash(envelope)',
         'integer(older, "schema") == integer(newer, "schema")',
@@ -410,10 +411,10 @@ function assertAiJournalContract(files) {
       throw new Error('Native journal storage boundary changed');
   }
   if (
-    android.split('confirm(it, latest(it))').length !== 3 ||
-    apple.split('confirm($0, latest($0))').length !== 3 ||
-    android.split('receipt(confirm(dir, value))').length !== 4 ||
-    apple.split('receipt(confirm(dir, value))').length !== 4 ||
+    android.split('confirm(it, latest(it))').length !== 2 ||
+    apple.split('confirm($0, latest($0))').length !== 2 ||
+    android.split('receipt(confirm(dir, value))').length !== 5 ||
+    apple.split('receipt(confirm(dir, value))').length !== 5 ||
     android.split('receipt(confirm(dir, latest(dir)))').length !== 2 ||
     apple.split('receipt(confirm(dir, latest(dir)))').length !== 2
   )
@@ -468,6 +469,7 @@ export function assertNativeSourceContract(files, packageManifest, indexSource) 
   }
   assertAiOriginalModelContract(files);
   assertAiJournalContract(files);
+  assertAiRecoverySourceContract(files);
   assertAiVaultContract(files, KOTLIN_DIRECTORY);
   assertAndroidProperties(files);
   assertAndroidApplication(files);
