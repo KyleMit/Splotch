@@ -29,7 +29,13 @@ const deliver: HeldPngDelivery = async (picture, isCurrent) => {
   link.href = `data:image/png;base64,${picture.base64}`;
   link.download = picture.filename;
   if (!isCurrent()) throw new Error('PNG export was cancelled. Your drawing is still here.');
-  link.click();
+  try {
+    document.body.appendChild(link);
+    if (!isCurrent()) throw new Error('PNG export was cancelled. Your drawing is still here.');
+    link.click();
+  } finally {
+    link.remove();
+  }
   return 'download-requested';
 };
 

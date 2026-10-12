@@ -1,6 +1,5 @@
 import type { Point, Stroke } from './model';
 
-export const CRAYON_TILE_PX = 256;
 export const CRAYON_COLOR_MIX = 0.55;
 export const NATIVE_CRAYON_EFFECTIVE_RETURN = 0.2944;
 export const CRAYON_BANDS = [
@@ -15,7 +14,7 @@ const REENTRY_DISTANCE_FRACTION = 0.45;
 const REENTRY_EXCLUSION_WIDTHS = 2.5;
 const PASS_SEED_MULTIPLIER = 41;
 
-export { canonicalCrayonPhase as crayonPhase } from './crayonGrain';
+export { CRAYON_TILE_PX, canonicalCrayonPhase as crayonPhase } from './crayonGrain';
 
 export type CrayonPass = Readonly<{ seed: number; points: readonly Point[] }>;
 

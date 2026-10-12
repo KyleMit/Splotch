@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Modal, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import type { useDrawingScreen } from './useDrawingScreen';
 import type { useDrawingSound } from './useDrawingSound';
@@ -6,6 +6,58 @@ import { BRUSHES, type Brush } from './drawing/brushes';
 import { pageLabel } from './drawing/pages';
 import { StrokeWidthSelector } from './drawing/StrokeWidthSelector';
 import { useDrawingScreenStyles } from './drawing/drawingScreenStyles';
+import type { useDrawingMenu } from './useDrawingMenu';
+import { useFullscreen } from './platform/useFullscreen';
+
+export function DrawingTools({
+  screen,
+  sound,
+  menu,
+  blocked,
+  onClose,
+  onFeedback,
+}: {
+  screen: ReturnType<typeof useDrawingScreen>;
+  sound: ReturnType<typeof useDrawingSound>;
+  menu: ReturnType<typeof useDrawingMenu>;
+  blocked: boolean;
+  onClose: () => void;
+  onFeedback: () => void;
+}) {
+  const fullscreen = useFullscreen(menu.visible && !blocked);
+  const styles = useDrawingScreenStyles();
+  return (
+    <>
+      {fullscreen.message ? (
+        <Text style={styles.notice} accessibilityLiveRegion="polite">
+          {fullscreen.message}
+        </Text>
+      ) : null}
+      {menu.open ? (
+        <DrawingMenu
+          screen={screen}
+          sound={sound}
+          visible={menu.visible}
+          onDismiss={menu.dismissed}
+          run={menu.run}
+          onClose={onClose}
+          onFeedback={onFeedback}
+          browserAction={
+            fullscreen.supported ? (
+              <Action
+                label={fullscreen.label}
+                disabled={blocked || !menu.visible || fullscreen.pending}
+                onPress={() => {
+                  if (fullscreen.toggle()) menu.close();
+                }}
+              />
+            ) : null
+          }
+        />
+      ) : null}
+    </>
+  );
+}
 
 export function Action({
   label,
@@ -117,6 +169,7 @@ export function DrawingMenu({
   visible,
   onDismiss,
   onFeedback,
+  browserAction,
 }: {
   screen: ReturnType<typeof useDrawingScreen>;
   sound: ReturnType<typeof useDrawingSound>;
@@ -125,6 +178,7 @@ export function DrawingMenu({
   visible: boolean;
   onDismiss: () => void;
   onFeedback: () => void;
+  browserAction: ReactNode;
 }) {
   const styles = useDrawingScreenStyles();
   const { brush } = screen;
@@ -218,6 +272,7 @@ export function DrawingMenu({
               openSettings={() => run(screen.openSettings)}
               openFeedback={() => run(onFeedback)}
             />
+            {browserAction}
           </ScrollView>
           <Action label="Keep drawing" disabled={!visible} onPress={onClose} />
         </View>

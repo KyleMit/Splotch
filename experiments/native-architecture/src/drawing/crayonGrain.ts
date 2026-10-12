@@ -1,4 +1,4 @@
-import { CRAYON_TILE_PX } from './crayon';
+export const CRAYON_TILE_PX = 256;
 
 const FIELD_SEED = 0x5c1a1;
 const DITHER_SEED = 0x0d17e;
