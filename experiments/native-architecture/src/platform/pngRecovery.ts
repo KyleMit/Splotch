@@ -7,6 +7,7 @@ import {
   serializeHeldPngStorage,
   type HeldPngDelivery,
 } from '../export/heldPng';
+import { awaitPngReadStage, inPngReadStage } from '../export/pngReadDiagnostic';
 
 const RECOVERY_DIRECTORY = 'splotch-png-recovery-v1';
 const REVISION_NAME = /^archive-(\d+)\.json$/;
@@ -118,8 +119,11 @@ function directory() {
 }
 
 function revisions(owner: Directory) {
-  return owner
-    .list()
+  return revisionEntries(owner.list());
+}
+
+function revisionEntries(items: ReturnType<Directory['list']>) {
+  return items
     .flatMap((item) => {
       if (!(item instanceof File)) throw new Error('Unexpected PNG recovery directory.');
       if (item.name.endsWith('.pending')) return [];
@@ -139,11 +143,21 @@ function reserveRevision(previous: ReturnType<typeof revisions>) {
 
 const storage = serializeHeldPngStorage({
   async read() {
-    const latest = revisions(directory())[0]?.file;
+    const owner = inPngReadStage(
+      'directory-open',
+      () => new Directory(Paths.document, RECOVERY_DIRECTORY)
+    );
+    inPngReadStage('directory-create', () =>
+      owner.create({ intermediates: true, idempotent: true })
+    );
+    const items = inPngReadStage('directory-list', () => owner.list());
+    const latest = inPngReadStage('directory-entry', () => revisionEntries(items))[0]?.file;
     if (!latest) return null;
-    if (latest.size > MAX_HELD_PNG_ARCHIVE_CHARACTERS)
-      throw new Error('PNG recovery data is too large.');
-    return latest.text();
+    inPngReadStage('archive-size', () => {
+      if (latest.size > MAX_HELD_PNG_ARCHIVE_CHARACTERS)
+        throw new Error('PNG recovery data is too large.');
+    });
+    return awaitPngReadStage('archive-text', () => latest.text());
   },
   async write(snapshot) {
     if (snapshot.length > MAX_HELD_PNG_ARCHIVE_CHARACTERS)

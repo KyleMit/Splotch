@@ -9,6 +9,7 @@ import {
   type HeldPngStorage,
   type PngDeliveryResult,
 } from './heldPng';
+import { reportPngReadFailure, type PngReadStage } from './pngReadDiagnostic';
 
 type PngAttempt =
   | Readonly<{ status: 'held' | PngDeliveryResult }>
@@ -110,13 +111,16 @@ class PngRecovery {
   }
 
   private async read(expectedGeneration: number) {
+    let readStage: PngReadStage = 'archive-text';
     try {
       const snapshot = await this.storage.read();
+      readStage = 'archive-shape';
       const stored = await parseHeldPngs(
         snapshot,
         () => this.live && this.generation === expectedGeneration
       );
       if (!this.live || this.generation !== expectedGeneration) return;
+      readStage = 'owner-merge';
       const known = new Map(this.entries.map((entry) => [entry.picture.base64, entry]));
       const merged = stored.map<Entry>(
         (picture) =>
@@ -132,8 +136,9 @@ class PngRecovery {
       this.status = 'ready';
       this.storageFailure = '';
       if (this.entries.some((entry) => !entry.durable)) await this.persist();
-    } catch {
+    } catch (error) {
       if (!this.live || this.generation !== expectedGeneration) return;
+      reportPngReadFailure(error, readStage);
       this.readable = false;
       this.status = 'unreadable';
       this.storageFailure =

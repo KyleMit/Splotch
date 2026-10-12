@@ -1,5 +1,6 @@
 import { MAX_PNG_BASE64_CHARACTERS, assertPngGrid, type PngGrid } from './pngLimits';
 import type { PngWork } from './pngWork';
+import { inPngReadStage } from '../export/pngReadDiagnostic';
 
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
@@ -16,6 +17,14 @@ const APPLE_IDOT_BYTES = 28;
 
 function invalid(): never {
   throw new Error('Picture capture returned an invalid or unsupported PNG.');
+}
+
+function updateChunkCrc(crc: number, value: number) {
+  return CRC_TABLE[(crc ^ value) & 255] ^ (crc >>> 8);
+}
+
+function assertChunkCrc(expected: number, crc: number) {
+  if (expected !== (crc ^ 0xffffffff) >>> 0) inPngReadStage('png-crc', invalid);
 }
 
 function base64Bytes(input: string, work: PngWork) {
@@ -94,9 +103,6 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
   function uint32() {
     return (byte() * 0x1000000 + (byte() << 16) + (byte() << 8) + byte()) >>> 0;
   }
-  function update(crc: number, value: number) {
-    return CRC_TABLE[(crc ^ value) & 255] ^ (crc >>> 8);
-  }
   function chunk(): Chunk {
     const length = uint32();
     if (length > MAX_CHUNK_BYTES) invalid();
@@ -110,7 +116,7 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
       )
         invalid();
       type += String.fromCharCode(value);
-      crc = update(crc, value);
+      crc = updateChunkCrc(crc, value);
     }
     return { type, length, remaining: length, crc };
   }
@@ -118,11 +124,12 @@ export async function openPng(input: string, expected: PngGrid, work: PngWork) {
     if (!current.remaining) invalid();
     const value = byte();
     current.remaining--;
-    current.crc = update(current.crc, value);
+    current.crc = updateChunkCrc(current.crc, value);
     return value;
   }
   function finish(current: Chunk) {
-    if (current.remaining || uint32() !== (current.crc ^ 0xffffffff) >>> 0) invalid();
+    if (current.remaining) invalid();
+    assertChunkCrc(uint32(), current.crc);
   }
   async function skip(current: Chunk) {
     while (current.remaining) {

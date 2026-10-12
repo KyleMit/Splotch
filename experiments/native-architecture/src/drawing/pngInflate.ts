@@ -1,4 +1,5 @@
 import type { PngWork } from './pngWork';
+import { inPngReadStage } from '../export/pngReadDiagnostic';
 
 const WINDOW_BYTES = 32768;
 const ADLER_MODULUS = 65521;
@@ -205,7 +206,8 @@ export async function inflatePng(
   held = 0;
   bitsHeld = 0;
   const adler = (byte() * 0x1000000 + (byte() << 16) + (byte() << 8) + byte()) >>> 0;
-  if (produced !== expectedBytes || adler !== ((adlerB << 16) | adlerA) >>> 0 || read() !== null)
-    invalid();
+  if (produced !== expectedBytes) invalid();
+  if (adler !== ((adlerB << 16) | adlerA) >>> 0) inPngReadStage('png-adler', invalid);
+  if (read() !== null) invalid();
   work.check();
 }

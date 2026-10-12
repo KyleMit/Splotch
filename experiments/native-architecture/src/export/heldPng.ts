@@ -1,4 +1,5 @@
 import { createPngAlphaDecoder } from '../drawing/pngAlpha';
+import { awaitPngReadStage, inPngReadStage } from './pngReadDiagnostic';
 
 const MAX_HELD_PNG_COUNT = 3;
 export const MAX_HELD_PNG_CHARACTERS = 16 * 1024 * 1024;
@@ -106,23 +107,31 @@ export async function parseHeldPngs(
   isCurrent: () => boolean
 ): Promise<readonly HeldPng[]> {
   if (snapshot === null) return [];
-  if (snapshot.length > MAX_HELD_PNG_ARCHIVE_CHARACTERS) invalid();
-  const value: unknown = JSON.parse(snapshot);
-  if (
-    !record(value) ||
-    !exactKeys(value, ['version', 'pictures']) ||
-    value.version !== 1 ||
-    !Array.isArray(value.pictures)
-  )
-    invalid();
-  const pictures = value.pictures.map(readHeldPng);
-  assertHeldPngCapacity(pictures);
-  if (
-    new Set(pictures.map((picture) => picture.id)).size !== pictures.length ||
-    new Set(pictures.map((picture) => picture.base64)).size !== pictures.length
-  )
-    invalid();
-  for (const picture of pictures) await validateHeldPng(picture.base64, isCurrent);
+  inPngReadStage('archive-length', () => {
+    if (snapshot.length > MAX_HELD_PNG_ARCHIVE_CHARACTERS) invalid();
+  });
+  const value: unknown = inPngReadStage('archive-json', () => JSON.parse(snapshot));
+  const values = inPngReadStage('archive-shape', () => {
+    if (
+      !record(value) ||
+      !exactKeys(value, ['version', 'pictures']) ||
+      value.version !== 1 ||
+      !Array.isArray(value.pictures)
+    )
+      invalid();
+    return value.pictures;
+  });
+  const pictures = inPngReadStage('archive-record', () => values.map(readHeldPng));
+  inPngReadStage('archive-capacity', () => assertHeldPngCapacity(pictures));
+  inPngReadStage('archive-duplicates', () => {
+    if (
+      new Set(pictures.map((picture) => picture.id)).size !== pictures.length ||
+      new Set(pictures.map((picture) => picture.base64)).size !== pictures.length
+    )
+      invalid();
+  });
+  for (const picture of pictures)
+    await awaitPngReadStage('png-validation', () => validateHeldPng(picture.base64, isCurrent));
   return pictures;
 }
 
