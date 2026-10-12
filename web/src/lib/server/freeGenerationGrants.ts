@@ -1,5 +1,3 @@
-import { getStore } from '@netlify/blobs';
-import { dev } from '$app/environment';
 import { FREE_RESERVATION_LEASE_MS } from '$lib/ai/limits';
 import {
   FREE_GENERATION_LIMIT,
@@ -9,150 +7,39 @@ import {
 import { isInstallationId } from '$lib/installationId';
 import { loggableError } from './logRedaction';
 import { sleep } from './sleep';
+import {
+  ADMIN_GRANT_SAMPLE_LIMIT,
+  CAS_ATTEMPTS,
+  CAS_BACKOFF_MS,
+  FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+  dailyProviderStartKey,
+  grantStore,
+  memoryDailyProviderStarts,
+  memoryGrants,
+  normalizeDailyProviderStarts,
+  normalizeGrant,
+  remainingFor,
+  utcDate,
+  type FreeGenerationGrant,
+  type GrantUpdate,
+} from './freeGenerationLedger';
 
-const STORE_NAME = 'free-generation-grants';
-const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
-// A reservation is held until the generation settles, and a background
-// generation settles outside the request that reserved it (ADR-0115) — when the
-// poll collects a job that may legitimately have been running for minutes. So the
-// lease has to outlive the job, not the request: anything shorter reclaims the
-// slot while the picture is still on its way, and the completion that follows
-// finds no reservation, books the success as an abandoned failure, and never
-// moves the counter the child is watching.
-//
-// The cost of the longer lease is that a run which dies without settling holds
-// its slot until just after the job would have expired anyway. That is the right
-// way round: a slot briefly held is recoverable, a picture delivered but never
-// counted is not.
-const RESERVATION_LEASE_MS = FREE_RESERVATION_LEASE_MS;
-const CAS_ATTEMPTS = 12;
-const CAS_BACKOFF_MS = 20;
-export const FREE_GENERATION_DAILY_PROVIDER_START_LIMIT = 500;
-export const ADMIN_GRANT_SAMPLE_LIMIT = 200;
-
-interface FreeGenerationGrant {
-  version: 1;
-  successful: number;
-  attempts: number;
-  failures: number;
-  createdAt: string;
-  lastAttemptAt: string;
-  lastSuccessAt: string | null;
-  lastFailureAt: string | null;
-  lastFailureKind: FreeGenerationFailureKind | null;
-  reservations: Record<string, string>;
-}
-
-interface DailyProviderStarts {
-  version: 1;
-  date: string;
-  starts: number;
-}
-
-type GrantUpdate<T> = (
-  grant: FreeGenerationGrant,
-  now: Date
-) => { grant: FreeGenerationGrant; result: T };
-
-const memoryGrants = new Map<string, FreeGenerationGrant>();
-const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
-
-// Netlify Blobs reads are eventually consistent by default: after a write, an
-// edge node can keep serving the previous copy for up to a minute. Every
-// operation in this module is a read-modify-write against one key, and a single
-// generation does two of them around a multi-second model call — reserve a slot,
-// then finalize it. Under the default mode that second read routinely missed the
-// reservation the same request had just written, so roughly half of all
-// production free generations answered 503 with a finished image in hand. Strong
-// reads bypass the cache; the added latency is noise beside the provider call.
-function grantStore(allowMemoryFallback = false): ReturnType<typeof getStore> | null {
-  try {
-    return getStore({ name: STORE_NAME, consistency: 'strong' });
-  } catch (error) {
-    if (!dev && !allowMemoryFallback) throw error;
-    return null;
-  }
-}
-
-function nonNegativeInteger(value: unknown): number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : 0;
-}
-
-function stringOrNull(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
-}
-
-const FAILURE_KINDS: readonly FreeGenerationFailureKind[] = [
-  'abandoned',
-  'daily-limit',
-  'exhausted',
-  'invalid-request',
-  'safety',
-  'upstream',
-];
-
-function isFailureKind(value: unknown): value is FreeGenerationFailureKind {
-  return FAILURE_KINDS.some((kind) => kind === value);
-}
-
-function failureKindOrNull(value: unknown): FreeGenerationFailureKind | null {
-  return isFailureKind(value) ? value : null;
-}
-
-function normalizeGrant(value: unknown, now: Date): FreeGenerationGrant {
-  const source =
-    typeof value === 'object' && value !== null ? (value as Partial<FreeGenerationGrant>) : {};
-  const nowIso = now.toISOString();
-  const reservations: Record<string, string> = {};
-  let abandoned = 0;
-  if (source.reservations && typeof source.reservations === 'object') {
-    for (const [id, expiresAt] of Object.entries(source.reservations)) {
-      if (typeof expiresAt === 'string' && new Date(expiresAt).getTime() > now.getTime()) {
-        reservations[id] = expiresAt;
-      } else {
-        abandoned += 1;
-      }
-    }
-  }
-  const failures = nonNegativeInteger(source.failures) + abandoned;
-  return {
-    version: 1,
-    successful: Math.min(FREE_GENERATION_LIMIT, nonNegativeInteger(source.successful)),
-    attempts: nonNegativeInteger(source.attempts),
-    failures,
-    createdAt: stringOrNull(source.createdAt) ?? nowIso,
-    lastAttemptAt: stringOrNull(source.lastAttemptAt) ?? nowIso,
-    lastSuccessAt: stringOrNull(source.lastSuccessAt),
-    lastFailureAt: abandoned > 0 ? nowIso : stringOrNull(source.lastFailureAt),
-    lastFailureKind: abandoned > 0 ? 'abandoned' : failureKindOrNull(source.lastFailureKind),
-    reservations,
-  };
-}
-
-function remainingFor(grant: FreeGenerationGrant): number {
-  return Math.max(
-    0,
-    FREE_GENERATION_LIMIT - grant.successful - Object.keys(grant.reservations).length
-  );
-}
-
-function utcDate(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
-
-function dailyProviderStartKey(date: string): string {
-  return `${DAILY_PROVIDER_START_KEY_PREFIX}${date}`;
-}
-
-function normalizeDailyProviderStarts(value: unknown, date: string): DailyProviderStarts {
-  const source =
-    typeof value === 'object' && value !== null ? (value as Partial<DailyProviderStarts>) : {};
-  return {
-    version: 1,
-    date,
-    starts: source.date === date ? nonNegativeInteger(source.starts) : 0,
-  };
-}
+export {
+  ADMIN_GRANT_SAMPLE_LIMIT,
+  FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+} from './freeGenerationLedger';
+export {
+  reserveRecoveryFreeGeneration,
+  reserveRecoveryDailyFreeGeneration,
+  settleRecoveryFreeGeneration,
+} from './freeGenerationRecovery';
+export type {
+  RecoveryFreeGenerationOperation,
+  RecoveryFreeGenerationReservationReceipt,
+  RecoveryDailyFreeGenerationReceipt,
+  RecoveryFreeGenerationSettlementReceipt,
+  RecoveryFreeGenerationOutcome,
+} from './freeGenerationRecoveryReceipts';
 
 export async function getDailyFreeGenerationStatus(): Promise<{
   available: boolean;
@@ -274,7 +161,7 @@ export async function reserveFreeGeneration(
       }
       const reservationId = crypto.randomUUID();
       grant.reservations[reservationId] = new Date(
-        now.getTime() + RESERVATION_LEASE_MS
+        now.getTime() + FREE_RESERVATION_LEASE_MS
       ).toISOString();
       return { grant, result: { reserved: true as const, reservationId } };
     }
@@ -285,7 +172,7 @@ export async function reserveFreeGeneration(
 // reclaimed lease may already have been re-reserved and spent by a later
 // request, so incrementing without it would let two completions claim one slot
 // and push `successful` past the limit. The lease is sized to outlive the job it
-// belongs to (RESERVATION_LEASE_MS above), so a missing reservation means
+// belongs to (FREE_RESERVATION_LEASE_MS), so a missing reservation means
 // something anomalous, and the caller decides what to do with the image rather
 // than this ledger guessing.
 export async function completeFreeGeneration(
@@ -293,6 +180,9 @@ export async function completeFreeGeneration(
   reservationId: string
 ): Promise<{ remaining: number }> {
   return updateGrant(installationId, (grant, now) => {
+    if (grant.recoveryOperations[reservationId]) {
+      throw new Error('Recovery free generation requires recovery settlement');
+    }
     if (!grant.reservations[reservationId]) throw new Error('Free generation reservation expired');
     delete grant.reservations[reservationId];
     grant.successful += 1;
@@ -310,6 +200,9 @@ export async function failFreeGeneration(
     // A slot is released once. Two polls collecting the same refusal both
     // arrive here, and a lease that already lapsed was booked as abandoned when
     // the grant was read; neither is a second failure.
+    if (reservationId && grant.recoveryOperations[reservationId]) {
+      throw new Error('Recovery free generation requires recovery settlement');
+    }
     if (reservationId && !grant.reservations[reservationId]) return { grant, result: undefined };
     if (reservationId) delete grant.reservations[reservationId];
     else grant.attempts += 1;
