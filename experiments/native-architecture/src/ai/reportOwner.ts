@@ -9,12 +9,25 @@ import {
   MAX_AI_REPORT_BYTES,
   reportMultipart,
   imageReportToken,
+  REPORT_TOKEN_HEADER,
   type AiReportTarget,
   type AiReportPreview,
   type AiReportContext,
   type AiReportState,
 } from './reportContract';
 import { sendAiReport, reportWait } from './reportTransport';
+import {
+  prepareRecoveryReport,
+  recoveryReportCurrent,
+  recoveryReportCredential,
+  recoveryReportEvidence,
+  recoveryRefusalReport,
+  recoveryPictureReport,
+  type RecoveryReportPermission,
+  type RecoveryReportSource,
+  type RecoveryReportProof,
+} from './recoveryReport';
+import type { AiRecoveryRequestReceipt, AiRecoveryTerminalConfirmation } from './journal';
 
 const AI_REPORT_PREPARE_TIMEOUT_MS = 2000;
 type ReportDependencies = {
@@ -28,6 +41,7 @@ type ReportDependencies = {
 class AiReportOwner {
   private deps: ReportDependencies;
   private contexts = new Map<number, AiReportContext>();
+  private recoveryContexts = new Map<number, RecoveryReportSource>();
   private epoch = 0;
   private selected: AiReportContext | null = null;
   private target: AiReportTarget | null = null;
@@ -44,9 +58,14 @@ class AiReportOwner {
     !!this.target &&
     this.contexts.get(this.selected.id) === this.selected &&
     this.deps.current(this.target) &&
+    this.contextCurrent(this.selected.id) &&
     !!this.proof?.valid() &&
     !!this.deps.parent?.consent().enabled &&
     this.deps.parent.consent().epoch === this.consentEpoch;
+  private contextCurrent = (id: number) => {
+    const source = this.recoveryContexts.get(id);
+    return !source || recoveryReportCurrent(source);
+  };
   cancel = () => {
     this.epoch += 1;
     this.controller?.abort();
@@ -61,6 +80,7 @@ class AiReportOwner {
   dispose = () => {
     this.cancel();
     this.contexts.clear();
+    this.recoveryContexts.clear();
   };
   private preview = (context: AiReportContext): AiReportPreview => {
     const evidence = context.evidence;
@@ -100,6 +120,7 @@ class AiReportOwner {
       )
         return;
       this.contexts.clear();
+      this.recoveryContexts.clear();
       this.contexts.set(id, {
         id,
         drawing: original,
@@ -114,6 +135,68 @@ class AiReportOwner {
     } finally {
       clearTimeout(timer);
     }
+  };
+  prepareRecovery = async (
+    receipt: AiRecoveryRequestReceipt,
+    drawing: Uint8Array,
+    permission: RecoveryReportPermission
+  ) => {
+    const ticket = this.epoch;
+    if (this.contexts.has(receipt.journal.id)) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AI_REPORT_PREPARE_TIMEOUT_MS);
+    try {
+      const prepared = await prepareRecoveryReport(
+        receipt,
+        drawing,
+        permission,
+        this.deps.vault,
+        this.deps.admit,
+        controller.signal
+      );
+      if (
+        !prepared ||
+        ticket !== this.epoch ||
+        controller.signal.aborted ||
+        !permission.permitted() ||
+        !recoveryReportCurrent(prepared.source)
+      )
+        return;
+      this.contexts.clear();
+      this.recoveryContexts.clear();
+      this.contexts.set(prepared.context.id, prepared.context);
+      this.recoveryContexts.set(prepared.context.id, prepared.source);
+    } catch {
+      /* Optional report context cannot authorize or prevent generation. */
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  adoptRecoveryRefusal = (
+    receipt: AiRecoveryRequestReceipt,
+    confirmation: AiRecoveryTerminalConfirmation,
+    proof: RecoveryReportProof
+  ) => {
+    const source = this.recoveryContexts.get(receipt.journal.id);
+    if (!source || !recoveryRefusalReport(source, receipt, confirmation, proof)) return false;
+    if (!this.refuse(receipt.journal.id, proof.token)) return false;
+    source.expiresAt = confirmation.body.expiresAt;
+    source.evidence = recoveryReportEvidence(receipt);
+    return true;
+  };
+  adoptRecoveryPicture = (
+    receipt: AiRecoveryRequestReceipt,
+    bytes: Uint8Array,
+    mime: AiMime,
+    proof: RecoveryReportProof,
+    uri: string
+  ) => {
+    const source = this.recoveryContexts.get(receipt.journal.id);
+    if (!source || !recoveryPictureReport(source, receipt, bytes, mime, proof, uri)) return;
+    this.complete(receipt.journal.id, bytes, mime, proof.token, uri);
+    source.expiresAt =
+      receipt.recovery.expiry.kind === 'known' ? receipt.recovery.expiry.expiresAt : null;
+    source.evidence = recoveryReportEvidence(receipt);
   };
   complete = (
     id: number,
@@ -184,6 +267,7 @@ class AiReportOwner {
       context.used ||
       !this.deps.parent ||
       !this.deps.current(target) ||
+      !this.contextCurrent(context.id) ||
       (context.credential.kind === 'free' && !evidence.token)
     ) {
       this.deps.publish({
@@ -250,7 +334,10 @@ class AiReportOwner {
       if (!valid()) return;
       if (
         credential.kind !== context.credential.kind ||
-        (credential.kind === 'free' && credential.installationId !== context.installationId)
+        (credential.kind === 'free' && credential.installationId !== context.installationId) ||
+        (this.recoveryContexts.has(context.id) &&
+          this.recoveryContexts.get(context.id)?.credentialDigest !==
+            recoveryReportCredential(credential))
       )
         throw new Error('The original generation credential is unavailable. Nothing was sent.');
       const multipart = reportMultipart(context);
@@ -263,7 +350,7 @@ class AiReportOwner {
         {
           ...credentialHeaders(credential),
           'Content-Type': multipart.contentType,
-          ...(context.evidence.token ? { 'X-Report-Token': context.evidence.token } : {}),
+          ...(context.evidence.token ? { [REPORT_TOKEN_HEADER]: context.evidence.token } : {}),
         },
         pending.signal
       );

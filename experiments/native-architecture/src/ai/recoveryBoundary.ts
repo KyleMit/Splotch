@@ -41,7 +41,12 @@ export class AiRecoveryBoundary extends AiSession {
   };
   protected publishReceipt = (action: RecoveryAction, receipt: RecoveryReceipt) => {
     action.receipt = receipt;
-    this.update({ recovery: receipt, journal: null, heldResult: receipt.journal.result });
+    this.update({
+      recovery: receipt,
+      journal: null,
+      heldResult: receipt.journal.result,
+      refusal: this.state.refusal?.id === receipt.journal.id ? this.state.refusal : null,
+    });
   };
   protected recoverStorage = async (action: RecoveryAction) => {
     this.recoveryUncertain = true;
@@ -133,6 +138,8 @@ export class AiRecoveryBoundary extends AiSession {
       this.publishReceipt(action, next);
       this.recoveryUncertain = false;
       this.assertCurrent(action);
+      if (reply.report && this.reports.adoptRecoveryRefusal(next, reply.confirmation, reply.report))
+        this.update({ refusal: { id: next.journal.id } });
       this.update({
         message: 'This request has finished without a picture. Your original drawing is saved.',
       });
@@ -180,9 +187,19 @@ export class AiRecoveryBoundary extends AiSession {
       this.publishReceipt(action, saved.receipt);
       this.recoveryUncertain = false;
       this.assertCurrent(action);
-      // The storage owner rereads, re-fences and fully decodes retained bytes before returning.
-      await this.rereadRequest(action);
-      this.assertCurrent(action);
+      if (reply.report) {
+        // The storage owner rereads, re-fences and fully decodes retained bytes before returning.
+        const verified = await this.rereadRequest(action);
+        this.assertCurrent(action);
+        if (verified.journal.result)
+          this.reports.adoptRecoveryPicture(
+            verified,
+            bytes,
+            image.mime,
+            reply.report,
+            verified.journal.result.uri
+          );
+      }
       await this.acknowledgeAuthorized(action);
       this.assertCurrent(action);
       return;

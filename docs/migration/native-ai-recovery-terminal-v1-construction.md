@@ -46,18 +46,28 @@ revocation; lost callbacks; delayed consent/close/vault invalidation; legacy res
 guards. These sources require execution against the integrated owners before they establish a
 passing guard.
 
-Refusal reporting is deliberately unchanged. Server `RecoveryService.reconcile` still issues the
-existing authenticated refusal reason/report header. `parseRecoveryResponse` returns only terminal
-proof to `AiRecoveryBoundary.acceptReply`; it does not pass that report token into
-`AiReportOwner.prepare` or `AiReportOwner.refuse`. Those owners require original drawing/session
-context and a credential binding; a restored terminal receipt does not establish that context.
-Carrying the validated refusal token and original context through recovery, restart and the report
-owner remains a separate hook requiring a bounded design and qualification. No report is sent here.
+Current-session refusal reporting is described in the
+[recovery report construction](native-ai-recovery-report-v1-construction.md). The transport retains
+bounded report proof only with the checked authenticated refusal tuple. The report owner captures
+verified original upload, style and the exact saved credential reference during an explicit send; it
+adopts refusal evidence only after terminal persistence. A separate image-report parent gate,
+consent epoch and final send confirmation still apply. Refusal reports contain no output picture.
+This context stays in memory. Restarted terminal receipts and older receipts without that original
+context are honestly unavailable for reporting; no journal schema or restart reconstruction hook is
+added. A terminal state never grants retry permission.
 
-Open qualifications include independent review and integrated type/format/test checks; Kotlin/Swift
-compilation and genuine platform persistence/readback; process death, fsync/F_FULLFSYNC, protected
-storage, full-image decoder and lifecycle behavior; cross-tab/native external vault changes; hosted
-Blobs strong/CAS/lost replies; all historical/rollback ledger writers; retention/deletion/privacy,
-capacity and deployment approval; and provider availability/billing behavior. A permanent claim
-limits application calls but does not promise exactly-once provider billing. None of these are
-established by source hashes, fixtures, earlier baseline builds or this packet.
+ROOT reports that the integrated 3492 source checks passed and that the a69f source passed the 3493
+Kotlin Release compilation and Swift parse-only checks. Those results apply to the baseline. ROOT
+separately executed the integrated 3494 report delta: all 166 focused/legacy tests, 716
+recovery/storage/provenance tests and 11 mounted UI tests passed. Four deliberate production
+mutations failed the intended assertions, and exact restoration plus the focused rerun passed.
+Native TypeScript and the web type check also passed. These are source and host-fixture checks, with
+the platform and deployment qualifications below still open.
+
+Open qualifications include independent review, full iOS compilation and genuine platform
+persistence/readback; process death, fsync/F_FULLFSYNC, protected storage, full-image decoder and
+lifecycle behavior; cross-tab/native external vault changes; hosted Blobs strong/CAS/lost replies;
+all historical/rollback ledger writers; retention/deletion/privacy, capacity and deployment
+approval; and provider availability/billing behavior. A permanent claim limits application calls but
+does not promise exactly-once provider billing. Source hashes, fixtures, syntax parsing and earlier
+build results do not establish these qualifications.

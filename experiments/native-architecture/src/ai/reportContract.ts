@@ -1,6 +1,9 @@
 import type { AiMime, AiStyle } from './contract';
 import type { AiCredentialReference } from './credentials';
 
+// Candidate import ownership rejects paths outside native-architecture.
+// tools/tests/native-ai-recovery-report-transport.test.mjs pins the hosted apiHeaders contract.
+export const REPORT_TOKEN_HEADER = 'X-Report-Token';
 export const MAX_AI_REPORT_BYTES = 4 * 1024 * 1024;
 export const AI_REPORT_TIMEOUT_MS = 20_000;
 export const AI_REPORT_REVIEW_HOURS = 24;

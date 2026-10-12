@@ -57,8 +57,11 @@ lookup never changes expiry or mutates GET. A dedicated terminal operation confi
 before publishing and refuses to downgrade delivery-pinned, retained or acknowledged receipts.
 Generic errors, missing metadata and uncertain callbacks preserve the hold. See the
 [checked terminal construction](native-ai-recovery-terminal-v1-construction.md) for the bounded
-source delta, falsification coverage and remaining qualification. Recovery refusal-report provenance
-remains unfinished; no terminal state grants retry permission.
+source delta, falsification coverage and remaining qualification. The
+[current-session report construction](native-ai-recovery-report-v1-construction.md) binds checked
+refusals and exact retained pictures to in-memory original context captured during explicit send.
+Restarted and older receipts without that context remain unavailable for reporting. No terminal
+state grants retry permission.
 
 Both client network guards and explicit send/reconcile/ACK controls remain closed. Source guards,
 transaction fixtures, failure controls, type checking and syntax parsing do not establish OS crash,

@@ -94,6 +94,15 @@ export class AiRecoverySession extends AiRecoveryBoundary {
       this.assertCurrent(action);
       if (upload.length !== receipt.inputLength || recoveryDigest(upload) !== receipt.inputDigest)
         throw new Error('Saved upload changed.');
+      await this.reports.prepareRecovery(receipt, upload, {
+        lease: action.lease,
+        permitted: () => this.permitted(action),
+        current: () =>
+          !this.recoveryUncertain && this.state.recovery?.kind === 'recovery-request'
+            ? this.state.recovery
+            : null,
+      });
+      this.assertCurrent(action);
       const headers = await this.referencedHeaders(action, receipt);
       this.assertCurrent(action);
       const reply = await this.requestRecovery(action, {

@@ -34,8 +34,13 @@ export class AiSession {
               (result) => result?.uri === target.uri
             )
           : this.state.refusal?.id === target.id &&
-            this.state.journal?.id === target.id &&
-            this.state.journal.result === null),
+            ((this.state.journal?.id === target.id && this.state.journal.result === null) ||
+              (!this.recoveryUncertain &&
+                this.state.recovery?.kind === 'recovery-request' &&
+                this.state.recovery.journal.id === target.id &&
+                this.state.recovery.journal.result === null &&
+                this.state.recovery.recovery.state === 'terminal' &&
+                this.state.recovery.recovery.outcome === 'refusal'))),
     });
   }
   protected reports: ReturnType<typeof createAiReportOwner>;

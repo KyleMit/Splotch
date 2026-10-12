@@ -25,6 +25,7 @@ import { resultImageGrid } from './imageAdmission';
 import { recoveryDigest } from './recoveryDigest';
 import { readAiBytes } from './responseBytes';
 import type { AiReply, AiResponse } from './transport';
+import { imageReportToken, REPORT_TOKEN_HEADER } from './reportContract';
 type RecoveryReadCommon = {
   path: typeof RECOVERY_PATH;
   method: 'GET';
@@ -98,6 +99,17 @@ function checkMutation(request: RecoveryMutationRequest): void {
   )
     throw new Error('Recovery mutation changed.');
 }
+function pictureReportProof(
+  response: AiResponse,
+  read: Extract<RecoveryRead, { kind: 'collect' }>,
+  expiresAt: number
+) {
+  const rawToken = response.headers.get(REPORT_TOKEN_HEADER);
+  const token = imageReportToken(rawToken);
+  return rawToken === null || token !== null
+    ? { report: Object.freeze({ id: read.id, createdAt: read.createdAt, expiresAt, token }) }
+    : {};
+}
 export async function parseRecoveryResponse(
   response: AiResponse,
   request: RecoveryReadRequest | RecoveryAdmissionRequest | RecoveryMutationRequest,
@@ -139,7 +151,12 @@ export async function parseRecoveryResponse(
     )
       throw new Error('Recovery delivery could not be confirmed.');
     checkLength(response, bytes.length);
-    return Object.freeze({ kind: 'recovery-delivery', reply, receipt });
+    return Object.freeze({
+      kind: 'recovery-delivery',
+      reply,
+      receipt,
+      ...pictureReportProof(response, read, metadata.expiresAt),
+    });
   }
   if (
     !legacyRead &&
@@ -169,7 +186,21 @@ export async function parseRecoveryResponse(
       confirmation.body.expiresAt
     )
       throw new Error('Recovery terminal expiry changed.');
-    return Object.freeze({ kind: 'recovery-terminal', confirmation });
+    const token = imageReportToken(response.headers.get(REPORT_TOKEN_HEADER));
+    return Object.freeze({
+      kind: 'recovery-terminal',
+      confirmation,
+      ...(confirmation.body.outcome === 'refusal' && token !== null
+        ? {
+            report: Object.freeze({
+              id: read.id,
+              createdAt: read.createdAt,
+              expiresAt: confirmation.body.expiresAt,
+              token,
+            }),
+          }
+        : {}),
+    });
   }
   if (request.method === 'POST' && request.recovery.kind === 'ack' && response.status === 200) {
     const operation = request.recovery;
