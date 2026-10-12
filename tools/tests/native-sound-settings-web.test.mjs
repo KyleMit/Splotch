@@ -23,13 +23,45 @@ describe('web sound settings persistence', () => {
     await owner.setEnabled(false);
     expect(storage.setItem).toHaveBeenCalledWith(
       'splotch-candidate:sound-v1',
-      '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true}'
+      '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"never","imageReport":"never","feedback":"never","parentCenter":"never"},"coloringBookEnabled":true,"soundLevel":"medium"}'
     );
     const reopened = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
     await reopened.load();
     expect(states.at(-1)).toMatchObject({ soundEnabled: false, saved: true });
     owner.dispose();
     reopened.dispose();
+  });
+  it('protects image reports when reading old web choices without changing their policies', async () => {
+    storage.getItem.mockReturnValueOnce(
+      JSON.stringify({
+        version: 6,
+        soundEnabled: false,
+        strokeWidth: 'medium',
+        eraserWidth: 'medium',
+        selectedColor: 'Purple',
+        customColors: [],
+        appearance: 'system',
+        aiEnabled: true,
+        parentPolicies: { ai: 'never', feedback: 'session', parentCenter: 'never' },
+        coloringBookEnabled: false,
+      })
+    );
+    const states = [];
+    const owner = createSoundSettings(soundSettingsStorage, (state) => states.push(state));
+    await owner.load();
+    expect(states.at(-1)).toMatchObject({
+      aiEnabled: true,
+      parentPolicies: {
+        ai: 'never',
+        imageReport: 'always',
+        feedback: 'session',
+        parentCenter: 'never',
+      },
+      coloringBookEnabled: false,
+      saved: true,
+    });
+    expect(storage.setItem).not.toHaveBeenCalled();
+    owner.dispose();
   });
   it('keeps sound muted when localStorage read throws', async () => {
     storage.getItem.mockImplementation(() => {

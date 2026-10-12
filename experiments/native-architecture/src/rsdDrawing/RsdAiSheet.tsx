@@ -14,6 +14,7 @@ import { aiCanGenerate } from '../ai/uiState';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import { useAiPictureViewer } from '../ai/useAiPictureViewer';
 import { RsdAiPictureView } from './RsdAiPictureView';
+import { AiReportAction, AiPictureReport } from '../ai/AiPictureReport';
 import { RsdAiStyleChoices } from './RsdAiStyleChoices';
 import { AiRecoveryActions } from '../ai/AiRecoveryActions';
 import { CurrentDrawingPreview } from '../ai/CurrentDrawingPreview';
@@ -49,15 +50,21 @@ export function RsdAiSheet({
 }) {
   const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
   const viewer = useAiPictureViewer(state, visible);
+  const reporting = state.report && !['idle', 'gating'].includes(state.report.phase);
   return (
     <NativeDialog
       visible={visible}
       onDismiss={onDismiss}
       label="AI picture"
-      onClose={viewer.picture ? viewer.back : owner.close}
+      onClose={reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : owner.close}
       footer={
         <html.div style={styles.row}>
-          {viewer.picture ? <RsdAction label="Back to AI pictures" onClick={viewer.back} /> : null}
+          {reporting || viewer.picture ? (
+            <RsdAction
+              label="Back to AI pictures"
+              onClick={reporting ? owner.cancelPictureReport : viewer.back}
+            />
+          ) : null}
           <RsdAction label="Keep drawing" onClick={owner.close} />
         </html.div>
       }
@@ -68,8 +75,13 @@ export function RsdAiSheet({
         </html.h1>
         {state.gate.open ? (
           <RsdAiParentalGate owner={owner} state={state} />
+        ) : reporting ? (
+          <AiPictureReport owner={owner} report={state.report} />
         ) : viewer.picture ? (
-          <RsdAiPictureView owner={owner} state={state} picture={viewer.picture} />
+          <>
+            <RsdAiPictureView owner={owner} state={state} picture={viewer.picture} />
+            <AiReportAction owner={owner} uri={viewer.picture.uri} />
+          </>
         ) : state.authorized ? (
           <>
             <html.span>{AI_DISCLOSURE}</html.span>

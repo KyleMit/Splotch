@@ -20,12 +20,13 @@ export function useCrayonTileResources(
 }
 
 export function useCrayonTileReadiness(uris: readonly string[], onError: (error: unknown) => void) {
+  const uniqueUris = [...new Set(uris)];
   const previous = useRef<readonly string[]>([]);
   if (
-    previous.current.length !== uris.length ||
-    uris.some((uri, index) => previous.current[index] !== uri)
+    previous.current.length !== uniqueUris.length ||
+    uniqueUris.some((uri, index) => previous.current[index] !== uri)
   )
-    previous.current = [...new Set(uris)];
+    previous.current = uniqueUris;
   const tiles = previous.current;
   const [native, setNative] = useState<ReadonlySet<string>>(new Set());
   const [svg, setSvg] = useState<ReadonlySet<string>>(new Set());
@@ -64,7 +65,8 @@ export function useCrayonTileReadiness(uris: readonly string[], onError: (error:
             source={{ uri }}
             style={styles.native}
             onLoad={() => {
-              if (valid()) setNative((loaded) => new Set([...loaded, uri]));
+              if (valid())
+                setNative((loaded) => (loaded.has(uri) ? loaded : new Set([...loaded, uri])));
             }}
             onError={() => {
               if (valid())
@@ -80,7 +82,8 @@ export function useCrayonTileReadiness(uris: readonly string[], onError: (error:
               width={CRAYON_TILE_PX}
               height={CRAYON_TILE_PX}
               onLoad={() => {
-                if (valid()) setSvg((loaded) => new Set([...loaded, uri]));
+                if (valid())
+                  setSvg((loaded) => (loaded.has(uri) ? loaded : new Set([...loaded, uri])));
               }}
             />
           ))}

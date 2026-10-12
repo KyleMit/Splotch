@@ -1,3 +1,7 @@
+import { parseRecordedDrawing7 } from './recordedDrawing7';
+import { addRecordedCommand7, recordedGeometry7 } from './recordedHistory7';
+import type { CompletedCohort7 } from './recordedContactCohort7';
+import type { Drawing7 } from './recordedTypes7';
 import { isPaintColor, isPaletteLabel, type PaintColor } from './palette';
 import { isPageId, type PageId } from './pages';
 import {
@@ -43,21 +47,29 @@ export type StrokeStyle = BrushStyle & Readonly<{ width: StoredStrokeWidthPx }>;
 export type Stroke = StrokeStyle & Readonly<{ points: readonly Point[] }>;
 export type PaintStroke = Exclude<Stroke, { brush: 'eraser' }>;
 type DrawingContents = Readonly<{ pageId: PageId; rainbow: number; strokes: readonly Stroke[] }>;
-export type Drawing = DrawingContents &
+export type LegacyDrawing = DrawingContents &
   (Readonly<{ version: 5 }> | Readonly<{ version: 6; paper: DrawingPaper }>);
-export type History = Readonly<{ drawing: Drawing; undo: readonly Drawing[] }>;
+export type Drawing = LegacyDrawing | Drawing7;
+export type History = Readonly<{
+  drawing: Drawing;
+  undo: readonly Drawing[];
+  allocationCursor7: number;
+}>;
 
 const HISTORY_LIMIT = 50;
 const HISTORY_POINT_BUDGET = 200_000;
 
-export function emptyDrawing(rainbow = INITIAL_RAINBOW, pageId: PageId = 'blank'): Drawing {
+export function emptyDrawing(
+  rainbow = INITIAL_RAINBOW,
+  pageId: PageId = 'blank'
+): Extract<LegacyDrawing, { version: 6 }> {
   return { version: 6, paper: UNADOPTED_PAPER, pageId, rainbow, strokes: [] };
 }
 
 export function strokeStyle(
   brush: Brush,
   color: PaintColor,
-  drawing: Drawing,
+  drawing: LegacyDrawing,
   selection: StrokeWidth = DEFAULT_STROKE_WIDTH
 ): StrokeStyle {
   if (!isPaintColor(color)) throw new Error('Paint color is invalid.');
@@ -76,11 +88,13 @@ export function strokeStyle(
 }
 
 export function createHistory(drawing: Drawing = emptyDrawing()): History {
-  return { drawing, undo: [] };
+  return { drawing, undo: [], allocationCursor7: drawing.version === 7 ? drawing.seedCursor : 1 };
 }
 
 function pointCount(drawing: Drawing): number {
-  return drawing.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
+  return drawing.version === 7
+    ? recordedGeometry7(drawing.commands)
+    : drawing.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
 }
 
 export function commitDrawing(history: History, drawing: Drawing): History {
@@ -91,12 +105,27 @@ export function commitDrawing(history: History, drawing: Drawing): History {
   ) {
     undo = undo.slice(1);
   }
-  return { drawing, undo };
+  const allocationCursor7 = Math.max(
+    history.allocationCursor7,
+    drawing.version === 7 ? drawing.seedCursor : 1
+  );
+  return {
+    drawing:
+      drawing.version === 7 && drawing.seedCursor !== allocationCursor7
+        ? Object.freeze({ ...drawing, seedCursor: allocationCursor7 })
+        : drawing,
+    undo,
+    allocationCursor7,
+  };
 }
 
 export function drawingCapacity(drawing: Drawing): { strokes: number; points: number } {
   return {
-    strokes: MAX_STROKES - drawing.strokes.length,
+    strokes:
+      MAX_STROKES -
+      (drawing.version === 7
+        ? drawing.commands.reduce((sum, command) => sum + command.styles.length, 0)
+        : drawing.strokes.length),
     points: MAX_POINTS - pointCount(drawing),
   };
 }
@@ -106,6 +135,8 @@ export function addStrokes(
   strokes: readonly Stroke[],
   paper?: PaperReference
 ): History {
+  if (history.drawing.version === 7)
+    throw new Error('Recorded pictures require recorded commands.');
   const additions = strokes.filter((stroke) => stroke.points.length > 0);
   if (additions.length === 0) return history;
   const capacity = drawingCapacity(history.drawing);
@@ -143,15 +174,35 @@ export function addStroke(history: History, stroke: Stroke, paper?: PaperReferen
 
 export function undoDrawing(history: History): History {
   const drawing = history.undo.at(-1);
-  return drawing ? { drawing, undo: history.undo.slice(0, -1) } : history;
+  return drawing
+    ? {
+        drawing:
+          drawing.version === 7 ? { ...drawing, seedCursor: history.allocationCursor7 } : drawing,
+        undo: history.undo.slice(0, -1),
+        allocationCursor7: history.allocationCursor7,
+      }
+    : history;
 }
 
 export function clearDrawing(history: History, visuallyEmpty: boolean): History {
-  const drawing = emptyDrawing(
+  const empty = emptyDrawing(
     (history.drawing.rainbow + 1) % MAGIC_RAINBOW_COUNT,
     history.drawing.pageId
   );
-  return visuallyEmpty ? { drawing, undo: history.undo } : commitDrawing(history, drawing);
+  const drawing: Drawing =
+    history.drawing.version === 7
+      ? {
+          version: 7,
+          rainbow: empty.rainbow,
+          pageId: empty.pageId,
+          paper: empty.paper,
+          seedCursor: history.allocationCursor7,
+          commands: [],
+        }
+      : empty;
+  return visuallyEmpty
+    ? { drawing, undo: history.undo, allocationCursor7: history.allocationCursor7 }
+    : commitDrawing(history, drawing);
 }
 
 export function changePage(history: History, pageId: PageId): History {
@@ -297,6 +348,7 @@ function readPoint(point: unknown): Point {
 }
 
 export function parseDrawing(value: unknown): Drawing {
+  if (record(value) && value.version === 7) return parseRecordedDrawing7(value);
   if (!record(value) || !Array.isArray(value.strokes) || value.strokes.length > MAX_STROKES)
     throw new Error('This saved picture is not a supported drawing.');
   const format = savedFormat(value);
@@ -338,4 +390,34 @@ export function parseDrawing(value: unknown): Drawing {
     return { version: 6, paper, pageId, rainbow, strokes };
   }
   return { version: 5, pageId, rainbow, strokes };
+}
+
+export function hasDrawingInk(drawing: Drawing): boolean {
+  return drawing.version === 7 ? drawing.commands.length > 0 : drawing.strokes.length > 0;
+}
+
+export function addRecordedCohort(
+  history: History,
+  base: Drawing7,
+  cohort: CompletedCohort7
+): History {
+  if (history.drawing !== base || base.seedCursor !== history.allocationCursor7)
+    throw new Error('The picture changed during this contact.');
+  return commitDrawing(history, addRecordedCommand7(base, cohort));
+}
+
+export function retainRecordedAllocation(
+  history: History,
+  base: Drawing7,
+  cursor: number
+): History {
+  if (!Number.isSafeInteger(cursor) || cursor < base.seedCursor || cursor > MAX_CRAYON_SEED + 1)
+    throw new Error('The recorded allocation cursor changed.');
+  const allocationCursor7 = Math.max(history.allocationCursor7, cursor);
+  if (allocationCursor7 === history.allocationCursor7) return history;
+  const drawing =
+    history.drawing.version === 7
+      ? { ...history.drawing, seedCursor: allocationCursor7 }
+      : history.drawing;
+  return { ...history, drawing, allocationCursor7 };
 }

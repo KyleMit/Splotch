@@ -2,7 +2,7 @@ import type { useNativeAi } from '../ai/useNativeAi';
 import { useDrawingProduct } from '../product/useDrawingProduct';
 import { RsdParentCenterSection } from './RsdParentCenterSection';
 import { RsdParentGateSheet } from './RsdParentGateSheet';
-import { useProductModalRoute } from '../product/useProductModalRoute';
+import { useProductModalRoute, isProductModalBlocked } from '../product/useProductModalRoute';
 import { RsdAiSheet } from './RsdAiSheet';
 import { LibraryProvider } from '../offlineLibrary/LibraryScope';
 import { DrawingAppearanceProvider, useDrawingAppearance } from '../drawing/DrawingAppearance';
@@ -26,6 +26,7 @@ import { RsdRecoveryNotice } from './RsdRecoveryNotice';
 import { RsdDraftNotice } from './RsdDraftNotice';
 import { NativeDrawingLayout, NativeDrawingStatus } from './NativeScrollAreas';
 import { RsdFeedbackSheet } from './RsdFeedbackSheet';
+import { useDrawingUndoShortcut } from '../product/useDrawingUndoShortcut';
 
 type Screen = ReturnType<typeof useDrawingScreen>;
 type Sound = ReturnType<typeof useDrawingSound>;
@@ -132,7 +133,7 @@ function RsdDrawingContent({
   route: ReturnType<typeof useProductModalRoute>;
   onModalDismissed: () => void;
 }) {
-  const { feedback, ai } = product;
+  const { feedback } = product;
   const theme = useDrawingAppearance();
   const menu = useDrawingMenu(screen);
   const notice = useSettledMessage(screen.notice, screen.drawing);
@@ -140,16 +141,10 @@ function RsdDrawingContent({
     sound.settings.message || sound.audioMessage,
     screen.drawing
   );
-  const modalBlocked =
-    route.shown !== 'none' ||
-    !!(
-      product.state?.gate.open ||
-      product.state?.parentCenterOpen ||
-      feedback.state?.open ||
-      ai.state?.open
-    );
+  const modalBlocked = isProductModalBlocked(route.shown, product);
   const disabled = screen.disabled || menu.open || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
   return (
     <LibraryProvider {...screen.library}>
       <NativeFrame>
@@ -223,6 +218,9 @@ function RsdDrawingContent({
               notice={soundNotice}
               onToggle={() => {
                 void sound.owner?.settings.setEnabled(!sound.settings.soundEnabled);
+              }}
+              onSoundLevelChange={(level) => {
+                void sound.owner?.settings.setSoundLevel(level);
               }}
               onAppearanceChange={(appearance) => {
                 void sound.owner?.settings.setAppearance(appearance);

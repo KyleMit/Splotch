@@ -1,4 +1,5 @@
 import { DEFAULT_COLORING_BOOK_ENABLED } from './coloringBook';
+import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from './soundLevel';
 import {
   DEFAULT_APPEARANCE,
   isAppearancePreference,
@@ -15,7 +16,12 @@ import {
   type PaintColor,
 } from '../drawing/palette';
 import { DEFAULT_PARENT_PREFERENCES } from '../platform/parentDefaults';
-import { isParentPolicies, type ParentPreferences } from '../parentCenter/parentPolicy';
+import {
+  readLegacyParentPreferences,
+  isParentPolicies,
+  PROTECTED_PARENT_POLICIES,
+  type ParentPreferences,
+} from '../parentCenter/parentPolicy';
 
 export type WidthSettings = Readonly<{ strokeWidth: StrokeWidth; eraserWidth: StrokeWidth }>;
 type ColorSettings = Readonly<{ selectedColor: PaintColor; customColors: readonly CustomColor[] }>;
@@ -24,16 +30,18 @@ type Choices = WidthSettings &
   ParentPreferences &
   Readonly<{
     soundEnabled: boolean;
+    soundLevel: SoundLevel;
     appearance: AppearancePreference;
     coloringBookEnabled: boolean;
   }>;
-export type SoundSettings = Choices & Readonly<{ version: 6 }>;
+export type SoundSettings = Choices & Readonly<{ version: 7 }>;
 export type SoundSettingsState =
   | (WidthSettings &
       ColorSettings &
       ParentPreferences & {
         status: 'loading';
         soundEnabled: false;
+        soundLevel: SoundLevel;
         appearance: AppearancePreference;
         coloringBookEnabled: boolean;
         message: string;
@@ -46,6 +54,10 @@ export type SoundSettingsStorage = {
 };
 export const MAX_SETTINGS_BYTES = 1024;
 const DEFAULT_SOUND_ENABLED = true;
+const MIGRATED_PARENT_PREFERENCES: ParentPreferences = {
+  ...DEFAULT_PARENT_PREFERENCES,
+  parentPolicies: { ...DEFAULT_PARENT_PREFERENCES.parentPolicies, imageReport: 'always' },
+};
 export const DEFAULT_WIDTH_SETTINGS: WidthSettings = {
   strokeWidth: DEFAULT_STROKE_WIDTH,
   eraserWidth: DEFAULT_STROKE_WIDTH,
@@ -71,9 +83,77 @@ function readParentPreferences(value: unknown): ParentPreferences {
     aiEnabled: value.aiEnabled,
     parentPolicies: {
       ai: value.parentPolicies.ai,
+      imageReport: value.parentPolicies.imageReport,
       feedback: value.parentPolicies.feedback,
       parentCenter: value.parentPolicies.parentCenter,
     },
+  };
+}
+
+function readStoredParentSettings(
+  value: object & { version: unknown },
+  widths: WidthSettings & { soundEnabled: boolean },
+  colors: ColorSettings,
+  appearance: AppearancePreference,
+  snapshot: string
+): SoundSettings {
+  const parent =
+    value.version === 7 ? readParentPreferences(value) : readLegacyParentPreferences(value);
+  const coloringBookEnabled =
+    value.version === 5
+      ? DEFAULT_COLORING_BOOK_ENABLED
+      : 'coloringBookEnabled' in value && typeof value.coloringBookEnabled === 'boolean'
+        ? value.coloringBookEnabled
+        : null;
+  if (coloringBookEnabled === null) throw new Error('Coloring book choice is invalid.');
+  const hasSoundLevel = value.version === 7 && 'soundLevel' in value;
+  const soundLevel =
+    hasSoundLevel && 'soundLevel' in value ? value.soundLevel : DEFAULT_SOUND_LEVEL;
+  if (!isSoundLevel(soundLevel)) throw new Error('Sound level is invalid.');
+  canonical(
+    {
+      version: value.version,
+      ...widths,
+      ...colors,
+      appearance,
+      ...parent,
+      ...(value.version === 5 ? {} : { coloringBookEnabled }),
+      ...(hasSoundLevel ? { soundLevel } : {}),
+    },
+    snapshot
+  );
+  return {
+    version: 7,
+    ...widths,
+    ...colors,
+    appearance,
+    ...parent,
+    parentPolicies: {
+      ai: parent.parentPolicies.ai,
+      imageReport:
+        'imageReport' in parent.parentPolicies ? parent.parentPolicies.imageReport : 'always',
+      feedback: parent.parentPolicies.feedback,
+      parentCenter: parent.parentPolicies.parentCenter,
+    },
+    coloringBookEnabled,
+    soundLevel,
+  };
+}
+
+function migrateLegacyChoices(
+  choices: Partial<WidthSettings & ColorSettings & { appearance: AppearancePreference }> & {
+    soundEnabled: boolean;
+  }
+): SoundSettings {
+  return {
+    version: 7,
+    coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
+    ...MIGRATED_PARENT_PREFERENCES,
+    ...DEFAULT_WIDTH_SETTINGS,
+    ...DEFAULT_COLOR_SETTINGS,
+    appearance: DEFAULT_APPEARANCE,
+    soundLevel: DEFAULT_SOUND_LEVEL,
+    ...choices,
   };
 }
 
@@ -90,22 +170,15 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
       value.version !== 3 &&
       value.version !== 4 &&
       value.version !== 5 &&
-      value.version !== 6) ||
+      value.version !== 6 &&
+      value.version !== 7) ||
     !('soundEnabled' in value) ||
     typeof value.soundEnabled !== 'boolean'
   )
     throw new Error('Sound settings are invalid.');
   if (value.version === 1) {
     canonical({ version: 1, soundEnabled: value.soundEnabled }, snapshot);
-    return {
-      version: 6,
-      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-      ...DEFAULT_PARENT_PREFERENCES,
-      soundEnabled: value.soundEnabled,
-      ...DEFAULT_WIDTH_SETTINGS,
-      ...DEFAULT_COLOR_SETTINGS,
-      appearance: DEFAULT_APPEARANCE,
-    };
+    return migrateLegacyChoices({ soundEnabled: value.soundEnabled });
   }
   if (
     !('strokeWidth' in value) ||
@@ -121,17 +194,14 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   };
   if (value.version === 2) {
     canonical({ version: 2, ...widths }, snapshot);
-    return {
-      version: 6,
-      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-      ...DEFAULT_PARENT_PREFERENCES,
-      ...widths,
-      ...DEFAULT_COLOR_SETTINGS,
-      appearance: DEFAULT_APPEARANCE,
-    };
+    return migrateLegacyChoices(widths);
   }
   if (
-    (value.version !== 3 && value.version !== 4 && value.version !== 5 && value.version !== 6) ||
+    (value.version !== 3 &&
+      value.version !== 4 &&
+      value.version !== 5 &&
+      value.version !== 6 &&
+      value.version !== 7) ||
     !('selectedColor' in value) ||
     !isPaintColor(value.selectedColor) ||
     !('customColors' in value) ||
@@ -145,61 +215,20 @@ export function parseSoundSettings(snapshot: string): SoundSettings {
   const colors = { selectedColor: value.selectedColor, customColors: value.customColors };
   if (value.version === 3) {
     canonical({ version: 3, ...widths, ...colors }, snapshot);
-    return {
-      version: 6,
-      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-      ...DEFAULT_PARENT_PREFERENCES,
-      ...widths,
-      ...colors,
-      appearance: DEFAULT_APPEARANCE,
-    };
+    return migrateLegacyChoices({ ...widths, ...colors });
   }
   if (!('appearance' in value) || !isAppearancePreference(value.appearance))
     throw new Error('Appearance choice is invalid.');
   if (value.version === 4) {
     canonical({ version: 4, ...widths, ...colors, appearance: value.appearance }, snapshot);
-    return {
-      version: 6,
-      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-      ...widths,
-      ...colors,
-      appearance: value.appearance,
-      ...DEFAULT_PARENT_PREFERENCES,
-    };
+    return migrateLegacyChoices({ ...widths, ...colors, appearance: value.appearance });
   }
-  const parent = readParentPreferences(value);
-  if (value.version === 5) {
-    canonical(
-      { version: 5, ...widths, ...colors, appearance: value.appearance, ...parent },
-      snapshot
-    );
-    return {
-      version: 6,
-      ...widths,
-      ...colors,
-      appearance: value.appearance,
-      ...parent,
-      coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
-    };
-  }
-  if (!('coloringBookEnabled' in value) || typeof value.coloringBookEnabled !== 'boolean')
-    throw new Error('Coloring book choice is invalid.');
-  return canonical(
-    {
-      version: 6,
-      ...widths,
-      ...colors,
-      appearance: value.appearance,
-      ...parent,
-      coloringBookEnabled: value.coloringBookEnabled,
-    },
-    snapshot
-  );
+  return readStoredParentSettings(value, widths, colors, value.appearance, snapshot);
 }
 
 function snapshot(state: Choices): SoundSettings {
   return {
-    version: 6,
+    version: 7,
     soundEnabled: state.soundEnabled,
     strokeWidth: state.strokeWidth,
     eraserWidth: state.eraserWidth,
@@ -209,6 +238,7 @@ function snapshot(state: Choices): SoundSettings {
     aiEnabled: state.aiEnabled,
     parentPolicies: state.parentPolicies,
     coloringBookEnabled: state.coloringBookEnabled,
+    soundLevel: state.soundLevel,
   };
 }
 
@@ -217,6 +247,7 @@ function initialSoundSettingsState(): SoundSettingsState {
     status: 'loading',
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: false,
+    soundLevel: DEFAULT_SOUND_LEVEL,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
@@ -227,9 +258,10 @@ function initialSoundSettingsState(): SoundSettingsState {
 
 function defaultSoundSettings(): SoundSettings {
   return {
-    version: 6,
+    version: 7,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     soundEnabled: DEFAULT_SOUND_ENABLED,
+    soundLevel: DEFAULT_SOUND_LEVEL,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     ...DEFAULT_PARENT_PREFERENCES,
@@ -242,10 +274,11 @@ function unreadSoundSettingsState(): SoundSettingsState {
     status: 'ready',
     coloringBookEnabled: false,
     soundEnabled: false,
+    soundLevel: DEFAULT_SOUND_LEVEL,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,
     aiEnabled: false,
-    parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+    parentPolicies: PROTECTED_PARENT_POLICIES,
     appearance: DEFAULT_APPEARANCE,
     saved: false,
     message:
@@ -267,6 +300,16 @@ function createDrawingPreferenceActions({
   persist: (settings: SoundSettings) => Promise<void>;
 }) {
   return {
+    async setSoundLevel(soundLevel: SoundLevel) {
+      const state = getState();
+      if (isDisposed() || state.status !== 'ready') return;
+      if (!isSoundLevel(soundLevel)) throw new Error('Sound level is invalid.');
+      if (hasReadFailed()) {
+        publish({ ...state, soundLevel });
+        return;
+      }
+      await persist({ ...snapshot(state), soundLevel });
+    },
     async setColoringBookEnabled(coloringBookEnabled: boolean) {
       const state = getState();
       if (isDisposed() || state.status !== 'ready') return;

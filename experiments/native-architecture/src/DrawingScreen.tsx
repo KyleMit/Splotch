@@ -2,7 +2,7 @@ import type { useNativeAi } from './ai/useNativeAi';
 import { useDrawingProduct } from './product/useDrawingProduct';
 import { ParentCenterSection } from './parentCenter/ParentCenterSection';
 import { ParentGateSheet } from './parentCenter/ParentGateSheet';
-import { useProductModalRoute } from './product/useProductModalRoute';
+import { useProductModalRoute, isProductModalBlocked } from './product/useProductModalRoute';
 import { NativeAiSheet } from './ai/AiSheet';
 import { LibraryProvider } from './offlineLibrary/LibraryScope';
 import { SavedPictures } from './drawing/SavedPictures';
@@ -27,6 +27,7 @@ import type { useDrawingSound } from './useDrawingSound';
 import { SoundSettings } from './settings/SoundSettingsSheet';
 import { useColorPickerFocus } from './useColorPickerFocus';
 import { NativeFeedback } from './feedback/FeedbackSheet';
+import { useDrawingUndoShortcut } from './product/useDrawingUndoShortcut';
 
 export function DrawingScreen() {
   const screen = useDrawingScreen();
@@ -128,22 +129,16 @@ function DrawingScreenContent({
   setSettingsClosing: (closing: boolean) => void;
   onModalDismissed: () => void;
 }) {
-  const { feedback, ai } = product;
+  const { feedback } = product;
   const styles = useDrawingScreenStyles();
   const menu = useDrawingMenu(screen);
   const window = useWindowDimensions();
   const landscape = window.width > window.height;
   const { pictures, surface, colorPickerOpen, disabled: drawingDisabled } = screen;
-  const modalBlocked =
-    route.shown !== 'none' ||
-    !!(
-      product.state?.gate.open ||
-      product.state?.parentCenterOpen ||
-      feedback.state?.open ||
-      ai.state?.open
-    );
+  const modalBlocked = isProductModalBlocked(route.shown, product);
   const disabled = drawingDisabled || modalBlocked;
   const paintsDisabled = disabled || sound.settings.status !== 'ready';
+  useDrawingUndoShortcut(screen, paintsDisabled || menu.open);
   const focusReturn = useColorPickerFocus({
     pickerOpen: colorPickerOpen,
     closePicker: screen.closeColorPicker,
@@ -465,6 +460,9 @@ function DrawingSheets({
           audioMessage={sound.audioMessage}
           onChange={(enabled) => {
             void sound.owner?.settings.setEnabled(enabled);
+          }}
+          onSoundLevelChange={(level) => {
+            void sound.owner?.settings.setSoundLevel(level);
           }}
           onAppearanceChange={(appearance) => {
             void sound.owner?.settings.setAppearance(appearance);

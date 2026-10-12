@@ -21,6 +21,21 @@ async function solve() {
   await input('Grown-up answer', String(Number(match[1]) * Number(match[2])));
   await click('Check answer');
 }
+async function reviewReport() {
+  await click('Open AI picture');
+  const beforeReport = caller.aiSend.mock.calls.length;
+  await click('Report AI picture');
+  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+  expect(host.textContent).toContain('Grown-ups only');
+  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
+  await solve();
+  expect(host.querySelectorAll('[data-native-modal]')).toHaveLength(1);
+  expect(host.textContent).toContain('Report this AI picture');
+  expect(host.textContent).toContain('private report');
+  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
+  await click('Cancel report');
+  expect(host.textContent).not.toContain('Report this AI picture');
+}
 it.each([false, true])(
   'drives actual RSD AI production callers with native decode rejection %s',
   async (rejectDecode) => {
@@ -35,7 +50,7 @@ it.each([false, true])(
         : request.path === '/api/verify-key'
           ? new Response('{"ok":true}')
           : new Response(rgbaPng(2, 2, 255), {
-              headers: { 'Content-Type': 'image/png' },
+              headers: { 'Content-Type': 'image/png', 'X-Report-Token': 'fixture-report-proof' },
             })
     );
     caller.screen = {
@@ -97,7 +112,11 @@ it.each([false, true])(
     await solve();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
     expect(caller.aiReadPreparedUpload).toHaveBeenCalledOnce();
-    expect(caller.aiAdmit).toHaveBeenCalledOnce();
+    expect(caller.aiAdmit).toHaveBeenCalledTimes(2);
+    expect(caller.aiAdmit.mock.calls.map(([bytes]) => bytes.length)).toEqual([
+      rgbaPng(1024, 768, 255).length,
+      rgbaPng(2, 2, 255).length,
+    ]);
     expect(caller.aiRetain).toHaveBeenCalledTimes(rejectDecode ? 0 : 1);
     expect(host.textContent).toContain(
       rejectDecode ? 'could not be safely opened' : 'original drawing are saved'
@@ -108,6 +127,7 @@ it.each([false, true])(
       )
     ).toBe(!rejectDecode);
     expect(caller.screen.history.drawing).toBe(drawing);
+    if (!rejectDecode) await reviewReport();
     await click('Use my OpenAI key');
     await input('OpenAI API key', 'fixture-key');
     await click('Verify and save credential');

@@ -38,6 +38,10 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   savePicture: vi.fn(),
   exportPng: vi.fn(),
 }));
+vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
+  drawingDraftStorage: { read: async () => null, write: async () => {} },
+  protectedDraftPageIds: async () => [],
+}));
 vi.mock('react-native', () => {
   const container = ({ children, style }) =>
     createElement(
@@ -73,12 +77,23 @@ vi.mock('react-native', () => {
         },
         children
       ),
-    Pressable: forwardRef(({ children, onPress, disabled, accessibilityLabel }, ref) =>
-      createElement(
-        'button',
-        { ref, onClick: onPress, disabled, 'aria-label': accessibilityLabel },
-        children
-      )
+    Pressable: forwardRef(
+      (
+        { children, onPress, disabled, accessibilityLabel, accessibilityRole, accessibilityState },
+        ref
+      ) =>
+        createElement(
+          'button',
+          {
+            ref,
+            onClick: onPress,
+            disabled,
+            'aria-label': accessibilityLabel,
+            role: accessibilityRole,
+            'aria-checked': accessibilityState?.checked,
+          },
+          children
+        )
     ),
     Switch: ({ value, disabled, onValueChange, accessibilityLabel }) =>
       createElement('input', {
@@ -222,6 +237,51 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('live drawing sound owner and Settings screen', () => {
+  it('persists the level independently of mute and restores its real drawing gain', async () => {
+    let stored = '{"version":1,"soundEnabled":true}';
+    sound.read.mockImplementation(async () => stored);
+    sound.write.mockImplementation(async (snapshot) => {
+      stored = snapshot;
+    });
+    await mount();
+    await ui.settings();
+    const medium = ui.container.querySelector('[aria-label="Medium drawing sound"]');
+    expect(medium.getAttribute('aria-checked')).toBe('true');
+    await ui.click('Quiet drawing sound');
+    expect(JSON.parse(stored)).toMatchObject({ soundEnabled: true, soundLevel: 'quiet' });
+    await ui.click('Close Settings');
+    await ui.click('Start stroke');
+    await ui.click('Move stroke');
+    expect(loop.setVolume).toHaveBeenLastCalledWith(0.1);
+    await ui.click('End stroke');
+    ui.close();
+    await mount();
+    await ui.settings();
+    expect(
+      ui.container.querySelector('[aria-label="Quiet drawing sound"]').getAttribute('aria-checked')
+    ).toBe('true');
+    await ui.click('Drawing sound');
+    await ui.click('Loud drawing sound');
+    expect(JSON.parse(stored)).toMatchObject({ soundEnabled: false, soundLevel: 'loud' });
+    await ui.click('Drawing sound');
+    await ui.click('Close Settings');
+    await ui.click('Start stroke');
+    await ui.click('Move stroke');
+    expect(loop.setVolume).toHaveBeenLastCalledWith(0.4);
+  });
+  it('updates active sound through the legacy hook without replacing its audio owner', async () => {
+    sound.read.mockResolvedValueOnce('{"version":1,"soundEnabled":true}');
+    await mount(Probe);
+    const owner = latest.owner;
+    await act(async () => owner.audio.begin({ x: 10, y: 20 }, 100));
+    await act(async () => owner.audio.sample({ x: 100, y: 20 }, 200));
+    await act(async () => owner.settings.setSoundLevel('quiet'));
+    expect(latest.owner).toBe(owner);
+    expect(loop.setVolume).toHaveBeenLastCalledWith(0.1);
+    expect(sound.load).toHaveBeenCalledOnce();
+    await act(async () => owner.settings.setSoundLevel('loud'));
+    expect(loop.setVolume).toHaveBeenLastCalledWith(0.4);
+  });
   it('persists real appearance controls, themes chrome immediately after failure, retries and restores on remount', async () => {
     let stored = '{"version":1,"soundEnabled":false}';
     sound.read.mockImplementation(async () => stored);
@@ -315,7 +375,7 @@ describe('live drawing sound owner and Settings screen', () => {
     expect(ui.switch().checked).toBe(true);
     expect(ui.dialog().textContent).toContain('could not be saved');
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":6,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
+      '{"version":7,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}'
     );
     await ui.click('Retry saving');
     expect(sound.write).toHaveBeenCalledTimes(2);
@@ -328,7 +388,7 @@ describe('live drawing sound owner and Settings screen', () => {
     await ui.click('Drawing sound');
     expect(ui.switch().checked).toBe(false);
     expect(sound.write).toHaveBeenLastCalledWith(
-      '{"version":6,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
+      '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}'
     );
     expect(loop.dispose).toHaveBeenCalledOnce();
   });

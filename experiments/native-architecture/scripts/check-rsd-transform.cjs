@@ -129,10 +129,10 @@ for (const component of [drawing, coloringPicker, settingsDialog])
       assert.ok(group, 'RSD radio group owner');
     },
   });
-assert.equal(groups.length, 5, 'RSD radio group count');
+assert.equal(groups.length, 6, 'RSD radio group count');
 assert.deepEqual(
   groups.map(literal).filter(Boolean).sort(),
-  ['Appearance', 'Coloring page', 'Drawing brush', 'Paint colors'],
+  ['Appearance', 'Coloring page', 'Drawing brush', 'Drawing sound level', 'Paint colors'],
   'RSD radio group names'
 );
 const dynamicLabel = groups.find((item) => item?.value?.type === 'JSXExpressionContainer');
@@ -143,7 +143,7 @@ assert.deepEqual(
   'RSD width group label'
 );
 assert.equal(dynamicLabel.value.expression.expressions[0]?.name, 'tool', 'RSD width group owner');
-assert.equal(radios, 5, 'RSD selection callers');
+assert.equal(radios, 6, 'RSD selection callers');
 const settingsValue = (expression, property) =>
   expression?.type === 'MemberExpression' &&
   !expression.computed &&
@@ -215,6 +215,49 @@ const { optionalBrushes, optionalLabels, assertTransformedBrushSwitches } = vali
   settingsValue,
 });
 const files = [
+  'src/platform/useUndoShortcut.ts',
+  'src/platform/useUndoShortcut.web.ts',
+  'src/product/useDrawingUndoShortcut.ts',
+  'src/product/useProductModalRoute.ts',
+  'src/parentCenter/parentPolicy.ts',
+  'src/settings/soundLevel.ts',
+  'src/settings/soundSettings.ts',
+  'src/audio/drawingAudio.ts',
+  'src/product/useDrawingProduct.ts',
+  'src/useDrawingSound.ts',
+  'src/settings/SoundSettingsSheet.tsx',
+  'src/drawing/useCrayonTileReadiness.tsx',
+  'src/ai/reportContract.ts',
+  'src/ai/reportTransport.ts',
+  'src/ai/reportOwner.ts',
+  'src/ai/AiPictureReport.tsx',
+  'src/product/drawingBackend.ts',
+  'src/ai/useAiPictureShare.ts',
+  'src/platform/aiShare.ts',
+  'src/platform/aiShare.web.ts',
+  'src/platform/aiOriginalModel.ts',
+  'src/useRendererRecovery.ts',
+  'src/useDrawingScreen.ts',
+  'src/drawing/RecordedDrawingSurface7.tsx',
+  'src/drawing/RecordedFixedInkCapture7.tsx',
+  'src/drawing/RecordedPaint7.tsx',
+  'src/drawing/RecordedRasterInk7.tsx',
+  'src/drawing/RecordedScene7.tsx',
+  'src/drawing/RecordedSceneContent7.tsx',
+  'src/drawing/RecordedWax7.tsx',
+  'src/drawing/cohortRecorder7.ts',
+  'src/drawing/crayonRaster7.ts',
+  'src/drawing/crayonTracker7.ts',
+  'src/drawing/nativeRecordedInput7.ts',
+  'src/drawing/recordedBounds7.ts',
+  'src/drawing/recordedContactCohort7.ts',
+  'src/drawing/recordedDrawing7.ts',
+  'src/drawing/recordedGuards7.ts',
+  'src/drawing/recordedHistory7.ts',
+  'src/drawing/recordedPaintPlan7.ts',
+  'src/drawing/recordedSnapshot7.ts',
+  'src/drawing/recordedTypes7.ts',
+  'src/drawing/captureInkPlan.ts',
   'src/index.ts',
   'src/ProbeApp.tsx',
   'src/product/createDrawingSession.ts',

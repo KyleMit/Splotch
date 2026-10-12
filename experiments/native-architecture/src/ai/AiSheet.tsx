@@ -23,7 +23,7 @@ import {
 import type { AiState, NativeAiOwner } from './generation';
 import { aiCanGenerate, AI_RESULT_HEIGHT_PX } from './uiState';
 import { useAiPictureViewer } from './useAiPictureViewer';
-import { NativeAiPictureView } from './NativeAiPictureView';
+import { NativeReportablePicture, AiPictureReport } from './AiPictureReport';
 import { NativeAiStyleChoices } from './NativeAiStyleChoices';
 import { AiRecoveryActions } from './AiRecoveryActions';
 import { CurrentDrawingPreview } from './CurrentDrawingPreview';
@@ -47,6 +47,7 @@ export function NativeAiSheet({
   const styles = useDrawingStyles(themedStyles);
   const waiting = !!state.journal && !['result', 'failed'].includes(state.journal.phase);
   const viewer = useAiPictureViewer(state, visible);
+  const reporting = state.report && !['idle', 'gating'].includes(state.report.phase);
   return (
     <Modal
       statusBarTranslucent
@@ -54,7 +55,9 @@ export function NativeAiSheet({
       visible={visible}
       onDismiss={onDismiss}
       animationType="none"
-      onRequestClose={viewer.picture ? viewer.back : owner.close}
+      onRequestClose={
+        reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : owner.close
+      }
       accessibilityLabel="AI picture"
     >
       <NativeFrame>
@@ -69,8 +72,10 @@ export function NativeAiSheet({
             </Text>
             {state.gate.open ? (
               <AiParentalGate owner={owner} state={state} />
+            ) : reporting ? (
+              <AiPictureReport owner={owner} report={state.report} />
             ) : viewer.picture ? (
-              <NativeAiPictureView owner={owner} state={state} picture={viewer.picture} />
+              <NativeReportablePicture owner={owner} state={state} picture={viewer.picture} />
             ) : state.authorized ? (
               <>
                 <Text style={styles.text}>{AI_DISCLOSURE}</Text>
@@ -136,7 +141,10 @@ export function NativeAiSheet({
               </>
             ) : null}
           </ScrollView>
-          <AiFooter onClose={owner.close} onBack={viewer.picture ? viewer.back : null} />
+          <AiFooter
+            onClose={owner.close}
+            onBack={reporting ? owner.cancelPictureReport : viewer.picture ? viewer.back : null}
+          />
         </View>
       </NativeFrame>
     </Modal>

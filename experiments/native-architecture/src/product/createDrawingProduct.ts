@@ -5,7 +5,12 @@ import {
   type SoundSettingsState,
   type SoundSettingsStorage,
 } from '../settings/soundSettings';
-import type { ParentFeature, ParentMode, ParentOperationPort } from '../parentCenter/parentPolicy';
+import {
+  PARENT_FEATURES,
+  type ParentFeature,
+  type ParentMode,
+  type ParentOperationPort,
+} from '../parentCenter/parentPolicy';
 
 export function createDrawingProduct(storage: SoundSettingsStorage, publish: () => void) {
   let preferences = DEFAULT_PARENT_PREFERENCES;
@@ -21,9 +26,9 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
   const settings = createSoundSettings(storage, (next) => {
     const changed =
       preferences.aiEnabled !== next.aiEnabled ||
-      preferences.parentPolicies.ai !== next.parentPolicies.ai ||
-      preferences.parentPolicies.feedback !== next.parentPolicies.feedback ||
-      preferences.parentPolicies.parentCenter !== next.parentPolicies.parentCenter;
+      PARENT_FEATURES.some(
+        (feature) => preferences.parentPolicies[feature] !== next.parentPolicies[feature]
+      );
     preferences = { aiEnabled: next.aiEnabled, parentPolicies: next.parentPolicies };
     settingsState = next;
     if (changed) {
@@ -38,7 +43,7 @@ export function createDrawingProduct(storage: SoundSettingsStorage, publish: () 
         disposed ||
         !settingsState ||
         settingsState.status === 'loading' ||
-        (feature === 'ai' && !preferences.aiEnabled)
+        ((feature === 'ai' || feature === 'imageReport') && !preferences.aiEnabled)
       )
         return false;
       return gate.request(feature, action);

@@ -1,3 +1,6 @@
+import { RecordedDrawingSurface7 } from './RecordedDrawingSurface7';
+import type { CompletedCohort7 } from './recordedContactCohort7';
+import type { Drawing7 } from './recordedTypes7';
 import { InkPaperScope } from './InkPaper';
 import { drawingPaper, type PaperReference } from './paperSpace';
 import { useDrawingAppearance } from './DrawingAppearance';
@@ -16,7 +19,7 @@ import {
 } from 'react';
 import { PanResponder, PixelRatio, StyleSheet, View } from 'react-native';
 import Svg from 'react-native-svg';
-import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type Stroke } from './model';
+import { PAPER_HEIGHT, PAPER_WIDTH, type Drawing, type LegacyDrawing, type Stroke } from './model';
 import { createContactResponder, type ContactDrawingProps } from './contactResponder';
 import { createPaperGeometry } from './paperGeometry';
 import { measurePaper } from './measurePaper';
@@ -33,13 +36,20 @@ export type DrawingSurfaceHandle = {
   lockInput: () => () => void;
   refreshGeometry: () => void;
 };
-type Props = ContactDrawingProps & {
+export type DrawingSurfaceProps = ContactDrawingProps & {
   drawing: Drawing;
+  onRecordedCohort: (base: Drawing7, cohort: CompletedCohort7) => Drawing7;
+  onAbandonAllocation: (base: Drawing7, cursor: number) => void;
   onPreparingChange: (busy: boolean) => void;
   onRendererFault: (error: unknown) => void;
 };
 
-export const DrawingSurface = forwardRef<DrawingSurfaceHandle, Props>(
+type LegacyProps = Omit<DrawingSurfaceProps, 'drawing' | 'currentDrawing'> & {
+  drawing: LegacyDrawing;
+  currentDrawing: () => LegacyDrawing;
+};
+
+const LegacyDrawingSurface = forwardRef<DrawingSurfaceHandle, LegacyProps>(
   function DrawingSurface(props, ref) {
     const styles = useDrawingStyles(themedStyles);
     const theme = useDrawingAppearance();
@@ -172,7 +182,7 @@ function useSurfaceCapture(
   ref: ForwardedRef<DrawingSurfaceHandle>,
   setPacket: (packet: PictureRequest | null) => void,
   raster: RefObject<RasterInkHandle | null>,
-  drawing: Drawing,
+  drawing: LegacyDrawing,
   appearance: InkAppearance,
   refreshGeometry: () => void
 ) {
@@ -189,6 +199,7 @@ function useSurfaceCapture(
   const nextId = useRef(1);
 
   async function capture(snapshot: Drawing, kind: PictureRequest['kind']) {
+    if (snapshot.version === 7) throw new Error('The drawing capture mode changed.');
     if (input.hasActive()) throw new Error('Lift your finger before capturing the picture.');
     const lease = commandLock.current;
     if (!lease || currentDrawing.current !== snapshot || !raster.current)
@@ -276,4 +287,24 @@ const themedStyles = createDrawingStyles((palette) =>
       backgroundColor: palette.paper,
     },
   })
+);
+
+export const DrawingSurface = forwardRef<DrawingSurfaceHandle, DrawingSurfaceProps>(
+  function DrawingSurface(props, ref) {
+    if (props.drawing.version === 7)
+      return <RecordedDrawingSurface7 {...props} drawing={props.drawing} ref={ref} />;
+    const currentDrawing = () => {
+      const drawing = props.currentDrawing();
+      if (drawing.version === 7) throw new Error('The drawing input mode changed.');
+      return drawing;
+    };
+    return (
+      <LegacyDrawingSurface
+        {...props}
+        drawing={props.drawing}
+        currentDrawing={currentDrawing}
+        ref={ref}
+      />
+    );
+  }
 );

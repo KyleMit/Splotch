@@ -1,5 +1,5 @@
-import type { ParentPreferences } from '../parentCenter/parentPolicy';
+import { PROTECTED_PARENT_POLICIES, type ParentPreferences } from '../parentCenter/parentPolicy';
 export const DEFAULT_PARENT_PREFERENCES: ParentPreferences = {
   aiEnabled: false,
-  parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+  parentPolicies: PROTECTED_PARENT_POLICIES,
 };

@@ -1,4 +1,5 @@
 import type { Point } from '../drawing/model';
+import { DEFAULT_SOUND_LEVEL, isSoundLevel, type SoundLevel } from '../settings/soundLevel';
 
 type DrawingLoop = {
   start: () => void;
@@ -13,6 +14,14 @@ export type DrawingLoopLoader = (
 // native-audio-projection.test.mjs pins the portable gain/timing literals without a startup import.
 // Speed is per-event normalized paper units/ms, distinct from shipping backing-store/windowed speed.
 export const BASE_SCRATCH_GAIN = 0.2;
+const QUIET_GAIN_MULTIPLIER = 0.5;
+const MEDIUM_GAIN_MULTIPLIER = 1;
+const LOUD_GAIN_MULTIPLIER = 2;
+const SOUND_LEVEL_GAIN: Record<SoundLevel, number> = {
+  quiet: QUIET_GAIN_MULTIPLIER,
+  medium: MEDIUM_GAIN_MULTIPLIER,
+  loud: LOUD_GAIN_MULTIPLIER,
+};
 export const FULL_VOLUME_PAPER_UNITS_PER_MS = 0.45;
 export const GAIN_RAMP_S = 0.06;
 export const STOP_DECLICK_S = 0.005;
@@ -34,6 +43,7 @@ type AudioState = {
   resource: AudioResource;
   stillness: ReturnType<typeof setTimeout> | null;
   volume: number;
+  level: SoundLevel;
   failureReported: boolean;
   onFailure: () => void;
   onReady: () => void;
@@ -87,7 +97,7 @@ function stop(state: AudioState) {
 function applyVolume(state: AudioState) {
   if (state.resource.status !== 'ready') return;
   try {
-    state.resource.loop.setVolume(state.volume);
+    state.resource.loop.setVolume(state.volume * SOUND_LEVEL_GAIN[state.level]);
   } catch {
     fail(state);
   }
@@ -138,6 +148,7 @@ export function createDrawingAudio(
     resource: { status: 'idle' },
     stillness: null,
     volume: 0,
+    level: DEFAULT_SOUND_LEVEL,
     failureReported: false,
     onFailure,
     onReady,
@@ -183,6 +194,13 @@ export function createDrawingAudio(
     },
     end() {
       stop(state);
+    },
+    setLevel(level: SoundLevel) {
+      if (state.disposed) return;
+      if (!isSoundLevel(level)) throw new Error('Sound level is invalid.');
+      if (state.level === level) return;
+      state.level = level;
+      applyVolume(state);
     },
     setEnabled(value: boolean) {
       state.enabled = value;

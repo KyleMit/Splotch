@@ -6,6 +6,16 @@ import Darwin
 final class SplotchAIJournal {
   private let queue = DispatchQueue(label: "art.splotch.ai-journal")
   private let maxModel = 8 * 1024 * 1024
+  private let currentOriginalVersions: Set<Int64> = [5, 6, 7]
+  private let importedOriginalVersions: Set<Int64> = [1, 2, 3, 4, 5, 6, 7]
+  private let maxDrawingContacts = 1000
+  private let maxDrawingSamples = 100000
+  private var maxRecordedOps: Int { maxDrawingSamples * 2 }
+  private let drawingRainbowCount: Int64 = 10
+  private let maxAllocationCursor: Int64 = 4294967296
+  private let drawingPaperWidth = 1024.0
+  private let drawingPaperHeight = 768.0
+  private let maximumBackingScale = 2.0
   private let maxUpload = 15 * 1024 * 1024
   private let maxResult = 16 * 1024 * 1024
   private let maxJournal = 32 * 1024
@@ -310,6 +320,72 @@ final class SplotchAIJournal {
     return bytes
   }
   private func same(_ a: [String: Any], _ b: [String: Any]) -> Bool { NSDictionary(dictionary: a).isEqual(to: b) }
+  private func originalModel(_ bytes: Data, _ importing: Bool) throws {
+    try checked(!bytes.isEmpty && bytes.count <= maxModel)
+    let value = try object(JSONSerialization.jsonObject(with: bytes))
+    let version = try integer(value, "version")
+    try checked((importing ? importedOriginalVersions : currentOriginalVersions).contains(version))
+    let expected: [String]
+    switch version {
+    case 1: expected = ["version", "strokes"]
+    case 2: expected = value["pageId"] == nil ? ["version", "rainbow", "strokes"] : ["version", "pageId", "strokes"]
+    case 3, 4, 5: expected = ["version", "pageId", "rainbow", "strokes"]
+    case 6: expected = ["version", "paper", "pageId", "rainbow", "strokes"]
+    case 7: expected = ["version", "paper", "pageId", "rainbow", "seedCursor", "commands"]
+    default: throw failure()
+    }
+    try keys(value, expected)
+    if value["pageId"] != nil { try checked(!string(value, "pageId").isEmpty) }
+    if value["rainbow"] != nil { try checked(integer(value, "rainbow", 0) < drawingRainbowCount) }
+    let count: Int
+    if version == 7 {
+      let highWater = try integer(value, "seedCursor")
+      try checked(highWater <= maxAllocationCursor)
+      guard let commands = value["commands"] as? [Any], commands.count <= maxDrawingContacts else { throw failure() }
+      var contacts = 0
+      var previous: Int64 = 1
+      for entry in commands {
+        let command = try object(entry)
+        try keys(command, ["firstSeed", "granularity", "styles", "moves", "ops"])
+        let firstSeed = try integer(command, "firstSeed")
+        try checked(firstSeed >= previous && firstSeed <= highWater)
+        previous = firstSeed
+        try checked(["per-move", "per-frame"].contains(string(command, "granularity")))
+        guard let styles = command["styles"] as? [Any], let moves = command["moves"] as? [Any], let ops = command["ops"] as? [Any] else { throw failure() }
+        contacts += styles.count
+        try checked(!styles.isEmpty && contacts <= maxDrawingContacts && moves.count <= maxDrawingSamples && ops.count <= maxRecordedOps)
+        for item in styles { _ = try object(item) }
+        for item in moves { _ = try object(item) }
+        for item in ops { _ = try object(item) }
+      }
+      count = commands.count
+    } else {
+      guard let strokes = value["strokes"] as? [Any], strokes.count <= maxDrawingContacts else { throw failure() }
+      var points = 0
+      for entry in strokes {
+        let stroke = try object(entry)
+        guard let samples = stroke["points"] as? [Any] else { throw failure() }
+        points += samples.count
+        try checked(!samples.isEmpty && points <= maxDrawingSamples)
+        for item in samples { _ = try object(item) }
+      }
+      count = strokes.count
+    }
+    if version >= 6 {
+      let paper = try object(value["paper"])
+      if try string(paper, "kind") == "unadopted" { try keys(paper, ["kind"]); try checked(count == 0) }
+      else {
+        try keys(paper, ["kind", "cssWidth", "cssHeight", "backingScale"])
+        try checked(string(paper, "kind") == "adopted")
+        for (name, maximum) in [("cssWidth", drawingPaperWidth), ("cssHeight", drawingPaperHeight), ("backingScale", maximumBackingScale)] {
+          guard let raw = paper[name] as? NSNumber else { throw failure() }
+          try checked(CFGetTypeID(raw) != CFBooleanGetTypeID() && raw.doubleValue.isFinite && raw.doubleValue > 0 && raw.doubleValue <= maximum)
+        }
+        guard let width = paper["cssWidth"] as? NSNumber, let height = paper["cssHeight"] as? NSNumber, let backing = paper["backingScale"] as? NSNumber else { throw failure() }
+        try checked((drawingPaperWidth / min(width.doubleValue / drawingPaperWidth, height.doubleValue / drawingPaperHeight) / backing.doubleValue).isFinite)
+      }
+    }
+  }
   private func dispatch(_ root: URL, _ kind: String, _ input: [String: Any]) throws -> [String: Any] {
     switch kind {
     case "read":
@@ -347,9 +423,7 @@ final class SplotchAIJournal {
       try checked(all.count < maxAttempts)
       for dir in all { try checked(!unresolved(latest(dir))) }
       let original = Data(try string(input, "originalModel").utf8)
-      try checked(!original.isEmpty && original.count <= maxModel)
-      let model = try object(JSONSerialization.jsonObject(with: original))
-      try checked(integer(model, "version") == 5)
+      try originalModel(original, kind == "importLegacy")
       let upload = kind != "importLegacy" ? try decode(input, "upload", maxUpload) : nil
       try quota(root, original.count + (upload?.count ?? 0) + maxResult + maxJournal * 2)
       let dir = root.appendingPathComponent("attempt-\(try integer(j, "id"))")
