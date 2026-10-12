@@ -10,6 +10,7 @@ import {
   checkedRecoveryAdmission,
   checkedRecoveryDelivery,
   checkedRecoveryAck,
+  checkedRecoveryTerminal,
   verifyRecoveryRequestIdentity,
 } from '../ai/recoveryRequest';
 import { admitAiImage } from './aiImage';
@@ -21,6 +22,7 @@ export type RecoveryStorageOperation =
   | 'markRecoverySubmission'
   | 'readRecoveryUpload'
   | 'recordRecoveryAdmission'
+  | 'recordRecoveryTerminal'
   | 'retainRecoveryResult'
   | 'recordAck'
   | 'readRecoveryAttempt';
@@ -162,6 +164,28 @@ class NativeRecoveryStorage implements AiRecoveryStorage {
       return next;
     });
   }
+  recordRecoveryTerminal(
+    ...[receipt, confirmation]: Parameters<AiRecoveryStorage['recordRecoveryTerminal']>
+  ) {
+    return this.run('recordRecoveryTerminal', async () => {
+      const checked = checkedRecoveryTerminal(receipt, confirmation);
+      const next = await this.request(
+        await this.operation('recordRecoveryTerminal', {
+          ...this.owner.current(receipt),
+          confirmation: checked,
+        }),
+        receipt.journal.id
+      );
+      if (
+        next.recovery.state !== 'terminal' ||
+        next.recovery.outcome !== checked.body.outcome ||
+        next.recovery.expiry.kind !== 'known' ||
+        next.recovery.expiry.expiresAt !== checked.body.expiresAt
+      )
+        invalidRecovery();
+      return next;
+    });
+  }
   retainRecoveryResult(
     ...[receipt, raw, bytes]: Parameters<AiRecoveryStorage['retainRecoveryResult']>
   ) {
@@ -236,6 +260,7 @@ export function createNativeRecoveryStorage(
     markRecoverySubmission: (...args) => storage.markRecoverySubmission(...args),
     readRecoveryUpload: (...args) => storage.readRecoveryUpload(...args),
     recordRecoveryAdmission: (...args) => storage.recordRecoveryAdmission(...args),
+    recordRecoveryTerminal: (...args) => storage.recordRecoveryTerminal(...args),
     retainRecoveryResult: (...args) => storage.retainRecoveryResult(...args),
     recordAck: (...args) => storage.recordAck(...args),
     readRecoveryAttempt: (...args) => storage.readRecoveryAttempt(...args),

@@ -8,12 +8,14 @@ import type {
   AiRecoveryRequestReceipt,
   AiRecoveryDelivery,
   AiRecoveryAckConfirmation,
+  AiRecoveryTerminalConfirmation,
 } from '../ai/journal';
 import {
   checkedRecoveryCredential,
   checkedRecoveryAdmission,
   checkedRecoveryDelivery,
   checkedRecoveryAck,
+  checkedRecoveryTerminal,
   recoveryKnownExpiry,
   recoveryRequestId,
 } from '../ai/recoveryRequest';
@@ -131,33 +133,44 @@ export class WebAiRecoveryStorage implements AiRecoveryStorage {
       await this.confirmed(receipt);
       const admitted = checkedRecoveryAdmission(receipt, status);
       const expiry = recoveryKnownExpiry(receipt, admitted.expiresAt);
-      const terminal = admitted.phase === 'refusal' || admitted.phase === 'error';
       if (
         receipt.recovery.state !== 'submission-uncertain' &&
         receipt.recovery.state !== 'admitted'
-      ) {
-        if (
-          receipt.recovery.state === 'terminal' &&
-          terminal &&
-          receipt.recovery.outcome !== admitted.phase
-        )
-          invalidAiStorage();
+      )
         return receipt;
-      }
-      if (receipt.recovery.state === 'admitted' && !terminal) return receipt;
+      if (receipt.recovery.state === 'admitted') return receipt;
       return this.save(
         parseRecoveryRequestReceipt({
           ...receipt,
           revision: receipt.revision + 1,
-          journal: { ...receipt.journal, phase: terminal ? 'failed' : 'unknown' },
+          recovery: { ...receipt.recovery, expiry, state: 'admitted' },
+        })
+      );
+    });
+  }
+  recordRecoveryTerminal(
+    receipt: AiRecoveryRequestReceipt,
+    confirmation: AiRecoveryTerminalConfirmation
+  ): Promise<AiRecoveryRequestReceipt> {
+    return this.owner.queue(false, async () => {
+      await this.confirmed(receipt);
+      const checked = checkedRecoveryTerminal(receipt, confirmation);
+      if (receipt.recovery.state === 'terminal') return receipt;
+      const saved = await this.save(
+        parseRecoveryRequestReceipt({
+          ...receipt,
+          revision: receipt.revision + 1,
+          journal: { ...receipt.journal, phase: 'failed' },
           recovery: {
             ...receipt.recovery,
-            expiry,
-            state: terminal ? 'terminal' : 'admitted',
-            ...(terminal ? { outcome: admitted.phase } : {}),
+            state: 'terminal',
+            expiry: recoveryKnownExpiry(receipt, checked.body.expiresAt),
+            outcome: checked.body.outcome,
           },
         })
       );
+      await this.confirmed(saved);
+      return saved;
     });
   }
   retainRecoveryResult(

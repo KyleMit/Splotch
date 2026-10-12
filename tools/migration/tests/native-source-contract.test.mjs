@@ -47,6 +47,7 @@ const materializerToolPaths = [
   'tools/migration/lib/native-ai-original-contract.mjs',
   'tools/migration/lib/native-ai-recovery-contract.mjs',
   'tools/migration/lib/native-ai-recovery-rules.mjs',
+  'tools/migration/lib/native-ai-terminal-rules.mjs',
   'tools/migration/lib/native-ai-vault-contract.mjs',
   'tools/migration/lib/native-apple-scene.mjs',
   'tools/migration/lib/native-gemfile.mjs',

@@ -182,14 +182,8 @@ describe('recovery controller source proposals (unrun at packet seal)', () => {
       await f.start('sendRecovery');
       const before = f.latest();
       f.dispatch.mockImplementationOnce(async () => ({
-        kind: 'recovery',
-        reply: {
-          kind: 'status',
-          phase,
-          id: before.recovery.id,
-          expiresAt: before.recovery.expiry.expiresAt,
-          pollAfterMs: 4000,
-        },
+        kind: 'recovery-terminal',
+        confirmation: terminalFor(before, phase),
       }));
       await f.start('collectRecovery');
       expect(f.latest().recovery.state).toBe('terminal');
@@ -325,3 +319,79 @@ describe('recovery controller source proposals (unrun at packet seal)', () => {
     expect(f.dispatch).not.toHaveBeenCalled();
   });
 });
+
+function terminalFor(receipt, outcome = 'expired') {
+  return {
+    status: outcome === 'expired' ? 410 : outcome === 'refusal' ? 422 : 502,
+    body: {
+      ok: false,
+      error: 'Fixture confirmed terminal',
+      code: 'RECOVERY_TERMINAL',
+      protocol: 'splotch-ai-recovery-v1',
+      id: receipt.recovery.id,
+      createdAt: receipt.journal.createdAt,
+      expiresAt: receipt.recovery.expiry.expiresAt,
+      outcome,
+    },
+  };
+}
+it('preserves a terminal commit after permission revocation and never resends it', async () => {
+  const f = fixture();
+  await f.start('sendRecovery');
+  const before = f.latest();
+  f.dispatch.mockResolvedValueOnce({
+    kind: 'recovery-terminal',
+    confirmation: terminalFor(before),
+  });
+  const delayed = block(f.storage.recordRecoveryTerminal);
+  await f.owner.collectRecovery();
+  await delayed.started;
+  f.revoke('consent');
+  delayed.release();
+  await f.idle();
+  expect(f.latest().recovery.state).toBe('terminal');
+  expect(f.owner.getState().recovery).toBe(f.latest());
+  expect(f.storage.readRecoveryUpload).toHaveBeenCalledOnce();
+  expect(f.storage.recordAck).not.toHaveBeenCalled();
+});
+it('authoritatively rereads a terminal commit whose callback is lost', async () => {
+  const f = fixture();
+  await f.start('sendRecovery');
+  const before = f.latest();
+  f.dispatch.mockResolvedValueOnce({
+    kind: 'recovery-terminal',
+    confirmation: terminalFor(before),
+  });
+  const save = f.storage.recordRecoveryTerminal.getMockImplementation();
+  f.storage.recordRecoveryTerminal.mockImplementationOnce(async (...args) => {
+    await save(...args);
+    throw new Error('lost callback');
+  });
+  await f.start('collectRecovery');
+  expect(f.storage.read).toHaveBeenCalled();
+  expect(f.latest().recovery.state).toBe('terminal');
+  f.dispatch.mockClear();
+  await f.start('collectRecovery');
+  await f.start('sendRecovery');
+  expect(f.dispatch).not.toHaveBeenCalled();
+});
+it.each(['close', 'consent', 'vault-write', 'vault-remove'])(
+  'blocks terminal persistence after a delayed credential reread and %s',
+  async (kind) => {
+    const f = fixture();
+    await f.start('sendRecovery');
+    const before = f.latest();
+    f.dispatch.mockImplementationOnce(async () => {
+      const delayed = block(f.rawVault.readReferenced);
+      queueMicrotask(async () => {
+        await delayed.started;
+        f.revoke(kind);
+        delayed.release();
+      });
+      return { kind: 'recovery-terminal', confirmation: terminalFor(before) };
+    });
+    await f.start('collectRecovery');
+    expect(f.storage.recordRecoveryTerminal).not.toHaveBeenCalled();
+    expect(f.latest().recovery.state).toBe('admitted');
+  }
+);

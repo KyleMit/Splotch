@@ -13,6 +13,8 @@ import {
   RECOVERY_DIGEST_HEADER,
   RECOVERY_RECEIPT_HEADER,
   RECOVERY_MAX_IMAGE_BYTES,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_TERMINAL_VALUE,
 } from '../../experiments/native-architecture/src/ai/recoveryContract.ts';
 import { recoveryDigest } from '../../experiments/native-architecture/src/ai/recoveryDigest.ts';
 import { rgbaPng } from './native-png-fixtures.mjs';
@@ -26,8 +28,9 @@ const DIGEST = recoveryDigest(BYTES);
 const collect = {
   path: RECOVERY_PATH,
   method: 'GET',
-  headers: {},
+  headers: { [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE },
   deliveryProof: true,
+  terminalProof: true,
   recovery: {
     kind: 'collect',
     id: ID,
@@ -83,7 +86,8 @@ describe('recovery transport source proposals (unrun at packet seal)', () => {
     expect(reply.receipt).toBe(RECEIPT);
     expect(Object.isFrozen(reply)).toBe(true);
     expect(reply.reply.bytes).toEqual(BYTES);
-    const { deliveryProof: _deliveryProof, ...legacy } = collect;
+    const { deliveryProof: _deliveryProof, terminalProof: _terminalProof, ...oldRequest } = collect;
+    const legacy = { ...oldRequest, headers: {} };
     const old = await parse(new Response(BYTES, { headers: headers() }), legacy);
     expect(old.kind).toBe('recovery');
     expect(old.reply.kind).toBe('unadmitted-image');
@@ -211,14 +215,16 @@ describe('recovery transport source proposals (unrun at packet seal)', () => {
           path: RECOVERY_PATH,
           method: 'POST',
           query: 'style=Magical',
-          headers: {},
+          terminalProof: true,
+          headers: { [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE },
           body: BYTES,
           recovery: { kind: 'admit', id: ID, createdAt: CREATED, expiry: { kind: 'unknown' } },
         },
         reconcile: {
           path: RECOVERY_PATH,
           method: 'POST',
-          headers: {},
+          terminalProof: true,
+          headers: { [RECOVERY_TERMINAL_HEADER]: RECOVERY_TERMINAL_VALUE },
           body: JSON.stringify({ operation: 'reconcile', id: ID, createdAt: CREATED }),
           recovery: { kind: 'reconcile', id: ID, createdAt: CREATED, expiry: { kind: 'unknown' } },
         },
@@ -244,4 +250,105 @@ describe('recovery transport source proposals (unrun at packet seal)', () => {
       );
     }
   });
+});
+
+const terminalBody = () => ({
+  ok: false,
+  error: 'Fixture confirmed expiry',
+  code: 'RECOVERY_TERMINAL',
+  protocol: RECOVERY_PROTOCOL,
+  id: ID,
+  createdAt: CREATED,
+  expiresAt: EXPIRES,
+  outcome: 'expired',
+});
+const terminalHeaders = () => ({
+  'Content-Type': 'application/json',
+  [RECOVERY_VERSION_HEADER]: RECOVERY_PROTOCOL,
+  [RECOVERY_EXPIRES_HEADER]: String(EXPIRES),
+});
+it('requires strict tuple and metadata while allowing a checked proof independent of the local wall clock', async () => {
+  const response = () =>
+    new Response(JSON.stringify(terminalBody()), { status: 410, headers: terminalHeaders() });
+  expect(await parse(response(), collect, Number.MAX_SAFE_INTEGER)).toEqual({
+    kind: 'recovery-terminal',
+    confirmation: { status: 410, body: terminalBody() },
+  });
+  expect(await parse(response(), collect, 0)).toEqual({
+    kind: 'recovery-terminal',
+    confirmation: { status: 410, body: terminalBody() },
+  });
+});
+it.each([404, 410, 401, 403, 503])(
+  'never infers a terminal proof from generic error status %s',
+  async (status) => {
+    const response = new Response(
+      JSON.stringify({ ok: false, error: 'Unknown attempt', code: 'RECOVERY_EXPIRED' }),
+      { status, headers: { 'Content-Type': 'application/json' } }
+    );
+    const reply = await parse(response, collect, Number.MAX_SAFE_INTEGER);
+    expect(reply.kind).toBe('recovery');
+    expect(reply.reply.kind).toBe('held');
+  }
+);
+it.each(['id', 'createdAt', 'expiresAt', 'outcome'])(
+  'rejects an incomplete terminal %s',
+  async (field) => {
+    const body = terminalBody();
+    delete body[field];
+    await expect(
+      parse(new Response(JSON.stringify(body), { status: 410, headers: terminalHeaders() }))
+    ).rejects.toThrow();
+  }
+);
+it.each([RECOVERY_VERSION_HEADER, RECOVERY_EXPIRES_HEADER])(
+  'rejects terminal proof missing response header %s',
+  async (field) => {
+    const headers = terminalHeaders();
+    delete headers[field];
+    await expect(
+      parse(new Response(JSON.stringify(terminalBody()), { status: 410, headers }))
+    ).rejects.toThrow();
+  }
+);
+it('never treats a proof-shaped reply as legacy GET completion or opens either network guard', async () => {
+  const { deliveryProof: _delivery, terminalProof: _terminal, ...legacy } = collect;
+  await expect(
+    parse(
+      new Response(JSON.stringify(terminalBody()), { status: 410, headers: terminalHeaders() }),
+      { ...legacy, headers: {} }
+    )
+  ).rejects.toThrow();
+  const transport = vi.fn();
+  expect(await requestAi(transport, collect, vi.fn())).toEqual({
+    kind: 'recovery',
+    reply: { kind: 'held', reason: 'unavailable' },
+  });
+  expect(transport).not.toHaveBeenCalled();
+  expect(() => aiUrl(collect)).toThrow('qualified');
+});
+
+it.each([undefined, 'true', '0', '1,1'])(
+  'rejects a changed checked request selector %s',
+  async (value) => {
+    const changed = {
+      ...collect,
+      headers: value === undefined ? {} : { [RECOVERY_TERMINAL_HEADER]: value },
+    };
+    await expect(
+      parse(
+        new Response(JSON.stringify(terminalBody()), { status: 410, headers: terminalHeaders() }),
+        changed
+      )
+    ).rejects.toThrow();
+  }
+);
+it('rejects the terminal selector on a legacy request before using a proof-shaped reply', async () => {
+  const { terminalProof: _terminal, deliveryProof: _delivery, ...legacy } = collect;
+  await expect(
+    parse(
+      new Response(JSON.stringify(terminalBody()), { status: 410, headers: terminalHeaders() }),
+      legacy
+    )
+  ).rejects.toThrow();
 });

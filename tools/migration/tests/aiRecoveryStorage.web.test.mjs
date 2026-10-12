@@ -5,6 +5,7 @@ import { rgbaPng } from '../../tests/native-png-fixtures.mjs';
 import { disk, model, png, journal, resetAiDisk } from './aiStorageHarness.mjs';
 import { createAiStorage } from '../../../experiments/native-architecture/src/platform/aiStorage.web';
 import { JOB_TTL_MS } from '../../../experiments/native-architecture/src/ai/contract';
+import { RECOVERY_TERMINAL_STATUS } from '../../../web/src/lib/ai/generationAttempt';
 
 beforeEach(resetAiDisk);
 
@@ -191,10 +192,7 @@ it('requires reread when the result commits but transaction completion is uncert
 it('preserves a checked terminal outcome and creates a separate successor from the original held source', async () => {
   const { storage, source, receipt } = await preparedRecovery();
   const marked = await storage.markRecoverySubmission(receipt);
-  const refused = await storage.recordRecoveryAdmission(marked, {
-    ...admittedStatus(marked),
-    phase: 'refusal',
-  });
+  const refused = await storage.recordRecoveryTerminal(marked, terminalFor(marked, 'refusal'));
   expect(refused.recovery.state).toBe('terminal');
   expect(refused.journal.phase).toBe('failed');
   const held = await storage.readRecoveryAttempt(1);
@@ -216,4 +214,123 @@ it('lets only one tab append a recovery successor from the same held state', asy
   expect(outcomes.map(({ status }) => status).sort()).toEqual(['fulfilled', 'rejected']);
   expect(disk.raw.attempts).toHaveLength(2);
   expect(disk.raw.attempts[0].receipt).toEqual(sourceA);
+});
+
+function terminalFor(receipt, outcome = 'expired') {
+  return {
+    status: RECOVERY_TERMINAL_STATUS[outcome],
+    body: {
+      ok: false,
+      error: 'Fixture confirmed terminal',
+      code: 'RECOVERY_TERMINAL',
+      protocol: 'splotch-ai-recovery-v1',
+      id: receipt.recovery.id,
+      createdAt: receipt.journal.createdAt,
+      expiresAt: receipt.journal.createdAt + JOB_TTL_MS,
+      outcome,
+    },
+  };
+}
+it.each(['expired', 'refusal', 'error'])(
+  'durably records a checked %s from unknown expiry and replays it exactly',
+  async (outcome) => {
+    const { storage, source, receipt } = await preparedRecovery();
+    const marked = await storage.markRecoverySubmission(receipt);
+    const terminal = await storage.recordRecoveryTerminal(marked, terminalFor(marked, outcome));
+    expect(terminal.recovery.state).toBe('terminal');
+    expect(terminal.recovery.outcome).toBe(outcome);
+    const revision = disk.raw.revision;
+    expect(await storage.recordRecoveryTerminal(terminal, terminalFor(terminal, outcome))).toBe(
+      terminal
+    );
+    expect(disk.raw.revision).toBe(revision);
+    const restarted = createAiStorage();
+    expect(await restarted.readRecoveryAttempt(2)).toEqual(terminal);
+    expect(await restarted.readRecoveryAttempt(1)).toEqual(source);
+    expect(disk.raw.attempts[0].originalModel).toBe(disk.raw.attempts[1].originalModel);
+  }
+);
+it.each([
+  ['id', 'f'.repeat(64)],
+  ['createdAt', 2001],
+  ['expiresAt', 1],
+  ['outcome', 'acknowledged'],
+  ['code', 'RECOVERY_EXPIRED'],
+  ['ok', true],
+  ['extra', true],
+])('holds a forged terminal %s at the real IDB owner', async (field, value) => {
+  const { storage, receipt } = await preparedRecovery();
+  const marked = await storage.markRecoverySubmission(receipt);
+  const confirmation = terminalFor(marked);
+  confirmation.body[field] = value;
+  await expect(storage.recordRecoveryTerminal(marked, confirmation)).rejects.toThrow();
+  expect(disk.raw.attempts[1].receipt.recovery.state).toBe('submission-uncertain');
+});
+it('keeps refusal/error 202 statuses advisory until settlement proof arrives', async () => {
+  const { storage, receipt } = await preparedRecovery();
+  const marked = await storage.markRecoverySubmission(receipt);
+  const advisory = await storage.recordRecoveryAdmission(marked, {
+    ...admittedStatus(marked),
+    phase: 'refusal',
+  });
+  expect(advisory.recovery.state).toBe('admitted');
+  expect(advisory.journal.phase).toBe('unknown');
+  expect('outcome' in advisory.recovery).toBe(false);
+});
+it('rejects changed expiry, conflicting terminal outcome, stale receipt and prepared state', async () => {
+  const { storage, receipt } = await preparedRecovery();
+  await expect(storage.recordRecoveryTerminal(receipt, terminalFor(receipt))).rejects.toThrow();
+  const reread = await storage.readRecoveryAttempt(2);
+  const marked = await storage.markRecoverySubmission(reread);
+  const admitted = await storage.recordRecoveryAdmission(marked, admittedStatus(marked));
+  const changed = terminalFor(admitted);
+  changed.body.expiresAt += 1;
+  await expect(storage.recordRecoveryTerminal(admitted, changed)).rejects.toThrow();
+  const current = await storage.readRecoveryAttempt(2);
+  const terminal = await storage.recordRecoveryTerminal(current, terminalFor(current));
+  await expect(
+    storage.recordRecoveryTerminal(terminal, terminalFor(terminal, 'error'))
+  ).rejects.toThrow();
+  const latest = await storage.readRecoveryAttempt(2);
+  await expect(
+    storage.recordRecoveryTerminal({ ...latest }, terminalFor(latest))
+  ).rejects.toThrow();
+  expect(disk.raw.attempts[1].receipt.recovery.outcome).toBe('expired');
+});
+it.each(['retained', 'acknowledged'])(
+  'never downgrades a %s result to a checked expiry',
+  async (state) => {
+    const { storage, retained } = await retainedRecovery();
+    const receipt =
+      state === 'acknowledged'
+        ? await storage.recordAck(retained.receipt, ackFor(retained.receipt))
+        : retained.receipt;
+    await expect(storage.recordRecoveryTerminal(receipt, terminalFor(receipt))).rejects.toThrow();
+    expect(disk.raw.attempts[1].receipt.recovery.state).toBe(state);
+    expect(disk.raw.attempts[1].receipt.journal.result).toEqual(retained.picture);
+  }
+);
+it('never downgrades delivery-pinned even when no result has been published', async () => {
+  const { storage, receipt } = await preparedRecovery();
+  const marked = await storage.markRecoverySubmission(receipt);
+  disk.failRevision = disk.raw.revision + 2;
+  await expect(storage.retainRecoveryResult(marked, deliveryFor(marked), png)).rejects.toThrow();
+  disk.failRevision = null;
+  const pinned = await storage.readRecoveryAttempt(2);
+  await expect(storage.recordRecoveryTerminal(pinned, terminalFor(pinned))).rejects.toThrow();
+  expect(disk.raw.attempts[1].receipt.recovery.state).toBe('delivery-pinned');
+});
+it('requires authoritative reread after a terminal write commits but completion is lost', async () => {
+  const { storage, receipt } = await preparedRecovery();
+  const marked = await storage.markRecoverySubmission(receipt);
+  disk.uncertainRevision = disk.raw.revision + 1;
+  await expect(storage.recordRecoveryTerminal(marked, terminalFor(marked))).rejects.toThrow(
+    'unconfirmed'
+  );
+  expect(disk.raw.attempts[1].receipt.recovery.state).toBe('terminal');
+  await expect(storage.markRecoverySubmission(marked)).rejects.toThrow();
+  disk.uncertainRevision = null;
+  const terminal = await storage.readRecoveryAttempt(2);
+  expect(await storage.recordRecoveryTerminal(terminal, terminalFor(terminal))).toBe(terminal);
+  expect(await storage.readRecoveryAttempt(1)).not.toBeNull();
 });

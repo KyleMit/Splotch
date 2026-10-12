@@ -517,18 +517,18 @@
     },
     {
       "source": "native-ai-environment-v1/android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt",
-      "sourceSha256": "0692a877adb6e58562a299dbb890e8e447a60c9329ac492230de1deae80d12cc",
+      "sourceSha256": "62304f8403818a44048f34149f50bae76e160d2386013729874d27ee1c6064c4",
       "target": "android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt",
       "change": "owned-native-ai-environment-v1",
-      "targetSha256": "0692a877adb6e58562a299dbb890e8e447a60c9329ac492230de1deae80d12cc",
+      "targetSha256": "62304f8403818a44048f34149f50bae76e160d2386013729874d27ee1c6064c4",
       "mode": "0o644"
     },
     {
       "source": "native-ai-environment-v1/ios/HelloWorld/SplotchAIJournal.swift",
-      "sourceSha256": "2643a56b18ffe7dba65383ad85e2671faf36c4f320bcf68e0928149222fdaead",
+      "sourceSha256": "7563493f801084f6b61bcea056d347784e6d55f9423dc6f3c6ec732137dfb45b",
       "target": "ios/HelloWorld/SplotchAIJournal.swift",
       "change": "owned-native-ai-environment-v1",
-      "targetSha256": "2643a56b18ffe7dba65383ad85e2671faf36c4f320bcf68e0928149222fdaead",
+      "targetSha256": "7563493f801084f6b61bcea056d347784e6d55f9423dc6f3c6ec732137dfb45b",
       "mode": "0o644"
     }
   ]

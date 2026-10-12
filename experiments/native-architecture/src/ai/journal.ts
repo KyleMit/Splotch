@@ -98,7 +98,13 @@ export type AiRecoveryRetainedResult = Readonly<{
   picture: AiResult;
   receipt: AiRecoveryRequestReceipt;
 }>;
+export type AiRecoveryTerminalConfirmation =
+  import('../../../../web/src/lib/ai/generationAttempt').RecoveryTerminalConfirmation;
 export interface AiRecoveryStorage {
+  recordRecoveryTerminal(
+    receipt: AiRecoveryRequestReceipt,
+    confirmation: AiRecoveryTerminalConfirmation
+  ): Promise<AiRecoveryRequestReceipt>;
   prepareRecoverySendFromHeld(
     source: AiRecoveryHeldReceipt,
     id: number,

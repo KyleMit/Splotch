@@ -10,6 +10,9 @@ export const RECOVERY_EXPIRES_HEADER = 'X-AI-Attempt-Expires-At';
 export const RECOVERY_DIGEST_HEADER = 'X-AI-Delivery-Digest';
 export const RECOVERY_RECEIPT_HEADER = 'X-AI-Delivery-Receipt';
 export const RECOVERY_INPUT_DIGEST_HEADER = 'X-AI-Input-Digest';
+export const RECOVERY_TERMINAL_HEADER = 'X-AI-Checked-Terminal';
+export const RECOVERY_TERMINAL_VALUE = '1';
+export const RECOVERY_TERMINAL_CODE = 'RECOVERY_TERMINAL';
 export const RECOVERY_ADMISSION_AGE_MS = 60_000;
 export const RECOVERY_FUTURE_SKEW_MS = 30_000;
 export const RECOVERY_POLL_AFTER_MS = 4_000;
@@ -287,4 +290,90 @@ export function parseRecoveryLookupHeaders(headers: Pick<Headers, 'get'>): Recov
   if (nonce === null && createdAt === null) return Object.freeze({ kind: 'capability' });
   if (!isRecoveryHex(nonce) || createdAt === null) recoveryInvalid();
   return Object.freeze({ kind: 'collect', nonce, createdAt: parseRecoveryTimestamp(createdAt) });
+}
+
+export type RecoveryTerminalOutcome = 'expired' | 'refusal' | 'error';
+export const RECOVERY_TERMINAL_STATUS = Object.freeze({
+  expired: 410,
+  refusal: 422,
+  error: 502,
+} as const);
+export type RecoveryTerminalBody = Readonly<{
+  ok: false;
+  error: string;
+  code: typeof RECOVERY_TERMINAL_CODE;
+  protocol: typeof RECOVERY_PROTOCOL;
+  id: string;
+  createdAt: number;
+  expiresAt: number;
+  outcome: RecoveryTerminalOutcome;
+}>;
+export type RecoveryTerminalConfirmation = Readonly<{
+  status: (typeof RECOVERY_TERMINAL_STATUS)[RecoveryTerminalOutcome];
+  body: RecoveryTerminalBody;
+}>;
+export function parseRecoveryTerminalReply(
+  status: number,
+  value: unknown,
+  expected: Readonly<{
+    id: string;
+    createdAt: number;
+    expiry: Readonly<{ kind: 'unknown' }> | Readonly<{ kind: 'known'; expiresAt: number }>;
+  }>
+): RecoveryTerminalConfirmation {
+  const item = recoveryObject(value);
+  recoveryExact(item, [
+    'ok',
+    'error',
+    'code',
+    'protocol',
+    'id',
+    'createdAt',
+    'expiresAt',
+    'outcome',
+  ]);
+  const outcome = item.outcome;
+  if (outcome !== 'expired' && outcome !== 'refusal' && outcome !== 'error') recoveryInvalid();
+  const minimum = expected.createdAt + RECOVERY_TTL_MS - RECOVERY_FUTURE_SKEW_MS;
+  const maximum = expected.createdAt + RECOVERY_TTL_MS + RECOVERY_ADMISSION_AGE_MS;
+  if (
+    item.ok !== false ||
+    item.code !== RECOVERY_TERMINAL_CODE ||
+    item.protocol !== RECOVERY_PROTOCOL ||
+    !isRecoveryHex(expected.id) ||
+    item.id !== expected.id ||
+    !isRecoveryTime(expected.createdAt) ||
+    item.createdAt !== expected.createdAt ||
+    !isRecoveryTime(minimum) ||
+    !isRecoveryTime(maximum) ||
+    !isRecoveryTime(item.expiresAt) ||
+    item.expiresAt < minimum ||
+    item.expiresAt > maximum ||
+    (expected.expiry.kind !== 'known' && expected.expiry.kind !== 'unknown') ||
+    (expected.expiry.kind === 'known' &&
+      (!isRecoveryTime(expected.expiry.expiresAt) ||
+        item.expiresAt !== expected.expiry.expiresAt)) ||
+    status !== RECOVERY_TERMINAL_STATUS[outcome]
+  )
+    recoveryInvalid();
+  const error = recoveryText(item.error, RECOVERY_MAX_JSON_BYTES);
+  return Object.freeze({
+    status: RECOVERY_TERMINAL_STATUS[outcome],
+    body: Object.freeze({
+      ok: false,
+      error,
+      code: RECOVERY_TERMINAL_CODE,
+      protocol: RECOVERY_PROTOCOL,
+      id: expected.id,
+      createdAt: expected.createdAt,
+      expiresAt: item.expiresAt,
+      outcome,
+    }),
+  });
+}
+export function recoveryTerminalRequested(headers: Pick<Headers, 'get'>): boolean {
+  const value = headers.get(RECOVERY_TERMINAL_HEADER);
+  if (value === null) return false;
+  if (value !== RECOVERY_TERMINAL_VALUE) recoveryInvalid();
+  return true;
 }

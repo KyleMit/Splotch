@@ -113,3 +113,22 @@ describe('recovery stable settlement authority', () => {
     expect(changedOutcome.receiptDigest).not.toBe(receipt.receiptDigest);
   });
 });
+
+it('returns the confirmed stable failure outcome with the settlement digest', async () => {
+  const fixture = recoveryServiceFixture();
+  getStoreMock.mockReturnValue(fixture.ledger.store());
+  await fixture.raw();
+  const claim = await fixture.attempts.claim(fixture.identity.id);
+  await fixture.attempts.complete(
+    fixture.identity.id,
+    claim!.claimId,
+    { phase: 'refusal', reason: 'Fixture safety reason' },
+    null
+  );
+  const record = await fixture.attempts.read(fixture.lookup);
+  if (record.phase !== 'refusal') throw new Error('Fixture did not refuse');
+  const settlement = await fixture.accounting.settle(record, fixture.credential);
+  expect(settlement.outcome).toEqual({ kind: 'failure', failureKind: 'safety' });
+  expect(settlement.receiptDigest).toMatch(/^[a-f0-9]{64}$/);
+  expect(fixture.ledger.grant().failures).toBe(1);
+});

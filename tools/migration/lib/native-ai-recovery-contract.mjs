@@ -19,6 +19,7 @@ const operations = Object.freeze([
   'markRecoverySubmission',
   'readRecoveryUpload',
   'recordRecoveryAdmission',
+  'recordRecoveryTerminal',
   'retainRecoveryResult',
   'recordAck',
   'readRecoveryAttempt',
@@ -83,7 +84,11 @@ const regions = {
     ],
   },
 };
-const orders = { retainRecovery: [3, 4, 8, 9, 14, 12], acknowledgeRecovery: [6, 7, 8, 9, 10, 11] };
+const orders = {
+  recoveryTerminal: [15, 16, 17, 18],
+  retainRecovery: [3, 4, 8, 9, 14, 12],
+  acknowledgeRecovery: [6, 7, 8, 9, 10, 11],
+};
 
 // Exporting the inventory lets falsification tests exercise every production source fence.
 export const nativeRecoverySourceRules = Object.freeze([
@@ -92,7 +97,10 @@ export const nativeRecoverySourceRules = Object.freeze([
     return {
       ...rule,
       region: regions[rule.regionName]?.[rule.platform],
-      ordered: orders[rule.owner]?.map((position) => rule.tokens[position]),
+      ordered: (rule.owner === 'recoveryTerminal' && rule.platform === 'apple'
+        ? [16, 17, 18, 19]
+        : orders[rule.owner]
+      )?.map((position) => rule.tokens[position]),
     };
   }),
   {
@@ -182,6 +190,7 @@ export const nativeRecoverySourceRules = Object.freeze([
       'maxUpload = 15 * 1024 * 1024',
       'maxResult = 16 * 1024 * 1024',
       'maxJournal = 32 * 1024',
+      'maxRecoveryJson = 8192',
     ],
   },
   {
@@ -192,6 +201,7 @@ export const nativeRecoverySourceRules = Object.freeze([
       'maxUpload = 15 * 1024 * 1024',
       'maxResult = 16 * 1024 * 1024',
       'maxJournal = 32 * 1024',
+      'maxRecoveryJson = 8192',
     ],
   },
   {

@@ -37,6 +37,7 @@ class SplotchAIJournal(private val context: Context) {
   private val minimumRecoveryExpiryDeltaMs = 1170000L
   private val maximumRecoveryExpiryDeltaMs = 1260000L
   private val recoveryPollAfterMs = 4000L
+  private val maxRecoveryJson = 8192
   private val styles = setOf("Magical", "Crayon", "Watercolor", "Paper", "Felt", "Sticker", "Cartoon", "Clay")
   fun execute(kind: String, payload: String, success: (String) -> Unit, failure: () -> Unit) {
     executor.execute {
@@ -574,10 +575,33 @@ class SplotchAIJournal(private val context: Context) {
     check(r.getJSONObject("expiry").getString("kind") == "unknown" || same(r.getJSONObject("expiry"), known))
     r.put("expiry", known)
     val state = r.getString("state")
-    if (state in setOf("submission-uncertain", "admitted")) {
-      r.put("state", if (phase in setOf("refusal", "error")) "terminal" else "admitted")
-      if (phase in setOf("refusal", "error")) { r.put("outcome", phase); next.getJSONObject("journal").put("phase", "failed") }
-    } else if (state == "terminal" && phase in setOf("refusal", "error")) check(r.getString("outcome") == phase)
+    if (state in setOf("submission-uncertain", "admitted")) r.put("state", "admitted")
+    return publishRequest(dir, value, next)
+  }
+  private fun recoveryTerminal(input: JSONObject): JSONObject {
+    keys(input, "id", "nonce", "revision", "confirmation")
+    val (dir, value) = selectedRequest(input)
+    val r = recoveryRequest(value)
+    val state = r.getString("state")
+    check(state in setOf("submission-uncertain", "admitted", "terminal"))
+    val confirmation = input.getJSONObject("confirmation"); keys(confirmation, "status", "body")
+    val body = confirmation.getJSONObject("body")
+    keys(body, "ok", "error", "code", "protocol", "id", "createdAt", "expiresAt", "outcome")
+    exactStrings(body, "error", "code", "protocol", "id", "outcome")
+    check(body.get("ok") is Boolean && !body.getBoolean("ok"))
+    check(body.getString("error").isNotEmpty() && body.getString("error").toByteArray(Charsets.UTF_8).size <= maxRecoveryJson)
+    check(body.getString("code") == "RECOVERY_TERMINAL" && body.getString("protocol") == r.getString("protocol") && body.getString("id") == r.getString("id"))
+    check(integer(body, "createdAt", 0) == integer(value.getJSONObject("journal"), "createdAt", 0))
+    val outcome = body.getString("outcome")
+    val status = when (outcome) { "expired" -> 410L; "refusal" -> 422L; "error" -> 502L; else -> error("Terminal outcome unavailable") }
+    check(integer(confirmation, "status") == status)
+    val known = JSONObject().put("kind", "known").put("expiresAt", integer(body, "expiresAt")).put("provenance", "validated-recovery-response")
+    check(r.getJSONObject("expiry").getString("kind") == "unknown" || same(r.getJSONObject("expiry"), known))
+    if (state == "terminal") check(r.getString("outcome") == outcome)
+    check(same(confirm(dir, latest(dir)), value))
+    val next = JSONObject(value.toString())
+    next.getJSONObject("recovery").put("expiry", known).put("state", "terminal").put("outcome", outcome)
+    next.getJSONObject("journal").put("phase", "failed")
     return publishRequest(dir, value, next)
   }
   private fun recoveryResultFile(dir: File, bytes: ByteArray) {
@@ -668,6 +692,7 @@ class SplotchAIJournal(private val context: Context) {
       "prepareRecoverySendFromHeld" -> prepareRecoverySend(input)
       "retainRecoveryResult" -> retainRecovery(input)
       "recordAck" -> acknowledgeRecovery(input)
+      "recordRecoveryTerminal" -> recoveryTerminal(input)
       "readRecoveryAttempt" -> {
         keys(input, "id")
         val id = integer(input, "id")

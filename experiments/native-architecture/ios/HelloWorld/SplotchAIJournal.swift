@@ -27,6 +27,7 @@ final class SplotchAIJournal {
   private let minimumRecoveryExpiryDeltaMs: Int64 = 1170000
   private let maximumRecoveryExpiryDeltaMs: Int64 = 1260000
   private let recoveryPollAfterMs: Int64 = 4000
+  private let maxRecoveryJson = 8192
   private let styles = ["Magical", "Crayon", "Watercolor", "Paper", "Felt", "Sticker", "Cartoon", "Clay"]
   private func failure() -> NSError { NSError(domain: "AI_DURABILITY_UNAVAILABLE", code: 1) }
   private func checked(_ condition: Bool) throws { if !condition { throw failure() } }
@@ -565,13 +566,37 @@ final class SplotchAIJournal {
     try checked(string(object(r["expiry"]), "kind") == "unknown" || same(object(r["expiry"]), known))
     r["expiry"] = known
     let state = try string(r, "state")
-    if ["submission-uncertain", "admitted"].contains(state) {
-      r["state"] = ["refusal", "error"].contains(phase) ? "terminal" : "admitted"
-      if ["refusal", "error"].contains(phase) {
-        r["outcome"] = phase; var j = try journal(next["journal"]); j["phase"] = "failed"; next["journal"] = j
-      }
-    } else if state == "terminal" && ["refusal", "error"].contains(phase) { try checked(string(r, "outcome") == phase) }
+    if ["submission-uncertain", "admitted"].contains(state) { r["state"] = "admitted" }
     next["recovery"] = r
+    return try publishRequest(root, dir, value, next)
+  }
+  private func recoveryTerminal(_ root: URL, _ input: [String: Any]) throws -> [String: Any] {
+    try keys(input, ["id", "nonce", "revision", "confirmation"])
+    let (dir, value) = try selectedRequest(root, input)
+    var r = try recoveryRequest(value)
+    let state = try string(r, "state")
+    try checked(["submission-uncertain", "admitted", "terminal"].contains(state))
+    let confirmation = try object(input["confirmation"])
+    try keys(confirmation, ["status", "body"])
+    let body = try object(confirmation["body"])
+    try keys(body, ["ok", "error", "code", "protocol", "id", "createdAt", "expiresAt", "outcome"])
+    guard let ok = body["ok"] as? NSNumber else { throw failure() }
+    try checked(CFGetTypeID(ok) == CFBooleanGetTypeID() && !ok.boolValue)
+    let message = try string(body, "error")
+    try checked(!message.isEmpty && message.utf8.count <= maxRecoveryJson)
+    try checked(string(body, "code") == "RECOVERY_TERMINAL" && string(body, "protocol") == string(r, "protocol") && string(body, "id") == string(r, "id"))
+    try checked(integer(body, "createdAt", 0) == integer(object(value["journal"]), "createdAt", 0))
+    let outcome = try string(body, "outcome")
+    let statuses: [String: Int64] = ["expired": 410, "refusal": 422, "error": 502]
+    guard let status = statuses[outcome] else { throw failure() }
+    try checked(integer(confirmation, "status") == status)
+    let known: [String: Any] = ["kind": "known", "expiresAt": try integer(body, "expiresAt"), "provenance": "validated-recovery-response"]
+    try checked(string(object(r["expiry"]), "kind") == "unknown" || same(object(r["expiry"]), known))
+    if state == "terminal" { try checked(string(r, "outcome") == outcome) }
+    try checked(same(confirm(dir, latest(dir)), value))
+    r["expiry"] = known; r["state"] = "terminal"; r["outcome"] = outcome
+    var next = value, j = try journal(value["journal"])
+    j["phase"] = "failed"; next["journal"] = j; next["recovery"] = r
     return try publishRequest(root, dir, value, next)
   }
   private func recoveryResultFile(_ dir: URL, _ bytes: Data) throws {
@@ -672,6 +697,7 @@ final class SplotchAIJournal {
     case "prepareRecoverySendFromHeld": return try prepareRecoverySend(root, input)
     case "retainRecoveryResult": return try retainRecovery(root, input)
     case "recordAck": return try acknowledgeRecovery(root, input)
+    case "recordRecoveryTerminal": return try recoveryTerminal(root, input)
     case "readRecoveryAttempt":
       try keys(input, ["id"])
       let id = try integer(input, "id")

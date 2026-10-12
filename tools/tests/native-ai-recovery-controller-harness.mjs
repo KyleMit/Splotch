@@ -7,6 +7,7 @@ import {
   checkedRecoveryAdmission,
   checkedRecoveryDelivery,
   checkedRecoveryAck,
+  checkedRecoveryTerminal,
 } from '../../experiments/native-architecture/src/ai/recoveryRequest.ts';
 import { parseAiResponse } from '../../experiments/native-architecture/src/ai/transport.ts';
 import {
@@ -140,18 +141,34 @@ export function fixture({ guarded = false, source = held() } = {}) {
     readRecoveryUpload: vi.fn(async () => new Uint8Array(INPUT)),
     recordRecoveryAdmission: vi.fn(async (before, status) => {
       const checked = checkedRecoveryAdmission(before, status);
-      const terminal = checked.phase === 'refusal' || checked.phase === 'error';
       return save({
         ...before,
         revision: before.revision + 1,
-        journal: { ...before.journal, phase: terminal ? 'failed' : 'unknown' },
+        journal: { ...before.journal, phase: 'unknown' },
         recovery: {
           ...before.recovery,
-          state: terminal ? 'terminal' : 'admitted',
-          ...(terminal ? { outcome: checked.phase } : {}),
+          state: 'admitted',
           expiry: {
             kind: 'known',
             expiresAt: checked.expiresAt,
+            provenance: 'validated-recovery-response',
+          },
+        },
+      });
+    }),
+    recordRecoveryTerminal: vi.fn(async (before, confirmation) => {
+      const checked = checkedRecoveryTerminal(before, confirmation);
+      return save({
+        ...before,
+        revision: before.revision + 1,
+        journal: { ...before.journal, phase: 'failed' },
+        recovery: {
+          ...before.recovery,
+          state: 'terminal',
+          outcome: checked.body.outcome,
+          expiry: {
+            kind: 'known',
+            expiresAt: checked.body.expiresAt,
             provenance: 'validated-recovery-response',
           },
         },

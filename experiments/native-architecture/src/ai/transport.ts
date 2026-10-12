@@ -26,7 +26,7 @@ import {
 } from './contract';
 import { resultImageGrid } from './imageAdmission';
 import { imageReportToken } from './reportContract';
-import type { AiRecoveryAckConfirmation } from './journal';
+import type { AiRecoveryAckConfirmation, AiRecoveryTerminalConfirmation } from './journal';
 type LegacyAiRequest = {
   path:
     | '/api/generate-image'
@@ -56,6 +56,7 @@ export type AiReply =
       receipt: string;
     }>
   | Readonly<{ kind: 'recovery-ack'; confirmation: AiRecoveryAckConfirmation }>
+  | Readonly<{ kind: 'recovery-terminal'; confirmation: AiRecoveryTerminalConfirmation }>
   | {
       kind: 'image';
       bytes: Uint8Array;

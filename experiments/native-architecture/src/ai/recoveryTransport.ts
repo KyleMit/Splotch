@@ -3,6 +3,12 @@ import {
   RECOVERY_PROTOCOL,
   RECOVERY_VERSION_HEADER,
   RECOVERY_RECEIPT_HEADER,
+  RECOVERY_TERMINAL_HEADER,
+  RECOVERY_TERMINAL_VALUE,
+  RECOVERY_TERMINAL_CODE,
+  RECOVERY_EXPIRES_HEADER,
+  originalRecoveryExpiry,
+  parseRecoveryTerminalReply,
   RECOVERY_MAX_JSON_BYTES,
   RECOVERY_MAX_IMAGE_BYTES,
   parseRecoveryJson,
@@ -19,33 +25,47 @@ import { resultImageGrid } from './imageAdmission';
 import { recoveryDigest } from './recoveryDigest';
 import { readAiBytes } from './responseBytes';
 import type { AiReply, AiResponse } from './transport';
-export type RecoveryReadRequest = {
+type RecoveryReadCommon = {
   path: typeof RECOVERY_PATH;
   method: 'GET';
   headers: Record<string, string>;
-  recovery: RecoveryRead;
+
   body?: never;
   query?: never;
-  deliveryProof?: true;
 };
+export type RecoveryReadRequest = RecoveryReadCommon &
+  (
+    | { recovery: RecoveryRead; deliveryProof?: never; terminalProof?: never }
+    | {
+        recovery: Extract<RecoveryRead, { kind: 'collect' }>;
+        deliveryProof: true;
+        terminalProof: true;
+      }
+  );
 export type RecoveryAdmissionRequest = {
   path: typeof RECOVERY_PATH;
   method: 'POST';
   headers: Record<string, string>;
   recovery: RecoveryAdmission;
+  terminalProof: true;
   query: string;
   body: Uint8Array;
   deliveryProof?: never;
 };
-export type RecoveryMutationRequest = {
+type RecoveryMutationCommon = {
   path: typeof RECOVERY_PATH;
   method: 'POST';
   headers: Record<string, string>;
-  recovery: RecoveryMutation;
+
   query?: never;
   body: string;
   deliveryProof?: never;
 };
+export type RecoveryMutationRequest = RecoveryMutationCommon &
+  (
+    | { recovery: Extract<RecoveryMutation, { kind: 'reconcile' }>; terminalProof: true }
+    | { recovery: Extract<RecoveryMutation, { kind: 'ack' }>; terminalProof?: never }
+  );
 function recoveryRead(operation: RecoveryOperation): Extract<RecoveryRead, { kind: 'collect' }> {
   return {
     kind: 'collect',
@@ -84,6 +104,10 @@ export async function parseRecoveryResponse(
   signal: AbortSignal,
   now: number
 ): Promise<AiReply> {
+  const checkedTerminal = request.terminalProof === true;
+  const terminalHeader = request.headers[RECOVERY_TERMINAL_HEADER];
+  if (checkedTerminal ? terminalHeader !== RECOVERY_TERMINAL_VALUE : terminalHeader !== undefined)
+    throw new Error('Recovery terminal request changed.');
   const legacyRead = request.method === 'GET' && !request.deliveryProof;
   const read = request.method === 'GET' ? request.recovery : recoveryRead(request.recovery);
   if (isMutationRequest(request)) checkMutation(request);
@@ -129,6 +153,24 @@ export async function parseRecoveryResponse(
   );
   if (!legacyRead) checkLength(response, bytes.length);
   const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  if (
+    checkedTerminal &&
+    read.kind === 'collect' &&
+    value &&
+    typeof value === 'object' &&
+    'code' in value &&
+    value.code === RECOVERY_TERMINAL_CODE
+  ) {
+    if (response.headers.get(RECOVERY_VERSION_HEADER) !== RECOVERY_PROTOCOL)
+      throw new Error('Recovery terminal version changed.');
+    const confirmation = parseRecoveryTerminalReply(response.status, value, read);
+    if (
+      originalRecoveryExpiry(response.headers.get(RECOVERY_EXPIRES_HEADER), read) !==
+      confirmation.body.expiresAt
+    )
+      throw new Error('Recovery terminal expiry changed.');
+    return Object.freeze({ kind: 'recovery-terminal', confirmation });
+  }
   if (request.method === 'POST' && request.recovery.kind === 'ack' && response.status === 200) {
     const operation = request.recovery;
     const body = parseRecoveryAckReply(value, {

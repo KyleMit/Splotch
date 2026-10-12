@@ -293,6 +293,30 @@ Every 202 includes the version and original `X-AI-Attempt-Expires-At` headers. G
 funding, dispatch, settlement, conversion, token minting, ACK or deletion, including at expiry. Raw
 image/refusal/error outcomes remain 202 statuses until explicit POST reconciliation.
 
+Schema 3 collect, raw admission and reconcile can additionally send the exact request header
+`X-AI-Checked-Terminal: 1`. This negotiates a strict wire shape; it cannot enable the closed route
+or worker, grant send permission, or authorize a new attempt. Capability and ACK requests reject
+this selector. Missing selectors retain legacy responses, including legacy absent/expired errors.
+CORS permits this selector alongside the original admission headers.
+
+A selected expired collect authenticates the original credential and reads retained original
+metadata without reading output bytes. Its HTTP 410 body is exactly
+`{ok:false,error,code:'RECOVERY_TERMINAL',protocol,id,createdAt,expiresAt,outcome:'expired'}`. It
+includes the protocol and original expiry response headers. Deleted metadata yields absence;
+authentication conflict, store failure, generic 404/410, local time and an unconfirmed callback
+provide no terminal proof. This GET performs no writes, cleanup, authorization, funding, settlement,
+conversion, report-token minting, dispatch or provider call, and never refreshes the original
+expiry.
+
+Selected explicit reconciliation of a refusal or error returns that same exact body vocabulary with
+`outcome:'refusal'` at HTTP 422 or `outcome:'error'` at HTTP 502. The stable settlement owner must
+confirm the corresponding failure outcome and receipt, followed by an exact original-record reread.
+Explicit duplicate raw admission propagates the selected shape when resuming that same outcome. The
+shared parser checks status, finite outcome, exact keys and immutable identity/creation/expiry. An
+advisory 202 refusal/error status does not establish settlement or durable local completion. The
+existing refusal reason and report-token issuance stay on the explicit POST path; native recovery
+refusal-report provenance is still unfinished.
+
 JSON POST is capped at 8192 bytes, has no query or repeated admission headers, and accepts exactly:
 
 ```ts
@@ -305,7 +329,7 @@ attempt. It never creates another identity, restarts expiry, reserves a second o
 a claim or calls the provider itself. For a raw outcome it performs only idempotent settlement and
 image staging. An earlier failed/abandoned free settlement prevents free image delivery. A refused
 outcome produces the existing 422 failure shape with its authenticated reason/report token only on
-POST reconcile; GET remains a pure status read.
+explicit POST; GET remains a pure status read.
 
 An immutable image delivery owns one byte sequence, MIME, digest, report token, allowance value,
 stable settlement digest and delivery receipt. An already-published delivery wins a reconciliation

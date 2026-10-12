@@ -1,3 +1,5 @@
+import { nativeRecoveryTerminalRules } from './native-ai-terminal-rules.mjs';
+
 function pair(owner, android, apple, regionName) {
   return ['android', 'apple'].map((platform, index) => {
     const tokens = [android, apple][index];
@@ -262,7 +264,7 @@ export const nativeRecoveryBoundaryRules = Object.freeze([
       'integer(status, "pollAfterMs") == recoveryPollAfterMs && status.getString("headerExpiresAt") == expiry.toString()',
       'r.getJSONObject("expiry").getString("kind") == "unknown" || same(r.getJSONObject("expiry"), known)',
       'if (state in setOf("submission-uncertain", "admitted"))',
-      'else if (state == "terminal" && phase in setOf("refusal", "error")) check(r.getString("outcome") == phase)',
+      'r.put("state", "admitted")',
       'return publishRequest(dir, value, next)',
       'phase in setOf("preparing", "funded", "pending", "working", "image", "delivery", "refusal", "error", "acknowledged")',
     ],
@@ -272,11 +274,12 @@ export const nativeRecoveryBoundaryRules = Object.freeze([
       'integer(status, "pollAfterMs") == recoveryPollAfterMs && string(status, "headerExpiresAt") == String(expiry)',
       'string(object(r["expiry"]), "kind") == "unknown" || same(object(r["expiry"]), known)',
       'if ["submission-uncertain", "admitted"].contains(state)',
-      'else if state == "terminal" && ["refusal", "error"].contains(phase) { try checked(string(r, "outcome") == phase) }',
+      'r["state"] = "admitted"',
       'return try publishRequest(root, dir, value, next)',
       '["preparing", "funded", "pending", "working", "image", "delivery", "refusal", "error", "acknowledged"].contains(phase)',
     ]
   ),
+  ...nativeRecoveryTerminalRules,
   ...pair(
     'recoveryResultFile',
     [
