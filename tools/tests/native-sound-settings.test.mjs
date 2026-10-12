@@ -42,6 +42,8 @@ describe('candidate sound settings', () => {
         },
         coloringBookEnabled: true,
         soundLevel: 'medium',
+        undoButtonEnabled: true,
+        strokeWidthControlEnabled: true,
         saved: true,
         message: '',
       },
@@ -84,7 +86,7 @@ describe('candidate sound settings', () => {
     expect(f.storage.write).not.toHaveBeenCalled();
     await f.settings.setEnabled(true);
     expect(f.storage.write).toHaveBeenCalledWith(
-      '{"version":7,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}'
+      '{"version":7,"soundEnabled":true,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}'
     );
     expect(f.changes.at(-1)).toMatchObject({ soundEnabled: true, saved: true });
   });
@@ -101,10 +103,10 @@ describe('candidate sound settings', () => {
     await f.settings.retrySave();
     expect(f.storage.write.mock.calls).toEqual([
       [
-        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}',
+        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}',
       ],
       [
-        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium"}',
+        '{"version":7,"soundEnabled":false,"strokeWidth":"medium","eraserWidth":"medium","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}',
       ],
     ]);
     expect(f.changes.at(-1)).toMatchObject({ status: 'ready', soundEnabled: false, saved: true });
@@ -165,6 +167,8 @@ describe('candidate sound settings', () => {
       await f.settings.load();
       expect(f.changes.at(-1)).toMatchObject({
         soundLevel: 'medium',
+        undoButtonEnabled: true,
+        strokeWidthControlEnabled: true,
         soundEnabled: false,
         saved: true,
       });
@@ -201,9 +205,17 @@ describe('candidate sound settings', () => {
         soundLevel,
         parentPolicies,
       });
-      const withoutLevel = JSON.parse(stored);
-      delete withoutLevel.soundLevel;
-      expect(parseSoundSettings(JSON.stringify(withoutLevel)).soundLevel).toBe('medium');
+      const {
+        soundLevel: _level,
+        undoButtonEnabled,
+        strokeWidthControlEnabled,
+        ...withoutLevel
+      } = JSON.parse(stored);
+      expect(
+        parseSoundSettings(
+          JSON.stringify({ ...withoutLevel, undoButtonEnabled, strokeWidthControlEnabled })
+        ).soundLevel
+      ).toBe('medium');
       for (const invalid of ['LOUD', '', null, 2, {}, ['quiet']]) {
         expect(() =>
           parseSoundSettings(JSON.stringify({ ...withoutLevel, soundLevel: invalid }))

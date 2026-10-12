@@ -3,6 +3,11 @@ import { aiStorage, admitAiImage } from './ai';
 import { MAX_RESULT_BYTES, type AiMime } from '../ai/contract';
 import type { AiResult } from '../ai/journal';
 
+export const aiPictureSharePresentation = {
+  label: 'Share AI picture',
+  complete: 'Share sheet closed.',
+};
+
 const SHARE_CACHE_DIRECTORY = 'splotch-ai-share-v1';
 const SHARE_RETENTION_MS = 24 * 60 * 60 * 1000;
 const MAX_SHARE_CACHE_BYTES = 48 * 1024 * 1024;

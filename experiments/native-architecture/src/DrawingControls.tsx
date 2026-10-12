@@ -171,7 +171,9 @@ export function DrawingMenu({
                 </View>
               </>
             ) : null}
-            <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
+            {sound.settings.strokeWidthControlEnabled ? (
+              <DrawingWidth brush={brush} disabled={disabled} sound={sound} />
+            ) : null}
             <Text style={styles.subtitle}>{pageLabel(screen.history.drawing.pageId)}</Text>
             <View style={styles.toolbar}>
               {sound.settings.coloringBookEnabled ? (

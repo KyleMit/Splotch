@@ -271,11 +271,13 @@ function DrawingPaintControls({
           disabled={disabled || menu.open}
           onPress={() => product.owner?.openParentCenter()}
         />
-        <Action
-          label="Undo"
-          disabled={disabled || menu.open || history.undo.length === 0}
-          onPress={undo}
-        />
+        {sound.settings.undoButtonEnabled ? (
+          <Action
+            label="Undo"
+            disabled={disabled || menu.open || history.undo.length === 0}
+            onPress={undo}
+          />
+        ) : null}
         {screen.brushControl.kind === 'toggle' ? (
           <Action
             label={BRUSHES[screen.brushControl.brush].label}
@@ -460,6 +462,12 @@ function DrawingSheets({
           audioMessage={sound.audioMessage}
           onChange={(enabled) => {
             void sound.owner?.settings.setEnabled(enabled);
+          }}
+          onUndoButtonChange={(enabled) => {
+            void sound.owner?.settings.setUndoButtonEnabled(enabled);
+          }}
+          onStrokeWidthControlChange={(enabled) => {
+            void sound.owner?.settings.setStrokeWidthControlEnabled(enabled);
           }}
           onSoundLevelChange={(level) => {
             void sound.owner?.settings.setSoundLevel(level);

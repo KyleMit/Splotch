@@ -8,7 +8,13 @@ import {
   emptyDrawing,
   parseDrawing,
 } from '../../experiments/native-architecture/src/drawing/model.ts';
-import { createScreen, files, pictures, STROKE } from './native-drawing-screen-harness.mjs';
+import {
+  createScreen,
+  expectSavedSettingsReread,
+  files,
+  pictures,
+  STROKE,
+} from './native-drawing-screen-harness.mjs';
 
 const SCREEN_SETUP_BUDGET_MS = 2000;
 let screen;
@@ -27,23 +33,6 @@ async function menuClick(label) {
 async function drawStroke() {
   if (screen.button('Pen')) await screen.click('Keep drawing');
   await screen.click('Draw fixture stroke');
-}
-
-async function expectSavedSettingsReread() {
-  const reads = files.settingsRead.mock.calls.length;
-  await screen.click('Manage Parent Center');
-  const factors = screen.container.textContent.match(/(\d) × (\d)/);
-  expect(factors).not.toBeNull();
-  const field = screen.container.querySelector('[aria-label="Grown-up answer"]');
-  await act(async () => {
-    field.value = String(Number(factors[1]) * Number(factors[2]));
-    field.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await screen.click('Check answer');
-  await screen.click('Read saved settings again');
-  expect(files.settingsRead).toHaveBeenCalledTimes(reads + 1);
-  expect(files.settingsWrite).not.toHaveBeenCalled();
-  await screen.click('Keep drawing');
 }
 
 beforeEach(async () => {
@@ -135,23 +124,31 @@ it.each([
     await screen.click(recovery);
     expect(files.settingsWrite).not.toHaveBeenCalled();
     expect(stored).toBe(original);
-    await expectSavedSettingsReread();
+    await expectSavedSettingsReread(screen);
     expect(await choose(false)).toBe(chosen);
     await menuClick('Settings');
     if (recovery === 'Drawing sound') await screen.click('Drawing sound');
     const writes = (kind === 'paint' ? 1 : 2) + (recovery === 'Drawing sound' ? 1 : 0);
     expect(files.settingsWrite).toHaveBeenCalledTimes(writes);
     expect(JSON.parse(stored)).toEqual({
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
       aiEnabled: false,
-      parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
+      parentPolicies: {
+        ai: 'always',
+        imageReport: 'always',
+        feedback: 'always',
+        parentCenter: 'always',
+      },
       appearance: 'system',
       soundEnabled: recovery === 'Retry saving',
       strokeWidth: kind === 'paint' ? 'thick' : 'thin',
       eraserWidth: kind === 'paint' ? 'thin' : 'thick',
       selectedColor: chosen,
       customColors: kind === 'paint' ? [chosen, '#FEDCBA'] : [],
+      soundLevel: 'medium',
+      undoButtonEnabled: true,
+      strokeWidthControlEnabled: true,
     });
     expect(screen.dialog().textContent).not.toContain(UNREAD_SETTINGS_WARNING);
   }
@@ -170,7 +167,7 @@ describe('custom paints wired to the drawing screen', () => {
     expect(screen.dialog()).toBeNull();
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     expect(JSON.parse(snapshot)).toMatchObject({
-      version: 6,
+      version: 7,
       coloringBookEnabled: true,
       aiEnabled: false,
       parentPolicies: { ai: 'always', feedback: 'always', parentCenter: 'always' },
@@ -217,7 +214,7 @@ describe('drawing width controls', () => {
     await openTools();
     expect(control('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
     expect(files.settingsWrite).toHaveBeenLastCalledWith(
-      '{"version":6,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true}'
+      '{"version":7,"soundEnabled":false,"strokeWidth":"thin","eraserWidth":"thick","selectedColor":"Purple","customColors":[],"appearance":"system","aiEnabled":false,"parentPolicies":{"ai":"always","imageReport":"always","feedback":"always","parentCenter":"always"},"coloringBookEnabled":true,"soundLevel":"medium","undoButtonEnabled":true,"strokeWidthControlEnabled":true}'
     );
     const snapshot = files.settingsWrite.mock.calls.at(-1)[0];
     screen.close();

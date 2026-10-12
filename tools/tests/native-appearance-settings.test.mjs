@@ -15,6 +15,8 @@ const parentDefaults = {
   },
   coloringBookEnabled: true,
   soundLevel: 'medium',
+  undoButtonEnabled: true,
+  strokeWidthControlEnabled: true,
 };
 const choices = {
   soundEnabled: false,

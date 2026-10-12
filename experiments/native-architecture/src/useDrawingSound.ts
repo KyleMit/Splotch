@@ -1,3 +1,4 @@
+import { DEFAULT_DRAWING_CONTROL_PREFERENCES } from './settings/drawingControlPreferences';
 import { DEFAULT_COLORING_BOOK_ENABLED } from './settings/coloringBook';
 import { DEFAULT_SOUND_LEVEL } from './settings/soundLevel';
 import { DEFAULT_APPEARANCE } from './settings/appearance';
@@ -20,6 +21,7 @@ export function useDrawingSound() {
     status: 'loading',
     soundEnabled: false,
     soundLevel: DEFAULT_SOUND_LEVEL,
+    ...DEFAULT_DRAWING_CONTROL_PREFERENCES,
     coloringBookEnabled: DEFAULT_COLORING_BOOK_ENABLED,
     ...DEFAULT_WIDTH_SETTINGS,
     ...DEFAULT_COLOR_SETTINGS,

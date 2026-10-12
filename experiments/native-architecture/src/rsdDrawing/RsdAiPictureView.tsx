@@ -28,7 +28,7 @@ export function RsdAiPictureView({
         />
       ) : null}
       <RsdAction
-        label="Share AI picture"
+        label={share.label}
         disabled={state.busy || share.busy}
         onClick={() => {
           void share.share();

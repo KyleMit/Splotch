@@ -412,6 +412,7 @@ class NativeAiController extends AiRecoverySession {
     const held = this.heldBytes;
     this.active = true;
     try {
+      await this.deps.storage.read();
       await this.settle(
         held.id,
         {
@@ -423,6 +424,10 @@ class NativeAiController extends AiRecoverySession {
         false
       );
       if (this.state.journal?.phase === 'result') this.heldBytes = null;
+    } catch {
+      this.update({
+        message: 'Saving could not be confirmed. Reopen AI picture and try saving again.',
+      });
     } finally {
       this.active = false;
       this.update({

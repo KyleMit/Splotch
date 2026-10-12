@@ -100,6 +100,8 @@ it('hydrates before usable controls and persists appearance through the real RSD
     version: 7,
     coloringBookEnabled: true,
     soundLevel: 'medium',
+    undoButtonEnabled: true,
+    strokeWidthControlEnabled: true,
     soundEnabled: false,
     strokeWidth: 'thin',
     eraserWidth: 'thick',

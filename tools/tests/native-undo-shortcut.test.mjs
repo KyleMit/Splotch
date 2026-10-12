@@ -107,6 +107,9 @@ describe('drawing screen web Undo admission', () => {
   let screen;
   beforeEach(async () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    files.retainClosingModal = false;
+    files.platform = 'android';
+    files.dismissModal = null;
     files.list.mockReturnValue(pictures);
     files.lock.mockReset().mockReturnValue(() => {});
     files.settingsRead.mockReset().mockResolvedValue('{"version":1,"soundEnabled":false}');
@@ -117,6 +120,84 @@ describe('drawing screen web Undo admission', () => {
   afterEach(() => {
     screen.close();
     vi.clearAllMocks();
+  });
+  it('hides both controls through Settings while preserving widths, committed ink and keyboard Undo', async () => {
+    await screen.menuClick('Drawing width: Thin');
+    await screen.click('Keep drawing');
+    await screen.click('Draw fixture stroke');
+    const original = screen.paper();
+    expect(JSON.parse(original).strokes[0].width).toBe(4);
+    await screen.menuClick('Settings');
+    await screen.click('Show Undo button');
+    await screen.click('Show drawing width controls');
+    expect(screen.paper()).toBe(original);
+    expect(screen.button('Undo')).toBeUndefined();
+    expect(JSON.parse(files.settingsWrite.mock.calls.at(-1)[0])).toMatchObject({
+      undoButtonEnabled: false,
+      strokeWidthControlEnabled: false,
+      strokeWidth: 'thin',
+      eraserWidth: 'medium',
+    });
+    await screen.click('Close Settings');
+    await screen.click('Drawing tools');
+    expect(screen.button('Drawing width: Thin')).toBeUndefined();
+    await screen.click('Keep drawing');
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes.map(({ width }) => width)).toEqual([4, 4]);
+    expect(key().defaultPrevented).toBe(true);
+    expect(screen.paper()).toBe(original);
+    await screen.menuClick('Settings');
+    await screen.click('Show Undo button');
+    await screen.click('Show drawing width controls');
+    await screen.click('Close Settings');
+    expect(screen.button('Undo').disabled).toBe(false);
+    await screen.click('Drawing tools');
+    expect(screen.button('Drawing width: Thin').getAttribute('aria-pressed')).toBe('true');
+    await screen.click('Keep drawing');
+    await screen.click('Undo');
+    expect(JSON.parse(screen.paper()).strokes).toHaveLength(0);
+  });
+  it('restores hidden controls and the selected width from a saved current snapshot', async () => {
+    await screen.menuClick('Drawing width: Thick');
+    await screen.click('Settings');
+    await screen.click('Show Undo button');
+    await screen.click('Show drawing width controls');
+    const saved = files.settingsWrite.mock.calls.at(-1)[0];
+    screen.close();
+    files.settingsRead.mockResolvedValue(saved);
+    screen = createScreen();
+    await act(async () => screen.mount());
+    expect(screen.button('Undo')).toBeUndefined();
+    await screen.click('Draw fixture stroke');
+    expect(JSON.parse(screen.paper()).strokes[0].width).toBe(14);
+    await screen.click('Drawing tools');
+    expect(screen.button('Drawing width: Thick')).toBeUndefined();
+    await screen.click('Settings');
+    expect(screen.button('Show Undo button').getAttribute('aria-checked')).toBe('false');
+    expect(screen.button('Show drawing width controls').getAttribute('aria-checked')).toBe('false');
+  });
+  it('disables both Settings switches during a serialized save and a retained closing sheet', async () => {
+    await screen.menuClick('Settings');
+    let finish;
+    files.settingsWrite.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    await screen.click('Show Undo button');
+    expect(screen.button('Show Undo button').disabled).toBe(true);
+    expect(screen.button('Show drawing width controls').disabled).toBe(true);
+    expect(files.settingsWrite).toHaveBeenCalledOnce();
+    await act(async () => finish());
+    expect(screen.button('Show drawing width controls').disabled).toBe(false);
+    files.retainClosingModal = true;
+    files.platform = 'ios';
+    await screen.click('Close Settings');
+    expect(screen.button('Show Undo button').disabled).toBe(true);
+    expect(screen.button('Show drawing width controls').disabled).toBe(true);
+    await act(async () => files.dismissModal());
+    files.retainClosingModal = false;
+    files.platform = 'android';
   });
   it('undoes committed ink and leaves the default alone when history becomes empty', async () => {
     await screen.click('Draw fixture stroke');
