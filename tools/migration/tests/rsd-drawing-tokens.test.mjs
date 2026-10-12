@@ -48,20 +48,13 @@ const WEB_STYLE_FILES = [
 const WEB_COMPILE_SOURCE = `
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const babel = require('@babel/core');
-const preset = require('react-strict-dom/babel-preset')(null, {
-  platform: 'web', debug: false, dev: false,
-});
-assert.equal(preset.plugins.length, 2);
-assert.equal(preset.plugins[1][1].runtimeInjection, false);
-preset.plugins[1][1] = { ...preset.plugins[1][1], runtimeInjection: true };
 const result = babel.transformSync(readFileSync(0, 'utf8'), {
   filename: process.argv[1],
   cwd: process.cwd(),
   babelrc: false,
-  configFile: false,
-  presets: [require.resolve('babel-preset-expo')],
-  plugins: preset.plugins,
+  configFile: join(process.cwd(), 'babel.config.cjs'),
   caller: { name: 'splotch-rsd-web-token-test', platform: 'web', supportsStaticESM: true },
 });
 assert.ok(result && typeof result.code === 'string');

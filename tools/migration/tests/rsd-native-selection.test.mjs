@@ -1,3 +1,4 @@
+import { nativeSettingsProps } from './rsd-coloring-root-host.mjs';
 import {
   caller,
   records,
@@ -226,14 +227,7 @@ it('keeps actual failed-write recovery copy live inside the Settings modal and c
   function Settings() {
     const [, update] = useState(0);
     refresh = () => update((value) => value + 1);
-    return createElement(NativeSoundSettingsDialog, {
-      settings: current,
-      notice: current.message,
-      onToggle: () => owner.setEnabled(!current.soundEnabled),
-      onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
-      onRetry: () => owner.retrySave(),
-      onClose() {},
-    });
+    return createElement(NativeSoundSettingsDialog, nativeSettingsProps(owner, current));
   }
   try {
     await mount(createElement(Settings));
@@ -483,16 +477,7 @@ it('persists Coloring Book through the released native switch without a parent c
   function Settings() {
     const [, update] = useState(0);
     refresh = () => update((value) => value + 1);
-    return createElement(NativeSoundSettingsDialog, {
-      settings: current,
-      notice: current.message,
-      onToggle: () => owner.setEnabled(!current.soundEnabled),
-      onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
-      onAppearanceChange: (appearance) => owner.setAppearance(appearance),
-      onRetry: () => owner.retrySave(),
-      onClose() {},
-      onParentCenter() {},
-    });
+    return createElement(NativeSoundSettingsDialog, nativeSettingsProps(owner, current));
   }
   try {
     await mount(createElement(Settings));

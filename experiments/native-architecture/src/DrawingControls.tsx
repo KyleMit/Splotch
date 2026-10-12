@@ -190,6 +190,15 @@ export function DrawingMenu({
                   })
                 }
               />
+              <Action
+                label="Save and clear"
+                disabled={disabled}
+                onPress={() =>
+                  run(() => {
+                    void screen.saveAndClear();
+                  })
+                }
+              />
             </View>
             <DrawingActions
               disabled={disabled}

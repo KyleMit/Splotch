@@ -1,9 +1,23 @@
+import { canonicalPaper } from '../../tests/native-paper-fixtures.mjs';
+import { DEFAULT_BRUSH_AVAILABILITY } from '../../../experiments/native-architecture/src/settings/brushPreferences.ts';
+
 export function drawingScreenPort(actual, caller, projectHistory) {
   return {
     useDrawingScreen: () =>
       caller.realScreen
         ? actual.useDrawingScreen()
         : {
+            brushPreferences: {
+              status: 'ready',
+              availability: DEFAULT_BRUSH_AVAILABILITY,
+              saved: true,
+              message: '',
+            },
+            brushControl: { kind: 'none' },
+            availableBrushes: [],
+            draftState: { status: 'session', message: '' },
+            retryDraft: async () => {},
+            selectInkBrush() {},
             ...caller.screen,
             library: caller.library,
             setColoringBookEnabled(enabled) {
@@ -45,23 +59,47 @@ export function paperPort(React, strokeStyle, caller) {
       'data-drawing': JSON.stringify(screen.history.drawing),
       disabled: screen.disabled || menuOpen || screen.pictures !== null,
       onClick: () =>
-        screen.recovery.callbacks.onCohort([
-          {
-            ...strokeStyle(
-              screen.brush,
-              sound.settings.selectedColor,
-              screen.history.drawing,
-              sound.settings.strokeWidth
-            ),
-            points: [
-              { x: 20, y: 20 },
-              { x: 100, y: 100 },
-            ],
-          },
-        ]),
+        screen.recovery.callbacks.onCohort(
+          [
+            {
+              ...strokeStyle(
+                screen.brush,
+                sound.settings.selectedColor,
+                screen.history.drawing,
+                sound.settings.strokeWidth
+              ),
+              points: [
+                { x: 20, y: 20 },
+                { x: 100, y: 100 },
+              ],
+            },
+          ],
+          canonicalPaper()
+        ),
     });
   }
   return {
     NativePaper: (props) => (caller.realScreen ? React.createElement(PaperBoundary, props) : null),
+  };
+}
+
+export function nativeSettingsProps(owner, state) {
+  return {
+    settings: state,
+    brushState: {
+      status: 'ready',
+      availability: DEFAULT_BRUSH_AVAILABILITY,
+      saved: true,
+      message: '',
+    },
+    onBrushAvailabilityChange() {},
+    onRetryBrushSave() {},
+    notice: state.message,
+    onToggle: () => owner.setEnabled(!state.soundEnabled),
+    onColoringBookChange: (enabled) => owner.setColoringBookEnabled(enabled),
+    onAppearanceChange: (appearance) => owner.setAppearance(appearance),
+    onRetry: () => owner.retrySave(),
+    onClose() {},
+    onParentCenter() {},
   };
 }

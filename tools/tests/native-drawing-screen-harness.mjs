@@ -5,6 +5,7 @@ import { act, createElement, forwardRef, useImperativeHandle, useRef } from 'rea
 import { createRoot } from 'react-dom/client';
 import { expect, vi } from 'vitest';
 import { DrawingScreen } from '../../experiments/native-architecture/src/DrawingScreen.tsx';
+import { DrawingSessionProvider } from '../../experiments/native-architecture/src/product/DrawingSession.tsx';
 import { strokeStyle } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const files = vi.hoisted(() => ({
@@ -40,6 +41,9 @@ const files = vi.hoisted(() => ({
   brushWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
   settingsWrite: vi.fn().mockResolvedValue(undefined),
+  draftRead: vi.fn().mockResolvedValue(null),
+  draftWrite: vi.fn().mockResolvedValue(undefined),
+  draftProtected: vi.fn().mockResolvedValue([]),
   cohort: null,
   cohortDrivers: false,
   platform: 'android',
@@ -87,7 +91,13 @@ vi.mock('../../experiments/native-architecture/src/platform/drawingFiles.ts', ()
   listPictures: files.list,
   reopenPicture: files.open,
   savePicture: files.save,
+  savedColoringPageIds: vi.fn().mockResolvedValue([]),
   exportPng: files.export,
+}));
+
+vi.mock('../../experiments/native-architecture/src/platform/drawingDraft.ts', () => ({
+  drawingDraftStorage: { read: files.draftRead, write: files.draftWrite },
+  protectedDraftPageIds: files.draftProtected,
 }));
 
 vi.mock('../../experiments/native-architecture/src/platform/drawingAudio.ts', () => ({
@@ -370,6 +380,16 @@ export function createScreen({ cohortDrivers = false } = {}) {
   const container = globalThis.document.createElement('div');
   globalThis.document.body.append(container);
   const root = createRoot(container);
+  let screenGeneration = 0;
+  function render() {
+    root.render(
+      createElement(
+        DrawingSessionProvider,
+        null,
+        createElement(DrawingScreen, { key: screenGeneration })
+      )
+    );
+  }
   function button(label) {
     return [...container.querySelectorAll('button')].find(
       (element) => element.getAttribute('aria-label') === label || element.textContent === label
@@ -378,7 +398,13 @@ export function createScreen({ cohortDrivers = false } = {}) {
   return {
     button,
     container,
-    mount: () => act(() => root.render(createElement(DrawingScreen))),
+    mount: () => act(render),
+    // Replacing only the screen exercises the app session's longer lifetime.
+    remount: () =>
+      act(() => {
+        screenGeneration += 1;
+        render();
+      }),
     close: () => {
       act(() => root.unmount());
       container.remove();

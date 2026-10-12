@@ -209,11 +209,7 @@ it.each(['light', 'dark'])(
 );
 
 async function coloringMenu(label) {
-  const tools = [...host.querySelectorAll('[aria-label]')].find((node) =>
-    node.getAttribute('aria-label').startsWith('Drawing tools.')
-  );
-  expect(tools).toBeDefined();
-  await click(tools.getAttribute('aria-label'));
+  await click('Drawing tools');
   await click(label);
 }
 function coloringPaper() {
@@ -227,6 +223,50 @@ function rootColoringSettings() {
   };
   return caller.settingsStorage;
 }
+it('reads bundled help, privacy and beta notes through Settings without changing ink or sending requests', async () => {
+  const storage = rootColoringSettings();
+  await mount(createElement(RsdDrawingScreen));
+  await click('Draw RSD fixture stroke');
+  const drawing = coloringPaper();
+  expect(drawing.strokes).toHaveLength(1);
+  await coloringMenu('Settings');
+  await click('Help and about');
+  expect(host.textContent).toContain('Make a picture');
+  expect(host.textContent).toContain('Splotch 1.6.0 · Beta');
+  await click('Privacy');
+  expect(host.textContent).toContain('Drawing stays on your device');
+  expect(host.textContent).toContain('AI pictures are optional');
+  await click('Back to help and about');
+  await click('What’s new');
+  expect(host.textContent).toContain('In this beta');
+  await click('Back to Settings');
+  expect(host.querySelector('[aria-label="System appearance"]')).not.toBeNull();
+  await click('Help and about');
+  await click('Keep drawing');
+  expect(coloringPaper()).toEqual(drawing);
+  await click('Undo');
+  expect(coloringPaper().strokes).toHaveLength(0);
+  expect(storage.write).not.toHaveBeenCalled();
+  expect(caller.aiSend).not.toHaveBeenCalled();
+  expect(caller.feedbackSend).not.toHaveBeenCalled();
+  expect(caller.aiVaultRead).not.toHaveBeenCalled();
+});
+it('guides an empty pictures gallery until a saved picture is available', async () => {
+  rootColoringSettings();
+  await mount(createElement(RsdDrawingScreen));
+  await coloringMenu('Pictures');
+  const empty = host.querySelector('[aria-label="Your pictures"]');
+  expect(empty.textContent).toContain('Save a picture to find it here.');
+  expect(empty.querySelector('[aria-label^="Open picture from "]')).toBeNull();
+  await click('Close');
+  caller.drawingList.mockReturnValue([
+    { id: 'picture-1-fixture', name: 'saved drawing', modifiedAt: 1 },
+  ]);
+  await coloringMenu('Pictures');
+  const saved = host.querySelector('[aria-label="Your pictures"]');
+  expect(saved.textContent).not.toContain('Save a picture to find it here.');
+  expect(saved.querySelector('[aria-label="Open picture from saved drawing"]')).not.toBeNull();
+});
 it('hides Coloring through actual RSD Settings and clamps actual history Undo and saved reopen while retaining ink', async () => {
   const storage = rootColoringSettings();
   await mount(createElement(RsdDrawingScreen));
@@ -249,10 +289,7 @@ it('hides Coloring through actual RSD Settings and clamps actual history Undo an
   await click('Keep drawing');
   await click('Undo');
   expect(coloringPaper().pageId).toBe('blank');
-  const tools = [...host.querySelectorAll('[aria-label]')].find((node) =>
-    node.getAttribute('aria-label').startsWith('Drawing tools.')
-  );
-  await click(tools.getAttribute('aria-label'));
+  await click('Drawing tools');
   expect(host.querySelector('[aria-label="Coloring pages"]')).toBeNull();
   await click('Keep drawing');
   caller.drawingList.mockReturnValue([

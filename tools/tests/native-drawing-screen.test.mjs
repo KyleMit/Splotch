@@ -70,6 +70,7 @@ afterEach(() => {
 
 const UNREAD_SETTINGS_WARNING =
   'Drawing settings could not be read. Sound is off. Your choices work for this session. Choose your settings and retry saving.';
+
 async function chooseUnreadPaint(draw) {
   await screen.click('More colors');
   const choice = screen.dialog().querySelector('[aria-label^="Explore "]');
@@ -360,20 +361,24 @@ describe('controller output snapshot ownership', () => {
 });
 
 describe('Clear observation refusal', () => {
-  it('retains canonical history and rainbow when the real native alpha owner refuses observation', async () => {
-    await drawStroke();
-    const original = screen.paper();
-    files.ink.mockResolvedValueOnce('ink-observation-input');
-    await menuClick('Clear');
-    expect(files.ink).toHaveBeenCalledOnce();
-    expect(screen.paper()).toBe(original);
-    expect(screen.container.textContent).toContain(
-      'Picture capture returned an invalid or unsupported PNG.'
-    );
-    await screen.click('Undo');
-    expect(JSON.parse(screen.paper()).strokes).toEqual([]);
-    expect(JSON.parse(screen.paper()).rainbow).toBe(0);
-  });
+  it.each(['Clear', 'Save and clear'])(
+    'retains history and rainbow when %s observation fails',
+    async (action) => {
+      await drawStroke();
+      const original = screen.paper();
+      files.ink.mockResolvedValueOnce('ink-observation-input');
+      await menuClick(action);
+      expect(files.ink).toHaveBeenCalledOnce();
+      expect(files.save).not.toHaveBeenCalled();
+      expect(screen.paper()).toBe(original);
+      expect(screen.container.textContent).toContain(
+        'Picture capture returned an invalid or unsupported PNG.'
+      );
+      await screen.click('Undo');
+      expect(JSON.parse(screen.paper()).strokes).toEqual([]);
+      expect(JSON.parse(screen.paper()).rainbow).toBe(0);
+    }
+  );
 });
 
 describe('coloring-page controls through the real drawing screen', () => {

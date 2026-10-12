@@ -218,9 +218,8 @@ export function useDrawingProduct(screen: ReturnType<typeof useDrawingScreen>) {
     if (!settings.aiEnabled) services?.ai.close();
   }, [services, settings.soundEnabled, settings.aiEnabled]);
   useEffect(() => {
-    screenRef.current.setColoringBookEnabled(
-      settings.status !== 'loading' && settings.coloringBookEnabled
-    );
+    if (settings.status !== 'loading')
+      screenRef.current.setColoringBookEnabled(settings.coloringBookEnabled);
   }, [settings.status, settings.coloringBookEnabled]);
   return {
     sound: {

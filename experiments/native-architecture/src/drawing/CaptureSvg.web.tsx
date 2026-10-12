@@ -36,10 +36,18 @@ function snapshotRoot(target: SVGSVGElement, options: unknown) {
   )
     throw new Error('The capture dimensions do not match the drawing paper.');
   const rect = target.getBoundingClientRect();
-  if (rect.width !== PAPER_WIDTH || rect.height !== PAPER_HEIGHT)
+  const viewBox = `0 0 ${PAPER_WIDTH} ${PAPER_HEIGHT}`;
+  // Browser layout can quantize fixed SVG dimensions to fractional CSS pixels.
+  if (
+    Math.round(rect.width) !== PAPER_WIDTH ||
+    Math.round(rect.height) !== PAPER_HEIGHT ||
+    target.getAttribute('width') !== String(PAPER_WIDTH) ||
+    target.getAttribute('height') !== String(PAPER_HEIGHT) ||
+    target.getAttribute('viewBox') !== viewBox
+  )
     throw new Error('The fixed drawing paper is not ready to capture.');
   const root = document.createElementNS(SVG_NAMESPACE, 'svg');
-  root.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+  root.setAttribute('viewBox', viewBox);
   root.setAttribute('width', String(PAPER_WIDTH));
   root.setAttribute('height', String(PAPER_HEIGHT));
   root.appendChild(target.cloneNode(true));
