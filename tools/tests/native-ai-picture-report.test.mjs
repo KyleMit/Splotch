@@ -58,7 +58,7 @@ beforeEach(() => {
     vault,
     transport,
     admit: files.aiAdmit,
-    current: (uri) => allowed && uri === URI,
+    current: (target) => allowed && target.kind === 'picture' && target.uri === URI,
     publish: (next) => {
       state = next;
     },
@@ -88,7 +88,11 @@ it('requires the separate report gate and final send, binding exact original fie
   expect(form.get('style')).toBe('Clay');
   expect(new Uint8Array(await form.get('drawing').arrayBuffer())).toEqual(INPUT);
   expect(new Uint8Array(await form.get('output').arrayBuffer())).toEqual(OUTPUT);
-  expect(state).toEqual({ phase: 'success', uri: URI, reportId: REPORT_ID });
+  expect(state).toEqual({
+    phase: 'success',
+    target: { kind: 'picture', uri: URI },
+    reportId: REPORT_ID,
+  });
 });
 
 it('fails closed without a current free report token or optional preparation', async () => {
@@ -213,11 +217,28 @@ it('rejects over-budget evidence and collision-checks the multipart boundary', (
     credential: REFERENCE,
     installationId: ORIGINAL.installationId,
     used: false,
-    result: { bytes: OUTPUT, mime: 'image/png', token: 'opaque', uris: new Set([URI]) },
+    evidence: {
+      kind: 'picture',
+      bytes: OUTPUT,
+      mime: 'image/png',
+      token: 'opaque',
+      uris: new Set([URI]),
+    },
   };
   expect(reportMultipart(context).contentType).toContain('splotch-report-1');
   expect(() =>
     reportMultipart({ ...context, drawing: new Uint8Array(MAX_AI_REPORT_BYTES) })
   ).toThrow();
   expect(imageReportToken('opaque\r\ninjected')).toBeNull();
+});
+
+it('preserves original picture proof when retention adds a saved URI without another server reply', async () => {
+  await owner.prepare(1, INPUT, 'Clay', ORIGINAL);
+  owner.complete(1, OUTPUT, 'image/png', 'opaque.original-proof', 'data:image/png;base64,AQIDBA==');
+  owner.complete(1, OUTPUT, 'image/png', null, URI);
+  owner.request(URI);
+  releaseGate({ valid: () => true });
+  await owner.send();
+  expect(transport.mock.calls[0][0].headers['X-Report-Token']).toBe('opaque.original-proof');
+  expect(state.phase).toBe('success');
 });

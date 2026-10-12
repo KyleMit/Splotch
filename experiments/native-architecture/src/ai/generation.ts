@@ -132,6 +132,7 @@ class NativeAiController extends AiRecoverySession {
       return;
     }
     if (reply.kind === 'image') {
+      this.update({ refusal: null });
       await this.collectImage(journal, reply);
     } else if (reply.kind === 'ticket') {
       try {
@@ -165,6 +166,10 @@ class NativeAiController extends AiRecoverySession {
             'A previous reply is still uncertain. Keep this app open; the attempt stays held until its server retention window ends.',
         });
         return;
+      }
+      if (reply.reason === 'safety') {
+        this.reports.refuse(id, reply.reportToken);
+        this.update({ refusal: { id }, message: reply.message });
       }
       await this.persist({
         ...journal,
@@ -211,6 +216,7 @@ class NativeAiController extends AiRecoverySession {
       busy: true,
       message: 'Saving your original drawing…',
       heldResult: null,
+      refusal: null,
     });
     let uploadStarted = false;
     try {

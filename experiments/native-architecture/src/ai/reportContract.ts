@@ -5,6 +5,7 @@ export const MAX_AI_REPORT_BYTES = 4 * 1024 * 1024;
 export const AI_REPORT_TIMEOUT_MS = 20_000;
 export const AI_REPORT_REVIEW_HOURS = 24;
 export const AI_REPORT_RETENTION_DAYS = 30;
+export const AI_REPORT_HANDLING_NOTICE = `We review reports within ${AI_REPORT_REVIEW_HOURS} hours and schedule deletion after ${AI_REPORT_RETENTION_DAYS} days by a daily cleanup.`;
 export const MAX_AI_REPORT_TOKEN_CHARACTERS = 4096;
 const MAX_REPORT_BOUNDARY_ATTEMPTS = 16;
 export const AI_REPORT_FIELDS = {
@@ -13,22 +14,35 @@ export const AI_REPORT_FIELDS = {
   output: 'output',
   style: 'style',
 } as const;
+export type AiReportTarget =
+  { kind: 'picture'; uri: string } | { kind: 'false-positive-refusal'; id: number };
+export type AiReportEvidence =
+  | { kind: 'picture'; bytes: Uint8Array; mime: AiMime; token: string | null; uris: Set<string> }
+  | { kind: 'false-positive-refusal'; token: string };
 export type AiReportContext = {
   id: number;
   drawing: Uint8Array;
   style: AiStyle;
   credential: AiCredentialReference;
   installationId: string | null;
-  result: { bytes: Uint8Array; mime: AiMime; token: string | null; uris: Set<string> } | null;
+  evidence: AiReportEvidence | null;
   used: boolean;
 };
-export type AiReportPreview = { uri: string; drawing: string; output: string; style: AiStyle };
+export type AiReportPreview = { drawing: string; style: AiStyle } & (
+  | { target: Extract<AiReportTarget, { kind: 'picture' }>; output: string }
+  | { target: Extract<AiReportTarget, { kind: 'false-positive-refusal' }>; output?: never }
+);
 export type AiReportState =
   | { phase: 'idle' }
-  | { phase: 'gating'; uri: string }
+  | { phase: 'gating'; target: AiReportTarget }
   | { phase: 'confirm' | 'sending'; preview: AiReportPreview }
-  | { phase: 'success'; uri: string; reportId: string }
-  | { phase: 'error' | 'unknown' | 'unavailable'; uri: string; message: string; retryAt: number };
+  | { phase: 'success'; target: AiReportTarget; reportId: string }
+  | {
+      phase: 'error' | 'unknown' | 'unavailable';
+      target: AiReportTarget;
+      message: string;
+      retryAt: number;
+    };
 
 export function imageReportToken(raw: string | null) {
   return raw && raw.length <= MAX_AI_REPORT_TOKEN_CHARACTERS && /^[\x21-\x7e]+$/.test(raw)
@@ -48,12 +62,14 @@ function contains(bytes: Uint8Array, needle: Uint8Array) {
 }
 
 export function reportMultipart(context: AiReportContext) {
-  const result = context.result;
+  const evidence = context.evidence;
   if (
-    !result ||
+    !evidence ||
     !context.drawing.length ||
-    !result.bytes.length ||
-    context.drawing.length + result.bytes.length > MAX_AI_REPORT_BYTES
+    (evidence.kind === 'picture' && !evidence.bytes.length) ||
+    context.drawing.length + (evidence.kind === 'picture' ? evidence.bytes.length : 0) >
+      MAX_AI_REPORT_BYTES ||
+    (evidence.kind === 'false-positive-refusal' && !imageReportToken(evidence.token))
   )
     throw new Error('That AI report is too large or unavailable.');
   const encoder = new TextEncoder();
@@ -61,7 +77,10 @@ export function reportMultipart(context: AiReportContext) {
   for (let index = 0; index < MAX_REPORT_BOUNDARY_ATTEMPTS; index++) {
     const candidate = `splotch-report-${index}`;
     const needle = encoder.encode(candidate);
-    if (!contains(context.drawing, needle) && !contains(result.bytes, needle)) {
+    if (
+      !contains(context.drawing, needle) &&
+      (evidence.kind === 'false-positive-refusal' || !contains(evidence.bytes, needle))
+    ) {
       boundary = candidate;
       break;
     }
@@ -70,22 +89,27 @@ export function reportMultipart(context: AiReportContext) {
   const field = AI_REPORT_FIELDS;
   const chunks = [
     encoder.encode(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${field.kind}"\r\n\r\npicture\r\n`
+      `--${boundary}\r\nContent-Disposition: form-data; name="${field.kind}"\r\n\r\n${evidence.kind}\r\n`
     ),
     encoder.encode(
       `--${boundary}\r\nContent-Disposition: form-data; name="${field.drawing}"; filename="drawing.png"\r\nContent-Type: image/png\r\n\r\n`
     ),
     context.drawing,
     encoder.encode('\r\n'),
-    encoder.encode(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${field.output}"; filename="output"\r\nContent-Type: ${result.mime}\r\n\r\n`
-    ),
-    result.bytes,
-    encoder.encode('\r\n'),
+  ];
+  if (evidence.kind === 'picture')
+    chunks.push(
+      encoder.encode(
+        `--${boundary}\r\nContent-Disposition: form-data; name="${field.output}"; filename="output"\r\nContent-Type: ${evidence.mime}\r\n\r\n`
+      ),
+      evidence.bytes,
+      encoder.encode('\r\n')
+    );
+  chunks.push(
     encoder.encode(
       `--${boundary}\r\nContent-Disposition: form-data; name="${field.style}"\r\n\r\n${context.style}\r\n--${boundary}--\r\n`
-    ),
-  ];
+    )
+  );
   const body = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
   let offset = 0;
   for (const chunk of chunks) {

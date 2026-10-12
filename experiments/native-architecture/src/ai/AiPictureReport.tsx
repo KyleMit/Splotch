@@ -4,15 +4,29 @@ import { createDrawingStyles, useDrawingStyles } from '../drawing/DrawingAppeara
 import { DRAWING_SCALE, TOUCH_TARGET } from '../drawing/theme';
 import type { NativeAiOwner, AiState } from './generation';
 import type { AiResult } from './journal';
-import {
-  AI_REPORT_REVIEW_HOURS,
-  AI_REPORT_RETENTION_DAYS,
-  type AiReportState,
-} from './reportContract';
+import { AI_REPORT_HANDLING_NOTICE, type AiReportState } from './reportContract';
 import { NativeAiPictureView } from './NativeAiPictureView';
 
 export function AiReportAction({ owner, uri }: { owner: NativeAiOwner; uri: string }) {
   return <Action label="Report AI picture" onPress={() => owner.reportPicture(uri)} />;
+}
+
+export function AiRefusalReportAction({
+  owner,
+  state,
+}: {
+  owner: NativeAiOwner;
+  state: Pick<AiState, 'refusal' | 'busy'>;
+}) {
+  const refusal = state.refusal;
+  if (!refusal) return null;
+  return (
+    <Action
+      label="Grown-ups: report this refusal"
+      disabled={state.busy}
+      onPress={() => owner.reportRefusal(refusal.id)}
+    />
+  );
 }
 
 export function NativeReportablePicture({
@@ -45,13 +59,18 @@ export function AiPictureReport({
   return (
     <View style={styles.content}>
       <Text accessibilityRole="header" style={styles.text}>
-        Report this AI picture
+        {('preview' in report ? report.preview.target : report.target).kind ===
+        'false-positive-refusal'
+          ? 'Report this refusal'
+          : 'Report this AI picture'}
       </Text>
       {confirming ? (
         <>
-          <Text
-            style={styles.text}
-          >{`The original drawing, AI picture, original art style and exact instruction go to a grown-up at Splotch in a private report. We review reports within ${AI_REPORT_REVIEW_HOURS} hours and delete them after ${AI_REPORT_RETENTION_DAYS} days.`}</Text>
+          <Text style={styles.text}>
+            {report.preview.target.kind === 'false-positive-refusal'
+              ? `The original drawing, original art style, exact instruction and authenticated refusal reason go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`
+              : `The original drawing, AI picture, original art style and exact instruction go to a grown-up at Splotch in a private report. ${AI_REPORT_HANDLING_NOTICE}`}
+          </Text>
           <Text style={styles.text}>{`Original style: ${report.preview.style}`}</Text>
           <Image
             accessibilityLabel="Original drawing to report"
@@ -59,12 +78,14 @@ export function AiPictureReport({
             resizeMode="contain"
             style={styles.image}
           />
-          <Image
-            accessibilityLabel="AI picture to report"
-            source={{ uri: report.preview.output }}
-            resizeMode="contain"
-            style={styles.image}
-          />
+          {report.preview.target.kind === 'picture' ? (
+            <Image
+              accessibilityLabel="AI picture to report"
+              source={{ uri: report.preview.output }}
+              resizeMode="contain"
+              style={styles.image}
+            />
+          ) : null}
           <Action
             label={report.phase === 'sending' ? 'Sending report…' : 'Send report'}
             disabled={report.phase === 'sending'}
@@ -76,14 +97,14 @@ export function AiPictureReport({
       ) : (
         <Text accessibilityLiveRegion="polite" style={styles.text}>
           {report.phase === 'success'
-            ? `Report received. We review it within ${AI_REPORT_REVIEW_HOURS} hours and delete it after ${AI_REPORT_RETENTION_DAYS} days. Keep this reference to request earlier deletion: ${report.reportId}`
+            ? `Report received. ${AI_REPORT_HANDLING_NOTICE} Keep this reference to request earlier deletion: ${report.reportId}`
             : 'message' in report
               ? report.message
               : ''}
         </Text>
       )}
       {report.phase === 'error' ? (
-        <Action label="Review report again" onPress={() => owner.reportPicture(report.uri)} />
+        <Action label="Review report again" onPress={() => owner.reviewAiReport(report.target)} />
       ) : null}
       <Action label="Cancel report" onPress={owner.cancelPictureReport} />
     </View>

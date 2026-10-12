@@ -29,7 +29,10 @@ it('keeps the drawing and history while reading bundled information from Setting
   await screen.click('Privacy');
   expect(screen.dialog().textContent).toContain('Drawing stays on your device');
   expect(screen.dialog().textContent).toContain(
-    'We review them within 24 hours and delete them after 30 days.'
+    'We review reports within 24 hours and schedule deletion after 30 days by a daily cleanup.'
+  );
+  expect(screen.dialog().textContent).toContain(
+    'A refusal report includes the authenticated refusal reason, without an AI picture.'
   );
   expect(screen.dialog().textContent).toContain('Opening a report or cancelling it sends nothing.');
   await screen.click('Back to help and about');

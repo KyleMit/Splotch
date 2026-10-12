@@ -15,7 +15,7 @@ import {
 import type { AiState, NativeAiOwner } from './generation';
 import { aiCanGenerate, AI_RESULT_HEIGHT_PX } from './uiState';
 import { useAiPictureViewer } from './useAiPictureViewer';
-import { NativeReportablePicture, AiPictureReport } from './AiPictureReport';
+import { NativeReportablePicture, AiPictureReport, AiRefusalReportAction } from './AiPictureReport';
 import { NativeAiStyleChoices } from './NativeAiStyleChoices';
 import { AiRecoveryActions } from './AiRecoveryActions';
 import { CurrentDrawingPreview } from './CurrentDrawingPreview';
@@ -128,6 +128,7 @@ export function NativeAiSheet({
                 <Text accessibilityLiveRegion="polite" style={styles.text}>
                   {state.message}
                 </Text>
+                <AiRefusalReportAction owner={owner} state={state} />
                 <AiPictures owner={owner} state={state} onOpen={viewer.open} />
                 <AiCredentialSetup owner={owner} state={state} />
               </>
