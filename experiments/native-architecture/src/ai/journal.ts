@@ -12,7 +12,7 @@ export type AiJournal = Readonly<{
   jobId: string | null;
   result: AiResult | null;
 }>;
-type ReceiptCommon = Readonly<{
+export type ReceiptCommon = Readonly<{
   journal: AiJournal;
   nonce: string;
   revision: number;
@@ -50,12 +50,85 @@ export type AiRecoveryHeldReceipt = ReceiptCommon &
       intent: 'prepared' | 'committed';
     }>;
   }>;
+export type AiRecoverySelector = Readonly<{ id: number; nonce: string; revision: number }>;
+export type AiRecoveryDelivery = Readonly<{
+  expiresAt: number;
+  digest: string;
+  receipt: string;
+  mime: AiMime;
+  length: number;
+}>;
+export type AiRecoveryKnownExpiry = Readonly<{
+  kind: 'known';
+  expiresAt: number;
+  provenance: 'validated-recovery-response';
+}>;
+export type AiRecoveryProgress =
+  | Readonly<{ state: 'prepared' | 'submission-uncertain'; expiry: Readonly<{ kind: 'unknown' }> }>
+  | Readonly<{ state: 'admitted'; expiry: AiRecoveryKnownExpiry }>
+  | Readonly<{
+      state: 'delivery-pinned' | 'retained' | 'acknowledged';
+      expiry: AiRecoveryKnownExpiry;
+      delivery: AiRecoveryDelivery;
+    }>
+  | Readonly<{
+      state: 'terminal';
+      expiry: AiRecoveryKnownExpiry;
+      outcome: 'refusal' | 'error' | 'expired';
+    }>;
+export type AiRecoveryRequestReceipt = ReceiptCommon &
+  Readonly<{
+    kind: 'recovery-request';
+    inputDigest: string;
+    inputLength: number;
+    recovery: Readonly<{
+      version: 3;
+      protocol: 'splotch-ai-recovery-v1';
+      id: string;
+      credential: AiCredentialReference;
+      sourceHeld: AiRecoverySelector;
+    }> &
+      AiRecoveryProgress;
+  }>;
+export type AiRecoveryAckConfirmation = Readonly<{
+  status: 200;
+  body: import('../../../../web/src/lib/ai/generationAttempt').RecoveryAckReply;
+}>;
+export type AiRecoveryRetainedResult = Readonly<{
+  picture: AiResult;
+  receipt: AiRecoveryRequestReceipt;
+}>;
+export interface AiRecoveryStorage {
+  prepareRecoverySendFromHeld(
+    source: AiRecoveryHeldReceipt,
+    id: number,
+    createdAt: number,
+    credential: AiCredentialReference
+  ): Promise<AiRecoveryRequestReceipt>;
+  markRecoverySubmission(receipt: AiRecoveryRequestReceipt): Promise<AiRecoveryRequestReceipt>;
+  readRecoveryUpload(receipt: AiRecoveryRequestReceipt): Promise<Uint8Array>;
+  recordRecoveryAdmission(
+    receipt: AiRecoveryRequestReceipt,
+    status: Extract<RecoveryReply, { kind: 'status' }>
+  ): Promise<AiRecoveryRequestReceipt>;
+  retainRecoveryResult(
+    receipt: AiRecoveryRequestReceipt,
+    delivery: AiRecoveryDelivery,
+    bytes: Uint8Array
+  ): Promise<AiRecoveryRetainedResult>;
+  recordAck(
+    receipt: AiRecoveryRequestReceipt,
+    confirmation: AiRecoveryAckConfirmation
+  ): Promise<AiRecoveryRequestReceipt>;
+  readRecoveryAttempt(id: number): Promise<AiRecoveryHeldReceipt | AiRecoveryRequestReceipt | null>;
+}
 export type AiStoredAttempt =
   | Readonly<{ kind: 'recovery-held'; receipt: AiRecoveryHeldReceipt }>
+  | Readonly<{ kind: 'recovery-request'; receipt: AiRecoveryRequestReceipt }>
   | Readonly<{ kind: 'native'; receipt: AiReceipt }>
   | Readonly<{ kind: 'legacy'; journal: AiJournal }>;
 export type AiRetainedResult = Readonly<{ picture: AiResult; receipt: AiReceipt }>;
-export interface AiStorage {
+export interface AiStorage extends AiRecoveryStorage {
   read(): Promise<AiStoredAttempt | null>;
   prepare(value: AiJournal, originalModel: string, upload: Uint8Array): Promise<AiPreparedReceipt>;
   readPreparedUpload(receipt: AiPreparedReceipt): Promise<Uint8Array>;

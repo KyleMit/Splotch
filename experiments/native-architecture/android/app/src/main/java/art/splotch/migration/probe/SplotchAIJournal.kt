@@ -52,7 +52,7 @@ class SplotchAIJournal(private val context: Context) {
             stream.fd.sync()
             fence(root)
             val output = dispatch(kind, JSONObject(payload))
-            check(output.toByteArray(Charsets.UTF_8).size <= if (kind == "readPreparedUpload") maxUploadReply else maxJournal)
+            check(output.toByteArray(Charsets.UTF_8).size <= if (kind in setOf("readPreparedUpload", "readRecoveryUpload")) maxUploadReply else maxJournal)
             output
           }
         }
@@ -194,6 +194,7 @@ class SplotchAIJournal(private val context: Context) {
   }
   private fun recoveryProgress(older: JSONObject, newer: JSONObject) {
     check(integer(older, "schema") == integer(newer, "schema"))
+    if (integer(older, "schema") == 3L) { requestProgress(older, newer); return }
     if (integer(older, "schema") != 2L) return
     val a = recovery(older); val b = recovery(newer)
     for (key in listOf("version", "protocol", "id")) check(a.get(key) == b.get(key))
@@ -211,17 +212,19 @@ class SplotchAIJournal(private val context: Context) {
       val stat = Os.lstat(it.path)
       check(OsConstants.S_ISREG(stat.st_mode) && stat.st_nlink == 1L && stat.st_uid == android.os.Process.myUid())
     }
+    check(files.none { it.name.endsWith(".json.pending") })
     val revisions = files.filter { Regex("journal-[0-9]+\\.json").matches(it.name) }
       .sortedByDescending { it.name.removePrefix("journal-").removeSuffix(".json").toLong() }
     check(revisions.isNotEmpty() && revisions.size <= 3)
     val values = revisions.map { file ->
       val value = JSONObject(String(read(file, maxJournal), Charsets.UTF_8))
       val schema = integer(value, "schema")
-      check(schema == 1L || schema == 2L)
+      check(schema == 1L || schema == 2L || schema == 3L)
       if (schema == 1L) keys(value, "schema", "nonce", "revision", "journal", "original", "upload", "result")
       else keys(value, "schema", "nonce", "revision", "journal", "original", "upload", "result", "recovery")
       check(Regex("[a-f0-9]{64}").matches(value.getString("nonce")))
       if (schema == 2L) recovery(value)
+      if (schema == 3L) recoveryRequest(value)
       check(integer(value, "revision") == file.name.removePrefix("journal-").removeSuffix(".json").toLong())
       val j = journal(value.getJSONObject("journal"))
       check(dir.name == "attempt-${integer(j, "id")}")
@@ -235,6 +238,21 @@ class SplotchAIJournal(private val context: Context) {
       value
     }
     val first = values.first()
+    if (integer(first, "schema") == 3L) {
+      check(files.none { it.name in setOf("original.bin.pending", "upload.bin.pending") })
+      sourceHeld(first)
+      val r = first.getJSONObject("recovery"); val state = r.getString("state")
+      val final = files.any { it.name == "result.bin" }; val pending = files.any { it.name == "result.bin.pending" }
+      check(!final || !pending)
+      if (pending) check(Os.lstat(File(dir, "result.bin.pending").path).st_size in 0..maxResult.toLong())
+      if (state == "delivery-pinned" && final) {
+        val d = delivery(r.getJSONObject("delivery"))
+        verify(dir, "result.bin", JSONObject().put("bytes", integer(d, "length")).put("sha256", d.getString("digest")), maxResult)
+      }
+      if (state !in setOf("delivery-pinned", "retained", "acknowledged")) {
+        check(files.none { it.name == "result.bin" || it.name == "result.bin.pending" })
+      }
+    }
     values.forEachIndexed { index, value ->
       recoveryProgress(value, first)
       check(value.getString("nonce") == first.getString("nonce") && value.getLong("revision") == first.getLong("revision") - index)
@@ -249,9 +267,22 @@ class SplotchAIJournal(private val context: Context) {
     val name = "journal-${value.getLong("revision")}.json"
     atomic(dir, name, read(File(dir, name), maxJournal))
     fence(dir)
+    if (integer(value, "schema") == 3L) {
+      val (source, held) = sourceHeld(value)
+      confirm(source, held)
+      val r = value.getJSONObject("recovery")
+      if (r.has("delivery") && File(dir, "result.bin").exists()) {
+        val d = delivery(r.getJSONObject("delivery"))
+        val bytes = read(File(dir, "result.bin"), maxResult)
+        check(digest(bytes) == d.getString("digest") && bytes.size.toLong() == integer(d, "length"))
+        SplotchAIImageDecoder.decode(bytes, d.getString("mime"))
+        atomic(dir, "result.bin", bytes)
+      }
+      check(same(latest(dir), value))
+    }
     return value
   }
-  private fun receipt(value: JSONObject): JSONObject = JSONObject().put("kind", if (integer(value, "schema") == 2L) "recovery-held" else if (value.isNull("upload")) "imported" else "prepared")
+  private fun receipt(value: JSONObject): JSONObject = JSONObject().put("kind", if (integer(value, "schema") == 3L) "recovery-request" else if (integer(value, "schema") == 2L) "recovery-held" else if (value.isNull("upload")) "imported" else "prepared")
     .put("journal", value.getJSONObject("journal")).put("originalRevision", 1)
     .put("nonce", value.getString("nonce")).put("revision", value.getLong("revision"))
     .put("originalDigest", value.getJSONObject("original").getString("sha256"))
@@ -259,7 +290,10 @@ class SplotchAIJournal(private val context: Context) {
     .put("inputLength", if (value.isNull("upload")) JSONObject.NULL else value.getJSONObject("upload").getLong("bytes"))
     .put("resultDigest", if (value.isNull("result")) JSONObject.NULL else value.getJSONObject("result").getString("sha256"))
     .put("resultLength", if (value.isNull("result")) JSONObject.NULL else value.getJSONObject("result").getLong("bytes"))
-    .also { if (integer(value, "schema") == 2L) it.put("recovery", recovery(value)) }
+    .also {
+      if (integer(value, "schema") == 2L) it.put("recovery", recovery(value))
+      if (integer(value, "schema") == 3L) it.put("recovery", recoveryRequest(value))
+    }
   private fun unresolved(value: JSONObject) = integer(value, "schema") == 2L || value.getJSONObject("journal").getString("phase") !in setOf("result", "failed")
   private fun quota(extra: Long, replacing: File? = null) {
     var size = 0L
@@ -382,17 +416,297 @@ class SplotchAIJournal(private val context: Context) {
       }
     }
   }
+  private fun exactStrings(value: JSONObject, vararg names: String) {
+    names.forEach { check(value.get(it) is String) }
+  }
+  private fun recoveryRequest(value: JSONObject): JSONObject {
+    val r = value.getJSONObject("recovery"); val j = journal(value.getJSONObject("journal"))
+    exactStrings(value, "nonce"); exactStrings(r, "protocol", "id", "state")
+    exactStrings(j, "style", "originalId", "phase")
+    val state = r.getString("state"); val deliveryStates = setOf("delivery-pinned", "retained", "acknowledged")
+    check(state in deliveryStates || state in setOf("prepared", "submission-uncertain", "admitted", "terminal"))
+    val expected = listOf("version", "protocol", "id", "credential", "sourceHeld", "state", "expiry") +
+      if (state in deliveryStates) listOf("delivery") else if (state == "terminal") listOf("outcome") else emptyList()
+    keys(r, *expected.toTypedArray())
+    check(integer(r, "version") == 3L && r.getString("protocol") == "splotch-ai-recovery-v1")
+    val nonce = value.getString("nonce"); val created = integer(j, "createdAt", 0)
+    check(r.getString("id") == digest("[\"splotch-ai-recovery-v1\",\"$nonce\",$created]".toByteArray(Charsets.UTF_8)))
+    val credential = r.getJSONObject("credential"); keys(credential, "kind", "reference")
+    exactStrings(credential, "kind", "reference")
+    check(credential.getString("kind") in setOf("free", "managed", "byok") && Regex("[a-f0-9]{64}").matches(credential.getString("reference")))
+    val source = r.getJSONObject("sourceHeld"); keys(source, "id", "nonce", "revision")
+    exactStrings(source, "nonce")
+    check(integer(source, "id") < integer(j, "id") && Regex("[a-f0-9]{64}").matches(source.getString("nonce")))
+    integer(source, "revision")
+    check(!value.isNull("upload") && j.isNull("jobId"))
+    val expiry = r.getJSONObject("expiry"); exactStrings(expiry, "kind")
+    for (key in listOf("original", "upload")) exactStrings(value.getJSONObject(key), "sha256")
+    if (state in setOf("prepared", "submission-uncertain")) {
+      keys(expiry, "kind"); check(expiry.getString("kind") == "unknown")
+    } else {
+      keys(expiry, "kind", "expiresAt", "provenance"); exactStrings(expiry, "provenance")
+      check(expiry.getString("kind") == "known" && expiry.getString("provenance") == "validated-recovery-response")
+      check(created <= safeInteger - maximumRecoveryExpiryDeltaMs)
+      check(integer(expiry, "expiresAt") - created in minimumRecoveryExpiryDeltaMs..maximumRecoveryExpiryDeltaMs)
+    }
+    if (state in deliveryStates) {
+      val d = delivery(r.getJSONObject("delivery"))
+      check(integer(d, "expiresAt") == integer(expiry, "expiresAt"))
+      if (state in setOf("retained", "acknowledged")) {
+        check(j.getString("phase") == "result" && !value.isNull("result"))
+        val result = value.getJSONObject("result"); exactStrings(result, "sha256")
+        exactStrings(j.getJSONObject("result"), "uri", "mime")
+        check(result.getString("sha256") == d.getString("digest") && integer(result, "bytes") == integer(d, "length"))
+        check(j.getJSONObject("result").getString("mime") == d.getString("mime"))
+      }
+    }
+    if (state !in setOf("retained", "acknowledged")) {
+      check(value.isNull("result") && j.isNull("result") && j.getString("phase") == (if (state == "terminal") "failed" else "unknown"))
+    }
+    if (state == "terminal") { exactStrings(r, "outcome"); check(r.getString("outcome") in setOf("refusal", "error", "expired")) }
+    return r
+  }
+  private fun delivery(d: JSONObject): JSONObject {
+    keys(d, "expiresAt", "digest", "receipt", "mime", "length")
+    exactStrings(d, "digest", "receipt", "mime")
+    integer(d, "expiresAt")
+    check(Regex("[a-f0-9]{64}").matches(d.getString("digest")) && Regex("[a-f0-9]{64}").matches(d.getString("receipt")))
+    check(d.getString("mime") in setOf("image/png", "image/jpeg", "image/webp") && integer(d, "length") <= maxResult)
+    return d
+  }
+  private fun requestProgress(older: JSONObject, newer: JSONObject) {
+    val a = recoveryRequest(older); val b = recoveryRequest(newer)
+    for (key in listOf("version", "protocol", "id")) check(a.get(key) == b.get(key))
+    for (key in listOf("credential", "sourceHeld")) check(same(a.getJSONObject(key), b.getJSONObject(key)))
+    for (key in listOf("original", "upload")) check(same(older.getJSONObject(key), newer.getJSONObject(key)))
+    val expiry = a.getJSONObject("expiry")
+    check(expiry.getString("kind") != "known" || same(expiry, b.getJSONObject("expiry")))
+    if (a.has("delivery")) check(same(a.getJSONObject("delivery"), b.getJSONObject("delivery")))
+    if (!older.isNull("result")) check(same(older.getJSONObject("result"), newer.getJSONObject("result")))
+    val state = a.getString("state"); val next = b.getString("state")
+    val allowed = when (state) {
+      "prepared" -> setOf("prepared", "submission-uncertain", "admitted", "delivery-pinned", "retained", "acknowledged", "terminal")
+      "submission-uncertain" -> setOf("submission-uncertain", "admitted", "delivery-pinned", "retained", "acknowledged", "terminal")
+      "admitted" -> setOf("admitted", "delivery-pinned", "retained", "acknowledged", "terminal")
+      "delivery-pinned" -> setOf("delivery-pinned", "retained", "acknowledged")
+      "retained" -> setOf("retained", "acknowledged")
+      "acknowledged" -> setOf("acknowledged")
+      else -> setOf("terminal")
+    }
+    check(next in allowed)
+    if (state == "terminal") check(a.getString("outcome") == b.getString("outcome"))
+  }
+  private fun sourceHeld(value: JSONObject): Pair<File, JSONObject> {
+    val r = recoveryRequest(value); val selector = r.getJSONObject("sourceHeld")
+    val dir = File(root, "attempt-${integer(selector, "id")}")
+    check(attempts().contains(dir))
+    val held = latest(dir)
+    check(integer(held, "schema") == 2L && held.getString("nonce") == selector.getString("nonce") && integer(held, "revision") == integer(selector, "revision"))
+    val j = journal(value.getJSONObject("journal")); val old = journal(held.getJSONObject("journal"))
+    check(integer(j, "createdAt", 0) > integer(old, "createdAt", 0))
+    for (key in listOf("style", "originalId")) check(j.getString(key) == old.getString(key))
+    for (key in listOf("original", "upload")) check(same(value.getJSONObject(key), held.getJSONObject(key)))
+    return dir to held
+  }
+  private fun selectedRequest(input: JSONObject): Pair<File, JSONObject> {
+    exactStrings(input, "nonce")
+    val id = integer(input, "id")
+    val all = confirmedAttempts()
+    val value = all.find { integer(it.getJSONObject("journal"), "id") == id } ?: error("Recovery attempt unavailable")
+    val dir = File(root, "attempt-$id")
+    check(integer(value, "schema") == 3L && input.getString("nonce") == value.getString("nonce") && integer(input, "revision") == integer(value, "revision"))
+    return dir to value
+  }
+  private fun publishRequest(dir: File, before: JSONObject, next: JSONObject): JSONObject {
+    recoveryRequest(next); requestProgress(before, next)
+    if (same(before, next)) return JSONObject().put("receipt", receipt(confirm(dir, next)))
+    check(integer(before, "revision") < safeInteger)
+    val terminal = next.getJSONObject("recovery").getString("state") in setOf("terminal", "retained", "acknowledged")
+    quota(maxJournal.toLong(), if (terminal) dir else null)
+    next.put("revision", integer(before, "revision") + 1)
+    return publish(dir, next)
+  }
+  private fun prepareRecoverySend(input: JSONObject): JSONObject {
+    keys(input, "source", "id", "createdAt", "credential")
+    val selector = input.getJSONObject("source"); keys(selector, "id", "nonce", "revision")
+    exactStrings(selector, "nonce")
+    val all = attempts(); val confirmed = confirmedAttempts()
+    val id = integer(input, "id"); val created = integer(input, "createdAt", 0)
+    check(all.size < maxAttempts)
+    for (value in confirmed) {
+      val schema = integer(value, "schema")
+      check(integer(value.getJSONObject("journal"), "id") < id && integer(value.getJSONObject("journal"), "createdAt", 0) < created)
+      check(schema == 2L || !unresolved(value))
+    }
+    val source = File(root, "attempt-${integer(selector, "id")}")
+    check(all.contains(source))
+    val held = confirm(source, latest(source))
+    check(integer(held, "schema") == 2L && selector.getString("nonce") == held.getString("nonce") && integer(selector, "revision") == integer(held, "revision"))
+    val j = JSONObject(journal(held.getJSONObject("journal")).toString())
+    check(created > integer(j, "createdAt", 0))
+    j.put("id", id).put("createdAt", created)
+    val original = read(File(source, "original.bin"), maxModel); val upload = read(File(source, "upload.bin"), maxUpload)
+    originalModel(original, false)
+    SplotchAIImageDecoder.decode(upload, "image/png")
+    quota(original.size + upload.size + maxResult + maxJournal * 2L)
+    val nonce = ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it.toInt() and 255) }
+    confirmed.forEach { check(it.getString("nonce") != nonce) }
+    val r = JSONObject().put("version", 3).put("protocol", "splotch-ai-recovery-v1")
+      .put("id", digest("[\"splotch-ai-recovery-v1\",\"$nonce\",$created]".toByteArray(Charsets.UTF_8)))
+      .put("credential", input.getJSONObject("credential")).put("sourceHeld", selector)
+      .put("state", "prepared").put("expiry", JSONObject().put("kind", "unknown"))
+    val value = JSONObject().put("schema", 3).put("nonce", nonce).put("revision", 1).put("journal", j)
+      .put("original", metadata(original)).put("upload", metadata(upload)).put("result", JSONObject.NULL).put("recovery", r)
+    recoveryRequest(value)
+    val dir = File(root, "attempt-$id")
+    check(!dir.exists()); directory(dir, root)
+    atomic(dir, "original.bin", original); atomic(dir, "upload.bin", upload)
+    return publish(dir, value)
+  }
+  private fun recoveryAdmission(dir: File, value: JSONObject, status: JSONObject): JSONObject {
+    keys(status, "kind", "protocol", "id", "expiresAt", "phase", "pollAfterMs", "headerExpiresAt")
+    exactStrings(status, "kind", "protocol", "id", "phase", "headerExpiresAt")
+    val next = JSONObject(value.toString()); val r = recoveryRequest(next)
+    check(r.getString("state") != "prepared" && status.getString("kind") == "status" && status.getString("protocol") == r.getString("protocol") && status.getString("id") == r.getString("id"))
+    val phase = status.getString("phase"); val expiry = integer(status, "expiresAt")
+    check(phase in setOf("preparing", "funded", "pending", "working", "image", "delivery", "refusal", "error", "acknowledged") && integer(status, "pollAfterMs") == recoveryPollAfterMs && status.getString("headerExpiresAt") == expiry.toString())
+    val known = JSONObject().put("kind", "known").put("expiresAt", expiry).put("provenance", "validated-recovery-response")
+    check(r.getJSONObject("expiry").getString("kind") == "unknown" || same(r.getJSONObject("expiry"), known))
+    r.put("expiry", known)
+    val state = r.getString("state")
+    if (state in setOf("submission-uncertain", "admitted")) {
+      r.put("state", if (phase in setOf("refusal", "error")) "terminal" else "admitted")
+      if (phase in setOf("refusal", "error")) { r.put("outcome", phase); next.getJSONObject("journal").put("phase", "failed") }
+    } else if (state == "terminal" && phase in setOf("refusal", "error")) check(r.getString("outcome") == phase)
+    return publishRequest(dir, value, next)
+  }
+  private fun recoveryResultFile(dir: File, bytes: ByteArray) {
+    val final = File(dir, "result.bin"); val pending = File(dir, "result.bin.pending")
+    if (final.exists()) { check(!pending.exists()); atomic(dir, "result.bin", bytes); return }
+    if (pending.exists()) {
+      val stat = Os.lstat(pending.path)
+      check(OsConstants.S_ISREG(stat.st_mode) && stat.st_nlink == 1L && stat.st_uid == android.os.Process.myUid() && stat.st_size in 0..maxResult.toLong())
+      if (stat.st_size > 0 && read(pending, maxResult).contentEquals(bytes)) {
+        val fd = Os.open(pending.path, OsConstants.O_RDONLY or OsConstants.O_NOFOLLOW, 0)
+        try {
+          checkFile(fd); Os.fsync(fd)
+          check(!final.exists()); Os.rename(pending.path, final.path); fence(dir)
+        } finally { Os.close(fd) }
+        return
+      }
+      Os.remove(pending.path); fence(dir)
+    }
+    atomic(dir, "result.bin", bytes)
+  }
+  private fun retainRecovery(input: JSONObject): JSONObject {
+    keys(input, "id", "nonce", "revision", "delivery", "bytes")
+    exactStrings(input, "bytes")
+    val (dir, initial) = selectedRequest(input)
+    var value = initial; var r = recoveryRequest(value)
+    val d = delivery(input.getJSONObject("delivery")); val bytes = decode(input, "bytes", maxResult)
+    check(r.getString("state") !in setOf("prepared", "terminal"))
+    check(integer(d, "length") == bytes.size.toLong() && d.getString("digest") == digest(bytes))
+    SplotchAIImageDecoder.decode(bytes, d.getString("mime"))
+    check(same(confirm(dir, latest(dir)), value))
+    val known = JSONObject().put("kind", "known").put("expiresAt", integer(d, "expiresAt")).put("provenance", "validated-recovery-response")
+    check(r.getJSONObject("expiry").getString("kind") == "unknown" || same(r.getJSONObject("expiry"), known))
+    if (r.has("delivery")) check(same(r.getJSONObject("delivery"), d)) else {
+      val pinned = JSONObject(value.toString())
+      pinned.getJSONObject("recovery").put("expiry", known).put("delivery", d).put("state", "delivery-pinned")
+      publishRequest(dir, value, pinned)
+      value = confirm(dir, latest(dir)); r = recoveryRequest(value)
+    }
+    if (r.getString("state") in setOf("retained", "acknowledged")) {
+      check(read(File(dir, "result.bin"), maxResult).contentEquals(bytes))
+      return JSONObject().put("receipt", receipt(confirm(dir, value)))
+    }
+    var storedBytes = 0L
+    for (name in listOf("result.bin", "result.bin.pending")) {
+      val file = File(dir, name)
+      if (file.exists()) {
+        val stat = Os.lstat(file.path)
+        check(OsConstants.S_ISREG(stat.st_mode) && stat.st_nlink == 1L && stat.st_uid == android.os.Process.myUid() && stat.st_size in 0..maxResult.toLong())
+        storedBytes += stat.st_size
+      }
+    }
+    quota(maxOf(0L, bytes.size - storedBytes) + maxJournal, dir)
+    recoveryResultFile(dir, bytes)
+    check(read(File(dir, "result.bin"), maxResult).contentEquals(bytes))
+    val next = JSONObject(value.toString())
+    next.getJSONObject("recovery").put("state", "retained")
+    next.getJSONObject("journal").put("phase", "result").put("result", JSONObject().put("uri", File(dir, "result.bin").toURI().toString()).put("mime", d.getString("mime")))
+    next.put("result", metadata(bytes))
+    return publishRequest(dir, value, next)
+  }
+  private fun acknowledgeRecovery(input: JSONObject): JSONObject {
+    keys(input, "id", "nonce", "revision", "confirmation")
+    val (dir, value) = selectedRequest(input); val r = recoveryRequest(value)
+    check(r.getString("state") in setOf("retained", "acknowledged"))
+    val d = delivery(r.getJSONObject("delivery")); val confirmation = input.getJSONObject("confirmation")
+    keys(confirmation, "status", "body"); check(integer(confirmation, "status") == 200L)
+    val body = confirmation.getJSONObject("body")
+    keys(body, "ok", "protocol", "id", "phase", "expiresAt", "deliveryDigest", "deliveryReceipt")
+    exactStrings(body, "protocol", "id", "phase", "deliveryDigest", "deliveryReceipt")
+    check(body.get("ok") is Boolean && body.getBoolean("ok"))
+    check(body.getString("protocol") == r.getString("protocol") && body.getString("id") == r.getString("id") && body.getString("phase") == "acknowledged" && integer(body, "expiresAt") == integer(d, "expiresAt") && body.getString("deliveryDigest") == d.getString("digest") && body.getString("deliveryReceipt") == d.getString("receipt"))
+    val bytes = read(File(dir, "result.bin"), maxResult)
+    check(digest(bytes) == d.getString("digest") && bytes.size.toLong() == integer(d, "length"))
+    SplotchAIImageDecoder.decode(bytes, d.getString("mime"))
+    check(same(confirm(dir, latest(dir)), value))
+    val next = JSONObject(value.toString()); next.getJSONObject("recovery").put("state", "acknowledged")
+    return publishRequest(dir, value, next)
+  }
+  private fun confirmedAttempts(): List<JSONObject> {
+    val values = attempts().map { confirm(it, latest(it)) }
+    if (values.any { integer(it, "schema") == 3L }) {
+      check(values.count { integer(it, "schema") != 2L && unresolved(it) } <= 1)
+    }
+    return values
+  }
   private fun dispatch(kind: String, input: JSONObject): String {
     val output = when (kind) {
+      "prepareRecoverySendFromHeld" -> prepareRecoverySend(input)
+      "retainRecoveryResult" -> retainRecovery(input)
+      "recordAck" -> acknowledgeRecovery(input)
+      "readRecoveryAttempt" -> {
+        keys(input, "id")
+        val id = integer(input, "id")
+        val all = confirmedAttempts()
+        val value = all.find { integer(it.getJSONObject("journal"), "id") == id }
+        if (value != null) check(integer(value, "schema") in setOf(2L, 3L))
+        JSONObject().put("receipt", value?.let { receipt(it) } ?: JSONObject.NULL)
+      }
+      "markRecoverySubmission", "readRecoveryUpload", "recordRecoveryAdmission" -> {
+        if (kind == "recordRecoveryAdmission") keys(input, "id", "nonce", "revision", "status") else keys(input, "id", "nonce", "revision")
+        val (dir, value) = selectedRequest(input)
+        val r = recoveryRequest(value)
+        when (kind) {
+          "readRecoveryUpload" -> {
+            check(r.getString("state") == "submission-uncertain")
+            val bytes = read(File(dir, "upload.bin"), maxUpload)
+            val meta = value.getJSONObject("upload")
+            check(integer(meta, "bytes") == bytes.size.toLong() && meta.getString("sha256") == digest(bytes))
+            SplotchAIImageDecoder.decode(bytes, "image/png")
+            check(same(confirm(dir, latest(dir)), value))
+            JSONObject().put("receipt", receipt(value)).put("upload", Base64.encodeToString(bytes, Base64.NO_WRAP))
+          }
+          "recordRecoveryAdmission" -> recoveryAdmission(dir, value, input.getJSONObject("status"))
+          else -> {
+            check(r.getString("state") in setOf("prepared", "submission-uncertain"))
+            val next = JSONObject(value.toString()); next.getJSONObject("recovery").put("state", "submission-uncertain")
+            publishRequest(dir, value, next)
+          }
+        }
+      }
       "read" -> {
         keys(input)
-        val all = attempts().map { confirm(it, latest(it)) }
+        val all = confirmedAttempts()
         JSONObject().put("receipt", all.maxByOrNull { it.getJSONObject("journal").getLong("id") }?.let { receipt(it) } ?: JSONObject.NULL)
       }
       "pictures" -> {
         keys(input)
         val pictures = org.json.JSONArray()
-        attempts().map { confirm(it, latest(it)) }.forEach { if (!it.isNull("result")) pictures.put(it.getJSONObject("journal").getJSONObject("result")) }
+        confirmedAttempts().forEach { if (!it.isNull("result")) pictures.put(it.getJSONObject("journal").getJSONObject("result")) }
         JSONObject().put("pictures", pictures)
       }
       "readPreparedUpload" -> {
@@ -464,6 +778,10 @@ class SplotchAIJournal(private val context: Context) {
         }
         recovery(value); recoveryProgress(before, value)
         if (same(before, value)) JSONObject().put("receipt", receipt(confirm(dir, value))) else {
+          for (candidate in attempts()) {
+            val existing = latest(candidate)
+            if (integer(existing, "schema") == 3L) check(integer(existing.getJSONObject("recovery").getJSONObject("sourceHeld"), "id") != integer(input, "id"))
+          }
           check(integer(value, "revision") < safeInteger)
           quota(maxJournal.toLong())
           value.put("revision", value.getLong("revision") + 1)

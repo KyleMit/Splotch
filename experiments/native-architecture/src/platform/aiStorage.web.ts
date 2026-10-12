@@ -25,7 +25,8 @@ import {
   invalidAiStorage,
   type WebAiReceipt,
 } from './aiStorageRecords.web';
-import { WebAiStorageOwner, sameAiIdentity } from './aiStorageOwner.web';
+import { sameAiIdentity } from './aiStorageOwner.web';
+import { WebAiRecoveryStorage } from './aiRecoveryStorage.web';
 
 const AI_ATTEMPT_NONCE_BYTES = 32;
 function nonce(): string {
@@ -34,8 +35,7 @@ function nonce(): string {
   ).join('');
 }
 
-class WebAiStorage implements AiStorage {
-  private owner = new WebAiStorageOwner();
+class WebAiStorage extends WebAiRecoveryStorage implements AiStorage {
   private async prepareAttempt(
     journal: AiJournal,
     originalModel: string,
@@ -88,6 +88,8 @@ class WebAiStorage implements AiStorage {
       await this.owner.load();
       const current = this.owner.latest();
       if (!current) return null;
+      if (current.kind === 'recovery-request')
+        return Object.freeze({ kind: 'recovery-request' as const, receipt: current });
       return current.kind === 'recovery-held'
         ? Object.freeze({ kind: 'recovery-held' as const, receipt: current })
         : Object.freeze({ kind: 'native' as const, receipt: current });

@@ -426,7 +426,8 @@
       "type": "file",
       "mode": "0o644",
       "bytes": 85,
-      "sha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713"
+      "sha256": "a72b39698946855708e362c2a6254e13a667737d02086cf49d7265881603c713",
+      "originalText": "<resources>\n    <string name=\"app_name\">Hello App Display Name</string>\n</resources>\n"
     },
     {
       "path": "package/android/app/src/main/res/values/styles.xml",

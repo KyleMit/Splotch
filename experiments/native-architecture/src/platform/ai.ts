@@ -1,4 +1,5 @@
 import { fetch } from 'expo/fetch';
+import { withCredentialLeases } from '../ai/credentialLease';
 import { NativeModules } from 'react-native';
 import { aiUrl, type AiTransport } from '../ai/transport';
 import { SECRET_SLOTS, isInstallationId } from '../ai/contract';
@@ -45,7 +46,7 @@ function referenceBridge() {
 function referenceSlot(kind: 'free' | keyof typeof SECRET_SLOTS) {
   return kind === 'free' ? 'free-generation-identity' : SECRET_SLOTS[kind];
 }
-export const aiVault: AiVault & AiReferencedVault = {
+const nativeVault: AiVault & Omit<AiReferencedVault, 'lease' | 'pinLeased'> = {
   async installationId() {
     const value = await bridge().installationId();
     if (!isInstallationId(value)) throw new Error('Installation grant unavailable.');
@@ -100,6 +101,7 @@ export const aiVault: AiVault & AiReferencedVault = {
       throw new Error('Secure AI removal was not confirmed.');
   },
 };
+export const aiVault = withCredentialLeases(nativeVault);
 export const aiTransport: AiTransport = (request, signal) =>
   fetch(aiUrl(request), {
     method: request.method,

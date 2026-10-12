@@ -118,6 +118,18 @@ beforeEach(async () => {
   fixture.storage.mockClear();
 });
 const originalModel = JSON.stringify({ version: 5, pageId: 'blank', rainbow: 0, strokes: [] });
+it('exposes every recovery operation through the production native storage facade', () => {
+  for (const operation of [
+    'prepareRecoverySendFromHeld',
+    'markRecoverySubmission',
+    'readRecoveryUpload',
+    'recordRecoveryAdmission',
+    'retainRecoveryResult',
+    'recordAck',
+    'readRecoveryAttempt',
+  ])
+    expect(typeof aiStorage[operation]).toBe('function');
+});
 function committed(journal, revision = 1) {
   return {
     kind: 'prepared',
@@ -299,4 +311,163 @@ it('creates exact pinned recovery bytes, commits intent once and records only ad
   expect(commands[2].value.revision).toBe(intent.revision);
   await expect(storage.commitRecoveryIntent(prepared)).rejects.toThrow('stale');
   expect(commands).toHaveLength(3);
+});
+
+async function nativeRecoveryFixture() {
+  const { createHash } = await import('node:crypto');
+  const bytes = new Uint8Array(rgbaPng(2, 2, 255));
+  const inputDigest = createHash('sha256').update(bytes).digest('hex');
+  const source = {
+    ...committed({ ...journal, phase: 'unknown' }),
+    inputDigest,
+    kind: 'recovery-held',
+    recovery: {
+      version: 2,
+      protocol: 'splotch-ai-recovery-v1',
+      id: 'a'.repeat(64),
+      credential: { kind: 'free', reference: 'b'.repeat(64) },
+      expiry: { kind: 'unknown' },
+      intent: 'committed',
+    },
+  };
+  let current = source;
+  fixture.storage.mockImplementation(async (kind, raw) => {
+    const payload = JSON.parse(raw);
+    if (kind === 'prepareRecoverySendFromHeld') {
+      const nonce = 'f'.repeat(64);
+      current = {
+        ...source,
+        kind: 'recovery-request',
+        nonce,
+        journal: { ...source.journal, id: payload.id, createdAt: payload.createdAt },
+        recovery: {
+          version: 3,
+          protocol: 'splotch-ai-recovery-v1',
+          id: createHash('sha256')
+            .update(JSON.stringify(['splotch-ai-recovery-v1', nonce, payload.createdAt]))
+            .digest('hex'),
+          sourceHeld: payload.source,
+          credential: payload.credential,
+          state: 'prepared',
+          expiry: { kind: 'unknown' },
+        },
+      };
+    }
+    if (kind === 'markRecoverySubmission')
+      current = {
+        ...current,
+        revision: current.revision + 1,
+        recovery: { ...current.recovery, state: 'submission-uncertain' },
+      };
+    if (kind === 'readRecoveryUpload')
+      return JSON.stringify({ receipt: current, upload: Buffer.from(bytes).toString('base64') });
+    if (kind === 'retainRecoveryResult') {
+      const uri = 'file:///owned/recovery/attempt-2/result.bin';
+      fixture.files.set(uri, new Uint8Array(Buffer.from(payload.bytes, 'base64')));
+      current = {
+        ...current,
+        revision: current.revision + 2,
+        resultDigest: payload.delivery.digest,
+        resultLength: payload.delivery.length,
+        journal: {
+          ...current.journal,
+          phase: 'result',
+          result: { uri, mime: payload.delivery.mime },
+        },
+        recovery: {
+          ...current.recovery,
+          state: 'retained',
+          delivery: payload.delivery,
+          expiry: {
+            kind: 'known',
+            expiresAt: payload.delivery.expiresAt,
+            provenance: 'validated-recovery-response',
+          },
+        },
+      };
+    }
+    if (kind === 'recordAck')
+      current = {
+        ...current,
+        revision: current.revision + 1,
+        recovery: { ...current.recovery, state: 'acknowledged' },
+      };
+    return JSON.stringify({
+      receipt: kind === 'readRecoveryAttempt' && payload.id === 1 ? source : current,
+    });
+  });
+  const held = (await aiStorage.read()).receipt;
+  const prepared = await aiStorage.prepareRecoverySendFromHeld(
+    held,
+    2,
+    2000,
+    source.recovery.credential
+  );
+  const marked = await aiStorage.markRecoverySubmission(prepared);
+  return { bytes, source, marked, inputDigest };
+}
+
+it('uses finite owned recovery bridge selectors and verifies exact native upload bytes', async () => {
+  const { bytes, source, marked } = await nativeRecoveryFixture();
+  expect(await aiStorage.readRecoveryUpload(marked)).toEqual(bytes);
+  expect(
+    JSON.parse(
+      fixture.storage.mock.calls.find(([kind]) => kind === 'prepareRecoverySendFromHeld')[1]
+    )
+  ).toEqual({
+    source: { id: 1, nonce: source.nonce, revision: source.revision },
+    id: 2,
+    createdAt: 2000,
+    credential: source.recovery.credential,
+  });
+  expect(JSON.parse(fixture.storage.mock.calls.at(-1)[1])).toEqual({
+    id: 2,
+    nonce: marked.nonce,
+    revision: marked.revision,
+  });
+  await expect(aiStorage.readRecoveryUpload({ ...marked })).rejects.toThrow('stale');
+});
+
+it('blocks recovery mutation after a bad native upload until an authoritative selected reread', async () => {
+  const { marked } = await nativeRecoveryFixture();
+  fixture.storage.mockResolvedValueOnce(
+    JSON.stringify({ receipt: marked, upload: Buffer.from(rgbaPng(2, 2, 0)).toString('base64') })
+  );
+  await expect(aiStorage.readRecoveryUpload(marked)).rejects.toThrow();
+  await expect(aiStorage.markRecoverySubmission(marked)).rejects.toThrow('unconfirmed');
+  const current = await aiStorage.readRecoveryAttempt(2);
+  expect(await aiStorage.readRecoveryUpload(current)).toEqual(new Uint8Array(rgbaPng(2, 2, 255)));
+});
+
+it('retains verified native delivery bytes and accepts only exact ACK200 proof after local reread', async () => {
+  const { marked, bytes, inputDigest } = await nativeRecoveryFixture();
+  const delivery = {
+    expiresAt: 1202000,
+    digest: inputDigest,
+    receipt: 'e'.repeat(64),
+    mime: 'image/png',
+    length: bytes.length,
+  };
+  const retained = await aiStorage.retainRecoveryResult(marked, delivery, bytes);
+  const confirmation = {
+    status: 200,
+    body: {
+      ok: true,
+      protocol: 'splotch-ai-recovery-v1',
+      id: marked.recovery.id,
+      phase: 'acknowledged',
+      expiresAt: delivery.expiresAt,
+      deliveryDigest: delivery.digest,
+      deliveryReceipt: delivery.receipt,
+    },
+  };
+  await expect(
+    aiStorage.recordAck(retained.receipt, { ...confirmation, status: 202 })
+  ).rejects.toThrow();
+  const current = await aiStorage.readRecoveryAttempt(2);
+  const acknowledged = await aiStorage.recordAck(current, confirmation);
+  expect(acknowledged.recovery.state).toBe('acknowledged');
+  expect(acknowledged.journal.result).toEqual(retained.picture);
+  expect(fixture.decode.mock.calls.length).toBeGreaterThanOrEqual(4);
+  expect(fixture.storage.mock.calls.filter(([kind]) => kind === 'recordAck')).toHaveLength(1);
 });

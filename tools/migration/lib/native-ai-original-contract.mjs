@@ -17,7 +17,7 @@ export function assertAiOriginalModelContract(files) {
     if (!Buffer.isBuffer(bytes)) throw new Error(`Missing maintained native source: ${path}`);
     const source = bytes.toString('utf8');
     const body = source.match(
-      /private (?:fun|func) originalModel\b([\s\S]*?)\n {2}private (?:fun|func) dispatch/
+      /private (?:fun|func) originalModel\b([\s\S]*?)(?=\n {2}private (?:fun|func)\b)/
     )?.[1];
     if (
       !body ||
@@ -51,8 +51,9 @@ export function assertAiOriginalModelContract(files) {
     ])
       if (!body.includes(token))
         throw new Error('Native original model envelope changed: ' + token);
-    const admission = source.indexOf(call);
-    const publication = source.indexOf('atomic(dir, "original.bin", original)');
+    const dispatch = source.slice(source.search(/private (?:fun|func) dispatch\b/));
+    const admission = dispatch.indexOf(call);
+    const publication = dispatch.indexOf('atomic(dir, "original.bin", original)');
     if (admission < 0 || publication <= admission || source.split(call).length !== 2)
       throw new Error('Native original model admission must precede publication');
   }

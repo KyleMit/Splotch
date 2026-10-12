@@ -289,7 +289,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
       />
       <RsdAction
         label="Refresh AI availability"
-        disabled={state.busy}
+        disabled={state.busy || waiting || !!state.recovery}
         onClick={() => {
           void owner.refresh();
         }}

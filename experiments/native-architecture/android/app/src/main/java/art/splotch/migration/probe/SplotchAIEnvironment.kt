@@ -39,10 +39,6 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
   private val maxCredentialBytes = 2048
   private val referenceBytes = 32
   private val protectedPrefix = "SPLOTCH-AI-VAULT-2\n"
-  private val maxImageBytes = 16 * 1024 * 1024
-  private val maxImageDimension = 4096
-  private val maxImagePixels = 4 * 1024 * 1024
-  private val maxDecodedBytes = maxImagePixels * 4
   override fun getName() = "SplotchAIEnvironment"
   private fun slot(name: String): AtomicFile {
     require(name == "gemini-api-key" || name == "managed-access-code" || name == "free-generation-identity")
@@ -137,16 +133,6 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
     try { synchronized(this) { promise.resolve(operation()) } }
     catch (_: Exception) { promise.reject("AI_SECURE_UNAVAILABLE", "Secure AI storage is unavailable.") }
   }
-  @android.annotation.TargetApi(28)
-  private fun completeBitmap(bytes: ByteArray, mime: String, width: Int, height: Int): Bitmap {
-    return ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, info, _ ->
-      check(info.size.width == width && info.size.height == height && info.mimeType == mime && !info.isAnimated)
-      decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE)
-      decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_DEFAULT)
-      decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
-      decoder.setOnPartialImageListener { false }
-    }
-  }
   @ReactMethod fun installationId(promise: Promise) = guarded(promise) { installationValue() }
   @ReactMethod fun readCredential(name: String, promise: Promise) = guarded(promise) {
     check(name == "gemini-api-key" || name == "managed-access-code")
@@ -172,32 +158,123 @@ class SplotchAIEnvironment(private val context: ReactApplicationContext) : React
   @ReactMethod fun decodeImage(base64: String, mime: String, width: Double, height: Double, promise: Promise) {
     try {
       synchronized(this) {
-        check(mime == "image/png" || mime == "image/jpeg" || mime == "image/webp")
         check(width.isFinite() && height.isFinite() && width == width.toInt().toDouble() && height == height.toInt().toDouble())
-        check(width >= 1 && height >= 1 && width <= maxImageDimension && height <= maxImageDimension && width * height <= maxImagePixels)
-        check(base64.length <= ((maxImageBytes + 2) / 3) * 4)
+        check(width >= 1 && height >= 1 && width <= SplotchAIImageDecoder.maxImageDimension && height <= SplotchAIImageDecoder.maxImageDimension && width * height <= SplotchAIImageDecoder.maxImagePixels)
+        check(base64.length <= ((SplotchAIImageDecoder.maxImageBytes + 2) / 3) * 4)
         val bytes = Base64.decode(base64, Base64.NO_WRAP)
-        check(bytes.isNotEmpty() && bytes.size <= maxImageBytes)
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        check(bounds.outWidth == width.toInt() && bounds.outHeight == height.toInt() && bounds.outMimeType == mime)
-        val options = BitmapFactory.Options().apply {
-          inPreferredConfig = Bitmap.Config.ARGB_8888
-          inSampleSize = 1
-          inScaled = false
-        }
-        check(Build.VERSION.SDK_INT >= 28 || mime != "image/webp")
-        val bitmap = if (Build.VERSION.SDK_INT >= 28) completeBitmap(bytes, mime, width.toInt(), height.toInt())
-          else BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-        check(bitmap != null)
-        try {
-          check(bitmap.width == width.toInt() && bitmap.height == height.toInt() && bitmap.allocationByteCount <= maxDecodedBytes)
-          check(bitmap.config == Bitmap.Config.ARGB_8888)
-          bitmap.getPixel(bitmap.width - 1, bitmap.height - 1)
-          promise.resolve(Arguments.createMap().apply { putInt("width", bitmap.width); putInt("height", bitmap.height) })
-        } finally { bitmap.recycle() }
+        check(Base64.encodeToString(bytes, Base64.NO_WRAP) == base64)
+        val dimensions = SplotchAIImageDecoder.decode(bytes, mime)
+        check(dimensions.first == width.toInt() && dimensions.second == height.toInt())
+        promise.resolve(Arguments.createMap().apply { putInt("width", dimensions.first); putInt("height", dimensions.second) })
       }
     } catch (_: Exception) { promise.reject("AI_IMAGE_REJECTED", "AI picture decoding failed.") }
     catch (_: OutOfMemoryError) { promise.reject("AI_IMAGE_REJECTED", "AI picture decoding failed.") }
+  }
+}
+
+internal object SplotchAIImageDecoder {
+  const val maxImageBytes = 16 * 1024 * 1024
+  const val maxImageDimension = 4096
+  const val maxImagePixels = 4 * 1024 * 1024
+  private const val maxDecodedBytes = maxImagePixels * 4
+  private const val maxPngChunks = 4096
+  private const val maxJpegSegments = 1024
+  private const val maxWebpChunks = 8
+  private fun structure(bytes: ByteArray, mime: String) {
+    fun u(index: Int) = bytes[index].toInt() and 255
+    fun text(start: Int, count: Int) = String(bytes, start, count, Charsets.US_ASCII)
+    fun be(start: Int) = (0..3).fold(0L) { value, index -> (value shl 8) or u(start + index).toLong() }
+    fun le(start: Int) = (0..3).fold(0L) { value, index -> value or (u(start + index).toLong() shl (8 * index)) }
+    when (mime) {
+      "image/png" -> {
+        check(bytes.size >= 33 && bytes.take(8).map { it.toInt() and 255 } == listOf(137, 80, 78, 71, 13, 10, 26, 10))
+        var offset = 8; var chunks = 0; var dataSeen = false; var ended = false
+        while (offset < bytes.size) {
+          check(++chunks <= maxPngChunks && offset <= bytes.size - 12 && !ended)
+          val length = be(offset); val type = text(offset + 4, 4)
+          check(length <= bytes.size - offset - 12)
+          val end = offset + length.toInt() + 12
+          val crc = java.util.zip.CRC32().apply { update(bytes, offset + 4, length.toInt() + 4) }.value
+          check(crc == be(end - 4))
+          when {
+            chunks == 1 -> check(type == "IHDR" && length == 13L && u(offset + 16) == 8 && u(offset + 17) in setOf(2, 6) && u(offset + 18) == 0 && u(offset + 19) == 0 && u(offset + 20) == 0)
+            type == "IDAT" -> dataSeen = true
+            type == "IEND" -> { check(length == 0L && dataSeen && end == bytes.size); ended = true }
+            else -> check(!dataSeen && type in setOf("cHRM", "gAMA", "sRGB", "sBIT", "pHYs", "PLTE"))
+          }
+          offset = end
+        }
+        check(ended)
+      }
+      "image/jpeg" -> {
+        check(bytes.size >= 4 && u(0) == 255 && u(1) == 0xd8)
+        var offset = 2; var segments = 0; var scan = false; var ended = false
+        while (offset < bytes.size) {
+          check(offset + 1 < bytes.size && u(offset) == 255)
+          val marker = u(offset + 1); offset += 2
+          if (scan) {
+            if (marker == 0 || marker in 0xd0..0xd7) {
+              while (offset < bytes.size && u(offset) != 255) offset++
+              continue
+            }
+            check(marker == 0xd9 && offset == bytes.size); ended = true; break
+          }
+          check(++segments <= maxJpegSegments && offset + 1 < bytes.size)
+          val length = u(offset) * 256 + u(offset + 1)
+          check(length >= 2 && length <= bytes.size - offset)
+          check(marker in setOf(0xc0, 0xc4, 0xdb, 0xdd, 0xda, 0xfe) || marker in 0xe0..0xef)
+          offset += length
+          if (marker == 0xda) scan = true
+          while (scan && offset < bytes.size && u(offset) != 255) offset++
+        }
+        check(scan && ended)
+      }
+      "image/webp" -> {
+        check(bytes.size >= 20 && text(0, 4) == "RIFF" && text(8, 4) == "WEBP" && le(4) == (bytes.size - 8).toLong())
+        var offset = 12; val seen = mutableSetOf<String>(); var picture = false
+        while (offset < bytes.size) {
+          check(offset <= bytes.size - 8 && seen.size < maxWebpChunks)
+          val type = text(offset, 4); val length = le(offset + 4)
+          check(type !in seen && length <= bytes.size - offset - 8)
+          val end = offset + length.toInt() + 8; val pad = length.toInt() and 1
+          check(end + pad <= bytes.size && (pad == 0 || u(end) == 0))
+          when (type) {
+            "VP8X" -> check(offset == 12 && length == 10L && u(offset + 8) and 0xc3 == 0)
+            "VP8 ", "VP8L" -> { check(!picture && length > 0); picture = true }
+            else -> check(type in setOf("ALPH", "ICCP", "EXIF", "XMP "))
+          }
+          seen.add(type); offset = end + pad
+        }
+        check(picture)
+      }
+      else -> error("Image MIME unavailable")
+    }
+  }
+  @android.annotation.TargetApi(28)
+  private fun completeBitmap(bytes: ByteArray, mime: String, width: Int, height: Int): Bitmap =
+    ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, info, _ ->
+      check(info.size.width == width && info.size.height == height && info.mimeType == mime && !info.isAnimated)
+      decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE)
+      decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_DEFAULT)
+      decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
+      decoder.setOnPartialImageListener { false }
+    }
+  fun decode(bytes: ByteArray, mime: String): Pair<Int, Int> {
+    check(bytes.isNotEmpty() && bytes.size <= maxImageBytes)
+    structure(bytes, mime)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    val width = bounds.outWidth; val height = bounds.outHeight
+    check(width in 1..maxImageDimension && height in 1..maxImageDimension && width.toLong() * height <= maxImagePixels && bounds.outMimeType == mime)
+    check(Build.VERSION.SDK_INT >= 28 || mime != "image/webp")
+    val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888; inSampleSize = 1; inScaled = false }
+    val bitmap = if (Build.VERSION.SDK_INT >= 28) completeBitmap(bytes, mime, width, height)
+      else BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    check(bitmap != null)
+    try {
+      check(bitmap.width == width && bitmap.height == height && bitmap.allocationByteCount <= maxDecodedBytes && bitmap.config == Bitmap.Config.ARGB_8888)
+      bitmap.getPixel(width - 1, height - 1)
+      return width to height
+    } finally { bitmap.recycle() }
   }
 }

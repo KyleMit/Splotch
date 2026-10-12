@@ -6,6 +6,12 @@ import {
 } from '../migration/lib/native-source-files.mjs';
 import { readTemplateManifest } from '../migration/lib/native-template.mjs';
 import { assertNativeSourceContract } from '../migration/lib/native-source-contract.mjs';
+import {
+  RECOVERY_ADMISSION_AGE_MS,
+  RECOVERY_FUTURE_SKEW_MS,
+  RECOVERY_TTL_MS,
+} from '../../web/src/lib/ai/generationAttempt';
+import { JOB_TTL_MS } from '../../experiments/native-architecture/src/ai/contract';
 const root = new URL('../../', import.meta.url);
 const candidate = new URL('experiments/native-architecture/', root);
 const android = 'android/app/src/main/java/art/splotch/migration/probe/SplotchAIJournal.kt';
@@ -51,10 +57,14 @@ const cases = [
   ],
   [android, 'input.getString("nonce") == pinned.getString("nonce")', 'true'],
   [apple, 'string(input, "nonce") == string(pinned, "nonce")', 'true'],
-  [android, 'if (kind == "readPreparedUpload") maxUploadReply else maxJournal', 'maxUploadReply'],
+  [
+    android,
+    'if (kind in setOf("readPreparedUpload", "readRecoveryUpload")) maxUploadReply else maxJournal',
+    'maxUploadReply',
+  ],
   [
     apple,
-    'kind == "readPreparedUpload" ? self.maxUploadReply : self.maxJournal',
+    '["readPreparedUpload", "readRecoveryUpload"].contains(kind) ? self.maxUploadReply : self.maxJournal',
     'self.maxUploadReply',
   ],
   [android, 'val pinned = confirm(dir, latest(dir))', 'val pinned = latest(dir)'],
@@ -104,9 +114,26 @@ it.each(cases)(
     );
   }
 );
-it('closes the native operation vocabulary and preserves the legacy wire without an ACK caller', () => {
+it('closes the transitive native operation vocabulary and preserves the legacy generation wire', () => {
   const storage = readFileSync(new URL('src/platform/durableAiStorage.ts', candidate), 'utf8');
   const vocabulary = storage.match(/type Operation\s*=([\s\S]*?);/)[1];
+  expect(vocabulary).toContain('RecoveryStorageOperation');
+  const recoveryStorage = readFileSync(
+    new URL('src/platform/aiRecoveryStorage.native.ts', candidate),
+    'utf8'
+  );
+  const recoveryVocabulary = recoveryStorage.match(
+    /type RecoveryStorageOperation\s*=([\s\S]*?);/
+  )[1];
+  expect([...recoveryVocabulary.matchAll(/'([^']+)'/g)].map((match) => match[1])).toEqual([
+    'prepareRecoverySendFromHeld',
+    'markRecoverySubmission',
+    'readRecoveryUpload',
+    'recordRecoveryAdmission',
+    'retainRecoveryResult',
+    'recordAck',
+    'readRecoveryAttempt',
+  ]);
   expect([...vocabulary.matchAll(/'([^']+)'/g)].map((match) => match[1])).toEqual([
     'read',
     'prepare',
@@ -137,9 +164,15 @@ it('closes the native operation vocabulary and preserves the legacy wire without
 
 it('pins native original-expiry interval to the actual recovery protocol skew without local-clock admission', () => {
   const protocol = readFileSync(new URL('src/ai/recoveryContract.ts', candidate), 'utf8');
-  expect(protocol).toContain("RECOVERY_PROTOCOL = 'splotch-ai-recovery-v1'");
-  expect(protocol).toContain('ADMISSION_AGE_MS = 60_000');
-  expect(protocol).toContain('FUTURE_SKEW_MS = 30_000');
+  expect(protocol).toContain("from '../../../../web/src/lib/ai/generationAttempt'");
+  expect(protocol).toContain('RECOVERY_ADMISSION_AGE_MS as ADMISSION_AGE_MS');
+  expect(protocol).toContain('RECOVERY_FUTURE_SKEW_MS as FUTURE_SKEW_MS');
+  expect(RECOVERY_ADMISSION_AGE_MS).toBe(60_000);
+  expect(RECOVERY_FUTURE_SKEW_MS).toBe(30_000);
+  expect(RECOVERY_TTL_MS).toBe(1_200_000);
+  expect(JOB_TTL_MS).toBe(RECOVERY_TTL_MS);
+  expect(RECOVERY_TTL_MS - RECOVERY_FUTURE_SKEW_MS).toBe(1_170_000);
+  expect(RECOVERY_TTL_MS + RECOVERY_ADMISSION_AGE_MS).toBe(1_260_000);
   for (const path of [android, apple]) {
     const source = readFileSync(new URL(path, candidate), 'utf8');
     expect(source).toContain('splotch-ai-recovery-v1');

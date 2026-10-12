@@ -1,3 +1,4 @@
+import { withCredentialLeases } from '../../experiments/native-architecture/src/ai/credentialLease.ts';
 import { afterEach, expect, it, vi } from 'vitest';
 import { createDrawingProduct } from '../../experiments/native-architecture/src/product/createDrawingProduct.ts';
 import { createNativeAi } from '../../experiments/native-architecture/src/ai/generation.ts';
@@ -133,7 +134,7 @@ async function fixture(restored = false) {
   }));
   const owner = createNativeAi({
     parent: product.port,
-    vault,
+    vault: withCredentialLeases(vault),
     storage,
     transport,
     prepare,
@@ -283,12 +284,12 @@ it('retains authenticated expiry under a still-current real Parent proof without
   expect(f.storage.recordRecoveryStatus).toHaveBeenCalledOnce();
   expect(f.owner.getState().recovery).toBe(f.saved());
   expect(f.saved().recovery.expiry.kind).toBe('known');
-  expect(f.owner.getState().message).toContain('The server admission expiry is saved');
+  expect(f.owner.getState().message).toContain('The saved request was checked');
   expect(wire.request).toHaveBeenCalledOnce();
   expect(wire.request.mock.calls[0][1].method).toBe('GET');
   expectNoLegacy(f);
 });
-it('keeps the captured receipt when the storage owner rejects a changed current receipt during collection', async () => {
+it('rereads the authoritative receipt when status persistence rejects a changed current receipt', async () => {
   const f = await fixture(true);
   const original = f.owner.getState().recovery;
   const wait = block(f, 'request');
@@ -301,10 +302,9 @@ it('keeps the captured receipt when the storage owner rejects a changed current 
     original,
     expect.objectContaining({ kind: 'status' })
   );
-  expect(f.owner.getState().recovery).toBe(original);
-  expect(f.owner.getState().message).toBe(
-    'Recovery could not be confirmed. The saved request stays held.'
-  );
+  expect(f.owner.getState().recovery).toBe(f.saved());
+  expect(f.storage.read).toHaveBeenCalled();
+  expect(f.owner.getState().message).toContain('Recovery could not be confirmed');
   expect(wire.request).toHaveBeenCalledOnce();
   expectNoLegacy(f);
 });
