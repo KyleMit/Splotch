@@ -327,6 +327,8 @@ const files = [
   'src/product/useDraftNotice.ts',
   'src/platform/drawingDraft.ts',
   'src/platform/drawingDraft.web.ts',
+  'src/platform/drawingDraftOwner.web.ts',
+  'src/platform/drawingDraftRecords.web.ts',
   'src/information/content.ts',
   'src/information/InformationSection.tsx',
   'src/rsdDrawing/RsdInformationSection.tsx',
