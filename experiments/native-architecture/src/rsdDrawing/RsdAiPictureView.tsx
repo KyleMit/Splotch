@@ -1,7 +1,8 @@
-import { css, html } from 'react-strict-dom';
+import { html } from 'react-strict-dom';
 import { RsdAction } from './controls';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import type { AiResult } from '../ai/journal';
+import { AiPictureViewport } from '../ai/AiPictureViewport';
 
 export function RsdAiPictureView({
   owner,
@@ -14,7 +15,6 @@ export function RsdAiPictureView({
 }) {
   return (
     <>
-      <html.img alt="Opened AI picture" src={picture.uri} style={styles.image} />
       <html.span aria-live="polite">{state.message}</html.span>
       {owner.hasHeldResult() ? (
         <RsdAction
@@ -25,8 +25,7 @@ export function RsdAiPictureView({
           }}
         />
       ) : null}
+      <AiPictureViewport key={picture.uri} picture={picture} />
     </>
   );
 }
-
-const styles = css.create({ image: { width: '100%', aspectRatio: '1 / 1', objectFit: 'contain' } });

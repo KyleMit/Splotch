@@ -102,6 +102,7 @@ it.each(['gate', 'authorization', 'closed', 'hidden', 'removed'])(
   'drops an open picture when its current %s boundary changes',
   async (boundary) => {
     await click('Open AI picture');
+    await click('Zoom in');
     expect(container.querySelector('img[alt="Opened AI picture"]')).not.toBeNull();
     const invalid = {
       gate: { ...state, gate: { ...state.gate, open: true } },
@@ -112,6 +113,7 @@ it.each(['gate', 'authorization', 'closed', 'hidden', 'removed'])(
     }[boundary];
     await render(invalid, boundary !== 'hidden' && invalid.open);
     expect(container.querySelector('img[alt="Opened AI picture"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Zoom in"]')).toBeNull();
     await render({
       ...invalid,
       open: true,
@@ -124,3 +126,28 @@ it.each(['gate', 'authorization', 'closed', 'hidden', 'removed'])(
     expect(files.aiSend).not.toHaveBeenCalled();
   }
 );
+
+it('zooms within limits, resets, and starts each opened picture at its fitted size', async () => {
+  await click('Open AI picture');
+  const disabled = (label) => container.querySelector(`button[aria-label="${label}"]`).disabled;
+  expect(container.textContent).toContain('Picture zoom 100%.');
+  expect(disabled('Zoom out')).toBe(true);
+  expect(disabled('Reset zoom')).toBe(true);
+  for (let step = 0; step < 4; step += 1) await click('Zoom in');
+  expect(container.textContent).toContain('Picture zoom 300%.');
+  expect(disabled('Zoom in')).toBe(true);
+  expect(container.querySelector('button[aria-label="Retry saving AI picture"]')).not.toBeNull();
+  expect(container.querySelector('button[aria-label="Keep drawing"]')).not.toBeNull();
+  await click('Zoom out');
+  expect(container.textContent).toContain('Picture zoom 250%.');
+  await click('Reset zoom');
+  expect(container.textContent).toContain('Picture zoom 100%.');
+  await click('Zoom in');
+  await click('Back to AI pictures');
+  await click('Open saved AI picture 1');
+  expect(container.textContent).toContain('Picture zoom 100%.');
+  expect(container.querySelector('img[alt="Opened AI picture"]').getAttribute('src')).toBe(
+    SAVED.uri
+  );
+  expect(files.aiSend).not.toHaveBeenCalled();
+});
