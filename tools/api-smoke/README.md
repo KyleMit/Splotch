@@ -116,3 +116,8 @@ mutates the real shared store. A preview's `finally` cleanup cannot run when the
 is terminated. In that case, remove the unguessable but live `blobs-smoke-*` credential manually
 through the admin console. Do not automate a prefix-wide sweep: this CLI can run outside the
 workflow's concurrency group and could delete another smoke's active probe.
+
+The local generation recovery contract checks live in `lib/recovery-contract.mjs`. They retain the
+legacy result lookup check and assert both recovery v1 methods stay closed before qualification. The
+fixture server blanks `AI_RECOVERY_V1_ENABLED`; no provider, ledger or worker is exercised by those
+closed-route checks.

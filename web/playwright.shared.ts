@@ -162,6 +162,7 @@ export const commonWebServer = {
     // mint a token report-image will accept. Blank would close that path.
     REPORT_TOKEN_SECRET: 'test-report-token-secret',
     USAGE_GRANT_ID_SECRET: 'test-usage-grant-id-secret',
+    AI_RECOVERY_V1_ENABLED: '',
   },
 } satisfies Partial<NonNullable<PlaywrightTestConfig['webServer']>> & {
   url: string;

@@ -16,7 +16,8 @@ type EndpointRateLimitPolicy = Record<
   | 'generateByok'
   | 'generateFree'
   | 'freeGrantStatus'
-  | 'generationResult',
+  | 'generationResult'
+  | 'generationAttempt',
   RateLimitBudget
 >;
 
@@ -38,4 +39,5 @@ export const rateLimitPolicy = {
   // One generation is polled for a couple of minutes at a few seconds apart, and
   // a household can have more than one child drawing at once.
   generationResult: { limit: 120, windowMs: WINDOW_MS },
+  generationAttempt: { limit: 120, windowMs: WINDOW_MS },
 } satisfies EndpointRateLimitPolicy;
