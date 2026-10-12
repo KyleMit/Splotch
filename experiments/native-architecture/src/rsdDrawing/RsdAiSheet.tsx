@@ -15,6 +15,10 @@ import type { AiState, NativeAiOwner } from '../ai/generation';
 import { useAiPictureViewer } from '../ai/useAiPictureViewer';
 import { RsdAiPictureView } from './RsdAiPictureView';
 import { RsdAiStyleChoices } from './RsdAiStyleChoices';
+import { AiRecoveryActions } from '../ai/AiRecoveryActions';
+import { CurrentDrawingPreview } from '../ai/CurrentDrawingPreview';
+import type { Drawing } from '../drawing/model';
+import type { ArtworkMap } from '../offlineLibrary/artworkContext';
 function inputValue(event: unknown) {
   if (
     !event ||
@@ -31,11 +35,15 @@ function inputValue(event: unknown) {
 export function RsdAiSheet({
   owner,
   state,
+  drawing,
+  artwork,
   visible = state.open,
   onDismiss,
 }: {
   owner: NativeAiOwner;
   state: AiState;
+  drawing: Drawing;
+  artwork: ArtworkMap;
   visible?: boolean;
   onDismiss?: () => void;
 }) {
@@ -59,29 +67,7 @@ export function RsdAiSheet({
           {state.gate.open ? 'Grown-ups only' : viewer.picture ? 'AI picture view' : 'AI picture'}
         </html.h1>
         {state.gate.open ? (
-          <>
-            <html.span>Solve this multiplication problem to continue.</html.span>
-            <html.span>
-              {state.gate.x} × {state.gate.y}
-            </html.span>
-            <html.input
-              aria-label="AI answer"
-              value={state.gate.input}
-              inputMode="numeric"
-              disabled={state.gate.locked}
-              onChange={(event: unknown) => {
-                const next = inputValue(event);
-                if (next !== null) owner.gateInput(next);
-              }}
-              style={aiStyles.input}
-            />
-            <html.span aria-live="polite">{state.gate.message}</html.span>
-            <RsdAction
-              label="Continue to AI"
-              disabled={state.gate.locked}
-              onClick={owner.gateAnswer}
-            />
-          </>
+          <RsdAiParentalGate owner={owner} state={state} />
         ) : viewer.picture ? (
           <RsdAiPictureView owner={owner} state={state} picture={viewer.picture} />
         ) : state.authorized ? (
@@ -90,7 +76,7 @@ export function RsdAiSheet({
             <html.span>{AI_WAIT_NOTICE}</html.span>
             <RsdAction
               label="Check AI allowance"
-              disabled={state.busy || waiting}
+              disabled={state.busy || waiting || !!state.recovery}
               onClick={owner.refresh}
             />
             <html.span>
@@ -109,6 +95,12 @@ export function RsdAiSheet({
               disabled={state.busy || waiting || !!state.recovery}
               onChoose={owner.chooseStyle}
             />
+            {visible && state.open ? (
+              <>
+                <html.span>Current drawing</html.span>
+                <CurrentDrawingPreview drawing={drawing} artwork={artwork} />
+              </>
+            ) : null}
             <RsdAction
               label="Send drawing for AI"
               disabled={!aiCanGenerate(state)}
@@ -116,6 +108,7 @@ export function RsdAiSheet({
                 void owner.generate();
               }}
             />
+            <AiRecoveryActions owner={owner} state={state} waiting={waiting} />
             {waiting ? (
               <>
                 <html.span>
@@ -141,6 +134,29 @@ export function RsdAiSheet({
         ) : null}
       </html.div>
     </NativeDialog>
+  );
+}
+function RsdAiParentalGate({ owner, state }: { owner: NativeAiOwner; state: AiState }) {
+  return (
+    <>
+      <html.span>Solve this multiplication problem to continue.</html.span>
+      <html.span>
+        {state.gate.x} × {state.gate.y}
+      </html.span>
+      <html.input
+        aria-label="AI answer"
+        value={state.gate.input}
+        inputMode="numeric"
+        disabled={state.gate.locked}
+        onChange={(event: unknown) => {
+          const next = inputValue(event);
+          if (next !== null) owner.gateInput(next);
+        }}
+        style={aiStyles.input}
+      />
+      <html.span aria-live="polite">{state.gate.message}</html.span>
+      <RsdAction label="Continue to AI" disabled={state.gate.locked} onClick={owner.gateAnswer} />
+    </>
   );
 }
 function AiPictures({
@@ -214,7 +230,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
             label={next === 'managed' ? 'Use access code' : 'Use my OpenAI key'}
             selection="radio"
             selected={kind === next}
-            disabled={state.busy || waiting}
+            disabled={state.busy || waiting || !!state.recovery}
             onClick={() => {
               setValue('');
               setKind(next);
@@ -228,7 +244,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
         autoComplete="off"
         value={value}
         maxLength={MAX_CREDENTIAL_CHARACTERS}
-        disabled={state.busy || waiting}
+        disabled={state.busy || waiting || !!state.recovery}
         onChange={(event: unknown) => {
           const next = inputValue(event);
           if (next !== null) setValue(next);
@@ -237,7 +253,7 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
       />
       <RsdAction
         label="Verify and save credential"
-        disabled={state.busy || waiting || !value}
+        disabled={state.busy || waiting || !!state.recovery || !value}
         onClick={() => {
           const pending = value;
           setValue('');
@@ -246,14 +262,14 @@ function AiCredentialSetup({ owner, state }: { owner: NativeAiOwner; state: AiSt
       />
       <RsdAction
         label="Remove access code"
-        disabled={state.busy || waiting}
+        disabled={state.busy || waiting || !!state.recovery}
         onClick={() => {
           void owner.removeCredential('managed');
         }}
       />
       <RsdAction
         label="Remove OpenAI key"
-        disabled={state.busy || waiting}
+        disabled={state.busy || waiting || !!state.recovery}
         onClick={() => {
           void owner.removeCredential('byok');
         }}

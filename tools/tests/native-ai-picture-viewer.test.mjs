@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { files } from './native-drawing-screen-harness.mjs';
 import { NativeAiSheet } from '../../experiments/native-architecture/src/ai/AiSheet.tsx';
+import { emptyDrawing } from '../../experiments/native-architecture/src/drawing/model.ts';
 
 const RESULT = { uri: 'file:///owned/current-ai.png', mime: 'image/png' };
 const SAVED = { uri: 'file:///owned/saved-ai.png', mime: 'image/png' };
@@ -14,7 +15,11 @@ let owner;
 
 function render(next, visible = next.open) {
   state = next;
-  return act(() => root.render(createElement(NativeAiSheet, { owner, state, visible })));
+  return act(() =>
+    root.render(
+      createElement(NativeAiSheet, { owner, state, visible, drawing: emptyDrawing(), artwork: {} })
+    )
+  );
 }
 
 async function click(label) {
@@ -149,5 +154,21 @@ it('zooms within limits, resets, and starts each opened picture at its fitted si
   expect(container.querySelector('img[alt="Opened AI picture"]').getAttribute('src')).toBe(
     SAVED.uri
   );
+  expect(files.aiSend).not.toHaveBeenCalled();
+});
+
+it('keeps held recovery actions available and disables service changes while recovery is held', async () => {
+  await click('Save held recovery request');
+  expect(owner.prepareRecovery).toHaveBeenCalledOnce();
+  await render({ ...state, recovery: { recovery: { intent: 'committed' } } });
+  for (const label of [
+    'Save held recovery request',
+    'Send drawing for AI',
+    'Use my OpenAI key',
+    'Remove OpenAI key',
+  ])
+    expect(container.querySelector(`button[aria-label="${label}"]`).disabled).toBe(true);
+  await click('Check held recovery request');
+  expect(owner.collectRecovery).toHaveBeenCalledOnce();
   expect(files.aiSend).not.toHaveBeenCalled();
 });

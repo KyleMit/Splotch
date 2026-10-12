@@ -86,6 +86,7 @@ it.each([false, true])(
     expect(caller.aiSend).not.toHaveBeenCalled();
     await solve();
     expect(host.querySelector('[aria-label="Sticker AI style"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Save held recovery request"]')).not.toBeNull();
     expect(host.textContent).toContain('splotch.art and OpenAI');
     await click('Sticker AI style');
     const requestsBeforeSend = caller.aiSend.mock.calls.length;
