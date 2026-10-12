@@ -8,6 +8,9 @@ import {
   AI_REPORT_TIMEOUT_MS,
   MAX_AI_REPORT_BYTES,
   reportMultipart,
+  imageReportToken,
+  type AiReportTarget,
+  type AiReportPreview,
   type AiReportContext,
   type AiReportState,
 } from './reportContract';
@@ -19,7 +22,7 @@ type ReportDependencies = {
   parent?: ParentOperationPort;
   transport: AiTransport;
   admit: AiImageAdmission;
-  current: (uri: string) => boolean;
+  current: (target: AiReportTarget) => boolean;
   publish: (state: AiReportState) => void;
 };
 class AiReportOwner {
@@ -27,9 +30,10 @@ class AiReportOwner {
   private contexts = new Map<number, AiReportContext>();
   private epoch = 0;
   private selected: AiReportContext | null = null;
-  private uri = '';
+  private target: AiReportTarget | null = null;
   private proof: ParentProof | null = null;
   private consentEpoch = -1;
+  private confirmationReady = false;
   private controller: AbortController | null = null;
   private retryAt = 0;
   constructor(deps: ReportDependencies) {
@@ -37,7 +41,9 @@ class AiReportOwner {
   }
   private current = () =>
     !!this.selected &&
-    this.deps.current(this.uri) &&
+    !!this.target &&
+    this.contexts.get(this.selected.id) === this.selected &&
+    this.deps.current(this.target) &&
     !!this.proof?.valid() &&
     !!this.deps.parent?.consent().enabled &&
     this.deps.parent.consent().epoch === this.consentEpoch;
@@ -46,7 +52,9 @@ class AiReportOwner {
     this.controller?.abort();
     this.controller = null;
     this.selected = null;
+    this.target = null;
     this.proof = null;
+    this.confirmationReady = false;
     this.deps.parent?.cancel('imageReport');
     this.deps.publish({ phase: 'idle' });
   };
@@ -54,22 +62,31 @@ class AiReportOwner {
     this.cancel();
     this.contexts.clear();
   };
-  private preview = (context: AiReportContext) => {
-    if (!context.result) throw new Error('AI reporting context is unavailable.');
-    return {
-      uri: this.uri,
+  private preview = (context: AiReportContext): AiReportPreview => {
+    const evidence = context.evidence;
+    if (!evidence || !this.target) throw new Error('AI reporting context is unavailable.');
+    const original = {
       drawing: `data:image/png;base64,${bytesBase64(context.drawing)}`,
-      output: `data:${context.result.mime};base64,${bytesBase64(context.result.bytes)}`,
       style: context.style,
     };
+    if (evidence.kind === 'picture' && this.target.kind === 'picture')
+      return {
+        ...original,
+        target: this.target,
+        output: `data:${evidence.mime};base64,${bytesBase64(evidence.bytes)}`,
+      };
+    if (evidence.kind === 'false-positive-refusal' && this.target.kind === 'false-positive-refusal')
+      return { ...original, target: this.target };
+    throw new Error('AI reporting evidence does not match this report.');
   };
   prepare = async (id: number, drawing: Uint8Array, style: AiStyle, credential: AiCredential) => {
     const ticket = this.epoch;
+    if (!drawing.length || drawing.length > MAX_AI_REPORT_BYTES) return;
+    const original = drawing.slice();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), AI_REPORT_PREPARE_TIMEOUT_MS);
     try {
-      if (!drawing.length || drawing.length > MAX_AI_REPORT_BYTES) return;
-      await reportWait(this.deps.admit(drawing, 'image/png'), controller.signal);
+      await reportWait(this.deps.admit(original, 'image/png'), controller.signal);
       const reference = await reportWait(this.deps.vault.pin(credential.kind), controller.signal);
       const confirmed = await reportWait(
         this.deps.vault.readReferenced(reference),
@@ -85,11 +102,11 @@ class AiReportOwner {
       this.contexts.clear();
       this.contexts.set(id, {
         id,
-        drawing: drawing.slice(),
+        drawing: original,
         style,
         credential: reference,
         installationId: credential.kind === 'free' ? credential.installationId : null,
-        result: null,
+        evidence: null,
         used: false,
       });
     } catch {
@@ -107,60 +124,94 @@ class AiReportOwner {
   ) => {
     const context = this.contexts.get(id);
     if (!context || context.drawing.length + bytes.length > MAX_AI_REPORT_BYTES) return;
-    if (context.result) {
+    const evidence = context.evidence;
+    const suppliedToken = imageReportToken(token);
+    if (evidence) {
       if (
-        context.result.mime !== mime ||
-        context.result.bytes.length !== bytes.length ||
-        !bytes.every((value, index) => value === context.result?.bytes[index])
+        evidence.kind !== 'picture' ||
+        evidence.mime !== mime ||
+        (suppliedToken !== null && evidence.token !== suppliedToken) ||
+        evidence.bytes.length !== bytes.length ||
+        !bytes.every((value, index) => value === evidence.bytes[index])
       )
         return;
-      context.result.uris.add(resultUri);
-    } else context.result = { bytes: bytes.slice(), mime, token, uris: new Set([resultUri]) };
+      evidence.uris.add(resultUri);
+    } else
+      context.evidence = {
+        kind: 'picture',
+        bytes: bytes.slice(),
+        mime,
+        token: suppliedToken,
+        uris: new Set([resultUri]),
+      };
   };
-  request = (resultUri: string) => {
+  refuse = (id: number, rawToken: string | null) => {
+    const context = this.contexts.get(id);
+    const token = imageReportToken(rawToken);
+    if (!context || !token) return false;
+    if (context.evidence)
+      return context.evidence.kind === 'false-positive-refusal' && context.evidence.token === token;
+    context.evidence = { kind: 'false-positive-refusal', token };
+    return true;
+  };
+  request = (uri: string) => this.review({ kind: 'picture', uri });
+  requestRefusal = (id: number) => this.review({ kind: 'false-positive-refusal', id });
+  review = (requestedTarget: AiReportTarget) => {
     if (this.controller) return;
+    const target = Object.freeze({ ...requestedTarget });
     if (Date.now() < this.retryAt) {
       this.deps.publish({
         phase: 'error',
-        uri: resultUri,
+        target,
         retryAt: this.retryAt,
         message: 'Please wait before reviewing this report again.',
       });
       return;
     }
     this.cancel();
-    this.uri = resultUri;
-    const context = [...this.contexts.values()].find((value) => value.result?.uris.has(this.uri));
+    this.target = target;
+    const context =
+      target.kind === 'picture'
+        ? [...this.contexts.values()].find(
+            (value) => value.evidence?.kind === 'picture' && value.evidence.uris.has(target.uri)
+          )
+        : this.contexts.get(target.id);
+    const evidence = context?.evidence;
     if (
       !context ||
+      !evidence ||
+      evidence.kind !== target.kind ||
       context.used ||
       !this.deps.parent ||
-      !this.deps.current(this.uri) ||
-      (context.credential.kind === 'free' && !context.result?.token)
+      !this.deps.current(target) ||
+      (context.credential.kind === 'free' && !evidence.token)
     ) {
       this.deps.publish({
         phase: 'unavailable',
-        uri: this.uri,
+        target,
         retryAt: 0,
         message:
-          'Reporting requires the original drawing, credential reference and report proof from this app session. Older pictures and refusals cannot be reported here.',
+          'Reporting requires the original drawing, credential reference and report proof from this app session. Older pictures and refusals without that context cannot be reported here.',
       });
       return;
     }
     this.selected = context;
     const ticket = this.epoch;
-    this.deps.publish({ phase: 'gating', uri: this.uri });
+    this.deps.publish({ phase: 'gating', target });
     const requested = this.deps.parent.request('imageReport', (nextProof) => {
-      if (this.epoch !== ticket || !this.deps.current(this.uri) || !nextProof.valid()) return;
+      if (this.epoch !== ticket || !this.deps.current(target) || !nextProof.valid()) return;
       this.proof = nextProof;
       this.consentEpoch = this.deps.parent?.consent().epoch ?? -1;
-      if (this.current()) this.deps.publish({ phase: 'confirm', preview: this.preview(context) });
+      if (this.current()) {
+        this.confirmationReady = true;
+        this.deps.publish({ phase: 'confirm', preview: this.preview(context) });
+      }
     });
     if (!requested && this.epoch === ticket) {
       this.selected = null;
       this.deps.publish({
         phase: 'unavailable',
-        uri: this.uri,
+        target,
         retryAt: 0,
         message: 'Parent authorization is unavailable. Close this report and try again.',
       });
@@ -168,14 +219,18 @@ class AiReportOwner {
   };
   send = async () => {
     const context = this.selected;
+    const target = this.target;
     if (
-      !context?.result ||
+      !context?.evidence ||
+      !target ||
+      !this.confirmationReady ||
       context.used ||
       this.controller ||
       !this.current() ||
       Date.now() < this.retryAt
     )
       return;
+    this.confirmationReady = false;
     const ticket = this.epoch;
     const pending = new AbortController();
     this.controller = pending;
@@ -208,13 +263,13 @@ class AiReportOwner {
         {
           ...credentialHeaders(credential),
           'Content-Type': multipart.contentType,
-          ...(context.result.token ? { 'X-Report-Token': context.result.token } : {}),
+          ...(context.evidence.token ? { 'X-Report-Token': context.evidence.token } : {}),
         },
         pending.signal
       );
       if (ticket !== this.epoch || !this.current()) return;
       if (reply.kind === 'success')
-        this.deps.publish({ phase: 'success', uri: this.uri, reportId: reply.reportId });
+        this.deps.publish({ phase: 'success', target, reportId: reply.reportId });
       else {
         if (reply.kind === 'failure') {
           context.used = false;
@@ -222,7 +277,7 @@ class AiReportOwner {
         }
         this.deps.publish({
           phase: reply.kind === 'failure' ? 'error' : 'unknown',
-          uri: this.uri,
+          target,
           message: reply.message,
           retryAt: this.retryAt,
         });
@@ -231,7 +286,7 @@ class AiReportOwner {
       if (ticket === this.epoch && this.current())
         this.deps.publish({
           phase: sent ? 'unknown' : 'error',
-          uri: this.uri,
+          target,
           retryAt: 0,
           message: sent
             ? 'The report outcome is unknown. It will not be sent again automatically.'

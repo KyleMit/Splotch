@@ -62,8 +62,14 @@ export type AiReply =
   | { kind: 'verified'; accessCode?: string }
   | {
       kind: 'failure';
-      reason:
-        'safety' | 'exhausted' | 'unavailable' | 'expired' | 'rejected' | 'server' | 'invalid';
+      reason: 'safety';
+      message: string;
+      reportToken: string | null;
+      retryAt?: never;
+    }
+  | {
+      kind: 'failure';
+      reason: 'exhausted' | 'unavailable' | 'expired' | 'rejected' | 'server' | 'invalid';
       message: string;
       retryAt?: number;
     }
@@ -269,6 +275,7 @@ function parseAiFailure(
     return {
       kind: 'failure',
       reason: 'safety',
+      reportToken: imageReportToken(response.headers.get('X-Report-Token')),
       message: "Let's try drawing something else! Your original is still here.",
     };
   if (response.status === 403 && raw.code === 'FREE_GRANT_EXHAUSTED' && raw.remaining === 0)

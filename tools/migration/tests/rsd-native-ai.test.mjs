@@ -36,9 +36,33 @@ async function reviewReport() {
   await click('Cancel report');
   expect(host.textContent).not.toContain('Report this AI picture');
 }
-it.each([false, true])(
-  'drives actual RSD AI production callers with native decode rejection %s',
-  async (rejectDecode) => {
+async function reviewRefusalReport(drawing) {
+  expect(caller.aiRetain).not.toHaveBeenCalled();
+  expect(host.textContent).not.toContain('private refusal reason');
+  const beforeReport = caller.aiSend.mock.calls.length;
+  await click('Grown-ups: report this refusal');
+  expect(host.textContent).toContain('Grown-ups only');
+  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
+  await solve();
+  expect(host.textContent).toContain('Report this refusal');
+  expect(host.textContent).toContain('Original style: Sticker');
+  expect(host.textContent).toContain('schedule deletion after 30 days by a daily cleanup');
+  expect(caller.aiSend).toHaveBeenCalledTimes(beforeReport);
+  await click('Send report');
+  const request = caller.aiSend.mock.calls.at(-1)[0];
+  expect(request.path).toBe('/api/report-image');
+  expect(request.headers['X-Report-Token']).toBe('fixture-refusal-proof');
+  const form = await new Response(request.body, { headers: request.headers }).formData();
+  expect(form.get('kind')).toBe('false-positive-refusal');
+  expect(form.get('style')).toBe('Sticker');
+  expect(form.has('output')).toBe(false);
+  expect(host.textContent).toContain('Report received.');
+  expect(caller.screen.history.drawing).toBe(drawing);
+}
+it.each(['picture', 'decode-rejection', 'refusal'])(
+  'drives actual RSD AI production callers through %s',
+  async (outcome) => {
+    const rejectDecode = outcome === 'decode-rejection';
     vi.clearAllMocks();
     caller.aiAdmit.mockImplementation(async () => {
       if (rejectDecode) throw new Error('controlled native rejection');
@@ -49,9 +73,19 @@ it.each([false, true])(
         ? new Response('{"ok":true,"remaining":10,"limit":10}')
         : request.path === '/api/verify-key'
           ? new Response('{"ok":true}')
-          : new Response(rgbaPng(2, 2, 255), {
-              headers: { 'Content-Type': 'image/png', 'X-Report-Token': 'fixture-report-proof' },
-            })
+          : request.path === '/api/report-image'
+            ? new Response('{"ok":true,"reportId":"17-00000000-0000-0000-0000-000000000001"}')
+            : outcome === 'refusal'
+              ? new Response('{"ok":false,"error":"private refusal reason"}', {
+                  status: 422,
+                  headers: { 'X-Report-Token': 'fixture-refusal-proof' },
+                })
+              : new Response(rgbaPng(2, 2, 255), {
+                  headers: {
+                    'Content-Type': 'image/png',
+                    'X-Report-Token': 'fixture-report-proof',
+                  },
+                })
     );
     caller.screen = {
       notice: '',
@@ -112,6 +146,10 @@ it.each([false, true])(
     await solve();
     expect(caller.aiSend.mock.calls.at(-1)[0].query).toBe('style=Sticker');
     expect(caller.aiReadPreparedUpload).toHaveBeenCalledOnce();
+    if (outcome === 'refusal') {
+      await reviewRefusalReport(drawing);
+      return;
+    }
     expect(caller.aiAdmit).toHaveBeenCalledTimes(2);
     expect(caller.aiAdmit.mock.calls.map(([bytes]) => bytes.length)).toEqual([
       rgbaPng(1024, 768, 255).length,

@@ -18,7 +18,7 @@ import type { AiJournal, AiResult, AiStorage, AiRecoveryHeldReceipt } from './jo
 import type { AiImageAdmission } from './imageAdmission';
 import type { ParentOperationPort, ParentProof } from '../parentCenter/parentPolicy';
 import { createAiReportOwner } from './reportOwner';
-import type { AiReportState } from './reportContract';
+import type { AiReportState, AiReportTarget } from './reportContract';
 export type AiState = Readonly<{
   open: boolean;
   authorized: boolean;
@@ -34,6 +34,7 @@ export type AiState = Readonly<{
   message: string;
   retryAt: number;
   report: AiReportState;
+  refusal: { id: number } | null;
 }>;
 export type PreparedAiDrawing = {
   bytes: Uint8Array;
@@ -64,14 +65,18 @@ export class AiSession {
       transport: deps.transport,
       admit: deps.admit,
       publish: (report) => this.update({ report }),
-      current: (uri) =>
+      current: (target) =>
         !this.disposed &&
         this.state.open &&
         this.state.authorized &&
         !this.state.gate.open &&
-        [this.state.heldResult, this.state.journal?.result, ...this.state.pictures].some(
-          (result) => result?.uri === uri
-        ),
+        (target.kind === 'picture'
+          ? [this.state.heldResult, this.state.journal?.result, ...this.state.pictures].some(
+              (result) => result?.uri === target.uri
+            )
+          : this.state.refusal?.id === target.id &&
+            this.state.journal?.id === target.id &&
+            this.state.journal.result === null),
     });
   }
   protected reports: ReturnType<typeof createAiReportOwner>;
@@ -131,6 +136,7 @@ export class AiSession {
     message: '',
     retryAt: 0,
     report: { phase: 'idle' },
+    refusal: null,
   };
   protected update = (next: Partial<AiState>) => {
     this.state = {
@@ -276,6 +282,7 @@ export class AiSession {
               : stored.journal;
         this.update({
           journal,
+          refusal: this.state.refusal?.id === journal?.id ? this.state.refusal : null,
         });
         if (journal) this.journals.set(journal.id, journal);
       }
@@ -479,6 +486,8 @@ export class AiSession {
     if (this.timer) clearTimeout(this.timer);
   };
   reportPicture = (uri: string) => this.reports.request(uri);
+  reportRefusal = (id: number) => this.reports.requestRefusal(id);
+  reviewAiReport = (target: AiReportTarget) => this.reports.review(target);
   sendPictureReport = () => this.reports.send();
   cancelPictureReport = () => this.reports.cancel();
 }

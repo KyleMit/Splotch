@@ -1,5 +1,5 @@
 export { FEEDBACK_APP_VERSION as APP_VERSION } from '../feedback/feedbackCopy';
-import { AI_REPORT_REVIEW_HOURS, AI_REPORT_RETENTION_DAYS } from '../ai/reportContract';
+import { AI_REPORT_HANDLING_NOTICE } from '../ai/reportContract';
 
 export type InformationPage = 'help' | 'privacy' | 'whatsNew';
 
@@ -54,10 +54,10 @@ export const INFORMATION_CONTENT: Record<InformationPage, InformationContent> = 
         ],
       },
       {
-        title: 'Report an AI picture',
+        title: 'Report an AI picture or refusal',
         paragraphs: [
-          'Reporting is a separate choice after an AI picture is created. You review the original drawing, AI picture and style before choosing Send report. The report also includes the exact instruction used for that style and follows the image-report check chosen in Parent Center.',
-          `Reports go privately to a grown-up at Splotch. We review them within ${AI_REPORT_REVIEW_HOURS} hours and delete them after ${AI_REPORT_RETENTION_DAYS} days. Keep the report reference if you want to request earlier deletion. Opening a report or cancelling it sends nothing.`,
+          'Reporting is a separate choice after an AI picture or refusal. You review the original drawing and style before choosing Send report. A picture report includes the AI picture. A refusal report includes the authenticated refusal reason, without an AI picture. Both include the exact instruction used for that style and follow the image-report check chosen in Parent Center.',
+          `Reports go privately to a grown-up at Splotch. ${AI_REPORT_HANDLING_NOTICE} Keep the report reference if you want to request earlier deletion. Opening a report or cancelling it sends nothing.`,
         ],
       },
       {

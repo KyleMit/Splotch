@@ -14,7 +14,7 @@ import { aiCanGenerate } from '../ai/uiState';
 import type { AiState, NativeAiOwner } from '../ai/generation';
 import { useAiPictureViewer } from '../ai/useAiPictureViewer';
 import { RsdAiPictureView } from './RsdAiPictureView';
-import { AiReportAction, AiPictureReport } from '../ai/AiPictureReport';
+import { AiReportAction, AiPictureReport, AiRefusalReportAction } from '../ai/AiPictureReport';
 import { RsdAiStyleChoices } from './RsdAiStyleChoices';
 import { AiRecoveryActions } from '../ai/AiRecoveryActions';
 import { CurrentDrawingPreview } from '../ai/CurrentDrawingPreview';
@@ -140,6 +140,7 @@ export function RsdAiSheet({
               </>
             ) : null}
             <html.span aria-live="polite">{state.message}</html.span>
+            <AiRefusalReportAction owner={owner} state={state} />
             <AiPictures owner={owner} state={state} onOpen={viewer.open} />
             <AiCredentialSetup owner={owner} state={state} />
           </>
