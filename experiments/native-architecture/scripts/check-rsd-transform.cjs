@@ -242,6 +242,17 @@ for (const [property, label, callback] of [
   );
 }
 const files = [
+  'src/platform/BrowserBack.tsx',
+  'src/platform/BrowserBack.web.tsx',
+  'src/platform/DrawingModal.tsx',
+  'src/product/browserBack.ts',
+  'src/drawing/ColorPicker.tsx',
+  'src/ColoringPagePicker.tsx',
+  'src/feedback/FeedbackSheet.tsx',
+  'src/parentCenter/ParentGateSheet.tsx',
+  'src/parentCenter/ParentCenterSection.tsx',
+  'src/drawing/SavedPictures.tsx',
+  'src/ai/AiSheet.tsx',
   'src/platform/useFullscreen.ts',
   'src/platform/useFullscreen.web.ts',
   'src/rsdDrawing/RsdDrawingTools.tsx',

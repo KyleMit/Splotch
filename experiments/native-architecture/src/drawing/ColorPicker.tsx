@@ -1,10 +1,10 @@
+import { DrawingModal as Modal } from '../platform/DrawingModal';
 import { useModalAnimation } from './useModalAnimation';
 import { createDrawingStyles, useDrawingAppearance, useDrawingStyles } from './DrawingAppearance';
 import { NativeFrame } from '../rsdDrawing/NativeFrame';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   AppState,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
