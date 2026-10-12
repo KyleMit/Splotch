@@ -61,6 +61,7 @@ it('uses the actual RSD native input bridge, preview, gate and transport caller 
   };
   await mount(createElement(RsdDrawingScreen));
   await click('Send Feedback');
+  const paperRenders = caller.paperRender.mock.calls.length;
   await input('Feedback message', 'RSD native bridge bug');
   await click('Include device details');
   await click('Review feedback');
@@ -71,6 +72,7 @@ it('uses the actual RSD native input bridge, preview, gate and transport caller 
   expect(match).not.toBeNull();
   await input('Answer', String(Number(match[1]) * Number(match[2])));
   await click('Continue');
+  expect(caller.paperRender).toHaveBeenCalledTimes(paperRenders);
   expect(caller.feedbackSend).toHaveBeenCalledOnce();
   expect(caller.feedbackSend.mock.calls[0][0]).toEqual({
     kind: 'bug',

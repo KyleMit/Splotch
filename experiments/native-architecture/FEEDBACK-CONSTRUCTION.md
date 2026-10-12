@@ -79,14 +79,15 @@ ignored device opt-in, stale completion, stale cancellation, dismissal resetting
 canonical message-cap drift. The private `NEGATIVE-CONTROLS.json` identifies each source hash,
 selected test and rejection exit. Final positive checks run after restoration.
 
-Root’s initial full-tools run failed; full-tools acceptance remains open. No full E2E, native build,
-native runtime, device, performance, live API acceptance, release validation or independent review
-is claimed. Native streaming, keyboard/accessibility, background lifecycle and persistent policy
-storage require on-device acceptance. Composition with the separately repaired Appearance unit must
-apply its DrawingStatusBar and consistent translucent modal/window backing to the new feedback modal
-when that source is integrated. This baseline has no such future symbol to import. Both operating
-systems, including opposite-OS Light/Dark system bar and modal pixels, remain open. The gate's
-termination lifetime and the broader parent-policy family remain explicit acceptance items.
+Root's initial full-tools run failed; the fixture repair's qualified retry passed. Further repairs
+require new root-owned full-tools acceptance. No full E2E, native build, native runtime, device,
+performance, live API acceptance, release validation or independent review is claimed. Native
+streaming, keyboard/accessibility, background lifecycle and persistent policy storage require
+on-device acceptance. Composition with the separately repaired Appearance unit must apply its
+DrawingStatusBar and consistent translucent modal/window backing to the new feedback modal when that
+source is integrated. This baseline has no such future symbol to import. Both operating systems,
+including opposite-OS Light/Dark system bar and modal pixels, remain open. The gate's termination
+lifetime and the broader parent-policy family remain explicit acceptance items.
 
 ## Reproducing the owned install
 
@@ -134,4 +135,32 @@ requires that response stream to be consumed, and forbids global fetch. Producti
 import released `expo/fetch`; native SDK/runtime acceptance remains open. Fault controls remove a
 mounted fixture boundary, substitute global fetch for Expo, omit a finite inventory path and allow
 unexpected fixture I/O, with actual rejected checks and exact restoration recorded in the repair
-packet. The same worker retains ownership; review remains unopened with zero rounds spent.
+packet. That checkpoint had no review rounds spent. The same worker retains implementation
+ownership.
+
+## First independent review repairs
+
+Root's first independent Claude review closed against the fixture repair with four nonblocking
+findings and no unverified findings. One review round is spent and two remain; root owns their
+execution. The earlier failed full-tools run, subsequent qualified pass and both private evidence
+seals remain immutable history.
+
+React Native's installed navigator setup defines `product`, not connectivity. The owned candidate
+graph has no native network-state provider, so its offline precheck returns `null` for unknown.
+Browser preview retains its browser precheck. A failure after transport starts remains an uncertain
+connection outcome even if a later connectivity check would say offline. The parent sees the
+concrete tradeoff: Splotch may already have received it, and sending again could send it twice.
+Nothing retries automatically or reveals private provider errors.
+
+A draft edit resets settled delivery outcomes to idle. Active sends retain their immutable request
+and cancellation identity; throttling remains enforced across edits until its original deadline.
+Expiry returns the form to idle without submitting. The revision and request-id controls still
+protect newer drafts and separate newer requests from older completion or cancellation.
+
+The screen retains one feedback owner for its lifetime. Only the RN or RSD sheet subscribes to that
+owner through `useSyncExternalStore`; its gate and throttle timers run there, including a retained
+throttle while the form is closed. Unchanged unlocked gate ticks do not publish. Mounted
+render-count guards prove that feedback typing, gate input and closed-form throttle ticks do not
+render the RN canvas fixture, and the released RSD caller does not render its paper fixture during
+feedback edits. These counts verify subscription scope; no device frame-time or performance
+acceptance is claimed.

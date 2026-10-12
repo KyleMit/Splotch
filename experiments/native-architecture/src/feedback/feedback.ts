@@ -41,7 +41,7 @@ export function createNativeFeedback({
 }: {
   transport: FeedbackTransport;
   device: () => DeviceInfo;
-  offline: () => boolean;
+  offline: () => boolean | null;
   policyStorage: FeedbackPolicyStorage;
   // Test seams let lockout checks advance the actual controller's clock without waiting minutes.
   now?: () => number;
@@ -81,7 +81,14 @@ export function createNativeFeedback({
     revision += 1;
     const draft = { ...state.draft, ...next };
     if (draft.kind === 'feature') draft.includeDevice = false;
-    update({ draft, preview: null, validation: '' });
+    update({
+      draft,
+      preview: null,
+      validation: '',
+      ...(state.delivery.status !== 'sending' && state.delivery.status !== 'throttled'
+        ? { delivery: { status: 'idle' } as const }
+        : {}),
+    });
   }
   const owner = {
     getState: () => state,

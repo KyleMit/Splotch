@@ -10,6 +10,7 @@ const caller = vi.hoisted(() => ({
   feedbackRead: vi.fn().mockResolvedValue(null),
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
+  paperRender: vi.fn(),
 }));
 vi.mock('../../../experiments/native-architecture/src/platform/feedback.ts', () => ({
   feedbackTransport: caller.feedbackSend,
@@ -27,7 +28,10 @@ vi.mock('../../../experiments/native-architecture/src/useDrawingMenu.ts', () => 
   useDrawingMenu: () => caller.menu ?? { open: false },
 }));
 vi.mock('../../../experiments/native-architecture/src/rsdDrawing/NativePaper.tsx', () => ({
-  NativePaper: () => null,
+  NativePaper: () => {
+    caller.paperRender();
+    return null;
+  },
 }));
 vi.mock('../../../experiments/native-architecture/src/rsdDrawing/RsdRecoveryNotice.tsx', () => ({
   RsdRecoveryNotice: () => null,

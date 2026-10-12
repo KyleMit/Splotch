@@ -133,6 +133,10 @@ describe('native feedback request ownership', () => {
     f.owner.open();
     f.owner.setMessage('Second draft');
     f.owner.preview();
+    expect(f.owner.getState().delivery).toMatchObject({
+      status: 'sending',
+      snapshot: { body: { message: 'The crayon is stuck' } },
+    });
     f.owner.send();
     expect(f.requests).toHaveLength(1);
     expect(f.requests[0].signal.aborted).toBe(false);
@@ -189,12 +193,67 @@ describe('native feedback request ownership', () => {
     f.owner.send();
     expect(f.requests).toHaveLength(1);
     expect(f.owner.getState().delivery.status).toBe('throttled');
+    f.owner.setMessage('A different report during throttle');
+    f.owner.preview();
+    expect(f.owner.getState().delivery.status).toBe('throttled');
+    f.owner.send();
+    expect(f.requests).toHaveLength(1);
     f.advance(12000);
     f.owner.deliveryTick();
+    expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
     expect(f.requests).toHaveLength(1);
     f.owner.send();
     expect(f.requests).toHaveLength(2);
+    expect(f.requests[1].body.message).toBe('A different report during throttle');
     await settle(f.requests[1]);
+  });
+  it.each([
+    [503, { ok: false, error: 'Fixture error' }, 'error'],
+    [200, { ok: true, privateId: 'not allowed' }, 'malformed'],
+    [200, { ok: true }, 'success'],
+  ])(
+    'clears settled %s delivery when a different draft is edited',
+    async (status, body, outcome) => {
+      const f = await prepared('never');
+      f.owner.send();
+      await settle(f.requests[0], body, status);
+      expect(f.owner.getState().delivery.status).toBe(outcome);
+      f.owner.setMessage('A different first submission');
+      f.owner.preview();
+      expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
+      expect(f.requests).toHaveLength(1);
+      f.owner.send();
+      expect(f.requests[1].body.message).toBe('A different first submission');
+      await settle(f.requests[1]);
+    }
+  );
+  it.each(['timeout', 'cancelled'])(
+    'clears an old %s after the next draft edit',
+    async (outcome) => {
+      vi.useFakeTimers();
+      const f = await prepared('never');
+      f.owner.send();
+      if (outcome === 'cancelled') f.owner.cancelSending(f.owner.getState().delivery.id);
+      await vi.advanceTimersByTimeAsync(FEEDBACK_TIMEOUT_MS);
+      expect(f.owner.getState().delivery.status).toBe(outcome);
+      expect(f.owner.getState().delivery.message).toBe(
+        `${outcome === 'timeout' ? 'Sending timed out.' : 'Sending stopped.'} Splotch may already have received it. Sending again could send it twice.`
+      );
+      f.owner.setMessage('Next report');
+      expect(f.owner.getState().delivery).toEqual({ status: 'idle' });
+      expect(f.requests).toHaveLength(1);
+      f.owner.dispose();
+    }
+  );
+  it('does not publish an unlocked challenge tick when no visible state changes', async () => {
+    const f = await prepared();
+    f.owner.send();
+    const listener = vi.fn();
+    f.owner.subscribe(listener);
+    f.owner.gateTick();
+    expect(f.owner.getState().gate.open).toBe(true);
+    expect(listener).not.toHaveBeenCalled();
+    f.owner.dispose();
   });
   it('does not publish late results after owner disposal', async () => {
     const f = await prepared('never');

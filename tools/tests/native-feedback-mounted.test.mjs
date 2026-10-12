@@ -5,6 +5,7 @@ import { FEEDBACK_TIMEOUT_MS } from '../../experiments/native-architecture/src/f
 import { createScreen, files } from './native-drawing-screen-harness.mjs';
 let screen;
 let finish;
+const COUNTDOWN_TEST_MS = 3000;
 async function input(label, value) {
   const field = screen.container.querySelector(`[aria-label="${label}"]`);
   expect(field).not.toBeNull();
@@ -117,7 +118,54 @@ describe('real RN drawing screen feedback caller', () => {
     await solve();
     expect(screen.container.textContent).toContain('may be offline');
     expect(screen.container.textContent).not.toContain('private transport detail');
+    expect(
+      [...screen.container.querySelectorAll('[aria-live="polite"]')].map((node) => node.textContent)
+    ).toContain(
+      'Could not connect. You may be offline. Splotch may already have received it. Sending again could send it twice.'
+    );
     expect(screen.button('Try sending again')).toBeDefined();
+    await screen.click('Edit feedback');
+    await input('Feedback message', 'Unrelated first send');
+    await screen.click('Review feedback');
+    expect(screen.button('Try sending again')).toBeUndefined();
+    expect(screen.button('Send privately')).toBeDefined();
+    expect(screen.container.textContent).not.toContain('Could not connect.');
+  });
+  it('keeps feedback typing, gate input and closed-sheet throttle ticks outside canvas renders', async () => {
+    await act(async () => screen.close());
+    vi.useFakeTimers();
+    screen = createScreen();
+    await screen.mount();
+    await openFeedback();
+    const rendered = files.surfaceRender.mock.calls.length;
+    for (const message of ['R', 'Re', 'Ren', 'Rend', 'Render'])
+      await input('Feedback message', message);
+    await screen.click('Review feedback');
+    await screen.click('Send privately');
+    await input('Answer', '0');
+    await act(async () => vi.advanceTimersByTimeAsync(COUNTDOWN_TEST_MS));
+    expect(files.surfaceRender).toHaveBeenCalledTimes(rendered);
+    await solve();
+    await act(async () => {
+      finish(
+        new Response('{"ok":false,"error":"throttle"}', {
+          status: 429,
+          headers: { 'Retry-After': '12' },
+        })
+      );
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await screen.click('Close feedback');
+    const closed = files.surfaceRender.mock.calls.length;
+    await act(async () => vi.advanceTimersByTimeAsync(COUNTDOWN_TEST_MS));
+    expect(files.surfaceRender).toHaveBeenCalledTimes(closed);
+    await openFeedback();
+    expect(screen.container.textContent).toContain('Wait 9 seconds');
+    expect(files.feedbackSend).toHaveBeenCalledOnce();
+    await screen.click('Edit feedback');
+    await input('Feedback message', 'New throttled report');
+    await screen.click('Review feedback');
+    expect(screen.button('Try sending again').disabled).toBe(true);
   });
   it('shows timeout and cancellation without automatically retrying a report of unknown delivery', async () => {
     vi.useFakeTimers();

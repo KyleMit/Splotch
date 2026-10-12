@@ -69,14 +69,12 @@ export function createFeedbackGate(
       until = null;
     }
     const locked = until !== null;
-    update({
-      locked,
-      ...(locked
-        ? { message: gateLockoutMessage((until ?? time) - time) }
-        : state.locked
-          ? { message: GATE_LOCKOUT_ENDED_MESSAGE }
-          : {}),
-    });
+    const message = locked
+      ? gateLockoutMessage((until ?? time) - time)
+      : state.locked
+        ? GATE_LOCKOUT_ENDED_MESSAGE
+        : state.message;
+    if (state.locked !== locked || state.message !== message) update({ locked, message });
     return locked;
   }
   function dismiss() {

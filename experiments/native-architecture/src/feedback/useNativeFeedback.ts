@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   createNativeFeedback,
   type NativeFeedbackOwner,
@@ -12,10 +12,11 @@ import {
 } from '../platform/feedback';
 
 const FEEDBACK_GATE_TICK_MS = 1000;
+const noFeedbackState = () => null;
+const noFeedbackSubscription = () => () => {};
 
 export function useNativeFeedback() {
   const [owner, setOwner] = useState<NativeFeedbackOwner | null>(null);
-  const [state, setState] = useState<NativeFeedbackState | null>(null);
   useEffect(() => {
     const instance = createNativeFeedback({
       transport: feedbackTransport,
@@ -24,14 +25,22 @@ export function useNativeFeedback() {
       policyStorage: feedbackPolicyStorage,
     });
     setOwner(instance);
-    setState(instance.getState());
-    const unsubscribe = instance.subscribe(() => setState(instance.getState()));
     void instance.loadPolicy();
     return () => {
-      unsubscribe();
       instance.dispose();
     };
   }, []);
+  return { owner };
+}
+
+export function useNativeFeedbackState(
+  owner: NativeFeedbackOwner | null
+): NativeFeedbackState | null {
+  const state = useSyncExternalStore(
+    owner?.subscribe ?? noFeedbackSubscription,
+    owner?.getState ?? noFeedbackState,
+    owner?.getState ?? noFeedbackState
+  );
   useEffect(() => {
     if (!owner || !state?.gate.open) return;
     const timer = setInterval(owner.gateTick, FEEDBACK_GATE_TICK_MS);
@@ -42,5 +51,5 @@ export function useNativeFeedback() {
     const timer = setInterval(owner.deliveryTick, FEEDBACK_GATE_TICK_MS);
     return () => clearInterval(timer);
   }, [owner, state?.delivery.status]);
-  return { owner, state };
+  return state;
 }

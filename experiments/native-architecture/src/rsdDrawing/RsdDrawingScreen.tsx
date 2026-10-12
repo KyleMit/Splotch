@@ -123,9 +123,7 @@ function RsdDrawingContent({ screen, sound }: { screen: Screen; sound: Sound }) 
             onFeedback={() => feedback.owner?.open()}
           />
         ) : null}
-        {feedback.owner && feedback.state?.open ? (
-          <RsdFeedbackSheet owner={feedback.owner} state={feedback.state} />
-        ) : null}
+        <RsdFeedbackSheet owner={feedback.owner} />
         {screen.pagePickerOpen ? (
           <RsdColoringBookPicker
             selected={screen.history.drawing.pageId}

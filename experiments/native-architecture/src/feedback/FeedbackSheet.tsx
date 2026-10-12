@@ -26,14 +26,10 @@ import {
   FEEDBACK_POLICY_NOTICE,
 } from './feedbackCopy';
 import type { NativeFeedbackOwner, NativeFeedbackState } from './feedback';
+import { useNativeFeedbackState } from './useNativeFeedback';
 
-export function NativeFeedback({
-  owner,
-  state,
-}: {
-  owner: NativeFeedbackOwner | null;
-  state: NativeFeedbackState | null;
-}) {
+export function NativeFeedback({ owner }: { owner: NativeFeedbackOwner | null }) {
+  const state = useNativeFeedbackState(owner);
   return owner && state?.open ? <FeedbackSheet owner={owner} state={state} /> : null;
 }
 

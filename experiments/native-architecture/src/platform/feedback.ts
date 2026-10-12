@@ -33,8 +33,8 @@ export function feedbackDevice(): DeviceInfo {
     display: 'Native app',
   };
 }
-export const feedbackOffline = () =>
-  typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false;
+// React Native's navigator has no connectivity signal; null keeps delivery uncertainty explicit.
+export const feedbackOffline = (): null => null;
 
 export const feedbackPolicyStorage: FeedbackPolicyStorage = {
   async read() {

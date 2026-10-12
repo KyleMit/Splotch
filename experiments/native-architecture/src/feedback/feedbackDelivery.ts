@@ -1,5 +1,10 @@
 import type { FeedbackSnapshot } from './feedback';
-import { sendFeedback, type FeedbackOutcome, type FeedbackTransport } from './feedbackTransport';
+import {
+  sendFeedback,
+  FEEDBACK_UNKNOWN_DELIVERY_NOTICE,
+  type FeedbackOutcome,
+  type FeedbackTransport,
+} from './feedbackTransport';
 
 export type FeedbackDeliveryState =
   | { status: 'idle' }
@@ -9,7 +14,7 @@ const SECONDS_TO_MS = 1000;
 
 export function createFeedbackDelivery(
   transport: FeedbackTransport,
-  offline: () => boolean,
+  offline: () => boolean | null,
   publish: (state: FeedbackDeliveryState) => void,
   succeeded: (snapshot: FeedbackSnapshot) => void,
   now: () => number = Date.now
@@ -43,7 +48,7 @@ export function createFeedbackDelivery(
       old.controller.abort();
       publish({
         status: 'cancelled',
-        message: 'Sending stopped. Your report may have arrived. Check before sending again.',
+        message: `Sending stopped. ${FEEDBACK_UNKNOWN_DELIVERY_NOTICE}`,
       });
     },
     tick() {
@@ -51,7 +56,7 @@ export function createFeedbackDelivery(
       const remaining = Math.max(0, Math.ceil((retryAt - now()) / SECONDS_TO_MS));
       if (remaining === 0) {
         retryAt = null;
-        publish({ status: 'error', message: 'You can try sending your feedback again.' });
+        publish({ status: 'idle' });
       } else
         publish({
           status: 'throttled',

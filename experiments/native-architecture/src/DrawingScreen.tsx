@@ -194,7 +194,7 @@ function DrawingScreenContent({
           setSettingsClosing(false);
         }}
       />
-      <NativeFeedback owner={feedback.owner} state={feedback.state} />
+      <NativeFeedback owner={feedback.owner} />
     </SafeAreaView>
   );
 }

@@ -15,6 +15,7 @@ const files = vi.hoisted(() => ({
   feedbackRead: vi.fn().mockResolvedValue(null),
   feedbackWrite: vi.fn().mockResolvedValue(undefined),
   feedbackSend: vi.fn(),
+  surfaceRender: vi.fn(),
   pngRead: vi.fn().mockResolvedValue(null),
   pngWrite: vi.fn().mockResolvedValue(undefined),
   settingsRead: vi.fn().mockResolvedValue('{"version":1,"soundEnabled":false}'),
@@ -186,6 +187,7 @@ vi.mock('../../experiments/native-architecture/src/drawing/DrawingSurface.tsx', 
       { drawing, onCohort, onDrawingChange, color, brush, strokeWidth, eraserWidth, disabled },
       ref
     ) => {
+      files.surfaceRender();
       useImperativeHandle(
         ref,
         () => ({

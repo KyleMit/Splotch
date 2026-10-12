@@ -17,6 +17,7 @@ import {
   FEEDBACK_POLICY_NOTICE,
 } from '../feedback/feedbackCopy';
 import type { NativeFeedbackOwner, NativeFeedbackState } from '../feedback/feedback';
+import { useNativeFeedbackState } from '../feedback/useNativeFeedback';
 
 function inputValue(event: unknown): string | null {
   if (!event || typeof event !== 'object' || !('target' in event)) return null;
@@ -29,13 +30,9 @@ function inputValue(event: unknown): string | null {
     : null;
 }
 
-export function RsdFeedbackSheet({
-  owner,
-  state,
-}: {
-  owner: NativeFeedbackOwner;
-  state: NativeFeedbackState;
-}) {
+export function RsdFeedbackSheet({ owner }: { owner: NativeFeedbackOwner | null }) {
+  const state = useNativeFeedbackState(owner);
+  if (!owner || !state?.open) return null;
   const close = () => (state.gate.open ? owner.dismissGate() : owner.close());
   const sending = state.delivery.status === 'sending';
   return (

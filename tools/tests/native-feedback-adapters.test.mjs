@@ -38,6 +38,7 @@ vi.mock('expo-file-system', () => ({
 import {
   feedbackTransport,
   feedbackDevice,
+  feedbackOffline,
   feedbackPolicyStorage,
 } from '../../experiments/native-architecture/src/platform/feedback.ts';
 import {
@@ -59,6 +60,27 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe('actual native and web feedback adapters', () => {
+  it('represents the real React Native navigator contract as unknown connectivity', async () => {
+    vi.stubGlobal('navigator', { product: 'ReactNative' });
+    expect(feedbackOffline()).toBeNull();
+    host.send.mockRejectedValueOnce(new TypeError('Network request failed: private fixture'));
+    const result = await sendFeedback(
+      feedbackTransport,
+      body,
+      new AbortController(),
+      feedbackOffline
+    );
+    expect(host.send).toHaveBeenCalledOnce();
+    expect(result).toEqual({
+      status: 'connection',
+      message:
+        'Could not connect. You may be offline. Splotch may already have received it. Sending again could send it twice.',
+    });
+  });
+  it('does not mistake a browser navigator shim for native connectivity evidence', () => {
+    vi.stubGlobal('navigator', { product: 'ReactNative', onLine: false });
+    expect(feedbackOffline()).toBeNull();
+  });
   it('uses the released Expo streaming transport with the exact hosted endpoint and no credentials or redirects', async () => {
     const signal = new AbortController().signal;
     await feedbackTransport(body, signal);

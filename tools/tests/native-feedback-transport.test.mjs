@@ -51,7 +51,7 @@ describe('bounded native feedback replies', () => {
       () => false
     );
     expect(result.message).not.toContain(secret);
-    expect(result.status).toBe('offline');
+    expect(result.status).toBe('connection');
     expect(result.message).toContain('may be offline');
   });
   it('does no transport work when known offline', async () => {
@@ -59,6 +59,25 @@ describe('bounded native feedback replies', () => {
     const result = await sendFeedback(transport, body, new AbortController(), () => true);
     expect(result.status).toBe('offline');
     expect(transport).not.toHaveBeenCalled();
+  });
+  it('retains delivery uncertainty when connectivity changes after a request starts', async () => {
+    let offline = false;
+    const transport = vi.fn(async () => {
+      offline = true;
+      throw new TypeError('Private network failure');
+    });
+    const result = await sendFeedback(transport, body, new AbortController(), () => offline);
+    expect(transport).toHaveBeenCalledOnce();
+    expect(result).toEqual({
+      status: 'connection',
+      message:
+        'Could not connect. You may be offline. Splotch may already have received it. Sending again could send it twice.',
+    });
+  });
+  it('explains duplicate risk for an unconfirmed reply', async () => {
+    expect((await run(response({ unexpected: true }))).message).toBe(
+      'Splotch did not return a valid confirmation. Splotch may already have received it. Sending again could send it twice.'
+    );
   });
   it('classifies and bounds the throttle delay', async () => {
     const result = await run(

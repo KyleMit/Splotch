@@ -6,9 +6,12 @@
   "branch": "codex/native-feedback",
   "ownership": "Retained through feedback repairs; no reassignment to an original unit reviewer.",
   "review": {
-    "opened": false,
-    "roundsUsed": 0,
-    "roundsRemaining": 3
+    "opened": true,
+    "roundsUsed": 1,
+    "roundsRemaining": 2,
+    "originalClaudeId": "90a2d1fb-4577-46d4-bbe2-713ce3d78c8e",
+    "authority": "Root owns review execution and the remaining rounds.",
+    "roundOne": "Closed with four verified nonblocking suggestions; implementation owner repairs connectivity honesty, delivery copy, draft outcome reset and subscription isolation."
   },
   "productionBoundary": [
     "experiments/native-architecture/src/feedback",
@@ -51,5 +54,13 @@
     "acceptance": false,
     "repair": "Explicit drawing fixture SDK boundary and exact sixteen-file inventory; production Expo streaming retained.",
     "retryOwner": "/root"
+  },
+  "qualifiedFullToolsRetry": {
+    "commit": "94f2db4b6f7a723d63721e02b4d6ad48b82484fa",
+    "actualExitCode": 0,
+    "files": 422,
+    "cases": 9230,
+    "defaultWorkers": true,
+    "newRepairAcceptance": "Requires root-owned joined candidate checks and review."
   }
 }
